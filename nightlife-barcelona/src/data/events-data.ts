@@ -1,28 +1,33 @@
 export const eventsData = [
+
     {
       id: 1,
-      title: "Techno All Night",
-      venue: "Razzmatazz",
+      name: "Techno All Night",
+      club: "Razzmatazz",
       date: "Tonight · 23:59",
-      lineup: "Charlotte de Witte · I Hate Models",
+      price: "20€",
+      attending: 420,
       image: "/clubs/razz.jpg",
     },
   
     {
       id: 2,
-      title: "Underground Sessions",
-      venue: "Input",
+      name: "Underground Sessions",
+      club: "Input",
       date: "Friday · 00:30",
-      lineup: "Amelie Lens · Klangkuenstler",
-      image: "/clubs/input.jpeg",
+      price: "25€",
+      attending: 610,
+      image: "/clubs/input.jpg",
     },
   
     {
       id: 3,
-      title: "Beachside Party",
-      venue: "Opium",
+      name: "Beachside Party",
+      club: "Opium",
       date: "Saturday · 01:00",
-      lineup: "International Guests",
-      image: "/clubs/opium.jpeg",
+      price: "30€",
+      attending: 780,
+      image: "/clubs/opium.jpg",
     },
+  
   ]

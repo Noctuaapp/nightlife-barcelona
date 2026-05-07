@@ -1,4 +1,5 @@
 import Image from "next/image"
+
 import { nightlifeData } from "../../../data/nightlife-data"
 
 interface ClubPageProps {
@@ -13,25 +14,35 @@ export default async function ClubPage({
 
   const { name } = await params
 
+  const decodedName = decodeURIComponent(name)
+    .toLowerCase()
+    .trim()
+
   const club = nightlifeData.find(
     (club) =>
-      club.name.toLowerCase() === name.toLowerCase()
+      club.name.toLowerCase().trim() === decodedName
   )
 
   if (!club) {
+
     return (
-      <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        Club not found.
-      </main>
+
+      <div className="flex min-h-screen items-center justify-center bg-black text-white">
+
+        Club not found
+
+      </div>
+
     )
   }
 
   return (
+
     <main className="min-h-screen bg-black text-white">
 
-      {/* HERO IMAGE */}
+      {/* HERO */}
 
-      <section className="relative h-[60vh] overflow-hidden">
+      <section className="relative h-[85vh] overflow-hidden">
 
         <Image
           src={club.image}
@@ -40,29 +51,97 @@ export default async function ClubPage({
           className="object-cover"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+        {/* OVERLAY */}
 
-        <div className="absolute bottom-0 left-0 w-full p-8">
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/10" />
+
+        {/* CONTENT */}
+
+        <div className="absolute bottom-0 left-0 w-full p-8 md:p-16">
 
           <div className="mx-auto max-w-7xl">
 
-            <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-400">
-              Barcelona nightlife
-            </p>
+            <div className="w-fit rounded-full border border-white/10 bg-black/40 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white backdrop-blur">
 
-            <h1 className="text-5xl font-black md:text-7xl">
+              {club.music}
+
+            </div>
+
+            <h1 className="mt-6 max-w-4xl text-5xl font-black leading-none tracking-tight text-white md:text-7xl">
+
               {club.name}
+
             </h1>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-300">
 
-              <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black">
-                {club.music}
-              </span>
+              One of Barcelona’s most iconic nightlife experiences located in {club.neighborhood}.
 
-              <span className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm">
-                {club.neighborhood}
-              </span>
+            </p>
+
+            {/* ACTIONS */}
+
+            <div className="mt-10 flex flex-wrap gap-4">
+
+              <button className="rounded-full bg-white px-8 py-4 text-sm font-bold text-black transition hover:scale-105">
+
+                Buy tickets
+
+              </button>
+
+              <button className="rounded-full border border-white/10 bg-white/[0.05] px-8 py-4 text-sm font-medium text-white backdrop-blur-xl transition hover:bg-white/[0.08]">
+
+                ❤️ Save
+
+              </button>
+
+              <button className="rounded-full border border-white/10 bg-white/[0.05] px-8 py-4 text-sm font-medium text-white backdrop-blur-xl transition hover:bg-white/[0.08]">
+
+                ↗ Share
+
+              </button>
+
+            </div>
+
+            {/* STATS */}
+
+            <div className="mt-10 flex flex-wrap gap-4">
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-xl">
+
+                <p className="text-sm text-zinc-400">
+                  Rating
+                </p>
+
+                <p className="mt-1 text-2xl font-black text-white">
+                  {club.rating} ⭐
+                </p>
+
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-xl">
+
+                <p className="text-sm text-zinc-400">
+                  People tonight
+                </p>
+
+                <p className="mt-1 text-2xl font-black text-white">
+                  {club.people}+
+                </p>
+
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-xl">
+
+                <p className="text-sm text-zinc-400">
+                  Entry
+                </p>
+
+                <p className="mt-1 text-2xl font-black text-white">
+                  {club.price}
+                </p>
+
+              </div>
 
             </div>
 
@@ -72,117 +151,75 @@ export default async function ClubPage({
 
       </section>
 
-      {/* CONTENT */}
+      {/* INFO */}
 
-      <section className="mx-auto max-w-7xl px-4 py-16">
+      <section className="mx-auto max-w-7xl px-4 py-20">
 
-        <div className="grid gap-10 lg:grid-cols-[1.5fr_420px]">
+        <div className="grid gap-10 lg:grid-cols-3">
 
           {/* LEFT */}
 
-          <div>
+          <div className="lg:col-span-2">
 
-            <div className="border-b border-zinc-800 pb-10">
+            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
+              About
+            </p>
 
-              <h2 className="text-3xl font-bold">
-                About this venue
-              </h2>
+            <h2 className="mt-4 text-4xl font-black tracking-tight text-white">
 
-              <p className="mt-6 max-w-3xl text-lg leading-relaxed text-zinc-400">
+              A nightlife experience built for unforgettable nights.
 
-                Discover one of Barcelona’s most iconic nightlife
-                experiences. Music, atmosphere, design and unforgettable
-                nights — all in one place.
+            </h2>
 
+            <p className="mt-8 max-w-3xl text-lg leading-relaxed text-zinc-400">
+
+              Discover music, atmosphere and experiences curated for nightlife lovers in Barcelona. Explore the venue, crowd vibe and local scene before your night even starts.
+
+            </p>
+
+          </div>
+
+          {/* RIGHT */}
+
+          <div className="space-y-5">
+
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
+
+              <p className="text-sm uppercase tracking-wide text-zinc-500">
+                Area
+              </p>
+
+              <p className="mt-2 text-xl font-bold text-white">
+                {club.neighborhood}
               </p>
 
             </div>
 
-            {/* INFO GRID */}
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
 
-            <div className="mt-10 grid gap-6 md:grid-cols-2">
+              <p className="text-sm uppercase tracking-wide text-zinc-500">
+                Opening hours
+              </p>
 
-              <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
+              <p className="mt-2 text-xl font-bold text-white">
+                {club.hours}
+              </p>
 
-                <p className="text-sm uppercase tracking-widest text-zinc-500">
-                  Address
-                </p>
+            </div>
 
-                <h3 className="mt-3 text-xl font-semibold">
-                  {club.address}
-                </h3>
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
 
-              </div>
+              <p className="text-sm uppercase tracking-wide text-zinc-500">
+                Address
+              </p>
 
-              <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
-
-                <p className="text-sm uppercase tracking-widest text-zinc-500">
-                  Metro
-                </p>
-
-                <h3 className="mt-3 text-xl font-semibold">
-                  {club.metro}
-                </h3>
-
-              </div>
-
-              <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
-
-                <p className="text-sm uppercase tracking-widest text-zinc-500">
-                  Opening hours
-                </p>
-
-                <h3 className="mt-3 text-xl font-semibold">
-                  {club.hours}
-                </h3>
-
-              </div>
-
-              <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
-
-                <p className="text-sm uppercase tracking-widest text-zinc-500">
-                  Entry price
-                </p>
-
-                <h3 className="mt-3 text-xl font-semibold">
-                  {club.price}
-                </h3>
-
-              </div>
+              <p className="mt-2 text-xl font-bold text-white">
+                {club.address}
+              </p>
 
             </div>
 
           </div>
-
-          {/* RIGHT SIDEBAR */}
-
-          <aside>
-
-            <div className="sticky top-10 rounded-3xl border border-zinc-800 bg-zinc-900 p-8">
-
-              <p className="text-sm uppercase tracking-widest text-zinc-500">
-                Nightlife experience
-              </p>
-
-              <h3 className="mt-4 text-3xl font-bold">
-                Plan your night
-              </h3>
-
-              <p className="mt-4 text-zinc-400">
-
-                Explore the venue, save it to favorites and discover nearby nightlife.
-
-              </p>
-
-              <button className="mt-8 w-full rounded-2xl bg-white px-6 py-4 font-semibold text-black transition hover:scale-[1.02]">
-
-                Save venue
-
-              </button>
-
-            </div>
-
-          </aside>
 
         </div>
 

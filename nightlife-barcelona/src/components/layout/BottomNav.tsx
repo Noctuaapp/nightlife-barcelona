@@ -1,64 +1,71 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-
 export default function BottomNav() {
 
-  const pathname = usePathname()
-
-  const navItems = [
-    {
-      label: "Home",
-      href: "/",
-      icon: "🏠",
-    },
-    {
-      label: "Favorites",
-      href: "/favorites",
-      icon: "❤️",
-    },
-    {
-      label: "Map",
-      href: "/map",
-      icon: "🗺️",
-    },
-  ]
-
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-800 bg-black/90 backdrop-blur">
 
-      <div className="mx-auto flex max-w-lg items-center justify-around py-3">
+    <div className="fixed bottom-6 left-1/2 z-50 w-[92%] max-w-md -translate-x-1/2">
 
-        {navItems.map((item) => {
+      <div className="flex items-center justify-between rounded-[32px] border border-white/10 bg-black/50 px-6 py-4 shadow-2xl backdrop-blur-2xl">
 
-          const active = pathname === item.href
+        {/* HOME */}
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center gap-1 text-xs font-medium transition ${
-                active
-                  ? "text-white"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
+        <button className="flex flex-col items-center gap-1 text-white">
 
-              <span className="text-xl">
-                {item.icon}
-              </span>
+          <span className="text-xl">
+            🏠
+          </span>
 
-              <span>
-                {item.label}
-              </span>
+          <span className="text-xs font-medium">
+            Home
+          </span>
 
-            </Link>
-          )
-        })}
+        </button>
+
+        {/* EVENTS */}
+
+        <button className="flex flex-col items-center gap-1 text-zinc-500 transition hover:text-white">
+
+          <span className="text-xl">
+            🎫
+          </span>
+
+          <span className="text-xs font-medium">
+            Events
+          </span>
+
+        </button>
+
+        {/* FAVORITES */}
+
+        <button className="flex flex-col items-center gap-1 text-zinc-500 transition hover:text-white">
+
+          <span className="text-xl">
+            ❤️
+          </span>
+
+          <span className="text-xs font-medium">
+            Saved
+          </span>
+
+        </button>
+
+        {/* PROFILE */}
+
+        <button className="flex flex-col items-center gap-1 text-zinc-500 transition hover:text-white">
+
+          <span className="text-xl">
+            👤
+          </span>
+
+          <span className="text-xs font-medium">
+            Profile
+          </span>
+
+        </button>
 
       </div>
 
-    </nav>
+    </div>
   )
 }
