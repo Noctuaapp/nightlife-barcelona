@@ -11,6 +11,8 @@ interface ClubCardProps {
   price: string
   hours: string
   image: string
+  rating: number
+  people: number
 }
 
 export default function ClubCard({
@@ -20,7 +22,9 @@ export default function ClubCard({
   price,
   hours,
   image,
-}: ClubCardProps) {
+  rating,
+  people,
+  }: ClubCardProps) {
 
   const [saved, setSaved] = useState(false)
 
@@ -160,7 +164,27 @@ export default function ClubCard({
             </div>
 
           </div>
+          <div className="mt-6 flex items-center justify-between">
 
+<div className="flex items-center gap-2">
+
+  <span className="text-lg">
+    ⭐
+  </span>
+
+  <span className="font-semibold text-white">
+    {rating}
+  </span>
+
+</div>
+
+<div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300 backdrop-blur">
+
+  {people}+ people tonight
+
+</div>
+
+</div>
           {/* FOOTER */}
 
           <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-5">

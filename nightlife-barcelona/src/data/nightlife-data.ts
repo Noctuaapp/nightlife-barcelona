@@ -10,6 +10,8 @@ export const nightlifeData = [
       hours: "19:00 - 03:00",
       metro: "L4 - Jaume I",
       image: "/clubs/paradiso.jpeg",
+      rating: 4.9,
+      people: 324,
     },
   
     {
@@ -23,6 +25,8 @@ export const nightlifeData = [
       hours: "00:00 - 06:00",
       metro: "L4 - Bogatell",
       image: "/clubs/razz.jpg",
+      rating: 4.8,
+      people: 812,
     },
   
     {
@@ -36,6 +40,8 @@ export const nightlifeData = [
       hours: "22:00 - 05:00",
       metro: "Paral·lel",
       image: "/clubs/apolo.jpeg",
+      rating: 4.7,
+      people: 540,
     },
   
     {
@@ -48,7 +54,9 @@ export const nightlifeData = [
       price: "25€",
       hours: "00:00 - 05:00",
       metro: "Barceloneta",
-      image: "/clubs/opium.jpg",
+      image: "/clubs/opium.jpeg",
+      rating: 4.5,
+      people: 1102,
     },
   
     {
@@ -58,9 +66,11 @@ export const nightlifeData = [
       neighborhood: "Montjuïc",
       address: "Poble Espanyol",
       music: "Techno",
-      price: "18€",
+      price: "22€",
       hours: "00:00 - 06:00",
       metro: "Espanya",
-      image: "/clubs/input.jpg",
+      image: "/clubs/input.jpeg",
+      rating: 4.8,
+      people: 602,
     },
   ]

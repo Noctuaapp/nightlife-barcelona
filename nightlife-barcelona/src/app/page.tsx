@@ -1,5 +1,6 @@
 "use client"
-
+import EventsSection from "../components/home/EventsSection"
+import TrendingSection from "../components/home/TrendingSection"
 import { useState } from "react"
 
 import Header from "../components/layout/Header"
@@ -156,22 +157,24 @@ export default function Home() {
 
             {openNowClubs.map((club) => (
 
-              <ClubCard
-                key={club.id}
-                name={club.name}
-                music={club.music}
-                area={club.neighborhood}
-                price={club.price}
-                hours={club.hours}
-                image={club.image}
-              />
+<ClubCard
+key={club.id}
+name={club.name}
+music={club.music}
+area={club.neighborhood}
+price={club.price}
+hours={club.hours}
+image={club.image}
+rating={club.rating}
+people={club.people}
+/>
 
             ))}
 
           </div>
 
         </section>
-
+        <TrendingSection />
         {/* FILTERS */}
 
         <section className="mx-auto mt-14 max-w-7xl px-4">
@@ -207,7 +210,7 @@ export default function Home() {
           </div>
 
         </section>
-
+        <EventsSection />
         {/* CLUB GRID */}
 
         <section className="mx-auto mt-10 max-w-7xl px-4">
@@ -253,15 +256,17 @@ export default function Home() {
 
       {filteredClubs.map((club) => (
 
-        <ClubCard
-          key={club.id}
-          name={club.name}
-          music={club.music}
-          area={club.neighborhood}
-          price={club.price}
-          hours={club.hours}
-          image={club.image}
-        />
+<ClubCard
+key={club.id}
+name={club.name}
+music={club.music}
+area={club.neighborhood}
+price={club.price}
+hours={club.hours}
+image={club.image}
+rating={club.rating}
+people={club.people}
+/>
 
       ))}
 
