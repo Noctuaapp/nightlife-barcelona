@@ -21,7 +21,7 @@ export default async function ClubPage({
   if (!club) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        Club not found
+        Club not found.
       </main>
     )
   }
@@ -29,86 +29,40 @@ export default async function ClubPage({
   return (
     <main className="min-h-screen bg-black text-white">
 
-      <div className="mx-auto max-w-5xl px-4 py-8">
+      {/* HERO IMAGE */}
+
+      <section className="relative h-[60vh] overflow-hidden">
 
         <Image
           src={club.image}
           alt={club.name}
-          width={1200}
-          height={700}
-          className="h-[400px] w-full rounded-3xl object-cover"
+          fill
+          className="object-cover"
         />
 
-        <div className="mt-8">
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
-          <h1 className="text-5xl font-bold">
-            {club.name}
-          </h1>
+        <div className="absolute bottom-0 left-0 w-full p-8">
 
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mx-auto max-w-7xl">
 
-            <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black">
-              {club.music}
-            </span>
+            <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-400">
+              Barcelona nightlife
+            </p>
 
-            <span className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300">
-              {club.neighborhood}
-            </span>
+            <h1 className="text-5xl font-black md:text-7xl">
+              {club.name}
+            </h1>
 
-          </div>
+            <div className="mt-6 flex flex-wrap gap-3">
 
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
+              <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black">
+                {club.music}
+              </span>
 
-            <div className="rounded-3xl bg-zinc-900 p-6">
-
-              <h2 className="mb-4 text-xl font-semibold">
-                Information
-              </h2>
-
-              <div className="space-y-3 text-zinc-300">
-
-                <p>
-                  <span className="font-semibold text-white">
-                    Address:
-                  </span>{" "}
-                  {club.address}
-                </p>
-
-                <p>
-                  <span className="font-semibold text-white">
-                    Hours:
-                  </span>{" "}
-                  {club.hours}
-                </p>
-
-                <p>
-                  <span className="font-semibold text-white">
-                    Price:
-                  </span>{" "}
-                  {club.price}
-                </p>
-
-                <p>
-                  <span className="font-semibold text-white">
-                    Metro:
-                  </span>{" "}
-                  {club.metro}
-                </p>
-
-              </div>
-
-            </div>
-
-            <div className="rounded-3xl bg-zinc-900 p-6">
-
-              <h2 className="mb-4 text-xl font-semibold">
-                About
-              </h2>
-
-              <p className="leading-relaxed text-zinc-400">
-                One of Barcelona's nightlife hotspots with music,
-                atmosphere and experiences for late-night culture.
-              </p>
+              <span className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm">
+                {club.neighborhood}
+              </span>
 
             </div>
 
@@ -116,7 +70,123 @@ export default async function ClubPage({
 
         </div>
 
-      </div>
+      </section>
+
+      {/* CONTENT */}
+
+      <section className="mx-auto max-w-7xl px-4 py-16">
+
+        <div className="grid gap-10 lg:grid-cols-[1.5fr_420px]">
+
+          {/* LEFT */}
+
+          <div>
+
+            <div className="border-b border-zinc-800 pb-10">
+
+              <h2 className="text-3xl font-bold">
+                About this venue
+              </h2>
+
+              <p className="mt-6 max-w-3xl text-lg leading-relaxed text-zinc-400">
+
+                Discover one of Barcelona’s most iconic nightlife
+                experiences. Music, atmosphere, design and unforgettable
+                nights — all in one place.
+
+              </p>
+
+            </div>
+
+            {/* INFO GRID */}
+
+            <div className="mt-10 grid gap-6 md:grid-cols-2">
+
+              <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
+
+                <p className="text-sm uppercase tracking-widest text-zinc-500">
+                  Address
+                </p>
+
+                <h3 className="mt-3 text-xl font-semibold">
+                  {club.address}
+                </h3>
+
+              </div>
+
+              <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
+
+                <p className="text-sm uppercase tracking-widest text-zinc-500">
+                  Metro
+                </p>
+
+                <h3 className="mt-3 text-xl font-semibold">
+                  {club.metro}
+                </h3>
+
+              </div>
+
+              <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
+
+                <p className="text-sm uppercase tracking-widest text-zinc-500">
+                  Opening hours
+                </p>
+
+                <h3 className="mt-3 text-xl font-semibold">
+                  {club.hours}
+                </h3>
+
+              </div>
+
+              <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
+
+                <p className="text-sm uppercase tracking-widest text-zinc-500">
+                  Entry price
+                </p>
+
+                <h3 className="mt-3 text-xl font-semibold">
+                  {club.price}
+                </h3>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* RIGHT SIDEBAR */}
+
+          <aside>
+
+            <div className="sticky top-10 rounded-3xl border border-zinc-800 bg-zinc-900 p-8">
+
+              <p className="text-sm uppercase tracking-widest text-zinc-500">
+                Nightlife experience
+              </p>
+
+              <h3 className="mt-4 text-3xl font-bold">
+                Plan your night
+              </h3>
+
+              <p className="mt-4 text-zinc-400">
+
+                Explore the venue, save it to favorites and discover nearby nightlife.
+
+              </p>
+
+              <button className="mt-8 w-full rounded-2xl bg-white px-6 py-4 font-semibold text-black transition hover:scale-[1.02]">
+
+                Save venue
+
+              </button>
+
+            </div>
+
+          </aside>
+
+        </div>
+
+      </section>
 
     </main>
   )

@@ -5,8 +5,7 @@ export const clubs = [
     music: "Techno",
     area: "Poblenou",
     price: "20€",
-    open: "Until 06:00",
-    image: "/clubs/razz.jpg"
+    open: "Until 06:00"
   },
 
   {
@@ -15,8 +14,7 @@ export const clubs = [
     music: "Commercial",
     area: "Barceloneta",
     price: "25€",
-    open: "Until 05:00",
-    image: "/clubs/opium.jpg"
+    open: "Until 05:00"
   },
 
   {
@@ -25,7 +23,6 @@ export const clubs = [
     music: "Techno",
     area: "Montjuïc",
     price: "18€",
-    open: "Until 06:00",
-    image: "/clubs/input.jpg"
+    open: "Until 06:00"
   }
 ]
