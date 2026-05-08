@@ -1,15 +1,71 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 
 import { nightlifeData } from "../../data/nightlife-data"
 
+type Club = {
+  id: number
+  name: string
+  music: string
+  neighborhood: string
+  liveStatus: string
+  queue: string
+  trending: boolean
+  soldOut: boolean
+}
+
 export default function AdminPage() {
 
-  const [clubs, setClubs] = useState(nightlifeData)
+  const [clubs, setClubs] = useState<Club[]>([])
+
+  const [search, setSearch] = useState("")
+
+  const [newClub, setNewClub] = useState({
+    name: "",
+    music: "",
+    neighborhood: "",
+  })
+
+  useEffect(() => {
+
+    const saved = localStorage.getItem(
+      "noctua-admin-clubs"
+    )
+
+    if (saved) {
+
+      const parsed = JSON.parse(saved)
+
+      const cleanData = parsed.filter(Boolean)
+
+      setClubs(cleanData)
+
+    } else {
+
+      const cleanData = nightlifeData.filter(Boolean)
+
+      setClubs(cleanData)
+
+    }
+
+  }, [])
+
+  useEffect(() => {
+
+    if (clubs.length > 0) {
+
+      localStorage.setItem(
+        "noctua-admin-clubs",
+        JSON.stringify(clubs)
+      )
+
+    }
+
+  }, [clubs])
 
   const queueLevels = [
     "No queue",
@@ -19,50 +75,150 @@ export default function AdminPage() {
     "Massive queue",
   ]
 
-  const toggleTrending = (name: string) => {
+  const toggleTrending = (id: number) => {
 
     setClubs((prev) =>
-      prev.map((club) =>
-        club.name === name
-          ? {
-              ...club,
-              trending: !club.trending,
-            }
-          : club
-      )
+      prev.map((club) => {
+
+        if (!club) return club
+
+        if (club.id === id) {
+
+          return {
+            ...club,
+            trending: !club.trending,
+          }
+
+        }
+
+        return club
+
+      })
     )
+
   }
 
-  const toggleSoldOut = (name: string) => {
+  const toggleSoldOut = (id: number) => {
 
     setClubs((prev) =>
-      prev.map((club) =>
-        club.name === name
-          ? {
-              ...club,
-              soldOut: !club.soldOut,
-            }
-          : club
-      )
+      prev.map((club) => {
+
+        if (!club) return club
+
+        if (club.id === id) {
+
+          return {
+            ...club,
+            soldOut: !club.soldOut,
+          }
+
+        }
+
+        return club
+
+      })
     )
+
   }
 
   const updateQueue = (
-    name: string,
+    id: number,
     level: string
   ) => {
 
     setClubs((prev) =>
-      prev.map((club) =>
-        club.name === name
-          ? {
-              ...club,
-              queue: level,
-            }
-          : club
+      prev.map((club) => {
+
+        if (!club) return club
+
+        if (club.id === id) {
+
+          return {
+            ...club,
+            queue: level,
+          }
+
+        }
+
+        return club
+
+      })
+    )
+
+  }
+
+  const deleteClub = (id: number) => {
+
+    setClubs((prev) =>
+      prev.filter(
+        (club) =>
+          club && club.id !== id
       )
     )
+
   }
+
+  const addClub = () => {
+
+    if (
+      !newClub.name ||
+      !newClub.music ||
+      !newClub.neighborhood
+    ) {
+      return
+    }
+
+    const club: Club = {
+      id: Date.now(),
+      name: newClub.name,
+      music: newClub.music,
+      neighborhood: newClub.neighborhood,
+      liveStatus: "Getting busy",
+      queue: "No queue",
+      trending: false,
+      soldOut: false,
+    }
+
+    setClubs((prev) => [
+      club,
+      ...prev,
+    ])
+
+    setNewClub({
+      name: "",
+      music: "",
+      neighborhood: "",
+    })
+
+  }
+
+  const filteredClubs = clubs.filter((club) => {
+
+    if (!club) return false
+
+    if (!search.trim()) return true
+
+    const query = search.toLowerCase()
+
+    return (
+      club.name
+        ?.toLowerCase()
+        .includes(query) ||
+
+      club.music
+        ?.toLowerCase()
+        .includes(query) ||
+
+      club.neighborhood
+        ?.toLowerCase()
+        .includes(query) ||
+
+      club.liveStatus
+        ?.toLowerCase()
+        .includes(query)
+    )
+
+  })
 
   return (
 
@@ -92,7 +248,9 @@ export default function AdminPage() {
 
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
 
-              Control nightlife activity, queues and live venue status across Barcelona.
+              Control nightlife activity,
+              queues and live venue status
+              across Barcelona.
 
             </p>
 
@@ -100,185 +258,59 @@ export default function AdminPage() {
 
         </section>
 
-        {/* LIVE STATS */}
-
-        <section className="mx-auto mt-14 max-w-7xl px-4">
-
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-
-            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 p-6">
-
-              <p className="text-sm uppercase tracking-wide text-zinc-400">
-
-                Clubs live
-
-              </p>
-
-              <h2 className="mt-4 text-5xl font-black text-white">
-
-                12
-
-              </h2>
-
-              <p className="mt-3 text-sm text-emerald-300">
-
-                +3 active now
-
-              </p>
-
-            </div>
-
-            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-orange-500/15 to-orange-500/5 p-6">
-
-              <p className="text-sm uppercase tracking-wide text-zinc-400">
-
-                Busy venues
-
-              </p>
-
-              <h2 className="mt-4 text-5xl font-black text-white">
-
-                4
-
-              </h2>
-
-              <p className="mt-3 text-sm text-orange-300">
-
-                Peak nightlife hour
-
-              </p>
-
-            </div>
-
-            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-pink-500/15 to-pink-500/5 p-6">
-
-              <p className="text-sm uppercase tracking-wide text-zinc-400">
-
-                VIP sold out
-
-              </p>
-
-              <h2 className="mt-4 text-5xl font-black text-white">
-
-                3
-
-              </h2>
-
-              <p className="mt-3 text-sm text-pink-300">
-
-                Demand increasing
-
-              </p>
-
-            </div>
-
-            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-cyan-500/15 to-cyan-500/5 p-6">
-
-              <p className="text-sm uppercase tracking-wide text-zinc-400">
-
-                Reports tonight
-
-              </p>
-
-              <h2 className="mt-4 text-5xl font-black text-white">
-
-                28
-
-              </h2>
-
-              <p className="mt-3 text-sm text-cyan-300">
-
-                Live user activity
-
-              </p>
-
-            </div>
-
-          </div>
-
-        </section>
-
-        {/* ACTIVITY FEED */}
+        {/* ADD CLUB */}
 
         <section className="mx-auto mt-10 max-w-7xl px-4">
 
           <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 lg:flex-row">
 
-              <div>
+              <input
+                value={newClub.name}
+                onChange={(e) =>
+                  setNewClub({
+                    ...newClub,
+                    name: e.target.value,
+                  })
+                }
+                placeholder="Club name"
+                className="flex-1 rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+              />
 
-                <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
+              <input
+                value={newClub.music}
+                onChange={(e) =>
+                  setNewClub({
+                    ...newClub,
+                    music: e.target.value,
+                  })
+                }
+                placeholder="Music type"
+                className="flex-1 rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+              />
 
-                  Activity feed
+              <input
+                value={newClub.neighborhood}
+                onChange={(e) =>
+                  setNewClub({
+                    ...newClub,
+                    neighborhood:
+                      e.target.value,
+                  })
+                }
+                placeholder="Neighborhood"
+                className="flex-1 rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+              />
 
-                </p>
+              <button
+                onClick={addClub}
+                className="rounded-2xl bg-white px-8 py-4 font-bold text-black transition hover:scale-[1.02]"
+              >
 
-                <h2 className="mt-3 text-4xl font-black text-white">
+                Add club
 
-                  Live nightlife updates
-
-                </h2>
-
-              </div>
-
-              <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300">
-
-                ● LIVE
-
-              </div>
-
-            </div>
-
-            <div className="mt-8 space-y-4">
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-
-                <p className="text-sm text-zinc-400">
-
-                  01:42 AM
-
-                </p>
-
-                <p className="mt-2 font-semibold text-white">
-
-                  🔥 Razzmatazz marked as trending
-
-                </p>
-
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-
-                <p className="text-sm text-zinc-400">
-
-                  01:51 AM
-
-                </p>
-
-                <p className="mt-2 font-semibold text-white">
-
-                  ⏳ Opium queue increased to long queue
-
-                </p>
-
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-
-                <p className="text-sm text-zinc-400">
-
-                  02:03 AM
-
-                </p>
-
-                <p className="mt-2 font-semibold text-white">
-
-                  🍾 VIP tables sold out at Pacha
-
-                </p>
-
-              </div>
+              </button>
 
             </div>
 
@@ -286,13 +318,28 @@ export default function AdminPage() {
 
         </section>
 
-        {/* CLUB CONTROLS */}
+        {/* SEARCH */}
 
-        <section className="mx-auto mt-14 max-w-7xl px-4">
+        <section className="mx-auto mt-6 max-w-7xl px-4">
+
+          <input
+            value={search}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
+            placeholder="Search clubs..."
+            className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5 outline-none"
+          />
+
+        </section>
+
+        {/* CLUBS */}
+
+        <section className="mx-auto mt-10 max-w-7xl px-4">
 
           <div className="grid gap-6">
 
-            {clubs.map((club) => (
+            {filteredClubs.map((club) => (
 
               <div
                 key={club.id}
@@ -339,7 +386,7 @@ export default function AdminPage() {
 
                     </div>
 
-                    {/* QUEUE CONTROL */}
+                    {/* QUEUE */}
 
                     <div className="mt-6">
 
@@ -356,7 +403,10 @@ export default function AdminPage() {
                           <button
                             key={level}
                             onClick={() =>
-                              updateQueue(club.name, level)
+                              updateQueue(
+                                club.id,
+                                level
+                              )
                             }
                             className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
                               club.queue === level
@@ -383,7 +433,7 @@ export default function AdminPage() {
 
                     <button
                       onClick={() =>
-                        toggleTrending(club.name)
+                        toggleTrending(club.id)
                       }
                       className={`rounded-full px-5 py-3 text-sm font-bold transition ${
                         club.trending
@@ -398,7 +448,7 @@ export default function AdminPage() {
 
                     <button
                       onClick={() =>
-                        toggleSoldOut(club.name)
+                        toggleSoldOut(club.id)
                       }
                       className={`rounded-full px-5 py-3 text-sm font-bold transition ${
                         club.soldOut
@@ -408,6 +458,17 @@ export default function AdminPage() {
                     >
 
                       🚫 Sold out
+
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        deleteClub(club.id)
+                      }
+                      className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500 hover:text-white"
+                    >
+
+                      Delete
 
                     </button>
 
@@ -428,5 +489,7 @@ export default function AdminPage() {
       <BottomNav />
 
     </>
+
   )
+
 }

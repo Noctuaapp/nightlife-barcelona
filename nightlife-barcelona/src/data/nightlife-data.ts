@@ -3,6 +3,8 @@ export const nightlifeData = [
   {
     id: 1,
 
+    slug: "razzmatazz",
+
     name: "Razzmatazz",
 
     music: "Techno",
@@ -78,12 +80,16 @@ export const nightlifeData = [
       "🎧 Techno temple",
       "🌍 International crowd",
     ],
+
     trending: false,
-soldOut: false,
+
+    soldOut: false,
   },
 
   {
     id: 2,
+
+    slug: "input",
 
     name: "Input",
 
@@ -160,12 +166,16 @@ soldOut: false,
       "🔥 Hard techno tonight",
       "🌙 Afterparty hotspot",
     ],
+
     trending: false,
-soldOut: false,
+
+    soldOut: false,
   },
 
   {
     id: 3,
+
+    slug: "opium",
 
     name: "Opium",
 
@@ -242,12 +252,16 @@ soldOut: false,
       "🌍 Tourist hotspot",
       "🔥 Beachfront party",
     ],
+
     trending: false,
-soldOut: false,
+
+    soldOut: false,
   },
 
   {
     id: 4,
+
+    slug: "pacha-barcelona",
 
     name: "Pacha Barcelona",
 
@@ -324,12 +338,16 @@ soldOut: false,
       "🌴 Beach club",
       "🔥 Trending tonight",
     ],
+
     trending: false,
-soldOut: false,
+
+    soldOut: false,
   },
 
   {
     id: 5,
+
+    slug: "sala-apolo",
 
     name: "Sala Apolo",
 
@@ -406,88 +424,96 @@ soldOut: false,
       "🔥 Student favorite",
       "🌙 Afterparty vibes",
     ],
+
     trending: false,
-soldOut: false,
+
+    soldOut: false,
   },
-  ,
+
   {
     id: 6,
-  
+
+    slug: "paradiso",
+
     name: "Paradiso",
-  
+
     music: "Cocktail Bar",
-  
+
     neighborhood: "El Born",
-  
+
     price: "€18 cocktails",
-  
+
     hours: "19:00 - 02:00",
-  
+
     image: "/clubs/paradiso.jpg",
-  
+
     address:
       "Carrer de Rera Palau 4, Barcelona",
-  
+
     rating: 4.9,
-  
+
     people: 900,
-  
+
     vibe: "Speakeasy",
-  
+
     internationalLevel: "High",
-  
+
     liveStatus: "Trending",
-  
+
     queue: "20 min queue",
-  
+
     crowd: "Cocktail lovers",
-  
+
     dresscode: "Smart casual",
-  
+
     terrace: false,
-  
+
     rooftop: false,
-  
+
     vip: false,
-  
+
     smokingArea: false,
-  
+
     afterparty: false,
-  
+
     tableBooking: true,
-  
+
     touristFriendly: true,
-  
+
     atmosphereScore: 10,
-  
+
     musicIntensity: 4,
-  
+
     crowdScore: 8,
-  
+
     valueScore: 7,
-  
+
     walkingTime: "8 min",
-  
+
     nearestMetro: "Jaume I (L4)",
-  
+
     nightBus: "N8 · N28",
-  
+
     taxiEstimate: "€6-10",
-  
+
     uberLink:
       "https://m.uber.com/ul/?action=setPickup&dropoff[formatted_address]=Carrer%20de%20Rera%20Palau%204%2C%20Barcelona",
-  
+
     cabifyLink:
       "https://cabify.com",
-  
+
     mapsLink:
       "https://www.google.com/maps/search/?api=1&query=Carrer%20de%20Rera%20Palau%204%2C%20Barcelona",
-  
+
     badges: [
       "🍸 World famous cocktails",
       "🔥 Trending tonight",
       "🌍 Tourist favorite",
     ],
+
     trending: false,
-soldOut: false,
-  }]
+
+    soldOut: false,
+  },
+
+]
