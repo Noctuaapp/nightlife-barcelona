@@ -1,70 +1,82 @@
 "use client"
 
+import Link from "next/link"
+
+import {
+  Home,
+  Calendar,
+  Heart,
+  Sparkles,
+  Shield,
+} from "lucide-react"
+
+import { usePathname } from "next/navigation"
+
 export default function BottomNav() {
+
+  const pathname = usePathname()
+
+  const navItems = [
+    {
+      label: "Home",
+      href: "/",
+      icon: Home,
+    },
+    {
+      label: "Events",
+      href: "/events",
+      icon: Calendar,
+    },
+    {
+      label: "Plan",
+      href: "/plan",
+      icon: Sparkles,
+    },
+    {
+      label: "Favorites",
+      href: "/favorites",
+      icon: Heart,
+    },
+    {
+      label: "Admin",
+      href: "/admin",
+      icon: Shield,
+    },
+  ]
 
   return (
 
-    <div className="fixed bottom-6 left-1/2 z-50 w-[92%] max-w-md -translate-x-1/2">
+    <div className="fixed bottom-4 left-1/2 z-50 flex w-[92%] max-w-md -translate-x-1/2 items-center justify-around rounded-2xl border border-white/10 bg-black/70 px-3 py-2 backdrop-blur-2xl">
 
-      <div className="flex items-center justify-between rounded-[32px] border border-white/10 bg-black/50 px-6 py-4 shadow-2xl backdrop-blur-2xl">
+      {navItems.map((item) => {
 
-        {/* HOME */}
+        const Icon = item.icon
 
-        <button className="flex flex-col items-center gap-1 text-white">
+        const active =
+          pathname === item.href
 
-          <span className="text-xl">
-            🏠
-          </span>
+        return (
 
-          <span className="text-xs font-medium">
-            Home
-          </span>
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition ${
+              active
+                ? "bg-white text-black"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
 
-        </button>
+            <Icon size={18} />
 
-        {/* EVENTS */}
+            <span>
+              {item.label}
+            </span>
 
-        <button className="flex flex-col items-center gap-1 text-zinc-500 transition hover:text-white">
+          </Link>
 
-          <span className="text-xl">
-            🎫
-          </span>
-
-          <span className="text-xs font-medium">
-            Events
-          </span>
-
-        </button>
-
-        {/* FAVORITES */}
-
-        <button className="flex flex-col items-center gap-1 text-zinc-500 transition hover:text-white">
-
-          <span className="text-xl">
-            ❤️
-          </span>
-
-          <span className="text-xs font-medium">
-            Saved
-          </span>
-
-        </button>
-
-        {/* PROFILE */}
-
-        <button className="flex flex-col items-center gap-1 text-zinc-500 transition hover:text-white">
-
-          <span className="text-xl">
-            👤
-          </span>
-
-          <span className="text-xs font-medium">
-            Profile
-          </span>
-
-        </button>
-
-      </div>
+        )
+      })}
 
     </div>
   )

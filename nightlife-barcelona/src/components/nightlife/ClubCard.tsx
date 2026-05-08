@@ -1,17 +1,39 @@
 "use client"
 
-import Image from "next/image"
+import { useState } from "react"
+
 import Link from "next/link"
+import Image from "next/image"
 
 interface ClubCardProps {
+
   name: string
+
   music: string
+
   area: string
+
   price: string
+
   hours: string
+
   image: string
+
   rating: number
+
   people: number
+
+  badges?: string[]
+
+  terrace?: boolean
+
+  vip?: boolean
+
+  smokingArea?: boolean
+
+  tableBooking?: boolean
+
+  dresscode?: string
 }
 
 export default function ClubCard({
@@ -23,119 +45,110 @@ export default function ClubCard({
   image,
   rating,
   people,
+  badges = [],
 }: ClubCardProps) {
+
+  const [liveBadges, setLiveBadges] =
+    useState(badges)
 
   return (
 
-    <Link href={`/club/${encodeURIComponent(name.toLowerCase())}`}>
+    <Link
+      href={`/club/${encodeURIComponent(name)}`}
+      className="group block overflow-hidden rounded-[30px] border border-white/10 bg-black transition duration-500 hover:-translate-y-2 hover:border-white/20"
+    >
 
-      <div className="group relative overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] backdrop-blur-xl transition duration-700 hover:-translate-y-3 hover:border-white/20 hover:shadow-[0_20px_80px_rgba(255,255,255,0.08)]">
+      {/* IMAGE */}
 
-        {/* LIGHT EFFECT */}
+      <div className="relative h-[420px] overflow-hidden">
 
-        <div className="absolute inset-0 opacity-0 transition duration-700 group-hover:opacity-100">
+        <Image
+          src={image}
+          alt={name}
+          fill
+          className="object-cover transition duration-700 group-hover:scale-110"
+        />
 
-          <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-purple-500/10 blur-3xl" />
+        {/* OVERLAY */}
 
-          <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-pink-500/10 blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
 
-        </div>
+        {/* BADGES */}
 
-        {/* IMAGE */}
+        <div className="absolute left-5 top-5 flex flex-wrap gap-2">
 
-        <div className="relative h-72 overflow-hidden">
+          {liveBadges?.slice(0, 2).map((badge, index) => (
 
-          <Image
-            src={image}
-            alt={name}
-            fill
-            className="object-cover transition duration-700 group-hover:scale-110"
-          />
+            <button
+              key={badge}
+              onClick={(e) => {
 
-          {/* OVERLAY */}
+                e.preventDefault()
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                const updated = [...liveBadges]
 
-          {/* MUSIC */}
+                updated[index] =
+                  badge === "🔥 Trending"
+                    ? "🟢 LIVE NOW"
+                    : "🔥 Trending"
 
-          <div className="absolute left-5 top-5 rounded-full border border-white/10 bg-black/40 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white backdrop-blur-xl">
+                setLiveBadges(updated)
+              }}
+              className="rounded-full border border-white/10 bg-black/50 px-3 py-2 text-xs font-semibold text-white backdrop-blur-xl transition hover:scale-105 hover:bg-white/20"
+            >
 
-            {music}
+              {badge}
 
-          </div>
+            </button>
+
+          ))}
 
         </div>
 
         {/* CONTENT */}
 
-        <div className="relative p-6">
+        <div className="absolute bottom-0 left-0 w-full bg-black/55 p-6 backdrop-blur-md">
 
-          <div className="flex items-start justify-between gap-4">
+          <p className="text-sm uppercase tracking-wide text-zinc-400">
 
-            <div>
+            {music}
 
-              <p className="text-sm uppercase tracking-wide text-zinc-500">
+          </p>
 
-                {area}
+          <h3 className="mt-2 text-4xl font-black tracking-tight text-white">
 
-              </p>
+            {name}
 
-              <h3 className="mt-2 text-3xl font-black tracking-tight text-white">
+          </h3>
 
-                {name}
+          <div className="mt-5 flex items-center justify-between text-sm text-zinc-300">
 
-              </h3>
+            <span>
+              📍 {area}
+            </span>
 
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white backdrop-blur">
-
-              {price}
-
-            </div>
+            <span>
+              ⭐ {rating}
+            </span>
 
           </div>
 
-          {/* STATS */}
+          <div className="mt-5 flex flex-wrap gap-3">
 
-          <div className="mt-6 flex items-center justify-between text-sm">
+            <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">
 
-            <div className="flex items-center gap-2 text-zinc-400">
-
-              <span>
-                ⭐
-              </span>
-
-              <span className="font-semibold text-white">
-
-                {rating}
-
-              </span>
+              🔥 {people}+ tonight
 
             </div>
 
-            <div className="text-zinc-400">
+            <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">
 
-              {hours}
-
+              🎟 {price}
             </div>
 
-          </div>
+            <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">
 
-          {/* FOOTER */}
-
-          <div className="mt-5 flex items-center justify-between">
-
-            <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300 backdrop-blur">
-
-              {people}+ tonight
-
-            </div>
-
-            <div className="text-sm font-semibold text-white transition duration-300 group-hover:translate-x-1">
-
-              Explore →
-
+              🕒 {hours}
             </div>
 
           </div>
