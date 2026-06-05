@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
 import Header from "../components/layout/Header"
@@ -13,16 +13,39 @@ import SearchBar from "../components/ui/SearchBar"
 import EventsSection from "../components/home/EventsSection"
 import AreasSection from "../components/home/AreasSection"
 
-import { nightlifeData } from "../data/nightlife-data"
+import { supabase } from "../lib/supabase"
 
 export default function Home() {
 
   const router = useRouter()
 
+  const [clubs, setClubs] = useState<any[]>([])
+
   const [selectedCategory, setSelectedCategory] =
     useState("All")
 
   const [search, setSearch] = useState("")
+
+  useEffect(() => {
+
+    const fetchClubs = async () => {
+
+      const { data, error } = await supabase
+        .from("clubs")
+        .select("*")
+
+      console.log("DATA:", data)
+      console.log("ERROR:", error)
+
+      if (data) {
+        setClubs(data)
+      }
+
+    }
+
+    fetchClubs()
+
+  }, [])
 
   const filters = [
     "All",
@@ -31,41 +54,31 @@ export default function Home() {
     "VIP",
   ]
 
-  const safeClubs = nightlifeData.filter(
-    (club) => club && club.name
-  )
-
-  const createSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, "-")
-  }
-
   const handleSearch = () => {
 
     if (!search.trim()) return
 
-    const foundClub = safeClubs.find((club) =>
-
+    const foundClub = clubs.find((club) =>
       club.name
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(search.toLowerCase())
-
     )
 
     if (foundClub) {
 
-      router.push(
-        `/clubs/${createSlug(foundClub.name)}`
-      )
+      const slug = foundClub.name
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+
+      router.push(`/clubs/${slug}`)
 
     }
 
   }
 
-  const filteredClubs = safeClubs.filter((club) => {
+  const filteredClubs = clubs.filter((club) => {
+
+    if (!club) return false
 
     const matchesCategory =
 
@@ -83,15 +96,15 @@ export default function Home() {
     const matchesSearch =
 
       club.name
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(search.toLowerCase()) ||
 
       club.neighborhood
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(search.toLowerCase()) ||
 
       club.music
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(search.toLowerCase())
 
     return matchesCategory && matchesSearch
@@ -101,8 +114,6 @@ export default function Home() {
   return (
 
     <>
-
-      {/* BACKGROUND */}
 
       <div className="fixed inset-0 -z-10 overflow-hidden">
 
@@ -129,8 +140,6 @@ export default function Home() {
           <div className="absolute inset-0 bg-black/60" />
 
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black" />
-
-          <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-500/20 blur-3xl" />
 
           <div className="relative z-10 flex h-full items-center px-4">
 
@@ -165,28 +174,6 @@ export default function Home() {
                     setSearch={setSearch}
                     onSearch={handleSearch}
                   />
-
-                </div>
-
-                <div className="mt-8 flex flex-wrap gap-4">
-
-                  <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm text-white backdrop-blur-xl">
-
-                    🔥 Live nightlife
-
-                  </div>
-
-                  <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm text-white backdrop-blur-xl">
-
-                    🌍 Barcelona clubs
-
-                  </div>
-
-                  <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm text-white backdrop-blur-xl">
-
-                    ⏳ Real-time queues
-
-                  </div>
 
                 </div>
 
