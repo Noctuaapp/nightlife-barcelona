@@ -1,0 +1,19 @@
+NOCTUA STORAGE
+
+BUCKETS ACTUALES
+================
+
+club-images
+- Public: YES
+- Uso: imágenes de clubs
+
+PENDIENTES
+================
+
+event-images
+- Public: YES
+- Uso: flyers y portadas de eventos
+
+future-user-images
+- Pendiente
+- Uso: perfiles de usuarios y favoritos

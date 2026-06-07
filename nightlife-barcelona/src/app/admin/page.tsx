@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ChangeEvent } from "react"
 
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
@@ -35,6 +35,17 @@ export default function AdminPage() {
   const [clubs, setClubs] = useState<Club[]>([])
   const [search, setSearch] = useState("")
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [checkingAdmin, setCheckingAdmin] = useState(true)
+
+  const [stats, setStats] = useState({
+    clubs: 0,
+    events: 0,
+    trendingClubs: 0,
+    soldOutClubs: 0,
+    featuredEvents: 0,
+    soldOutEvents: 0,
+  })
 
   const [editClub, setEditClub] = useState<EditClub>({
     name: "",
@@ -63,14 +74,39 @@ export default function AdminPage() {
     "Massive queue",
   ]
 
+  const fetchDashboardStats = async () => {
+    const { data: clubsData } = await supabase
+      .from("clubs")
+      .select("id, trending, sold_out")
+
+    const { data: eventsData } = await supabase
+      .from("events")
+      .select("id, featured, sold_out")
+
+    setStats({
+      clubs: clubsData?.length || 0,
+      events: eventsData?.length || 0,
+      trendingClubs:
+        clubsData?.filter((club) => club.trending).length || 0,
+      soldOutClubs:
+        clubsData?.filter((club) => club.sold_out).length || 0,
+      featuredEvents:
+        eventsData?.filter((event) => event.featured).length || 0,
+      soldOutEvents:
+        eventsData?.filter((event) => event.sold_out).length || 0,
+    })
+  }
+
   const fetchClubs = async () => {
     const { data, error } = await supabase
       .from("clubs")
       .select("*")
       .order("id")
 
-    console.log("ADMIN DATA:", data)
-    console.log("ADMIN ERROR:", error)
+    if (error) {
+      console.log("ADMIN ERROR:", error)
+      return
+    }
 
     if (data) {
       setClubs(data)
@@ -78,8 +114,81 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    fetchClubs()
+    const checkAdmin = async () => {
+      const { data, error } = await supabase.auth.getSession()
+
+      if (error || data.session?.user.email !== "info@noctuaapp.com") {
+        window.location.href = "/login"
+        return
+      }
+
+      setCheckingAdmin(false)
+    }
+
+    checkAdmin()
   }, [])
+
+  useEffect(() => {
+    fetchClubs()
+    fetchDashboardStats()
+  }, [])
+
+  const uploadImage = async (file: File) => {
+    setUploading(true)
+
+    const fileExt = file.name.split(".").pop()
+    const fileName = `${Date.now()}.${fileExt}`
+    const filePath = `clubs/${fileName}`
+
+    const { error } = await supabase.storage
+    .from("club-images")
+      .upload(filePath, file)
+
+    setUploading(false)
+
+    if (error) {
+      console.log("UPLOAD ERROR:", error)
+      return null
+    }
+
+    const { data } = supabase.storage
+    .from("club-images")
+      .getPublicUrl(filePath)
+
+    return data.publicUrl
+  }
+
+  const handleNewImageUpload = async (
+    e: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const publicUrl = await uploadImage(file)
+
+    if (publicUrl) {
+      setNewClub((prev) => ({
+        ...prev,
+        image: publicUrl,
+      }))
+    }
+  }
+
+  const handleEditImageUpload = async (
+    e: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const publicUrl = await uploadImage(file)
+
+    if (publicUrl) {
+      setEditClub((prev) => ({
+        ...prev,
+        image: publicUrl,
+      }))
+    }
+  }
 
   const startEditing = (club: Club) => {
     setEditingId(club.id)
@@ -140,6 +249,7 @@ export default function AdminPage() {
       )
     }
 
+    await fetchDashboardStats()
     cancelEditing()
   }
 
@@ -163,6 +273,8 @@ export default function AdminPage() {
           : item
       )
     )
+
+    await fetchDashboardStats()
   }
 
   const toggleSoldOut = async (club: Club) => {
@@ -185,6 +297,8 @@ export default function AdminPage() {
           : item
       )
     )
+
+    await fetchDashboardStats()
   }
 
   const updateQueue = async (club: Club, level: string) => {
@@ -221,14 +335,12 @@ export default function AdminPage() {
     setClubs((prev) =>
       prev.filter((club) => club.id !== id)
     )
+
+    await fetchDashboardStats()
   }
 
   const addClub = async () => {
-    if (
-      !newClub.name ||
-      !newClub.music ||
-      !newClub.neighborhood
-    ) {
+    if (!newClub.name || !newClub.music || !newClub.neighborhood) {
       return
     }
 
@@ -266,6 +378,8 @@ export default function AdminPage() {
       hours: "",
       image: "",
     })
+
+    await fetchDashboardStats()
   }
 
   const filteredClubs = clubs.filter((club) => {
@@ -280,6 +394,16 @@ export default function AdminPage() {
       club.live_status?.toLowerCase().includes(query)
     )
   })
+
+  if (checkingAdmin) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-black text-white">
+        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
+          Loading admin...
+        </p>
+      </main>
+    )
+  }
 
   return (
     <>
@@ -299,6 +423,104 @@ export default function AdminPage() {
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
               Control nightlife activity, queues and live venue status across Barcelona.
             </p>
+
+            <div className="mt-8 flex flex-wrap gap-4">
+              <a
+                href="/admin"
+                className="rounded-full bg-white px-5 py-3 text-sm font-bold text-black"
+              >
+                Clubs admin
+              </a>
+
+              <a
+                href="/admin/events"
+                className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
+              >
+                Events admin
+              </a>
+              <a
+  href="/admin/tickets"
+  className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
+>
+  Tickets admin
+</a>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto mt-10 max-w-7xl px-4">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-6">
+            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-purple-500/15 to-white/[0.03] p-6">
+              <p className="text-sm uppercase tracking-wide text-zinc-400">
+                Clubs
+              </p>
+              <h2 className="mt-4 text-5xl font-black">
+                {stats.clubs}
+              </h2>
+              <p className="mt-3 text-sm text-zinc-400">
+                Active venues
+              </p>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-cyan-500/15 to-white/[0.03] p-6">
+              <p className="text-sm uppercase tracking-wide text-zinc-400">
+                Events
+              </p>
+              <h2 className="mt-4 text-5xl font-black">
+                {stats.events}
+              </h2>
+              <p className="mt-3 text-sm text-zinc-400">
+                Listed nights
+              </p>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-emerald-500/15 to-white/[0.03] p-6">
+              <p className="text-sm uppercase tracking-wide text-zinc-400">
+                Trending clubs
+              </p>
+              <h2 className="mt-4 text-5xl font-black">
+                {stats.trendingClubs}
+              </h2>
+              <p className="mt-3 text-sm text-emerald-300">
+                Live demand
+              </p>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-red-500/15 to-white/[0.03] p-6">
+              <p className="text-sm uppercase tracking-wide text-zinc-400">
+                Sold out clubs
+              </p>
+              <h2 className="mt-4 text-5xl font-black">
+                {stats.soldOutClubs}
+              </h2>
+              <p className="mt-3 text-sm text-red-300">
+                Capacity alerts
+              </p>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-pink-500/15 to-white/[0.03] p-6">
+              <p className="text-sm uppercase tracking-wide text-zinc-400">
+                Featured events
+              </p>
+              <h2 className="mt-4 text-5xl font-black">
+                {stats.featuredEvents}
+              </h2>
+              <p className="mt-3 text-sm text-pink-300">
+                Promoted tonight
+              </p>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-orange-500/15 to-white/[0.03] p-6">
+              <p className="text-sm uppercase tracking-wide text-zinc-400">
+                Sold out events
+              </p>
+              <h2 className="mt-4 text-5xl font-black">
+                {stats.soldOutEvents}
+              </h2>
+              <p className="mt-3 text-sm text-orange-300">
+                Ticket pressure
+              </p>
+            </div>
           </div>
         </section>
 
@@ -355,15 +577,33 @@ export default function AdminPage() {
                 onChange={(e) =>
                   setNewClub({ ...newClub, image: e.target.value })
                 }
-                placeholder="Image path"
+                placeholder="Image URL"
                 className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
               />
 
+              <div className="lg:col-span-3">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleNewImageUpload}
+                  className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none"
+                />
+
+                {newClub.image && (
+                  <img
+                    src={newClub.image}
+                    alt="Preview"
+                    className="mt-4 h-40 w-full rounded-2xl object-cover"
+                  />
+                )}
+              </div>
+
               <button
                 onClick={addClub}
-                className="rounded-2xl bg-white px-8 py-4 font-bold text-black transition hover:scale-[1.02] lg:col-span-3"
+                disabled={uploading}
+                className="rounded-2xl bg-white px-8 py-4 font-bold text-black transition hover:scale-[1.02] disabled:opacity-50 lg:col-span-3"
               >
-                Add club to Supabase
+                {uploading ? "Uploading image..." : "Add club to Supabase"}
               </button>
             </div>
           </div>
@@ -437,22 +677,43 @@ export default function AdminPage() {
                       onChange={(e) =>
                         setEditClub({ ...editClub, image: e.target.value })
                       }
-                      placeholder="Image path"
+                      placeholder="Image URL"
                       className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
                     />
 
                     <input
                       value={editClub.live_status}
                       onChange={(e) =>
-                        setEditClub({ ...editClub, live_status: e.target.value })
+                        setEditClub({
+                          ...editClub,
+                          live_status: e.target.value,
+                        })
                       }
                       placeholder="Live status"
                       className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-3"
                     />
 
+                    <div className="lg:col-span-3">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleEditImageUpload}
+                        className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none"
+                      />
+
+                      {editClub.image && (
+                        <img
+                          src={editClub.image}
+                          alt="Preview"
+                          className="mt-4 h-52 w-full rounded-2xl object-cover"
+                        />
+                      )}
+                    </div>
+
                     <button
                       onClick={() => saveEditing(club.id)}
-                      className="rounded-2xl bg-emerald-400 px-8 py-4 font-bold text-black transition hover:scale-[1.02]"
+                      disabled={uploading}
+                      className="rounded-2xl bg-emerald-400 px-8 py-4 font-bold text-black transition hover:scale-[1.02] disabled:opacity-50"
                     >
                       Save changes
                     </button>
@@ -467,6 +728,14 @@ export default function AdminPage() {
                 ) : (
                   <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                     <div>
+                      {club.image && (
+                        <img
+                          src={club.image}
+                          alt={club.name}
+                          className="mb-6 h-48 w-full rounded-3xl object-cover lg:w-[420px]"
+                        />
+                      )}
+
                       <p className="text-sm uppercase tracking-wide text-zinc-500">
                         {club.music}
                       </p>

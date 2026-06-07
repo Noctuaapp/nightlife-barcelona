@@ -1,0 +1,45 @@
+-- NOCTUA SUPABASE SCHEMA ACTUAL
+-- Estado documentado antes de seguir con Tickets, Mapbox y Favoritos
+
+-- TABLE: clubs
+-- id: bigint, not null
+-- name: text, not null
+-- music: text
+-- neighborhood: text
+-- image: text
+-- live_status: text
+-- queue: text
+-- price: text
+-- hours: text
+-- trending: boolean, default false
+-- sold_out: boolean, default false
+-- created_at: timestamp with time zone, default timezone('utc', now())
+
+-- TABLE: events
+-- id: bigint, not null
+-- title: text, not null
+-- club_id: bigint
+-- club_name: text
+-- artist: text
+-- music: text
+-- date: date
+-- start_time: text
+-- end_time: text
+-- price: text
+-- ticket_url: text
+-- image: text
+-- description: text
+-- featured: boolean, default false
+-- sold_out: boolean, default false
+-- created_at: timestamp with time zone, default timezone('utc', now())
+
+-- TABLE: tickets
+-- id: bigint, not null
+-- event_id: bigint, references events(id)
+-- name: text, not null
+-- description: text
+-- price: numeric
+-- currency: text, default 'EUR'
+-- available: boolean, default true
+-- external_url: text
+-- created_at: timestamp with time zone, default now()
