@@ -25,7 +25,7 @@ type Event = {
   sold_out: boolean | null
 }
 
-export default function AdminEventsPage() {
+export default function AdminClubEventsPage() {
   const router = useRouter()
 
   const emptyEvent = {
@@ -153,7 +153,7 @@ export default function AdminEventsPage() {
       .single()
 
     if (error) {
-      console.log("ADD EVENT ERROR:", error)
+      console.log("Add club night ERROR:", error)
       return
     }
 
@@ -297,7 +297,12 @@ export default function AdminEventsPage() {
   >
     Clubs admin
   </a>
-
+  <a
+  href="/admin/club-events"
+  className="rounded-full bg-white px-5 py-3 text-sm font-bold text-black"
+>
+  Club nights admin
+</a>
   <a
     href="/admin/events"
     className="rounded-full bg-white px-5 py-3 text-sm font-bold text-black"

@@ -444,6 +444,12 @@ export default function AdminPage() {
 >
   Tickets admin
 </a>
+<a
+  href="/admin/club-events"
+  className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
+>
+  Club nights admin
+</a>
             </div>
           </div>
         </section>

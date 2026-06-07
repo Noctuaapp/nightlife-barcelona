@@ -1,17 +1,22 @@
 "use client"
 
 import { useEffect, useState, type ChangeEvent } from "react"
-import { useRouter } from "next/navigation"
 
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 
 import { supabase } from "../../../lib/supabase"
 
-type Event = {
+type Club = {
   id: number
-  title: string
+  name: string
+}
+
+type ClubEvent = {
+  id: number
+  club_id: number | null
   club_name: string | null
+  title: string
   artist: string | null
   music: string | null
   date: string | null
@@ -25,12 +30,11 @@ type Event = {
   sold_out: boolean | null
 }
 
-export default function AdminEventsPage() {
-  const router = useRouter()
-
-  const emptyEvent = {
-    title: "",
+export default function AdminClubEventsPage() {
+  const emptyClubEvent = {
+    club_id: "",
     club_name: "",
+    title: "",
     artist: "",
     music: "",
     date: "",
@@ -42,9 +46,10 @@ export default function AdminEventsPage() {
     description: "",
   }
 
-  const [events, setEvents] = useState<Event[]>([])
-  const [newEvent, setNewEvent] = useState(emptyEvent)
-  const [editEvent, setEditEvent] = useState(emptyEvent)
+  const [clubs, setClubs] = useState<Club[]>([])
+  const [clubEvents, setClubEvents] = useState<ClubEvent[]>([])
+  const [newClubEvent, setNewClubEvent] = useState(emptyClubEvent)
+  const [editClubEvent, setEditClubEvent] = useState(emptyClubEvent)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [uploading, setUploading] = useState(false)
   const [checkingAdmin, setCheckingAdmin] = useState(true)
@@ -64,22 +69,37 @@ export default function AdminEventsPage() {
     checkAdmin()
   }, [])
 
-  const fetchEvents = async () => {
+  const fetchClubs = async () => {
     const { data, error } = await supabase
-      .from("events")
+      .from("clubs")
+      .select("id, name")
+      .order("name")
+
+    if (error) {
+      console.log("FETCH CLUBS ERROR:", error)
+      return
+    }
+
+    if (data) setClubs(data)
+  }
+
+  const fetchClubEvents = async () => {
+    const { data, error } = await supabase
+      .from("club_events")
       .select("*")
       .order("date", { ascending: true })
 
     if (error) {
-      console.log("EVENTS ADMIN ERROR:", error)
+      console.log("CLUB EVENTS ADMIN ERROR:", error)
       return
     }
 
-    if (data) setEvents(data)
+    if (data) setClubEvents(data)
   }
 
   useEffect(() => {
-    fetchEvents()
+    fetchClubs()
+    fetchClubEvents()
   }, [])
 
   const uploadImage = async (file: File) => {
@@ -87,10 +107,10 @@ export default function AdminEventsPage() {
 
     const fileExt = file.name.split(".").pop()
     const fileName = `${Date.now()}.${fileExt}`
-    const filePath = `events/${fileName}`
+    const filePath = `club-events/${fileName}`
 
     const { error } = await supabase.storage
-    .from("event-images")
+      .from("event-images")
       .upload(filePath, file)
 
     setUploading(false)
@@ -101,7 +121,7 @@ export default function AdminEventsPage() {
     }
 
     const { data } = supabase.storage
-    .from("event-images")
+      .from("event-images")
       .getPublicUrl(filePath)
 
     return data.publicUrl
@@ -116,7 +136,7 @@ export default function AdminEventsPage() {
     const publicUrl = await uploadImage(file)
 
     if (publicUrl) {
-      setNewEvent((prev) => ({
+      setNewClubEvent((prev) => ({
         ...prev,
         image: publicUrl,
       }))
@@ -132,20 +152,55 @@ export default function AdminEventsPage() {
     const publicUrl = await uploadImage(file)
 
     if (publicUrl) {
-      setEditEvent((prev) => ({
+      setEditClubEvent((prev) => ({
         ...prev,
         image: publicUrl,
       }))
     }
   }
 
-  const addEvent = async () => {
-    if (!newEvent.title || !newEvent.club_name) return
+  const handleNewClubChange = (clubId: string) => {
+    const selectedClub = clubs.find(
+      (club) => club.id === Number(clubId)
+    )
+
+    setNewClubEvent({
+      ...newClubEvent,
+      club_id: clubId,
+      club_name: selectedClub?.name || "",
+    })
+  }
+
+  const handleEditClubChange = (clubId: string) => {
+    const selectedClub = clubs.find(
+      (club) => club.id === Number(clubId)
+    )
+
+    setEditClubEvent({
+      ...editClubEvent,
+      club_id: clubId,
+      club_name: selectedClub?.name || "",
+    })
+  }
+
+  const addClubEvent = async () => {
+    if (!newClubEvent.club_id || !newClubEvent.title) return
 
     const { data, error } = await supabase
-      .from("events")
+      .from("club_events")
       .insert({
-        ...newEvent,
+        club_id: Number(newClubEvent.club_id),
+        club_name: newClubEvent.club_name,
+        title: newClubEvent.title,
+        artist: newClubEvent.artist,
+        music: newClubEvent.music,
+        date: newClubEvent.date || null,
+        start_time: newClubEvent.start_time,
+        end_time: newClubEvent.end_time,
+        price: newClubEvent.price,
+        ticket_url: newClubEvent.ticket_url,
+        image: newClubEvent.image,
+        description: newClubEvent.description,
         featured: false,
         sold_out: false,
       })
@@ -153,57 +208,71 @@ export default function AdminEventsPage() {
       .single()
 
     if (error) {
-      console.log("ADD EVENT ERROR:", error)
+      console.log("ADD CLUB EVENT ERROR:", error)
       return
     }
 
-    if (data) setEvents((prev) => [data, ...prev])
+    if (data) setClubEvents((prev) => [data, ...prev])
 
-    setNewEvent(emptyEvent)
+    setNewClubEvent(emptyClubEvent)
   }
 
-  const startEditing = (event: Event) => {
-    setEditingId(event.id)
+  const startEditing = (clubEvent: ClubEvent) => {
+    setEditingId(clubEvent.id)
 
-    setEditEvent({
-      title: event.title || "",
-      club_name: event.club_name || "",
-      artist: event.artist || "",
-      music: event.music || "",
-      date: event.date || "",
-      start_time: event.start_time || "",
-      end_time: event.end_time || "",
-      price: event.price || "",
-      ticket_url: event.ticket_url || "",
-      image: event.image || "",
-      description: event.description || "",
+    setEditClubEvent({
+      club_id: clubEvent.club_id ? String(clubEvent.club_id) : "",
+      club_name: clubEvent.club_name || "",
+      title: clubEvent.title || "",
+      artist: clubEvent.artist || "",
+      music: clubEvent.music || "",
+      date: clubEvent.date || "",
+      start_time: clubEvent.start_time || "",
+      end_time: clubEvent.end_time || "",
+      price: clubEvent.price || "",
+      ticket_url: clubEvent.ticket_url || "",
+      image: clubEvent.image || "",
+      description: clubEvent.description || "",
     })
   }
 
   const cancelEditing = () => {
     setEditingId(null)
-    setEditEvent(emptyEvent)
+    setEditClubEvent(emptyClubEvent)
   }
 
   const saveEditing = async (id: number) => {
-    if (!editEvent.title) return
+    if (!editClubEvent.club_id || !editClubEvent.title) return
 
     const { data, error } = await supabase
-      .from("events")
-      .update(editEvent)
+      .from("club_events")
+      .update({
+        club_id: Number(editClubEvent.club_id),
+        club_name: editClubEvent.club_name,
+        title: editClubEvent.title,
+        artist: editClubEvent.artist,
+        music: editClubEvent.music,
+        date: editClubEvent.date || null,
+        start_time: editClubEvent.start_time,
+        end_time: editClubEvent.end_time,
+        price: editClubEvent.price,
+        ticket_url: editClubEvent.ticket_url,
+        image: editClubEvent.image,
+        description: editClubEvent.description,
+      })
       .eq("id", id)
       .select()
       .single()
 
     if (error) {
-      console.log("EDIT EVENT ERROR:", error)
+      console.log("EDIT CLUB EVENT ERROR:", error)
       return
     }
 
     if (data) {
-      setEvents((prev) =>
-        prev.map((event) =>
-          event.id === id ? data : event
+      setClubEvents((prev) =>
+        prev.map((clubEvent) =>
+          clubEvent.id === id ? data : clubEvent
         )
       )
     }
@@ -211,54 +280,54 @@ export default function AdminEventsPage() {
     cancelEditing()
   }
 
-  const toggleFeatured = async (event: Event) => {
-    const newValue = !event.featured
+  const toggleFeatured = async (clubEvent: ClubEvent) => {
+    const newValue = !clubEvent.featured
 
     const { error } = await supabase
-      .from("events")
+      .from("club_events")
       .update({ featured: newValue })
-      .eq("id", event.id)
+      .eq("id", clubEvent.id)
 
     if (error) return console.log("FEATURED ERROR:", error)
 
-    setEvents((prev) =>
+    setClubEvents((prev) =>
       prev.map((item) =>
-        item.id === event.id
+        item.id === clubEvent.id
           ? { ...item, featured: newValue }
           : item
       )
     )
   }
 
-  const toggleSoldOut = async (event: Event) => {
-    const newValue = !event.sold_out
+  const toggleSoldOut = async (clubEvent: ClubEvent) => {
+    const newValue = !clubEvent.sold_out
 
     const { error } = await supabase
-      .from("events")
+      .from("club_events")
       .update({ sold_out: newValue })
-      .eq("id", event.id)
+      .eq("id", clubEvent.id)
 
     if (error) return console.log("SOLD OUT ERROR:", error)
 
-    setEvents((prev) =>
+    setClubEvents((prev) =>
       prev.map((item) =>
-        item.id === event.id
+        item.id === clubEvent.id
           ? { ...item, sold_out: newValue }
           : item
       )
     )
   }
 
-  const deleteEvent = async (id: number) => {
+  const deleteClubEvent = async (id: number) => {
     const { error } = await supabase
-      .from("events")
+      .from("club_events")
       .delete()
       .eq("id", id)
 
-    if (error) return console.log("DELETE EVENT ERROR:", error)
+    if (error) return console.log("DELETE CLUB EVENT ERROR:", error)
 
-    setEvents((prev) =>
-      prev.filter((event) => event.id !== id)
+    setClubEvents((prev) =>
+      prev.filter((clubEvent) => clubEvent.id !== id)
     )
   }
 
@@ -280,51 +349,172 @@ export default function AdminEventsPage() {
         <section className="px-4 pt-14">
           <div className="mx-auto max-w-7xl">
             <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
-              Admin events
+              Admin club nights
             </p>
 
             <h1 className="mt-4 text-6xl font-black tracking-tight">
-              Event control
+              Club nights control
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg text-zinc-400">
-              Create, edit and manage nightlife events across Barcelona.
+              Create, edit and manage nights inside each club.
             </p>
-            <div className="mt-8 flex flex-wrap gap-4">
-  <a
-    href="/admin"
-    className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
-  >
-    Clubs admin
-  </a>
 
-  <a
-    href="/admin/events"
-    className="rounded-full bg-white px-5 py-3 text-sm font-bold text-black"
-  >
-    Events admin
-  </a>
-</div>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <a
+                href="/admin"
+                className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
+              >
+                Clubs admin
+              </a>
+
+              <a
+                href="/admin/events"
+                className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
+              >
+                Events admin
+              </a>
+
+              <a
+                href="/admin/tickets"
+                className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
+              >
+                Tickets admin
+              </a>
+
+              <a
+                href="/admin/club-events"
+                className="rounded-full bg-white px-5 py-3 text-sm font-bold text-black"
+              >
+                Club nights admin
+              </a>
+            </div>
           </div>
         </section>
 
         <section className="mx-auto mt-10 max-w-7xl px-4">
           <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
             <div className="grid gap-4 lg:grid-cols-3">
-              {Object.keys(emptyEvent).map((key) => (
-                <input
-                  key={key}
-                  value={(newEvent as any)[key]}
-                  onChange={(e) =>
-                    setNewEvent({
-                      ...newEvent,
-                      [key]: e.target.value,
-                    })
-                  }
-                  placeholder={key}
-                  className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
-                />
-              ))}
+              <select
+                value={newClubEvent.club_id}
+                onChange={(e) => handleNewClubChange(e.target.value)}
+                className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+              >
+                <option value="">Select club</option>
+                {clubs.map((club) => (
+                  <option key={club.id} value={club.id}>
+                    {club.name}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                value={newClubEvent.title}
+                onChange={(e) =>
+                  setNewClubEvent({
+                    ...newClubEvent,
+                    title: e.target.value,
+                  })
+                }
+                placeholder="Night title"
+                className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+              />
+
+              <input
+                value={newClubEvent.artist}
+                onChange={(e) =>
+                  setNewClubEvent({
+                    ...newClubEvent,
+                    artist: e.target.value,
+                  })
+                }
+                placeholder="Artist"
+                className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+              />
+
+              <input
+                value={newClubEvent.music}
+                onChange={(e) =>
+                  setNewClubEvent({
+                    ...newClubEvent,
+                    music: e.target.value,
+                  })
+                }
+                placeholder="Music"
+                className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+              />
+
+              <input
+                type="date"
+                value={newClubEvent.date}
+                onChange={(e) =>
+                  setNewClubEvent({
+                    ...newClubEvent,
+                    date: e.target.value,
+                  })
+                }
+                className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+              />
+
+              <input
+                value={newClubEvent.start_time}
+                onChange={(e) =>
+                  setNewClubEvent({
+                    ...newClubEvent,
+                    start_time: e.target.value,
+                  })
+                }
+                placeholder="Start time"
+                className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+              />
+
+              <input
+                value={newClubEvent.end_time}
+                onChange={(e) =>
+                  setNewClubEvent({
+                    ...newClubEvent,
+                    end_time: e.target.value,
+                  })
+                }
+                placeholder="End time"
+                className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+              />
+
+              <input
+                value={newClubEvent.price}
+                onChange={(e) =>
+                  setNewClubEvent({
+                    ...newClubEvent,
+                    price: e.target.value,
+                  })
+                }
+                placeholder="Price"
+                className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+              />
+
+              <input
+                value={newClubEvent.ticket_url}
+                onChange={(e) =>
+                  setNewClubEvent({
+                    ...newClubEvent,
+                    ticket_url: e.target.value,
+                  })
+                }
+                placeholder="Ticket URL"
+                className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+              />
+
+              <input
+                value={newClubEvent.image}
+                onChange={(e) =>
+                  setNewClubEvent({
+                    ...newClubEvent,
+                    image: e.target.value,
+                  })
+                }
+                placeholder="Image URL"
+                className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-3"
+              />
 
               <input
                 type="file"
@@ -333,20 +523,32 @@ export default function AdminEventsPage() {
                 className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none lg:col-span-3"
               />
 
-              {newEvent.image && (
+              {newClubEvent.image && (
                 <img
-                  src={newEvent.image}
+                  src={newClubEvent.image}
                   alt="Preview"
                   className="h-44 w-full rounded-2xl object-cover lg:col-span-3"
                 />
               )}
 
+              <textarea
+                value={newClubEvent.description}
+                onChange={(e) =>
+                  setNewClubEvent({
+                    ...newClubEvent,
+                    description: e.target.value,
+                  })
+                }
+                placeholder="Description"
+                className="min-h-[120px] rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-3"
+              />
+
               <button
-                onClick={addEvent}
+                onClick={addClubEvent}
                 disabled={uploading}
                 className="rounded-2xl bg-white px-8 py-4 font-bold text-black disabled:opacity-50 lg:col-span-3"
               >
-                {uploading ? "Uploading..." : "Add event"}
+                {uploading ? "Uploading..." : "Add club night"}
               </button>
             </div>
           </div>
@@ -354,27 +556,133 @@ export default function AdminEventsPage() {
 
         <section className="mx-auto mt-10 max-w-7xl px-4">
           <div className="grid gap-6">
-            {events.map((event) => (
+            {clubEvents.map((clubEvent) => (
               <div
-                key={event.id}
+                key={clubEvent.id}
                 className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6"
               >
-                {editingId === event.id ? (
+                {editingId === clubEvent.id ? (
                   <div className="grid gap-4 lg:grid-cols-3">
-                    {Object.keys(emptyEvent).map((key) => (
-                      <input
-                        key={key}
-                        value={(editEvent as any)[key]}
-                        onChange={(e) =>
-                          setEditEvent({
-                            ...editEvent,
-                            [key]: e.target.value,
-                          })
-                        }
-                        placeholder={key}
-                        className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
-                      />
-                    ))}
+                    <select
+                      value={editClubEvent.club_id}
+                      onChange={(e) => handleEditClubChange(e.target.value)}
+                      className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                    >
+                      <option value="">Select club</option>
+                      {clubs.map((club) => (
+                        <option key={club.id} value={club.id}>
+                          {club.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <input
+                      value={editClubEvent.title}
+                      onChange={(e) =>
+                        setEditClubEvent({
+                          ...editClubEvent,
+                          title: e.target.value,
+                        })
+                      }
+                      placeholder="Night title"
+                      className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                    />
+
+                    <input
+                      value={editClubEvent.artist}
+                      onChange={(e) =>
+                        setEditClubEvent({
+                          ...editClubEvent,
+                          artist: e.target.value,
+                        })
+                      }
+                      placeholder="Artist"
+                      className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                    />
+
+                    <input
+                      value={editClubEvent.music}
+                      onChange={(e) =>
+                        setEditClubEvent({
+                          ...editClubEvent,
+                          music: e.target.value,
+                        })
+                      }
+                      placeholder="Music"
+                      className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                    />
+
+                    <input
+                      type="date"
+                      value={editClubEvent.date}
+                      onChange={(e) =>
+                        setEditClubEvent({
+                          ...editClubEvent,
+                          date: e.target.value,
+                        })
+                      }
+                      className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                    />
+
+                    <input
+                      value={editClubEvent.start_time}
+                      onChange={(e) =>
+                        setEditClubEvent({
+                          ...editClubEvent,
+                          start_time: e.target.value,
+                        })
+                      }
+                      placeholder="Start time"
+                      className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                    />
+
+                    <input
+                      value={editClubEvent.end_time}
+                      onChange={(e) =>
+                        setEditClubEvent({
+                          ...editClubEvent,
+                          end_time: e.target.value,
+                        })
+                      }
+                      placeholder="End time"
+                      className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                    />
+
+                    <input
+                      value={editClubEvent.price}
+                      onChange={(e) =>
+                        setEditClubEvent({
+                          ...editClubEvent,
+                          price: e.target.value,
+                        })
+                      }
+                      placeholder="Price"
+                      className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                    />
+
+                    <input
+                      value={editClubEvent.ticket_url}
+                      onChange={(e) =>
+                        setEditClubEvent({
+                          ...editClubEvent,
+                          ticket_url: e.target.value,
+                        })
+                      }
+                      placeholder="Ticket URL"
+                      className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                    />
+
+                    <input
+                      value={editClubEvent.image}
+                      onChange={(e) =>
+                        setEditClubEvent({
+                          ...editClubEvent,
+                          image: e.target.value,
+                        })
+                      }
+                      placeholder="Image URL"
+                      className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-3"
+                    />
 
                     <input
                       type="file"
@@ -383,16 +691,28 @@ export default function AdminEventsPage() {
                       className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none lg:col-span-3"
                     />
 
-                    {editEvent.image && (
+                    {editClubEvent.image && (
                       <img
-                        src={editEvent.image}
+                        src={editClubEvent.image}
                         alt="Preview"
                         className="h-52 w-full rounded-2xl object-cover lg:col-span-3"
                       />
                     )}
 
+                    <textarea
+                      value={editClubEvent.description}
+                      onChange={(e) =>
+                        setEditClubEvent({
+                          ...editClubEvent,
+                          description: e.target.value,
+                        })
+                      }
+                      placeholder="Description"
+                      className="min-h-[120px] rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-3"
+                    />
+
                     <button
-                      onClick={() => saveEditing(event.id)}
+                      onClick={() => saveEditing(clubEvent.id)}
                       disabled={uploading}
                       className="rounded-2xl bg-emerald-400 px-8 py-4 font-bold text-black disabled:opacity-50"
                     >
@@ -409,57 +729,57 @@ export default function AdminEventsPage() {
                 ) : (
                   <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      {event.image && (
+                      {clubEvent.image && (
                         <img
-                          src={event.image}
-                          alt={event.title}
+                          src={clubEvent.image}
+                          alt={clubEvent.title}
                           className="mb-6 h-48 w-full rounded-3xl object-cover lg:w-[420px]"
                         />
                       )}
 
                       <p className="text-sm uppercase tracking-wide text-zinc-500">
-                        {event.club_name} · {event.music}
+                        {clubEvent.club_name} · {clubEvent.music}
                       </p>
 
                       <h2 className="mt-2 text-3xl font-black">
-                        {event.title}
+                        {clubEvent.title}
                       </h2>
 
                       <div className="mt-5 flex flex-wrap gap-3">
                         <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                          🎧 {event.artist}
+                          🎧 {clubEvent.artist || "TBA"}
                         </span>
 
                         <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                          📅 {event.date}
+                          📅 {clubEvent.date || "TBA"}
                         </span>
 
                         <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                          🕒 {event.start_time} - {event.end_time}
+                          🕒 {clubEvent.start_time || "TBA"} - {clubEvent.end_time || "TBA"}
                         </span>
 
                         <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                          🎟 {event.price}
+                          🎟 {clubEvent.price || "TBA"}
                         </span>
                       </div>
 
                       <p className="mt-5 max-w-2xl text-zinc-400">
-                        {event.description}
+                        {clubEvent.description}
                       </p>
                     </div>
 
                     <div className="flex flex-wrap gap-3">
                       <button
-                        onClick={() => startEditing(event)}
+                        onClick={() => startEditing(clubEvent)}
                         className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold"
                       >
                         ✏️ Edit
                       </button>
 
                       <button
-                        onClick={() => toggleFeatured(event)}
+                        onClick={() => toggleFeatured(clubEvent)}
                         className={`rounded-full px-5 py-3 text-sm font-bold ${
-                          event.featured
+                          clubEvent.featured
                             ? "bg-emerald-400 text-black"
                             : "border border-white/10 bg-white/5"
                         }`}
@@ -468,9 +788,9 @@ export default function AdminEventsPage() {
                       </button>
 
                       <button
-                        onClick={() => toggleSoldOut(event)}
+                        onClick={() => toggleSoldOut(clubEvent)}
                         className={`rounded-full px-5 py-3 text-sm font-bold ${
-                          event.sold_out
+                          clubEvent.sold_out
                             ? "bg-red-500 text-white"
                             : "border border-white/10 bg-white/5"
                         }`}
@@ -479,7 +799,7 @@ export default function AdminEventsPage() {
                       </button>
 
                       <button
-                        onClick={() => deleteEvent(event.id)}
+                        onClick={() => deleteClubEvent(clubEvent.id)}
                         className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400"
                       >
                         Delete

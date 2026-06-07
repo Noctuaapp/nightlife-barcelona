@@ -7,7 +7,14 @@ import BottomNav from "../../../components/layout/BottomNav"
 
 import { supabase } from "../../../lib/supabase"
 
-type Event = {
+type EventItem = {
+  id: number
+  title: string
+  club_name: string | null
+  date: string | null
+}
+
+type ClubEventItem = {
   id: number
   title: string
   club_name: string | null
@@ -17,6 +24,7 @@ type Event = {
 type Ticket = {
   id: number
   event_id: number | null
+  club_event_id: number | null
   name: string
   description: string | null
   price: number | null
@@ -27,7 +35,9 @@ type Ticket = {
 
 export default function AdminTicketsPage() {
   const emptyTicket = {
+    target_type: "event",
     event_id: "",
+    club_event_id: "",
     name: "",
     description: "",
     price: "",
@@ -35,7 +45,8 @@ export default function AdminTicketsPage() {
     external_url: "",
   }
 
-  const [events, setEvents] = useState<Event[]>([])
+  const [events, setEvents] = useState<EventItem[]>([])
+  const [clubEvents, setClubEvents] = useState<ClubEventItem[]>([])
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [newTicket, setNewTicket] = useState(emptyTicket)
   const [editTicket, setEditTicket] = useState(emptyTicket)
@@ -71,6 +82,20 @@ export default function AdminTicketsPage() {
     if (data) setEvents(data)
   }
 
+  const fetchClubEvents = async () => {
+    const { data, error } = await supabase
+      .from("club_events")
+      .select("id, title, club_name, date")
+      .order("date", { ascending: true })
+
+    if (error) {
+      console.log("FETCH CLUB EVENTS ERROR:", error)
+      return
+    }
+
+    if (data) setClubEvents(data)
+  }
+
   const fetchTickets = async () => {
     const { data, error } = await supabase
       .from("tickets")
@@ -87,16 +112,24 @@ export default function AdminTicketsPage() {
 
   useEffect(() => {
     fetchEvents()
+    fetchClubEvents()
     fetchTickets()
   }, [])
 
   const addTicket = async () => {
-    if (!newTicket.event_id || !newTicket.name) return
+    if (!newTicket.name) return
+
+    const isEvent = newTicket.target_type === "event"
+    const isClubEvent = newTicket.target_type === "club_event"
+
+    if (isEvent && !newTicket.event_id) return
+    if (isClubEvent && !newTicket.club_event_id) return
 
     const { data, error } = await supabase
       .from("tickets")
       .insert({
-        event_id: Number(newTicket.event_id),
+        event_id: isEvent ? Number(newTicket.event_id) : null,
+        club_event_id: isClubEvent ? Number(newTicket.club_event_id) : null,
         name: newTicket.name,
         description: newTicket.description,
         price: newTicket.price ? Number(newTicket.price) : null,
@@ -113,15 +146,18 @@ export default function AdminTicketsPage() {
     }
 
     if (data) setTickets((prev) => [data, ...prev])
-
     setNewTicket(emptyTicket)
   }
 
   const startEditing = (ticket: Ticket) => {
+    const targetType = ticket.club_event_id ? "club_event" : "event"
+
     setEditingId(ticket.id)
 
     setEditTicket({
+      target_type: targetType,
       event_id: ticket.event_id ? String(ticket.event_id) : "",
+      club_event_id: ticket.club_event_id ? String(ticket.club_event_id) : "",
       name: ticket.name || "",
       description: ticket.description || "",
       price: ticket.price ? String(ticket.price) : "",
@@ -136,12 +172,19 @@ export default function AdminTicketsPage() {
   }
 
   const saveEditing = async (id: number) => {
-    if (!editTicket.event_id || !editTicket.name) return
+    if (!editTicket.name) return
+
+    const isEvent = editTicket.target_type === "event"
+    const isClubEvent = editTicket.target_type === "club_event"
+
+    if (isEvent && !editTicket.event_id) return
+    if (isClubEvent && !editTicket.club_event_id) return
 
     const { data, error } = await supabase
       .from("tickets")
       .update({
-        event_id: Number(editTicket.event_id),
+        event_id: isEvent ? Number(editTicket.event_id) : null,
+        club_event_id: isClubEvent ? Number(editTicket.club_event_id) : null,
         name: editTicket.name,
         description: editTicket.description,
         price: editTicket.price ? Number(editTicket.price) : null,
@@ -159,9 +202,7 @@ export default function AdminTicketsPage() {
 
     if (data) {
       setTickets((prev) =>
-        prev.map((ticket) =>
-          ticket.id === id ? data : ticket
-        )
+        prev.map((ticket) => (ticket.id === id ? data : ticket))
       )
     }
 
@@ -201,17 +242,27 @@ export default function AdminTicketsPage() {
       return
     }
 
-    setTickets((prev) =>
-      prev.filter((ticket) => ticket.id !== id)
-    )
+    setTickets((prev) => prev.filter((ticket) => ticket.id !== id))
   }
 
-  const getEventLabel = (eventId: number | null) => {
-    const event = events.find((item) => item.id === eventId)
+  const getTicketTarget = (ticket: Ticket) => {
+    if (ticket.event_id) {
+      const event = events.find((item) => item.id === ticket.event_id)
+      return event
+        ? `Event · ${event.title} · ${event.club_name || "Barcelona"} · ${event.date || "TBA"}`
+        : "Event · Unknown"
+    }
 
-    if (!event) return "Unknown event"
+    if (ticket.club_event_id) {
+      const clubEvent = clubEvents.find(
+        (item) => item.id === ticket.club_event_id
+      )
+      return clubEvent
+        ? `Club night · ${clubEvent.title} · ${clubEvent.club_name || "Barcelona"} · ${clubEvent.date || "TBA"}`
+        : "Club night · Unknown"
+    }
 
-    return `${event.title} · ${event.club_name || "Barcelona"} · ${event.date || "TBA"}`
+    return "No target"
   }
 
   if (checkingAdmin) {
@@ -223,6 +274,69 @@ export default function AdminTicketsPage() {
       </main>
     )
   }
+
+  const renderTargetSelector = (
+    ticket: typeof emptyTicket,
+    setTicket: typeof setNewTicket
+  ) => (
+    <>
+      <select
+        value={ticket.target_type}
+        onChange={(e) =>
+          setTicket({
+            ...ticket,
+            target_type: e.target.value,
+            event_id: "",
+            club_event_id: "",
+          })
+        }
+        className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+      >
+        <option value="event">Event</option>
+        <option value="club_event">Club night</option>
+      </select>
+
+      {ticket.target_type === "event" && (
+        <select
+          value={ticket.event_id}
+          onChange={(e) =>
+            setTicket({
+              ...ticket,
+              event_id: e.target.value,
+            })
+          }
+          className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-2"
+        >
+          <option value="">Select event</option>
+          {events.map((event) => (
+            <option key={event.id} value={event.id}>
+              {event.title} · {event.club_name || "Barcelona"} · {event.date || "TBA"}
+            </option>
+          ))}
+        </select>
+      )}
+
+      {ticket.target_type === "club_event" && (
+        <select
+          value={ticket.club_event_id}
+          onChange={(e) =>
+            setTicket({
+              ...ticket,
+              club_event_id: e.target.value,
+            })
+          }
+          className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-2"
+        >
+          <option value="">Select club night</option>
+          {clubEvents.map((clubEvent) => (
+            <option key={clubEvent.id} value={clubEvent.id}>
+              {clubEvent.title} · {clubEvent.club_name || "Barcelona"} · {clubEvent.date || "TBA"}
+            </option>
+          ))}
+        </select>
+      )}
+    </>
+  )
 
   return (
     <>
@@ -240,28 +354,23 @@ export default function AdminTicketsPage() {
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg text-zinc-400">
-              Create, edit and manage ticket options for every Noctua event.
+              Create tickets for events and club nights.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-4">
-              <a
-                href="/admin"
-                className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
-              >
+              <a href="/admin" className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black">
                 Clubs admin
               </a>
 
-              <a
-                href="/admin/events"
-                className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
-              >
+              <a href="/admin/events" className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black">
                 Events admin
               </a>
 
-              <a
-                href="/admin/tickets"
-                className="rounded-full bg-white px-5 py-3 text-sm font-bold text-black"
-              >
+              <a href="/admin/club-events" className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black">
+                Club nights admin
+              </a>
+
+              <a href="/admin/tickets" className="rounded-full bg-white px-5 py-3 text-sm font-bold text-black">
                 Tickets admin
               </a>
             </div>
@@ -271,31 +380,12 @@ export default function AdminTicketsPage() {
         <section className="mx-auto mt-10 max-w-7xl px-4">
           <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
             <div className="grid gap-4 lg:grid-cols-3">
-              <select
-                value={newTicket.event_id}
-                onChange={(e) =>
-                  setNewTicket({
-                    ...newTicket,
-                    event_id: e.target.value,
-                  })
-                }
-                className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
-              >
-                <option value="">Select event</option>
-                {events.map((event) => (
-                  <option key={event.id} value={event.id}>
-                    {event.title} · {event.club_name} · {event.date}
-                  </option>
-                ))}
-              </select>
+              {renderTargetSelector(newTicket, setNewTicket)}
 
               <input
                 value={newTicket.name}
                 onChange={(e) =>
-                  setNewTicket({
-                    ...newTicket,
-                    name: e.target.value,
-                  })
+                  setNewTicket({ ...newTicket, name: e.target.value })
                 }
                 placeholder="Ticket name"
                 className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
@@ -304,10 +394,7 @@ export default function AdminTicketsPage() {
               <input
                 value={newTicket.price}
                 onChange={(e) =>
-                  setNewTicket({
-                    ...newTicket,
-                    price: e.target.value,
-                  })
+                  setNewTicket({ ...newTicket, price: e.target.value })
                 }
                 placeholder="Price"
                 className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
@@ -316,10 +403,7 @@ export default function AdminTicketsPage() {
               <input
                 value={newTicket.currency}
                 onChange={(e) =>
-                  setNewTicket({
-                    ...newTicket,
-                    currency: e.target.value,
-                  })
+                  setNewTicket({ ...newTicket, currency: e.target.value })
                 }
                 placeholder="Currency"
                 className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
@@ -328,22 +412,16 @@ export default function AdminTicketsPage() {
               <input
                 value={newTicket.external_url}
                 onChange={(e) =>
-                  setNewTicket({
-                    ...newTicket,
-                    external_url: e.target.value,
-                  })
+                  setNewTicket({ ...newTicket, external_url: e.target.value })
                 }
                 placeholder="External ticket URL"
-                className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-2"
+                className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-3"
               />
 
               <textarea
                 value={newTicket.description}
                 onChange={(e) =>
-                  setNewTicket({
-                    ...newTicket,
-                    description: e.target.value,
-                  })
+                  setNewTicket({ ...newTicket, description: e.target.value })
                 }
                 placeholder="Description"
                 className="min-h-[120px] rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-3"
@@ -368,31 +446,12 @@ export default function AdminTicketsPage() {
               >
                 {editingId === ticket.id ? (
                   <div className="grid gap-4 lg:grid-cols-3">
-                    <select
-                      value={editTicket.event_id}
-                      onChange={(e) =>
-                        setEditTicket({
-                          ...editTicket,
-                          event_id: e.target.value,
-                        })
-                      }
-                      className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
-                    >
-                      <option value="">Select event</option>
-                      {events.map((event) => (
-                        <option key={event.id} value={event.id}>
-                          {event.title} · {event.club_name} · {event.date}
-                        </option>
-                      ))}
-                    </select>
+                    {renderTargetSelector(editTicket, setEditTicket)}
 
                     <input
                       value={editTicket.name}
                       onChange={(e) =>
-                        setEditTicket({
-                          ...editTicket,
-                          name: e.target.value,
-                        })
+                        setEditTicket({ ...editTicket, name: e.target.value })
                       }
                       placeholder="Ticket name"
                       className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
@@ -401,10 +460,7 @@ export default function AdminTicketsPage() {
                     <input
                       value={editTicket.price}
                       onChange={(e) =>
-                        setEditTicket({
-                          ...editTicket,
-                          price: e.target.value,
-                        })
+                        setEditTicket({ ...editTicket, price: e.target.value })
                       }
                       placeholder="Price"
                       className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
@@ -413,10 +469,7 @@ export default function AdminTicketsPage() {
                     <input
                       value={editTicket.currency}
                       onChange={(e) =>
-                        setEditTicket({
-                          ...editTicket,
-                          currency: e.target.value,
-                        })
+                        setEditTicket({ ...editTicket, currency: e.target.value })
                       }
                       placeholder="Currency"
                       className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
@@ -431,7 +484,7 @@ export default function AdminTicketsPage() {
                         })
                       }
                       placeholder="External ticket URL"
-                      className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-2"
+                      className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-3"
                     />
 
                     <textarea
@@ -464,7 +517,7 @@ export default function AdminTicketsPage() {
                   <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <p className="text-sm uppercase tracking-wide text-zinc-500">
-                        {getEventLabel(ticket.event_id)}
+                        {getTicketTarget(ticket)}
                       </p>
 
                       <h2 className="mt-2 text-3xl font-black">
