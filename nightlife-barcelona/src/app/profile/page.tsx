@@ -14,6 +14,8 @@ export default function ProfilePage() {
 
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState("")
 
   useEffect(() => {
     const getUser = async () => {
@@ -34,6 +36,34 @@ export default function ProfilePage() {
   const logout = async () => {
     await supabase.auth.signOut()
     window.location.href = "/login"
+  }
+
+  const deleteAccount = async () => {
+    setDeleteError("")
+
+    if (email === "info@noctuaapp.com") {
+      setDeleteError("Admin account cannot be deleted.")
+      return
+    }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to delete your account? This will remove your favorites and cannot be undone."
+    )
+
+    if (!confirmed) return
+
+    setDeleting(true)
+
+    const { error } = await supabase.rpc("delete_current_user")
+
+    if (error) {
+      setDeleteError(error.message)
+      setDeleting(false)
+      return
+    }
+
+    await supabase.auth.signOut()
+    window.location.href = "/signup"
   }
 
   if (loading) {
@@ -124,14 +154,21 @@ export default function ProfilePage() {
             </h2>
 
             <p className="mt-4 text-red-100/80">
-              Account deletion will be added soon. For now, contact Noctua support if you need your account removed.
+              Permanently delete your Noctua account and remove your saved favorites. This action cannot be undone.
             </p>
 
+            {deleteError && (
+              <p className="mt-4 text-sm font-bold text-red-300">
+                {deleteError}
+              </p>
+            )}
+
             <button
-              disabled
-              className="mt-6 cursor-not-allowed rounded-2xl border border-red-500/20 bg-red-500/10 px-6 py-4 font-bold text-red-300 opacity-60"
+              onClick={deleteAccount}
+              disabled={deleting}
+              className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/20 px-6 py-4 font-bold text-red-200 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Delete account coming soon
+              {deleting ? "Deleting account..." : "Delete account"}
             </button>
           </div>
         </section>

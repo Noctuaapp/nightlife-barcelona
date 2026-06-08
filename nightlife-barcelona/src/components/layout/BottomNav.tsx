@@ -8,6 +8,7 @@ import {
   Heart,
   Sparkles,
   Shield,
+  User,
 } from "lucide-react"
 
 import { usePathname } from "next/navigation"
@@ -51,6 +52,11 @@ export default function BottomNav() {
       label: "Favorites",
       href: "/favorites",
       icon: Heart,
+    },
+    {
+      label: "Profile",
+      href: "/profile",
+      icon: User,
     },
   
     ...(isAdmin
