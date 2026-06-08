@@ -2,7 +2,7 @@ import Link from "next/link"
 
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
-
+import FavoriteButton from "../../../components/favorites/FavoriteButton"
 import { supabase } from "../../../lib/supabase"
 
 type ClubPageProps = {
@@ -39,12 +39,12 @@ export default async function ClubPage({
           <h1 className="text-5xl font-black">
             Club not found
           </h1>
-
+          
           <Link
             href="/"
             className="mt-6 inline-block rounded-full bg-white px-6 py-3 font-bold text-black"
           >
-            Back home
+              Back home
           </Link>
         </div>
       </main>
@@ -245,13 +245,14 @@ export default async function ClubPage({
                   </p>
                 </div>
               </div>
+              <FavoriteButton itemType="club" itemId={club.id} />
 
-              <Link
-                href="/"
-                className="mt-10 flex items-center justify-center rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02]"
-              >
-                Back to home
-              </Link>
+<Link
+  href="/"
+  className="mt-4 flex items-center justify-center rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02]"
+>
+  Back to home
+</Link>
             </div>
           </div>
         </section>

@@ -2,7 +2,7 @@ import Link from "next/link"
 
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
-
+import FavoriteButton from "../../../components/favorites/FavoriteButton"
 import { supabase } from "../../../lib/supabase"
 
 type ClubEventPageProps = {
@@ -242,7 +242,7 @@ export default async function ClubEventPage({
                   Sold out
                 </div>
               )}
-
+<FavoriteButton itemType="club_event" itemId={clubEvent.id} />
               <Link
                 href={`/clubs/${clubEvent.club_name?.toLowerCase().replace(/\s+/g, "-") || ""}`}
                 className="mt-4 flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white/10"

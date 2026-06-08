@@ -11,11 +11,26 @@ import {
 } from "lucide-react"
 
 import { usePathname } from "next/navigation"
-
+import { useEffect, useState } from "react"
+import { supabase } from "../../lib/supabase"
 export default function BottomNav() {
 
   const pathname = usePathname()
+  const [isAdmin, setIsAdmin] = useState(false)
 
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data } = await supabase.auth.getUser()
+  
+      if (
+        data.user?.email === "info@noctuaapp.com"
+      ) {
+        setIsAdmin(true)
+      }
+    }
+  
+    checkAdmin()
+  }, [])
   const navItems = [
     {
       label: "Home",
@@ -37,11 +52,16 @@ export default function BottomNav() {
       href: "/favorites",
       icon: Heart,
     },
-    {
-      label: "Admin",
-      href: "/admin",
-      icon: Shield,
-    },
+  
+    ...(isAdmin
+      ? [
+          {
+            label: "Admin",
+            href: "/admin",
+            icon: Shield,
+          },
+        ]
+      : []),
   ]
 
   return (
