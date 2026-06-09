@@ -279,8 +279,8 @@ export default function FavoritesPage() {
                     </h3>
 
                     <div className="mt-5 flex flex-wrap gap-3">
-                      <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                        📅 {clubEvent.date || "TBA"}
+                    <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
+                        📅 {clubEvent.date ? new Date(clubEvent.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "TBA"}
                       </span>
 
                       <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
@@ -327,8 +327,8 @@ export default function FavoritesPage() {
                     </h3>
 
                     <div className="mt-5 flex flex-wrap gap-3">
-                      <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                        📅 {event.date || "TBA"}
+                    <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
+                        📅 {event.date ? new Date(event.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "TBA"}
                       </span>
 
                       <span className="rounded-full bg-white/10 px-4 py-2 text-sm">

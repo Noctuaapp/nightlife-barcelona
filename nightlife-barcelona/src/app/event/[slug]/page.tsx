@@ -1,8 +1,8 @@
 import Link from "next/link"
-
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import FavoriteButton from "../../../components/favorites/FavoriteButton"
+import ClubMap from "../../../components/map/ClubMap"
 import { supabase } from "../../../lib/supabase"
 
 type EventPageProps = {
@@ -168,12 +168,19 @@ export default async function EventPage({
               </h3>
 
               <div className="mt-10 space-y-6 text-zinc-300">
-                <div>
+              <div>
                   <p className="text-sm text-zinc-500">
                     Date
                   </p>
                   <p className="mt-2 text-lg">
-                    📅 {event.date || "TBA"}
+                    📅 {event.date
+                      ? new Date(event.date).toLocaleDateString("en-GB", {
+                          weekday: "long",
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })
+                      : "TBA"}
                   </p>
                 </div>
 
@@ -266,12 +273,27 @@ export default async function EventPage({
                 </a>
               )}
 
-              {event.sold_out && (
+{event.sold_out && (
                 <div className="mt-10 flex items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 px-6 py-4 font-bold text-red-300">
                   Sold out
                 </div>
               )}
-<FavoriteButton itemType="event" itemId={event.id} />
+
+              {event.latitude && event.longitude && (
+                <div className="mt-8">
+                  <p className="text-sm text-zinc-500 mb-3">Location</p>
+                  <ClubMap
+                    latitude={event.latitude}
+                    longitude={event.longitude}
+                    name={event.title}
+                  />
+                  {event.address && (
+                    <p className="mt-3 text-sm text-zinc-400">📍 {event.address}</p>
+                  )}
+                </div>
+              )}
+
+              <FavoriteButton itemType="event" itemId={event.id} />
               <Link
                 href="/"
                 className="mt-4 flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white/10"
