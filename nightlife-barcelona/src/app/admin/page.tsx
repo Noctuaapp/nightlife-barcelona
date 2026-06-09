@@ -45,6 +45,11 @@ export default function AdminPage() {
     soldOutClubs: 0,
     featuredEvents: 0,
     soldOutEvents: 0,
+    users: 0,
+    favorites: 0,
+    favoriteClubs: 0,
+    favoriteEvents: 0,
+    favoriteClubEvents: 0,
   })
 
   const [editClub, setEditClub] = useState<EditClub>({
@@ -82,7 +87,8 @@ export default function AdminPage() {
     const { data: eventsData } = await supabase
       .from("events")
       .select("id, featured, sold_out")
-
+      const { data: adminStatsData } = await supabase.rpc("get_admin_stats")
+const adminStats = Array.isArray(adminStatsData) ? adminStatsData[0] : adminStatsData
     setStats({
       clubs: clubsData?.length || 0,
       events: eventsData?.length || 0,
@@ -94,6 +100,11 @@ export default function AdminPage() {
         eventsData?.filter((event) => event.featured).length || 0,
       soldOutEvents:
         eventsData?.filter((event) => event.sold_out).length || 0,
+        users: adminStats?.users || 0,
+favorites: adminStats?.favorites || 0,
+favoriteClubs: adminStats?.favorite_clubs || 0,
+favoriteEvents: adminStats?.favorite_events || 0,
+favoriteClubEvents: adminStats?.favorite_club_events || 0,
     })
   }
 
@@ -479,7 +490,64 @@ export default function AdminPage() {
                 Listed nights
               </p>
             </div>
+            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-blue-500/15 to-white/[0.03] p-6">
+              <p className="text-sm uppercase tracking-wide text-zinc-400">
+                Users
+              </p>
+              <h2 className="mt-4 text-5xl font-black">
+                {stats.users}
+              </h2>
+              <p className="mt-3 text-sm text-blue-300">
+                Registered accounts
+              </p>
+            </div>
 
+            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-rose-500/15 to-white/[0.03] p-6">
+              <p className="text-sm uppercase tracking-wide text-zinc-400">
+                Favorites
+              </p>
+              <h2 className="mt-4 text-5xl font-black">
+                {stats.favorites}
+              </h2>
+              <p className="mt-3 text-sm text-rose-300">
+                Total saved items
+              </p>
+            </div>
+            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-pink-500/15 to-white/[0.03] p-6">
+              <p className="text-sm uppercase tracking-wide text-zinc-400">
+                Favorite clubs
+              </p>
+              <h2 className="mt-4 text-5xl font-black">
+                {stats.favoriteClubs}
+              </h2>
+              <p className="mt-3 text-sm text-fuchsia-300">
+                Saved venues
+              </p>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-purple-500/15 to-white/[0.03] p-6">
+              <p className="text-sm uppercase tracking-wide text-zinc-400">
+                Favorite events
+              </p>
+              <h2 className="mt-4 text-5xl font-black">
+                {stats.favoriteEvents}
+              </h2>
+              <p className="mt-3 text-sm text-violet-300">
+                Saved events
+              </p>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-cyan-500/15 to-white/[0.03] p-6">
+              <p className="text-sm uppercase tracking-wide text-zinc-400">
+                Favorite club nights
+              </p>
+              <h2 className="mt-4 text-5xl font-black">
+                {stats.favoriteClubEvents}
+              </h2>
+              <p className="mt-3 text-sm text-indigo-300">
+                Saved club nights
+              </p>
+            </div>
             <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-emerald-500/15 to-white/[0.03] p-6">
               <p className="text-sm uppercase tracking-wide text-zinc-400">
                 Trending clubs

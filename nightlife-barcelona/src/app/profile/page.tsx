@@ -136,12 +136,21 @@ export default function ProfilePage() {
               Sign out from this device. You can log back in whenever you want.
             </p>
 
-            <button
-              onClick={logout}
-              className="mt-6 rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02]"
-            >
-              Log out
-            </button>
+            <div className="mt-6 flex flex-wrap gap-4">
+  <button
+    onClick={logout}
+    className="rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02]"
+  >
+    Log out
+  </button>
+
+  <Link
+    href="/profile/change-password"
+    className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white hover:text-black"
+  >
+    Change password
+  </Link>
+</div>
           </div>
 
           <div className="mt-6 rounded-[32px] border border-red-500/20 bg-red-500/10 p-8">

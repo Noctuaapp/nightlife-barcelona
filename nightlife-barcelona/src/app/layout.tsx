@@ -24,15 +24,15 @@ export default function RootLayout({
 
 <body>
 
-  <FavoritesProvider>
+<FavoritesProvider>
 
-    <NightlifeProvider>
+<NightlifeProvider>
 
-      {children}
+  {children}
 
-    </NightlifeProvider>
+</NightlifeProvider>
 
-  </FavoritesProvider>
+</FavoritesProvider>
 
 </body>
 

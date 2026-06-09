@@ -4,7 +4,7 @@ import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import FavoriteButton from "../../../components/favorites/FavoriteButton"
 import { supabase } from "../../../lib/supabase"
-
+import ClubMap from "../../../components/map/ClubMap"
 type ClubPageProps = {
   params: Promise<{
     slug: string
@@ -245,6 +245,21 @@ export default async function ClubPage({
                   </p>
                 </div>
               </div>
+              {club.latitude && club.longitude && (
+  <div className="mt-8">
+    <p className="text-sm text-zinc-500 mb-3">Location</p>
+    <ClubMap
+      latitude={club.latitude}
+      longitude={club.longitude}
+      name={club.name}
+    />
+    {club.address && (
+      <p className="mt-3 text-sm text-zinc-400">
+        📍 {club.address}
+      </p>
+    )}
+  </div>
+)}
               <FavoriteButton itemType="club" itemId={club.id} />
 
 <Link

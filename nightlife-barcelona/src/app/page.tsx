@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 
 import Header from "../components/layout/Header"
 import BottomNav from "../components/layout/BottomNav"
-
+import Footer from "../components/layout/Footer"
 import ClubCard from "../components/nightlife/ClubCard"
 
 import SearchBar from "../components/ui/SearchBar"
@@ -277,6 +277,10 @@ export default function Home() {
         <EventsSection />
 
         <AreasSection />
+
+        <div className="h-screen" />
+
+<Footer />
 
       </main>
 

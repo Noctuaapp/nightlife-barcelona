@@ -25,7 +25,7 @@ type Event = {
   sold_out: boolean | null
 }
 
-export default function AdminClubEventsPage() {
+export default function AdminEventsPage() {
   const router = useRouter()
 
   const emptyEvent = {
@@ -140,12 +140,15 @@ export default function AdminClubEventsPage() {
   }
 
   const addEvent = async () => {
-    if (!newEvent.title || !newEvent.club_name) return
+    if (!newEvent.title) return
 
     const { data, error } = await supabase
       .from("events")
       .insert({
         ...newEvent,
+        date: newEvent.date || null,
+        start_time: newEvent.start_time || null,
+        end_time: newEvent.end_time || null,
         featured: false,
         sold_out: false,
       })
@@ -299,7 +302,7 @@ export default function AdminClubEventsPage() {
   </a>
   <a
   href="/admin/club-events"
-  className="rounded-full bg-white px-5 py-3 text-sm font-bold text-black"
+   className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
 >
   Club nights admin
 </a>
