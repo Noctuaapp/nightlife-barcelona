@@ -4,11 +4,10 @@ import Link from "next/link"
 import {
   Home,
   Calendar,
-  Heart,
-  Sparkles,
   Shield,
   User,
   Map,
+  Sparkles,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -32,7 +31,7 @@ export default function BottomNav() {
     { label: "Home", href: "/", icon: Home },
     { label: "Events", href: "/events", icon: Calendar },
     { label: "Map", href: "/map", icon: Map },
-    { label: "Favorites", href: "/favorites", icon: Heart },
+    { label: "Plan", href: "/plan", icon: Sparkles },
     { label: "Profile", href: "/profile", icon: User },
     ...(isAdmin
       ? [{ label: "Admin", href: "/admin", icon: Shield }]
