@@ -60,7 +60,7 @@ export default function ClubCard({
           className="object-cover transition duration-700 group-hover:scale-110"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+<div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
 
         <div className="absolute left-5 top-5 flex flex-wrap gap-2">
           {liveBadges?.slice(0, 2).map((badge, index) => (
@@ -85,7 +85,7 @@ export default function ClubCard({
           ))}
         </div>
 
-        <div className="absolute bottom-0 left-0 w-full bg-black/55 p-6 backdrop-blur-md">
+        <div className="absolute bottom-0 left-0 w-full p-6">
           <p className="text-sm uppercase tracking-wide text-zinc-400">
             {music}
           </p>

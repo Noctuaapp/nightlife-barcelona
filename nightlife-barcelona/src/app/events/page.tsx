@@ -94,7 +94,7 @@ export default function EventsPage() {
                   ) : (
                     <div className="absolute inset-0 bg-zinc-900" />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
 
                   {event.featured && (
                     <div className="absolute left-5 top-5">
