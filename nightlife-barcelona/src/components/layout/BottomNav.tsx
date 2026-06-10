@@ -1,14 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import {
-  Home,
-  Calendar,
-  Shield,
-  User,
-  Map,
-  Sparkles,
-} from "lucide-react"
+import { Home, Music, Calendar, Shield, Compass } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
@@ -29,13 +22,10 @@ export default function BottomNav() {
 
   const navItems = [
     { label: "Home", href: "/", icon: Home },
+    { label: "Clubs", href: "/clubs", icon: Music },
     { label: "Events", href: "/events", icon: Calendar },
-    { label: "Map", href: "/map", icon: Map },
-    { label: "Plan", href: "/plan", icon: Sparkles },
-    { label: "Profile", href: "/profile", icon: User },
-    ...(isAdmin
-      ? [{ label: "Admin", href: "/admin", icon: Shield }]
-      : []),
+    { label: "Essentials", href: "/essentials", icon: Compass },
+    ...(isAdmin ? [{ label: "Admin", href: "/admin", icon: Shield }] : []),
   ]
 
   return (

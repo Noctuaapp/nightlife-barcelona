@@ -5,7 +5,7 @@ import FavoriteButton from "../../../components/favorites/FavoriteButton"
 import ClubMap from "../../../components/map/ClubMap"
 import ClubNightsCalendar from "../../../components/nightlife/ClubNightsCalendar"
 import { supabase } from "../../../lib/supabase"
-
+import TransportButtons from "../../../components/ui/TransportButtons"
 type ClubPageProps = {
   params: Promise<{ slug: string }>
 }
@@ -144,7 +144,12 @@ export default async function ClubPage({ params }: ClubPageProps) {
                   )}
                 </div>
               )}
-
+<TransportButtons
+  name={club.name}
+  address={club.address}
+  lat={club.latitude}
+  lng={club.longitude}
+/>
               <FavoriteButton itemType="club" itemId={club.id} />
 
               <Link

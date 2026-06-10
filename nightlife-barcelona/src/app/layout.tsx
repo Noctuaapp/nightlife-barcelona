@@ -1,15 +1,12 @@
 import type { Metadata } from "next"
 import { NightlifeProvider } from "../context/NightlifeContext"
+import { FavoritesProvider } from "../context/FavoritesContext"
+import BackButton from "../components/ui/BackButton"
 import "./globals.css"
 
-import { FavoritesProvider } from "../context/FavoritesContext"
-
 export const metadata: Metadata = {
-
   title: "Nightlife Barcelona",
-
-  description:
-    "Discover clubs, nightlife and events in Barcelona.",
+  description: "Discover clubs, nightlife and events in Barcelona.",
 }
 
 export default function RootLayout({
@@ -17,25 +14,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-
   return (
-
     <html lang="en">
-
-<body>
-
-<FavoritesProvider>
-
-<NightlifeProvider>
-
-  {children}
-
-</NightlifeProvider>
-
-</FavoritesProvider>
-
-</body>
-
+      <body>
+        <FavoritesProvider>
+          <NightlifeProvider>
+            <BackButton />
+            {children}
+          </NightlifeProvider>
+        </FavoritesProvider>
+      </body>
     </html>
   )
 }
