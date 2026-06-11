@@ -95,46 +95,51 @@ export default function MapPage() {
   const [selected, setSelected] = useState<Club | Event | Essential | null>(null)
   const [mapReady, setMapReady] = useState(false)
   const [showList, setShowList] = useState(false)
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
 
   useEffect(() => {
-    const init = async () => {
-      const { data } = await supabase.auth.getSession()
-      const loggedIn = !!data.session
-      setIsLoggedIn(loggedIn)
+    supabase.auth.getSession().then(({ data }) => {
+      const logged = !!data.session
+      setLoggedIn(logged)
+      setIsLoggedIn(logged)
+    })
+  }, [])
 
-      if (!loggedIn || !mapContainer.current || map.current) return
+  useEffect(() => {
+    if (!loggedIn) return
 
-      mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!mapContainer.current || map.current) return
 
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: "mapbox://styles/mapbox/dark-v11",
-        center: [2.1734, 41.3851],
-        zoom: 13,
-      })
+        mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!
 
-      map.current.on("load", () => {
-        setTimeout(() => {
+        map.current = new mapboxgl.Map({
+          container: mapContainer.current,
+          style: "mapbox://styles/mapbox/dark-v11",
+          center: [2.1734, 41.3851],
+          zoom: 13,
+        })
+
+        map.current.on("load", () => {
           if (map.current) {
             map.current.resize()
             setMapReady(true)
           }
-        }, 200)
+        })
+
+        const handleResize = () => {
+          if (map.current) map.current.resize()
+        }
+        window.addEventListener("resize", handleResize)
       })
-
-      const handleResize = () => {
-        if (map.current) map.current.resize()
-      }
-      window.addEventListener("resize", handleResize)
-    }
-
-    init()
+    })
 
     return () => {
       map.current?.remove()
       map.current = null
     }
-  }, [])
+  }, [loggedIn])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -226,7 +231,7 @@ export default function MapPage() {
   }
 
   return (
-        <div style={{ height: "100dvh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div style={{ height: "100dvh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
       <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10, background: "#000", gap: "8px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -252,7 +257,7 @@ export default function MapPage() {
         </div>
       </div>
 
-      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative", minHeight: 0, minWidth: 0 }}>
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0, minWidth: 0 }}>
 
         <aside className="hidden lg:flex" style={{ width: "320px", borderRight: "1px solid rgba(255,255,255,0.1)", background: "#000", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
           <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
@@ -304,7 +309,7 @@ export default function MapPage() {
           )}
         </aside>
 
-        <div style={{ flex: 1, position: "relative", minWidth: 0, minHeight: 0, height: "100%" }}>
+        <div style={{ flex: 1, position: "relative", minWidth: 0, minHeight: 0 }}>
           <div ref={mapContainer} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
 
           <button
