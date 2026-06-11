@@ -94,6 +94,7 @@ export default function MapPage() {
   const [filter, setFilter] = useState<Filter>("clubs")
   const [selected, setSelected] = useState<Club | Event | Essential | null>(null)
   const [mapReady, setMapReady] = useState(false)
+  const [showList, setShowList] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -218,22 +219,23 @@ export default function MapPage() {
   return (
     <div style={{ position: "fixed", inset: 0, background: "#000", display: "flex", flexDirection: "column" }}>
 
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10, background: "#000", gap: "16px", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <Link href="/" style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px", textDecoration: "none" }}>← Back</Link>
-          <span style={{ fontSize: "16px", fontWeight: 900, color: "#fff" }}>Barcelona</span>
+      {/* TOP BAR */}
+      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10, background: "#000", gap: "8px", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <Link href="/" style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px", textDecoration: "none", whiteSpace: "nowrap" }}>← Back</Link>
+          <span style={{ fontSize: "15px", fontWeight: 900, color: "#fff", whiteSpace: "nowrap" }}>Barcelona</span>
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "6px", flexWrap: "nowrap" }}>
           {(["clubs", "events", "essentials"] as Filter[]).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               style={{
-                padding: "6px 16px", borderRadius: "999px",
+                padding: "5px 10px", borderRadius: "999px",
                 border: filter === f ? `1px solid ${COLORS[f]}` : "1px solid rgba(255,255,255,0.1)",
                 background: filter === f ? `${COLORS[f]}22` : "rgba(255,255,255,0.03)",
                 color: filter === f ? COLORS[f] : "rgba(255,255,255,0.5)",
-                fontSize: "13px", fontWeight: 600, cursor: "pointer", textTransform: "capitalize",
+                fontSize: "11px", fontWeight: 600, cursor: "pointer", textTransform: "capitalize", whiteSpace: "nowrap",
               }}
             >
               {f}
@@ -242,9 +244,11 @@ export default function MapPage() {
         </div>
       </div>
 
-      <div style={{ flex: 1, display: "flex", overflow: "hidden", height: "calc(100vh - 120px)" }}>
+      {/* MAIN */}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
 
-        <aside style={{ width: "320px", borderRight: "1px solid rgba(255,255,255,0.1)", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
+        {/* SIDEBAR — desktop only */}
+        <aside className="hidden lg:flex" style={{ width: "320px", borderRight: "1px solid rgba(255,255,255,0.1)", background: "#000", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
           <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {(currentList as (Club | Event | Essential)[])
@@ -267,11 +271,6 @@ export default function MapPage() {
                     <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>{getSub(item)}</p>
                   </button>
                 ))}
-              {(currentList as (Club | Event | Essential)[]).filter((item) => item.latitude && item.longitude).length === 0 && (
-                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)", padding: "16px", textAlign: "center" }}>
-                  No {filter} with location data yet.
-                </p>
-              )}
             </div>
           </div>
 
@@ -282,12 +281,7 @@ export default function MapPage() {
               {"address" in selected && selected.address && (
                 <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)", marginTop: "4px" }}>📍 {selected.address}</p>
               )}
-              <TransportButtons
-                name={getName(selected)}
-                address={"address" in selected ? selected.address : null}
-                lat={selected.latitude}
-                lng={selected.longitude}
-              />
+              <TransportButtons name={getName(selected)} address={"address" in selected ? selected.address : null} lat={selected.latitude} lng={selected.longitude} />
               {filter === "clubs" && (
                 <Link href={`/clubs/${createSlug(getName(selected))}`}
                   style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
@@ -304,23 +298,74 @@ export default function MapPage() {
           )}
         </aside>
 
+        {/* MAP */}
         <div style={{ flex: 1, position: "relative", height: "100%", minWidth: 0 }}>
           <div ref={mapContainer} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%" }} />
 
+          {/* MOBILE: list toggle button */}
+          <button
+            className="lg:hidden"
+            onClick={() => setShowList(!showList)}
+            style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.2)", padding: "8px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(10px)" }}
+          >
+            {showList ? "✕ Close" : "☰ List"}
+          </button>
+
+          {/* MOBILE: sliding list panel */}
+          {showList && (
+            <div
+              className="lg:hidden"
+              style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "85%", maxWidth: "320px", background: "#000", zIndex: 20, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.1)" }}
+            >
+              <div style={{ padding: "12px", paddingTop: "50px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {(currentList as (Club | Event | Essential)[])
+                    .filter((item) => item.latitude && item.longitude)
+                    .map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setSelected(item)
+                          setShowList(false)
+                          map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 })
+                        }}
+                        style={{
+                          textAlign: "left", borderRadius: "14px",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          background: "rgba(255,255,255,0.02)",
+                          padding: "12px", cursor: "pointer", width: "100%",
+                        }}
+                      >
+                        <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px" }}>{getName(item)}</p>
+                        <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>{getSub(item)}</p>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MOBILE: selected overlay */}
           {selected && (
-            <div style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.9)", padding: "16px", backdropFilter: "blur(10px)" }}>
-              <p style={{ fontWeight: 900, color: "#fff" }}>{getName(selected)}</p>
-              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", marginTop: "4px" }}>{getSub(selected)}</p>
-              <TransportButtons
-                name={getName(selected)}
-                address={"address" in selected ? selected.address : null}
-                lat={selected.latitude}
-                lng={selected.longitude}
-              />
+            <div style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.92)", padding: "16px", backdropFilter: "blur(10px)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <p style={{ fontWeight: 900, color: "#fff", fontSize: "15px" }}>{getName(selected)}</p>
+                  <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginTop: "2px" }}>{getSub(selected)}</p>
+                </div>
+                <button onClick={() => setSelected(null)} style={{ color: "rgba(255,255,255,0.4)", background: "none", border: "none", fontSize: "18px", cursor: "pointer", padding: "0 0 0 8px" }}>✕</button>
+              </div>
+              <TransportButtons name={getName(selected)} address={"address" in selected ? selected.address : null} lat={selected.latitude} lng={selected.longitude} />
               {filter === "clubs" && (
                 <Link href={`/clubs/${createSlug(getName(selected))}`}
                   style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
                   View club →
+                </Link>
+              )}
+              {filter === "events" && (
+                <Link href={`/event/${createSlug(getName(selected))}`}
+                  style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
+                  View event →
                 </Link>
               )}
             </div>
