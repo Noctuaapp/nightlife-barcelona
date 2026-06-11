@@ -6,7 +6,7 @@ export default function BackButton() {
   const router = useRouter()
   const pathname = usePathname()
 
-  const hideOn = ["/", "/login", "/signup"]
+  const hideOn = ["/", "/login", "/signup", "/map"]
   if (hideOn.includes(pathname)) return null
 
   return (
