@@ -235,7 +235,21 @@ export default function MapPage() {
 
       <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10, background: "#000", gap: "8px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <Link href="/" style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px", textDecoration: "none", whiteSpace: "nowrap" }}>← Back</Link>
+        <Link
+            href="/"
+            style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              borderRadius: "999px", padding: "6px 14px",
+              background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)",
+              fontSize: "13px", fontWeight: 700, color: "#fff", textDecoration: "none",
+              whiteSpace: "nowrap"
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <path d="M10 3L5 8L10 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Back
+          </Link>
           <span style={{ fontSize: "15px", fontWeight: 900, color: "#fff", whiteSpace: "nowrap" }}>Barcelona</span>
         </div>
         <div style={{ display: "flex", gap: "6px", flexWrap: "nowrap" }}>

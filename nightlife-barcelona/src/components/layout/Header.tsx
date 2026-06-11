@@ -26,7 +26,7 @@ export default function Header() {
 
     return () => { subscription.unsubscribe() }
   }, [])
-
+  if (pathname === "/map") return null
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-2xl">
