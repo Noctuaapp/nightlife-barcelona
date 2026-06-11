@@ -17,6 +17,7 @@ type Club = {
   latitude: number | null
   longitude: number | null
   address: string | null
+  image: string | null
 }
 
 type Event = {
@@ -82,6 +83,11 @@ const TransportButtons = ({ name, address, lat, lng }: { name: string; address: 
   )
 }
 
+const getImage = (item: Club | Event | Essential): string | null => {
+  if ("image" in item) return (item as Club | Event).image
+  return null
+}
+
 export default function MapPage() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
@@ -145,7 +151,7 @@ export default function MapPage() {
     const fetchData = async () => {
       const [{ data: clubsData }, { data: eventsData }, { data: essentialsData }] =
         await Promise.all([
-          supabase.from("clubs").select("id, name, neighborhood, music, hours, price, latitude, longitude, address"),
+          supabase.from("clubs").select("id, name, neighborhood, music, hours, price, latitude, longitude, address, image"),
           supabase.from("events").select("id, title, date, price, image, latitude, longitude, address"),
           supabase.from("essentials").select("id, name, category, neighborhood, open_hours, latitude, longitude, address"),
         ])
@@ -235,7 +241,7 @@ export default function MapPage() {
 
       <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10, background: "#000", gap: "8px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <Link
+          <Link
             href="/"
             style={{
               display: "flex", alignItems: "center", gap: "6px",
@@ -301,6 +307,9 @@ export default function MapPage() {
 
           {selected && (
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", padding: "16px", background: "rgba(255,255,255,0.02)", flexShrink: 0 }}>
+              {getImage(selected) && (
+                <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "10px", marginBottom: "12px" }} />
+              )}
               <p style={{ fontWeight: 900, fontSize: "16px", color: "#fff" }}>{getName(selected)}</p>
               <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", marginTop: "4px" }}>{getSub(selected)}</p>
               {"address" in selected && selected.address && (
@@ -378,6 +387,9 @@ export default function MapPage() {
 
           {selected && (
             <div style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.92)", padding: "16px", backdropFilter: "blur(10px)" }}>
+              {getImage(selected) && (
+                <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "10px", marginBottom: "12px" }} />
+              )}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <p style={{ fontWeight: 900, color: "#fff", fontSize: "15px" }}>{getName(selected)}</p>
