@@ -226,7 +226,7 @@ export default function MapPage() {
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#000", display: "flex", flexDirection: "column" }}>
+        <div style={{ height: "100dvh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
       <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10, background: "#000", gap: "8px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -252,7 +252,7 @@ export default function MapPage() {
         </div>
       </div>
 
-      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative", minHeight: 0 }}>
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative", minHeight: 0, minWidth: 0 }}>
 
         <aside className="hidden lg:flex" style={{ width: "320px", borderRight: "1px solid rgba(255,255,255,0.1)", background: "#000", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
           <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
