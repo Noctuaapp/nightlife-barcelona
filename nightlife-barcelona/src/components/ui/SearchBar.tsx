@@ -12,7 +12,7 @@ export default function SearchBar({
 
   return (
 
-    <div className="relative">
+    <div className="relative max-w-xl">
 
       <input
         type="text"

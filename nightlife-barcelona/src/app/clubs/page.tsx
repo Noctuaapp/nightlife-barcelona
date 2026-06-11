@@ -9,6 +9,7 @@ import { supabase } from "../../lib/supabase"
 export default function ClubsPage() {
   const [clubs, setClubs] = useState<any[]>([])
   const [selectedCategory, setSelectedCategory] = useState("All")
+  const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
 
   const filters = ["All", "Techno", "Commercial", "Cocktail Bar", "Trending"]
@@ -23,12 +24,20 @@ export default function ClubsPage() {
   }, [])
 
   const filteredClubs = clubs.filter((club) => {
-    if (selectedCategory === "All") return true
-    if (selectedCategory === "Techno") return club.music === "Techno"
-    if (selectedCategory === "Commercial") return club.music === "Commercial"
-    if (selectedCategory === "Cocktail Bar") return club.music === "Cocktail Bar"
-    if (selectedCategory === "Trending") return club.trending === true
-    return true
+    const matchesCategory =
+      selectedCategory === "All" ||
+      (selectedCategory === "Techno" && club.music === "Techno") ||
+      (selectedCategory === "Commercial" && club.music === "Commercial") ||
+      (selectedCategory === "Cocktail Bar" && club.music === "Cocktail Bar") ||
+      (selectedCategory === "Trending" && club.trending === true)
+
+    const matchesSearch =
+      search === "" ||
+      club.name?.toLowerCase().includes(search.toLowerCase()) ||
+      club.neighborhood?.toLowerCase().includes(search.toLowerCase()) ||
+      club.music?.toLowerCase().includes(search.toLowerCase())
+
+    return matchesCategory && matchesSearch
   })
 
   return (
@@ -47,7 +56,45 @@ export default function ClubsPage() {
           </div>
         </section>
 
-        <section className="mx-auto mt-12 max-w-7xl px-4">
+        {/* Search */}
+<section className="mx-auto mt-10 max-w-7xl px-4">
+  <div className="relative max-w-xl">
+    <input
+      type="text"
+      placeholder="Search..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      style={{
+        width: "100%",
+        background: "rgba(255,255,255,0.07)",
+        border: "1px solid rgba(255,255,255,0.15)",
+        borderRadius: "14px",
+        padding: "14px 44px 14px 48px",
+        fontSize: "14px",
+        color: "#fff",
+        outline: "none",
+      }}
+    />
+    <svg
+      style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+      width="18" height="18" viewBox="0 0 24 24" fill="none"
+    >
+      <circle cx="11" cy="11" r="7" stroke="rgba(255,255,255,0.4)" strokeWidth="2"/>
+      <path d="M16.5 16.5L21 21" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+    {search && (
+      <button
+        onClick={() => setSearch("")}
+        style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.4)", background: "none", border: "none", cursor: "pointer", fontSize: "16px" }}
+      >
+        ✕
+      </button>
+    )}
+  </div>
+</section>
+
+        {/* Filters */}
+        <section className="mx-auto mt-6 max-w-7xl px-4">
           <div className="flex gap-3 overflow-x-auto pb-2">
             {filters.map((filter) => (
               <button
@@ -65,7 +112,8 @@ export default function ClubsPage() {
           </div>
         </section>
 
-        <section className="mx-auto mt-14 grid max-w-7xl gap-8 px-4 md:grid-cols-2 xl:grid-cols-3">
+        {/* Results */}
+        <section className="mx-auto mt-10 grid max-w-7xl gap-8 px-4 md:grid-cols-2 xl:grid-cols-3">
           {loading ? (
             <p className="text-zinc-500 text-sm col-span-3 text-center py-20">Loading clubs...</p>
           ) : filteredClubs.length === 0 ? (

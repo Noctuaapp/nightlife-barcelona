@@ -7,19 +7,20 @@ import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 
+const createSlug = (text: string) =>
+  text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
+
 export default function EventsPage() {
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedFilter, setSelectedFilter] = useState("All")
+  const [search, setSearch] = useState("")
 
   const filters = ["All", "Festival", "Free", "Featured"]
 
   useEffect(() => {
     const fetchEvents = async () => {
-      const { data } = await supabase
-        .from("events")
-        .select("*")
-        .order("date", { ascending: true })
+      const { data } = await supabase.from("events").select("*").order("date", { ascending: true })
       if (data) setEvents(data)
       setLoading(false)
     }
@@ -27,15 +28,27 @@ export default function EventsPage() {
   }, [])
 
   const filteredEvents = events.filter((event) => {
-    if (selectedFilter === "All") return true
-    if (selectedFilter === "Featured") return event.featured === true
-    if (selectedFilter === "Free") return event.price?.toLowerCase() === "free"
-    if (selectedFilter === "Festival") return event.music?.toLowerCase().includes("festival") || event.title?.toLowerCase().includes("festival") || event.title?.toLowerCase().includes("fiesta")
-    return true
-  })
+    const matchesFilter =
+      selectedFilter === "All" ||
+      (selectedFilter === "Featured" && event.featured === true) ||
+      (selectedFilter === "Free" && event.price?.toLowerCase() === "gratis") ||
+      (selectedFilter === "Festival" && (
+        event.title?.toLowerCase().includes("festival") ||
+        event.title?.toLowerCase().includes("primavera") ||
+        event.title?.toLowerCase().includes("sonar") ||
+        event.title?.toLowerCase().includes("cruïlla") ||
+        event.title?.toLowerCase().includes("mira") ||
+        event.title?.toLowerCase().includes("beach festival")
+      ))
 
-  const createSlug = (text: string) =>
-    text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
+    const matchesSearch =
+      search === "" ||
+      event.title?.toLowerCase().includes(search.toLowerCase()) ||
+      event.address?.toLowerCase().includes(search.toLowerCase()) ||
+      event.description?.toLowerCase().includes(search.toLowerCase())
+
+    return matchesFilter && matchesSearch
+  })
 
   return (
     <>
@@ -53,7 +66,45 @@ export default function EventsPage() {
           </div>
         </section>
 
-        <section className="mx-auto mt-12 max-w-7xl px-4">
+        {/* Search */}
+<section className="mx-auto mt-10 max-w-7xl px-4">
+  <div className="relative max-w-xl">
+    <input
+      type="text"
+      placeholder="Search..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      style={{
+        width: "100%",
+        background: "rgba(255,255,255,0.07)",
+        border: "1px solid rgba(255,255,255,0.15)",
+        borderRadius: "14px",
+        padding: "14px 44px 14px 48px",
+        fontSize: "14px",
+        color: "#fff",
+        outline: "none",
+      }}
+    />
+    <svg
+      style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+      width="18" height="18" viewBox="0 0 24 24" fill="none"
+    >
+      <circle cx="11" cy="11" r="7" stroke="rgba(255,255,255,0.4)" strokeWidth="2"/>
+      <path d="M16.5 16.5L21 21" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+    {search && (
+      <button
+        onClick={() => setSearch("")}
+        style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.4)", background: "none", border: "none", cursor: "pointer", fontSize: "16px" }}
+      >
+        ✕
+      </button>
+    )}
+  </div>
+</section>
+
+        {/* Filters */}
+        <section className="mx-auto mt-6 max-w-7xl px-4">
           <div className="flex gap-3 overflow-x-auto pb-2">
             {filters.map((filter) => (
               <button
@@ -71,7 +122,8 @@ export default function EventsPage() {
           </div>
         </section>
 
-        <section className="mx-auto mt-14 grid max-w-7xl gap-8 px-4 md:grid-cols-2 xl:grid-cols-3">
+        {/* Results */}
+        <section className="mx-auto mt-10 grid max-w-7xl gap-8 px-4 md:grid-cols-2 xl:grid-cols-3">
           {loading ? (
             <p className="text-zinc-500 text-sm col-span-3 text-center py-20">Loading events...</p>
           ) : filteredEvents.length === 0 ? (
@@ -107,7 +159,7 @@ export default function EventsPage() {
                   <div className="absolute bottom-0 left-0 w-full p-6">
                     {event.date && (
                       <p className="text-sm uppercase tracking-wide text-zinc-400">
-                        {new Date(event.date).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
+                        {new Date(event.date).toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })}
                       </p>
                     )}
                     <h2 className="mt-3 text-4xl font-black tracking-tight text-white">

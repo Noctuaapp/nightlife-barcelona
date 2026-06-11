@@ -88,6 +88,27 @@ const getImage = (item: Club | Event | Essential): string | null => {
   return null
 }
 
+const SearchInput = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+  <div style={{ position: "relative" }}>
+    <input
+      type="text"
+      placeholder="Search..."
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      style={{
+        width: "100%", background: "rgba(255,255,255,0.07)",
+        border: "1px solid rgba(255,255,255,0.12)", borderRadius: "10px",
+        padding: "10px 36px 10px 14px", fontSize: "13px", color: "#fff",
+        outline: "none", boxSizing: "border-box",
+      }}
+    />
+    <svg style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} width="14" height="14" viewBox="0 0 24 24" fill="none">
+      <circle cx="11" cy="11" r="7" stroke="rgba(255,255,255,0.3)" strokeWidth="2"/>
+      <path d="M16.5 16.5L21 21" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  </div>
+)
+
 export default function MapPage() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
@@ -102,6 +123,7 @@ export default function MapPage() {
   const [mapReady, setMapReady] = useState(false)
   const [showList, setShowList] = useState(false)
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
+  const [search, setSearch] = useState("")
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -191,8 +213,6 @@ export default function MapPage() {
     }
   }, [filter, mapReady, clubs, events, essentials])
 
-  const currentList = filter === "clubs" ? clubs : filter === "events" ? events : essentials
-
   const getName = (item: Club | Event | Essential) =>
     "name" in item ? item.name : item.title
 
@@ -202,6 +222,15 @@ export default function MapPage() {
     if ("category" in item) return (item as Essential).category || ""
     return ""
   }
+
+  const rawList = filter === "clubs" ? clubs : filter === "events" ? events : essentials
+
+  const currentList = rawList.filter((item) => {
+    if (!search) return true
+    const name = getName(item).toLowerCase()
+    const sub = getSub(item).toLowerCase()
+    return name.includes(search.toLowerCase()) || sub.includes(search.toLowerCase())
+  })
 
   if (isLoggedIn === null) {
     return (
@@ -239,18 +268,10 @@ export default function MapPage() {
   return (
     <div style={{ height: "100dvh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
+      {/* TOP BAR */}
       <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10, background: "#000", gap: "8px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <Link
-            href="/"
-            style={{
-              display: "flex", alignItems: "center", gap: "6px",
-              borderRadius: "999px", padding: "6px 14px",
-              background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)",
-              fontSize: "13px", fontWeight: 700, color: "#fff", textDecoration: "none",
-              whiteSpace: "nowrap"
-            }}
-          >
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "6px", borderRadius: "999px", padding: "6px 14px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", fontSize: "13px", fontWeight: 700, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <path d="M10 3L5 8L10 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -260,17 +281,8 @@ export default function MapPage() {
         </div>
         <div style={{ display: "flex", gap: "6px", flexWrap: "nowrap" }}>
           {(["clubs", "events", "essentials"] as Filter[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              style={{
-                padding: "5px 10px", borderRadius: "999px",
-                border: filter === f ? `1px solid ${COLORS[f]}` : "1px solid rgba(255,255,255,0.1)",
-                background: filter === f ? `${COLORS[f]}22` : "rgba(255,255,255,0.03)",
-                color: filter === f ? COLORS[f] : "rgba(255,255,255,0.5)",
-                fontSize: "11px", fontWeight: 600, cursor: "pointer", textTransform: "capitalize", whiteSpace: "nowrap",
-              }}
-            >
+            <button key={f} onClick={() => { setFilter(f); setSearch("") }}
+              style={{ padding: "5px 10px", borderRadius: "999px", border: filter === f ? `1px solid ${COLORS[f]}` : "1px solid rgba(255,255,255,0.1)", background: filter === f ? `${COLORS[f]}22` : "rgba(255,255,255,0.03)", color: filter === f ? COLORS[f] : "rgba(255,255,255,0.5)", fontSize: "11px", fontWeight: 600, cursor: "pointer", textTransform: "capitalize", whiteSpace: "nowrap" }}>
               {f}
             </button>
           ))}
@@ -279,29 +291,26 @@ export default function MapPage() {
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0, minWidth: 0 }}>
 
+        {/* SIDEBAR desktop */}
         <aside className="hidden lg:flex" style={{ width: "320px", borderRight: "1px solid rgba(255,255,255,0.1)", background: "#000", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
+          <div style={{ padding: "12px 12px 0" }}>
+            <SearchInput value={search} onChange={setSearch} />
+          </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {(currentList as (Club | Event | Essential)[])
                 .filter((item) => item.latitude && item.longitude)
                 .map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setSelected(item)
-                      map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 })
-                    }}
-                    style={{
-                      textAlign: "left", borderRadius: "14px",
-                      border: selected && "id" in selected && selected.id === item.id ? `1px solid ${COLORS[filter]}88` : "1px solid rgba(255,255,255,0.08)",
-                      background: selected && "id" in selected && selected.id === item.id ? `${COLORS[filter]}18` : "rgba(255,255,255,0.02)",
-                      padding: "12px", cursor: "pointer", width: "100%",
-                    }}
-                  >
+                  <button key={item.id}
+                    onClick={() => { setSelected(item); map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 }) }}
+                    style={{ textAlign: "left", borderRadius: "14px", border: selected && "id" in selected && selected.id === item.id ? `1px solid ${COLORS[filter]}88` : "1px solid rgba(255,255,255,0.08)", background: selected && "id" in selected && selected.id === item.id ? `${COLORS[filter]}18` : "rgba(255,255,255,0.02)", padding: "12px", cursor: "pointer", width: "100%" }}>
                     <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px" }}>{getName(item)}</p>
                     <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>{getSub(item)}</p>
                   </button>
                 ))}
+              {currentList.filter(i => i.latitude && i.longitude).length === 0 && (
+                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)", padding: "16px", textAlign: "center" }}>No results found.</p>
+              )}
             </div>
           </div>
 
@@ -317,14 +326,12 @@ export default function MapPage() {
               )}
               <TransportButtons name={getName(selected)} address={"address" in selected ? selected.address : null} lat={selected.latitude} lng={selected.longitude} />
               {filter === "clubs" && (
-                <Link href={`/clubs/${createSlug(getName(selected))}`}
-                  style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
+                <Link href={`/clubs/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
                   View club →
                 </Link>
               )}
               {filter === "events" && (
-                <Link href={`/event/${createSlug(getName(selected))}`}
-                  style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
+                <Link href={`/event/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
                   View event →
                 </Link>
               )}
@@ -332,59 +339,46 @@ export default function MapPage() {
           )}
         </aside>
 
+        {/* MAP */}
         <div style={{ flex: 1, position: "relative", minWidth: 0, minHeight: 0 }}>
           <div ref={mapContainer} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
 
-          <button
-            className="lg:hidden"
-            onClick={() => setShowList(!showList)}
-            style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.2)", padding: "8px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(10px)" }}
-          >
+          <button className="lg:hidden" onClick={() => setShowList(!showList)}
+            style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.2)", padding: "8px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(10px)" }}>
             {showList ? "✕ Close" : "☰ List"}
           </button>
 
+          {/* Mobile list panel */}
           {showList && (
-            <div
-              className="lg:hidden"
-              style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "85%", maxWidth: "320px", background: "#000", zIndex: 20, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.1)" }}
-            >
+            <div className="lg:hidden" style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "85%", maxWidth: "320px", background: "#000", zIndex: 20, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.1)" }}>
               <div style={{ padding: "12px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                   <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", textTransform: "capitalize" }}>{filter}</p>
-                  <button
-                    onClick={() => setShowList(false)}
-                    style={{ color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 10px", fontSize: "13px", cursor: "pointer" }}
-                  >
-                    ✕
-                  </button>
+                  <button onClick={() => setShowList(false)} style={{ color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 10px", fontSize: "13px", cursor: "pointer" }}>✕</button>
+                </div>
+                <div style={{ marginBottom: "10px" }}>
+                  <SearchInput value={search} onChange={setSearch} />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {(currentList as (Club | Event | Essential)[])
                     .filter((item) => item.latitude && item.longitude)
                     .map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          setSelected(item)
-                          setShowList(false)
-                          map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 })
-                        }}
-                        style={{
-                          textAlign: "left", borderRadius: "14px",
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          background: "rgba(255,255,255,0.02)",
-                          padding: "12px", cursor: "pointer", width: "100%",
-                        }}
-                      >
+                      <button key={item.id}
+                        onClick={() => { setSelected(item); setShowList(false); map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 }) }}
+                        style={{ textAlign: "left", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)", padding: "12px", cursor: "pointer", width: "100%" }}>
                         <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px" }}>{getName(item)}</p>
                         <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>{getSub(item)}</p>
                       </button>
                     ))}
+                  {currentList.filter(i => i.latitude && i.longitude).length === 0 && (
+                    <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)", padding: "16px", textAlign: "center" }}>No results found.</p>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
+          {/* Selected overlay */}
           {selected && (
             <div style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.92)", padding: "16px", backdropFilter: "blur(10px)" }}>
               {getImage(selected) && (
@@ -399,14 +393,12 @@ export default function MapPage() {
               </div>
               <TransportButtons name={getName(selected)} address={"address" in selected ? selected.address : null} lat={selected.latitude} lng={selected.longitude} />
               {filter === "clubs" && (
-                <Link href={`/clubs/${createSlug(getName(selected))}`}
-                  style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
+                <Link href={`/clubs/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
                   View club →
                 </Link>
               )}
               {filter === "events" && (
-                <Link href={`/event/${createSlug(getName(selected))}`}
-                  style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
+                <Link href={`/event/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
                   View event →
                 </Link>
               )}
