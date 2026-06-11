@@ -11,7 +11,8 @@ export default function Header() {
   const router = useRouter()
   const pathname = usePathname()
 
-  const showBack = !(["/", "/login", "/signup"].includes(pathname))
+  const showBack = !(["/", "/login", "/signup", "/map"].includes(pathname))
+  const hideHeader = pathname === "/map"
 
   useEffect(() => {
     const checkSession = async () => {
@@ -26,13 +27,14 @@ export default function Header() {
 
     return () => { subscription.unsubscribe() }
   }, [])
-  if (pathname === "/map") return null
+
+  if (hideHeader) return null
+
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-2xl">
-      <div className="flex h-20 items-center justify-between px-6 relative">
-
-<div className="flex items-center gap-4">
+        <div className="flex h-20 items-center justify-between px-6 relative">
+          <div className="flex items-center gap-4">
             {showBack && (
               <button
                 onClick={() => router.back()}
@@ -54,7 +56,7 @@ export default function Header() {
           <button
             onClick={() => setMenuOpen(true)}
             className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 transition hover:bg-white/20 outline-none"
-            style={{ WebkitTapHighlightColor: "transparent", outline: "none" }}
+            style={{ WebkitTapHighlightColor: "transparent" }}
           >
             <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
               <rect y="0" width="20" height="2" rx="1" fill="white" />
@@ -93,7 +95,7 @@ export default function Header() {
           <p className="text-sm uppercase tracking-widest text-zinc-500">Menu</p>
           <button
             onClick={() => setMenuOpen(false)}
-           className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-white hover:bg-white/10 transition text-lg outline-none"
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-white hover:bg-white/10 transition text-lg outline-none"
           >
             ✕
           </button>
