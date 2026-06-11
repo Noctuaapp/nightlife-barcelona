@@ -114,9 +114,18 @@ export default function MapPage() {
       })
 
       map.current.on("load", () => {
-        map.current?.resize()
-        setMapReady(true)
+        setTimeout(() => {
+          if (map.current) {
+            map.current.resize()
+            setMapReady(true)
+          }
+        }, 200)
       })
+
+      const handleResize = () => {
+        if (map.current) map.current.resize()
+      }
+      window.addEventListener("resize", handleResize)
     }
 
     init()
@@ -219,7 +228,6 @@ export default function MapPage() {
   return (
     <div style={{ position: "fixed", inset: 0, background: "#000", display: "flex", flexDirection: "column" }}>
 
-      {/* TOP BAR */}
       <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10, background: "#000", gap: "8px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <Link href="/" style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px", textDecoration: "none", whiteSpace: "nowrap" }}>← Back</Link>
@@ -244,10 +252,8 @@ export default function MapPage() {
         </div>
       </div>
 
-      {/* MAIN */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative", minHeight: 0 }}>
 
-        {/* SIDEBAR — desktop only */}
         <aside className="hidden lg:flex" style={{ width: "320px", borderRight: "1px solid rgba(255,255,255,0.1)", background: "#000", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
           <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -298,11 +304,9 @@ export default function MapPage() {
           )}
         </aside>
 
-        {/* MAP */}
         <div style={{ flex: 1, position: "relative", minWidth: 0, minHeight: 0, height: "100%" }}>
           <div ref={mapContainer} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
 
-          {/* MOBILE: list toggle button */}
           <button
             className="lg:hidden"
             onClick={() => setShowList(!showList)}
@@ -311,13 +315,12 @@ export default function MapPage() {
             {showList ? "✕ Close" : "☰ List"}
           </button>
 
-          {/* MOBILE: sliding list panel */}
           {showList && (
             <div
               className="lg:hidden"
               style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "85%", maxWidth: "320px", background: "#000", zIndex: 20, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.1)" }}
             >
-              <div style={{ padding: "12px", paddingTop: "12px" }}>
+              <div style={{ padding: "12px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                   <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", textTransform: "capitalize" }}>{filter}</p>
                   <button
@@ -354,7 +357,6 @@ export default function MapPage() {
             </div>
           )}
 
-          {/* MOBILE: selected overlay */}
           {selected && (
             <div style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.92)", padding: "16px", backdropFilter: "blur(10px)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
