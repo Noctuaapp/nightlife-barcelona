@@ -245,7 +245,7 @@ export default function MapPage() {
       </div>
 
       {/* MAIN */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative", minHeight: 0 }}>
 
         {/* SIDEBAR — desktop only */}
         <aside className="hidden lg:flex" style={{ width: "320px", borderRight: "1px solid rgba(255,255,255,0.1)", background: "#000", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
@@ -299,8 +299,8 @@ export default function MapPage() {
         </aside>
 
         {/* MAP */}
-        <div style={{ flex: 1, position: "relative", height: "100%", minWidth: 0 }}>
-          <div ref={mapContainer} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%" }} />
+        <div style={{ flex: 1, position: "relative", minWidth: 0, minHeight: 0, height: "100%" }}>
+          <div ref={mapContainer} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
 
           {/* MOBILE: list toggle button */}
           <button
@@ -317,7 +317,16 @@ export default function MapPage() {
               className="lg:hidden"
               style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "85%", maxWidth: "320px", background: "#000", zIndex: 20, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.1)" }}
             >
-              <div style={{ padding: "12px", paddingTop: "50px" }}>
+              <div style={{ padding: "12px", paddingTop: "12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                  <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", textTransform: "capitalize" }}>{filter}</p>
+                  <button
+                    onClick={() => setShowList(false)}
+                    style={{ color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 10px", fontSize: "13px", cursor: "pointer" }}
+                  >
+                    ✕
+                  </button>
+                </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {(currentList as (Club | Event | Essential)[])
                     .filter((item) => item.latitude && item.longitude)
