@@ -109,7 +109,7 @@ export default function Home() {
 
     return matchesCategory && matchesSearch
 
-  })
+  }).slice(0, 6)
 
   return (
 
@@ -265,7 +265,11 @@ export default function Home() {
           </div>
 
         </section>
-
+        <div className="mt-10 flex justify-center">
+            <a href="/clubs" className="rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-bold text-white transition hover:bg-white/10">
+              Explore all clubs →
+            </a>
+          </div>
         <EventsSection />
 
         <AreasSection />
