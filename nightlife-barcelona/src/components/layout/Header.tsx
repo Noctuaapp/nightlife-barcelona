@@ -34,7 +34,7 @@ export default function Header() {
     <>
       <header className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-2xl">
         <div className="flex h-20 items-center justify-between px-6 relative">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4">
             {showBack && (
               <button
                 onClick={() => router.back()}
@@ -47,9 +47,13 @@ export default function Header() {
                 <span>Back</span>
               </button>
             )}
-            <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
-              <h1 className="text-2xl font-black tracking-widest text-white uppercase">Noctua</h1>
-              <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500">Barcelona Nightlife</p>
+            <Link href="/" className="absolute left-1/2 -translate-x-1/2">
+            <img
+                src="/noctua_logo.jpeg"
+                alt="Noctua"
+                className="h-9 w-auto object-contain"
+                style={{ maxWidth: "120px" }}
+              />
             </Link>
           </div>
 

@@ -132,7 +132,7 @@ export default function Home() {
         <section className="relative h-[92vh] overflow-hidden">
 
           <img
-            src="/hero/barcelona-night.jpg"
+            src="/hero/skyline_barcelona.jpeg"
             alt="Barcelona nightlife skyline"
             className="absolute inset-0 h-full w-full object-cover"
           />
