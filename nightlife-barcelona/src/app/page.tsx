@@ -137,37 +137,29 @@ export default function Home() {
             className="absolute inset-0 h-full w-full object-cover"
           />
 
-          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-black/30" />
 
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black" />
 
-          <div className="relative z-10 flex h-full items-center px-4">
+          <div className="relative z-10 flex h-full items-end px-6 pb-20">
 
-            <div className="mx-auto max-w-7xl">
+            <div className="w-full max-w-7xl">
 
-              <div className="max-w-4xl">
+              <div className="max-w-2xl">
 
                 <p className="mb-5 text-sm uppercase tracking-[0.4em] text-zinc-300">
 
-                  Barcelona nightlife intelligence
+                  Noctua Nightlife 
 
                 </p>
 
                 <h1 className="text-6xl font-black leading-none tracking-tight text-white md:text-8xl">
 
-                  Discover Barcelona after dark.
+                  Descubre Barcelona al anochecer...
 
                 </h1>
-
-                <p className="mt-8 max-w-2xl text-lg leading-relaxed text-zinc-300 md:text-xl">
-
-                  Real-time nightlife discovery,
-                  trending venues, live queues
-                  and the best nights in Barcelona.
-
-                </p>
-
-                <div className="mt-10 max-w-xl">
+                
+                <div className="mt-10 max-w-xs">
 
                   <SearchBar
                     search={search}

@@ -49,10 +49,10 @@ export default function Header() {
             )}
             <Link href="/" className="absolute left-1/2 -translate-x-1/2">
             <img
-                src="/noctua_logo.jpeg"
+                src="/noctua_logo.png"
                 alt="Noctua"
-                className="h-9 w-auto object-contain"
-                style={{ maxWidth: "120px" }}
+                className="h-12 w-auto object-contain"
+                style={{ maxWidth: "160px" }}
               />
             </Link>
           </div>
