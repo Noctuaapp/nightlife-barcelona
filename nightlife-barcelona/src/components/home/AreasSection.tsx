@@ -5,9 +5,9 @@ const essentialCategories = [
   { name: "Pharmacies", slug: "pharmacy", image: "/essentials/pharmacy.jpg", description: "24h pharmacies across Barcelona", icon: "💊" },
   { name: "ATMs", slug: "atm", image: "/essentials/atm.jpg", description: "Cash machines open all night", icon: "🏧" },
   { name: "Late Night Food", slug: "food", image: "/essentials/foodie.jpg", description: "Food open after 3AM", icon: "🍔" },
-  { name: "Night Transport", slug: "transport", image: "/essentials/transport.jpg", description: "Night buses and metro", icon: "🚌" },
-  { name: "Taxi Ranks", slug: "taxi", image: "/essentials/taxi.jpg", description: "Pickup points near clubs", icon: "🚕" },
+  { name: "Night Transport", slug: "transport", image: "/essentials/transport.jpg", description: "Night buses and metro", icon: "🚇" },
   { name: "Supermarkets", slug: "supermarket", image: "/essentials/supermarket.jpg", description: "Open late night shops", icon: "🛒" },
+  { name: "Hotels", slug: "hotel", image: "/essentials/hotel.jpg", description: "Hotels near the nightlife areas", icon: "🏨" },
 ]
 
 export default function AreasSection() {
