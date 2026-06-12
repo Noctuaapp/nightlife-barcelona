@@ -23,7 +23,7 @@ export default function EssentialsPage() {
 
   useEffect(() => {
     const fetchEssentials = async () => {
-      const { data } = await supabase.from("essentials").select("*")
+      const { data } = await supabase.from("essentials").select("*").eq("hidden", false)
       if (data) setEssentials(data)
       setLoading(false)
     }

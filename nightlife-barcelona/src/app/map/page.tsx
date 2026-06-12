@@ -173,9 +173,9 @@ export default function MapPage() {
     const fetchData = async () => {
       const [{ data: clubsData }, { data: eventsData }, { data: essentialsData }] =
         await Promise.all([
-          supabase.from("clubs").select("id, name, neighborhood, music, hours, price, latitude, longitude, address, image"),
-          supabase.from("events").select("id, title, date, price, image, latitude, longitude, address"),
-          supabase.from("essentials").select("id, name, category, neighborhood, open_hours, latitude, longitude, address"),
+          supabase.from("clubs").select("id, name, neighborhood, music, hours, price, latitude, longitude, address, image").eq("hidden", false),
+supabase.from("events").select("id, title, date, price, image, latitude, longitude, address").eq("hidden", false),
+supabase.from("essentials").select("id, name, category, neighborhood, open_hours, latitude, longitude, address").eq("hidden", false),
         ])
       if (clubsData) setClubs(clubsData)
       if (eventsData) setEvents(eventsData)

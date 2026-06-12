@@ -16,7 +16,7 @@ export default function ClubsPage() {
 
   useEffect(() => {
     const fetchClubs = async () => {
-      const { data } = await supabase.from("clubs").select("*")
+      const { data } = await supabase.from("clubs").select("*").eq("hidden", false)
       if (data) setClubs(data)
       setLoading(false)
     }

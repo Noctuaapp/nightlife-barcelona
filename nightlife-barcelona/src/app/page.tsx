@@ -30,9 +30,7 @@ export default function Home() {
 
     const fetchClubs = async () => {
 
-      const { data, error } = await supabase
-        .from("clubs")
-        .select("*")
+      const { data, error } = await supabase.from("clubs").select("*").eq("hidden", false)
 
       console.log("DATA:", data)
       console.log("ERROR:", error)

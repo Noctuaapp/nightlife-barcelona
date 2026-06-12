@@ -20,7 +20,7 @@ export default function EventsPage() {
 
   useEffect(() => {
     const fetchEvents = async () => {
-      const { data } = await supabase.from("events").select("*").order("date", { ascending: true })
+      const { data } = await supabase.from("events").select("*").eq("hidden", false).order("date", { ascending: true })
       if (data) setEvents(data)
       setLoading(false)
     }

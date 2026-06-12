@@ -23,6 +23,7 @@ type Event = {
   description: string | null
   featured: boolean | null
   sold_out: boolean | null
+  hidden: boolean | null
 }
 
 export default function AdminEventsPage() {
@@ -151,7 +152,7 @@ export default function AdminEventsPage() {
         end_time: newEvent.end_time || null,
         featured: false,
         sold_out: false,
-      })
+            })
       .select()
       .single()
 
@@ -235,21 +236,16 @@ export default function AdminEventsPage() {
 
   const toggleSoldOut = async (event: Event) => {
     const newValue = !event.sold_out
-
-    const { error } = await supabase
-      .from("events")
-      .update({ sold_out: newValue })
-      .eq("id", event.id)
-
+    const { error } = await supabase.from("events").update({ sold_out: newValue }).eq("id", event.id)
     if (error) return console.log("SOLD OUT ERROR:", error)
+    setEvents((prev) => prev.map((item) => item.id === event.id ? { ...item, sold_out: newValue } : item))
+  }
 
-    setEvents((prev) =>
-      prev.map((item) =>
-        item.id === event.id
-          ? { ...item, sold_out: newValue }
-          : item
-      )
-    )
+  const toggleHidden = async (event: Event) => {
+    const newValue = !event.hidden
+    const { error } = await supabase.from("events").update({ hidden: newValue }).eq("id", event.id)
+    if (error) return
+    setEvents((prev) => prev.map((e) => e.id === event.id ? { ...e, hidden: newValue } : e))
   }
 
   const deleteEvent = async (id: number) => {
@@ -485,11 +481,13 @@ export default function AdminEventsPage() {
                       >
                         🚫 Sold out
                       </button>
-
+                      <button onClick={() => toggleHidden(event)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${event.hidden ? "bg-zinc-600 text-white" : "border border-white/10 bg-white/5"}`}>
+  {event.hidden ? "👁️ Hidden" : "👁️ Visible"}
+</button>
                       <button
                         onClick={() => deleteEvent(event.id)}
                         className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400"
-                      >
+                      >                         
                         Delete
                       </button>
                     </div>
