@@ -113,6 +113,9 @@ export default function MapPage() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const markersRef = useRef<mapboxgl.Marker[]>([])
+  const userMarkerRef = useRef<mapboxgl.Marker | null>(null)
+  const watchIdRef = useRef<number | null>(null)
+  const routeLayerRef = useRef<boolean>(false)
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
   const [clubs, setClubs] = useState<Club[]>([])
@@ -124,6 +127,9 @@ export default function MapPage() {
   const [showList, setShowList] = useState(false)
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
   const [search, setSearch] = useState("")
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
+  const [trackingActive, setTrackingActive] = useState(false)
+  const [walkingTime, setWalkingTime] = useState<string | null>(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -164,6 +170,7 @@ export default function MapPage() {
     })
 
     return () => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current)
       map.current?.remove()
       map.current = null
     }
@@ -174,8 +181,8 @@ export default function MapPage() {
       const [{ data: clubsData }, { data: eventsData }, { data: essentialsData }] =
         await Promise.all([
           supabase.from("clubs").select("id, name, neighborhood, music, hours, price, latitude, longitude, address, image").eq("hidden", false),
-supabase.from("events").select("id, title, date, price, image, latitude, longitude, address").eq("hidden", false),
-supabase.from("essentials").select("id, name, category, neighborhood, open_hours, latitude, longitude, address").eq("hidden", false),
+          supabase.from("events").select("id, title, date, price, image, latitude, longitude, address").eq("hidden", false),
+          supabase.from("essentials").select("id, name, category, neighborhood, open_hours, latitude, longitude, address").eq("hidden", false),
         ])
       if (clubsData) setClubs(clubsData)
       if (eventsData) setEvents(eventsData)
@@ -190,6 +197,7 @@ supabase.from("essentials").select("id, name, category, neighborhood, open_hours
     markersRef.current.forEach((m) => m.remove())
     markersRef.current = []
     setSelected(null)
+    setWalkingTime(null)
 
     const color = COLORS[filter]
 
@@ -212,6 +220,108 @@ supabase.from("essentials").select("id, name, category, neighborhood, open_hours
       essentials.filter((e) => e.latitude && e.longitude).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
     }
   }, [filter, mapReady, clubs, events, essentials])
+
+  // Fetch walking route when user selects a place and has location
+  useEffect(() => {
+    if (!selected || !userLocation || !map.current || !mapReady) {
+      setWalkingTime(null)
+      return
+    }
+
+    const destLat = selected.latitude
+    const destLng = selected.longitude
+    if (!destLat || !destLng) return
+
+    const fetchRoute = async () => {
+      const [userLng, userLat] = userLocation
+      const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${userLng},${userLat};${destLng},${destLat}?steps=false&geometries=geojson&access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`
+
+      try {
+        const res = await fetch(url)
+        const data = await res.json()
+        const route = data.routes?.[0]
+        if (!route) return
+
+        // Show walking time
+        const minutes = Math.ceil(route.duration / 60)
+        setWalkingTime(`${minutes} min walking`)
+
+        // Draw route on map
+        const geojson = route.geometry
+
+        if (map.current!.getSource("route")) {
+          ;(map.current!.getSource("route") as mapboxgl.GeoJSONSource).setData(geojson)
+        } else {
+          map.current!.addSource("route", { type: "geojson", data: geojson })
+          map.current!.addLayer({
+            id: "route",
+            type: "line",
+            source: "route",
+            layout: { "line-join": "round", "line-cap": "round" },
+            paint: { "line-color": "#3b82f6", "line-width": 4, "line-opacity": 0.8 },
+          })
+          routeLayerRef.current = true
+        }
+      } catch (e) {
+        console.log("Route error:", e)
+      }
+    }
+
+    fetchRoute()
+  }, [selected, userLocation, mapReady])
+
+  const startTracking = () => {
+    if (!navigator.geolocation) return
+
+    if (trackingActive) {
+      // Stop tracking
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current)
+        watchIdRef.current = null
+      }
+      userMarkerRef.current?.remove()
+      userMarkerRef.current = null
+      setUserLocation(null)
+      setTrackingActive(false)
+      setWalkingTime(null)
+
+      // Remove route
+      if (map.current && routeLayerRef.current) {
+        if (map.current.getLayer("route")) map.current.removeLayer("route")
+        if (map.current.getSource("route")) map.current.removeSource("route")
+        routeLayerRef.current = false
+      }
+      return
+    }
+
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords
+        setUserLocation([longitude, latitude])
+
+        if (!userMarkerRef.current) {
+          // Custom blue pulsing dot
+          const el = document.createElement("div")
+          el.style.cssText = `
+            width: 18px; height: 18px; border-radius: 50%;
+            background: #3b82f6; border: 3px solid #fff;
+            box-shadow: 0 0 0 4px rgba(59,130,246,0.3);
+          `
+          userMarkerRef.current = new mapboxgl.Marker({ element: el })
+            .setLngLat([longitude, latitude])
+            .addTo(map.current!)
+          map.current?.flyTo({ center: [longitude, latitude], zoom: 15, duration: 800 })
+        } else {
+          userMarkerRef.current.setLngLat([longitude, latitude])
+        }
+      },
+      (err) => console.log("Geolocation error:", err),
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    )
+
+    watchIdRef.current = id
+    setTrackingActive(true)
+  }
 
   const getName = (item: Club | Event | Essential) =>
     "name" in item ? item.name : item.title
@@ -324,6 +434,9 @@ supabase.from("essentials").select("id, name, category, neighborhood, open_hours
               {"address" in selected && selected.address && (
                 <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)", marginTop: "4px" }}>📍 {selected.address}</p>
               )}
+              {walkingTime && (
+                <p style={{ fontSize: "12px", color: "#3b82f6", marginTop: "6px", fontWeight: 700 }}>🚶 {walkingTime}</p>
+              )}
               <TransportButtons name={getName(selected)} address={"address" in selected ? selected.address : null} lat={selected.latitude} lng={selected.longitude} />
               {filter === "clubs" && (
                 <Link href={`/clubs/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
@@ -348,21 +461,11 @@ supabase.from("essentials").select("id, name, category, neighborhood, open_hours
             {showList ? "✕ Close" : "☰ List"}
           </button>
 
-          <button
-  onClick={() => {
-    if (!navigator.geolocation) return
-    navigator.geolocation.getCurrentPosition((pos) => {
-      const { latitude, longitude } = pos.coords
-      map.current?.flyTo({ center: [longitude, latitude], zoom: 15, duration: 800 })
-      new mapboxgl.Marker({ color: "#3b82f6" })
-        .setLngLat([longitude, latitude])
-        .addTo(map.current!)
-    })
-  }}
-  style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.2)", padding: "8px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(10px)" }}
->
-  📍 Mi ubicación
-</button>
+          {/* Location button */}
+          <button onClick={startTracking}
+            style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, borderRadius: "999px", background: trackingActive ? "rgba(59,130,246,0.9)" : "rgba(0,0,0,0.8)", border: trackingActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.2)", padding: "8px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(10px)" }}>
+            {trackingActive ? "📍 Tracking" : "📍 Mi ubicación"}
+          </button>
 
           {/* Mobile list panel */}
           {showList && (
@@ -394,7 +497,7 @@ supabase.from("essentials").select("id, name, category, neighborhood, open_hours
             </div>
           )}
 
-          {/* Selected overlay */}
+          {/* Selected overlay mobile */}
           {selected && (
             <div style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.92)", padding: "16px", backdropFilter: "blur(10px)" }}>
               {getImage(selected) && (
@@ -404,8 +507,11 @@ supabase.from("essentials").select("id, name, category, neighborhood, open_hours
                 <div>
                   <p style={{ fontWeight: 900, color: "#fff", fontSize: "15px" }}>{getName(selected)}</p>
                   <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginTop: "2px" }}>{getSub(selected)}</p>
+                  {walkingTime && (
+                    <p style={{ fontSize: "12px", color: "#3b82f6", marginTop: "4px", fontWeight: 700 }}>🚶 {walkingTime}</p>
+                  )}
                 </div>
-                <button onClick={() => setSelected(null)} style={{ color: "rgba(255,255,255,0.4)", background: "none", border: "none", fontSize: "18px", cursor: "pointer", padding: "0 0 0 8px" }}>✕</button>
+                <button onClick={() => { setSelected(null); setWalkingTime(null) }} style={{ color: "rgba(255,255,255,0.4)", background: "none", border: "none", fontSize: "18px", cursor: "pointer", padding: "0 0 0 8px" }}>✕</button>
               </div>
               <TransportButtons name={getName(selected)} address={"address" in selected ? selected.address : null} lat={selected.latitude} lng={selected.longitude} />
               {filter === "clubs" && (
