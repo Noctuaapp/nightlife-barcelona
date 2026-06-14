@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Analytics } from "@vercel/analytics/react"
 import { NightlifeProvider } from "../context/NightlifeContext"
 import { FavoritesProvider } from "../context/FavoritesContext"
 import BackButton from "../components/ui/BackButton"
@@ -53,6 +54,7 @@ export default function RootLayout({
             {children}
           </NightlifeProvider>
         </FavoritesProvider>
+        <Analytics />
       </body>
     </html>
   )

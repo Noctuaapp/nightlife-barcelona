@@ -348,6 +348,22 @@ supabase.from("essentials").select("id, name, category, neighborhood, open_hours
             {showList ? "✕ Close" : "☰ List"}
           </button>
 
+          <button
+  onClick={() => {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const { latitude, longitude } = pos.coords
+      map.current?.flyTo({ center: [longitude, latitude], zoom: 15, duration: 800 })
+      new mapboxgl.Marker({ color: "#3b82f6" })
+        .setLngLat([longitude, latitude])
+        .addTo(map.current!)
+    })
+  }}
+  style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.2)", padding: "8px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(10px)" }}
+>
+  📍 Mi ubicación
+</button>
+
           {/* Mobile list panel */}
           {showList && (
             <div className="lg:hidden" style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "85%", maxWidth: "320px", background: "#000", zIndex: 20, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.1)" }}>
