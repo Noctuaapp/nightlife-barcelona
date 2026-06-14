@@ -33,7 +33,7 @@ const emptyForm = {
   longitude: "",
 }
 
-const categories = ["Pharmacy", "ATM", "Food", "Transport", "Taxi", "Supermarket", "Other"]
+const categories = ["Pharmacy", "ATM", "Food", "Transport", "Taxi", "Supermarket", "Hotel", "Casino", "Other"]
 
 const adminLinks = [
   { href: "/admin/dashboard", label: "Dashboard" },

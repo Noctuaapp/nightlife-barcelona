@@ -8,6 +8,7 @@ const essentialCategories = [
   { name: "Night Transport", slug: "transport", image: "/essentials/transport.jpg", description: "Night buses and metro", icon: "🚇" },
   { name: "Supermarkets", slug: "supermarket", image: "/essentials/supermarket.jpg", description: "Open late night shops", icon: "🛒" },
   { name: "Hotels", slug: "hotel", image: "/essentials/hotel.jpg", description: "Hotels near the nightlife areas", icon: "🏨" },
+  { name: "Casinos", slug: "casino", image: "/essentials/casino.jpg", description: "Casinos open all night in Barcelona", icon: "🎰" },
 ]
 
 export default function AreasSection() {
