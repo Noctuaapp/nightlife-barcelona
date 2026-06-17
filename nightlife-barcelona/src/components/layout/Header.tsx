@@ -7,10 +7,6 @@ import { supabase } from "../../lib/supabase"
 
 const cities = [
   { name: "Barcelona", slug: "barcelona", active: true, lat: 41.3851, lng: 2.1734 },
-  { name: "Madrid", slug: "madrid", active: false, lat: 40.4168, lng: -3.7038 },
-  { name: "Valencia", slug: "valencia", active: false, lat: 39.4699, lng: -0.3763 },
-  { name: "Sevilla", slug: "sevilla", active: false, lat: 37.3891, lng: -5.9845 },
-  { name: "Ibiza", slug: "ibiza", active: false, lat: 38.9067, lng: 1.4206 },
 ]
 
 const weatherCodes: Record<number, string> = {
@@ -34,7 +30,7 @@ export default function Header() {
   const router = useRouter()
   const pathname = usePathname()
 
-  const showBack = !(["/", "/login", "/signup", "/map"].includes(pathname))
+  const showBack = !(["/", "/login", "/signup", "/map", "/events", "/clubs", "/essentials", "/favorites", "/profile", "/plan", "/admin"].includes(pathname)) && !pathname.startsWith("/event/") && !pathname.startsWith("/essentials/") && !pathname.startsWith("/club-event/")
   const hideHeader = pathname === "/map"
 
   useEffect(() => {
@@ -58,16 +54,13 @@ export default function Header() {
           `https://api.open-meteo.com/v1/forecast?latitude=${selectedCity.lat}&longitude=${selectedCity.lng}&current=temperature_2m,weathercode&hourly=temperature_2m,weathercode&timezone=Europe/Madrid&forecast_days=1`
         )
         const data = await res.json()
-
         const currentTemp = Math.round(data.current.temperature_2m)
         const currentCode = data.current.weathercode
         const currentIcon = weatherCodes[currentCode] || "🌡"
-
         const nightIndex = data.hourly.time.findIndex((t: string) => t.includes("T23:00"))
         const nightTemp = nightIndex !== -1 ? Math.round(data.hourly.temperature_2m[nightIndex]) : null
         const nightCode = nightIndex !== -1 ? data.hourly.weathercode[nightIndex] : null
         const nightIcon = nightCode !== null ? (weatherCodes[nightCode] || "🌡") : null
-
         setWeather({ temp: currentTemp, icon: currentIcon, nightTemp, nightIcon })
       } catch (e) {
         console.log("Weather error:", e)
@@ -95,65 +88,37 @@ export default function Header() {
                 <span>Back</span>
               </button>
             ) : (
-              <>
-                {/* City selector */}
-                <div className="relative">
-                  <button
-                    onClick={() => setCityOpen(!cityOpen)}
-                    className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold text-white transition hover:bg-white/10"
-                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-                  >
-                    <span>📍</span>
-                    <span>{selectedCity.name}</span>
-                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-                      <path d="M1 1L5 5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
+              <div className="relative">
+                <button
+                  onClick={() => setCityOpen(!cityOpen)}
+                  className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold text-white transition hover:bg-white/10"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                >
+                  <span>📍</span>
+                  <span>{selectedCity.name}</span>
+                  <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+                    <path d="M1 1L5 5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
 
-                  {cityOpen && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setCityOpen(false)} />
-                      <div className="absolute left-0 top-12 z-50 w-52 rounded-2xl border border-white/10 shadow-2xl overflow-hidden" style={{ background: "#111" }}>
-                        {cities.map((city) => (
-                          <button
-                            key={city.slug}
-                            onClick={() => {
-                              if (city.active) { setSelectedCity(city); setCityOpen(false) }
-                            }}
-                            className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition ${
-                              city.active ? "text-white hover:bg-white/10 cursor-pointer" : "text-zinc-600 cursor-not-allowed"
-                            } ${selectedCity.slug === city.slug ? "bg-white/10" : ""}`}
-                          >
-                            <span>{city.name}</span>
-                            {!city.active && (
-                              <span className="text-xs font-normal text-zinc-600 border border-zinc-700 rounded-full px-2 py-0.5">Soon</span>
-                            )}
-                            {city.active && selectedCity.slug === city.slug && (
-                              <span className="text-emerald-400 text-xs">✓</span>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Weather widget */}
-                {weather && (
-                  <div
-                    className="flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold text-white"
-                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-                  >
-                    <span>{weather.icon} {weather.temp}°</span>
-                    {weather.nightTemp !== null && (
-                      <>
-                        <span className="text-white/30">|</span>
-                        <span>🌙 {weather.nightTemp}°</span>
-                      </>
-                    )}
-                  </div>
+                {cityOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setCityOpen(false)} />
+                    <div className="absolute left-0 top-12 z-50 w-52 rounded-2xl border border-white/10 shadow-2xl overflow-hidden" style={{ background: "#111" }}>
+                      {cities.map((city) => (
+                        <button
+                          key={city.slug}
+                          onClick={() => { setSelectedCity(city); setCityOpen(false) }}
+                          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition"
+                        >
+                          <span>{city.name}</span>
+                          <span className="text-emerald-400 text-xs">✓</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
                 )}
-              </>
+              </div>
             )}
           </div>
 
@@ -193,6 +158,31 @@ export default function Header() {
           <p className="text-sm uppercase tracking-widest text-zinc-500">Menu</p>
           <button onClick={() => setMenuOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-white hover:bg-white/10 transition text-lg outline-none">✕</button>
         </div>
+
+        {/* Weather in menu */}
+        {weather && (
+          <div className="mx-4 mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+            <p className="text-xs uppercase tracking-widest text-zinc-500 mb-3">Barcelona tonight</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{weather.icon}</span>
+                <div>
+                  <p className="text-xs text-zinc-500">Now</p>
+                  <p className="text-lg font-black text-white">{weather.temp}°C</p>
+                </div>
+              </div>
+              {weather.nightTemp !== null && (
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{weather.nightIcon}</span>
+                  <div>
+                    <p className="text-xs text-zinc-500">23:00</p>
+                    <p className="text-lg font-black text-white">{weather.nightTemp}°C</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col gap-1 px-4 py-6 flex-1">
           {isLoggedIn && (
