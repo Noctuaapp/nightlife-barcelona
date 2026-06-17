@@ -4,39 +4,87 @@ import { useState } from "react"
 import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 
+const countries = [
+  { code: "ES", name: "España" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "FR", name: "France" },
+  { code: "DE", name: "Germany" },
+  { code: "IT", name: "Italy" },
+  { code: "US", name: "United States" },
+  { code: "NL", name: "Netherlands" },
+  { code: "BE", name: "Belgium" },
+  { code: "PT", name: "Portugal" },
+  { code: "SE", name: "Sweden" },
+  { code: "NO", name: "Norway" },
+  { code: "DK", name: "Denmark" },
+  { code: "CH", name: "Switzerland" },
+  { code: "AT", name: "Austria" },
+  { code: "PL", name: "Poland" },
+  { code: "AU", name: "Australia" },
+  { code: "CA", name: "Canada" },
+  { code: "MX", name: "Mexico" },
+  { code: "AR", name: "Argentina" },
+  { code: "BR", name: "Brazil" },
+  { code: "JP", name: "Japan" },
+  { code: "CN", name: "China" },
+  { code: "KR", name: "South Korea" },
+  { code: "OTHER", name: "Other" },
+]
+
 export default function SignupPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [username, setUsername] = useState("")
+  const [country, setCountry] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
+  const isVisitor = country !== "" && country !== "ES"
+
   const signup = async () => {
     setError("")
-    if (!email || !password) { setError("Please enter your email and password."); return }
+    if (!email || !password || !username) { setError("Please fill in all fields."); return }
+    if (username.length < 3) { setError("Username must be at least 3 characters."); return }
     setLoading(true)
-    const { error } = await supabase.auth.signUp({ email, password })
+
+    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+    if (signUpError) { setError(signUpError.message); setLoading(false); return }
+
+    if (data.user) {
+      const { error: profileError } = await supabase.from("profiles").insert({
+        id: data.user.id,
+        username: username.toLowerCase().trim(),
+        country: country || null,
+      })
+      if (profileError) {
+        if (profileError.code === "23505") {
+          setError("Username already taken. Try another one.")
+        } else {
+          setError(profileError.message)
+        }
+        setLoading(false)
+        return
+      }
+    }
+
     setLoading(false)
-    if (error) { setError(error.message); return }
     window.location.href = "/login"
   }
 
   const loginWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/favorites`,
-      },
+      options: { redirectTo: `${window.location.origin}/favorites` },
     })
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-black px-4 text-white">
+    <main className="flex min-h-screen items-center justify-center bg-black px-4 py-10 text-white">
       <div className="w-full max-w-md rounded-[32px] border border-white/10 bg-white/[0.04] p-8">
         <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Noctua</p>
         <h1 className="mt-4 text-4xl font-black">Create account</h1>
         <p className="mt-3 text-zinc-400">Save your favorite clubs, events and nights across Barcelona.</p>
 
-        {/* Google signup */}
         <button
           onClick={loginWithGoogle}
           className="mt-8 w-full flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white/10"
@@ -57,9 +105,15 @@ export default function SignupPage() {
         </div>
 
         <input
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          className="mt-6 w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+          placeholder="Username"
+        />
+        <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-6 w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+          className="mt-4 w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
           placeholder="Email"
         />
         <input
@@ -69,6 +123,31 @@ export default function SignupPage() {
           className="mt-4 w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
           placeholder="Password"
         />
+
+        <select
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          className="mt-4 w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none text-white"
+          style={{ color: country === "" ? "rgba(255,255,255,0.4)" : "#fff" }}
+        >
+          <option value="" disabled>Where are you from?</option>
+          {countries.map((c) => (
+            <option key={c.code} value={c.code} style={{ background: "#000" }}>{c.name}</option>
+          ))}
+        </select>
+
+        {/* Visitor warning */}
+        {isVisitor && (
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-5">
+            <p className="text-sm font-bold text-white mb-2">🌍 Welcome to Barcelona!</p>
+            <p className="text-sm text-zinc-300 leading-relaxed">
+              Barcelona is one of Europe's most vibrant and beautiful cities, with an incredible nightlife, amazing food and a unique Mediterranean atmosphere. We're happy to have you here!
+            </p>
+            <p className="text-sm text-amber-300 leading-relaxed mt-3">
+              ⚠️ One thing to keep in mind: Barcelona has high rates of pickpocketing in busy areas. Keep your phone and wallet secure, especially in the metro, Las Ramblas and crowded clubs.
+            </p>
+          </div>
+        )}
 
         {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
 

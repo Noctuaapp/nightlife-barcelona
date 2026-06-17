@@ -12,7 +12,7 @@ export default function ClubsPage() {
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
 
-  const filters = ["All", "Techno", "Commercial", "Cocktail Bar", "Trending"]
+  const filters = ["All", "Techno", "Commercial", "Cocktail Bar", "Trending", "+18", "+21", "+25"]
 
   useEffect(() => {
     const fetchClubs = async () => {
@@ -29,7 +29,10 @@ export default function ClubsPage() {
       (selectedCategory === "Techno" && club.music === "Techno") ||
       (selectedCategory === "Commercial" && club.music === "Commercial") ||
       (selectedCategory === "Cocktail Bar" && club.music === "Cocktail Bar") ||
-      (selectedCategory === "Trending" && club.trending === true)
+      (selectedCategory === "Trending" && club.trending === true) ||
+      (selectedCategory === "+18" && club.age_min === 18) ||
+      (selectedCategory === "+21" && club.age_min === 21) ||
+      (selectedCategory === "+25" && club.age_min === 25)
 
     const matchesSearch =
       search === "" ||
@@ -136,6 +139,7 @@ export default function ClubsPage() {
                   smokingArea={club.smoking_area}
                   tableBooking={club.table_booking}
                   dresscode={club.dresscode}
+                  lgtbi_friendly={club.lgtbi_friendly}
                 />
               </div>
             ))

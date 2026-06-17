@@ -79,6 +79,9 @@ export default async function ClubEventPage({ params }: ClubEventPageProps) {
                     🚫 Sold out
                   </div>
                 )}
+                <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm font-bold text-white">
+                  🔞 +{clubEvent.age_min || 18}
+                </div>
                 <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm">
                   🎧 {clubEvent.music || "Music"}
                 </div>

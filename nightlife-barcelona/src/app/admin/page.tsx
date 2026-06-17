@@ -18,6 +18,8 @@ type Club = {
   trending: boolean | null
   sold_out: boolean | null
   hidden: boolean | null
+  age_min: number | null
+  lgtbi_friendly: boolean | null
 }
 
 type EditClub = {
@@ -28,6 +30,7 @@ type EditClub = {
   hours: string
   image: string
   live_status: string
+  age_min: number
 }
 
 const adminLinks = [
@@ -48,14 +51,15 @@ export default function AdminPage() {
   const [checkingAdmin, setCheckingAdmin] = useState(true)
 
   const [editClub, setEditClub] = useState<EditClub>({
-    name: "", music: "", neighborhood: "", price: "", hours: "", image: "", live_status: "",
+    name: "", music: "", neighborhood: "", price: "", hours: "", image: "", live_status: "", age_min: 18,
   })
 
   const [newClub, setNewClub] = useState({
-    name: "", music: "", neighborhood: "", price: "", hours: "", image: "",
+    name: "", music: "", neighborhood: "", price: "", hours: "", image: "", age_min: 18,
   })
 
   const queueLevels = ["No queue", "Short queue", "Medium queue", "Long queue", "Massive queue"]
+  const ageLevels = [18, 21, 25]
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -114,23 +118,26 @@ export default function AdminPage() {
       trending: false,
       sold_out: false,
       hidden: false,
+      age_min: newClub.age_min || 18,
+      lgtbi_friendly: false,
     }).select().single()
     if (error) { console.log("ADD ERROR:", error); return }
     if (data) setClubs((prev) => [data, ...prev])
-    setNewClub({ name: "", music: "", neighborhood: "", price: "", hours: "", image: "" })
+    setNewClub({ name: "", music: "", neighborhood: "", price: "", hours: "", image: "", age_min: 18 })
   }
 
   const startEditing = (club: Club) => {
     setEditingId(club.id)
     setEditClub({
       name: club.name || "", music: club.music || "", neighborhood: club.neighborhood || "",
-      price: club.price || "", hours: club.hours || "", image: club.image || "", live_status: club.live_status || "",
+      price: club.price || "", hours: club.hours || "", image: club.image || "",
+      live_status: club.live_status || "", age_min: club.age_min || 18,
     })
   }
 
   const cancelEditing = () => {
     setEditingId(null)
-    setEditClub({ name: "", music: "", neighborhood: "", price: "", hours: "", image: "", live_status: "" })
+    setEditClub({ name: "", music: "", neighborhood: "", price: "", hours: "", image: "", live_status: "", age_min: 18 })
   }
 
   const saveEditing = async (id: number) => {
@@ -162,10 +169,23 @@ export default function AdminPage() {
     setClubs((prev) => prev.map((c) => c.id === club.id ? { ...c, hidden: newValue } : c))
   }
 
+  const toggleLgtbi = async (club: Club) => {
+    const newValue = !club.lgtbi_friendly
+    const { error } = await supabase.from("clubs").update({ lgtbi_friendly: newValue }).eq("id", club.id)
+    if (error) return
+    setClubs((prev) => prev.map((c) => c.id === club.id ? { ...c, lgtbi_friendly: newValue } : c))
+  }
+
   const updateQueue = async (club: Club, level: string) => {
     const { error } = await supabase.from("clubs").update({ queue: level }).eq("id", club.id)
     if (error) return
     setClubs((prev) => prev.map((c) => c.id === club.id ? { ...c, queue: level } : c))
+  }
+
+  const updateAgeMin = async (club: Club, age: number) => {
+    const { error } = await supabase.from("clubs").update({ age_min: age }).eq("id", club.id)
+    if (error) return
+    setClubs((prev) => prev.map((c) => c.id === club.id ? { ...c, age_min: age } : c))
   }
 
   const deleteClub = async (id: number) => {
@@ -226,6 +246,17 @@ export default function AdminPage() {
                   onChange={(e) => setNewClub({ ...newClub, [key]: e.target.value })}
                   placeholder={placeholder} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
               ))}
+              <div>
+                <p className="text-xs text-zinc-500 mb-2 uppercase tracking-wide">Minimum age</p>
+                <div className="flex gap-2">
+                  {ageLevels.map((age) => (
+                    <button key={age} onClick={() => setNewClub({ ...newClub, age_min: age })}
+                      className={`rounded-full px-4 py-2 text-sm font-bold transition ${newClub.age_min === age ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white"}`}>
+                      +{age}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="lg:col-span-3">
                 <input type="file" accept="image/*" onChange={handleNewImageUpload}
                   className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none" />
@@ -263,7 +294,18 @@ export default function AdminPage() {
                         placeholder={placeholder} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
                     ))}
                     <input value={editClub.live_status} onChange={(e) => setEditClub({ ...editClub, live_status: e.target.value })}
-                      placeholder="Live status" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-3" />
+                      placeholder="Live status" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
+                    <div>
+                      <p className="text-xs text-zinc-500 mb-2 uppercase tracking-wide">Minimum age</p>
+                      <div className="flex gap-2">
+                        {ageLevels.map((age) => (
+                          <button key={age} onClick={() => setEditClub({ ...editClub, age_min: age })}
+                            className={`rounded-full px-4 py-2 text-sm font-bold transition ${editClub.age_min === age ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white"}`}>
+                            +{age}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     <div className="lg:col-span-3">
                       <input type="file" accept="image/*" onChange={handleEditImageUpload}
                         className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none" />
@@ -279,8 +321,9 @@ export default function AdminPage() {
                       <p className="text-sm uppercase tracking-wide text-zinc-500">{club.music}</p>
                       <h2 className="mt-2 text-3xl font-black text-white">{club.name}</h2>
                       {club.hidden && <span className="mt-2 inline-block rounded-full bg-zinc-700 px-3 py-1 text-xs font-bold text-zinc-300">Hidden from public</span>}
+                      {club.lgtbi_friendly && <span className="mt-2 ml-2 inline-block rounded-full bg-pink-500/20 border border-pink-500/30 px-3 py-1 text-xs font-bold text-pink-300">🏳️‍🌈 LGTBI+</span>}
                       <div className="mt-5 flex flex-wrap gap-3">
-                        {[`📍 ${club.neighborhood}`, `🔥 ${club.live_status}`, `⏳ ${club.queue}`, `💸 ${club.price}`, `🕒 ${club.hours}`].map((tag) => (
+                        {[`📍 ${club.neighborhood}`, `🔥 ${club.live_status}`, `⏳ ${club.queue}`, `💸 ${club.price}`, `🕒 ${club.hours}`, `🔞 +${club.age_min || 18}`].map((tag) => (
                           <div key={tag} className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm">{tag}</div>
                         ))}
                       </div>
@@ -295,6 +338,17 @@ export default function AdminPage() {
                           ))}
                         </div>
                       </div>
+                      <div className="mt-4">
+                        <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">Minimum age</p>
+                        <div className="flex gap-2">
+                          {ageLevels.map((age) => (
+                            <button key={age} onClick={() => updateAgeMin(club, age)}
+                              className={`rounded-full px-4 py-2 text-xs font-semibold transition ${club.age_min === age ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white"}`}>
+                              +{age}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-3">
                       <button onClick={() => startEditing(club)} className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white hover:bg-white hover:text-black transition">✏️ Edit</button>
@@ -302,6 +356,9 @@ export default function AdminPage() {
                       <button onClick={() => toggleSoldOut(club)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${club.sold_out ? "bg-red-500 text-white" : "border border-white/10 bg-white/5 text-white"}`}>🚫 Sold out</button>
                       <button onClick={() => toggleHidden(club)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${club.hidden ? "bg-zinc-600 text-white" : "border border-white/10 bg-white/5 text-white"}`}>
                         {club.hidden ? "👁️ Hidden" : "👁️ Visible"}
+                      </button>
+                      <button onClick={() => toggleLgtbi(club)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${club.lgtbi_friendly ? "bg-pink-500 text-white" : "border border-white/10 bg-white/5 text-white"}`}>
+                        🏳️‍🌈 LGTBI+
                       </button>
                       <button onClick={() => deleteClub(club.id)} className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400 hover:bg-red-500 hover:text-white transition">Delete</button>
                     </div>
