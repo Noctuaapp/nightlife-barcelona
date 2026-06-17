@@ -39,11 +39,9 @@ export default function Header() {
       setIsLoggedIn(!!data.session)
     }
     checkSession()
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session)
     })
-
     return () => { subscription.unsubscribe() }
   }, [])
 
@@ -100,17 +98,13 @@ export default function Header() {
                     <path d="M1 1L5 5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
-
                 {cityOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setCityOpen(false)} />
                     <div className="absolute left-0 top-12 z-50 w-52 rounded-2xl border border-white/10 shadow-2xl overflow-hidden" style={{ background: "#111" }}>
                       {cities.map((city) => (
-                        <button
-                          key={city.slug}
-                          onClick={() => { setSelectedCity(city); setCityOpen(false) }}
-                          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition"
-                        >
+                        <button key={city.slug} onClick={() => { setSelectedCity(city); setCityOpen(false) }}
+                          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition">
                           <span>{city.name}</span>
                           <span className="text-emerald-400 text-xs">✓</span>
                         </button>
@@ -144,45 +138,18 @@ export default function Header() {
         <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
       )}
 
-      <div
-        style={{
-          position: "fixed", top: 0, right: 0, zIndex: 50, height: "100%", width: "288px",
-          background: "#000", borderLeft: "1px solid rgba(255,255,255,0.1)",
-          display: "flex", flexDirection: "column",
-          transform: menuOpen ? "translateX(0)" : "translateX(100%)",
-          transition: "transform 0.3s ease-in-out",
-          boxShadow: "-20px 0 60px rgba(0,0,0,0.8)",
-        }}
-      >
+      <div style={{
+        position: "fixed", top: 0, right: 0, zIndex: 50, height: "100%", width: "288px",
+        background: "#000", borderLeft: "1px solid rgba(255,255,255,0.1)",
+        display: "flex", flexDirection: "column",
+        transform: menuOpen ? "translateX(0)" : "translateX(100%)",
+        transition: "transform 0.3s ease-in-out",
+        boxShadow: "-20px 0 60px rgba(0,0,0,0.8)",
+      }}>
         <div className="flex items-center justify-between px-6 py-6 border-b border-white/10">
           <p className="text-sm uppercase tracking-widest text-zinc-500">Menu</p>
           <button onClick={() => setMenuOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-white hover:bg-white/10 transition text-lg outline-none">✕</button>
         </div>
-
-        {/* Weather in menu */}
-        {weather && (
-          <div className="mx-4 mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-            <p className="text-xs uppercase tracking-widest text-zinc-500 mb-3">Barcelona tonight</p>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">{weather.icon}</span>
-                <div>
-                  <p className="text-xs text-zinc-500">Now</p>
-                  <p className="text-lg font-black text-white">{weather.temp}°C</p>
-                </div>
-              </div>
-              {weather.nightTemp !== null && (
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{weather.nightIcon}</span>
-                  <div>
-                    <p className="text-xs text-zinc-500">23:00</p>
-                    <p className="text-lg font-black text-white">{weather.nightTemp}°C</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         <div className="flex flex-col gap-1 px-4 py-6 flex-1">
           {isLoggedIn && (
@@ -197,6 +164,25 @@ export default function Header() {
             <span className="text-xl">✨</span>Plan your night
           </Link>
         </div>
+
+        {weather !== null && weather.nightTemp !== null && (
+          <div style={{
+            margin: "0 40px 16px 40px",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "16px",
+            background: "rgba(255,255,255,0.05)",
+            padding: "12px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+          }}>
+            <span style={{ fontSize: "24px" }}>{weather.nightIcon}</span>
+            <div>
+              <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", marginBottom: "2px" }}>Tonight 23:00</p>
+              <p style={{ fontSize: "18px", fontWeight: 900, color: "#fff" }}>{weather.nightTemp}°C</p>
+            </div>
+          </div>
+        )}
 
         <div className="px-4 py-6 border-t border-white/10">
           {isLoggedIn ? (

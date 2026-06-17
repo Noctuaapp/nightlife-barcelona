@@ -205,17 +205,15 @@ export default function ProfilePage() {
           </div>
 
           {/* Delete account */}
-          <div className="mt-6 rounded-[32px] border border-red-500/20 bg-red-500/10 p-8">
-            <p className="text-sm uppercase tracking-[0.3em] text-red-300">Danger zone</p>
-            <h2 className="mt-4 text-3xl font-black text-white">Delete account</h2>
-            <p className="mt-4 text-red-100/80">Permanently delete your Noctua account and remove your saved favorites. This action cannot be undone.</p>
-            {deleteError && <p className="mt-4 text-sm font-bold text-red-300">{deleteError}</p>}
+          <div className="mt-6 rounded-[32px] border border-red-500/20 bg-red-500/10 p-6 flex items-center justify-between">
+            <p className="text-sm text-red-300">Delete your account permanently</p>
+            {deleteError && <p className="text-sm font-bold text-red-300">{deleteError}</p>}
             <button
               onClick={deleteAccount}
               disabled={deleting}
-              className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/20 px-6 py-4 font-bold text-red-200 transition hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-full border border-red-500/30 bg-red-500/20 px-4 py-2 text-xs font-bold text-red-300 hover:bg-red-500 hover:text-white transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {deleting ? "Deleting account..." : "Delete account"}
+              {deleting ? "Deleting..." : "Delete account"}
             </button>
           </div>
         </section>

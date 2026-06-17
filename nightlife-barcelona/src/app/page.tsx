@@ -78,6 +78,9 @@ export default function Home() {
                 <h1 className="text-6xl font-black leading-none tracking-tight text-white md:text-8xl">
                   Descubre Barcelona al anochecer...
                 </h1>
+                <p className="mt-4 max-w-xl text-base text-zinc-300 leading-relaxed">
+                  Noctua is Barcelona's nightlife discovery platform. Find the best clubs, events, bars and night essentials for your perfect night out.
+                </p>
               </div>
             </div>
           </div>

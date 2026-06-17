@@ -17,6 +17,9 @@
 /.next/
 /out/
 .next
+extract_venues.js
+extract*.js
+*.csv
 # production
 /build
 
