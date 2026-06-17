@@ -16,6 +16,8 @@ const weatherCodes: Record<number, string> = {
   75: "🌨", 80: "🌦", 81: "🌧", 82: "⛈", 95: "⛈",
 }
 
+type WeatherHour = { label: string; icon: string; temp: number }
+
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -24,8 +26,7 @@ export default function Header() {
   const [weather, setWeather] = useState<{
     temp: number
     icon: string
-    nightTemp: number | null
-    nightIcon: string | null
+    nightHours: WeatherHour[]
   } | null>(null)
   const router = useRouter()
   const pathname = usePathname()
@@ -49,17 +50,35 @@ export default function Header() {
     const fetchWeather = async () => {
       try {
         const res = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${selectedCity.lat}&longitude=${selectedCity.lng}&current=temperature_2m,weathercode&hourly=temperature_2m,weathercode&timezone=Europe/Madrid&forecast_days=1`
+          `https://api.open-meteo.com/v1/forecast?latitude=${selectedCity.lat}&longitude=${selectedCity.lng}&current=temperature_2m,weathercode&hourly=temperature_2m,weathercode&timezone=Europe/Madrid&forecast_days=2`
         )
         const data = await res.json()
         const currentTemp = Math.round(data.current.temperature_2m)
         const currentCode = data.current.weathercode
         const currentIcon = weatherCodes[currentCode] || "🌡"
-        const nightIndex = data.hourly.time.findIndex((t: string) => t.includes("T23:00"))
-        const nightTemp = nightIndex !== -1 ? Math.round(data.hourly.temperature_2m[nightIndex]) : null
-        const nightCode = nightIndex !== -1 ? data.hourly.weathercode[nightIndex] : null
-        const nightIcon = nightCode !== null ? (weatherCodes[nightCode] || "🌡") : null
-        setWeather({ temp: currentTemp, icon: currentIcon, nightTemp, nightIcon })
+
+        const now = new Date()
+        const currentHour = now.getHours()
+        const allNightHours = ["T23:00", "T00:00", "T01:00", "T02:00", "T03:00", "T05:00", "T06:00"]
+
+        const nightHours: WeatherHour[] = allNightHours
+          .filter((h) => {
+            const hour = parseInt(h.replace("T", "").replace(":00", ""))
+            if (hour >= 23) return currentHour <= hour
+            if (currentHour >= 7) return true
+            return true
+          })
+          .slice(0, 4)
+          .map((h) => {
+            const idx = data.hourly.time.findIndex((t: string) => t.includes(h))
+            const temp = idx !== -1 ? Math.round(data.hourly.temperature_2m[idx]) : null
+            const code = idx !== -1 ? data.hourly.weathercode[idx] : null
+            const icon = code !== null ? (weatherCodes[code] || "🌡") : "🌡"
+            const label = h.replace("T", "").replace(":00", "") + ":00"
+            return { label, icon, temp: temp ?? 0 }
+          })
+
+        setWeather({ temp: currentTemp, icon: currentIcon, nightHours })
       } catch (e) {
         console.log("Weather error:", e)
       }
@@ -165,21 +184,23 @@ export default function Header() {
           </Link>
         </div>
 
-        {weather !== null && weather.nightTemp !== null && (
+        {weather !== null && weather.nightHours.length > 0 && (
           <div style={{
-            margin: "0 40px 16px 40px",
+            margin: "0 16px 16px 16px",
             border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: "16px",
             background: "rgba(255,255,255,0.05)",
-            padding: "12px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
+            padding: "12px",
           }}>
-            <span style={{ fontSize: "24px" }}>{weather.nightIcon}</span>
-            <div>
-              <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", marginBottom: "2px" }}>Tonight 23:00</p>
-              <p style={{ fontSize: "18px", fontWeight: 900, color: "#fff" }}>{weather.nightTemp}°C</p>
+            <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", marginBottom: "10px", textTransform: "uppercase", letterSpacing: "0.1em" }}>Barcelona tonight</p>
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${weather.nightHours.length}, 1fr)`, gap: "4px" }}>
+              {weather.nightHours.map((h) => (
+                <div key={h.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
+                  <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)" }}>{h.label}</p>
+                  <span style={{ fontSize: "18px" }}>{h.icon}</span>
+                  <p style={{ fontSize: "13px", fontWeight: 900, color: "#fff" }}>{h.temp}°</p>
+                </div>
+              ))}
             </div>
           </div>
         )}
