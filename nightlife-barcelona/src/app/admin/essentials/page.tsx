@@ -18,6 +18,7 @@ type Essential = {
   maps_link: string | null
   latitude: number | null
   longitude: number | null
+  hidden: boolean | null
 }
 
 const emptyForm = {
@@ -139,6 +140,12 @@ export default function AdminEssentialsPage() {
     const { error } = await supabase.from("essentials").delete().eq("id", id)
     if (error) return
     setEssentials((prev) => prev.filter((e) => e.id !== id))
+  }
+  const toggleHidden = async (item: Essential) => {
+    const newValue = !(item as any).hidden
+    const { error } = await supabase.from("essentials").update({ hidden: newValue }).eq("id", item.id)
+    if (error) return
+    setEssentials((prev) => prev.map((e) => e.id === item.id ? { ...e, hidden: newValue } : e))
   }
   const showAll = async () => {
     const { error } = await supabase.from("essentials").update({ hidden: false }).neq("id", 0)
@@ -289,6 +296,9 @@ export default function AdminEssentialsPage() {
                     <div className="flex flex-wrap gap-3">
                       <button onClick={() => startEditing(item)} className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold hover:bg-white hover:text-black transition">
                         ✏️ Edit
+                      </button>
+                      <button onClick={() => toggleHidden(item)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${(item as any).hidden ? "bg-zinc-600 text-white" : "border border-white/10 bg-white/5 text-white"}`}>
+                        {(item as any).hidden ? "👁️ Hidden" : "👁️ Visible"}
                       </button>
                       <button onClick={() => deleteEssential(item.id)} className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400 hover:bg-red-500 hover:text-white transition">
                         Delete
