@@ -194,6 +194,17 @@ export default function AdminPage() {
     setClubs((prev) => prev.filter((c) => c.id !== id))
   }
 
+  const showAll = async () => {
+    const { error } = await supabase.from("clubs").update({ hidden: false }).neq("id", 0)
+    if (error) return
+    setClubs((prev) => prev.map((c) => ({ ...c, hidden: false })))
+  }
+
+  const hideAll = async () => {
+    const { error } = await supabase.from("clubs").update({ hidden: true }).neq("id", 0)
+    if (error) return
+    setClubs((prev) => prev.map((c) => ({ ...c, hidden: true })))
+  }
   const filteredClubs = clubs.filter((club) => {
     if (!search.trim()) return true
     const q = search.toLowerCase()
@@ -234,14 +245,16 @@ export default function AdminPage() {
           <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
             <p className="text-sm uppercase tracking-[0.3em] text-zinc-500 mb-6">Add new club</p>
             <div className="grid gap-4 lg:grid-cols-3">
-              {[
-                { key: "name", placeholder: "Club name" },
-                { key: "music", placeholder: "Music type" },
-                { key: "neighborhood", placeholder: "Neighborhood" },
-                { key: "price", placeholder: "Price (e.g. €20)" },
-                { key: "hours", placeholder: "Hours (e.g. 00:00 - 06:00)" },
-                { key: "image", placeholder: "Image URL (optional)" },
-              ].map(({ key, placeholder }) => (
+            {[
+                      { key: "name", placeholder: "Club name" },
+                      { key: "music", placeholder: "Music" },
+                      { key: "neighborhood", placeholder: "Neighborhood" },
+                      { key: "price", placeholder: "Price" },
+                      { key: "hours", placeholder: "Hours" },
+                      { key: "image", placeholder: "Image URL" },
+                      { key: "metro_lines", placeholder: "Metro lines (e.g. L2, L3)" },
+                      { key: "night_buses", placeholder: "Night buses (e.g. N17, N27)" },
+                    ].map(({ key, placeholder }) => (
                 <input key={key} value={(newClub as any)[key]}
                   onChange={(e) => setNewClub({ ...newClub, [key]: e.target.value })}
                   placeholder={placeholder} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
@@ -271,6 +284,14 @@ export default function AdminPage() {
         </section>
 
         <section className="mx-auto mt-6 max-w-7xl px-4">
+          <div className="flex gap-3 mb-4">
+            <button onClick={showAll} className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300 hover:bg-emerald-500 hover:text-white transition">
+              👁️ Show all
+            </button>
+            <button onClick={hideAll} className="rounded-full border border-zinc-500/30 bg-zinc-500/10 px-5 py-3 text-sm font-bold text-zinc-300 hover:bg-zinc-600 hover:text-white transition">
+              🙈 Hide all
+            </button>
+          </div>
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search clubs..."
             className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5 outline-none" />
         </section>
@@ -282,13 +303,15 @@ export default function AdminPage() {
                 {editingId === club.id ? (
                   <div className="grid gap-4 lg:grid-cols-3">
                     {[
-                      { key: "name", placeholder: "Club name" },
-                      { key: "music", placeholder: "Music" },
-                      { key: "neighborhood", placeholder: "Neighborhood" },
-                      { key: "price", placeholder: "Price" },
-                      { key: "hours", placeholder: "Hours" },
-                      { key: "image", placeholder: "Image URL" },
-                    ].map(({ key, placeholder }) => (
+                { key: "name", placeholder: "Club name" },
+                { key: "music", placeholder: "Music type" },
+                { key: "neighborhood", placeholder: "Neighborhood" },
+                { key: "price", placeholder: "Price (e.g. €20)" },
+                { key: "hours", placeholder: "Hours (e.g. 00:00 - 06:00)" },
+                { key: "image", placeholder: "Image URL (optional)" },
+                { key: "metro_lines", placeholder: "Metro lines (e.g. L2, L3)" },
+                { key: "night_buses", placeholder: "Night buses (e.g. N17, N27)" },
+              ].map(({ key, placeholder }) => (
                       <input key={key} value={(editClub as any)[key]}
                         onChange={(e) => setEditClub({ ...editClub, [key]: e.target.value })}
                         placeholder={placeholder} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />

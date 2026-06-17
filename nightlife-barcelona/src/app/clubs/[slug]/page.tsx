@@ -134,7 +134,34 @@ export default async function ClubPage({ params }: ClubPageProps) {
                   <p className="mt-2 text-lg">⏳ {club.queue || "No queue"}</p>
                 </div>
               </div>
-
+              <div>
+                  <p className="text-sm text-zinc-500">Queue</p>
+                  <p className="mt-2 text-lg">⏳ {club.queue || "No queue"}</p>
+                </div>
+                {club.metro_lines && (
+                  <div>
+                    <p className="text-sm text-zinc-500">Metro</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {club.metro_lines.split(",").map((line: string) => (
+                        <span key={line.trim()} className="rounded-full bg-red-500/20 border border-red-500/30 px-3 py-1 text-sm font-bold text-red-300">
+                          🚇 {line.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {club.night_buses && (
+                  <div>
+                    <p className="text-sm text-zinc-500">Night buses</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {club.night_buses.split(",").map((bus: string) => (
+                        <span key={bus.trim()} className="rounded-full bg-blue-500/20 border border-blue-500/30 px-3 py-1 text-sm font-bold text-blue-300">
+                          🚌 {bus.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               {club.latitude && club.longitude && (
                 <div className="mt-8">
                   <p className="text-sm text-zinc-500 mb-3">Location</p>

@@ -222,12 +222,12 @@ Pick the 3 best clubs and 1-2 best events. Be specific and enthusiastic. Write i
             {/* GROUP + BUDGET */}
             <div className="grid gap-10 md:grid-cols-2">
               <div>
-                <div className="flex items-end justify-between mb-5">
+              <div className="flex items-center justify-between mb-5">
                   <p className="text-xs uppercase tracking-widest text-zinc-500">Group size</p>
-                  <p className="text-3xl font-black text-white">
-                    {group > 14 ? "15+" : group}
-                    <span className="text-base font-normal text-zinc-500 ml-1">people</span>
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-3xl font-black text-white">{group > 14 ? "15+" : group}</p>
+                    <p className="text-base font-normal text-zinc-500">people</p>
+                  </div>
                 </div>
                 <input type="range" min={1} max={15} step={1} value={group} onChange={(e) => setGroup(Number(e.target.value))} className="w-full accent-purple-500" />
                 <div className="flex justify-between text-xs text-zinc-600 mt-2"><span>1</span><span>15+</span></div>
