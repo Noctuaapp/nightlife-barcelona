@@ -140,6 +140,17 @@ export default function AdminEssentialsPage() {
     if (error) return
     setEssentials((prev) => prev.filter((e) => e.id !== id))
   }
+  const showAll = async () => {
+    const { error } = await supabase.from("essentials").update({ hidden: false }).neq("id", 0)
+    if (error) return
+    setEssentials((prev) => prev.map((e) => ({ ...e, hidden: false })))
+  }
+
+  const hideAll = async () => {
+    const { error } = await supabase.from("essentials").update({ hidden: true }).neq("id", 0)
+    if (error) return
+    setEssentials((prev) => prev.map((e) => ({ ...e, hidden: true })))
+  }
 
   const filteredEssentials = essentials.filter((e) =>
     filterCategory === "All" ? true : e.category === filterCategory
@@ -235,6 +246,14 @@ export default function AdminEssentialsPage() {
 
         {/* LIST */}
         <section className="mx-auto mt-6 max-w-7xl px-4">
+          <div className="flex gap-3 mb-4">
+            <button onClick={showAll} className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300 hover:bg-emerald-500 hover:text-white transition">
+              👁️ Show all
+            </button>
+            <button onClick={hideAll} className="rounded-full border border-zinc-500/30 bg-zinc-500/10 px-5 py-3 text-sm font-bold text-zinc-300 hover:bg-zinc-600 hover:text-white transition">
+              🙈 Hide all
+            </button>
+          </div>
           <div className="grid gap-6">
             {filteredEssentials.map((item) => (
               <div key={item.id} className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
