@@ -58,13 +58,13 @@ const getTransportLinks = (name: string, address: string | null, lat: number | n
   const uberLink = lat && lng
     ? `https://m.uber.com/ul/?action=setPickup&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}&dropoff[nickname]=${encodeURIComponent(name)}`
     : `https://m.uber.com/ul/?action=setPickup&dropoff[formatted_address]=${dest}`
-  const cabifyLink = `https://cabify.com/ride?dest[0][name]=${encodeURIComponent(name)}&dest[0][address]=${dest}`
-  const taxiLink = `https://www.taxi.barcelona/en`
-  return { uberLink, cabifyLink, taxiLink }
+  const cabifyLink = `https://cabify.com/es`
+  const freeNowLink = `https://free-now.com`
+  return { uberLink, cabifyLink, freeNowLink }
 }
 
 const TransportButtons = ({ name, address, lat, lng }: { name: string; address: string | null; lat: number | null; lng: number | null }) => {
-  const { uberLink, cabifyLink, taxiLink } = getTransportLinks(name, address, lat, lng)
+  const { uberLink, cabifyLink, freeNowLink } = getTransportLinks(name, address, lat, lng)
   return (
     <div style={{ display: "flex", gap: "6px", marginTop: "10px" }}>
       <a href={uberLink} target="_blank" rel="noopener noreferrer"
@@ -75,9 +75,9 @@ const TransportButtons = ({ name, address, lat, lng }: { name: string; address: 
         style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", borderRadius: "8px", background: "#7c3aed", border: "1px solid rgba(124,58,237,0.5)", padding: "7px 4px", fontSize: "11px", fontWeight: 700, color: "#fff", textDecoration: "none" }}>
         🟣 Cabify
       </a>
-      <a href={taxiLink} target="_blank" rel="noopener noreferrer"
+      <a href={freeNowLink} target="_blank" rel="noopener noreferrer"
         style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", borderRadius: "8px", background: "#ca8a04", border: "1px solid rgba(202,138,4,0.5)", padding: "7px 4px", fontSize: "11px", fontWeight: 700, color: "#fff", textDecoration: "none" }}>
-        🚕 Taxi
+        🚕 FREE NOW
       </a>
     </div>
   )
@@ -141,34 +141,22 @@ export default function MapPage() {
 
   useEffect(() => {
     if (!loggedIn) return
-
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (!mapContainer.current || map.current) return
-
         mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!
-
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
           style: "mapbox://styles/mapbox/dark-v11",
           center: [2.1734, 41.3851],
           zoom: 13,
         })
-
         map.current.on("load", () => {
-          if (map.current) {
-            map.current.resize()
-            setMapReady(true)
-          }
+          if (map.current) { map.current.resize(); setMapReady(true) }
         })
-
-        const handleResize = () => {
-          if (map.current) map.current.resize()
-        }
-        window.addEventListener("resize", handleResize)
+        window.addEventListener("resize", () => { if (map.current) map.current.resize() })
       })
     })
-
     return () => {
       if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current)
       map.current?.remove()
@@ -178,12 +166,11 @@ export default function MapPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [{ data: clubsData }, { data: eventsData }, { data: essentialsData }] =
-        await Promise.all([
-          supabase.from("clubs").select("id, name, neighborhood, music, hours, price, latitude, longitude, address, image").eq("hidden", false),
-          supabase.from("events").select("id, title, date, price, image, latitude, longitude, address").eq("hidden", false),
-          supabase.from("essentials").select("id, name, category, neighborhood, open_hours, latitude, longitude, address").eq("hidden", false),
-        ])
+      const [{ data: clubsData }, { data: eventsData }, { data: essentialsData }] = await Promise.all([
+        supabase.from("clubs").select("id, name, neighborhood, music, hours, price, latitude, longitude, address, image").eq("hidden", false),
+        supabase.from("events").select("id, title, date, price, image, latitude, longitude, address").eq("hidden", false),
+        supabase.from("essentials").select("id, name, category, neighborhood, open_hours, latitude, longitude, address").eq("hidden", false),
+      ])
       if (clubsData) setClubs(clubsData)
       if (eventsData) setEvents(eventsData)
       if (essentialsData) setEssentials(essentialsData)
@@ -193,99 +180,60 @@ export default function MapPage() {
 
   useEffect(() => {
     if (!mapReady || !map.current) return
-
     markersRef.current.forEach((m) => m.remove())
     markersRef.current = []
     setSelected(null)
     setWalkingTime(null)
-
     const color = COLORS[filter]
-
     const addMarker = (lat: number, lng: number, item: Club | Event | Essential) => {
-      const marker = new mapboxgl.Marker({ color })
-        .setLngLat([lng, lat])
-        .addTo(map.current!)
+      const marker = new mapboxgl.Marker({ color }).setLngLat([lng, lat]).addTo(map.current!)
       marker.getElement().addEventListener("click", () => {
         setSelected(item)
         map.current?.flyTo({ center: [lng, lat], zoom: 15, duration: 800 })
       })
       markersRef.current.push(marker)
     }
-
-    if (filter === "clubs") {
-      clubs.filter((c) => c.latitude && c.longitude).forEach((c) => addMarker(c.latitude!, c.longitude!, c))
-    } else if (filter === "events") {
-      events.filter((e) => e.latitude && e.longitude).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
-    } else if (filter === "essentials") {
-      essentials.filter((e) => e.latitude && e.longitude).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
-    }
+    if (filter === "clubs") clubs.filter((c) => c.latitude && c.longitude).forEach((c) => addMarker(c.latitude!, c.longitude!, c))
+    else if (filter === "events") events.filter((e) => e.latitude && e.longitude).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
+    else if (filter === "essentials") essentials.filter((e) => e.latitude && e.longitude).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
   }, [filter, mapReady, clubs, events, essentials])
 
-  // Fetch walking route when user selects a place and has location
   useEffect(() => {
-    if (!selected || !userLocation || !map.current || !mapReady) {
-      setWalkingTime(null)
-      return
-    }
-
+    if (!selected || !userLocation || !map.current || !mapReady) { setWalkingTime(null); return }
     const destLat = selected.latitude
     const destLng = selected.longitude
     if (!destLat || !destLng) return
-
     const fetchRoute = async () => {
       const [userLng, userLat] = userLocation
       const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${userLng},${userLat};${destLng},${destLat}?steps=false&geometries=geojson&access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`
-
       try {
         const res = await fetch(url)
         const data = await res.json()
         const route = data.routes?.[0]
         if (!route) return
-
-        // Show walking time
-        const minutes = Math.ceil(route.duration / 60)
-        setWalkingTime(`${minutes} min walking`)
-
-        // Draw route on map
+        setWalkingTime(`${Math.ceil(route.duration / 60)} min walking`)
         const geojson = route.geometry
-
         if (map.current!.getSource("route")) {
           ;(map.current!.getSource("route") as mapboxgl.GeoJSONSource).setData(geojson)
         } else {
           map.current!.addSource("route", { type: "geojson", data: geojson })
-          map.current!.addLayer({
-            id: "route",
-            type: "line",
-            source: "route",
-            layout: { "line-join": "round", "line-cap": "round" },
-            paint: { "line-color": "#3b82f6", "line-width": 4, "line-opacity": 0.8 },
-          })
+          map.current!.addLayer({ id: "route", type: "line", source: "route", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#3b82f6", "line-width": 4, "line-opacity": 0.8 } })
           routeLayerRef.current = true
         }
-      } catch (e) {
-        console.log("Route error:", e)
-      }
+      } catch (e) { console.log("Route error:", e) }
     }
-
     fetchRoute()
   }, [selected, userLocation, mapReady])
 
   const startTracking = () => {
     if (!navigator.geolocation) return
-
     if (trackingActive) {
-      // Stop tracking
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current)
-        watchIdRef.current = null
-      }
+      if (watchIdRef.current !== null) { navigator.geolocation.clearWatch(watchIdRef.current); watchIdRef.current = null }
       userMarkerRef.current?.remove()
       userMarkerRef.current = null
       setUserLocation(null)
       setTrackingActive(false)
       setWalkingTime(null)
-
-      // Remove route
       if (map.current && routeLayerRef.current) {
         if (map.current.getLayer("route")) map.current.removeLayer("route")
         if (map.current.getSource("route")) map.current.removeSource("route")
@@ -293,23 +241,14 @@ export default function MapPage() {
       }
       return
     }
-
     const id = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords
         setUserLocation([longitude, latitude])
-
         if (!userMarkerRef.current) {
-          // Custom blue pulsing dot
           const el = document.createElement("div")
-          el.style.cssText = `
-            width: 18px; height: 18px; border-radius: 50%;
-            background: #3b82f6; border: 3px solid #fff;
-            box-shadow: 0 0 0 4px rgba(59,130,246,0.3);
-          `
-          userMarkerRef.current = new mapboxgl.Marker({ element: el })
-            .setLngLat([longitude, latitude])
-            .addTo(map.current!)
+          el.style.cssText = `width: 18px; height: 18px; border-radius: 50%; background: #3b82f6; border: 3px solid #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.3);`
+          userMarkerRef.current = new mapboxgl.Marker({ element: el }).setLngLat([longitude, latitude]).addTo(map.current!)
           map.current?.flyTo({ center: [longitude, latitude], zoom: 15, duration: 800 })
         } else {
           userMarkerRef.current.setLngLat([longitude, latitude])
@@ -318,14 +257,11 @@ export default function MapPage() {
       (err) => console.log("Geolocation error:", err),
       { enableHighAccuracy: true, maximumAge: 5000 }
     )
-
     watchIdRef.current = id
     setTrackingActive(true)
   }
 
-  const getName = (item: Club | Event | Essential) =>
-    "name" in item ? item.name : item.title
-
+  const getName = (item: Club | Event | Essential) => "name" in item ? item.name : item.title
   const getSub = (item: Club | Event | Essential) => {
     if ("music" in item) return item.neighborhood || ""
     if ("title" in item && "date" in item) return (item as Event).date || ""
@@ -334,7 +270,6 @@ export default function MapPage() {
   }
 
   const rawList = filter === "clubs" ? clubs : filter === "events" ? events : essentials
-
   const currentList = rawList.filter((item) => {
     if (!search) return true
     const name = getName(item).toLowerCase()
@@ -358,16 +293,10 @@ export default function MapPage() {
           <div className="max-w-md text-center">
             <div className="text-7xl mb-6">🗺️</div>
             <h1 className="text-4xl font-black text-white">Explore Barcelona</h1>
-            <p className="mt-4 text-zinc-400 text-lg leading-relaxed">
-              Create a free account to explore the interactive nightlife map of Barcelona.
-            </p>
+            <p className="mt-4 text-zinc-400 text-lg leading-relaxed">Create a free account to explore the interactive nightlife map of Barcelona.</p>
             <div className="mt-8 flex gap-4 justify-center">
-              <Link href="/signup" className="rounded-full bg-white px-8 py-4 font-bold text-black hover:scale-105 transition">
-                Create account
-              </Link>
-              <Link href="/login" className="rounded-full border border-white/10 bg-white/5 px-8 py-4 font-bold text-white hover:bg-white/10 transition">
-                Log in
-              </Link>
+              <Link href="/signup" className="rounded-full bg-white px-8 py-4 font-bold text-black hover:scale-105 transition">Create account</Link>
+              <Link href="/login" className="rounded-full border border-white/10 bg-white/5 px-8 py-4 font-bold text-white hover:bg-white/10 transition">Log in</Link>
             </div>
           </div>
         </main>
@@ -377,14 +306,10 @@ export default function MapPage() {
 
   return (
     <div style={{ height: "100dvh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-
-      {/* TOP BAR */}
       <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10, background: "#000", gap: "8px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "6px", borderRadius: "999px", padding: "6px 14px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", fontSize: "13px", fontWeight: 700, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <path d="M10 3L5 8L10 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8L10 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             Back
           </Link>
           <span style={{ fontSize: "15px", fontWeight: 900, color: "#fff", whiteSpace: "nowrap" }}>Barcelona</span>
@@ -400,74 +325,50 @@ export default function MapPage() {
       </div>
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0, minWidth: 0 }}>
-
-        {/* SIDEBAR desktop */}
         <aside className="hidden lg:flex" style={{ width: "320px", borderRight: "1px solid rgba(255,255,255,0.1)", background: "#000", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
           <div style={{ padding: "12px 12px 0" }}>
             <SearchInput value={search} onChange={setSearch} />
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {(currentList as (Club | Event | Essential)[])
-                .filter((item) => item.latitude && item.longitude)
-                .map((item) => (
-                  <button key={item.id}
-                    onClick={() => { setSelected(item); map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 }) }}
-                    style={{ textAlign: "left", borderRadius: "14px", border: selected && "id" in selected && selected.id === item.id ? `1px solid ${COLORS[filter]}88` : "1px solid rgba(255,255,255,0.08)", background: selected && "id" in selected && selected.id === item.id ? `${COLORS[filter]}18` : "rgba(255,255,255,0.02)", padding: "12px", cursor: "pointer", width: "100%" }}>
-                    <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px" }}>{getName(item)}</p>
-                    <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>{getSub(item)}</p>
-                  </button>
-                ))}
+              {(currentList as (Club | Event | Essential)[]).filter((item) => item.latitude && item.longitude).map((item) => (
+                <button key={item.id}
+                  onClick={() => { setSelected(item); map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 }) }}
+                  style={{ textAlign: "left", borderRadius: "14px", border: selected && "id" in selected && selected.id === item.id ? `1px solid ${COLORS[filter]}88` : "1px solid rgba(255,255,255,0.08)", background: selected && "id" in selected && selected.id === item.id ? `${COLORS[filter]}18` : "rgba(255,255,255,0.02)", padding: "12px", cursor: "pointer", width: "100%" }}>
+                  <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px" }}>{getName(item)}</p>
+                  <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>{getSub(item)}</p>
+                </button>
+              ))}
               {currentList.filter(i => i.latitude && i.longitude).length === 0 && (
                 <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)", padding: "16px", textAlign: "center" }}>No results found.</p>
               )}
             </div>
           </div>
-
           {selected && (
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", padding: "16px", background: "rgba(255,255,255,0.02)", flexShrink: 0 }}>
-              {getImage(selected) && (
-                <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "10px", marginBottom: "12px" }} />
-              )}
+              {getImage(selected) && <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "10px", marginBottom: "12px" }} />}
               <p style={{ fontWeight: 900, fontSize: "16px", color: "#fff" }}>{getName(selected)}</p>
               <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", marginTop: "4px" }}>{getSub(selected)}</p>
-              {"address" in selected && selected.address && (
-                <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)", marginTop: "4px" }}>📍 {selected.address}</p>
-              )}
-              {walkingTime && (
-                <p style={{ fontSize: "12px", color: "#3b82f6", marginTop: "6px", fontWeight: 700 }}>🚶 {walkingTime}</p>
-              )}
+              {"address" in selected && selected.address && <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)", marginTop: "4px" }}>📍 {selected.address}</p>}
+              {walkingTime && <p style={{ fontSize: "12px", color: "#3b82f6", marginTop: "6px", fontWeight: 700 }}>🚶 {walkingTime}</p>}
               <TransportButtons name={getName(selected)} address={"address" in selected ? selected.address : null} lat={selected.latitude} lng={selected.longitude} />
-              {filter === "clubs" && (
-                <Link href={`/clubs/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
-                  View club →
-                </Link>
-              )}
-              {filter === "events" && (
-                <Link href={`/event/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
-                  View event →
-                </Link>
-              )}
+              {filter === "clubs" && <Link href={`/clubs/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>View club →</Link>}
+              {filter === "events" && <Link href={`/event/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>View event →</Link>}
             </div>
           )}
         </aside>
 
-        {/* MAP */}
         <div style={{ flex: 1, position: "relative", minWidth: 0, minHeight: 0 }}>
           <div ref={mapContainer} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
-
           <button className="lg:hidden" onClick={() => setShowList(!showList)}
             style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.2)", padding: "8px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(10px)" }}>
             {showList ? "✕ Close" : "☰ List"}
           </button>
-
-          {/* Location button */}
           <button onClick={startTracking}
             style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, borderRadius: "999px", background: trackingActive ? "rgba(59,130,246,0.9)" : "rgba(0,0,0,0.8)", border: trackingActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.2)", padding: "8px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(10px)" }}>
             {trackingActive ? "📍 Tracking" : "📍 Mi ubicación"}
           </button>
 
-          {/* Mobile list panel */}
           {showList && (
             <div className="lg:hidden" style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "85%", maxWidth: "320px", background: "#000", zIndex: 20, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.1)" }}>
               <div style={{ padding: "12px" }}>
@@ -475,20 +376,16 @@ export default function MapPage() {
                   <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", textTransform: "capitalize" }}>{filter}</p>
                   <button onClick={() => setShowList(false)} style={{ color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 10px", fontSize: "13px", cursor: "pointer" }}>✕</button>
                 </div>
-                <div style={{ marginBottom: "10px" }}>
-                  <SearchInput value={search} onChange={setSearch} />
-                </div>
+                <div style={{ marginBottom: "10px" }}><SearchInput value={search} onChange={setSearch} /></div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {(currentList as (Club | Event | Essential)[])
-                    .filter((item) => item.latitude && item.longitude)
-                    .map((item) => (
-                      <button key={item.id}
-                        onClick={() => { setSelected(item); setShowList(false); map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 }) }}
-                        style={{ textAlign: "left", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)", padding: "12px", cursor: "pointer", width: "100%" }}>
-                        <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px" }}>{getName(item)}</p>
-                        <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>{getSub(item)}</p>
-                      </button>
-                    ))}
+                  {(currentList as (Club | Event | Essential)[]).filter((item) => item.latitude && item.longitude).map((item) => (
+                    <button key={item.id}
+                      onClick={() => { setSelected(item); setShowList(false); map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 }) }}
+                      style={{ textAlign: "left", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)", padding: "12px", cursor: "pointer", width: "100%" }}>
+                      <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px" }}>{getName(item)}</p>
+                      <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>{getSub(item)}</p>
+                    </button>
+                  ))}
                   {currentList.filter(i => i.latitude && i.longitude).length === 0 && (
                     <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)", padding: "16px", textAlign: "center" }}>No results found.</p>
                   )}
@@ -497,38 +394,24 @@ export default function MapPage() {
             </div>
           )}
 
-          {/* Selected overlay mobile */}
           {selected && (
             <div style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.92)", padding: "16px", backdropFilter: "blur(10px)" }}>
-              {getImage(selected) && (
-                <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "10px", marginBottom: "12px" }} />
-              )}
+              {getImage(selected) && <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "10px", marginBottom: "12px" }} />}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <p style={{ fontWeight: 900, color: "#fff", fontSize: "15px" }}>{getName(selected)}</p>
                   <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginTop: "2px" }}>{getSub(selected)}</p>
-                  {walkingTime && (
-                    <p style={{ fontSize: "12px", color: "#3b82f6", marginTop: "4px", fontWeight: 700 }}>🚶 {walkingTime}</p>
-                  )}
+                  {walkingTime && <p style={{ fontSize: "12px", color: "#3b82f6", marginTop: "4px", fontWeight: 700 }}>🚶 {walkingTime}</p>}
                 </div>
                 <button onClick={() => { setSelected(null); setWalkingTime(null) }} style={{ color: "rgba(255,255,255,0.4)", background: "none", border: "none", fontSize: "18px", cursor: "pointer", padding: "0 0 0 8px" }}>✕</button>
               </div>
               <TransportButtons name={getName(selected)} address={"address" in selected ? selected.address : null} lat={selected.latitude} lng={selected.longitude} />
-              {filter === "clubs" && (
-                <Link href={`/clubs/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
-                  View club →
-                </Link>
-              )}
-              {filter === "events" && (
-                <Link href={`/event/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>
-                  View event →
-                </Link>
-              )}
+              {filter === "clubs" && <Link href={`/clubs/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>View club →</Link>}
+              {filter === "events" && <Link href={`/event/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>View event →</Link>}
             </div>
           )}
         </div>
       </div>
-
       <BottomNav />
     </div>
   )
