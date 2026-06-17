@@ -141,31 +141,31 @@ export default function Home() {
 
             <div className="w-full max-w-7xl">
 
-              <div className="max-w-2xl">
+            <div className="max-w-2xl">
 
-                <p className="mb-5 text-sm uppercase tracking-[0.4em] text-zinc-300">
+<p className="mb-5 text-sm uppercase tracking-[0.4em] text-zinc-300">
 
-                  Noctua Nightlife 
+  Noctua Nightlife 
 
-                </p>
+</p>
 
-                <h1 className="text-6xl font-black leading-none tracking-tight text-white md:text-8xl">
+<h1 className="text-6xl font-black leading-none tracking-tight text-white md:text-8xl">
 
-                  Descubre Barcelona al anochecer...
+  Descubre Barcelona al anochecer...
 
-                </h1>
-                
-                <div className="mt-10 max-w-xs">
+</h1>
 
-                  <SearchBar
-                    search={search}
-                    setSearch={setSearch}
-                    onSearch={handleSearch}
-                  />
+</div>
 
-                </div>
+<div className="mt-32 max-w-xs">
 
-              </div>
+<SearchBar
+  search={search}
+  setSearch={setSearch}
+  onSearch={handleSearch}
+/>
+
+</div>
 
             </div>
 
