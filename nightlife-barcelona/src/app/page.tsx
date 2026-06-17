@@ -71,7 +71,7 @@ export default function Home() {
           <img src="/hero/skyline_barcelona.jpeg" alt="Barcelona nightlife skyline" className="absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-black/30" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black" />
-          <div className="relative z-10 flex h-full items-end px-6 pb-40">
+          <div className="relative z-10 flex h-full items-center px-6 pb-80">
             <div className="w-full max-w-7xl">
               <div className="max-w-2xl">
                 <p className="mb-5 text-sm uppercase tracking-[0.4em] text-zinc-300">Noctua Nightlife</p>
