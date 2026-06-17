@@ -16,7 +16,7 @@ export default function EventsPage() {
   const [selectedFilter, setSelectedFilter] = useState("All")
   const [search, setSearch] = useState("")
 
-  const filters = ["All", "Festival", "Free", "Featured"]
+  const filters = ["All", "Festival", "Fiesta de barrio", "Free", "Featured"]
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -29,17 +29,24 @@ export default function EventsPage() {
 
   const filteredEvents = events.filter((event) => {
     const matchesFilter =
-      selectedFilter === "All" ||
-      (selectedFilter === "Featured" && event.featured === true) ||
-      (selectedFilter === "Free" && event.price?.toLowerCase() === "gratis") ||
-      (selectedFilter === "Festival" && (
-        event.title?.toLowerCase().includes("festival") ||
-        event.title?.toLowerCase().includes("primavera") ||
-        event.title?.toLowerCase().includes("sonar") ||
-        event.title?.toLowerCase().includes("cruïlla") ||
-        event.title?.toLowerCase().includes("mira") ||
-        event.title?.toLowerCase().includes("beach festival")
-      ))
+  selectedFilter === "All" ||
+  (selectedFilter === "Featured" && event.featured === true) ||
+  (selectedFilter === "Free" && event.price?.toLowerCase() === "gratis") ||
+  (selectedFilter === "Festival" && (
+    event.title?.toLowerCase().includes("festival") ||
+    event.title?.toLowerCase().includes("primavera") ||
+    event.title?.toLowerCase().includes("sonar") ||
+    event.title?.toLowerCase().includes("cruïlla") ||
+    event.title?.toLowerCase().includes("mira") ||
+    event.title?.toLowerCase().includes("beach festival")
+  )) ||
+  (selectedFilter === "Fiesta de barrio" && (
+    event.title?.toLowerCase().includes("festa major") ||
+    event.title?.toLowerCase().includes("festes majors") ||
+    event.title?.toLowerCase().includes("fiesta mayor") ||
+    event.title?.toLowerCase().includes("la mercè") ||
+    event.title?.toLowerCase().includes("grec")
+  ))
 
     const matchesSearch =
       search === "" ||

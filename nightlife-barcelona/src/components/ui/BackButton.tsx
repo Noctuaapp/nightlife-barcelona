@@ -7,7 +7,11 @@ export default function BackButton() {
   const pathname = usePathname()
 
   const hideOn = ["/", "/login", "/signup", "/map", "/events", "/clubs", "/essentials"]
+  
   if (hideOn.includes(pathname)) return null
+  if (pathname.startsWith("/event/")) return null
+  if (pathname.startsWith("/essentials/")) return null
+  if (pathname.startsWith("/club-event/")) return null
 
   return (
     <div className="sticky top-20 z-[9999] pointer-events-none">

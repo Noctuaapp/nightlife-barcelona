@@ -45,12 +45,7 @@ export default function Home() {
 
   }, [])
 
-  const filters = [
-    "All",
-    "Techno",
-    "Commercial",
-    "VIP",
-  ]
+  const filters = ["All", "Techno", "Commercial", "House", "Reggaeton", "Rock", "VIP"]
 
   const handleSearch = () => {
 
@@ -90,6 +85,9 @@ export default function Home() {
 
       (selectedCategory === "VIP" &&
         club.vip)
+        (selectedCategory === "House" && club.music === "House") 
+        (selectedCategory === "Reggaeton" && club.music === "Reggaeton") 
+        (selectedCategory === "Rock" && club.music === "Rock") 
 
     const matchesSearch =
 
