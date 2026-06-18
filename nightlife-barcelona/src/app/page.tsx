@@ -10,9 +10,11 @@ import SearchBar from "../components/ui/SearchBar"
 import EventsSection from "../components/home/EventsSection"
 import AreasSection from "../components/home/AreasSection"
 import { supabase } from "../lib/supabase"
+import { useLanguage } from "../context/LanguageContext"
 
 export default function Home() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [clubs, setClubs] = useState<any[]>([])
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [search, setSearch] = useState("")
@@ -25,7 +27,7 @@ export default function Home() {
     fetchClubs()
   }, [])
 
-  const filters = ["All", "Techno", "Commercial", "House", "Reggaeton", "Rock", "VIP"]
+  const filters = [t("filters.all"), "Techno", "Commercial", "House", "Reggaeton", "Rock", "VIP"]
 
   const handleSearch = () => {
     if (!search.trim()) return
@@ -38,7 +40,9 @@ export default function Home() {
 
   const filteredClubs = clubs.filter((club) => {
     if (!club) return false
+    const allLabel = t("filters.all")
     const matchesCategory =
+      selectedCategory === allLabel ||
       selectedCategory === "All" ||
       (selectedCategory === "Techno" && club.music === "Techno") ||
       (selectedCategory === "Commercial" && club.music === "Commercial") ||
@@ -76,10 +80,10 @@ export default function Home() {
               <div className="max-w-2xl">
                 <p className="mb-5 text-sm uppercase tracking-[0.4em] text-zinc-300">Noctua Nightlife</p>
                 <h1 className="text-6xl font-black leading-none tracking-tight text-white md:text-8xl">
-                  Descubre Barcelona al anochecer...
+                  {t("home.hero")}
                 </h1>
                 <p className="mt-4 max-w-xl text-base text-zinc-300 leading-relaxed">
-                  Noctua is Barcelona's nightlife discovery platform. Find the best clubs, events, bars and night essentials for your perfect night out.
+                  {t("home.subtitle")}
                 </p>
               </div>
             </div>
@@ -97,8 +101,8 @@ export default function Home() {
         <section className="mx-auto mt-10 max-w-7xl px-4">
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Clubs</p>
-              <h2 className="mt-3 text-5xl font-black tracking-tight text-white">Barcelona nightlife</h2>
+              <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("home.clubs")}</p>
+              <h2 className="mt-3 text-5xl font-black tracking-tight text-white">{t("home.nightlife")}</h2>
             </div>
           </div>
 
@@ -140,7 +144,7 @@ export default function Home() {
 
         <div className="mt-10 flex justify-center">
           <a href="/clubs" className="rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-bold text-white transition hover:bg-white/10">
-            Explore all clubs →
+            {t("home.explore")}
           </a>
         </div>
 

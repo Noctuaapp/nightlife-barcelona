@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { supabase } from "../../lib/supabase"
+import { useLanguage } from "../../context/LanguageContext"
 
 const cities = [
   { name: "Barcelona", slug: "barcelona", active: true, lat: 41.3851, lng: 2.1734 },
@@ -18,10 +19,21 @@ const weatherCodes: Record<number, string> = {
 
 type WeatherHour = { label: string; icon: string; temp: number }
 
+const languages = [
+  { code: "es", flag: "https://flagcdn.com/w40/es.png", name: "Español" },
+  { code: "en", flag: "https://flagcdn.com/w40/gb.png", name: "English" },
+  { code: "ca", flag: "/flags/catalunya.png", name: "Català" },
+  { code: "fr", flag: "https://flagcdn.com/w40/fr.png", name: "Français" },
+  { code: "de", flag: "https://flagcdn.com/w40/de.png", name: "Deutsch" },
+  { code: "it", flag: "https://flagcdn.com/w40/it.png", name: "Italiano" },
+  { code: "nl", flag: "https://flagcdn.com/w40/nl.png", name: "Nederlands" },
+]
+
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [cityOpen, setCityOpen] = useState(false)
+  const [langOpen, setLangOpen] = useState(false)
   const [selectedCity, setSelectedCity] = useState(cities[0])
   const [weather, setWeather] = useState<{
     temp: number
@@ -30,6 +42,9 @@ export default function Header() {
   } | null>(null)
   const router = useRouter()
   const pathname = usePathname()
+  const { locale, setLocale } = useLanguage()
+
+  const currentLang = languages.find((l) => l.code === locale) || languages[0]
 
   const showBack = !(["/", "/login", "/signup", "/map", "/events", "/clubs", "/essentials", "/favorites", "/profile", "/plan", "/admin"].includes(pathname)) && !pathname.startsWith("/event/") && !pathname.startsWith("/essentials/") && !pathname.startsWith("/club-event/")
   const hideHeader = pathname === "/map"
@@ -164,13 +179,14 @@ export default function Header() {
         transform: menuOpen ? "translateX(0)" : "translateX(100%)",
         transition: "transform 0.3s ease-in-out",
         boxShadow: "-20px 0 60px rgba(0,0,0,0.8)",
+        overflowY: "auto",
       }}>
         <div className="flex items-center justify-between px-6 py-6 border-b border-white/10">
           <p className="text-sm uppercase tracking-widest text-zinc-500">Menu</p>
           <button onClick={() => setMenuOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-white hover:bg-white/10 transition text-lg outline-none">✕</button>
         </div>
 
-        <div className="flex flex-col gap-1 px-4 py-6 flex-1">
+        <div className="flex flex-col gap-1 px-4 py-4 flex-1">
           {isLoggedIn && (
             <Link href="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
               <span className="text-xl">👤</span>My Profile
@@ -186,7 +202,7 @@ export default function Header() {
 
         {weather !== null && weather.nightHours.length > 0 && (
           <div style={{
-            margin: "0 16px 16px 16px",
+            margin: "0 16px 12px 16px",
             border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: "16px",
             background: "rgba(255,255,255,0.05)",
@@ -205,7 +221,37 @@ export default function Header() {
           </div>
         )}
 
-        <div className="px-4 py-6 border-t border-white/10">
+        <div className="px-4 pb-3">
+          <button
+            onClick={() => setLangOpen(!langOpen)}
+            className="w-full flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition"
+          >
+            <div className="flex items-center gap-2">
+              <img src={currentLang.flag} alt={currentLang.name} style={{ width: "18px", height: "13px", objectFit: "cover", borderRadius: "2px" }} />
+              <span>🌐 {currentLang.name}</span>
+            </div>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ transform: langOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+              <path d="M1 1L5 5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          {langOpen && (
+            <div className="mt-1 rounded-2xl border border-white/10 bg-black overflow-hidden">
+              {languages.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => { setLocale(lang.code as any); setLangOpen(false) }}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition hover:bg-white/10 ${locale === lang.code ? "text-white bg-white/10" : "text-zinc-400"}`}
+                >
+                  <img src={lang.flag} alt={lang.name} style={{ width: "18px", height: "13px", objectFit: "cover", borderRadius: "2px" }} />
+                  <span>{lang.name}</span>
+                  {locale === lang.code && <span className="ml-auto text-emerald-400 text-xs">✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="px-4 py-4 border-t border-white/10">
           {isLoggedIn ? (
             <button
               onClick={async () => {

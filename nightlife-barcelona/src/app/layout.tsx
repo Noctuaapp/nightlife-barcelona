@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Analytics } from "@vercel/analytics/react"
 import { NightlifeProvider } from "../context/NightlifeContext"
 import { FavoritesProvider } from "../context/FavoritesContext"
+import { LanguageProvider } from "../context/LanguageContext"
 import BackButton from "../components/ui/BackButton"
 import "./globals.css"
 
@@ -48,12 +49,14 @@ export default function RootLayout({
         <meta name="google" content="notranslate" />
       </head>
       <body>
-        <FavoritesProvider>
-          <NightlifeProvider>
-            <BackButton />
-            {children}
-          </NightlifeProvider>
-        </FavoritesProvider>
+        <LanguageProvider>
+          <FavoritesProvider>
+            <NightlifeProvider>
+              <BackButton />
+              {children}
+            </NightlifeProvider>
+          </FavoritesProvider>
+        </LanguageProvider>
         <Analytics />
       </body>
     </html>

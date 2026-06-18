@@ -1,0 +1,119 @@
+{
+  "nav": {
+    "home": "Home",
+    "clubs": "Club",
+    "events": "Eventi",
+    "essentials": "Essenziali",
+    "map": "Mappa",
+    "plan": "Pianifica la tua notte",
+    "profile": "Il mio profilo",
+    "login": "Accedi",
+    "logout": "Esci",
+    "signup": "Crea account"
+  },
+  "home": {
+    "hero": "Scopri Barcellona dopo il tramonto...",
+    "subtitle": "Noctua è la piattaforma per la vita notturna di Barcellona.",
+    "clubs": "Club",
+    "nightlife": "Vita notturna a Barcellona",
+    "explore": "Esplora tutti i club →"
+  },
+  "filters": {
+    "all": "Tutti"
+  },
+  "common": {
+    "back": "Indietro",
+    "search": "Cerca",
+    "loading": "Caricamento..."
+  },
+  "login": {
+    "title": "Accedi",
+    "subtitle": "Salva i preferiti, gestisci le tue notti e accedi al tuo account.",
+    "google": "Continua con Google",
+    "or": "o",
+    "email": "Email",
+    "password": "Password",
+    "signin": "Accedi",
+    "signing_in": "Accesso in corso...",
+    "new": "Nuovo su Noctua? Crea account"
+  },
+  "signup": {
+    "title": "Crea account",
+    "subtitle": "Salva i tuoi club, eventi e notti preferiti a Barcellona.",
+    "google": "Continua con Google",
+    "or": "o",
+    "username": "Nome utente",
+    "email": "Email",
+    "password": "Password",
+    "country": "Da dove vieni?",
+    "create": "Crea account",
+    "creating": "Creazione account...",
+    "existing": "Hai già un account? Accedi"
+  },
+  "clubs": {
+    "title": "Club",
+    "subtitle": "I migliori club di Barcellona",
+    "search": "Cerca club, quartieri o musica...",
+    "lgtbi": "LGTBI+",
+    "explore": "Esplora tutti i club →"
+  },
+  "events": {
+    "title": "Eventi",
+    "subtitle": "I migliori eventi di Barcellona",
+    "search": "Cerca eventi...",
+    "festival": "Festival",
+    "neighborhood": "Festa di quartiere",
+    "free": "Gratis",
+    "featured": "In evidenza"
+  },
+  "essentials": {
+    "title": "Essenziali",
+    "subtitle": "Tutto ciò di cui hai bisogno per la tua notte a Barcellona",
+    "search": "Cerca..."
+  },
+  "plan": {
+    "title": "Pianifica la tua notte",
+    "subtitle": "Dicci il tuo umore — la nostra IA troverà i posti perfetti per stanotte a Barcellona.",
+    "group": "Dimensione del gruppo",
+    "people": "persone",
+    "budget": "Budget per persona",
+    "time": "A che ora uscite?",
+    "early": "Presto",
+    "peak": "Mezzanotte",
+    "late": "Tardi",
+    "vibe": "Qual è il vostro umore?",
+    "music": "Musica",
+    "dresscode": "Codice di abbigliamento",
+    "area": "Zona",
+    "lgtbi": "Solo LGTBI+ friendly",
+    "find": "✨ Trova la mia notte",
+    "finding": "Ricerca della tua notte perfetta...",
+    "results": "✨ Il tuo piano per stanotte",
+    "tip": "💡 Consiglio insider",
+    "clubs_for_you": "Club per te",
+    "events_tonight": "Eventi stanotte",
+    "generate_new": "🔄 Genera nuovi suggerimenti"
+  },
+  "profile": {
+    "title": "Il tuo profilo",
+    "subtitle": "Gestisci il tuo account Noctua, preferiti e sessione.",
+    "email": "Email",
+    "favorites": "Preferiti",
+    "view_favorites": "Vedi preferiti",
+    "username": "Nome utente",
+    "change_username": "Cambia nome utente",
+    "days_until_change": "Puoi cambiare il tuo nome utente tra {days} giorni.",
+    "username_hint": "Puoi cambiare il tuo nome utente solo una volta ogni 30 giorni.",
+    "save": "Salva",
+    "saving": "Salvataggio...",
+    "cancel": "Annulla",
+    "session": "Sessione",
+    "logout": "Esci",
+    "logout_subtitle": "Esci da questo dispositivo.",
+    "change_password": "Cambia password",
+    "danger": "Zona pericolosa",
+    "delete": "Elimina account",
+    "deleting": "Eliminazione...",
+    "delete_subtitle": "Elimina definitivamente il tuo account Noctua."
+  }
+}

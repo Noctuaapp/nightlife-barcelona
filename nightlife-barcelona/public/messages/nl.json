@@ -1,0 +1,119 @@
+{
+  "nav": {
+    "home": "Home",
+    "clubs": "Clubs",
+    "events": "Evenementen",
+    "essentials": "Essentials",
+    "map": "Kaart",
+    "plan": "Plan je nacht",
+    "profile": "Mijn profiel",
+    "login": "Inloggen",
+    "logout": "Uitloggen",
+    "signup": "Account aanmaken"
+  },
+  "home": {
+    "hero": "Ontdek Barcelona na zonsondergang...",
+    "subtitle": "Noctua is het nachtleven platform van Barcelona.",
+    "clubs": "Clubs",
+    "nightlife": "Nachtleven in Barcelona",
+    "explore": "Alle clubs bekijken →"
+  },
+  "filters": {
+    "all": "Alle"
+  },
+  "common": {
+    "back": "Terug",
+    "search": "Zoeken",
+    "loading": "Laden..."
+  },
+  "login": {
+    "title": "Inloggen",
+    "subtitle": "Sla favorieten op, beheer je nachten en toegang tot je account.",
+    "google": "Doorgaan met Google",
+    "or": "of",
+    "email": "Email",
+    "password": "Wachtwoord",
+    "signin": "Inloggen",
+    "signing_in": "Inloggen...",
+    "new": "Nieuw bij Noctua? Account aanmaken"
+  },
+  "signup": {
+    "title": "Account aanmaken",
+    "subtitle": "Sla je favoriete clubs, evenementen en nachten op in Barcelona.",
+    "google": "Doorgaan met Google",
+    "or": "of",
+    "username": "Gebruikersnaam",
+    "email": "Email",
+    "password": "Wachtwoord",
+    "country": "Waar kom je vandaan?",
+    "create": "Account aanmaken",
+    "creating": "Account aanmaken...",
+    "existing": "Heb je al een account? Inloggen"
+  },
+  "clubs": {
+    "title": "Clubs",
+    "subtitle": "De beste clubs in Barcelona",
+    "search": "Zoek clubs, buurten of muziek...",
+    "lgtbi": "LGTBI+",
+    "explore": "Alle clubs bekijken →"
+  },
+  "events": {
+    "title": "Evenementen",
+    "subtitle": "De beste evenementen in Barcelona",
+    "search": "Zoek evenementen...",
+    "festival": "Festival",
+    "neighborhood": "Buurtfeest",
+    "free": "Gratis",
+    "featured": "Uitgelicht"
+  },
+  "essentials": {
+    "title": "Essentials",
+    "subtitle": "Alles wat je nodig hebt voor je nacht in Barcelona",
+    "search": "Zoeken..."
+  },
+  "plan": {
+    "title": "Plan je nacht",
+    "subtitle": "Vertel ons je vibe — onze AI vindt de perfecte plekken voor vanavond in Barcelona.",
+    "group": "Groepsgrootte",
+    "people": "personen",
+    "budget": "Budget per persoon",
+    "time": "Hoe laat gaan jullie uit?",
+    "early": "Vroeg",
+    "peak": "Middernacht",
+    "late": "Laat",
+    "vibe": "Wat is jullie vibe?",
+    "music": "Muziek",
+    "dresscode": "Dresscode",
+    "area": "Gebied",
+    "lgtbi": "Alleen LGTBI+ friendly",
+    "find": "✨ Vind mijn nacht",
+    "finding": "Je perfecte nacht zoeken...",
+    "results": "✨ Jouw nachtplan",
+    "tip": "💡 Insider tip",
+    "clubs_for_you": "Clubs voor jou",
+    "events_tonight": "Evenementen vanavond",
+    "generate_new": "🔄 Nieuwe suggesties genereren"
+  },
+  "profile": {
+    "title": "Jouw profiel",
+    "subtitle": "Beheer je Noctua-account, favorieten en sessie.",
+    "email": "Email",
+    "favorites": "Favorieten",
+    "view_favorites": "Favorieten bekijken",
+    "username": "Gebruikersnaam",
+    "change_username": "Gebruikersnaam wijzigen",
+    "days_until_change": "Je kunt je gebruikersnaam over {days} dagen wijzigen.",
+    "username_hint": "Je kunt je gebruikersnaam slechts eenmaal per 30 dagen wijzigen.",
+    "save": "Opslaan",
+    "saving": "Opslaan...",
+    "cancel": "Annuleren",
+    "session": "Sessie",
+    "logout": "Uitloggen",
+    "logout_subtitle": "Uitloggen van dit apparaat.",
+    "change_password": "Wachtwoord wijzigen",
+    "danger": "Gevaarlijke zone",
+    "delete": "Account verwijderen",
+    "deleting": "Verwijderen...",
+    "delete_subtitle": "Verwijder je Noctua-account permanent."
+  }
+}

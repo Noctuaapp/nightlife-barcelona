@@ -5,10 +5,12 @@ import { Home, Music, Calendar, Shield, Compass } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
+import { useLanguage } from "../../context/LanguageContext"
 
 export default function BottomNav() {
   const pathname = usePathname()
   const [isAdmin, setIsAdmin] = useState(false)
+  const { t } = useLanguage()
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -21,10 +23,10 @@ export default function BottomNav() {
   }, [])
 
   const navItems = [
-    { label: "Home", href: "/", icon: Home },
-    { label: "Clubs", href: "/clubs", icon: Music },
-    { label: "Events", href: "/events", icon: Calendar },
-    { label: "Essentials", href: "/essentials", icon: Compass },
+    { label: t("nav.home"), href: "/", icon: Home },
+    { label: t("nav.clubs"), href: "/clubs", icon: Music },
+    { label: t("nav.events"), href: "/events", icon: Calendar },
+    { label: t("nav.essentials"), href: "/essentials", icon: Compass },
     ...(isAdmin ? [{ label: "Admin", href: "/admin", icon: Shield }] : []),
   ]
 

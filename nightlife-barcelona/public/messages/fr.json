@@ -1,0 +1,119 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "clubs": "Clubs",
+    "events": "Événements",
+    "essentials": "Essentiels",
+    "map": "Carte",
+    "plan": "Planifiez votre soirée",
+    "profile": "Mon profil",
+    "login": "Se connecter",
+    "logout": "Se déconnecter",
+    "signup": "Créer un compte"
+  },
+  "home": {
+    "hero": "Découvrez Barcelone après la tombée de la nuit...",
+    "subtitle": "Noctua est la plateforme de vie nocturne de Barcelone.",
+    "clubs": "Clubs",
+    "nightlife": "Vie nocturne à Barcelone",
+    "explore": "Explorer tous les clubs →"
+  },
+  "filters": {
+    "all": "Tous"
+  },
+  "common": {
+    "back": "Retour",
+    "search": "Rechercher",
+    "loading": "Chargement..."
+  },
+  "login": {
+    "title": "Se connecter",
+    "subtitle": "Sauvegardez vos favoris, gérez vos soirées et accédez à votre compte.",
+    "google": "Continuer avec Google",
+    "or": "ou",
+    "email": "Email",
+    "password": "Mot de passe",
+    "signin": "Se connecter",
+    "signing_in": "Connexion...",
+    "new": "Nouveau sur Noctua ? Créer un compte"
+  },
+  "signup": {
+    "title": "Créer un compte",
+    "subtitle": "Sauvegardez vos clubs, événements et soirées préférés à Barcelone.",
+    "google": "Continuer avec Google",
+    "or": "ou",
+    "username": "Nom d'utilisateur",
+    "email": "Email",
+    "password": "Mot de passe",
+    "country": "D'où venez-vous ?",
+    "create": "Créer un compte",
+    "creating": "Création du compte...",
+    "existing": "Vous avez déjà un compte ? Se connecter"
+  },
+  "clubs": {
+    "title": "Clubs",
+    "subtitle": "Les meilleurs clubs de Barcelone",
+    "search": "Rechercher des clubs, quartiers ou musique...",
+    "lgtbi": "LGTBI+",
+    "explore": "Explorer tous les clubs →"
+  },
+  "events": {
+    "title": "Événements",
+    "subtitle": "Les meilleurs événements de Barcelone",
+    "search": "Rechercher des événements...",
+    "festival": "Festival",
+    "neighborhood": "Fête de quartier",
+    "free": "Gratuit",
+    "featured": "À la une"
+  },
+  "essentials": {
+    "title": "Essentiels",
+    "subtitle": "Tout ce dont vous avez besoin pour votre nuit à Barcelone",
+    "search": "Rechercher..."
+  },
+  "plan": {
+    "title": "Planifiez votre soirée",
+    "subtitle": "Dites-nous votre ambiance — notre IA trouvera les meilleurs endroits pour ce soir à Barcelone.",
+    "group": "Taille du groupe",
+    "people": "personnes",
+    "budget": "Budget par personne",
+    "time": "À quelle heure sortez-vous ?",
+    "early": "Tôt",
+    "peak": "Minuit",
+    "late": "Tard",
+    "vibe": "Quelle est votre ambiance ?",
+    "music": "Musique",
+    "dresscode": "Code vestimentaire",
+    "area": "Zone",
+    "lgtbi": "Uniquement LGTBI+ friendly",
+    "find": "✨ Trouver ma soirée",
+    "finding": "Recherche de votre soirée parfaite...",
+    "results": "✨ Votre plan pour ce soir",
+    "tip": "💡 Conseil insider",
+    "clubs_for_you": "Clubs pour vous",
+    "events_tonight": "Événements ce soir",
+    "generate_new": "🔄 Générer de nouvelles suggestions"
+  },
+  "profile": {
+    "title": "Votre profil",
+    "subtitle": "Gérez votre compte Noctua, vos favoris et votre session.",
+    "email": "Email",
+    "favorites": "Favoris",
+    "view_favorites": "Voir les favoris",
+    "username": "Nom d'utilisateur",
+    "change_username": "Changer le nom d'utilisateur",
+    "days_until_change": "Vous pouvez changer votre nom d'utilisateur dans {days} jours.",
+    "username_hint": "Vous ne pouvez changer votre nom d'utilisateur qu'une fois tous les 30 jours.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "cancel": "Annuler",
+    "session": "Session",
+    "logout": "Se déconnecter",
+    "logout_subtitle": "Se déconnecter de cet appareil.",
+    "change_password": "Changer le mot de passe",
+    "danger": "Zone dangereuse",
+    "delete": "Supprimer le compte",
+    "deleting": "Suppression...",
+    "delete_subtitle": "Supprimez définitivement votre compte Noctua."
+  }
+}
