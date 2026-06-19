@@ -35,7 +35,10 @@ export default function Footer() {
         </Link>
       </div>
 
-      <p className="mt-4 text-xs text-zinc-600">
+      <p className="mt-4 text-xs text-zinc-600 max-w-md mx-auto px-4">
+        Noctua uses your email to manage your account. Google Sign-In only shares your name and email. We never sell your data or use it for advertising.
+      </p>
+      <p className="mt-2 text-xs text-zinc-600">
         © 2026 Noctua
       </p>
     </footer>

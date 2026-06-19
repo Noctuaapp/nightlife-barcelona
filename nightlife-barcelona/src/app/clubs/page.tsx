@@ -10,6 +10,7 @@ import { useLanguage } from "../../context/LanguageContext"
 export default function ClubsPage() {
   const [clubs, setClubs] = useState<any[]>([])
   const [selectedCategory, setSelectedCategory] = useState("All")
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState("All")
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
   const { t } = useLanguage()
@@ -25,6 +26,8 @@ export default function ClubsPage() {
     fetchClubs()
   }, [])
 
+  const neighborhoods = ["All", ...Array.from(new Set(clubs.map((c) => c.neighborhood).filter(Boolean))).sort()]
+
   const filteredClubs = clubs.filter((club) => {
     const allLabel = t("filters.all")
     const matchesCategory =
@@ -39,13 +42,17 @@ export default function ClubsPage() {
       (selectedCategory === "+21" && club.age_min === 21) ||
       (selectedCategory === "+25" && club.age_min === 25)
 
+    const matchesNeighborhood =
+      selectedNeighborhood === "All" ||
+      club.neighborhood === selectedNeighborhood
+
     const matchesSearch =
       search === "" ||
       club.name?.toLowerCase().includes(search.toLowerCase()) ||
       club.neighborhood?.toLowerCase().includes(search.toLowerCase()) ||
       club.music?.toLowerCase().includes(search.toLowerCase())
 
-    return matchesCategory && matchesSearch
+    return matchesCategory && matchesNeighborhood && matchesSearch
   })
 
   return (
@@ -98,8 +105,9 @@ export default function ClubsPage() {
           </div>
         </section>
 
-        {/* Filters */}
+        {/* Music Filters */}
         <section className="mx-auto mt-6 max-w-7xl px-4">
+          <p className="text-xs uppercase tracking-widest text-zinc-500 mb-3">{t("clubs.title")}</p>
           <div className="flex gap-3 overflow-x-auto pb-2">
             {filters.map((filter) => (
               <button
@@ -112,6 +120,26 @@ export default function ClubsPage() {
                 }`}
               >
                 {filter}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Neighborhood Filters */}
+        <section className="mx-auto mt-4 max-w-7xl px-4">
+          <p className="text-xs uppercase tracking-widest text-zinc-500 mb-3">📍 Barrio</p>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {neighborhoods.map((n) => (
+              <button
+                key={n}
+                onClick={() => setSelectedNeighborhood(n)}
+                className={`rounded-full px-5 py-3 text-sm font-medium whitespace-nowrap transition ${
+                  selectedNeighborhood === n
+                    ? "bg-white text-black"
+                    : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                }`}
+              >
+                {n}
               </button>
             ))}
           </div>

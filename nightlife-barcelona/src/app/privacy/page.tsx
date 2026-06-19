@@ -94,11 +94,28 @@ export default function PrivacyPage() {
             <p>We use Supabase for authentication and database services. Supabase processes data in accordance with GDPR. We do not share your personal data with any other third parties unless required by law.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">10. Changes to this policy</h2>
+            <h2 className="text-white font-semibold text-base mb-3">10. Google Sign-In</h2>
+            <p className="mb-3">Noctua allows users to sign in using their Google account via Google OAuth 2.0. When you choose to sign in with Google, we receive the following information from Google:</p>
+            <ul className="space-y-2 pl-4">
+              {[
+                { label: "Name", desc: "Your display name as registered with Google." },
+                { label: "Email address", desc: "Used to create and identify your Noctua account." },
+                { label: "Profile picture", desc: "Optionally displayed in your Noctua profile." },
+              ].map(({ label, desc }) => (
+                <li key={label} className="flex gap-2">
+                  <span className="text-purple-400 mt-0.5 flex-shrink-0">—</span>
+                  <span><span className="text-white/80 font-medium">{label}:</span> {desc}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3">We do not access your Google contacts, Google Drive, Gmail, or any other Google services. The data received from Google is used solely to create and manage your Noctua account. You can revoke Noctua&apos;s access to your Google account at any time via your <a href="https://myaccount.google.com/permissions" target="_blank" className="text-purple-400 hover:text-purple-300 transition-colors">Google Account settings</a>.</p>
+          </section>
+          <section>
+            <h2 className="text-white font-semibold text-base mb-3">11. Changes to this policy</h2>
             <p>We may update this Privacy Policy from time to time. When we do, we will update the date at the top of this page. Continued use of Noctua after changes constitutes acceptance of the updated policy.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">11. Contact</h2>
+            <h2 className="text-white font-semibold text-base mb-3">12. Contact</h2>
             <p>For any questions about this Privacy Policy, please contact us at{" "}<a href="mailto:info@noctuaapp.com" className="text-purple-400 hover:text-purple-300 transition-colors">info@noctuaapp.com</a>.</p>
           </section>
         </div>

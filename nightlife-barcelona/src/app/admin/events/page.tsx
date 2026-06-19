@@ -49,7 +49,7 @@ export default function AdminEventsPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [uploading, setUploading] = useState(false)
   const [checkingAdmin, setCheckingAdmin] = useState(true)
-
+  const [search, setSearch] = useState("")
   useEffect(() => {
     const checkAdmin = async () => {
       const { data } = await supabase.auth.getSession()
@@ -368,6 +368,12 @@ export default function AdminEventsPage() {
         </section>
 
         <section className="mx-auto mt-10 max-w-7xl px-4">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search events..."
+            className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5 outline-none mb-4"
+          />
           <div className="flex gap-3 mb-4">
             <button onClick={showAll} className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300 hover:bg-emerald-500 hover:text-white transition">
               👁️ Show all
@@ -377,7 +383,11 @@ export default function AdminEventsPage() {
             </button>
           </div>
           <div className="grid gap-6">
-            {events.map((event) => (
+            {events.filter((event) => {
+              if (!search.trim()) return true
+              const q = search.toLowerCase()
+              return event.title?.toLowerCase().includes(q) || event.club_name?.toLowerCase().includes(q) || event.artist?.toLowerCase().includes(q)
+            }).map((event) => (
               <div
                 key={event.id}
                 className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6"
