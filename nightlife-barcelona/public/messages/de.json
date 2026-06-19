@@ -64,12 +64,42 @@
     "festival": "Festival",
     "neighborhood": "Stadtteilfest",
     "free": "Kostenlos",
-    "featured": "Empfohlen"
+    "featured": "Empfohlen",
+    "tonight": "Heute Nacht",
+"sold_out": "Ausverkauft",
+"live": "Live-Veranstaltungen",
+"happening": "Was läuft",
+"see_all": "Alle Veranstaltungen →"
   },
   "essentials": {
-    "title": "Wichtiges",
-    "subtitle": "Alles was du für deine Nacht in Barcelona brauchst",
-    "search": "Suchen..."
+  "title": "Wichtiges",
+  "subtitle": "Alles was du für deine Nacht in Barcelona brauchst",
+  "search": "Suchen...",
+  "view_all": "Alle anzeigen →",
+  "locations": "Ort",
+  "locations_plural": "Orte",
+  "categories": {
+    "Pharmacy": "24h Apotheken in Barcelona",
+    "ATM": "Geldautomaten die ganze Nacht geöffnet",
+    "Food": "Nachtessen und Restaurants",
+    "Transport": "Nachtbusse und U-Bahn-Linien",
+    "Taxi": "Taxistände und Abholpunkte",
+    "Supermarket": "24h Supermärkte",
+    "Hotel": "Hotels und Unterkunft",
+    "Casino": "Casinos und Unterhaltung",
+    "Other": "Andere nützliche Dienste"
+  },
+  "category_names": {
+  "Pharmacy": "Apotheke",
+  "ATM": "Geldautomat",
+  "Food": "Essen",
+  "Transport": "Transport",
+  "Taxi": "Taxi",
+  "Supermarket": "Supermarkt",
+  "Hotel": "Hotel",
+  "Casino": "Casino",
+  "Other": "Sonstiges"
+}
   },
   "plan": {
     "title": "Plane deine Nacht",

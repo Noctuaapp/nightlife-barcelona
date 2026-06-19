@@ -64,12 +64,43 @@
     "festival": "Festival",
     "neighborhood": "Festa de barri",
     "free": "Gratis",
-    "featured": "Destacat"
+    "featured": "Destacat",
+    "tonight": "Aquesta nit",
+"sold_out": "Exhaurit",
+"live": "Esdeveniments en directe",
+"happening": "Què està passant",
+"see_all": "Veure tots els esdeveniments →"
   },
   "essentials": {
-    "title": "Essencials",
-    "subtitle": "Tot el que necessites per a la teva nit a Barcelona",
-    "search": "Cercar..."
+  "title": "Essencials",
+  "subtitle": "Tot el que necessites per a la teva nit a Barcelona",
+  "search": "Cercar...",
+  "view_all": "Veure tot →",
+  "locations": "ubicació",
+  "locations_plural": "ubicacions",
+  "categories": {
+    "Pharmacy": "Farmàcies 24h a Barcelona",
+    "ATM": "Caixers automàtics oberts tota la nit",
+    "Food": "Menjar nocturn i restaurants",
+    "Transport": "Busos nocturns i línies de metro",
+    "Taxi": "Parades de taxi i punts de recollida",
+    "Supermarket": "Supermercats 24h i botigues de conveniència",
+    "Hotel": "Hotels i allotjament",
+    "Casino": "Casinos i entreteniment",
+    "Other": "Altres serveis útils",
+  "category_names": {
+  "Pharmacy": "Farmàcia",
+  "ATM": "Caixer",
+  "Food": "Menjar",
+  "Transport": "Transport",
+  "Taxi": "Taxi",
+  "Supermarket": "Supermercat",
+  "Hotel": "Hotel",
+  "Casino": "Casino",
+  "Other": "Altres"
+}
+  }
+
   },
   "plan": {
     "title": "Planifica la teva nit",

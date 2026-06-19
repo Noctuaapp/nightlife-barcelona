@@ -64,12 +64,42 @@
     "festival": "Festival",
     "neighborhood": "Fête de quartier",
     "free": "Gratuit",
-    "featured": "À la une"
+    "featured": "À la une",
+    "tonight": "Ce soir",
+"sold_out": "Complet",
+"live": "Événements en direct",
+"happening": "Ce qui se passe",
+"see_all": "Voir tous les événements →"
   },
   "essentials": {
-    "title": "Essentiels",
-    "subtitle": "Tout ce dont vous avez besoin pour votre nuit à Barcelone",
-    "search": "Rechercher..."
+  "title": "Essentiels",
+  "subtitle": "Tout ce dont vous avez besoin pour votre nuit à Barcelone",
+  "search": "Rechercher...",
+  "view_all": "Voir tout →",
+  "locations": "lieu",
+  "locations_plural": "lieux",
+  "categories": {
+    "Pharmacy": "Pharmacies 24h à Barcelone",
+    "ATM": "Distributeurs ouverts toute la nuit",
+    "Food": "Restauration nocturne",
+    "Transport": "Bus de nuit et lignes de métro",
+    "Taxi": "Stations de taxi",
+    "Supermarket": "Supermarchés 24h",
+    "Hotel": "Hôtels et hébergement",
+    "Casino": "Casinos et divertissement",
+    "Other": "Autres services utiles"
+  },
+  "category_names": {
+  "Pharmacy": "Pharmacie",
+  "ATM": "Distributeur",
+  "Food": "Restauration",
+  "Transport": "Transport",
+  "Taxi": "Taxi",
+  "Supermarket": "Supermarché",
+  "Hotel": "Hôtel",
+  "Casino": "Casino",
+  "Other": "Autres"
+}
   },
   "plan": {
     "title": "Planifiez votre soirée",

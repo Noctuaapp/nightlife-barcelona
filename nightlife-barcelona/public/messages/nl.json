@@ -64,12 +64,42 @@
     "festival": "Festival",
     "neighborhood": "Buurtfeest",
     "free": "Gratis",
-    "featured": "Uitgelicht"
+    "featured": "Uitgelicht",
+    "tonight": "Vanavond",
+"sold_out": "Uitverkocht",
+"live": "Live evenementen",
+"happening": "Wat er gebeurt",
+"see_all": "Alle evenementen bekijken →"
   },
   "essentials": {
-    "title": "Essentials",
-    "subtitle": "Alles wat je nodig hebt voor je nacht in Barcelona",
-    "search": "Zoeken..."
+  "title": "Essentials",
+  "subtitle": "Alles wat je nodig hebt voor je nacht in Barcelona",
+  "search": "Zoeken...",
+  "view_all": "Alles bekijken →",
+  "locations": "locatie",
+  "locations_plural": "locaties",
+  "categories": {
+    "Pharmacy": "24u apotheken in Barcelona",
+    "ATM": "Geldautomaten de hele nacht open",
+    "Food": "Nachtelijk eten en restaurants",
+    "Transport": "Nachtbussen en metrolijnen",
+    "Taxi": "Taxistandplaatsen",
+    "Supermarket": "24u supermarkten",
+    "Hotel": "Hotels en accommodatie",
+    "Casino": "Casino's en entertainment",
+    "Other": "Andere nuttige diensten"
+  },
+  "category_names": {
+  "Pharmacy": "Apotheek",
+  "ATM": "Geldautomaat",
+  "Food": "Eten",
+  "Transport": "Transport",
+  "Taxi": "Taxi",
+  "Supermarket": "Supermarkt",
+  "Hotel": "Hotel",
+  "Casino": "Casino",
+  "Other": "Overige"
+}
   },
   "plan": {
     "title": "Plan je nacht",

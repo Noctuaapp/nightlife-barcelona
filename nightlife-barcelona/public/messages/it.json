@@ -64,12 +64,42 @@
     "festival": "Festival",
     "neighborhood": "Festa di quartiere",
     "free": "Gratis",
-    "featured": "In evidenza"
+    "featured": "In evidenza",
+    "tonight": "Stanotte",
+"sold_out": "Esaurito",
+"live": "Eventi dal vivo",
+"happening": "Cosa sta succedendo",
+"see_all": "Vedi tutti gli eventi →"
   },
   "essentials": {
-    "title": "Essenziali",
-    "subtitle": "Tutto ciò di cui hai bisogno per la tua notte a Barcellona",
-    "search": "Cerca..."
+  "title": "Essenziali",
+  "subtitle": "Tutto ciò di cui hai bisogno per la tua notte a Barcellona",
+  "search": "Cerca...",
+  "view_all": "Vedi tutto →",
+  "locations": "luogo",
+  "locations_plural": "luoghi",
+  "categories": {
+    "Pharmacy": "Farmacie 24h a Barcellona",
+    "ATM": "Bancomat aperti tutta la notte",
+    "Food": "Cibo notturno e ristoranti",
+    "Transport": "Bus notturni e linee metro",
+    "Taxi": "Posteggi taxi",
+    "Supermarket": "Supermercati 24h",
+    "Hotel": "Hotel e alloggi",
+    "Casino": "Casinò e intrattenimento",
+    "Other": "Altri servizi utili"
+  },
+  "category_names": {
+  "Pharmacy": "Farmacia",
+  "ATM": "Bancomat",
+  "Food": "Cibo",
+  "Transport": "Trasporto",
+  "Taxi": "Taxi",
+  "Supermarket": "Supermercato",
+  "Hotel": "Hotel",
+  "Casino": "Casinò",
+  "Other": "Altro"
+}
   },
   "plan": {
     "title": "Pianifica la tua notte",

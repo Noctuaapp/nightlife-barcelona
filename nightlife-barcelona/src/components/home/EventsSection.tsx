@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { supabase } from "../../lib/supabase"
+import { useLanguage } from "../../context/LanguageContext"
 
 type Event = {
   id: number
@@ -29,8 +30,14 @@ const createSlug = (title: string) =>
 export default function EventsSection() {
   const [events, setEvents] = useState<Event[]>([])
   const [selectedCategory, setSelectedCategory] = useState("All")
+  const { t } = useLanguage()
 
-  const categories = ["All", "Tonight", "Featured", "Sold out"]
+  const categories = [
+    { key: "All", label: t("filters.all") },
+    { key: "Tonight", label: t("events.tonight") },
+    { key: "Featured", label: t("events.featured") },
+    { key: "Sold out", label: t("events.sold_out") },
+  ]
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -54,28 +61,28 @@ export default function EventsSection() {
     <section className="mx-auto mt-28 max-w-7xl px-4">
       <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
         <div className="max-w-3xl">
-          <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Live events</p>
+          <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("events.live")}</p>
           <h2 className="mt-4 text-5xl font-black tracking-tight text-white">
-            What's happening
+            {t("events.happening")}
           </h2>
         </div>
         <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-300">
-          ● LIVE EVENTS
+          ● {t("events.live")}
         </div>
       </div>
 
       <div className="mt-12 flex gap-3 overflow-x-auto pb-2">
         {categories.map((category) => (
           <button
-            key={category}
-            onClick={() => setSelectedCategory(category)}
+            key={category.key}
+            onClick={() => setSelectedCategory(category.key)}
             className={`rounded-full px-5 py-3 text-sm font-medium whitespace-nowrap transition ${
-              selectedCategory === category
+              selectedCategory === category.key
                 ? "bg-white text-black"
                 : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
             }`}
           >
-            {category}
+            {category.label}
           </button>
         ))}
       </div>
@@ -104,18 +111,18 @@ export default function EventsSection() {
                 <div className="absolute left-5 top-5 flex flex-wrap gap-2">
                   {event.featured && (
                     <div className="rounded-full border border-white/10 bg-black/50 px-3 py-2 text-xs font-semibold text-white backdrop-blur-xl">
-                      🔥 Featured
+                      🔥 {t("events.featured")}
                     </div>
                   )}
                   {event.sold_out && (
                     <div className="rounded-full border border-red-500/20 bg-red-500/20 px-3 py-2 text-xs font-semibold text-red-200 backdrop-blur-xl">
-                      🚫 Sold out
+                      🚫 {t("events.sold_out")}
                     </div>
                   )}
                 </div>
 
                 <div className="absolute right-5 top-5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300 backdrop-blur-xl">
-                  {event.date === today ? "Tonight" : event.date}
+                  {event.date === today ? t("events.tonight") : event.date}
                 </div>
 
                 <div className="absolute bottom-0 left-0 w-full p-6">
@@ -141,7 +148,7 @@ export default function EventsSection() {
           href="/events"
           className="rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-bold text-white transition hover:bg-white/10"
         >
-          See all events →
+          {t("events.see_all")}
         </Link>
       </div>
     </section>

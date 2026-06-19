@@ -42,7 +42,7 @@ export default function Header() {
   } | null>(null)
   const router = useRouter()
   const pathname = usePathname()
-  const { locale, setLocale } = useLanguage()
+  const { locale, setLocale, t } = useLanguage()
 
   const currentLang = languages.find((l) => l.code === locale) || languages[0]
 
@@ -117,7 +117,7 @@ export default function Header() {
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M10 3L5 8L10 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                <span>Back</span>
+                <span>{t("common.back")}</span>
               </button>
             ) : (
               <div className="relative">
@@ -169,11 +169,11 @@ export default function Header() {
       </header>
 
       {menuOpen && (
-        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
+        <div className="fixed inset-0 z-[190] bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
       )}
 
-      <div style={{
-        position: "fixed", top: 0, right: 0, zIndex: 50, height: "100%", width: "288px",
+<div style={{
+        position: "fixed", top: 0, right: 0, zIndex: 200, height: "100%", width: "288px",
         background: "#000", borderLeft: "1px solid rgba(255,255,255,0.1)",
         display: "flex", flexDirection: "column",
         transform: menuOpen ? "translateX(0)" : "translateX(100%)",
@@ -189,14 +189,14 @@ export default function Header() {
         <div className="flex flex-col gap-1 px-4 py-4 flex-1">
           {isLoggedIn && (
             <Link href="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-              <span className="text-xl">👤</span>My Profile
+              <span className="text-xl">👤</span>{t("nav.profile")}
             </Link>
           )}
           <Link href="/map" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-            <span className="text-xl">🗺️</span>Map
+            <span className="text-xl">🗺️</span>{t("nav.map")}
           </Link>
           <Link href="/plan" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-            <span className="text-xl">✨</span>Plan your night
+            <span className="text-xl">✨</span>{t("nav.plan")}
           </Link>
         </div>
 
@@ -261,12 +261,12 @@ export default function Header() {
               }}
               className="w-full flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-white/10"
             >
-              Log out
+              {t("nav.logout")}
             </button>
           ) : (
             <div className="flex flex-col gap-3">
-              <Link href="/login" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">Login</Link>
-              <Link href="/signup" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-black transition hover:scale-[1.02]">Create account</Link>
+              <Link href="/login" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">{t("nav.login")}</Link>
+              <Link href="/signup" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-black transition hover:scale-[1.02]">{t("nav.signup")}</Link>
             </div>
           )}
         </div>

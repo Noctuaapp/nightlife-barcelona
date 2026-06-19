@@ -2,24 +2,27 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
+import { useLanguage } from "../../context/LanguageContext"
 
-const categoryConfig: Record<string, { icon: string; color: string; description: string }> = {
-  Pharmacy:    { icon: "💊", color: "#10b981", description: "24h pharmacies across Barcelona" },
-  ATM:         { icon: "🏧", color: "#3b82f6", description: "Cash machines open all night" },
-  Food:        { icon: "🍔", color: "#f97316", description: "Late night food and restaurants" },
-  Transport:   { icon: "🚌", color: "#8b5cf6", description: "Night buses and metro lines" },
-  Taxi:        { icon: "🚕", color: "#eab308", description: "Taxi ranks and pickup points" },
-  Supermarket: { icon: "🛒", color: "#ec4899", description: "24h supermarkets and convenience stores" },
-  Other:       { icon: "📍", color: "#6b7280", description: "Other useful services" },
+const categoryConfig: Record<string, { icon: string; color: string }> = {
+  Pharmacy:    { icon: "💊", color: "#10b981" },
+  ATM:         { icon: "🏧", color: "#3b82f6" },
+  Food:        { icon: "🍔", color: "#f97316" },
+  Transport:   { icon: "🚌", color: "#8b5cf6" },
+  Taxi:        { icon: "🚕", color: "#eab308" },
+  Supermarket: { icon: "🛒", color: "#ec4899" },
+  Hotel:       { icon: "🏨", color: "#14b8a6" },
+  Casino:      { icon: "🎰", color: "#f43f5e" },
+  Other:       { icon: "📍", color: "#6b7280" },
 }
 
 export default function EssentialsPage() {
   const [essentials, setEssentials] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const { t } = useLanguage()
 
   useEffect(() => {
     const fetchEssentials = async () => {
@@ -31,7 +34,6 @@ export default function EssentialsPage() {
   }, [])
 
   const categories = Array.from(new Set(essentials.map((e) => e.category))).sort()
-
   const countByCategory = (cat: string) => essentials.filter((e) => e.category === cat).length
 
   return (
@@ -40,19 +42,16 @@ export default function EssentialsPage() {
       <main className="min-h-screen bg-black pb-40 text-white">
         <section className="px-4 pt-14">
           <div className="mx-auto max-w-7xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Essentials</p>
+            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("essentials.title")}</p>
             <h1 className="mt-4 text-6xl font-black tracking-tight text-white">
-              Barcelona after-dark essentials
+              {t("essentials.subtitle")}
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
-              Useful late-night services for nightlife, emergencies and surviving the city after dark.
-            </p>
           </div>
         </section>
 
         <section className="mx-auto mt-14 max-w-7xl px-4">
           {loading ? (
-            <p className="text-zinc-500 text-sm text-center py-20">Loading essentials...</p>
+            <p className="text-zinc-500 text-sm text-center py-20">{t("common.loading")}</p>
           ) : categories.length === 0 ? (
             <p className="text-zinc-500 text-sm text-center py-20">No essentials added yet.</p>
           ) : (
@@ -60,6 +59,8 @@ export default function EssentialsPage() {
               {categories.map((cat, index) => {
                 const config = categoryConfig[cat] || categoryConfig["Other"]
                 const count = countByCategory(cat)
+                const description = t(`essentials.categories.${cat}`)
+                const locationsLabel = count === 1 ? t("essentials.locations") : t("essentials.locations_plural")
                 return (
                   <Link
                     key={cat}
@@ -72,17 +73,17 @@ export default function EssentialsPage() {
                     }}
                   >
                     <div className="text-5xl mb-4">{config.icon}</div>
-                    <h2 className="text-3xl font-black text-white">{cat}</h2>
-                    <p className="mt-2 text-zinc-400 text-sm">{config.description}</p>
+                    <h2 className="text-3xl font-black text-white">{t(`essentials.category_names.${cat}`) || cat}</h2>
+                    <p className="mt-2 text-zinc-400 text-sm">{description}</p>
                     <div className="mt-6 flex items-center justify-between">
                       <span
                         className="rounded-full px-4 py-1.5 text-xs font-semibold"
                         style={{ background: `${config.color}20`, color: config.color }}
                       >
-                        {count} location{count !== 1 ? "s" : ""}
+                        {count} {locationsLabel}
                       </span>
                       <span className="text-zinc-500 text-sm group-hover:text-white transition">
-                        View all →
+                        {t("essentials.view_all")}
                       </span>
                     </div>
                   </Link>

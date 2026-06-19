@@ -1,27 +1,29 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
-
-const essentialCategories = [
-  { name: "Pharmacies", slug: "pharmacy", image: "/essentials/pharmacy.jpg", description: "24h pharmacies across Barcelona", icon: "💊" },
-  { name: "Cajeros", slug: "atm", image: "/essentials/atm.jpg", description: "Cash machines open all night", icon: "🏧" },
-  { name: "Late Night Food", slug: "food", image: "/essentials/foodie.jpg", description: "Food open after 3AM", icon: "🍔" },
-  { name: "Night Transport", slug: "transport", image: "/essentials/transport.jpg", description: "Night buses and metro", icon: "🚇" },
-  { name: "Supermarkets", slug: "supermarket", image: "/essentials/supermarket.jpg", description: "Open late night shops", icon: "🛒" },
-  { name: "Hotels", slug: "hotel", image: "/essentials/hotel.jpg", description: "Hotels near the nightlife areas", icon: "🏨" },
-  { name: "Casinos 🔞", slug: "casino", image: "/essentials/casino.jpg", description: "Casinos open all night in Barcelona · +18", icon: "🎰" },
-]
+import { useLanguage } from "../../context/LanguageContext"
 
 export default function AreasSection() {
+  const { t } = useLanguage()
+
+  const essentialCategories = [
+    { key: "Pharmacy", slug: "pharmacy", image: "/essentials/pharmacy.jpg", icon: "💊" },
+    { key: "ATM", slug: "atm", image: "/essentials/atm.jpg", icon: "🏧" },
+    { key: "Food", slug: "food", image: "/essentials/foodie.jpg", icon: "🍔" },
+    { key: "Transport", slug: "transport", image: "/essentials/transport.jpg", icon: "🚇" },
+    { key: "Supermarket", slug: "supermarket", image: "/essentials/supermarket.jpg", icon: "🛒" },
+    { key: "Hotel", slug: "hotel", image: "/essentials/hotel.jpg", icon: "🏨" },
+    { key: "Casino", slug: "casino", image: "/essentials/casino.jpg", icon: "🎰" },
+  ]
+
   return (
     <section className="mx-auto mt-28 max-w-7xl px-4">
       <div className="max-w-3xl">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Night essentials</p>
+        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("essentials.title")}</p>
         <h2 className="mt-4 text-5xl font-black tracking-tight text-white">
-          Everything you need after dark
+          {t("essentials.subtitle")}
         </h2>
-        <p className="mt-6 text-lg leading-relaxed text-zinc-400">
-          Pharmacies, supermarkets, ATMs and useful late-night services across Barcelona.
-        </p>
       </div>
 
       <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -35,20 +37,22 @@ export default function AreasSection() {
             <div className="relative h-[220px] overflow-hidden">
               <Image
                 src={cat.image}
-                alt={cat.name}
+                alt={t(`essentials.category_names.${cat.key}`)}
                 fill
                 className="object-cover transition duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute bottom-0 left-0 w-full p-5">
                 <p className="text-sm uppercase tracking-wide text-zinc-400">{cat.icon}</p>
-                <h3 className="mt-2 text-3xl font-black tracking-tight text-white">{cat.name}</h3>
+                <h3 className="mt-2 text-3xl font-black tracking-tight text-white">
+                  {t(`essentials.category_names.${cat.key}`)}
+                </h3>
               </div>
             </div>
             <div className="p-5">
-              <p className="text-sm text-zinc-400">{cat.description}</p>
+              <p className="text-sm text-zinc-400">{t(`essentials.categories.${cat.key}`)}</p>
               <div className="mt-4 flex items-center justify-between">
-                <span className="text-sm font-semibold text-white">Explore →</span>
+                <span className="text-sm font-semibold text-white">{t("essentials.view_all")}</span>
               </div>
             </div>
           </Link>

@@ -64,12 +64,42 @@
     "festival": "Festival",
     "neighborhood": "Neighbourhood party",
     "free": "Free",
-    "featured": "Featured"
+    "featured": "Featured",
+    "tonight": "Tonight",
+"sold_out": "Sold out",
+"live": "Live events",
+"happening": "What's happening",
+"see_all": "See all events →"
   },
   "essentials": {
-    "title": "Essentials",
-    "subtitle": "Everything you need for your night in Barcelona",
-    "search": "Search..."
+  "title": "Essentials",
+  "subtitle": "Everything you need for your night in Barcelona",
+  "search": "Search...",
+  "view_all": "View all →",
+  "locations": "location",
+  "locations_plural": "locations",
+  "categories": {
+    "Pharmacy": "24h pharmacies across Barcelona",
+    "ATM": "Cash machines open all night",
+    "Food": "Late night food and restaurants",
+    "Transport": "Night buses and metro lines",
+    "Taxi": "Taxi ranks and pickup points",
+    "Supermarket": "24h supermarkets and convenience stores",
+    "Hotel": "Hotels and accommodation",
+    "Casino": "Casinos and entertainment",
+    "Other": "Other useful services"
+  },
+  "category_names": {
+  "Pharmacy": "Pharmacy",
+  "ATM": "ATM",
+  "Food": "Food",
+  "Transport": "Transport",
+  "Taxi": "Taxi",
+  "Supermarket": "Supermarket",
+  "Hotel": "Hotel",
+  "Casino": "Casino",
+  "Other": "Other"
+}
   },
   "plan": {
     "title": "Plan your night",

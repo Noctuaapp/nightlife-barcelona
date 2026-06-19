@@ -6,9 +6,11 @@ import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { useFavorites } from "../../context/FavoritesContext"
+import { useLanguage } from "../../context/LanguageContext"
 
 export default function ProfilePage() {
   const { favorites } = useFavorites()
+  const { t } = useLanguage()
 
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(true)
@@ -62,7 +64,7 @@ export default function ProfilePage() {
     setUsernameSuccess("")
     if (!newUsername || newUsername.length < 3) { setUsernameError("Username must be at least 3 characters."); return }
     if (newUsername === username) { setEditingUsername(false); return }
-    if (!canChangeUsername()) { setUsernameError(`You can change your username again in ${daysUntilChange()} days.`); return }
+    if (!canChangeUsername()) { setUsernameError(t("profile.days_until_change").replace("{days}", String(daysUntilChange()))); return }
 
     setSavingUsername(true)
     const { data: userData } = await supabase.auth.getUser()
@@ -110,7 +112,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Loading profile...</p>
+        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("common.loading")}</p>
       </main>
     )
   }
@@ -121,27 +123,27 @@ export default function ProfilePage() {
       <main className="min-h-screen bg-black pb-40 text-white">
         <section className="mx-auto max-w-5xl px-4 pt-14">
           <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Account</p>
-          <h1 className="mt-4 text-6xl font-black tracking-tight">Your profile</h1>
-          <p className="mt-6 max-w-2xl text-lg text-zinc-400">Manage your Noctua account, favorites and session.</p>
+          <h1 className="mt-4 text-6xl font-black tracking-tight">{t("profile.title")}</h1>
+          <p className="mt-6 max-w-2xl text-lg text-zinc-400">{t("profile.subtitle")}</p>
 
           <div className="mt-10 grid gap-6 md:grid-cols-2">
             <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-              <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Email</p>
+              <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("profile.email")}</p>
               <h2 className="mt-4 break-all text-2xl font-black">{email}</h2>
             </div>
 
             <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-              <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Favorites</p>
+              <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("profile.favorites")}</p>
               <h2 className="mt-4 text-5xl font-black">{favorites.length}</h2>
               <Link href="/favorites" className="mt-6 inline-block rounded-full bg-white px-5 py-3 text-sm font-bold text-black">
-                View favorites
+                {t("profile.view_favorites")}
               </Link>
             </div>
           </div>
 
           {/* Username */}
           <div className="mt-6 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Username</p>
+            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("profile.username")}</p>
             <h2 className="mt-4 text-3xl font-black">@{username || "—"}</h2>
 
             {!editingUsername ? (
@@ -151,11 +153,11 @@ export default function ProfilePage() {
                     onClick={() => { setEditingUsername(true); setUsernameError(""); setUsernameSuccess("") }}
                     className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white hover:text-black"
                   >
-                    Change username
+                    {t("profile.change_username")}
                   </button>
                 ) : (
                   <p className="text-sm text-zinc-500">
-                    You can change your username again in <span className="text-white font-bold">{daysUntilChange()} days</span>.
+                    {t("profile.days_until_change").replace("{days}", String(daysUntilChange()))}
                   </p>
                 )}
                 {usernameSuccess && <p className="mt-3 text-sm text-emerald-400">{usernameSuccess}</p>}
@@ -165,10 +167,10 @@ export default function ProfilePage() {
                 <input
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
-                  placeholder="New username"
+                  placeholder={t("profile.username")}
                   className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
                 />
-                <p className="mt-2 text-xs text-zinc-500">You can only change your username once every 30 days.</p>
+                <p className="mt-2 text-xs text-zinc-500">{t("profile.username_hint")}</p>
                 {usernameError && <p className="mt-2 text-sm text-red-400">{usernameError}</p>}
                 <div className="mt-4 flex gap-3">
                   <button
@@ -176,13 +178,13 @@ export default function ProfilePage() {
                     disabled={savingUsername}
                     className="rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02] disabled:opacity-50"
                   >
-                    {savingUsername ? "Saving..." : "Save"}
+                    {savingUsername ? t("profile.saving") : t("profile.save")}
                   </button>
                   <button
                     onClick={() => { setEditingUsername(false); setNewUsername(username); setUsernameError("") }}
                     className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white/10"
                   >
-                    Cancel
+                    {t("profile.cancel")}
                   </button>
                 </div>
               </div>
@@ -191,29 +193,29 @@ export default function ProfilePage() {
 
           {/* Session */}
           <div className="mt-6 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Session</p>
-            <h2 className="mt-4 text-3xl font-black">Logout</h2>
-            <p className="mt-4 text-zinc-400">Sign out from this device. You can log back in whenever you want.</p>
+            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("profile.session")}</p>
+            <h2 className="mt-4 text-3xl font-black">{t("profile.logout")}</h2>
+            <p className="mt-4 text-zinc-400">{t("profile.logout_subtitle")}</p>
             <div className="mt-6 flex flex-wrap gap-4">
               <button onClick={logout} className="rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02]">
-                Log out
+                {t("profile.logout")}
               </button>
               <Link href="/profile/change-password" className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white hover:text-black">
-                Change password
+                {t("profile.change_password")}
               </Link>
             </div>
           </div>
 
           {/* Delete account */}
           <div className="mt-6 rounded-[32px] border border-red-500/20 bg-red-500/10 p-6 flex items-center justify-between">
-            <p className="text-sm text-red-300">Delete your account permanently</p>
+            <p className="text-sm text-red-300">{t("profile.delete_subtitle")}</p>
             {deleteError && <p className="text-sm font-bold text-red-300">{deleteError}</p>}
             <button
               onClick={deleteAccount}
               disabled={deleting}
               className="rounded-full border border-red-500/30 bg-red-500/20 px-4 py-2 text-xs font-bold text-red-300 hover:bg-red-500 hover:text-white transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {deleting ? "Deleting..." : "Delete account"}
+              {deleting ? t("profile.deleting") : t("profile.delete")}
             </button>
           </div>
         </section>
