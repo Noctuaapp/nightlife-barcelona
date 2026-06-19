@@ -3,7 +3,6 @@ import { Analytics } from "@vercel/analytics/react"
 import { NightlifeProvider } from "../context/NightlifeContext"
 import { FavoritesProvider } from "../context/FavoritesContext"
 import { LanguageProvider } from "../context/LanguageContext"
-import BackButton from "../components/ui/BackButton"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -51,8 +50,7 @@ export default function RootLayout({
       <body>
         <LanguageProvider>
           <FavoritesProvider>
-            <NightlifeProvider>
-              <BackButton />
+            <NightlifeProvider>              
               {children}
             </NightlifeProvider>
           </FavoritesProvider>
