@@ -46,7 +46,7 @@ export default function Header() {
 
   const currentLang = languages.find((l) => l.code === locale) || languages[0]
 
-  const showBack = !(["/", "/login", "/signup", "/map", "/events", "/clubs", "/essentials", "/favorites", "/profile", "/plan", "/admin"].includes(pathname)) && !pathname.startsWith("/event/") && !pathname.startsWith("/essentials/") && !pathname.startsWith("/club-event/")
+  const showBack = !(["/", "/login", "/signup", "/map", "/events", "/clubs", "/essentials", "/favorites", "/profile", "/plan", "/admin", "/admin/events", "/admin/club-events", "/admin/essentials", "/admin/tickets", "/admin/messages", "/admin/dashboard"].includes(pathname))
   const hideHeader = pathname === "/map"
 
   useEffect(() => {
