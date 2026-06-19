@@ -13,7 +13,7 @@
   },
   "home": {
     "hero": "Descobreix Barcelona al capvespre...",
-    "subtitle": "Noctua és la plataforma d'oci nocturn de Barcelona.",
+    "subtitle": "Noctua és l'app d'oci nocturn de Barcelona. Troba i explora els millors clubs, bars, esdeveniments i serveis nocturns. Crea un compte gratuït per guardar els teus locals favorits i planificar la teva nit amb IA.",
     "clubs": "Clubs",
     "nightlife": "Vida nocturna a Barcelona",
     "explore": "Veure tots els clubs →"
@@ -87,7 +87,8 @@
     "Supermarket": "Supermercats 24h i botigues de conveniència",
     "Hotel": "Hotels i allotjament",
     "Casino": "Casinos i entreteniment",
-    "Other": "Altres serveis útils",
+    "Other": "Altres serveis útils"
+  },
   "category_names": {
   "Pharmacy": "Farmàcia",
   "ATM": "Caixer",
@@ -99,9 +100,7 @@
   "Casino": "Casino",
   "Other": "Altres"
 }
-  }
-
-  },
+ },
   "plan": {
     "title": "Planifica la teva nit",
     "subtitle": "Digues-nos el teu ambient — la nostra IA trobarà els millors llocs per aquesta nit a Barcelona.",

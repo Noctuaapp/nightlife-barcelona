@@ -27,7 +27,7 @@ export default function Home() {
     fetchClubs()
   }, [])
 
-  const filters = [t("filters.all"), "Techno", "Commercial", "House", "Reggaeton", "Rock", "VIP"]
+  const filters = [t("filters.all"), "Techno", "Commercial", "House", "Reggaeton", "Rock"]
 
   const handleSearch = () => {
     if (!search.trim()) return
@@ -45,8 +45,7 @@ export default function Home() {
       selectedCategory === allLabel ||
       selectedCategory === "All" ||
       (selectedCategory === "Techno" && club.music === "Techno") ||
-      (selectedCategory === "Commercial" && club.music === "Commercial") ||
-      (selectedCategory === "VIP" && club.vip) ||
+      (selectedCategory === "Commercial" && club.music === "Commercial") ||      
       (selectedCategory === "House" && club.music === "House") ||
       (selectedCategory === "Reggaeton" && club.music === "Reggaeton") ||
       (selectedCategory === "Rock" && club.music === "Rock")
