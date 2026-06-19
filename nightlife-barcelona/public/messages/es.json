@@ -13,11 +13,10 @@
   },
   "home": {
     "hero": "Descubre Barcelona al anochecer...",
-    "subtitle": "Noctua es la app de ocio nocturno de Barcelona. Encuentra y explora los mejores clubs, bares, eventos, festivales y servicios nocturnos. Crea una cuenta gratis para guardar tus locales favoritos y planificar tu noche con IA."
+    "subtitle": "Noctua es la app de ocio nocturno de Barcelona. Encuentra y explora los mejores clubs, bares, eventos, festivales y servicios nocturnos. Crea una cuenta gratis para guardar tus locales favoritos y planificar tu noche con IA.",
     "clubs": "Clubs",
     "nightlife": "Vida nocturna en Barcelona",
-    "explore": "Ver todos los clubs →",
-    
+    "explore": "Ver todos los clubs →"
   },
   "filters": {
     "all": "Todos"
@@ -67,40 +66,40 @@
     "free": "Gratis",
     "featured": "Destacado",
     "tonight": "Esta noche",
-"sold_out": "Agotado",
-"live": "Eventos en directo",
-"happening": "Qué está pasando",
-"see_all": "Ver todos los eventos →"
+    "sold_out": "Agotado",
+    "live": "Eventos en directo",
+    "happening": "Qué está pasando",
+    "see_all": "Ver todos los eventos →"
   },
   "essentials": {
-  "title": "Esenciales",
-  "subtitle": "Todo lo que necesitas para tu noche en Barcelona",
-  "search": "Buscar...",
-  "view_all": "Ver todo →",
-  "locations": "ubicación",
-  "locations_plural": "ubicaciones",
-  "categories": {
-    "Pharmacy": "Farmacias 24h en Barcelona",
-    "ATM": "Cajeros automáticos abiertos toda la noche",
-    "Food": "Comida nocturna y restaurantes",
-    "Transport": "Buses nocturnos y líneas de metro",
-    "Taxi": "Paradas de taxi y puntos de recogida",
-    "Supermarket": "Supermercados 24h y tiendas de conveniencia",
-    "Hotel": "Hoteles y alojamiento",
-    "Casino": "Casinos y entretenimiento",
-    "Other": "Otros servicios útiles"
-  },
-  "category_names": {
-  "Pharmacy": "Farmacia",
-  "ATM": "Cajero",
-  "Food": "Comida",
-  "Transport": "Transporte",
-  "Taxi": "Taxi",
-  "Supermarket": "Supermercado",
-  "Hotel": "Hotel",
-  "Casino": "Casino",
-  "Other": "Otros"
-   }
+    "title": "Esenciales",
+    "subtitle": "Todo lo que necesitas para tu noche en Barcelona",
+    "search": "Buscar...",
+    "view_all": "Ver todo →",
+    "locations": "ubicación",
+    "locations_plural": "ubicaciones",
+    "categories": {
+      "Pharmacy": "Farmacias 24h en Barcelona",
+      "ATM": "Cajeros automáticos abiertos toda la noche",
+      "Food": "Comida nocturna y restaurantes",
+      "Transport": "Buses nocturnos y líneas de metro",
+      "Taxi": "Paradas de taxi y puntos de recogida",
+      "Supermarket": "Supermercados 24h y tiendas de conveniencia",
+      "Hotel": "Hoteles y alojamiento",
+      "Casino": "Casinos y entretenimiento",
+      "Other": "Otros servicios útiles"
+    },
+    "category_names": {
+      "Pharmacy": "Farmacia",
+      "ATM": "Cajero",
+      "Food": "Comida",
+      "Transport": "Transporte",
+      "Taxi": "Taxi",
+      "Supermarket": "Supermercado",
+      "Hotel": "Hotel",
+      "Casino": "Casino",
+      "Other": "Otros"
+    }
   },
   "plan": {
     "title": "Planifica tu noche",

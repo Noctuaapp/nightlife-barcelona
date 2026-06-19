@@ -8,15 +8,18 @@ import "mapbox-gl/dist/mapbox-gl.css"
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import { supabase } from "../../../lib/supabase"
+import { useLanguage } from "../../../context/LanguageContext"
 
-const categoryConfig: Record<string, { icon: string; color: string; label: string }> = {
-  pharmacy:    { icon: "💊", color: "#10b981", label: "Pharmacies" },
-  atm:         { icon: "🏧", color: "#3b82f6", label: "ATMs" },
-  food:        { icon: "🍔", color: "#f97316", label: "Late Night Food" },
-  transport:   { icon: "🚌", color: "#8b5cf6", label: "Night Transport" },
-  taxi:        { icon: "🚕", color: "#eab308", label: "Taxi Ranks" },
-  supermarket: { icon: "🛒", color: "#ec4899", label: "Supermarkets" },
-  other:       { icon: "📍", color: "#6b7280", label: "Other" },
+const categoryConfig: Record<string, { icon: string; color: string; key: string }> = {
+  pharmacy:    { icon: "💊", color: "#10b981", key: "Pharmacy" },
+  atm:         { icon: "🏧", color: "#3b82f6", key: "ATM" },
+  food:        { icon: "🍔", color: "#f97316", key: "Food" },
+  transport:   { icon: "🚌", color: "#8b5cf6", key: "Transport" },
+  taxi:        { icon: "🚕", color: "#eab308", key: "Taxi" },
+  supermarket: { icon: "🛒", color: "#ec4899", key: "Supermarket" },
+  hotel:       { icon: "🏨", color: "#14b8a6", key: "Hotel" },
+  casino:      { icon: "🎰", color: "#f43f5e", key: "Casino" },
+  other:       { icon: "📍", color: "#6b7280", key: "Other" },
 }
 
 type Essential = {
@@ -37,6 +40,8 @@ export default function EssentialCategoryPage() {
   const params = useParams()
   const category = (params.category as string).toLowerCase()
   const config = categoryConfig[category] || categoryConfig["other"]
+  const { t } = useLanguage()
+  const label = t(`essentials.category_names.${config.key}`)
 
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
@@ -73,7 +78,25 @@ export default function EssentialCategoryPage() {
       zoom: 13,
     })
 
-    map.current.on("load", () => setMapReady(true))
+    map.current.on("load", () => {
+      setMapReady(true)
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((pos) => {
+          const { latitude, longitude } = pos.coords
+
+          new mapboxgl.Marker({ color: "#a855f7" })
+            .setLngLat([longitude, latitude])
+            .addTo(map.current!)
+
+          map.current?.flyTo({
+            center: [longitude, latitude],
+            zoom: 14,
+            duration: 1000,
+          })
+        })
+      }
+    })
 
     return () => {
       map.current?.remove()
@@ -120,17 +143,17 @@ export default function EssentialCategoryPage() {
         <section className="px-4 pt-14">
           <div className="mx-auto max-w-7xl">
             <Link href="/essentials" className="text-sm text-zinc-500 hover:text-white transition">
-              ← Essentials
+              ← {t("essentials.title")}
             </Link>
             <div className="mt-4 flex items-center gap-4">
               <span className="text-5xl">{config.icon}</span>
               <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Essentials</p>
-                <h1 className="text-5xl font-black tracking-tight text-white">{config.label}</h1>
+                <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("essentials.title")}</p>
+                <h1 className="text-5xl font-black tracking-tight text-white">{label}</h1>
               </div>
             </div>
             <p className="mt-4 max-w-2xl text-zinc-400">
-              {filteredEssentials.length} location{filteredEssentials.length !== 1 ? "s" : ""} found in Barcelona
+              {filteredEssentials.length} {filteredEssentials.length !== 1 ? t("essentials.locations_plural") : t("essentials.locations")}
             </p>
           </div>
         </section>
@@ -166,7 +189,7 @@ export default function EssentialCategoryPage() {
         {/* LIST */}
         <section className="mx-auto mt-8 max-w-7xl px-4">
           {loading ? (
-            <p className="text-zinc-500 text-sm text-center py-20">Loading...</p>
+            <p className="text-zinc-500 text-sm text-center py-20">{t("common.loading")}</p>
           ) : filteredEssentials.length === 0 ? (
             <p className="text-zinc-500 text-sm text-center py-20">No locations found.</p>
           ) : (
@@ -212,17 +235,17 @@ export default function EssentialCategoryPage() {
                     <p className="mt-3 text-sm text-zinc-400 line-clamp-2">{item.description}</p>
                   )}
 
-                 {item.maps_link && (
-                  <a  
-                      href={item.maps_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="mt-4 inline-block rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white hover:text-black transition"
-                    >
-                      Open in Maps →
-                    </a>
-                  )}
+                   {item.maps_link && (
+                    
+                   <a href={item.maps_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    className="mt-4 inline-block rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white hover:text-black transition"
+                  >
+                    Open in Maps →
+                  </a>
+                )}
                 </div>
               ))}
             </div>

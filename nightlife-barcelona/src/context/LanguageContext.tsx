@@ -11,22 +11,23 @@ type LanguageContextType = {
 }
 
 const LanguageContext = createContext<LanguageContextType>({
-  locale: "en",
+  locale: "es",
   setLocale: () => {},
   t: (key) => key,
 })
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("en")
+  const [locale, setLocaleState] = useState<Locale>("es")
   const [messages, setMessages] = useState<Record<string, any>>({})
 
   useEffect(() => {
     const saved = localStorage.getItem("noctua_locale") as Locale
-    if (saved) setLocaleState(saved)
+    const initial = saved || "es"
+    setLocaleState(initial)
   }, [])
 
   useEffect(() => {
-    fetch(`/messages/${locale}.json`)
+    fetch(`/messages/${locale}.json?v=${Date.now()}`)
       .then((res) => res.json())
       .then((data) => setMessages(data))
       .catch(() => {})
