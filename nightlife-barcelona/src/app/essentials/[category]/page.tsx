@@ -19,8 +19,9 @@ const categoryConfig: Record<string, { icon: string; color: string; key: string 
   supermarket: { icon: "🛒", color: "#ec4899", key: "Supermarket" },
   hotel:       { icon: "🏨", color: "#14b8a6", key: "Hotel" },
   casino:      { icon: "🎰", color: "#f43f5e", key: "Casino" },
-  other:       { icon: "📍", color: "#6b7280", key: "Other" },
-}
+  "gas-station": { icon: "⛽", color: "#f59e0b", key: "GasStation" },
+  hospital:    { icon: "🏥", color: "#ef4444", key: "Hospital" },
+  }
 
 type Essential = {
   id: number
@@ -52,6 +53,7 @@ export default function EssentialCategoryPage() {
   const [selectedNeighborhood, setSelectedNeighborhood] = useState("All")
   const [loading, setLoading] = useState(true)
   const [mapReady, setMapReady] = useState(false)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
 
   useEffect(() => {
     const fetchEssentials = async () => {
@@ -84,6 +86,8 @@ export default function EssentialCategoryPage() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((pos) => {
           const { latitude, longitude } = pos.coords
+
+          setUserLocation({ lat: latitude, lng: longitude })
 
           new mapboxgl.Marker({ color: "#a855f7" })
             .setLngLat([longitude, latitude])
@@ -235,17 +239,34 @@ export default function EssentialCategoryPage() {
                     <p className="mt-3 text-sm text-zinc-400 line-clamp-2">{item.description}</p>
                   )}
 
-                   {item.maps_link && (
-                    
-                   <a href={item.maps_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                    className="mt-4 inline-block rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white hover:text-black transition"
-                  >
-                    Open in Maps →
-                  </a>
-                )}
+                  <div className="mt-4 flex gap-2 flex-wrap">
+                    {item.maps_link && (
+                      
+                      <a  href={item.maps_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        className="inline-block rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white hover:text-black transition"
+                      >
+                        Open in Maps →
+                      </a>
+                    )}
+                    {item.latitude && item.longitude && (
+                      
+                        <a href={
+                          userLocation
+                            ? `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${item.latitude},${item.longitude}`
+                            : `https://www.google.com/maps/dir/?api=1&destination=${item.latitude},${item.longitude}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        className="inline-block rounded-full border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-xs font-semibold text-purple-300 hover:bg-purple-500 hover:text-white transition"
+                      >
+                        🧭 Cómo llegar
+                      </a>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

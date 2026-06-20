@@ -20,13 +20,14 @@ interface ClubCardProps {
   tableBooking?: boolean
   dresscode?: string
   lgtbi_friendly?: boolean
+  verified?: boolean
 }
 
 const createSlug = (text: string) =>
   text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
 
 export default function ClubCard({
-  name, music, area, price, hours, image, rating, people, badges = [], lgtbi_friendly,
+  name, music, area, price, hours, image, rating, people, badges = [], lgtbi_friendly, verified,
 }: ClubCardProps) {
   const [liveBadges, setLiveBadges] = useState(badges)
   const slug = createSlug(name)
@@ -57,6 +58,11 @@ export default function ClubCard({
           {lgtbi_friendly && (
             <div className="rounded-full border border-pink-500/30 bg-pink-500/20 px-3 py-2 text-xs font-semibold text-pink-300 backdrop-blur-xl">
               🏳️‍🌈 LGTBI+
+            </div>
+          )}
+          {verified && (
+            <div className="rounded-full border border-emerald-500/30 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-300 backdrop-blur-xl">
+              ✓ Verified
             </div>
           )}
         </div>

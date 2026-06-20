@@ -16,8 +16,9 @@ const categoryConfig: Record<string, { icon: string; color: string }> = {
   Supermarket: { icon: "🛒", color: "#ec4899" },
   Hotel:       { icon: "🏨", color: "#14b8a6" },
   Casino:      { icon: "🎰", color: "#f43f5e" },
-  Other:       { icon: "📍", color: "#6b7280" },
-}
+  "Gas Station": { icon: "⛽", color: "#f59e0b" },
+  Hospital:    { icon: "🏥", color: "#ef4444" },
+  }
 
 export default function EssentialsPage() {
   const [essentials, setEssentials] = useState<any[]>([])
@@ -64,7 +65,7 @@ export default function EssentialsPage() {
                 return (
                   <Link
                     key={cat}
-                    href={`/essentials/${cat.toLowerCase()}`}
+                    href={`/essentials/${cat.toLowerCase().replace(/\s+/g, "-")}`}
                     className="group relative overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] p-8 transition duration-500 hover:-translate-y-2 hover:border-white/20 fade-up"
                     style={{
                       animationDelay: `${index * 0.08}s`,
@@ -73,8 +74,8 @@ export default function EssentialsPage() {
                     }}
                   >
                     <div className="text-5xl mb-4">{config.icon}</div>
-                    <h2 className="text-3xl font-black text-white">{t(`essentials.category_names.${cat}`) || cat}</h2>
-                    <p className="mt-2 text-zinc-400 text-sm">{description}</p>
+                    <h2 className="text-3xl font-black text-white">{t(`essentials.category_names.${cat.replace(/\s+/g, "")}`) || cat}</h2>
+<p className="mt-2 text-zinc-400 text-sm">{t(`essentials.categories.${cat.replace(/\s+/g, "")}`) || description}</p>
                     <div className="mt-6 flex items-center justify-between">
                       <span
                         className="rounded-full px-4 py-1.5 text-xs font-semibold"

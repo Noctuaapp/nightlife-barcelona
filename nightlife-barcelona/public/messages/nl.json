@@ -66,40 +66,42 @@
     "free": "Gratis",
     "featured": "Uitgelicht",
     "tonight": "Vanavond",
-"sold_out": "Uitverkocht",
-"live": "Live evenementen",
-"happening": "Wat er gebeurt",
-"see_all": "Alle evenementen bekijken →"
+    "sold_out": "Uitverkocht",
+    "live": "Live evenementen",
+    "happening": "Wat er gebeurt",
+    "see_all": "Alle evenementen bekijken →"
   },
   "essentials": {
-  "title": "Essentials",
-  "subtitle": "Alles wat je nodig hebt voor je nacht in Barcelona",
-  "search": "Zoeken...",
-  "view_all": "Alles bekijken →",
-  "locations": "locatie",
-  "locations_plural": "locaties",
-  "categories": {
-    "Pharmacy": "24u apotheken in Barcelona",
-    "ATM": "Geldautomaten de hele nacht open",
-    "Food": "Nachtelijk eten en restaurants",
-    "Transport": "Nachtbussen en metrolijnen",
-    "Taxi": "Taxistandplaatsen",
-    "Supermarket": "24u supermarkten",
-    "Hotel": "Hotels en accommodatie",
-    "Casino": "Casino's en entertainment",
-    "Other": "Andere nuttige diensten"
-  },
-  "category_names": {
-  "Pharmacy": "Apotheek",
-  "ATM": "Geldautomaat",
-  "Food": "Eten",
-  "Transport": "Transport",
-  "Taxi": "Taxi",
-  "Supermarket": "Supermarkt",
-  "Hotel": "Hotel",
-  "Casino": "Casino",
-  "Other": "Overige"
-}
+    "title": "Essentials",
+    "subtitle": "Alles wat je nodig hebt voor je nacht in Barcelona",
+    "search": "Zoeken...",
+    "view_all": "Alles bekijken →",
+    "locations": "locatie",
+    "locations_plural": "locaties",
+    "category_names": {
+      "Pharmacy": "Apotheek",
+      "ATM": "Geldautomaat",
+      "Food": "Eten",
+      "Transport": "Transport",
+      "Taxi": "Taxi",
+      "Supermarket": "Supermarkt",
+      "Hotel": "Hotel",
+      "Casino": "Casino",
+      "GasStation": "Tankstation",
+      "Hospital": "Ziekenhuis"
+    },
+    "categories": {
+      "Pharmacy": "24u apotheken in Barcelona",
+      "ATM": "Geldautomaten de hele nacht open",
+      "Food": "Nachtelijk eten en restaurants",
+      "Transport": "Nachtbussen en metrolijnen",
+      "Taxi": "Taxistandplaatsen",
+      "Supermarket": "24u supermarkten",
+      "Hotel": "Hotels en accommodatie",
+      "Casino": "Casino's en entertainment",
+      "GasStation": "Tankstations de hele nacht open",
+      "Hospital": "Ziekenhuizen en 24u spoedeisende hulp"
+    }
   },
   "plan": {
     "title": "Plan je nacht",
@@ -145,5 +147,26 @@
     "delete": "Account verwijderen",
     "deleting": "Verwijderen...",
     "delete_subtitle": "Verwijder je Noctua-account permanent."
+  },
+  "club": {
+    "experience": "Club ervaring",
+    "about": "Over deze locatie",
+    "night_info": "Nacht info",
+    "details": "Details",
+    "hours": "Openingstijden",
+    "price": "Prijs",
+    "live_status": "Live status",
+    "queue": "Wachtrij",
+    "metro": "Metro",
+    "night_buses": "Nachtbussen",
+    "location": "Locatie",
+    "back_home": "Terug naar home",
+    "trending": "Trending",
+    "sold_out": "Uitverkocht",
+    "not_found": "Club niet gevonden",
+    "music": "Muziek",
+    "area": "Gebied",
+    "no_queue": "Geen wachtrij",
+    "atmosphere": "sfeer"
   }
 }

@@ -19,18 +19,22 @@ const LanguageContext = createContext<LanguageContextType>({
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("es")
   const [messages, setMessages] = useState<Record<string, any>>({})
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    const saved = localStorage.getItem("noctua_locale") as Locale
-    const initial = saved || "es"
-    setLocaleState(initial)
+    const saved = (localStorage.getItem("noctua_locale") as Locale) || "es"
+    setLocaleState(saved)
   }, [])
 
   useEffect(() => {
+    setLoaded(false)
     fetch(`/messages/${locale}.json?v=${Date.now()}`)
       .then((res) => res.json())
-      .then((data) => setMessages(data))
-      .catch(() => {})
+      .then((data) => {
+        setMessages(data)
+        setLoaded(true)
+      })
+      .catch(() => setLoaded(true))
   }, [locale])
 
   const setLocale = (newLocale: Locale) => {
@@ -39,6 +43,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }
 
   const t = (key: string): string => {
+    if (!loaded) return ""
     const keys = key.split(".")
     let value: any = messages
     for (const k of keys) {

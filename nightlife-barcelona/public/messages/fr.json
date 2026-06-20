@@ -66,40 +66,42 @@
     "free": "Gratuit",
     "featured": "À la une",
     "tonight": "Ce soir",
-"sold_out": "Complet",
-"live": "Événements en direct",
-"happening": "Ce qui se passe",
-"see_all": "Voir tous les événements →"
+    "sold_out": "Complet",
+    "live": "Événements en direct",
+    "happening": "Ce qui se passe",
+    "see_all": "Voir tous les événements →"
   },
   "essentials": {
-  "title": "Essentiels",
-  "subtitle": "Tout ce dont vous avez besoin pour votre nuit à Barcelone",
-  "search": "Rechercher...",
-  "view_all": "Voir tout →",
-  "locations": "lieu",
-  "locations_plural": "lieux",
-  "categories": {
-    "Pharmacy": "Pharmacies 24h à Barcelone",
-    "ATM": "Distributeurs ouverts toute la nuit",
-    "Food": "Restauration nocturne",
-    "Transport": "Bus de nuit et lignes de métro",
-    "Taxi": "Stations de taxi",
-    "Supermarket": "Supermarchés 24h",
-    "Hotel": "Hôtels et hébergement",
-    "Casino": "Casinos et divertissement",
-    "Other": "Autres services utiles"
-  },
-  "category_names": {
-  "Pharmacy": "Pharmacie",
-  "ATM": "Distributeur",
-  "Food": "Restauration",
-  "Transport": "Transport",
-  "Taxi": "Taxi",
-  "Supermarket": "Supermarché",
-  "Hotel": "Hôtel",
-  "Casino": "Casino",
-  "Other": "Autres"
-}
+    "title": "Essentiels",
+    "subtitle": "Tout ce dont vous avez besoin pour votre nuit à Barcelone",
+    "search": "Rechercher...",
+    "view_all": "Voir tout →",
+    "locations": "lieu",
+    "locations_plural": "lieux",
+    "category_names": {
+      "Pharmacy": "Pharmacie",
+      "ATM": "Distributeur",
+      "Food": "Restauration",
+      "Transport": "Transport",
+      "Taxi": "Taxi",
+      "Supermarket": "Supermarché",
+      "Hotel": "Hôtel",
+      "Casino": "Casino",
+      "GasStation": "Station-service",
+      "Hospital": "Hôpital"
+    },
+    "categories": {
+      "Pharmacy": "Pharmacies 24h à Barcelone",
+      "ATM": "Distributeurs ouverts toute la nuit",
+      "Food": "Restauration nocturne",
+      "Transport": "Bus de nuit et lignes de métro",
+      "Taxi": "Stations de taxi",
+      "Supermarket": "Supermarchés 24h",
+      "Hotel": "Hôtels et hébergement",
+      "Casino": "Casinos et divertissement",
+      "GasStation": "Stations-service ouvertes la nuit",
+      "Hospital": "Hôpitaux et urgences 24h"
+    }
   },
   "plan": {
     "title": "Planifiez votre soirée",
@@ -145,5 +147,26 @@
     "delete": "Supprimer le compte",
     "deleting": "Suppression...",
     "delete_subtitle": "Supprimez définitivement votre compte Noctua."
+  },
+  "club": {
+    "experience": "Expérience du club",
+    "about": "À propos de ce lieu",
+    "night_info": "Info soirée",
+    "details": "Détails",
+    "hours": "Horaires",
+    "price": "Prix",
+    "live_status": "Statut en direct",
+    "queue": "File d'attente",
+    "metro": "Métro",
+    "night_buses": "Bus de nuit",
+    "location": "Localisation",
+    "back_home": "Retour à l'accueil",
+    "trending": "Tendance",
+    "sold_out": "Complet",
+    "not_found": "Club introuvable",
+    "music": "Musique",
+    "area": "Zone",
+    "no_queue": "Pas de file",
+    "atmosphere": "ambiance"
   }
 }

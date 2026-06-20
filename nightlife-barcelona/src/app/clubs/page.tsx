@@ -13,6 +13,10 @@ export default function ClubsPage() {
   const [selectedNeighborhood, setSelectedNeighborhood] = useState("All")
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
+  const [openNow, setOpenNow] = useState(false)
+  const [nearMe, setNearMe] = useState(false)
+  const [userLat, setUserLat] = useState<number | null>(null)
+  const [userLng, setUserLng] = useState<number | null>(null)
   const { t } = useLanguage()
 
   const filters = [t("filters.all"), "Techno", "Commercial", "Cocktail Bar", "Trending", "LGTBI+", "+18", "+21", "+25"]
@@ -25,6 +29,76 @@ export default function ClubsPage() {
     }
     fetchClubs()
   }, [])
+
+  const isOpenNow = (hours: string): boolean => {
+    if (!hours) return false
+
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Madrid" }))
+    const currentMinutes = now.getHours() * 60 + now.getMinutes()
+    const currentDay = now.getDay()
+
+    const dayMap: Record<string, number> = { L: 1, M: 2, X: 3, J: 4, V: 5, S: 6, D: 0 }
+    const dayOrder = [1, 2, 3, 4, 5, 6, 0]
+
+    const isDayActive = (daysStr: string): boolean => {
+      const parts = daysStr.split("/")
+      for (const part of parts) {
+        if (part.includes("-")) {
+          const [from, to] = part.split("-")
+          const fromIdx = dayOrder.indexOf(dayMap[from])
+          const toIdx = dayOrder.indexOf(dayMap[to])
+          const currentIdx = dayOrder.indexOf(currentDay)
+          if (fromIdx !== -1 && toIdx !== -1 && currentIdx !== -1) {
+            if (fromIdx <= toIdx) {
+              if (currentIdx >= fromIdx && currentIdx <= toIdx) return true
+            } else {
+              if (currentIdx >= fromIdx || currentIdx <= toIdx) return true
+            }
+          }
+        } else {
+          if (dayMap[part] === currentDay) return true
+        }
+      }
+      return false
+    }
+
+    const periods = hours.split("|").map(s => s.trim())
+
+    for (const period of periods) {
+      const withDay = period.match(/^([LMXJVSD\/\-]+)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/)
+      const noDay = period.match(/^(\d{2}:\d{2})-(\d{2}:\d{2})$/)
+
+      if (withDay) {
+        if (!isDayActive(withDay[1])) continue
+        const startMin = parseInt(withDay[2].split(":")[0]) * 60 + parseInt(withDay[2].split(":")[1])
+        const endMin = parseInt(withDay[3].split(":")[0]) * 60 + parseInt(withDay[3].split(":")[1])
+        if (endMin < startMin) {
+          if (currentMinutes >= startMin || currentMinutes <= endMin) return true
+        } else {
+          if (currentMinutes >= startMin && currentMinutes <= endMin) return true
+        }
+      } else if (noDay) {
+        const startMin = parseInt(noDay[1].split(":")[0]) * 60 + parseInt(noDay[1].split(":")[1])
+        const endMin = parseInt(noDay[2].split(":")[0]) * 60 + parseInt(noDay[2].split(":")[1])
+        if (endMin < startMin) {
+          if (currentMinutes >= startMin || currentMinutes <= endMin) return true
+        } else {
+          if (currentMinutes >= startMin && currentMinutes <= endMin) return true
+        }
+      }
+    }
+    return false
+  }
+
+  const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLng = (lng2 - lng1) * Math.PI / 180
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng/2) * Math.sin(dLng/2)
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  }
 
   const neighborhoods = ["All", ...Array.from(new Set(clubs.map((c) => c.neighborhood).filter(Boolean))).sort()]
 
@@ -52,7 +126,14 @@ export default function ClubsPage() {
       club.neighborhood?.toLowerCase().includes(search.toLowerCase()) ||
       club.music?.toLowerCase().includes(search.toLowerCase())
 
-    return matchesCategory && matchesNeighborhood && matchesSearch
+    const matchesOpenNow = !openNow || isOpenNow(club.hours)
+
+    const matchesNearMe = !nearMe || !userLat || !userLng || (
+      club.latitude && club.longitude &&
+      getDistance(userLat, userLng, club.latitude, club.longitude) <= 2
+    )
+
+    return matchesCategory && matchesNeighborhood && matchesSearch && matchesOpenNow && matchesNearMe
   })
 
   return (
@@ -125,6 +206,47 @@ export default function ClubsPage() {
           </div>
         </section>
 
+        {/* Tonight Mode + Near Me */}
+        <section className="mx-auto mt-4 max-w-7xl px-4">
+          <div className="flex gap-3">
+            <button
+              onClick={() => setOpenNow(!openNow)}
+              className={`rounded-full px-5 py-3 text-sm font-bold transition ${
+                openNow
+                  ? "bg-emerald-400 text-black"
+                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+              }`}
+            >
+              🟢 Abierto ahora
+            </button>
+            <button
+              onClick={() => {
+                if (!navigator.geolocation) return
+                navigator.geolocation.getCurrentPosition((pos) => {
+                  setUserLat(pos.coords.latitude)
+                  setUserLng(pos.coords.longitude)
+                  setNearMe(true)
+                })
+              }}
+              className={`rounded-full px-5 py-3 text-sm font-bold transition ${
+                nearMe
+                  ? "bg-purple-500 text-white"
+                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+              }`}
+            >
+              📍 Cerca de mí
+            </button>
+            {nearMe && (
+              <button
+                onClick={() => { setNearMe(false); setUserLat(null); setUserLng(null) }}
+                className="rounded-full px-5 py-3 text-sm font-bold border border-white/10 bg-white/5 text-white hover:bg-white/10 transition"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </section>
+
         {/* Neighborhood Filters */}
         <section className="mx-auto mt-4 max-w-7xl px-4">
           <p className="text-xs uppercase tracking-widest text-zinc-500 mb-3">📍 Barrio</p>
@@ -170,6 +292,7 @@ export default function ClubsPage() {
                   tableBooking={club.table_booking}
                   dresscode={club.dresscode}
                   lgtbi_friendly={club.lgtbi_friendly}
+                  verified={club.verified}
                 />
               </div>
             ))

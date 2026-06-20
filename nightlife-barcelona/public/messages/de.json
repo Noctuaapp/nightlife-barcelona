@@ -66,40 +66,42 @@
     "free": "Kostenlos",
     "featured": "Empfohlen",
     "tonight": "Heute Nacht",
-"sold_out": "Ausverkauft",
-"live": "Live-Veranstaltungen",
-"happening": "Was läuft",
-"see_all": "Alle Veranstaltungen →"
+    "sold_out": "Ausverkauft",
+    "live": "Live-Veranstaltungen",
+    "happening": "Was läuft",
+    "see_all": "Alle Veranstaltungen →"
   },
   "essentials": {
-  "title": "Wichtiges",
-  "subtitle": "Alles was du für deine Nacht in Barcelona brauchst",
-  "search": "Suchen...",
-  "view_all": "Alle anzeigen →",
-  "locations": "Ort",
-  "locations_plural": "Orte",
-  "categories": {
-    "Pharmacy": "24h Apotheken in Barcelona",
-    "ATM": "Geldautomaten die ganze Nacht geöffnet",
-    "Food": "Nachtessen und Restaurants",
-    "Transport": "Nachtbusse und U-Bahn-Linien",
-    "Taxi": "Taxistände und Abholpunkte",
-    "Supermarket": "24h Supermärkte",
-    "Hotel": "Hotels und Unterkunft",
-    "Casino": "Casinos und Unterhaltung",
-    "Other": "Andere nützliche Dienste"
-  },
-  "category_names": {
-  "Pharmacy": "Apotheke",
-  "ATM": "Geldautomat",
-  "Food": "Essen",
-  "Transport": "Transport",
-  "Taxi": "Taxi",
-  "Supermarket": "Supermarkt",
-  "Hotel": "Hotel",
-  "Casino": "Casino",
-  "Other": "Sonstiges"
-}
+    "title": "Wichtiges",
+    "subtitle": "Alles was du für deine Nacht in Barcelona brauchst",
+    "search": "Suchen...",
+    "view_all": "Alle anzeigen →",
+    "locations": "Ort",
+    "locations_plural": "Orte",
+    "category_names": {
+      "Pharmacy": "Apotheke",
+      "ATM": "Geldautomat",
+      "Food": "Essen",
+      "Transport": "Transport",
+      "Taxi": "Taxi",
+      "Supermarket": "Supermarkt",
+      "Hotel": "Hotel",
+      "Casino": "Casino",
+      "GasStation": "Tankstelle",
+      "Hospital": "Krankenhaus"
+    },
+    "categories": {
+      "Pharmacy": "24h Apotheken in Barcelona",
+      "ATM": "Geldautomaten die ganze Nacht geöffnet",
+      "Food": "Nachtessen und Restaurants",
+      "Transport": "Nachtbusse und U-Bahn-Linien",
+      "Taxi": "Taxistände und Abholpunkte",
+      "Supermarket": "24h Supermärkte",
+      "Hotel": "Hotels und Unterkunft",
+      "Casino": "Casinos und Unterhaltung",
+      "GasStation": "Tankstellen die ganze Nacht geöffnet",
+      "Hospital": "Krankenhäuser und 24h Notaufnahme"
+    }
   },
   "plan": {
     "title": "Plane deine Nacht",
@@ -145,5 +147,26 @@
     "delete": "Konto löschen",
     "deleting": "Löschen...",
     "delete_subtitle": "Lösche dein Noctua-Konto dauerhaft."
+  },
+  "club": {
+    "experience": "Club-Erlebnis",
+    "about": "Über diesen Ort",
+    "night_info": "Nacht-Info",
+    "details": "Details",
+    "hours": "Öffnungszeiten",
+    "price": "Preis",
+    "live_status": "Live-Status",
+    "queue": "Warteschlange",
+    "metro": "U-Bahn",
+    "night_buses": "Nachtbusse",
+    "location": "Standort",
+    "back_home": "Zurück zur Startseite",
+    "trending": "Trending",
+    "sold_out": "Ausverkauft",
+    "not_found": "Club nicht gefunden",
+    "music": "Musik",
+    "area": "Bereich",
+    "no_queue": "Keine Warteschlange",
+    "atmosphere": "Atmosphäre"
   }
 }

@@ -9,13 +9,13 @@
     "profile": "My profile",
     "login": "Log in",
     "logout": "Log out",
-    "signup": "Create account"
+    "signup": "Sign up"
   },
   "home": {
     "hero": "Discover Barcelona after dark...",
     "subtitle": "Noctua is a Barcelona nightlife discovery app. Find and explore the best clubs, bars, live events, festivals and late-night essentials. Create a free account to save your favourite venues and plan your night with AI.",
     "clubs": "Clubs",
-    "nightlife": "Barcelona nightlife",
+    "nightlife": "Nightlife in Barcelona",
     "explore": "Explore all clubs →"
   },
   "filters": {
@@ -27,19 +27,19 @@
     "loading": "Loading..."
   },
   "login": {
-    "title": "Sign in",
-    "subtitle": "Save favorites, manage your nights and access your account.",
+    "title": "Log in",
+    "subtitle": "Save favourites, manage your nights and access your account.",
     "google": "Continue with Google",
     "or": "or",
     "email": "Email",
     "password": "Password",
-    "signin": "Sign in",
-    "signing_in": "Signing in...",
-    "new": "New to Noctua? Create account"
+    "signin": "Log in",
+    "signing_in": "Logging in...",
+    "new": "New to Noctua? Sign up"
   },
   "signup": {
-    "title": "Create account",
-    "subtitle": "Save your favorite clubs, events and nights across Barcelona.",
+    "title": "Sign up",
+    "subtitle": "Save your favourite clubs, events and nights in Barcelona.",
     "google": "Continue with Google",
     "or": "or",
     "username": "Username",
@@ -48,7 +48,7 @@
     "country": "Where are you from?",
     "create": "Create account",
     "creating": "Creating account...",
-    "existing": "Already have an account? Sign in"
+    "existing": "Already have an account? Log in"
   },
   "clubs": {
     "title": "Clubs",
@@ -66,50 +66,52 @@
     "free": "Free",
     "featured": "Featured",
     "tonight": "Tonight",
-"sold_out": "Sold out",
-"live": "Live events",
-"happening": "What's happening",
-"see_all": "See all events →"
+    "sold_out": "Sold out",
+    "live": "Live events",
+    "happening": "What's happening",
+    "see_all": "See all events →"
   },
   "essentials": {
-  "title": "Essentials",
-  "subtitle": "Everything you need for your night in Barcelona",
-  "search": "Search...",
-  "view_all": "View all →",
-  "locations": "location",
-  "locations_plural": "locations",
-  "categories": {
-    "Pharmacy": "24h pharmacies across Barcelona",
-    "ATM": "Cash machines open all night",
-    "Food": "Late night food and restaurants",
-    "Transport": "Night buses and metro lines",
-    "Taxi": "Taxi ranks and pickup points",
-    "Supermarket": "24h supermarkets and convenience stores",
-    "Hotel": "Hotels and accommodation",
-    "Casino": "Casinos and entertainment",
-    "Other": "Other useful services"
-  },
-  "category_names": {
-  "Pharmacy": "Pharmacy",
-  "ATM": "ATM",
-  "Food": "Food",
-  "Transport": "Transport",
-  "Taxi": "Taxi",
-  "Supermarket": "Supermarket",
-  "Hotel": "Hotel",
-  "Casino": "Casino",
-  "Other": "Other"
-}
+    "title": "Essentials",
+    "subtitle": "Everything you need for your night in Barcelona",
+    "search": "Search...",
+    "view_all": "View all →",
+    "locations": "location",
+    "locations_plural": "locations",
+    "category_names": {
+      "Pharmacy": "Pharmacy",
+      "ATM": "ATM",
+      "Food": "Food",
+      "Transport": "Transport",
+      "Taxi": "Taxi",
+      "Supermarket": "Supermarket",
+      "Hotel": "Hotel",
+      "Casino": "Casino",
+      "GasStation": "Gas Station",
+      "Hospital": "Hospital"
+    },
+    "categories": {
+      "Pharmacy": "24h pharmacies across Barcelona",
+      "ATM": "Cash machines open all night",
+      "Food": "Late night food and restaurants",
+      "Transport": "Night buses and metro lines",
+      "Taxi": "Taxi ranks and pickup points",
+      "Supermarket": "24h supermarkets and convenience stores",
+      "Hotel": "Hotels and accommodation",
+      "Casino": "Casinos and entertainment",
+      "GasStation": "Gas stations open all night",
+      "Hospital": "Hospitals and 24h emergency services"
+    }
   },
   "plan": {
     "title": "Plan your night",
-    "subtitle": "Tell us your vibe — our AI will find the perfect spots for tonight in Barcelona.",
+    "subtitle": "Tell us your vibe — our AI will find the best spots for tonight in Barcelona.",
     "group": "Group size",
     "people": "people",
     "budget": "Budget per person",
     "time": "What time are you going out?",
     "early": "Early",
-    "peak": "Peak",
+    "peak": "Midnight",
     "late": "Late",
     "vibe": "What's your vibe?",
     "music": "Music",
@@ -118,7 +120,7 @@
     "lgtbi": "LGTBI+ friendly only",
     "find": "✨ Find my night",
     "finding": "Finding your perfect night...",
-    "results": "✨ Your night plan",
+    "results": "✨ Your plan for tonight",
     "tip": "💡 Insider tip",
     "clubs_for_you": "Clubs for you",
     "events_tonight": "Events tonight",
@@ -126,24 +128,45 @@
   },
   "profile": {
     "title": "Your profile",
-    "subtitle": "Manage your Noctua account, favorites and session.",
+    "subtitle": "Manage your Noctua account, favourites and session.",
     "email": "Email",
-    "favorites": "Favorites",
-    "view_favorites": "View favorites",
+    "favorites": "Favourites",
+    "view_favorites": "View favourites",
     "username": "Username",
     "change_username": "Change username",
-    "days_until_change": "You can change your username again in {days} days.",
+    "days_until_change": "You can change your username in {days} days.",
     "username_hint": "You can only change your username once every 30 days.",
     "save": "Save",
     "saving": "Saving...",
     "cancel": "Cancel",
     "session": "Session",
     "logout": "Log out",
-    "logout_subtitle": "Sign out from this device.",
+    "logout_subtitle": "Log out of this device.",
     "change_password": "Change password",
     "danger": "Danger zone",
     "delete": "Delete account",
     "deleting": "Deleting...",
     "delete_subtitle": "Permanently delete your Noctua account."
+  },
+  "club": {
+    "experience": "Club experience",
+    "about": "About this venue",
+    "night_info": "Night info",
+    "details": "Details",
+    "hours": "Hours",
+    "price": "Price",
+    "live_status": "Live status",
+    "queue": "Queue",
+    "metro": "Metro",
+    "night_buses": "Night buses",
+    "location": "Location",
+    "back_home": "Back to home",
+    "trending": "Trending",
+    "sold_out": "Sold out",
+    "not_found": "Club not found",
+    "music": "Music",
+    "area": "Area",
+    "no_queue": "No queue",
+    "atmosphere": "atmosphere"
   }
 }

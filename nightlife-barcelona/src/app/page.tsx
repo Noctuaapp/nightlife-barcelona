@@ -135,6 +135,7 @@ export default function Home() {
                   tableBooking={club.tableBooking}
                   dresscode={club.dresscode}
                   lgtbi_friendly={club.lgtbi_friendly}
+                  verified={club.verified}
                 />
               </div>
             ))}

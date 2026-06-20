@@ -78,17 +78,6 @@
     "view_all": "Ver todo →",
     "locations": "ubicación",
     "locations_plural": "ubicaciones",
-    "categories": {
-      "Pharmacy": "Farmacias 24h en Barcelona",
-      "ATM": "Cajeros automáticos abiertos toda la noche",
-      "Food": "Comida nocturna y restaurantes",
-      "Transport": "Buses nocturnos y líneas de metro",
-      "Taxi": "Paradas de taxi y puntos de recogida",
-      "Supermarket": "Supermercados 24h y tiendas de conveniencia",
-      "Hotel": "Hoteles y alojamiento",
-      "Casino": "Casinos y entretenimiento",
-      "Other": "Otros servicios útiles"
-    },
     "category_names": {
       "Pharmacy": "Farmacia",
       "ATM": "Cajero",
@@ -98,7 +87,20 @@
       "Supermarket": "Supermercado",
       "Hotel": "Hotel",
       "Casino": "Casino",
-      "Other": "Otros"
+      "GasStation": "Gasolinera",
+      "Hospital": "Hospital"
+    },
+    "categories": {
+      "Pharmacy": "Farmacias 24h en Barcelona",
+      "ATM": "Cajeros automáticos abiertos toda la noche",
+      "Food": "Comida nocturna y restaurantes",
+      "Transport": "Buses nocturnos y líneas de metro",
+      "Taxi": "Paradas de taxi y puntos de recogida",
+      "Supermarket": "Supermercados 24h y tiendas de conveniencia",
+      "Hotel": "Hoteles y alojamiento",
+      "Casino": "Casinos y entretenimiento",
+      "GasStation": "Gasolineras abiertas toda la noche",
+      "Hospital": "Hospitales y urgencias 24h"
     }
   },
   "plan": {
@@ -145,5 +147,26 @@
     "delete": "Eliminar cuenta",
     "deleting": "Eliminando...",
     "delete_subtitle": "Elimina tu cuenta de Noctua permanentemente."
+  },
+  "club": {
+    "experience": "Experiencia en el club",
+    "about": "Sobre este local",
+    "night_info": "Info de la noche",
+    "details": "Detalles",
+    "hours": "Horario",
+    "price": "Precio",
+    "live_status": "Estado en vivo",
+    "queue": "Cola",
+    "metro": "Metro",
+    "night_buses": "Buses nocturnos",
+    "location": "Ubicación",
+    "back_home": "Volver al inicio",
+    "trending": "Trending",
+    "sold_out": "Agotado",
+    "not_found": "Club no encontrado",
+    "music": "Música",
+    "area": "Zona",
+    "no_queue": "Sin cola",
+    "atmosphere": "ambiente"
   }
 }
