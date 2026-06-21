@@ -388,12 +388,7 @@ export default function AdminPage() {
                       <button onClick={() => toggleLgtbi(club)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${club.lgtbi_friendly ? "bg-pink-500 text-white" : "border border-white/10 bg-white/5 text-white"}`}>
                         🏳️‍🌈 LGTBI+
                       </button>
-                      <button onClick={() => toggleVerified(club)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${(club as any).verified ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5 text-white"}`}>
-                        ✓ Verified
-                      </button>
-                      <button onClick={() => toggleVerified(club)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${(club as any).verified ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5 text-white"}`}>
-                        ✓ Verified
-                      </button>
+                                        
                       <button onClick={() => deleteClub(club.id)} className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400 hover:bg-red-500 hover:text-white transition">Delete</button>
                     </div>
                   </div>
