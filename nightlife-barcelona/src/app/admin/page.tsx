@@ -175,7 +175,12 @@ export default function AdminPage() {
     if (error) return
     setClubs((prev) => prev.map((c) => c.id === club.id ? { ...c, lgtbi_friendly: newValue } : c))
   }
-
+  const toggleVerified = async (club: Club) => {
+    const newValue = !(club as any).verified
+    const { error } = await supabase.from("clubs").update({ verified: newValue }).eq("id", club.id)
+    if (error) return
+    setClubs((prev) => prev.map((c) => c.id === club.id ? { ...c, verified: newValue } : c))
+  }
   const updateQueue = async (club: Club, level: string) => {
     const { error } = await supabase.from("clubs").update({ queue: level }).eq("id", club.id)
     if (error) return
@@ -382,6 +387,12 @@ export default function AdminPage() {
                       </button>
                       <button onClick={() => toggleLgtbi(club)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${club.lgtbi_friendly ? "bg-pink-500 text-white" : "border border-white/10 bg-white/5 text-white"}`}>
                         🏳️‍🌈 LGTBI+
+                      </button>
+                      <button onClick={() => toggleVerified(club)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${(club as any).verified ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5 text-white"}`}>
+                        ✓ Verified
+                      </button>
+                      <button onClick={() => toggleVerified(club)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${(club as any).verified ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5 text-white"}`}>
+                        ✓ Verified
                       </button>
                       <button onClick={() => deleteClub(club.id)} className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400 hover:bg-red-500 hover:text-white transition">Delete</button>
                     </div>

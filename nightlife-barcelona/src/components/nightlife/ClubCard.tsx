@@ -61,8 +61,9 @@ export default function ClubCard({
             </div>
           )}
           {verified && (
-            <div className="rounded-full border border-emerald-500/30 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-300 backdrop-blur-xl">
-              ✓ Verified
+            <div className="flex items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/20 px-3 py-2 text-xs font-semibold text-purple-300 backdrop-blur-xl">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-purple-500 text-white font-black text-[10px]">N</span>
+              Noctua Verified
             </div>
           )}
         </div>
