@@ -107,9 +107,9 @@ export default function ClubsPage() {
     const matchesCategory =
       selectedCategory === allLabel ||
       selectedCategory === "All" ||
-      (selectedCategory === "Techno" && club.music === "Techno") ||
-      (selectedCategory === "Commercial" && club.music === "Commercial") ||
-      (selectedCategory === "Cocktail Bar" && club.music === "Cocktail Bar") ||
+      (selectedCategory === "Techno" && club.music?.toLowerCase().includes("techno")) ||
+      (selectedCategory === "Commercial" && club.music?.toLowerCase().includes("commercial")) ||
+      (selectedCategory === "Cocktail Bar" && club.music?.toLowerCase().includes("cocktail")) ||
       (selectedCategory === "Trending" && club.trending === true) ||
       (selectedCategory === "LGTBI+" && club.lgtbi_friendly === true) ||
       (selectedCategory === "+18" && club.age_min === 18) ||

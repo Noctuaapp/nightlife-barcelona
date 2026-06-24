@@ -16,7 +16,9 @@
     "subtitle": "Noctua is a Barcelona nightlife discovery app. Find and explore the best clubs, bars, live events, festivals and late-night essentials. Create a free account to save your favourite venues and plan your night with AI.",
     "clubs": "Clubs",
     "nightlife": "Nightlife in Barcelona",
-    "explore": "Explore all clubs →"
+    "explore": "Explore all clubs →",
+    "about_title": "What is Noctua?",
+    "about_text": "Noctua is a Barcelona nightlife discovery platform. We help users find and explore the best clubs, bars, live events, festivals and late-night essentials. Users can create a free account to save favourite venues and plan their night with AI. Noctua uses Google Sign-In to allow users to log in quickly and securely. We only access your name and email address to create and manage your Noctua account."
   },
   "filters": {
     "all": "All"

@@ -88,15 +88,15 @@ export default function Home() {
             </div>
           </div>
         </section>
-{/* Google verification section - visible to crawlers */}
-<section className="mx-auto mt-6 max-w-7xl px-4">
+
+         {/* Google verification section */}
+        <section className="sr-only">
           <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-            <h2 className="text-2xl font-black text-white mb-3">What is Noctua?</h2>
-            <p className="text-zinc-300 leading-relaxed">
-              Noctua is a Barcelona nightlife discovery platform. We help users find and explore the best clubs, bars, live events, festivals and late-night essentials across Barcelona. Users can create a free account to save favourite venues, plan their night with AI assistance, and get real-time information about opening hours, music, prices and dress codes. Noctua uses Google Sign-In to allow users to log in quickly and securely. We only access your name and email address to create and manage your Noctua account.
-            </p>
+            <h2 className="text-2xl font-black text-white mb-3">{t("home.about_title")}</h2>
+            <p className="text-zinc-300 leading-relaxed">{t("home.about_text")}</p>
           </div>
         </section>
+
         {/* SEARCH */}
         <section className="mx-auto mt-10 max-w-7xl px-4">
           <div className="max-w-lg">
