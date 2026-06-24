@@ -14,6 +14,14 @@ type EventPageProps = {
 const createSlug = (text: string) =>
   text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
 
+const isEventPast = (date: string): boolean => {
+  if (!date) return false
+  const eventDate = new Date(date)
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  return eventDate < now
+}
+
 export default async function EventPage({ params }: EventPageProps) {
   const { slug } = await params
 
@@ -24,9 +32,9 @@ export default async function EventPage({ params }: EventPageProps) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
         <div className="text-center">
-          <h1 className="text-5xl font-black">Event not found</h1>
+          <h1 className="text-5xl font-black">Evento no encontrado</h1>
           <Link href="/" className="mt-6 inline-block rounded-full bg-white px-6 py-3 font-bold text-black">
-            Back home
+            Volver al inicio
           </Link>
         </div>
       </main>
@@ -45,6 +53,8 @@ export default async function EventPage({ params }: EventPageProps) {
     .select("*")
     .eq("event_id", event.id)
     .order("date", { ascending: true })
+
+  const past = isEventPast(event.date)
 
   return (
     <>
@@ -68,14 +78,19 @@ export default async function EventPage({ params }: EventPageProps) {
                 {event.title}
               </h1>
               <div className="mt-8 flex flex-wrap gap-3">
-                {event.featured && (
+                {past && (
+                  <div className="rounded-full border border-zinc-500/30 bg-zinc-800/80 px-5 py-3 text-sm font-bold text-zinc-400">
+                    ⏹ Evento terminado
+                  </div>
+                )}
+                {event.featured && !past && (
                   <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300">
-                    🔥 Featured
+                    🔥 Destacado
                   </div>
                 )}
                 {event.sold_out && (
                   <div className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-300">
-                    🚫 Sold out
+                    🚫 Agotado
                   </div>
                 )}
                 <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm">
@@ -93,46 +108,43 @@ export default async function EventPage({ params }: EventPageProps) {
           <div className="grid gap-10 lg:grid-cols-3">
 
             <div className="lg:col-span-2 space-y-10">
-              {/* About */}
               <div className="rounded-[36px] border border-white/10 bg-white/[0.03] p-10 backdrop-blur-2xl">
                 <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Sobre el evento</p>
-                <h2 className="mt-4 text-5xl font-black">About this event</h2>
+                <h2 className="mt-4 text-5xl font-black">Sobre este evento</h2>
                 <p className="mt-8 text-lg leading-relaxed text-zinc-300">
-                  {event.description || "A curated event in Barcelona."}
+                  {event.description || "Un evento en Barcelona."}
                 </p>
               </div>
 
-              {/* Sessions calendar */}
               {sessions && sessions.length > 0 && (
                 <EventSessionsCalendar sessions={sessions} eventName={event.title} />
               )}
             </div>
 
-            {/* Sidebar */}
             <div className="rounded-[36px] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-2xl">
-              <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Event info</p>
-              <h3 className="mt-4 text-4xl font-black">Details</h3>
+              <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Info del evento</p>
+              <h3 className="mt-4 text-4xl font-black">Detalles</h3>
 
               <div className="mt-10 space-y-6 text-zinc-300">
                 <div>
-                  <p className="text-sm text-zinc-500">Date</p>
+                  <p className="text-sm text-zinc-500">Fecha</p>
                   <p className="mt-2 text-lg">
                     📅 {event.date ? new Date(event.date).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "TBA"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-zinc-500">Time</p>
+                  <p className="text-sm text-zinc-500">Hora</p>
                   <p className="mt-2 text-lg">🕒 {event.start_time || "TBA"} - {event.end_time || "TBA"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-zinc-500">Price</p>
+                  <p className="text-sm text-zinc-500">Precio</p>
                   <p className="mt-2 text-lg">🎟 {event.price || "TBA"}</p>
                 </div>
               </div>
 
               {tickets && tickets.length > 0 && (
                 <div className="mt-10">
-                  <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">Tickets</p>
+                  <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">Entradas</p>
                   <div className="space-y-4">
                     {tickets.map((ticket) => (
                       <div key={ticket.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -148,7 +160,7 @@ export default async function EventPage({ params }: EventPageProps) {
                         {ticket.external_url && !event.sold_out && (
                           <a href={ticket.external_url} target="_blank" rel="noopener noreferrer"
                             className="mt-4 flex items-center justify-center rounded-xl bg-white px-4 py-3 font-bold text-black transition hover:scale-[1.02]">
-                            Buy Ticket
+                            Comprar entrada
                           </a>
                         )}
                       </div>
@@ -157,22 +169,28 @@ export default async function EventPage({ params }: EventPageProps) {
                 </div>
               )}
 
-              {(!tickets || tickets.length === 0) && event.ticket_url && !event.sold_out && (
+              {(!tickets || tickets.length === 0) && event.ticket_url && !event.sold_out && !past && (
                 <a href={event.ticket_url} target="_blank" rel="noopener noreferrer"
                   className="mt-10 flex items-center justify-center rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02]">
-                  Get tickets
+                  Comprar entradas
                 </a>
               )}
 
               {event.sold_out && (
                 <div className="mt-10 flex items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 px-6 py-4 font-bold text-red-300">
-                  Sold out
+                  🚫 Agotado
+                </div>
+              )}
+
+              {past && (
+                <div className="mt-10 flex items-center justify-center rounded-2xl border border-zinc-500/20 bg-zinc-800/50 px-6 py-4 font-bold text-zinc-400">
+                  ⏹ Evento terminado
                 </div>
               )}
 
               {event.latitude && event.longitude && (
                 <div className="mt-8">
-                  <p className="text-sm text-zinc-500 mb-3">Location</p>
+                  <p className="text-sm text-zinc-500 mb-3">Ubicación</p>
                   <ClubMap latitude={event.latitude} longitude={event.longitude} name={event.title} />
                   {event.address && <p className="mt-3 text-sm text-zinc-400">📍 {event.address}</p>}
                 </div>
@@ -188,8 +206,15 @@ export default async function EventPage({ params }: EventPageProps) {
               <FavoriteButton itemType="event" itemId={event.id} />
 
               <Link href="/" className="mt-4 flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white/10">
-                Back to home
+                Volver al inicio
               </Link>
+
+              <a
+                href={"/contact?type=report_issue&subject=" + encodeURIComponent("Reporte evento: " + event.title)}
+                className="mt-3 flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-zinc-400 transition hover:bg-white/10"
+              >
+                ⚑ Reportar información incorrecta
+              </a>
             </div>
           </div>
         </section>

@@ -18,7 +18,7 @@
     "nightlife": "Vida nocturna a Barcelona",
     "explore": "Veure tots els clubs →",
     "about_title": "Què és Noctua?",
-"about_text": "Noctua és la plataforma de descobriment de vida nocturna de Barcelona. Ajudem els usuaris a trobar i explorar els millors clubs, bars, esdeveniments i serveis nocturns. Els usuaris poden crear un compte gratuït per guardar els seus locals favorits i planificar la seva nit amb IA. Noctua utilitza Google Sign-In per permetre als usuaris iniciar sessió de forma ràpida i segura."
+    "about_text": "Noctua és la plataforma de descobriment de vida nocturna de Barcelona. Ajudem els usuaris a trobar i explorar els millors clubs, bars, esdeveniments i serveis nocturns. Els usuaris poden crear un compte gratuït per guardar els seus locals favorits i planificar la seva nit amb IA. Noctua utilitza Google Sign-In per permetre als usuaris iniciar sessió de forma ràpida i segura."
   },
   "filters": {
     "all": "Tots"
@@ -170,5 +170,13 @@
     "area": "Zona",
     "no_queue": "Sense cua",
     "atmosphere": "ambient"
-  }
+  },
+  "footer": {
+  "tagline": "La plataforma d'oci nocturn de Barcelona. Troba els millors clubs, esdeveniments i serveis nocturns.",
+  "venue_cta": "Ets propietari d'un club? Contacta'ns →",
+  "explore": "Explorar",
+  "legal": "Legal",
+  "copyright": "© 2026 Noctua · Barcelona Nightlife",
+  "privacy_note": "Noctua utilitza el teu email per gestionar el teu compte. Google Sign-In només comparteix el teu nom i email. Mai venem les teves dades ni les fem servir per publicitat."
+}
 }

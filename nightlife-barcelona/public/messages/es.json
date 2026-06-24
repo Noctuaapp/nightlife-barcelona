@@ -170,5 +170,13 @@
     "area": "Zona",
     "no_queue": "Sin cola",
     "atmosphere": "ambiente"
-  }
+  },
+  "footer": {
+  "tagline": "La plataforma de ocio nocturno de Barcelona. Encuentra los mejores clubs, eventos y servicios nocturnos.",
+  "venue_cta": "¿Eres dueño de un club? Contáctanos →",
+  "explore": "Explorar",
+  "legal": "Legal",
+  "copyright": "© 2026 Noctua · Barcelona Nightlife",
+  "privacy_note": "Noctua usa tu email para gestionar tu cuenta. Google Sign-In solo comparte tu nombre y email. Nunca vendemos tus datos ni los usamos para publicidad."
+}
 }

@@ -170,5 +170,13 @@
     "area": "Gebied",
     "no_queue": "Geen wachtrij",
     "atmosphere": "sfeer"
-  }
+  },
+  "footer": {
+  "tagline": "Barcelona's nachtleven platform. Vind de beste clubs, evenementen en nachtelijke diensten.",
+  "venue_cta": "Heb je een club? Neem contact op →",
+  "explore": "Verkennen",
+  "legal": "Juridisch",
+  "copyright": "© 2026 Noctua · Barcelona Nightlife",
+  "privacy_note": "Noctua gebruikt je e-mail om je account te beheren. Google Sign-In deelt alleen je naam en e-mail. We verkopen je gegevens nooit."
+}
 }

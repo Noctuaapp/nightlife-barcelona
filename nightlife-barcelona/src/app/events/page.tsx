@@ -11,19 +11,30 @@ import { useLanguage } from "../../context/LanguageContext"
 const createSlug = (text: string) =>
   text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
 
+const isEventPast = (date: string): boolean => {
+  if (!date) return false
+  const eventDate = new Date(date)
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  return eventDate < now
+}
+
 export default function EventsPage() {
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedFilter, setSelectedFilter] = useState("All")
   const [search, setSearch] = useState("")
+  const [nearMe, setNearMe] = useState(false)
+  const [userLat, setUserLat] = useState<number | null>(null)
+  const [userLng, setUserLng] = useState<number | null>(null)
   const { t } = useLanguage()
 
   const filters = [
-    t("filters.all"),
-    t("events.festival"),
-    t("events.neighborhood"),
-    t("events.free"),
-    t("events.featured"),
+    { key: "all", label: t("filters.all") },
+    { key: "festival", label: t("events.festival") },
+    { key: "neighborhood", label: t("events.neighborhood") },
+    { key: "free", label: t("events.free") },
+    { key: "featured", label: t("events.featured") },
   ]
 
   useEffect(() => {
@@ -34,6 +45,16 @@ export default function EventsPage() {
     }
     fetchEvents()
   }, [])
+
+  const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLng = (lng2 - lng1) * Math.PI / 180
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng/2) * Math.sin(dLng/2)
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  }
 
   const filteredEvents = events.filter((event) => {
     const allLabel = t("filters.all")
@@ -69,7 +90,12 @@ export default function EventsPage() {
       event.address?.toLowerCase().includes(search.toLowerCase()) ||
       event.description?.toLowerCase().includes(search.toLowerCase())
 
-    return matchesFilter && matchesSearch
+    const matchesNearMe = !nearMe || !userLat || !userLng || (
+      event.latitude && event.longitude &&
+      getDistance(userLat, userLng, event.latitude, event.longitude) <= 5
+    )
+
+    return matchesFilter && matchesSearch && matchesNearMe
   })
 
   return (
@@ -122,22 +148,47 @@ export default function EventsPage() {
           </div>
         </section>
 
-        {/* Filters */}
+        {/* Filters + Near Me */}
         <section className="mx-auto mt-6 max-w-7xl px-4">
           <div className="flex gap-3 overflow-x-auto pb-2">
-            {filters.map((filter) => (
+          {filters.map((filter) => (
               <button
-                key={filter}
-                onClick={() => setSelectedFilter(filter)}
+                key={filter.key}
+                onClick={() => setSelectedFilter(filter.label)}
                 className={`rounded-full px-5 py-3 text-sm font-medium whitespace-nowrap transition ${
-                  selectedFilter === filter
+                  selectedFilter === filter.label
                     ? "bg-white text-black"
                     : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
                 }`}
               >
-                {filter}
+                {filter.label}
               </button>
             ))}
+            <button
+              onClick={() => {
+                if (!navigator.geolocation) return
+                navigator.geolocation.getCurrentPosition((pos) => {
+                  setUserLat(pos.coords.latitude)
+                  setUserLng(pos.coords.longitude)
+                  setNearMe(true)
+                })
+              }}
+              className={`rounded-full px-5 py-3 text-sm font-medium whitespace-nowrap transition ${
+                nearMe
+                  ? "bg-purple-500 text-white"
+                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+              }`}
+            >
+              📍 Cerca de mí
+            </button>
+            {nearMe && (
+              <button
+                onClick={() => { setNearMe(false); setUserLat(null); setUserLng(null) }}
+                className="rounded-full px-5 py-3 text-sm font-medium border border-white/10 bg-white/5 text-white hover:bg-white/10 transition"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </section>
 
@@ -148,54 +199,56 @@ export default function EventsPage() {
           ) : filteredEvents.length === 0 ? (
             <p className="text-zinc-500 text-sm col-span-3 text-center py-20">No events found.</p>
           ) : (
-            filteredEvents.map((event, index) => (
-              <div
+            filteredEvents.map((event, index) => {
+              const past = isEventPast(event.date)
+              return (
+                <Link
                 key={event.id}
-                className="group overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] transition duration-500 hover:-translate-y-2 hover:border-white/20 fade-up"
+                href={`/event/${createSlug(event.title)}`}
+                className={`group overflow-hidden rounded-[32px] border bg-white/[0.03] transition duration-500 hover:-translate-y-2 hover:border-white/20 fade-up block ${past ? "opacity-60 border-white/5" : "border-white/10"}`}
                 style={{ animationDelay: `${index * 0.08}s` }}
               >
-                <div className="relative h-[460px] overflow-hidden">
-                  {event.image ? (
-                    <Image src={event.image} alt={event.title} fill className="object-cover transition duration-700 group-hover:scale-110" />
-                  ) : (
-                    <div className="absolute inset-0 bg-zinc-900" />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
+                  <div className="relative h-[460px] overflow-hidden">
+                    {event.image ? (
+                      <Image src={event.image} alt={event.title} fill className="object-cover transition duration-700 group-hover:scale-110" />
+                    ) : (
+                      <div className="absolute inset-0 bg-zinc-900" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
 
-                  {event.featured && (
-                    <div className="absolute left-5 top-5">
-                      <div className="w-fit rounded-full border border-white/10 bg-black/50 px-4 py-2 text-xs font-semibold text-white backdrop-blur-xl">
-                        ⭐ {t("events.featured")}
+                    <div className="absolute left-5 top-5 flex gap-2">
+                      {past && (
+                        <div className="rounded-full border border-zinc-500/30 bg-zinc-800/80 px-4 py-2 text-xs font-semibold text-zinc-400 backdrop-blur-xl">
+                          ⏹ Evento terminado
+                        </div>
+                      )}
+                      {event.featured && !past && (
+                        <div className="rounded-full border border-white/10 bg-black/50 px-4 py-2 text-xs font-semibold text-white backdrop-blur-xl">
+                          ⭐ {t("events.featured")}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="absolute bottom-0 left-0 w-full p-6">
+                      {event.date && (
+                        <p className="text-sm uppercase tracking-wide text-zinc-400">
+                          {past ? "Evento terminado" : new Date(event.date).toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })}
+                        </p>
+                      )}
+                      <h2 className="mt-3 text-4xl font-black tracking-tight text-white">{event.title}</h2>
+                      {event.description && (
+                        <p className="mt-4 text-zinc-300 line-clamp-2">{event.description}</p>
+                      )}
+                      <div className="mt-4 flex items-center justify-between text-sm text-zinc-300">
+                        {event.start_time && <span>🕒 {event.start_time}</span>}
+                        {event.price && <span>🎟 {event.price}</span>}
                       </div>
-                    </div>
-                  )}
-
-                  <div className="absolute bottom-0 left-0 w-full p-6">
-                    {event.date && (
-                      <p className="text-sm uppercase tracking-wide text-zinc-400">
-                        {new Date(event.date).toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })}
-                      </p>
-                    )}
-                    <h2 className="mt-3 text-4xl font-black tracking-tight text-white">{event.title}</h2>
-                    {event.description && (
-                      <p className="mt-4 text-zinc-300 line-clamp-2">{event.description}</p>
-                    )}
-                    <div className="mt-4 flex items-center justify-between text-sm text-zinc-300">
-                      {event.start_time && <span>🕒 {event.start_time}</span>}
-                      {event.price && <span>🎟 {event.price}</span>}
-                    </div>
-                    <div className="mt-6 flex gap-3">
-                      <Link
-                        href={`/event/${createSlug(event.title)}`}
-                        className="rounded-full bg-white px-5 py-3 text-sm font-bold text-black transition hover:scale-105"
-                      >
-                        {t("common.search")}
-                      </Link>
+                      
                     </div>
                   </div>
-                </div>
-              </div>
-            ))
+                </Link>
+              )
+            })
           )}
         </section>
       </main>

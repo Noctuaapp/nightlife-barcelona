@@ -239,10 +239,10 @@ export default function EssentialCategoryPage() {
                     <p className="mt-3 text-sm text-zinc-400 line-clamp-2">{item.description}</p>
                   )}
 
-                  <div className="mt-4 flex gap-2 flex-wrap">
+<div className="mt-4 flex gap-2 flex-wrap">
                     {item.maps_link && (
-                      
-                      <a  href={item.maps_link}
+                      <a
+                        href={item.maps_link}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
@@ -252,8 +252,8 @@ export default function EssentialCategoryPage() {
                       </a>
                     )}
                     {item.latitude && item.longitude && (
-                      
-                        <a href={
+                      <a
+                        href={
                           userLocation
                             ? `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${item.latitude},${item.longitude}`
                             : `https://www.google.com/maps/dir/?api=1&destination=${item.latitude},${item.longitude}`
@@ -266,6 +266,13 @@ export default function EssentialCategoryPage() {
                         🧭 Cómo llegar
                       </a>
                     )}
+                    <a
+                      href={"/contact?type=report_issue&subject=" + encodeURIComponent("Reporte: " + item.name)}
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                      className="inline-block rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-zinc-500 hover:text-white transition"
+                    >
+                      ⚑ Reportar
+                    </a>
                   </div>
                 </div>
               ))}

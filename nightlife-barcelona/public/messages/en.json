@@ -170,5 +170,13 @@
     "area": "Area",
     "no_queue": "No queue",
     "atmosphere": "atmosphere"
-  }
+  },
+  "footer": {
+  "tagline": "Barcelona's nightlife discovery platform. Find the best clubs, events and late-night essentials.",
+  "venue_cta": "Own a club? Contact us →",
+  "explore": "Explore",
+  "legal": "Legal",
+  "copyright": "© 2026 Noctua · Barcelona Nightlife",
+  "privacy_note": "Noctua uses your email to manage your account. Google Sign-In only shares your name and email. We never sell your data or use it for advertising."
+}
 }

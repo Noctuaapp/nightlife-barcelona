@@ -44,11 +44,11 @@ export default function Home() {
     const matchesCategory =
       selectedCategory === allLabel ||
       selectedCategory === "All" ||
-      (selectedCategory === "Techno" && club.music === "Techno") ||
-      (selectedCategory === "Commercial" && club.music === "Commercial") ||      
-      (selectedCategory === "House" && club.music === "House") ||
-      (selectedCategory === "Reggaeton" && club.music === "Reggaeton") ||
-      (selectedCategory === "Rock" && club.music === "Rock")
+      (selectedCategory === "Techno" && club.music?.toLowerCase().includes("techno")) ||
+      (selectedCategory === "Commercial" && club.music?.toLowerCase().includes("commercial")) ||
+      (selectedCategory === "House" && club.music?.toLowerCase().includes("house")) ||
+      (selectedCategory === "Reggaeton" && club.music?.toLowerCase().includes("reggaeton")) ||
+      (selectedCategory === "Rock" && club.music?.toLowerCase().includes("rock"))
 
     const matchesSearch =
       club.name?.toLowerCase().includes(search.toLowerCase()) ||
