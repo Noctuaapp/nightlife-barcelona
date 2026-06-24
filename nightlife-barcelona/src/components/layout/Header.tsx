@@ -74,14 +74,16 @@ export default function Header() {
 
         const now = new Date()
         const currentHour = now.getHours()
-        const allNightHours = ["T23:00", "T00:00", "T01:00", "T02:00", "T03:00", "T05:00", "T06:00"]
+        const allNightHours = ["T23:00", "T00:00", "T01:00", "T02:00", "T03:00", "T04:00", "T05:00", "T06:00"]
 
         const nightHours: WeatherHour[] = allNightHours
           .filter((h) => {
             const hour = parseInt(h.replace("T", "").replace(":00", ""))
-            if (hour >= 23) return currentHour <= hour
             if (currentHour >= 7) return true
-            return true
+            if (hour === 0 || hour === 1 || hour === 2 || hour === 3 || hour === 4 || hour === 5 || hour === 6) {
+              return hour >= currentHour
+            }
+            return hour >= currentHour
           })
           .slice(0, 4)
           .map((h) => {
