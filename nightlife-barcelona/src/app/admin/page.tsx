@@ -171,7 +171,7 @@ export default function AdminPage() {
     image: form.image.trim(),
     rating: form.rating.trim() ? Number(form.rating.trim()) : null,
     people: form.people.trim(),
-    dresscode: form.dresscode.trim(),
+    dress_code: form.dresscode.trim(),
     terrace: form.terrace,
     smoking_area: form.smoking_area,
     table_booking: form.table_booking,
