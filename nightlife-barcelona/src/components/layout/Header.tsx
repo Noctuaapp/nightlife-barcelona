@@ -26,6 +26,7 @@ type NotificationRow = {
   type: "reply" | "broadcast"
   read: boolean
   created_at: string | null
+  related_message_id: number | null
 }
 
 const languages = [
@@ -40,6 +41,7 @@ const languages = [
 
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [cityOpen, setCityOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
@@ -62,10 +64,12 @@ export default function Header() {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession()
       setIsLoggedIn(!!data.session)
+      setIsAdmin(data.session?.user.email === "info@noctuaapp.com")
     }
     checkSession()
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session)
+      setIsAdmin(session?.user.email === "info@noctuaapp.com")
     })
     return () => { subscription.unsubscribe() }
   }, [])
@@ -258,15 +262,36 @@ export default function Header() {
                       {notifications.length === 0 ? (
                         <p className="px-4 py-6 text-center text-sm text-zinc-500">No tienes notificaciones</p>
                       ) : (
-                        notifications.map((n) => (
-                          <div key={n.id} className={`border-b border-white/5 px-4 py-3 ${isUnread(n) ? "bg-white/[0.04]" : ""}`}>
-                            <p className="text-sm font-bold text-white">{n.title}</p>
-                            <p className="mt-1 whitespace-pre-wrap text-xs text-zinc-400">{n.body}</p>
-                            {n.created_at && (
-                              <p className="mt-1 text-[10px] text-zinc-600">{new Date(n.created_at).toLocaleString()}</p>
-                            )}
-                          </div>
-                        ))
+                        notifications.map((n) => {
+                          const content = (
+                            <>
+                              <p className="text-sm font-bold text-white">{n.title}</p>
+                              <p className="mt-1 whitespace-pre-wrap text-xs text-zinc-400">{n.body}</p>
+                              {n.created_at && (
+                                <p className="mt-1 text-[10px] text-zinc-600">{new Date(n.created_at).toLocaleString()}</p>
+                              )}
+                            </>
+                          )
+
+                          if (isAdmin && n.related_message_id) {
+                            return (
+                              <Link
+                                key={n.id}
+                                href="/admin/messages"
+                                onClick={() => setNotifOpen(false)}
+                                className={`block border-b border-white/5 px-4 py-3 transition hover:bg-white/[0.08] ${isUnread(n) ? "bg-white/[0.04]" : ""}`}
+                              >
+                                {content}
+                              </Link>
+                            )
+                          }
+
+                          return (
+                            <div key={n.id} className={`border-b border-white/5 px-4 py-3 ${isUnread(n) ? "bg-white/[0.04]" : ""}`}>
+                              {content}
+                            </div>
+                          )
+                        })
                       )}
                     </div>
                   </>

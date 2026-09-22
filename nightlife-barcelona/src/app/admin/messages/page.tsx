@@ -423,7 +423,7 @@ export default function AdminMessagesPage() {
                         disabled={sending || !replyText.trim()}
                         className="rounded-2xl bg-white px-6 py-3 text-sm font-bold text-black transition hover:scale-[1.02] disabled:opacity-40"
                       >
-                        {sending ? "Guardando..." : "Guardar respuesta"}
+                        {sending ? "Enviando..." : "Enviar respuesta"}
                       </button>
 
                       {sendOk && <span className="text-sm font-bold text-emerald-400">Guardado ✓</span>}
