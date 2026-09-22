@@ -48,8 +48,19 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
                   🚫 {t("club.sold_out")}
                 </div>
               )}
+              {club.vip_tables && (
+                <div className="rounded-full border border-amber-500/20 bg-amber-500/10 px-5 py-3 text-sm font-bold text-amber-300">
+                  🛋️ Mesa VIP
+                </div>
+              )}
               <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm">
                 📍 {club.neighborhood || "Barcelona"}
+              </div>
+              <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm">
+                🕒 {club.hours || "TBA"}
+              </div>
+              <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm">
+                🎟 {club.price || "TBA"}
               </div>
               <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm">
                 ⏳ {club.queue || t("club.no_queue")}
@@ -142,37 +153,19 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
             )}
 
             {club.website && (
-             <a 
-                href={club.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackClick("website_click")}
-                className="mt-6 flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10"
-              >
+              <a href={club.website} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("website_click")} className="mt-6 flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10">
                 🌐 Web oficial
               </a>
             )}
 
-{club.website && (
-             <a 
-              href={club.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackClick("website_click")}
-              className="mt-6 flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10"
-            >
-              🌐 Web oficial
-            </a>
-          )}
-
-<TransportButtons
+            <TransportButtons
               name={club.name}
               address={club.address}
               lat={club.latitude}
               lng={club.longitude}
             />
 
-<FavoriteButton itemType="club" itemId={club.id} />
+            <FavoriteButton itemType="club" itemId={club.id} />
 
             <Link
               href="/"
@@ -181,10 +174,7 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
               {t("club.back_home")}
             </Link>
 
-            <a
-              href={"/contact?type=report_issue&subject=" + encodeURIComponent("Reporte: " + club.name)}
-              className="mt-3 flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-zinc-400 transition hover:bg-white/10"
-            >
+            <a href={"/contact?type=report_issue&subject=" + encodeURIComponent("Reporte: " + club.name)} className="mt-3 flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-zinc-400 transition hover:bg-white/10">
               ⚑ Reportar información incorrecta
             </a>
           </div>

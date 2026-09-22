@@ -53,6 +53,12 @@ const COLORS: Record<Filter, string> = {
   essentials: "#10b981",
 }
 
+const FILTER_ICONS: Record<Filter, string> = {
+  clubs: "🎪",
+  events: "🎉",
+  essentials: "📍",
+}
+
 const getTransportLinks = (name: string, address: string | null, lat: number | null, lng: number | null) => {
   const dest = encodeURIComponent(address || name)
   const uberLink = lat && lng
@@ -67,16 +73,13 @@ const TransportButtons = ({ name, address, lat, lng }: { name: string; address: 
   const { uberLink, cabifyLink, freeNowLink } = getTransportLinks(name, address, lat, lng)
   return (
     <div style={{ display: "flex", gap: "6px", marginTop: "10px" }}>
-      <a href={uberLink} target="_blank" rel="noopener noreferrer"
-        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", borderRadius: "8px", background: "#000", border: "1px solid rgba(255,255,255,0.2)", padding: "7px 4px", fontSize: "11px", fontWeight: 700, color: "#fff", textDecoration: "none" }}>
+      <a href={uberLink} target="_blank" rel="noopener noreferrer" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", borderRadius: "10px", background: "#000", border: "1px solid rgba(255,255,255,0.2)", padding: "8px 4px", fontSize: "11px", fontWeight: 700, color: "#fff", textDecoration: "none" }}>
         🚗 Uber
       </a>
-      <a href={cabifyLink} target="_blank" rel="noopener noreferrer"
-        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", borderRadius: "8px", background: "#7c3aed", border: "1px solid rgba(124,58,237,0.5)", padding: "7px 4px", fontSize: "11px", fontWeight: 700, color: "#fff", textDecoration: "none" }}>
+      <a href={cabifyLink} target="_blank" rel="noopener noreferrer" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", borderRadius: "10px", background: "#7c3aed", border: "1px solid rgba(124,58,237,0.5)", padding: "8px 4px", fontSize: "11px", fontWeight: 700, color: "#fff", textDecoration: "none" }}>
         🟣 Cabify
       </a>
-      <a href={freeNowLink} target="_blank" rel="noopener noreferrer"
-        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", borderRadius: "8px", background: "#ca8a04", border: "1px solid rgba(202,138,4,0.5)", padding: "7px 4px", fontSize: "11px", fontWeight: 700, color: "#fff", textDecoration: "none" }}>
+      <a href={freeNowLink} target="_blank" rel="noopener noreferrer" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", borderRadius: "10px", background: "#ca8a04", border: "1px solid rgba(202,138,4,0.5)", padding: "8px 4px", fontSize: "11px", fontWeight: 700, color: "#fff", textDecoration: "none" }}>
         🚕 FREE NOW
       </a>
     </div>
@@ -92,13 +95,13 @@ const SearchInput = ({ value, onChange }: { value: string; onChange: (v: string)
   <div style={{ position: "relative" }}>
     <input
       type="text"
-      placeholder="Search..."
+      placeholder="Buscar..."
       value={value}
       onChange={(e) => onChange(e.target.value)}
       style={{
-        width: "100%", background: "rgba(255,255,255,0.07)",
-        border: "1px solid rgba(255,255,255,0.12)", borderRadius: "10px",
-        padding: "10px 36px 10px 14px", fontSize: "13px", color: "#fff",
+        width: "100%", background: "rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255,255,255,0.12)", borderRadius: "12px",
+        padding: "11px 36px 11px 14px", fontSize: "13px", color: "#fff",
         outline: "none", boxSizing: "border-box",
       }}
     />
@@ -220,7 +223,7 @@ export default function MapPage() {
         const data = await res.json()
         const route = data.routes?.[0]
         if (!route) return
-        setWalkingTime(`${Math.ceil(route.duration / 60)} min walking`)
+        setWalkingTime(`${Math.ceil(route.duration / 60)} min andando`)
         const geojson = route.geometry
         if (map.current!.getSource("route")) {
           ;(map.current!.getSource("route") as mapboxgl.GeoJSONSource).setData(geojson)
@@ -288,8 +291,8 @@ export default function MapPage() {
 
   if (isLoggedIn === null) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Loading...</p>
+      <main style={{ display: "flex", minHeight: "100dvh", alignItems: "center", justifyContent: "center", background: "#050308", color: "#fff" }}>
+        <p style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(255,255,255,0.4)" }}>Cargando...</p>
       </main>
     )
   }
@@ -298,14 +301,20 @@ export default function MapPage() {
     return (
       <>
         <BottomNav />
-        <main className="flex min-h-screen items-center justify-center bg-black text-white px-4">
-          <div className="max-w-md text-center">
-            <div className="text-7xl mb-6">🗺️</div>
-            <h1 className="text-4xl font-black text-white">Explore Barcelona</h1>
-            <p className="mt-4 text-zinc-400 text-lg leading-relaxed">Create a free account to explore the interactive nightlife map of Barcelona.</p>
-            <div className="mt-8 flex gap-4 justify-center">
-              <Link href="/signup" className="rounded-full bg-white px-8 py-4 font-bold text-black hover:scale-105 transition">Create account</Link>
-              <Link href="/login" className="rounded-full border border-white/10 bg-white/5 px-8 py-4 font-bold text-white hover:bg-white/10 transition">Log in</Link>
+        <main style={{ position: "relative", display: "flex", minHeight: "100dvh", alignItems: "center", justifyContent: "center", background: "#050308", color: "#fff", padding: "0 16px", overflow: "hidden" }}>
+          <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+            <div style={{ position: "absolute", left: "-160px", top: "-160px", width: "500px", height: "500px", borderRadius: "9999px", background: "rgba(168,85,247,0.2)", filter: "blur(120px)" }} />
+            <div style={{ position: "absolute", right: "-160px", top: "30%", width: "450px", height: "450px", borderRadius: "9999px", background: "rgba(245,180,60,0.1)", filter: "blur(130px)" }} />
+          </div>
+          <div style={{ position: "relative", maxWidth: "420px", textAlign: "center" }}>
+            <div style={{ fontSize: "64px", marginBottom: "24px" }}>🗺️</div>
+            <h1 style={{ fontSize: "38px", fontWeight: 900, color: "#fff" }}>Explora Barcelona</h1>
+            <p style={{ marginTop: "16px", color: "rgba(255,255,255,0.5)", fontSize: "17px", lineHeight: 1.6 }}>
+              Crea una cuenta gratis para explorar el mapa interactivo de la vida nocturna de Barcelona.
+            </p>
+            <div style={{ marginTop: "32px", display: "flex", gap: "16px", justifyContent: "center" }}>
+              <Link href="/signup" style={{ borderRadius: "9999px", background: "#fff", padding: "16px 32px", fontWeight: 700, color: "#000", textDecoration: "none" }}>Crear cuenta</Link>
+              <Link href="/login" style={{ borderRadius: "9999px", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", padding: "16px 32px", fontWeight: 700, color: "#fff", textDecoration: "none" }}>Iniciar sesión</Link>
             </div>
           </div>
         </main>
@@ -314,55 +323,58 @@ export default function MapPage() {
   }
 
   return (
-    <div style={{ height: "100dvh", background: "#000", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10, background: "#000", gap: "8px", flexShrink: 0 }}>
+    <div style={{ height: "100dvh", background: "#050308", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(16px)", gap: "8px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "6px", borderRadius: "999px", padding: "6px 14px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", fontSize: "13px", fontWeight: 700, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "6px", borderRadius: "999px", padding: "7px 14px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", fontSize: "13px", fontWeight: 700, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8L10 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            Back
+            Volver
           </Link>
           <span style={{ fontSize: "15px", fontWeight: 900, color: "#fff", whiteSpace: "nowrap" }}>Barcelona</span>
         </div>
         <div style={{ display: "flex", gap: "6px", flexWrap: "nowrap" }}>
           {(["clubs", "events", "essentials"] as Filter[]).map((f) => (
             <button key={f} onClick={() => { setFilter(f); setSearch("") }}
-              style={{ padding: "5px 10px", borderRadius: "999px", border: filter === f ? `1px solid ${COLORS[f]}` : "1px solid rgba(255,255,255,0.1)", background: filter === f ? `${COLORS[f]}22` : "rgba(255,255,255,0.03)", color: filter === f ? COLORS[f] : "rgba(255,255,255,0.5)", fontSize: "11px", fontWeight: 600, cursor: "pointer", textTransform: "capitalize", whiteSpace: "nowrap" }}>
-              {f}
+              style={{ padding: "6px 12px", borderRadius: "999px", border: filter === f ? `1px solid ${COLORS[f]}` : "1px solid rgba(255,255,255,0.1)", background: filter === f ? `${COLORS[f]}22` : "rgba(255,255,255,0.03)", color: filter === f ? COLORS[f] : "rgba(255,255,255,0.5)", fontSize: "11px", fontWeight: 700, cursor: "pointer", textTransform: "capitalize", whiteSpace: "nowrap" }}>
+              {FILTER_ICONS[f]} {f}
             </button>
           ))}
         </div>
       </div>
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0, minWidth: 0 }}>
-      <aside className="hidden lg:flex" style={{ width: showList === false ? "0px" : "320px", borderRight: showList === false ? "none" : "1px solid rgba(255,255,255,0.1)", background: "#000", flexDirection: "column", overflow: "hidden", flexShrink: 0, transition: "width 0.3s ease", minWidth: 0 }}>
-          <div style={{ padding: "12px 12px 0" }}>
+      <aside className="hidden lg:flex" style={{ width: showList === false ? "0px" : "320px", borderRight: showList === false ? "none" : "1px solid rgba(255,255,255,0.1)", background: "#050308", flexDirection: "column", overflow: "hidden", flexShrink: 0, transition: "width 0.3s ease", minWidth: 0 }}>
+          <div style={{ padding: "14px 14px 0" }}>
             <SearchInput value={search} onChange={setSearch} />
+            <p style={{ marginTop: "10px", fontSize: "11px", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.15em" }}>
+              {currentList.filter((i) => i.latitude && i.longitude).length} resultados
+            </p>
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {(currentList as (Club | Event | Essential)[]).filter((item) => item.latitude && item.longitude).map((item) => (
                 <button key={item.id}
                   onClick={() => { setSelected(item); map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 }) }}
-                  style={{ textAlign: "left", borderRadius: "14px", border: selected && "id" in selected && selected.id === item.id ? `1px solid ${COLORS[filter]}88` : "1px solid rgba(255,255,255,0.08)", background: selected && "id" in selected && selected.id === item.id ? `${COLORS[filter]}18` : "rgba(255,255,255,0.02)", padding: "12px", cursor: "pointer", width: "100%" }}>
+                  style={{ textAlign: "left", borderRadius: "16px", border: selected && "id" in selected && selected.id === item.id ? `1px solid ${COLORS[filter]}88` : "1px solid rgba(255,255,255,0.08)", background: selected && "id" in selected && selected.id === item.id ? `${COLORS[filter]}18` : "rgba(255,255,255,0.03)", padding: "13px", cursor: "pointer", width: "100%", transition: "background 0.2s" }}>
                   <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px" }}>{getName(item)}</p>
                   <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>{getSub(item)}</p>
                 </button>
               ))}
               {currentList.filter(i => i.latitude && i.longitude).length === 0 && (
-                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)", padding: "16px", textAlign: "center" }}>No results found.</p>
+                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)", padding: "16px", textAlign: "center" }}>No se encontraron resultados.</p>
               )}
             </div>
           </div>
           {selected && (
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", padding: "16px", background: "rgba(255,255,255,0.02)", flexShrink: 0 }}>
-              {getImage(selected) && <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "10px", marginBottom: "12px" }} />}
+            <div style={{ borderTop: `1px solid ${COLORS[filter]}30`, padding: "16px", background: `linear-gradient(180deg, ${COLORS[filter]}10, rgba(255,255,255,0.02))`, flexShrink: 0 }}>
+              {getImage(selected) && <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "12px", marginBottom: "12px" }} />}
               <p style={{ fontWeight: 900, fontSize: "16px", color: "#fff" }}>{getName(selected)}</p>
               <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", marginTop: "4px" }}>{getSub(selected)}</p>
               {"address" in selected && selected.address && <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)", marginTop: "4px" }}>📍 {selected.address}</p>}
               {walkingTime && <p style={{ fontSize: "12px", color: "#3b82f6", marginTop: "6px", fontWeight: 700 }}>🚶 {walkingTime}</p>}
               <TransportButtons name={getName(selected)} address={"address" in selected ? selected.address : null} lat={selected.latitude} lng={selected.longitude} />
-              {filter === "clubs" && <Link href={`/clubs/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>View club →</Link>}
-              {filter === "events" && <Link href={`/event/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>View event →</Link>}
+              {filter === "clubs" && <Link href={`/clubs/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>Ver club →</Link>}
+              {filter === "events" && <Link href={`/event/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>Ver evento →</Link>}
             </div>
           )}
         </aside>
@@ -370,23 +382,23 @@ export default function MapPage() {
         <div style={{ flex: 1, position: "relative", minWidth: 0, minHeight: 0 }}>
           <div ref={mapContainer} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
           <button className="lg:hidden" onClick={() => setShowList(!showList)}
-            style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.2)", padding: "8px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(10px)" }}>
-            {showList ? "✕ Close" : "☰ List"}
+            style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", padding: "9px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)" }}>
+            {showList ? "✕ Cerrar" : "☰ Lista"}
           </button>
           <button className="hidden lg:block" onClick={() => setShowList(showList === false ? true : false)}
-            style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.2)", padding: "6px 10px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(10px)", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", padding: "6px 10px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {showList === false ? "☰" : "✕"}
           </button>
           <button onClick={startTracking}
-            style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, borderRadius: "999px", background: trackingActive ? "rgba(59,130,246,0.9)" : "rgba(0,0,0,0.8)", border: trackingActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.2)", padding: "8px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(10px)" }}>
-            {trackingActive ? "📍 Tracking" : "📍 Mi ubicación"}
+            style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, borderRadius: "999px", background: trackingActive ? "rgba(59,130,246,0.9)" : "rgba(0,0,0,0.75)", border: trackingActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.2)", padding: "9px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)" }}>
+            {trackingActive ? "📍 Siguiendo" : "📍 Mi ubicación"}
           </button>
 
           {showList && (
-            <div className="lg:hidden" style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "85%", maxWidth: "320px", background: "#000", zIndex: 20, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.1)" }}>
-              <div style={{ padding: "12px" }}>
+            <div className="lg:hidden" style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "85%", maxWidth: "320px", background: "#050308", zIndex: 20, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.1)" }}>
+              <div style={{ padding: "14px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                  <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", textTransform: "capitalize" }}>{filter}</p>
+                  <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", textTransform: "capitalize" }}>{FILTER_ICONS[filter]} {filter}</p>
                   <button onClick={() => setShowList(false)} style={{ color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 10px", fontSize: "13px", cursor: "pointer" }}>✕</button>
                 </div>
                 <div style={{ marginBottom: "10px" }}><SearchInput value={search} onChange={setSearch} /></div>
@@ -394,13 +406,13 @@ export default function MapPage() {
                   {(currentList as (Club | Event | Essential)[]).filter((item) => item.latitude && item.longitude).map((item) => (
                     <button key={item.id}
                       onClick={() => { setSelected(item); setShowList(false); map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 }) }}
-                      style={{ textAlign: "left", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)", padding: "12px", cursor: "pointer", width: "100%" }}>
+                      style={{ textAlign: "left", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", padding: "13px", cursor: "pointer", width: "100%" }}>
                       <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px" }}>{getName(item)}</p>
                       <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>{getSub(item)}</p>
                     </button>
                   ))}
                   {currentList.filter(i => i.latitude && i.longitude).length === 0 && (
-                    <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)", padding: "16px", textAlign: "center" }}>No results found.</p>
+                    <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)", padding: "16px", textAlign: "center" }}>No se encontraron resultados.</p>
                   )}
                 </div>
               </div>
@@ -408,8 +420,8 @@ export default function MapPage() {
           )}
 
           {selected && (
-            <div style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.92)", padding: "16px", backdropFilter: "blur(10px)" }}>
-              {getImage(selected) && <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "10px", marginBottom: "12px" }} />}
+            <div style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "20px", border: `1px solid ${COLORS[filter]}40`, background: "rgba(0,0,0,0.92)", padding: "16px", backdropFilter: "blur(16px)", boxShadow: "0 20px 50px -20px rgba(0,0,0,0.6)" }}>
+              {getImage(selected) && <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "12px", marginBottom: "12px" }} />}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <p style={{ fontWeight: 900, color: "#fff", fontSize: "15px" }}>{getName(selected)}</p>
@@ -419,8 +431,8 @@ export default function MapPage() {
                 <button onClick={() => { setSelected(null); setWalkingTime(null) }} style={{ color: "rgba(255,255,255,0.4)", background: "none", border: "none", fontSize: "18px", cursor: "pointer", padding: "0 0 0 8px" }}>✕</button>
               </div>
               <TransportButtons name={getName(selected)} address={"address" in selected ? selected.address : null} lat={selected.latitude} lng={selected.longitude} />
-              {filter === "clubs" && <Link href={`/clubs/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>View club →</Link>}
-              {filter === "events" && <Link href={`/event/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>View event →</Link>}
+              {filter === "clubs" && <Link href={`/clubs/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>Ver club →</Link>}
+              {filter === "events" && <Link href={`/event/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>Ver evento →</Link>}
             </div>
           )}
         </div>

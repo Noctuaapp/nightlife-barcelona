@@ -24,6 +24,7 @@ type Event = {
   featured: boolean | null
   sold_out: boolean | null
   hidden: boolean | null
+  vip_tables: boolean | null
 }
 
 export default function AdminEventsPage() {
@@ -50,6 +51,7 @@ export default function AdminEventsPage() {
   const [uploading, setUploading] = useState(false)
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [search, setSearch] = useState("")
+
   useEffect(() => {
     const checkAdmin = async () => {
       const { data } = await supabase.auth.getSession()
@@ -90,9 +92,7 @@ export default function AdminEventsPage() {
     const fileName = `${Date.now()}.${fileExt}`
     const filePath = `events/${fileName}`
 
-    const { error } = await supabase.storage
-    .from("event-images")
-      .upload(filePath, file)
+    const { error } = await supabase.storage.from("event-images").upload(filePath, file)
 
     setUploading(false)
 
@@ -101,42 +101,30 @@ export default function AdminEventsPage() {
       return null
     }
 
-    const { data } = supabase.storage
-    .from("event-images")
-      .getPublicUrl(filePath)
+    const { data } = supabase.storage.from("event-images").getPublicUrl(filePath)
 
     return data.publicUrl
   }
 
-  const handleNewImageUpload = async (
-    e: ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleNewImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     const publicUrl = await uploadImage(file)
 
     if (publicUrl) {
-      setNewEvent((prev) => ({
-        ...prev,
-        image: publicUrl,
-      }))
+      setNewEvent((prev) => ({ ...prev, image: publicUrl }))
     }
   }
 
-  const handleEditImageUpload = async (
-    e: ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleEditImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     const publicUrl = await uploadImage(file)
 
     if (publicUrl) {
-      setEditEvent((prev) => ({
-        ...prev,
-        image: publicUrl,
-      }))
+      setEditEvent((prev) => ({ ...prev, image: publicUrl }))
     }
   }
 
@@ -152,7 +140,8 @@ export default function AdminEventsPage() {
         end_time: newEvent.end_time || null,
         featured: false,
         sold_out: false,
-            })
+        vip_tables: false,
+      })
       .select()
       .single()
 
@@ -192,12 +181,7 @@ export default function AdminEventsPage() {
   const saveEditing = async (id: number) => {
     if (!editEvent.title) return
 
-    const { data, error } = await supabase
-      .from("events")
-      .update(editEvent)
-      .eq("id", id)
-      .select()
-      .single()
+    const { data, error } = await supabase.from("events").update(editEvent).eq("id", id).select().single()
 
     if (error) {
       console.log("EDIT EVENT ERROR:", error)
@@ -205,11 +189,7 @@ export default function AdminEventsPage() {
     }
 
     if (data) {
-      setEvents((prev) =>
-        prev.map((event) =>
-          event.id === id ? data : event
-        )
-      )
+      setEvents((prev) => prev.map((event) => (event.id === id ? data : event)))
     }
 
     cancelEditing()
@@ -218,35 +198,34 @@ export default function AdminEventsPage() {
   const toggleFeatured = async (event: Event) => {
     const newValue = !event.featured
 
-    const { error } = await supabase
-      .from("events")
-      .update({ featured: newValue })
-      .eq("id", event.id)
+    const { error } = await supabase.from("events").update({ featured: newValue }).eq("id", event.id)
 
     if (error) return console.log("FEATURED ERROR:", error)
 
-    setEvents((prev) =>
-      prev.map((item) =>
-        item.id === event.id
-          ? { ...item, featured: newValue }
-          : item
-      )
-    )
+    setEvents((prev) => prev.map((item) => (item.id === event.id ? { ...item, featured: newValue } : item)))
   }
 
   const toggleSoldOut = async (event: Event) => {
     const newValue = !event.sold_out
     const { error } = await supabase.from("events").update({ sold_out: newValue }).eq("id", event.id)
     if (error) return console.log("SOLD OUT ERROR:", error)
-    setEvents((prev) => prev.map((item) => item.id === event.id ? { ...item, sold_out: newValue } : item))
+    setEvents((prev) => prev.map((item) => (item.id === event.id ? { ...item, sold_out: newValue } : item)))
+  }
+
+  const toggleVipTables = async (event: Event) => {
+    const newValue = !event.vip_tables
+    const { error } = await supabase.from("events").update({ vip_tables: newValue }).eq("id", event.id)
+    if (error) return console.log("VIP TABLES ERROR:", error)
+    setEvents((prev) => prev.map((item) => (item.id === event.id ? { ...item, vip_tables: newValue } : item)))
   }
 
   const toggleHidden = async (event: Event) => {
     const newValue = !event.hidden
     const { error } = await supabase.from("events").update({ hidden: newValue }).eq("id", event.id)
     if (error) return
-    setEvents((prev) => prev.map((e) => e.id === event.id ? { ...e, hidden: newValue } : e))
+    setEvents((prev) => prev.map((e) => (e.id === event.id ? { ...e, hidden: newValue } : e)))
   }
+
   const showAll = async () => {
     const { error } = await supabase.from("events").update({ hidden: false }).neq("id", 0)
     if (error) return
@@ -260,24 +239,17 @@ export default function AdminEventsPage() {
   }
 
   const deleteEvent = async (id: number) => {
-    const { error } = await supabase
-      .from("events")
-      .delete()
-      .eq("id", id)
+    const { error } = await supabase.from("events").delete().eq("id", id)
 
     if (error) return console.log("DELETE EVENT ERROR:", error)
 
-    setEvents((prev) =>
-      prev.filter((event) => event.id !== id)
-    )
+    setEvents((prev) => prev.filter((event) => event.id !== id))
   }
 
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
-          Loading admin...
-        </p>
+        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Loading admin...</p>
       </main>
     )
   }
@@ -289,37 +261,17 @@ export default function AdminEventsPage() {
       <main className="min-h-screen bg-black pb-40 text-white">
         <section className="px-4 pt-14">
           <div className="mx-auto max-w-7xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
-              Admin events
-            </p>
+            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Admin events</p>
 
-            <h1 className="mt-4 text-6xl font-black tracking-tight">
-              Event control
-            </h1>
+            <h1 className="mt-4 text-6xl font-black tracking-tight">Event control</h1>
 
-            <p className="mt-6 max-w-2xl text-lg text-zinc-400">
-              Create, edit and manage nightlife events across Barcelona.
-            </p>
+            <p className="mt-6 max-w-2xl text-lg text-zinc-400">Create, edit and manage nightlife events across Barcelona.</p>
+
             <div className="mt-8 flex flex-wrap gap-4">
-  <a
-    href="/admin"
-    className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
-  >
-    Clubs admin
-  </a>
-  <a
-  href="/admin/club-events"
-   className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
->
-  Club nights admin
-</a>
-  <a
-    href="/admin/events"
-    className="rounded-full bg-white px-5 py-3 text-sm font-bold text-black"
-  >
-    Events admin
-  </a>
-</div>
+              <a href="/admin" className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black">Clubs admin</a>
+              <a href="/admin/club-events" className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black">Club nights admin</a>
+              <a href="/admin/events" className="rounded-full bg-white px-5 py-3 text-sm font-bold text-black">Events admin</a>
+            </div>
           </div>
         </section>
 
@@ -330,12 +282,7 @@ export default function AdminEventsPage() {
                 <input
                   key={key}
                   value={(newEvent as any)[key]}
-                  onChange={(e) =>
-                    setNewEvent({
-                      ...newEvent,
-                      [key]: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setNewEvent({ ...newEvent, [key]: e.target.value })}
                   placeholder={key}
                   className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
                 />
@@ -349,11 +296,7 @@ export default function AdminEventsPage() {
               />
 
               {newEvent.image && (
-                <img
-                  src={newEvent.image}
-                  alt="Preview"
-                  className="h-44 w-full rounded-2xl object-cover lg:col-span-3"
-                />
+                <img src={newEvent.image} alt="Preview" className="h-44 w-full rounded-2xl object-cover lg:col-span-3" />
               )}
 
               <button
@@ -375,155 +318,80 @@ export default function AdminEventsPage() {
             className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5 outline-none mb-4"
           />
           <div className="flex gap-3 mb-4">
-            <button onClick={showAll} className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300 hover:bg-emerald-500 hover:text-white transition">
-              👁️ Show all
-            </button>
-            <button onClick={hideAll} className="rounded-full border border-zinc-500/30 bg-zinc-500/10 px-5 py-3 text-sm font-bold text-zinc-300 hover:bg-zinc-600 hover:text-white transition">
-              🙈 Hide all
-            </button>
+            <button onClick={showAll} className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300 hover:bg-emerald-500 hover:text-white transition">👁️ Show all</button>
+            <button onClick={hideAll} className="rounded-full border border-zinc-500/30 bg-zinc-500/10 px-5 py-3 text-sm font-bold text-zinc-300 hover:bg-zinc-600 hover:text-white transition">🙈 Hide all</button>
           </div>
           <div className="grid gap-6">
-            {events.filter((event) => {
-              if (!search.trim()) return true
-              const q = search.toLowerCase()
-              return event.title?.toLowerCase().includes(q) || event.club_name?.toLowerCase().includes(q) || event.artist?.toLowerCase().includes(q)
-            }).map((event) => (
-              <div
-                key={event.id}
-                className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6"
-              >
-                {editingId === event.id ? (
-                  <div className="grid gap-4 lg:grid-cols-3">
-                    {Object.keys(emptyEvent).map((key) => (
-                      <input
-                        key={key}
-                        value={(editEvent as any)[key]}
-                        onChange={(e) =>
-                          setEditEvent({
-                            ...editEvent,
-                            [key]: e.target.value,
-                          })
-                        }
-                        placeholder={key}
-                        className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
-                      />
-                    ))}
-
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleEditImageUpload}
-                      className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none lg:col-span-3"
-                    />
-
-                    {editEvent.image && (
-                      <img
-                        src={editEvent.image}
-                        alt="Preview"
-                        className="h-52 w-full rounded-2xl object-cover lg:col-span-3"
-                      />
-                    )}
-
-                    <button
-                      onClick={() => saveEditing(event.id)}
-                      disabled={uploading}
-                      className="rounded-2xl bg-emerald-400 px-8 py-4 font-bold text-black disabled:opacity-50"
-                    >
-                      Save changes
-                    </button>
-
-                    <button
-                      onClick={cancelEditing}
-                      className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 font-bold"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      {event.image && (
-                        <img
-                          src={event.image}
-                          alt={event.title}
-                          className="mb-6 h-48 w-full rounded-3xl object-cover lg:w-[420px]"
+            {events
+              .filter((event) => {
+                if (!search.trim()) return true
+                const q = search.toLowerCase()
+                return event.title?.toLowerCase().includes(q) || event.club_name?.toLowerCase().includes(q) || event.artist?.toLowerCase().includes(q)
+              })
+              .map((event) => (
+                <div key={event.id} className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
+                  {editingId === event.id ? (
+                    <div className="grid gap-4 lg:grid-cols-3">
+                      {Object.keys(emptyEvent).map((key) => (
+                        <input
+                          key={key}
+                          value={(editEvent as any)[key]}
+                          onChange={(e) => setEditEvent({ ...editEvent, [key]: e.target.value })}
+                          placeholder={key}
+                          className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
                         />
+                      ))}
+
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleEditImageUpload}
+                        className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none lg:col-span-3"
+                      />
+
+                      {editEvent.image && (
+                        <img src={editEvent.image} alt="Preview" className="h-52 w-full rounded-2xl object-cover lg:col-span-3" />
                       )}
 
-                      <p className="text-sm uppercase tracking-wide text-zinc-500">
-                        {event.club_name} · {event.music}
-                      </p>
+                      <button onClick={() => saveEditing(event.id)} disabled={uploading} className="rounded-2xl bg-emerald-400 px-8 py-4 font-bold text-black disabled:opacity-50">Save changes</button>
+                      <button onClick={cancelEditing} className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 font-bold">Cancel</button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+                      <div>
+                        {event.image && (
+                          <img src={event.image} alt={event.title} className="mb-6 h-48 w-full rounded-3xl object-cover lg:w-[420px]" />
+                        )}
 
-                      <h2 className="mt-2 text-3xl font-black">
-                        {event.title}
-                      </h2>
+                        <p className="text-sm uppercase tracking-wide text-zinc-500">{event.club_name} · {event.music}</p>
 
-                      <div className="mt-5 flex flex-wrap gap-3">
-                        <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                          🎧 {event.artist}
-                        </span>
+                        <h2 className="mt-2 text-3xl font-black">{event.title}</h2>
 
-                        <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                          📅 {event.date}
-                        </span>
+                        <div className="mt-5 flex flex-wrap gap-3">
+                          <span className="rounded-full bg-white/10 px-4 py-2 text-sm">🎧 {event.artist}</span>
+                          <span className="rounded-full bg-white/10 px-4 py-2 text-sm">📅 {event.date}</span>
+                          <span className="rounded-full bg-white/10 px-4 py-2 text-sm">🕒 {event.start_time} - {event.end_time}</span>
+                          <span className="rounded-full bg-white/10 px-4 py-2 text-sm">🎟 {event.price}</span>
+                          {event.vip_tables && (
+                            <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-4 py-2 text-sm text-amber-300">🛋️ Mesa VIP</span>
+                          )}
+                        </div>
 
-                        <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                          🕒 {event.start_time} - {event.end_time}
-                        </span>
-
-                        <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                          🎟 {event.price}
-                        </span>
+                        <p className="mt-5 max-w-2xl text-zinc-400">{event.description}</p>
                       </div>
 
-                      <p className="mt-5 max-w-2xl text-zinc-400">
-                        {event.description}
-                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        <button onClick={() => startEditing(event)} className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold">✏️ Edit</button>
+                        <button onClick={() => toggleFeatured(event)} className={`rounded-full px-5 py-3 text-sm font-bold ${event.featured ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5"}`}>🔥 Featured</button>
+                        <button onClick={() => toggleSoldOut(event)} className={`rounded-full px-5 py-3 text-sm font-bold ${event.sold_out ? "bg-red-500 text-white" : "border border-white/10 bg-white/5"}`}>🚫 Sold out</button>
+                        <button onClick={() => toggleVipTables(event)} className={`rounded-full px-5 py-3 text-sm font-bold ${event.vip_tables ? "bg-amber-400 text-black" : "border border-white/10 bg-white/5"}`}>🛋️ Mesa VIP</button>
+                        <button onClick={() => toggleHidden(event)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${event.hidden ? "bg-zinc-600 text-white" : "border border-white/10 bg-white/5"}`}>{event.hidden ? "👁️ Hidden" : "👁️ Visible"}</button>
+                        <button onClick={() => deleteEvent(event.id)} className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400">Delete</button>
+                      </div>
                     </div>
-
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        onClick={() => startEditing(event)}
-                        className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold"
-                      >
-                        ✏️ Edit
-                      </button>
-
-                      <button
-                        onClick={() => toggleFeatured(event)}
-                        className={`rounded-full px-5 py-3 text-sm font-bold ${
-                          event.featured
-                            ? "bg-emerald-400 text-black"
-                            : "border border-white/10 bg-white/5"
-                        }`}
-                      >
-                        🔥 Featured
-                      </button>
-
-                      <button
-                        onClick={() => toggleSoldOut(event)}
-                        className={`rounded-full px-5 py-3 text-sm font-bold ${
-                          event.sold_out
-                            ? "bg-red-500 text-white"
-                            : "border border-white/10 bg-white/5"
-                        }`}
-                      >
-                        🚫 Sold out
-                      </button>
-                      <button onClick={() => toggleHidden(event)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${event.hidden ? "bg-zinc-600 text-white" : "border border-white/10 bg-white/5"}`}>
-  {event.hidden ? "👁️ Hidden" : "👁️ Visible"}
-</button>
-                      <button
-                        onClick={() => deleteEvent(event.id)}
-                        className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400"
-                      >                         
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              ))}
           </div>
         </section>
       </main>

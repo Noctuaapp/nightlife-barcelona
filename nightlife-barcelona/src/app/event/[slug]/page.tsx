@@ -72,7 +72,7 @@ export default async function EventPage({ params }: EventPageProps) {
           <div className="relative z-10 flex h-full items-end">
             <div className="mx-auto w-full max-w-7xl px-6 pb-16">
               <p className="text-sm uppercase tracking-[0.4em] text-zinc-300">
-                {event.address || "Barcelona event"}
+                {event.music || event.club_name || "Barcelona event"}
               </p>
               <h1 className="mt-5 max-w-5xl text-6xl font-black tracking-tight text-white md:text-8xl">
                 {event.title}
@@ -93,8 +93,19 @@ export default async function EventPage({ params }: EventPageProps) {
                     🚫 Agotado
                   </div>
                 )}
+                {event.vip_tables && !past && (
+                  <div className="rounded-full border border-amber-500/20 bg-amber-500/10 px-5 py-3 text-sm font-bold text-amber-300">
+                    🛋️ Mesa VIP
+                  </div>
+                )}
+                <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm">
+                  📍 {event.club_name || event.address || "Barcelona"}
+                </div>
                 <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm">
                   📅 {event.date ? new Date(event.date).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }) : "TBA"}
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm">
+                  🕒 {event.start_time || "TBA"}{event.end_time ? ` - ${event.end_time}` : ""}
                 </div>
                 <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm">
                   🎟 {event.price || "TBA"}
@@ -114,6 +125,16 @@ export default async function EventPage({ params }: EventPageProps) {
                 <p className="mt-8 text-lg leading-relaxed text-zinc-300">
                   {event.description || "Un evento en Barcelona."}
                 </p>
+                <div className="mt-10 grid gap-4 md:grid-cols-2">
+                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+                    <p className="text-sm text-zinc-500">Música</p>
+                    <p className="mt-3 text-2xl font-black">🎵 {event.music || "TBA"}</p>
+                  </div>
+                  <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+                    <p className="text-sm text-zinc-500">Club</p>
+                    <p className="mt-3 text-2xl font-black">📍 {event.club_name || "Barcelona"}</p>
+                  </div>
+                </div>
               </div>
 
               {sessions && sessions.length > 0 && (
@@ -140,6 +161,12 @@ export default async function EventPage({ params }: EventPageProps) {
                   <p className="text-sm text-zinc-500">Precio</p>
                   <p className="mt-2 text-lg">🎟 {event.price || "TBA"}</p>
                 </div>
+                {event.artist && (
+                  <div>
+                    <p className="text-sm text-zinc-500">Artista</p>
+                    <p className="mt-2 text-lg">🎧 {event.artist}</p>
+                  </div>
+                )}
               </div>
 
               {tickets && tickets.length > 0 && (
@@ -158,8 +185,7 @@ export default async function EventPage({ params }: EventPageProps) {
                           </p>
                         </div>
                         {ticket.external_url && !event.sold_out && (
-                          <a href={ticket.external_url} target="_blank" rel="noopener noreferrer"
-                            className="mt-4 flex items-center justify-center rounded-xl bg-white px-4 py-3 font-bold text-black transition hover:scale-[1.02]">
+                          <a href={ticket.external_url} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center justify-center rounded-xl bg-white px-4 py-3 font-bold text-black transition hover:scale-[1.02]">
                             Comprar entrada
                           </a>
                         )}
@@ -170,8 +196,7 @@ export default async function EventPage({ params }: EventPageProps) {
               )}
 
               {(!tickets || tickets.length === 0) && event.ticket_url && !event.sold_out && !past && (
-                <a href={event.ticket_url} target="_blank" rel="noopener noreferrer"
-                  className="mt-10 flex items-center justify-center rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02]">
+                <a href={event.ticket_url} target="_blank" rel="noopener noreferrer" className="mt-10 flex items-center justify-center rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02]">
                   Comprar entradas
                 </a>
               )}
@@ -209,10 +234,7 @@ export default async function EventPage({ params }: EventPageProps) {
                 Volver al inicio
               </Link>
 
-              <a
-                href={"/contact?type=report_issue&subject=" + encodeURIComponent("Reporte evento: " + event.title)}
-                className="mt-3 flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-zinc-400 transition hover:bg-white/10"
-              >
+              <a href={"/contact?type=report_issue&subject=" + encodeURIComponent("Reporte evento: " + event.title)} className="mt-3 flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-zinc-400 transition hover:bg-white/10">
                 ⚑ Reportar información incorrecta
               </a>
             </div>

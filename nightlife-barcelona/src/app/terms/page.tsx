@@ -18,22 +18,22 @@ export default function TermsPage() {
         </div>
         <div className="space-y-10 text-white/65 text-sm leading-relaxed">
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">1. Acceptance of terms</h2>
-            <p>By accessing or using Noctua (&quot;the Platform&quot;), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Platform. We reserve the right to update these terms at any time; continued use constitutes acceptance of any changes.</p>
+            <h2 className="text-white font-semibold text-base mb-3">1. Aceptación de los términos</h2>
+            <p>Al acceder o usar Noctua (&quot;la Plataforma&quot;), aceptas quedar vinculado por estos Términos de Servicio. Si no estás de acuerdo con estos términos, por favor no uses la Plataforma. Nos reservamos el derecho de actualizar estos términos en cualquier momento; el uso continuado constituye la aceptación de cualquier cambio.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">2. Description of service</h2>
-            <p>Noctua is a nightlife discovery platform that provides information about clubs, events, and nightlife in Barcelona. We are an information platform — we do not operate venues, organise events, or sell tickets directly.</p>
+            <h2 className="text-white font-semibold text-base mb-3">2. Descripción del servicio</h2>
+            <p>Noctua es una plataforma de descubrimiento de vida nocturna que ofrece información sobre clubs, eventos y ocio nocturno en Barcelona. Somos una plataforma informativa — no operamos locales, organizamos eventos ni vendemos entradas directamente.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">3. User accounts</h2>
-            <p className="mb-3">When you create an account, you agree to:</p>
+            <h2 className="text-white font-semibold text-base mb-3">3. Cuentas de usuario</h2>
+            <p className="mb-3">Al crear una cuenta, aceptas:</p>
             <ul className="space-y-2 pl-4">
               {[
-                "Provide accurate and complete information.",
-                "Keep your password secure and confidential.",
-                "Notify us immediately of any unauthorised use of your account.",
-                "Be responsible for all activity that occurs under your account.",
+                "Proporcionar información precisa y completa.",
+                "Mantener tu contraseña segura y confidencial.",
+                "Notificarnos inmediatamente de cualquier uso no autorizado de tu cuenta.",
+                "Ser responsable de toda actividad que ocurra bajo tu cuenta.",
               ].map((item) => (
                 <li key={item} className="flex gap-2">
                   <span className="text-purple-400 mt-0.5 flex-shrink-0">—</span>
@@ -41,19 +41,19 @@ export default function TermsPage() {
                 </li>
               ))}
             </ul>
-            <p className="mt-3">You must be at least 18 years old to create an account on Noctua, in line with the nature of nightlife content.</p>
+            <p className="mt-3">Debes tener al menos 18 años para crear una cuenta en Noctua, acorde a la naturaleza del contenido de ocio nocturno.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">4. Acceptable use</h2>
-            <p className="mb-3">You agree not to:</p>
+            <h2 className="text-white font-semibold text-base mb-3">4. Uso aceptable</h2>
+            <p className="mb-3">Aceptas no:</p>
             <ul className="space-y-2 pl-4">
               {[
-                "Use the Platform for any unlawful purpose.",
-                "Scrape, copy, or reproduce any content without permission.",
-                "Attempt to gain unauthorised access to any part of the Platform.",
-                "Submit false, misleading, or defamatory information.",
-                "Interfere with or disrupt the Platform's operation.",
-                "Use the Platform to send unsolicited commercial communications.",
+                "Usar la Plataforma con fines ilícitos.",
+                "Extraer, copiar o reproducir contenido sin permiso.",
+                "Intentar acceder sin autorización a cualquier parte de la Plataforma.",
+                "Enviar información falsa, engañosa o difamatoria.",
+                "Interferir o interrumpir el funcionamiento de la Plataforma.",
+                "Usar la Plataforma para enviar comunicaciones comerciales no solicitadas.",
               ].map((item) => (
                 <li key={item} className="flex gap-2">
                   <span className="text-purple-400 mt-0.5 flex-shrink-0">—</span>
@@ -63,36 +63,36 @@ export default function TermsPage() {
             </ul>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">5. Content accuracy</h2>
-            <p>We strive to keep all venue and event information accurate and up to date. However, we cannot guarantee the accuracy, completeness, or timeliness of any information on the Platform. Always verify details directly with the venue before attending.</p>
+            <h2 className="text-white font-semibold text-base mb-3">5. Exactitud del contenido</h2>
+            <p>Nos esforzamos por mantener toda la información de locales y eventos precisa y actualizada. Sin embargo, no podemos garantizar la exactitud, integridad o vigencia de la información en la Plataforma. Verifica siempre los detalles directamente con el local antes de asistir.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">6. Intellectual property</h2>
-            <p>All content on the Platform, including text, graphics, logos, and design, is the property of Noctua or its content suppliers and is protected by applicable intellectual property laws. You may not reproduce, distribute, or create derivative works without our express written permission.</p>
+            <h2 className="text-white font-semibold text-base mb-3">6. Propiedad intelectual</h2>
+            <p>Todo el contenido de la Plataforma, incluidos textos, gráficos, logotipos y diseño, es propiedad de Noctua o de sus proveedores de contenido y está protegido por las leyes de propiedad intelectual aplicables. No puedes reproducir, distribuir ni crear obras derivadas sin nuestro permiso expreso por escrito.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">7. Third-party links</h2>
-            <p>The Platform may contain links to third-party websites, including venue websites and ticketing platforms. These links are provided for convenience only. We have no control over and assume no responsibility for the content or practices of any third-party sites.</p>
+            <h2 className="text-white font-semibold text-base mb-3">7. Enlaces a terceros</h2>
+            <p>La Plataforma puede contener enlaces a sitios web de terceros, incluidas webs de locales y plataformas de venta de entradas. Estos enlaces se ofrecen únicamente por comodidad. No tenemos control ni asumimos responsabilidad alguna sobre el contenido o las prácticas de dichos sitios.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">8. Limitation of liability</h2>
-            <p>To the fullest extent permitted by law, Noctua shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Platform. Our total liability for any claim shall not exceed the amount paid by you to use the Platform in the 12 months preceding the claim.</p>
+            <h2 className="text-white font-semibold text-base mb-3">8. Limitación de responsabilidad</h2>
+            <p>En la máxima medida permitida por la ley, Noctua no será responsable de daños indirectos, incidentales, especiales, consecuentes o punitivos derivados del uso de la Plataforma. Nuestra responsabilidad total por cualquier reclamación no excederá el importe pagado por ti por el uso de la Plataforma en los 12 meses anteriores a la reclamación.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">9. Disclaimer of warranties</h2>
-            <p>The Platform is provided on an &quot;as is&quot; and &quot;as available&quot; basis without warranties of any kind, either express or implied. We do not warrant that the Platform will be uninterrupted or error-free.</p>
+            <h2 className="text-white font-semibold text-base mb-3">9. Exclusión de garantías</h2>
+            <p>La Plataforma se ofrece &quot;tal cual&quot; y &quot;según disponibilidad&quot;, sin garantías de ningún tipo, expresas o implícitas. No garantizamos que la Plataforma esté libre de interrupciones o errores.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">10. Account termination</h2>
-            <p>We reserve the right to suspend or terminate your account at our discretion if you breach these Terms of Service. You may delete your account at any time from your Profile page.</p>
+            <h2 className="text-white font-semibold text-base mb-3">10. Cancelación de cuenta</h2>
+            <p>Nos reservamos el derecho de suspender o cancelar tu cuenta a nuestra discreción si incumples estos Términos de Servicio. Puedes eliminar tu cuenta en cualquier momento desde tu página de Perfil.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">11. Governing law</h2>
-            <p>These Terms of Service are governed by the laws of Spain. Any disputes shall be subject to the exclusive jurisdiction of the courts of Barcelona, Spain.</p>
+            <h2 className="text-white font-semibold text-base mb-3">11. Ley aplicable</h2>
+            <p>Estos Términos de Servicio se rigen por las leyes de España. Cualquier disputa quedará sujeta a la jurisdicción exclusiva de los tribunales de Barcelona, España.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">12. Contact</h2>
-            <p>For any questions about these Terms of Service, please contact us at{" "}<a href="mailto:info@noctuaapp.com" className="text-purple-400 hover:text-purple-300 transition-colors">info@noctuaapp.com</a>.</p>
+            <h2 className="text-white font-semibold text-base mb-3">12. Contacto</h2>
+            <p>Para cualquier pregunta sobre estos Términos de Servicio, contáctanos en <a href="mailto:info@noctuaapp.com" className="text-purple-400 hover:text-purple-300 transition-colors">info@noctuaapp.com</a>.</p>
           </section>
         </div>
       </main>
