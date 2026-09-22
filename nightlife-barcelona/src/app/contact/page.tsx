@@ -34,9 +34,35 @@ export default function ContactPage() {
     setSending(true)
 
     const { data: userData } = await supabase.auth.getUser()
-    console.log("USER AL ENVIAR:", userData.user)
-    const { error } = await supabase.from("contact_messages").insert({
-      name,
+
+    let finalName = name
+
+    if (userData.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", userData.user.id)
+        .single()
+        if (userData.user) {
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("id", userData.user.id)
+            .single()
+    
+          console.log("PROFILE RESULT:", profile, "ERROR:", profileError)
+    
+          if (profile?.username) {
+            finalName = profile.username
+          }
+        }
+      if (profile?.username) {
+        finalName = profile.username
+      }
+    }
+
+    const { error: insertError } = await supabase.from("contact_messages").insert({
+      name: finalName,
       email,
       type,
       subject,
@@ -45,7 +71,7 @@ export default function ContactPage() {
     })
 
     setSending(false)
-    if (error) { setError(error.message); return }
+    if (insertError) { setError(insertError.message); return }
     setSuccess("✅ Mensaje enviado. Noctua lo revisará pronto.")
     setName(""); setEmail(""); setType("user_support"); setSubject(""); setMessage("")
   }
