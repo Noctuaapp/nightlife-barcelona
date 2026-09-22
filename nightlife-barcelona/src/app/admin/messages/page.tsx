@@ -83,7 +83,21 @@ export default function AdminMessagesPage() {
 
     setMessages((prev) => prev.map((message) => (message.id === id ? { ...message, status } : message)))
   }
+  const deleteMessage = async (id: number) => {
+    const confirmed = window.confirm("¿Seguro que quieres eliminar este mensaje? No se puede deshacer.")
+    if (!confirmed) return
 
+    const { error } = await supabase.from("contact_messages").delete().eq("id", id)
+
+    if (error) {
+      console.log("DELETE MESSAGE ERROR:", error)
+      window.alert("No se pudo eliminar el mensaje")
+      return
+    }
+
+    setMessages((prev) => prev.filter((m) => m.id !== id))
+    if (selectedId === id) setSelectedId(null)
+  }
   const openMessage = (message: ContactMessage) => {
     setSelectedId(message.id)
     setReplyText(message.admin_reply || "")
@@ -367,6 +381,12 @@ export default function AdminMessagesPage() {
                       className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300 transition hover:bg-emerald-500 hover:text-black"
                     >
                       Cerrado
+                    </button>
+                    <button
+                      onClick={() => deleteMessage(selectedMessage.id)}
+                      className="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500 hover:text-white"
+                    >
+                      Eliminar
                     </button>
                   </div>
 

@@ -34,7 +34,7 @@ export default function ContactPage() {
     setSending(true)
 
     const { data: userData } = await supabase.auth.getUser()
-
+    console.log("USER AL ENVIAR:", userData.user)
     const { error } = await supabase.from("contact_messages").insert({
       name,
       email,
