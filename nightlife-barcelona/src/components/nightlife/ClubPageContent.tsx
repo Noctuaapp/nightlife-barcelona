@@ -6,9 +6,18 @@ import FavoriteButton from "../favorites/FavoriteButton"
 import ClubMap from "../map/ClubMap"
 import ClubNightsCalendar from "../nightlife/ClubNightsCalendar"
 import TransportButtons from "../ui/TransportButtons"
-
+import { supabase } from "../../lib/supabase"
 export default function ClubPageContent({ club, clubEvents }: { club: any; clubEvents: any[] }) {
-  const { t } = useLanguage()
+    const { t } = useLanguage()
+
+    const trackClick = async (eventType: string) => {
+      await supabase.from("analytics").insert({
+        event_type: eventType,
+        item_type: "club",
+        item_id: club.id,
+        item_name: club.name,
+      })
+    }
 
   return (
     <main className="min-h-screen bg-black pb-40 text-white">
@@ -132,14 +141,38 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
               </div>
             )}
 
-            <TransportButtons
+            {club.website && (
+             <a 
+                href={club.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackClick("website_click")}
+                className="mt-6 flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10"
+              >
+                🌐 Web oficial
+              </a>
+            )}
+
+{club.website && (
+             <a 
+              href={club.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackClick("website_click")}
+              className="mt-6 flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10"
+            >
+              🌐 Web oficial
+            </a>
+          )}
+
+<TransportButtons
               name={club.name}
               address={club.address}
               lat={club.latitude}
               lng={club.longitude}
             />
 
-            <FavoriteButton itemType="club" itemId={club.id} />
+<FavoriteButton itemType="club" itemId={club.id} />
 
             <Link
               href="/"

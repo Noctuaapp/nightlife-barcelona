@@ -178,5 +178,14 @@
   "legal": "Juridisch",
   "copyright": "© 2026 Noctua · Barcelona Nightlife",
   "privacy_note": "Noctua gebruikt je e-mail om je account te beheren. Google Sign-In deelt alleen je naam en e-mail. We verkopen je gegevens nooit."
+},
+"privacy": {
+  "title": "Privacybeleid",
+  "subtitle": "Hoe Noctua uw informatie verzamelt, gebruikt en beschermt.",
+  "last_updated": "Laatst bijgewerkt: juni 2026"
+},
+"terms": {
+  "title": "Servicevoorwaarden",
+  "last_updated": "Laatst bijgewerkt: juni 2026"
 }
 }

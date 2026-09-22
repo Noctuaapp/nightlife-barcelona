@@ -124,12 +124,21 @@ export default function MapPage() {
   const [filter, setFilter] = useState<Filter>("clubs")
   const [selected, setSelected] = useState<Club | Event | Essential | null>(null)
   const [mapReady, setMapReady] = useState(false)
-  const [showList, setShowList] = useState(false)
+  const [showList, setShowList] = useState(true)
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
   const [search, setSearch] = useState("")
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [trackingActive, setTrackingActive] = useState(false)
   const [walkingTime, setWalkingTime] = useState<string | null>(null)
+  useEffect(() => {
+    const start = Date.now()
+    const duration = 300
+    const interval = setInterval(() => {
+      if (map.current) map.current.resize()
+      if (Date.now() - start > duration) clearInterval(interval)
+    }, 16)
+    return () => clearInterval(interval)
+  }, [showList])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -325,7 +334,7 @@ export default function MapPage() {
       </div>
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0, minWidth: 0 }}>
-        <aside className="hidden lg:flex" style={{ width: "320px", borderRight: "1px solid rgba(255,255,255,0.1)", background: "#000", flexDirection: "column", overflow: "hidden", flexShrink: 0 }}>
+      <aside className="hidden lg:flex" style={{ width: showList === false ? "0px" : "320px", borderRight: showList === false ? "none" : "1px solid rgba(255,255,255,0.1)", background: "#000", flexDirection: "column", overflow: "hidden", flexShrink: 0, transition: "width 0.3s ease", minWidth: 0 }}>
           <div style={{ padding: "12px 12px 0" }}>
             <SearchInput value={search} onChange={setSearch} />
           </div>
@@ -363,6 +372,10 @@ export default function MapPage() {
           <button className="lg:hidden" onClick={() => setShowList(!showList)}
             style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.2)", padding: "8px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(10px)" }}>
             {showList ? "✕ Close" : "☰ List"}
+          </button>
+          <button className="hidden lg:block" onClick={() => setShowList(showList === false ? true : false)}
+            style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.8)", border: "1px solid rgba(255,255,255,0.2)", padding: "6px 10px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(10px)", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {showList === false ? "☰" : "✕"}
           </button>
           <button onClick={startTracking}
             style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, borderRadius: "999px", background: trackingActive ? "rgba(59,130,246,0.9)" : "rgba(0,0,0,0.8)", border: trackingActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.2)", padding: "8px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(10px)" }}>

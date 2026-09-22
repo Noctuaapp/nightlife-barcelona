@@ -1,16 +1,20 @@
+"use client"
+
+import { useLanguage } from "../../context/LanguageContext"
 import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"
 import BottomNav from "@/components/layout/BottomNav"
 
 export default function TermsPage() {
+  const { t } = useLanguage()
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 px-4 py-16 max-w-2xl mx-auto w-full">
         <div className="mb-12">
           <p className="text-xs font-semibold uppercase tracking-widest text-purple-400 mb-3">Legal</p>
-          <h1 className="text-3xl font-bold text-white mb-3">Terms of Service</h1>
-          <p className="text-white/40 text-sm">Last updated: June 2026</p>
+          <h1 className="text-3xl font-bold text-white mb-3">{t("terms.title")}</h1>
+          <p className="text-white/40 text-sm">{t("terms.last_updated")}</p>
         </div>
         <div className="space-y-10 text-white/65 text-sm leading-relaxed">
           <section>

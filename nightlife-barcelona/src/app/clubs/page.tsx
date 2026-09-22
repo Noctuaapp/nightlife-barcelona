@@ -19,7 +19,7 @@ export default function ClubsPage() {
   const [userLng, setUserLng] = useState<number | null>(null)
   const { t } = useLanguage()
 
-  const filters = [t("filters.all"), "Techno", "Commercial", "Cocktail Bar", "Trending", "LGTBI+", "+18", "+21", "+25"]
+  const filters = [t("filters.all"), "Techno", "Commercial", "Cocktail Bar", "Trending", "LGTBI+", "Sin cola", "+18", "+21", "+25"]
 
   useEffect(() => {
     const fetchClubs = async () => {
@@ -114,7 +114,8 @@ export default function ClubsPage() {
       (selectedCategory === "LGTBI+" && club.lgtbi_friendly === true) ||
       (selectedCategory === "+18" && club.age_min === 18) ||
       (selectedCategory === "+21" && club.age_min === 21) ||
-      (selectedCategory === "+25" && club.age_min === 25)
+      (selectedCategory === "+25" && club.age_min === 25) ||
+      (selectedCategory === "Sin cola" && (club.queue === "No queue" || !club.queue))
 
     const matchesNeighborhood =
       selectedNeighborhood === "All" ||

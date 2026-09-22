@@ -56,7 +56,7 @@ export default function Home() {
       club.music?.toLowerCase().includes(search.toLowerCase())
 
     return matchesCategory && matchesSearch
-  }).slice(0, 6)
+  }).sort(() => Math.random() - 0.5).slice(0, 6)
 
   return (
     <>
