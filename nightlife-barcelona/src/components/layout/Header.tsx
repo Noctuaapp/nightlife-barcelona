@@ -19,6 +19,15 @@ const weatherCodes: Record<number, string> = {
 
 type WeatherHour = { label: string; icon: string; temp: number }
 
+type NotificationRow = {
+  id: number
+  title: string
+  body: string
+  type: "reply" | "broadcast"
+  read: boolean
+  created_at: string | null
+}
+
 const languages = [
   { code: "es", flag: "https://flagcdn.com/w40/es.png", name: "Español" },
   { code: "en", flag: "https://flagcdn.com/w40/gb.png", name: "English" },
@@ -103,6 +112,73 @@ export default function Header() {
     fetchWeather()
   }, [selectedCity])
 
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [notifications, setNotifications] = useState<NotificationRow[]>([])
+  const [readBroadcastIds, setReadBroadcastIds] = useState<number[]>([])
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setNotifications([])
+      return
+    }
+
+    const fetchNotifications = async () => {
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) return
+
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .or(`user_id.eq.${userData.user.id},user_id.is.null`)
+        .order("created_at", { ascending: false })
+        .limit(30)
+
+      if (error) {
+        console.log("NOTIFICATIONS ERROR:", error)
+        return
+      }
+
+      setNotifications(data || [])
+    }
+
+    fetchNotifications()
+
+    try {
+      const stored = localStorage.getItem("noctua_read_broadcasts")
+      if (stored) setReadBroadcastIds(JSON.parse(stored))
+    } catch (e) {
+      console.log("LOCALSTORAGE ERROR:", e)
+    }
+  }, [isLoggedIn])
+
+  const isUnread = (n: NotificationRow) =>
+    n.type === "broadcast" ? !readBroadcastIds.includes(n.id) : !n.read
+
+  const unreadCount = notifications.filter(isUnread).length
+
+  const toggleNotifications = async () => {
+    const opening = !notifOpen
+    setNotifOpen(opening)
+    if (!opening) return
+
+    const personalUnread = notifications.filter((n) => n.type !== "broadcast" && !n.read)
+    if (personalUnread.length > 0) {
+      await supabase.from("notifications").update({ read: true }).in("id", personalUnread.map((n) => n.id))
+      setNotifications((prev) => prev.map((n) => (personalUnread.some((p) => p.id === n.id) ? { ...n, read: true } : n)))
+    }
+
+    const broadcastIds = notifications.filter((n) => n.type === "broadcast").map((n) => n.id)
+    if (broadcastIds.length > 0) {
+      const merged = Array.from(new Set([...readBroadcastIds, ...broadcastIds]))
+      setReadBroadcastIds(merged)
+      try {
+        localStorage.setItem("noctua_read_broadcasts", JSON.stringify(merged))
+      } catch (e) {
+        console.log("LOCALSTORAGE ERROR:", e)
+      }
+    }
+  }
+
   if (hideHeader) return null
 
   return (
@@ -156,17 +232,60 @@ export default function Header() {
             <img src="/noctua_logo.png" alt="Noctua" className="h-12 w-auto object-contain" style={{ maxWidth: "160px" }} />
           </Link>
 
-          <button
-            onClick={() => setMenuOpen(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 transition hover:bg-white/20 outline-none"
-            style={{ WebkitTapHighlightColor: "transparent" }}
-          >
-            <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
-              <rect y="0" width="20" height="2" rx="1" fill="white" />
-              <rect y="6" width="20" height="2" rx="1" fill="white" />
-              <rect y="12" width="20" height="2" rx="1" fill="white" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            {isLoggedIn && (
+              <div className="relative">
+                <button
+                  onClick={toggleNotifications}
+                  className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 transition hover:bg-white/20 outline-none"
+                  style={{ WebkitTapHighlightColor: "transparent" }}
+                >
+                  <span className="text-lg">🔔</span>
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {notifOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
+                    <div className="absolute right-0 top-12 z-50 max-h-[70vh] w-80 overflow-y-auto rounded-2xl border border-white/10 shadow-2xl" style={{ background: "#111" }}>
+                      <div className="border-b border-white/10 px-4 py-3">
+                        <p className="text-sm font-bold text-white">Notificaciones</p>
+                      </div>
+                      {notifications.length === 0 ? (
+                        <p className="px-4 py-6 text-center text-sm text-zinc-500">No tienes notificaciones</p>
+                      ) : (
+                        notifications.map((n) => (
+                          <div key={n.id} className={`border-b border-white/5 px-4 py-3 ${isUnread(n) ? "bg-white/[0.04]" : ""}`}>
+                            <p className="text-sm font-bold text-white">{n.title}</p>
+                            <p className="mt-1 whitespace-pre-wrap text-xs text-zinc-400">{n.body}</p>
+                            {n.created_at && (
+                              <p className="mt-1 text-[10px] text-zinc-600">{new Date(n.created_at).toLocaleString()}</p>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 transition hover:bg-white/20 outline-none"
+              style={{ WebkitTapHighlightColor: "transparent" }}
+            >
+              <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
+                <rect y="0" width="20" height="2" rx="1" fill="white" />
+                <rect y="6" width="20" height="2" rx="1" fill="white" />
+                <rect y="12" width="20" height="2" rx="1" fill="white" />
+              </svg>
+            </button>
+          </div>
         </div>
       </header>
 

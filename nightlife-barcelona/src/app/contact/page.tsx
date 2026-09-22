@@ -32,7 +32,18 @@ export default function ContactPage() {
     setError("")
     if (!message.trim()) { setError("Por favor escribe un mensaje."); return }
     setSending(true)
-    const { error } = await supabase.from("contact_messages").insert({ name, email, type, subject, message })
+
+    const { data: userData } = await supabase.auth.getUser()
+
+    const { error } = await supabase.from("contact_messages").insert({
+      name,
+      email,
+      type,
+      subject,
+      message,
+      user_id: userData.user?.id || null,
+    })
+
     setSending(false)
     if (error) { setError(error.message); return }
     setSuccess("✅ Mensaje enviado. Noctua lo revisará pronto.")
