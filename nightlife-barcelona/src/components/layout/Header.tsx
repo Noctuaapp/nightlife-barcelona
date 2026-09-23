@@ -23,7 +23,7 @@ type NotificationRow = {
   id: number
   title: string
   body: string
-  type: "reply" | "broadcast"
+  type: "reply" | "broadcast" | "favorite_reminder"
   read: boolean
   created_at: string | null
   related_message_id: number | null
@@ -87,33 +87,51 @@ export default function Header() {
 
         const now = new Date()
         const currentHour = now.getHours()
-        const allNightHours = ["T23:00", "T00:00", "T01:00", "T02:00", "T03:00", "T04:00", "T05:00", "T06:00"]
+        const pad = (n: number) => String(n).padStart(2, "0")
 
-        const nightHours: WeatherHour[] = allNightHours
-          .filter((h) => {
-            const hour = parseInt(h.replace("T", "").replace(":00", ""))
-            if (currentHour >= 7) return true
-            if (hour === 0 || hour === 1 || hour === 2 || hour === 3 || hour === 4 || hour === 5 || hour === 6) {
-              return hour >= currentHour
+        const nightHourValues = [23, 0, 1, 2, 3, 4, 5, 6]
+
+        const buildDateFor = (hour: number) => {
+          const d = new Date(now)
+          d.setMinutes(0, 0, 0)
+          if (hour === 23) {
+            d.setHours(23)
+            if (currentHour >= 0 && currentHour <= 6) {
+              d.setDate(d.getDate() - 1)
             }
-            return hour >= currentHour
-          })
+          } else {
+            if (!(currentHour >= 0 && currentHour <= 6)) {
+              d.setDate(d.getDate() + 1)
+            }
+            d.setHours(hour)
+          }
+          return d
+        }
+
+        const upcoming = nightHourValues
+          .map((hour) => ({ hour, date: buildDateFor(hour) }))
+          .filter(({ date }) => date.getTime() >= now.getTime() - 30 * 60 * 1000)
           .slice(0, 4)
-          .map((h) => {
-            const idx = data.hourly.time.findIndex((t: string) => t.includes(h))
-            const temp = idx !== -1 ? Math.round(data.hourly.temperature_2m[idx]) : null
-            const code = idx !== -1 ? data.hourly.weathercode[idx] : null
-            const icon = code !== null ? (weatherCodes[code] || "🌡") : "🌡"
-            const label = h.replace("T", "").replace(":00", "") + ":00"
-            return { label, icon, temp: temp ?? 0 }
-          })
+
+        const nightHours: WeatherHour[] = upcoming.map(({ hour, date }) => {
+          const iso = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(hour)}:00`
+          const idx = data.hourly.time.indexOf(iso)
+          const temp = idx !== -1 ? Math.round(data.hourly.temperature_2m[idx]) : null
+          const code = idx !== -1 ? data.hourly.weathercode[idx] : null
+          const icon = code !== null ? (weatherCodes[code] || "🌡") : "🌡"
+          const label = `${pad(hour)}:00`
+          return { label, icon, temp: temp ?? 0 }
+        })
 
         setWeather({ temp: currentTemp, icon: currentIcon, nightHours })
       } catch (e) {
         console.log("Weather error:", e)
       }
     }
+
     fetchWeather()
+    const interval = setInterval(fetchWeather, 30 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [selectedCity])
 
   const [notifOpen, setNotifOpen] = useState(false)
@@ -126,9 +144,83 @@ export default function Header() {
       return
     }
 
+    const checkFavoriteReminders = async (userId: string) => {
+      const { data: favs } = await supabase
+        .from("favorites")
+        .select("*")
+        .eq("user_id", userId)
+        .in("item_type", ["event", "club_event"])
+
+      console.log("REMINDER DEBUG - favs:", favs)
+
+      if (!favs || favs.length === 0) return
+
+      const eventIds = favs.filter((f) => f.item_type === "event").map((f) => f.item_id)
+      const clubEventIds = favs.filter((f) => f.item_type === "club_event").map((f) => f.item_id)
+
+      const [eventsRes, clubEventsRes] = await Promise.all([
+        eventIds.length > 0
+          ? supabase.from("events").select("id, title, date, start_time").in("id", eventIds)
+          : Promise.resolve({ data: [] as any[] }),
+        clubEventIds.length > 0
+          ? supabase.from("club_events").select("id, title, date, start_time").in("id", clubEventIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ])
+
+      console.log("REMINDER DEBUG - eventsRes:", eventsRes, "clubEventsRes:", clubEventsRes)
+
+      const items = [
+        ...(eventsRes.data || []).map((e: any) => ({ ...e, kind: "event" })),
+        ...(clubEventsRes.data || []).map((e: any) => ({ ...e, kind: "club_event" })),
+      ]
+
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      for (const item of items) {
+        if (!item.date) continue
+
+        const fav = favs.find((f) => f.item_type === item.kind && f.item_id === item.id)
+        const daysBefore = fav?.reminder_days_before ?? 0
+
+        const eventDate = new Date(item.date)
+        eventDate.setHours(0, 0, 0, 0)
+        const daysUntil = Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+        console.log("REMINDER DEBUG - item:", item.title, "date:", item.date, "daysUntil:", daysUntil, "daysBefore:", daysBefore)
+
+        if (daysUntil !== daysBefore) continue
+
+        const { data: existing } = await supabase
+          .from("notifications")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("related_event_id", item.id)
+          .eq("related_event_type", item.kind)
+
+        console.log("REMINDER DEBUG - existing:", existing)
+
+        if (existing && existing.length > 0) continue
+
+        const when = daysUntil === 0 ? "es hoy" : daysUntil === 1 ? "es mañana" : `es en ${daysUntil} días`
+
+        const { error: insertError } = await supabase.from("notifications").insert({
+          user_id: userId,
+          title: "⏰ Recordatorio",
+          body: `${item.title || "Tu evento guardado"} ${when}${item.start_time ? ` a las ${item.start_time}` : ""}.`,
+          type: "favorite_reminder",
+          related_event_id: item.id,
+          related_event_type: item.kind,
+        })
+        if (insertError) console.log("FAVORITE REMINDER INSERT ERROR:", insertError)
+      }
+    }
+
     const fetchNotifications = async () => {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) return
+
+      await checkFavoriteReminders(userData.user.id)
 
       const { data, error } = await supabase
         .from("notifications")
@@ -152,9 +244,11 @@ export default function Header() {
 
       setReadBroadcastIds(readBroadcasts)
 
-      const unread = (data || []).filter((n) =>
-        n.type === "broadcast" ? !readBroadcasts.includes(n.id) : !n.read
-      )
+      const unread = (data || []).filter((n) => {
+        if (n.type === "favorite_reminder") return true
+        if (n.type === "broadcast") return !readBroadcasts.includes(n.id)
+        return !n.read
+      })
       setNotifications(unread)
     }
 
@@ -188,9 +282,13 @@ export default function Header() {
     }
 
     setNotifications((prev) =>
-      prev.filter((n) =>
-        n.type === "broadcast" ? !merged.includes(n.id) : !personalUnread.some((p) => p.id === n.id)
-      )
+      prev
+        .map((n) => (personalUnread.some((p) => p.id === n.id) ? { ...n, read: true } : n))
+        .filter((n) => {
+          if (n.type === "favorite_reminder") return true
+          if (n.type === "broadcast") return !merged.includes(n.id)
+          return !n.read
+        })
     )
   }
 

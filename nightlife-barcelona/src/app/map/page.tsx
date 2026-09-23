@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import BottomNav from "../../components/layout/BottomNav"
 
@@ -119,6 +120,8 @@ export default function MapPage() {
   const userMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const watchIdRef = useRef<number | null>(null)
   const routeLayerRef = useRef<boolean>(false)
+  const urlHandledRef = useRef(false)
+  const searchParams = useSearchParams()
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
   const [clubs, setClubs] = useState<Club[]>([])
@@ -209,6 +212,23 @@ export default function MapPage() {
     else if (filter === "events") events.filter((e) => e.latitude && e.longitude).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
     else if (filter === "essentials") essentials.filter((e) => e.latitude && e.longitude).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
   }, [filter, mapReady, clubs, events, essentials])
+
+  useEffect(() => {
+    if (urlHandledRef.current || !mapReady) return
+    const typeParam = searchParams.get("type") as Filter | null
+    const idParam = searchParams.get("id")
+    if (!typeParam || !idParam) { urlHandledRef.current = true; return }
+    if (typeParam !== filter) { setFilter(typeParam); return }
+    const list = typeParam === "clubs" ? clubs : typeParam === "events" ? events : essentials
+    if (list.length === 0) return
+    const match = list.find((i) => String(i.id) === idParam)
+    if (!match) { urlHandledRef.current = true; return }
+    urlHandledRef.current = true
+    setSelected(match)
+    if (match.latitude && match.longitude) {
+      map.current?.flyTo({ center: [match.longitude, match.latitude], zoom: 15, duration: 800 })
+    }
+  }, [mapReady, filter, clubs, events, essentials, searchParams])
 
   useEffect(() => {
     if (!selected || !userLocation || !map.current || !mapReady) { setWalkingTime(null); return }

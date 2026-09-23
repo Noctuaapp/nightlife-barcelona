@@ -8,6 +8,9 @@ import { supabase } from "../../lib/supabase"
 import { useFavorites } from "../../context/FavoritesContext"
 import { useLanguage } from "../../context/LanguageContext"
 
+const createSlug = (text: string) =>
+  text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
+
 export default function ProfilePage() {
   const { favorites } = useFavorites()
   const { t } = useLanguage()
@@ -16,6 +19,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState("")
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const [username, setUsername] = useState("")
   const [newUsername, setNewUsername] = useState("")
@@ -24,6 +28,9 @@ export default function ProfilePage() {
   const [usernameSuccess, setUsernameSuccess] = useState("")
   const [savingUsername, setSavingUsername] = useState(false)
   const [editingUsername, setEditingUsername] = useState(false)
+
+  const [calendarItems, setCalendarItems] = useState<any[]>([])
+  const [loadingCalendar, setLoadingCalendar] = useState(true)
 
   useEffect(() => {
     const getUser = async () => {
@@ -42,6 +49,44 @@ export default function ProfilePage() {
     }
     getUser()
   }, [])
+
+  useEffect(() => {
+    const loadCalendar = async () => {
+      setLoadingCalendar(true)
+
+      const eventIds = favorites.filter((f) => f.item_type === "event").map((f) => f.item_id)
+      const clubEventIds = favorites.filter((f) => f.item_type === "club_event").map((f) => f.item_id)
+
+      const [eventsRes, clubEventsRes] = await Promise.all([
+        eventIds.length > 0 ? supabase.from("events").select("*").in("id", eventIds) : Promise.resolve({ data: [] as any[] }),
+        clubEventIds.length > 0 ? supabase.from("club_events").select("*").in("id", clubEventIds) : Promise.resolve({ data: [] as any[] }),
+      ])
+
+      const merged = [
+        ...(eventsRes.data || []).map((e: any) => ({
+          id: e.id,
+          kind: "event" as const,
+          title: e.title,
+          date: e.date,
+          time: e.start_time,
+          slug: createSlug(e.title || ""),
+        })),
+        ...(clubEventsRes.data || []).map((e: any) => ({
+          id: e.id,
+          kind: "club_event" as const,
+          title: e.title || e.name || "Noche de club",
+          date: e.date,
+          time: e.start_time || e.time,
+          slug: null,
+        })),
+      ]
+
+      merged.sort((a, b) => (a.date || "").localeCompare(b.date || ""))
+      setCalendarItems(merged)
+      setLoadingCalendar(false)
+    }
+    loadCalendar()
+  }, [favorites])
 
   const canChangeUsername = () => {
     if (!usernameUpdatedAt) return true
@@ -97,11 +142,14 @@ export default function ProfilePage() {
     window.location.href = "/login"
   }
 
-  const deleteAccount = async () => {
+  const askDeleteAccount = () => {
     setDeleteError("")
     if (email === "info@noctuaapp.com") { setDeleteError("Admin account cannot be deleted."); return }
-    const confirmed = window.confirm("Are you sure you want to delete your account? This will remove your favorites and cannot be undone.")
-    if (!confirmed) return
+    setShowDeleteModal(true)
+  }
+
+  const confirmDeleteAccount = async () => {
+    setShowDeleteModal(false)
     setDeleting(true)
     const { error } = await supabase.rpc("delete_current_user")
     if (error) { setDeleteError(error.message); setDeleting(false); return }
@@ -118,6 +166,7 @@ export default function ProfilePage() {
   }
 
   const initials = username ? username.slice(0, 2).toUpperCase() : email.slice(0, 2).toUpperCase()
+  const today = new Date().toISOString().split("T")[0]
 
   return (
     <>
@@ -167,6 +216,46 @@ export default function ProfilePage() {
                 <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">{t("profile.view_favorites")}</p>
               </Link>
             </div>
+          </div>
+
+          {/* Calendario de favoritos */}
+          <div className="mb-6 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
+            <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">Tu calendario</p>
+            {loadingCalendar ? (
+              <p className="text-sm text-zinc-500">Cargando...</p>
+            ) : calendarItems.length === 0 ? (
+              <p className="text-sm text-zinc-500">Guarda eventos o noches de club en favoritos para verlos aquí.</p>
+            ) : (
+              <div className="space-y-3">
+                {calendarItems.map((item) => {
+                  const isPast = item.date ? item.date < today : false
+                  const isToday = item.date === today
+                  const dateLabel = item.date
+                    ? new Date(item.date).toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })
+                    : "Fecha por confirmar"
+                  const card = (
+                    <div
+                      className={`flex items-center justify-between gap-4 rounded-2xl border p-4 transition ${
+                        isPast ? "border-white/5 opacity-50" : isToday ? "border-emerald-500/30 bg-emerald-500/5" : "border-white/10 hover:border-white/30"
+                      }`}
+                    >
+                      <div>
+                        <p className="font-bold text-white">{item.title}</p>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          {isToday ? "🟢 Hoy" : dateLabel}{item.time ? ` · ${item.time}` : ""}
+                        </p>
+                      </div>
+                      <span className="text-zinc-500">→</span>
+                    </div>
+                  )
+                  return item.kind === "event" ? (
+                    <Link key={`event-${item.id}`} href={`/event/${item.slug}`}>{card}</Link>
+                  ) : (
+                    <Link key={`club_event-${item.id}`} href="/favorites">{card}</Link>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Username */}
@@ -249,7 +338,7 @@ export default function ProfilePage() {
               {deleteError && <p className="mt-2 text-xs text-red-300">{deleteError}</p>}
             </div>
             <button
-              onClick={deleteAccount}
+              onClick={askDeleteAccount}
               disabled={deleting}
               className="shrink-0 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-400 hover:bg-red-500 hover:text-white transition disabled:opacity-50"
             >
@@ -258,6 +347,34 @@ export default function ProfilePage() {
           </div>
 
         </section>
+
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+            <div className="w-full max-w-md rounded-[32px] border border-red-500/30 bg-[#111] p-8">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-3xl">⚠️</div>
+              <h2 className="mt-5 text-2xl font-black text-white">¿Eliminar tu cuenta?</h2>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+                Esta acción es <span className="font-bold text-red-400">permanente</span>. Se borrarán tu perfil, tus favoritos y todo tu historial en Noctua. No podrás recuperarlo.
+              </p>
+              <div className="mt-8 flex flex-col gap-3">
+                <button
+                  onClick={confirmDeleteAccount}
+                  disabled={deleting}
+                  className="rounded-2xl bg-red-500 px-6 py-4 text-sm font-bold text-white transition hover:bg-red-600 disabled:opacity-50"
+                >
+                  {deleting ? "Eliminando..." : "Sí, eliminar mi cuenta"}
+                </button>
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={deleting}
+                  className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
       <BottomNav />
     </>

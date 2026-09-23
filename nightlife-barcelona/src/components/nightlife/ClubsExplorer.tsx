@@ -451,6 +451,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
             visibleClubs.map((club, index) => (
               <Reveal key={club.id} style={{ transitionDelay: `${Math.min(index, 8) * 60}ms` }}>
                 <ClubCard
+                  id={club.id}
                   name={club.name}
                   music={club.music}
                   area={club.neighborhood}

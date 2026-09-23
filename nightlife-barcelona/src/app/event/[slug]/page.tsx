@@ -218,6 +218,12 @@ export default async function EventPage({ params }: EventPageProps) {
                   <p className="text-sm text-zinc-500 mb-3">Ubicación</p>
                   <ClubMap latitude={event.latitude} longitude={event.longitude} name={event.title} />
                   {event.address && <p className="mt-3 text-sm text-zinc-400">📍 {event.address}</p>}
+                  <Link
+                    href={`/map?type=events&id=${event.id}`}
+                    className="mt-3 flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+                  >
+                    🗺️ Ver en mapa interactivo
+                  </Link>
                 </div>
               )}
 

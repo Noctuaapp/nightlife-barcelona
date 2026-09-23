@@ -17,6 +17,7 @@ type Favorite = {
   user_id: string
   item_type: FavoriteType
   item_id: number
+  reminder_days_before: number
 }
 
 interface FavoritesContextType {
@@ -25,6 +26,8 @@ interface FavoritesContextType {
   toggleFavorite: (itemType: FavoriteType, itemId: number) => Promise<void>
   isFavorite: (itemType: FavoriteType, itemId: number) => boolean
   refreshFavorites: () => Promise<void>
+  setReminder: (itemType: FavoriteType, itemId: number, daysBefore: number) => Promise<void>
+  getReminder: (itemType: FavoriteType, itemId: number) => number
 }
 
 const FavoritesContext =
@@ -90,6 +93,34 @@ export function FavoritesProvider({
     )
   }
 
+  const getReminder = (itemType: FavoriteType, itemId: number) => {
+    const fav = favorites.find(
+      (favorite) => favorite.item_type === itemType && favorite.item_id === itemId
+    )
+    return fav?.reminder_days_before ?? 0
+  }
+
+  const setReminder = async (itemType: FavoriteType, itemId: number, daysBefore: number) => {
+    const fav = favorites.find(
+      (favorite) => favorite.item_type === itemType && favorite.item_id === itemId
+    )
+    if (!fav) return
+
+    const { error } = await supabase
+      .from("favorites")
+      .update({ reminder_days_before: daysBefore })
+      .eq("id", fav.id)
+
+    if (error) {
+      console.log("SET REMINDER ERROR:", error)
+      return
+    }
+
+    setFavorites((prev) =>
+      prev.map((f) => (f.id === fav.id ? { ...f, reminder_days_before: daysBefore } : f))
+    )
+  }
+
   const toggleFavorite = async (
     itemType: FavoriteType,
     itemId: number
@@ -132,6 +163,7 @@ export function FavoritesProvider({
         user_id: user.id,
         item_type: itemType,
         item_id: itemId,
+        reminder_days_before: 0,
       })
       .select()
       .single()
@@ -154,6 +186,8 @@ export function FavoritesProvider({
         toggleFavorite,
         isFavorite,
         refreshFavorites,
+        setReminder,
+        getReminder,
       }}
     >
       {children}

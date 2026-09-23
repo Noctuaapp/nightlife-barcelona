@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 
@@ -22,6 +23,8 @@ type Event = {
   description: string | null
   featured: boolean | null
   sold_out: boolean | null
+  latitude: number | null
+  longitude: number | null
 }
 
 const createSlug = (title: string) =>
@@ -31,6 +34,7 @@ export default function EventsSection() {
   const [events, setEvents] = useState<Event[]>([])
   const [selectedCategory, setSelectedCategory] = useState("All")
   const { t } = useLanguage()
+  const router = useRouter()
 
   const categories = [
     { key: "All", label: t("filters.all") },
@@ -119,6 +123,16 @@ export default function EventsSection() {
                       🚫 {t("events.sold_out")}
                     </div>
                   )}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      router.push(`/map?type=events&id=${event.id}`)
+                    }}
+                    className="rounded-full border border-white/10 bg-black/50 px-3 py-2 text-xs font-semibold text-white backdrop-blur-xl transition hover:scale-105 hover:bg-white/20"
+                  >
+                    🗺️ Ver en mapa
+                  </button>
                 </div>
 
                 <div className="absolute right-5 top-5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300 backdrop-blur-xl">

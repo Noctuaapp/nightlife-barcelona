@@ -3,8 +3,10 @@
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 
 interface ClubCardProps {
+  id: number
   name: string
   music: string
   area: string
@@ -27,9 +29,10 @@ const createSlug = (text: string) =>
   text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
 
 export default function ClubCard({
-  name, music, area, price, hours, image, rating, people, badges = [], vip, lgtbi_friendly, verified,
+  id, name, music, area, price, hours, image, rating, people, badges = [], vip, lgtbi_friendly, verified,
 }: ClubCardProps) {
   const [liveBadges, setLiveBadges] = useState(badges)
+  const router = useRouter()
   const slug = createSlug(name)
 
   return (
@@ -71,6 +74,16 @@ export default function ClubCard({
               Noctua Verified
             </div>
           )}
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              router.push(`/map?type=clubs&id=${id}`)
+            }}
+            className="rounded-full border border-white/10 bg-black/50 px-3 py-2 text-xs font-semibold text-white backdrop-blur-xl transition hover:scale-105 hover:bg-white/20"
+          >
+            🗺️ Ver en mapa
+          </button>
         </div>
 
         <div className="absolute bottom-0 left-0 w-full p-6">
