@@ -71,6 +71,7 @@ export default function CuratedSection({
           >
 
             <ClubCard
+              id={club.id}
               name={club.name}
               music={club.music}
               area={club.neighborhood}
