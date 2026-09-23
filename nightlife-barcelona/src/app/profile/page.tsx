@@ -8,13 +8,42 @@ import { supabase } from "../../lib/supabase"
 import { useFavorites } from "../../context/FavoritesContext"
 import { useLanguage } from "../../context/LanguageContext"
 
+const ACCENT_PATTERN = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g")
+
 const createSlug = (text: string) =>
-  text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
+  text.toLowerCase().normalize("NFD").replace(ACCENT_PATTERN, "").replace(/\s+/g, "-")
+
+const timeAgo = (iso: string | null) => {
+  if (!iso) return ""
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diffMs / 60000)
+  if (mins < 1) return "ahora"
+  if (mins < 60) return `hace ${mins} min`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `hace ${hours}h`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `hace ${days}d`
+  return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short" })
+}
+
+const NOTIF_ICON: Record<string, string> = {
+  reply: "💬",
+  broadcast: "📢",
+  favorite_reminder: "⏰",
+}
+
+const sortByPinned = <T extends { pinned?: boolean | null; created_at?: string | null }>(list: T[]): T[] =>
+  [...list].sort((a, b) => {
+    const pinDiff = (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)
+    if (pinDiff !== 0) return pinDiff
+    return (b.created_at || "").localeCompare(a.created_at || "")
+  })
 
 export default function ProfilePage() {
   const { favorites } = useFavorites()
   const { t } = useLanguage()
 
+  const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
@@ -32,10 +61,16 @@ export default function ProfilePage() {
   const [calendarItems, setCalendarItems] = useState<any[]>([])
   const [loadingCalendar, setLoadingCalendar] = useState(true)
 
+  const [inboxTab, setInboxTab] = useState<"notifications" | "messages">("notifications")
+  const [notifHistory, setNotifHistory] = useState<any[]>([])
+  const [sentMessages, setSentMessages] = useState<any[]>([])
+  const [loadingInbox, setLoadingInbox] = useState(true)
+
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser()
       if (!data.user) { window.location.href = "/login"; return }
+      setUserId(data.user.id)
       setEmail(data.user.email || "")
 
       const { data: profile } = await supabase.from("profiles").select("username, username_updated_at").eq("id", data.user.id).single()
@@ -87,6 +122,21 @@ export default function ProfilePage() {
     }
     loadCalendar()
   }, [favorites])
+
+  useEffect(() => {
+    if (!userId || !email) return
+    const loadInbox = async () => {
+      setLoadingInbox(true)
+      const [notifRes, messagesRes] = await Promise.all([
+        supabase.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
+        supabase.from("contact_messages").select("*").eq("email", email).order("created_at", { ascending: false }).limit(50),
+      ])
+      setNotifHistory(sortByPinned(notifRes.data || []))
+      setSentMessages(sortByPinned(messagesRes.data || []))
+      setLoadingInbox(false)
+    }
+    loadInbox()
+  }, [userId, email])
 
   const canChangeUsername = () => {
     if (!usernameUpdatedAt) return true
@@ -157,6 +207,36 @@ export default function ProfilePage() {
     window.location.href = "/signup"
   }
 
+  const toggleNotifRead = async (id: number, current: boolean) => {
+    const next = !current
+    setNotifHistory((prev) => prev.map((n) => (n.id === id ? { ...n, read: next } : n)))
+    await supabase.from("notifications").update({ read: next }).eq("id", id)
+  }
+
+  const toggleNotifPinned = async (id: number, current: boolean) => {
+    const next = !current
+    setNotifHistory((prev) => sortByPinned(prev.map((n) => (n.id === id ? { ...n, pinned: next } : n))))
+    await supabase.from("notifications").update({ pinned: next }).eq("id", id)
+  }
+
+  const deleteNotif = async (id: number) => {
+    setNotifHistory((prev) => prev.filter((n) => n.id !== id))
+    await supabase.from("notifications").delete().eq("id", id)
+  }
+
+  const toggleMessagePinned = async (id: number, current: boolean) => {
+    const next = !current
+    setSentMessages((prev) => sortByPinned(prev.map((m) => (m.id === id ? { ...m, pinned: next } : m))))
+    await supabase.from("contact_messages").update({ pinned: next }).eq("id", id)
+  }
+
+  const deleteMessage = async (id: number) => {
+    const confirmed = window.confirm("¿Eliminar este mensaje? No se puede deshacer.")
+    if (!confirmed) return
+    setSentMessages((prev) => prev.filter((m) => m.id !== id))
+    await supabase.from("contact_messages").delete().eq("id", id)
+  }
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
@@ -167,6 +247,7 @@ export default function ProfilePage() {
 
   const initials = username ? username.slice(0, 2).toUpperCase() : email.slice(0, 2).toUpperCase()
   const today = new Date().toISOString().split("T")[0]
+  const unreadCount = notifHistory.filter((n) => !n.read).length
 
   return (
     <>
@@ -254,6 +335,146 @@ export default function ProfilePage() {
                     <Link key={`club_event-${item.id}`} href="/favorites">{card}</Link>
                   )
                 })}
+              </div>
+            )}
+          </div>
+
+          {/* BUZON */}
+          <div className="mb-6 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-xs uppercase tracking-widest text-zinc-500">📥 Buzón</p>
+              {unreadCount > 0 && (
+                <span className="rounded-full bg-purple-500/20 border border-purple-500/30 px-3 py-1 text-xs font-bold text-purple-300">
+                  {unreadCount} sin leer
+                </span>
+              )}
+            </div>
+
+            <div className="mb-6 flex gap-2">
+              <button
+                onClick={() => setInboxTab("notifications")}
+                className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${
+                  inboxTab === "notifications" ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                }`}
+              >
+                Notificaciones
+              </button>
+              <button
+                onClick={() => setInboxTab("messages")}
+                className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${
+                  inboxTab === "messages" ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                }`}
+              >
+                Tus mensajes
+              </button>
+            </div>
+
+            {loadingInbox ? (
+              <p className="text-sm text-zinc-500">Cargando...</p>
+            ) : inboxTab === "notifications" ? (
+              notifHistory.length === 0 ? (
+                <p className="text-sm text-zinc-500">Todavía no tienes notificaciones.</p>
+              ) : (
+                <div className="space-y-3">
+                  {notifHistory.map((n) => (
+                    <div
+                      key={n.id}
+                      className={`rounded-2xl border p-4 transition ${
+                        n.pinned
+                          ? "border-amber-400/40 bg-amber-400/[0.06]"
+                          : n.read
+                          ? "border-white/5 bg-white/[0.01]"
+                          : "border-purple-500/20 bg-purple-500/[0.06]"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <button
+                          onClick={() => !n.read && toggleNotifRead(n.id, n.read)}
+                          className="flex flex-1 items-start gap-3 text-left"
+                        >
+                          <span className="text-xl">{NOTIF_ICON[n.type] || "🔔"}</span>
+                          <div>
+                            <p className="font-bold text-white">{n.title}</p>
+                            {n.body && <p className="mt-1 text-sm text-zinc-400">{n.body}</p>}
+                          </div>
+                        </button>
+                        <div className="flex shrink-0 flex-col items-end gap-2">
+                          <span className="text-xs text-zinc-500">{timeAgo(n.created_at)}</span>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => toggleNotifPinned(n.id, !!n.pinned)}
+                              title={n.pinned ? "Quitar prioridad" : "Marcar como prioritario"}
+                              className={n.pinned ? "text-amber-400" : "text-zinc-600 hover:text-amber-300"}
+                            >
+                              📌
+                            </button>
+                            <button
+                              onClick={() => toggleNotifRead(n.id, n.read)}
+                              title={n.read ? "Marcar como no leído" : "Marcar como leído"}
+                              className={n.read ? "text-zinc-600 hover:text-white" : "text-purple-400"}
+                            >
+                              {n.read ? "○" : "●"}
+                            </button>
+                            <button
+                              onClick={() => deleteNotif(n.id)}
+                              title="Eliminar"
+                              className="text-zinc-600 hover:text-red-400"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : sentMessages.length === 0 ? (
+              <p className="text-sm text-zinc-500">
+                Todavía no has enviado ningún mensaje. Puedes escribirnos desde{" "}
+                <Link href="/contact" className="text-purple-300 underline">contacto</Link>.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {sentMessages.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`rounded-2xl border p-4 ${
+                      m.pinned ? "border-amber-400/40 bg-amber-400/[0.06]" : "border-white/10 bg-white/[0.02]"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="font-bold text-white">{m.subject || "Mensaje enviado"}</p>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-bold ${
+                            m.reply ? "bg-emerald-500/15 text-emerald-300" : "bg-white/10 text-zinc-400"
+                          }`}
+                        >
+                          {m.reply ? "Respondido" : "Pendiente"}
+                        </span>
+                        <button
+                          onClick={() => toggleMessagePinned(m.id, !!m.pinned)}
+                          title={m.pinned ? "Quitar prioridad" : "Marcar como prioritario"}
+                          className={m.pinned ? "text-amber-400" : "text-zinc-600 hover:text-amber-300"}
+                        >
+                          📌
+                        </button>
+                        <button onClick={() => deleteMessage(m.id)} title="Eliminar" className="text-zinc-600 hover:text-red-400">
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-sm text-zinc-400">{m.message}</p>
+                    <p className="mt-2 text-xs text-zinc-600">{timeAgo(m.created_at)}</p>
+                    {m.reply && (
+                      <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
+                        <p className="text-xs uppercase tracking-widest text-emerald-400 mb-1">Respuesta de Noctua</p>
+                        <p className="text-sm text-zinc-300">{m.reply}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>
