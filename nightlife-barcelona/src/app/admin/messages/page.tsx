@@ -83,6 +83,7 @@ export default function AdminMessagesPage() {
 
     setMessages((prev) => prev.map((message) => (message.id === id ? { ...message, status } : message)))
   }
+
   const deleteMessage = async (id: number) => {
     const confirmed = window.confirm("¿Seguro que quieres eliminar este mensaje? No se puede deshacer.")
     if (!confirmed) return
@@ -95,9 +96,12 @@ export default function AdminMessagesPage() {
       return
     }
 
+    await supabase.from("notifications").delete().eq("related_message_id", id)
+
     setMessages((prev) => prev.filter((m) => m.id !== id))
     if (selectedId === id) setSelectedId(null)
   }
+
   const openMessage = (message: ContactMessage) => {
     setSelectedId(message.id)
     setReplyText(message.admin_reply || "")
@@ -426,7 +430,7 @@ export default function AdminMessagesPage() {
                         {sending ? "Enviando..." : "Enviar respuesta"}
                       </button>
 
-                      {sendOk && <span className="text-sm font-bold text-emerald-400">Guardado ✓</span>}
+                      {sendOk && <span className="text-sm font-bold text-emerald-400">Enviado ✓</span>}
                       {sendError && <span className="text-sm font-bold text-red-400">{sendError}</span>}
                     </div>
                   </div>

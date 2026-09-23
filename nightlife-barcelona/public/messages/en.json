@@ -6,6 +6,7 @@
     "essentials": "Essentials",
     "map": "Map",
     "plan": "Plan your night",
+    "favorites": "Favorites",
     "profile": "My profile",
     "login": "Log in",
     "logout": "Log out",
@@ -178,5 +179,14 @@
   "legal": "Legal",
   "copyright": "© 2026 Noctua · Barcelona Nightlife",
   "privacy_note": "Noctua uses your email to manage your account. Google Sign-In only shares your name and email. We never sell your data or use it for advertising."
+},
+"privacy": {
+  "title": "Privacy Policy",
+  "subtitle": "How Noctua collects, uses and protects your information.",
+  "last_updated": "Last updated: June 2026"
+},
+"terms": {
+  "title": "Terms of Service",
+  "last_updated": "Last updated: June 2026"
 }
 }

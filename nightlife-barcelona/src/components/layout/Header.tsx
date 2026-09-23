@@ -142,17 +142,23 @@ export default function Header() {
         return
       }
 
-      setNotifications(data || [])
+      let readBroadcasts: number[] = []
+      try {
+        const stored = localStorage.getItem("noctua_read_broadcasts")
+        if (stored) readBroadcasts = JSON.parse(stored)
+      } catch (e) {
+        console.log("LOCALSTORAGE ERROR:", e)
+      }
+
+      setReadBroadcastIds(readBroadcasts)
+
+      const unread = (data || []).filter((n) =>
+        n.type === "broadcast" ? !readBroadcasts.includes(n.id) : !n.read
+      )
+      setNotifications(unread)
     }
 
     fetchNotifications()
-
-    try {
-      const stored = localStorage.getItem("noctua_read_broadcasts")
-      if (stored) setReadBroadcastIds(JSON.parse(stored))
-    } catch (e) {
-      console.log("LOCALSTORAGE ERROR:", e)
-    }
   }, [isLoggedIn])
 
   const isUnread = (n: NotificationRow) =>
@@ -168,12 +174,11 @@ export default function Header() {
     const personalUnread = notifications.filter((n) => n.type !== "broadcast" && !n.read)
     if (personalUnread.length > 0) {
       await supabase.from("notifications").update({ read: true }).in("id", personalUnread.map((n) => n.id))
-      setNotifications((prev) => prev.map((n) => (personalUnread.some((p) => p.id === n.id) ? { ...n, read: true } : n)))
     }
 
     const broadcastIds = notifications.filter((n) => n.type === "broadcast").map((n) => n.id)
+    const merged = Array.from(new Set([...readBroadcastIds, ...broadcastIds]))
     if (broadcastIds.length > 0) {
-      const merged = Array.from(new Set([...readBroadcastIds, ...broadcastIds]))
       setReadBroadcastIds(merged)
       try {
         localStorage.setItem("noctua_read_broadcasts", JSON.stringify(merged))
@@ -181,6 +186,12 @@ export default function Header() {
         console.log("LOCALSTORAGE ERROR:", e)
       }
     }
+
+    setNotifications((prev) =>
+      prev.filter((n) =>
+        n.type === "broadcast" ? !merged.includes(n.id) : !personalUnread.some((p) => p.id === n.id)
+      )
+    )
   }
 
   if (hideHeader) return null
@@ -318,7 +329,7 @@ export default function Header() {
         <div className="fixed inset-0 z-[190] bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
       )}
 
-<div style={{
+      <div style={{
         position: "fixed", top: 0, right: 0, zIndex: 200, height: "100%", width: "288px",
         background: "#000", borderLeft: "1px solid rgba(255,255,255,0.1)",
         display: "flex", flexDirection: "column",
@@ -343,6 +354,9 @@ export default function Header() {
           </Link>
           <Link href="/plan" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
             <span className="text-xl">✨</span>{t("nav.plan")}
+          </Link>
+          <Link href="/favorites" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
+            <span className="text-xl">❤️</span>{t("nav.favorites")}
           </Link>
         </div>
 
