@@ -81,7 +81,9 @@ export async function GET(req: Request) {
               google_last_refreshed_at: null,
               google_verified_at: new Date().toISOString(),
               gallery: null,
-              ...(wasFromGoogle ? { image: null } : {}),
+              // Nunca dejamos "image" a null: si venía de Google (foto del sitio equivocado),
+              // volvemos al placeholder para que la tarjeta nunca se quede sin imagen.
+              ...(wasFromGoogle ? { image: "/clubs/razz.jpg" } : {}),
             })
             .eq("id", club.id)
           return { club: club.name, googleSaid: googleName, status: "reset_mismatch" }

@@ -396,25 +396,12 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
           >
             <Icon name="share" className="h-4 w-4" />
           </button>
-          {ticketUrl ? (
-            <a
-              href={ticketUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackClick("tickets_click")}
-              style={accentGradient}
-              className="rounded-full px-4 py-2.5 text-xs font-black text-white transition hover:scale-105 sm:px-5 sm:text-sm"
-            >
-              Comprar entradas
-            </a>
-          ) : (
-            <button
-              onClick={openDirections}
-              className="rounded-full bg-white px-4 py-2.5 text-xs font-black text-black transition hover:scale-105 sm:px-5 sm:text-sm"
-            >
-              Cómo llegar
-            </button>
-          )}
+          <button
+            onClick={openDirections}
+            className="rounded-full bg-white px-4 py-2.5 text-xs font-black text-black transition hover:scale-105 sm:px-5 sm:text-sm"
+          >
+            Cómo llegar
+          </button>
         </div>
       </header>
 
@@ -524,18 +511,7 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
               style={{ transitionDelay: "260ms" }}
               className={`mt-8 flex flex-wrap items-center gap-3 transition-all duration-700 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
-              {ticketUrl ? (
-                <a
-                  href={ticketUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => trackClick("tickets_click")}
-                  style={accentGradient}
-                  className="flex items-center gap-2 rounded-2xl px-7 py-4 font-black text-white transition hover:scale-[1.02] hover:opacity-90"
-                >
-                  <Icon name="ticket" className="h-4 w-4" /> Comprar entradas
-                </a>
-              ) : club.website ? (
+              {club.website && (
                 <a
                   href={club.website}
                   target="_blank"
@@ -546,7 +522,7 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
                 >
                   Web oficial
                 </a>
-              ) : null}
+              )}
               <button
                 onClick={openDirections}
                 className="flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-6 py-4 font-bold text-white backdrop-blur-xl transition hover:bg-white/10"
@@ -1016,18 +992,6 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
         <button onClick={openDirections} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-xs font-bold text-black">
           <Icon name="map" className="h-4 w-4" /> Cómo llegar
         </button>
-        {ticketUrl && (
-          <a
-            href={ticketUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => trackClick("tickets_click")}
-            style={accentGradient}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white"
-          >
-            <Icon name="ticket" className="h-4 w-4" />
-          </a>
-        )}
         <button onClick={shareClub} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5">
           <Icon name="share" className="h-4 w-4" />
         </button>

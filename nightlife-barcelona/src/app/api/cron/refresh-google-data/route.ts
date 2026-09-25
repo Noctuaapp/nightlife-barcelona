@@ -131,9 +131,16 @@ export async function GET(req: Request) {
         // día), no le pegamos fotos/reseñas ajenas: lo desasignamos para que el Paso 0 lo
         // vuelva a buscar bien en el próximo ciclo, sin tocar nada a mano.
         if (googleName && !namesLikelyMatch(club.name, googleName)) {
+          const wasFromGoogle = typeof club.image === "string" && club.image.includes("club-photos")
           await supabase
             .from("clubs")
-            .update({ google_place_id: null, google_last_refreshed_at: null })
+            .update({
+              google_place_id: null,
+              google_last_refreshed_at: null,
+              gallery: null,
+              // Nunca dejamos "image" a null para que la tarjeta nunca se quede sin foto.
+              ...(wasFromGoogle ? { image: "/clubs/razz.jpg" } : {}),
+            })
             .eq("id", club.id)
           return { club: club.name, status: "mismatch_reset", googleSaid: googleName }
         }
