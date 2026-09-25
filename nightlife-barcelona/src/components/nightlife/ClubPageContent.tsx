@@ -143,11 +143,13 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [now, setNow] = useState(() => Date.now())
   const [mounted, setMounted] = useState(false)
+  const [reviews, setReviews] = useState<any[]>([])
   const heroRef = useRef<HTMLDivElement>(null)
 
   const accent = hashAccent(club.music || club.name || "noctua")
   const ticketUrl = club.tickets_url || club.ticket_url || club.entradas_url || club.website
-  const reviewCount = club.review_count || club.reviews_count || null
+  const displayRating = club.google_rating || club.rating || null
+  const reviewCount = club.google_review_count || club.review_count || club.reviews_count || null
   const capacity = club.capacity || club.aforo || null
   const minAge = club.min_age || club.edad_minima || null
   const instagram = club.instagram || club.instagram_url || null
@@ -196,9 +198,18 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
         }
       } catch {}
     }
+    const loadReviews = async () => {
+      const { data } = await supabase
+        .from("club_reviews")
+        .select("*")
+        .eq("club_id", club.id)
+        .order("rating", { ascending: false })
+      if (data) setReviews(data)
+    }
     loadRelated()
     loadFavCount()
     loadWeather()
+    loadReviews()
   }, [club.id])
 
   const trackClick = async (eventType: string) => {
@@ -288,7 +299,7 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
     { key: "minage", label: minAge ? `Edad mínima: ${minAge} años` : "", icon: "id", active: !!minAge },
   ].filter((f) => f.active)
 
-  const ratingRounded = club.rating ? Math.round(club.rating) : 0
+  const ratingRounded = displayRating ? Math.round(displayRating) : 0
 
   const energyLevel = club.sold_out
     ? { label: "Lleno", bars: 5, color: "bg-red-400" }
@@ -427,7 +438,7 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
               <p className="mt-4 text-sm uppercase tracking-[0.35em] text-zinc-400">{club.neighborhood || "Barcelona"}</p>
             </div>
 
-            {club.rating && (
+            {displayRating && (
               <div
                 style={{ transitionDelay: "220ms" }}
                 className={`mt-6 flex items-center gap-2 transition-all duration-700 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
@@ -440,7 +451,7 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
                   ))}
                 </div>
                 <span className="text-sm font-semibold text-zinc-300">
-                  <CountUp value={club.rating} decimals={1} />/5
+                  <CountUp value={displayRating} decimals={1} />/5
                 </span>
                 {reviewCount ? (
                   <span className="text-sm text-zinc-500">
@@ -670,6 +681,31 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
                     )}
                   </div>
                 </Card>
+
+                {reviews.length > 0 && (
+                  <Card innerClassName="p-8">
+                    <div className="mb-6 flex items-center justify-between">
+                      <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">Lo que dice la gente</p>
+                      <p className="text-[10px] uppercase tracking-widest text-zinc-600">Reseñas de Google</p>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {reviews.slice(0, 4).map((r) => (
+                        <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-bold text-white">{r.author_name}</p>
+                            {r.rating && (
+                              <span className="flex items-center gap-1 text-xs font-semibold" style={{ color: accent.from }}>
+                                ★ {r.rating}
+                              </span>
+                            )}
+                          </div>
+                          {r.relative_time && <p className="mt-0.5 text-[11px] text-zinc-500">{r.relative_time}</p>}
+                          <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-zinc-400">{r.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
 
                 {faqs.length > 0 && (
                   <Card innerClassName="p-8">
