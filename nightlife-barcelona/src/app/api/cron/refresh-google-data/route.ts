@@ -58,7 +58,7 @@ export async function GET(req: Request) {
 
   const { data: clubs, error } = await supabase
     .from("clubs")
-    .select("id, name, google_place_id")
+    .select("id, name, image, google_place_id")
     .not("google_place_id", "is", null)
     .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
     .limit(BATCH_SIZE)
@@ -119,6 +119,9 @@ export async function GET(req: Request) {
             google_review_count: data.userRatingCount ?? null,
             google_last_refreshed_at: new Date().toISOString(),
             ...(photoUrls.length > 0 ? { gallery: photoUrls } : {}),
+            // Si el club no tenía foto principal propia, usamos la primera de Google
+            // como imagen de portada (así deja de salir el placeholder de Razz en las tarjetas).
+            ...(!club.image && photoUrls.length > 0 ? { image: photoUrls[0] } : {}),
           })
           .eq("id", club.id)
 
