@@ -4,9 +4,39 @@ import { createClient } from "@supabase/supabase-js"
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
 
+const ACCENT_PATTERN = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g")
+
+const STOPWORDS = new Set([
+  "the", "bar", "club", "sala", "disco", "discoteca", "pub", "lounge",
+  "de", "del", "la", "el", "los", "las", "en", "y", "and", "of",
+])
+
+function normalizeWords(s: string): string[] {
+  return (s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(ACCENT_PATTERN, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 3 && !STOPWORDS.has(w))
+}
+
+// Comprueba que el nombre que devuelve Google se parece de verdad al nombre del club,
+// para no asignarle a un club el place_id de un sitio totalmente distinto
+// (p.ej. "Costa Breve" emparejado por error con "Costa Brava").
+function namesLikelyMatch(clubName: string, googleName: string): boolean {
+  const a = normalizeWords(clubName)
+  const b = normalizeWords(googleName)
+  if (a.length === 0 || b.length === 0) return true // no hay suficiente info para descartar, no bloqueamos
+  return a.some((w) => b.includes(w)) || b.some((w) => a.includes(w))
+}
+
+const isPlaceholderImage = (img: string | null | undefined) =>
+  !img || img.includes("razz") || img.trim() === ""
+
 // Al principio: visita esta URL repetidamente (recarga la página) hasta que "remaining" salga en 0,
 // para traer las fotos/reseñas de los 130 clubs por primera vez.
-// Luego el cron mensual va reciclando los más antiguos automáticamente, unos pocos cada vez.
+// Luego el cron diario va reciclando los más antiguos automáticamente, unos pocos cada vez.
 // Para probarla a mano: https://TU_DOMINIO/api/cron/refresh-google-data?secret=TU_ADMIN_SECRET
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -39,15 +69,21 @@ export async function GET(req: Request) {
           headers: {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": apiKey,
-            "X-Goog-FieldMask": "places.id",
+            "X-Goog-FieldMask": "places.id,places.displayName",
           },
           body: JSON.stringify({ textQuery: query }),
         })
         const json = await res.json()
-        const placeId = json?.places?.[0]?.id
-        if (placeId) {
+        const place = json?.places?.[0]
+        const placeId = place?.id
+        const placeName = place?.displayName?.text || ""
+
+        if (placeId && namesLikelyMatch(club.name, placeName)) {
           await supabase.from("clubs").update({ google_place_id: placeId }).eq("id", club.id)
-          return { club: club.name, placeId, status: "assigned" }
+          return { club: club.name, placeId, matchedAs: placeName, status: "assigned" }
+        }
+        if (placeId) {
+          return { club: club.name, status: "rejected_mismatch", googleSaid: placeName }
         }
         return { club: club.name, status: "not_found" }
       } catch (e: any) {
@@ -85,10 +121,22 @@ export async function GET(req: Request) {
         const detailsRes = await fetch(`https://places.googleapis.com/v1/places/${club.google_place_id}`, {
           headers: {
             "X-Goog-Api-Key": apiKey,
-            "X-Goog-FieldMask": "rating,userRatingCount,reviews,photos",
+            "X-Goog-FieldMask": "displayName,rating,userRatingCount,reviews,photos",
           },
         })
         const data = await detailsRes.json()
+        const googleName = data?.displayName?.text || ""
+
+        // Si el place_id guardado no corresponde de verdad a este club (mal emparejado en su
+        // día), no le pegamos fotos/reseñas ajenas: lo desasignamos para que el Paso 0 lo
+        // vuelva a buscar bien en el próximo ciclo, sin tocar nada a mano.
+        if (googleName && !namesLikelyMatch(club.name, googleName)) {
+          await supabase
+            .from("clubs")
+            .update({ google_place_id: null, google_last_refreshed_at: null })
+            .eq("id", club.id)
+          return { club: club.name, status: "mismatch_reset", googleSaid: googleName }
+        }
 
         // Descargamos las fotos y las guardamos en tu propio Storage (NUNCA guardar la URL
         // directa de Google: si no, cada visita a la web sería una llamada de pago a Google).
@@ -119,9 +167,9 @@ export async function GET(req: Request) {
             google_review_count: data.userRatingCount ?? null,
             google_last_refreshed_at: new Date().toISOString(),
             ...(photoUrls.length > 0 ? { gallery: photoUrls } : {}),
-            // Si el club no tenía foto principal propia, usamos la primera de Google
-            // como imagen de portada (así deja de salir el placeholder de Razz en las tarjetas).
-            ...(!club.image && photoUrls.length > 0 ? { image: photoUrls[0] } : {}),
+            // Si el club no tenía foto principal propia (o seguía con el placeholder de
+            // Razzmatazz de los datos de partida), usamos la primera de Google como portada.
+            ...(isPlaceholderImage(club.image) && photoUrls.length > 0 ? { image: photoUrls[0] } : {}),
           })
           .eq("id", club.id)
 
