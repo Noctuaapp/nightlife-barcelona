@@ -4,7 +4,9 @@ import { createClient } from "@supabase/supabase-js"
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
 
-// Se ejecuta sola cada mes via Vercel Cron (ver vercel.json).
+// Al principio: visita esta URL repetidamente (recarga la página) hasta que "remaining" salga en 0,
+// para traer las fotos/reseñas de los 130 clubs por primera vez.
+// Luego el cron mensual va reciclando los más antiguos automáticamente, unos pocos cada vez.
 // Para probarla a mano: https://TU_DOMINIO/api/cron/refresh-google-data?secret=TU_ADMIN_SECRET
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -17,11 +19,25 @@ export async function GET(req: Request) {
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
   const apiKey = process.env.GOOGLE_MAPS_API_KEY!
+  const BATCH_SIZE = 8
 
   const { data: clubs, error } = await supabase
     .from("clubs")
     .select("id, name, google_place_id")
     .not("google_place_id", "is", null)
+    .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
+    .limit(BATCH_SIZE)
+
+  const { count: totalWithPlaceId } = await supabase
+    .from("clubs")
+    .select("*", { count: "exact", head: true })
+    .not("google_place_id", "is", null)
+
+  const { count: alreadyRefreshed } = await supabase
+    .from("clubs")
+    .select("*", { count: "exact", head: true })
+    .not("google_place_id", "is", null)
+    .not("google_last_refreshed_at", "is", null)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -60,6 +76,7 @@ export async function GET(req: Request) {
         .update({
           google_rating: data.rating ?? null,
           google_review_count: data.userRatingCount ?? null,
+          google_last_refreshed_at: new Date().toISOString(),
           ...(photoUrls.length > 0 ? { gallery: photoUrls } : {}),
         })
         .eq("id", club.id)
@@ -82,5 +99,10 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({ processed: results.length, results })
+  const remaining = (totalWithPlaceId ?? 0) - (alreadyRefreshed ?? 0) - results.length
+  return NextResponse.json({
+    processed: results.length,
+    remaining: remaining < 0 ? 0 : remaining,
+    results,
+  })
 }

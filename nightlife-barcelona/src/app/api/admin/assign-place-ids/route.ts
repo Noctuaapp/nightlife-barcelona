@@ -4,7 +4,8 @@ import { createClient } from "@supabase/supabase-js"
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
 
-// Visita esta URL una vez (o cada vez que añadas clubs nuevos):
+// Visita esta URL repetidamente (recarga la página) hasta que "remaining" salga en 0.
+// Procesa de 15 en 15 para no superar el límite de tiempo de Vercel.
 // https://TU_DOMINIO/api/admin/assign-place-ids?secret=TU_ADMIN_SECRET
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -14,10 +15,17 @@ export async function GET(req: Request) {
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
   const apiKey = process.env.GOOGLE_MAPS_API_KEY!
+  const BATCH_SIZE = 15
 
   const { data: clubs, error } = await supabase
     .from("clubs")
     .select("id, name, address, neighborhood")
+    .is("google_place_id", null)
+    .limit(BATCH_SIZE)
+
+  const { count: remaining } = await supabase
+    .from("clubs")
+    .select("*", { count: "exact", head: true })
     .is("google_place_id", null)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -50,5 +58,9 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({ processed: results.length, results })
+  return NextResponse.json({
+    processed: results.length,
+    remaining: (remaining ?? 0) - results.length < 0 ? 0 : (remaining ?? 0) - results.length,
+    results,
+  })
 }
