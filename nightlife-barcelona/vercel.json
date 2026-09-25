@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/refresh-google-data",
+      "schedule": "0 4 1 * *"
+    }
+  ]
+}
