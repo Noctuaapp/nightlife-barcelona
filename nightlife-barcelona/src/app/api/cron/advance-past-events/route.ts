@@ -18,14 +18,18 @@ function addOneYear(dateStr: string): string {
   return d.toISOString().slice(0, 10)
 }
 
+// Un evento de varios días (date_end) no ha terminado hasta que pasa el último día, no el
+// primero, así que la comparación con "hoy" usa date_end cuando existe.
+const NOT_OVER_FILTER = (today: string) => `date_end.lt.${today},and(date_end.is.null,date.lt.${today})`
+
 export async function GET() {
   const today = new Date().toISOString().slice(0, 10)
 
   const { data: pastEvents, error } = await supabase
     .from("events")
-    .select("id, title, date, recurring, hidden")
+    .select("id, title, date, date_end, recurring, hidden")
     .not("date", "is", null)
-    .lt("date", today)
+    .or(NOT_OVER_FILTER(today))
     .limit(BATCH_SIZE)
 
   if (error) {
@@ -47,13 +51,16 @@ export async function GET() {
     }
 
     // Evento recurrente: se avanza al año siguiente y se oculta hasta que lo revises
-    // (el cartel, precio o artistas pueden cambiar de una edición a otra).
+    // (el cartel, precio o artistas pueden cambiar de una edición a otra). Si tenía
+    // date_end (rango de días), también se avanza un año para mantener la misma duración.
     const newDate = addOneYear(ev.date as string)
+    const newDateEnd = ev.date_end ? addOneYear(ev.date_end as string) : null
 
     await supabase
       .from("events")
       .update({
         date: newDate,
+        date_end: newDateEnd,
         hidden: true,
         sold_out: false,
         featured: false,
@@ -67,7 +74,7 @@ export async function GET() {
     .from("events")
     .select("id", { count: "exact", head: true })
     .not("date", "is", null)
-    .lt("date", today)
+    .or(NOT_OVER_FILTER(today))
 
   return NextResponse.json({ processed: results.length, remaining: remaining || 0, results })
 }

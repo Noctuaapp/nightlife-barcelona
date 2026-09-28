@@ -8,14 +8,11 @@ import EventSessionsCalendar from "../nightlife/EventSessionsCalendar"
 import TransportButtons from "../ui/TransportButtons"
 import { supabase } from "../../lib/supabase"
 
-const ACCENT_PATTERN = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g")
-
-const createSlug = (text: string) =>
-  (text || "").toLowerCase().normalize("NFD").replace(ACCENT_PATTERN, "").replace(/\s+/g, "-")
-
-const isEventPast = (date: string): boolean => {
+// Un evento de varios días (date_end) no se considera terminado hasta que pasa el último día,
+// no el primero.
+const isEventPast = (date: string, dateEnd?: string | null): boolean => {
   if (!date) return false
-  const eventDate = new Date(date)
+  const eventDate = new Date(dateEnd || date)
   const now = new Date()
   now.setHours(0, 0, 0, 0)
   return eventDate < now
@@ -152,7 +149,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
   const heroRef = useRef<HTMLDivElement>(null)
 
   const accent = hashAccent(event.music || event.title || "noctua")
-  const past = isEventPast(event.date)
+  const past = isEventPast(event.date, event.date_end)
   const firstOpenTicket = (tickets || []).find((tk) => tk.external_url)
   const ticketUrl = !past && !event.sold_out ? firstOpenTicket?.external_url || event.ticket_url : null
   const displayRating = event.google_rating || null
@@ -249,13 +246,22 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
     ? new Date(event.date).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
     : "TBA"
 
+  // Si tiene date_end distinto de date, es un evento de varios días -> se muestra como rango.
+  const dateEndLabel =
+    event.date_end && event.date_end !== event.date
+      ? new Date(event.date_end).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+      : null
+  const fullDateLabel = dateEndLabel ? `${dateLabel} - ${dateEndLabel}` : dateLabel
+
+  const priceTiers: { label: string; price: string }[] = Array.isArray(event.price_tiers) ? event.price_tiers : []
+
   const galleryImages: string[] = (Array.isArray(event.gallery) ? event.gallery : []).filter(
     (src: any) => typeof src === "string" && src.length > 0
   )
   const allImages = [event.image, ...galleryImages].filter(Boolean)
 
   const quickFacts = [
-    { key: "date", icon: "calendar", value: past ? "Terminado" : dateLabel.split(",")[0] || dateLabel, label: "Fecha" },
+    { key: "date", icon: "calendar", value: past ? "Terminado" : dateEndLabel ? `${dateLabel.split(",")[0]} - ${dateEndLabel.split(",")[0]}` : dateLabel.split(",")[0] || dateLabel, label: "Fecha" },
     { key: "time", icon: "clock", value: event.start_time ? `${event.start_time}${event.end_time ? ` - ${event.end_time}` : ""}` : "TBA", label: "Horario" },
     { key: "price", icon: "ticket", value: event.price || "TBA", label: "Precio" },
     { key: "music", icon: "music", value: event.music || "TBA", label: "Música" },
@@ -374,7 +380,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
               </span>
               <span className="h-1 w-1 rounded-full bg-zinc-600" />
               <span className="flex items-center gap-1.5 text-sm text-zinc-300">
-                <Icon name="calendar" className="h-3.5 w-3.5 text-zinc-500" /> {dateLabel}
+                <Icon name="calendar" className="h-3.5 w-3.5 text-zinc-500" /> {fullDateLabel}
               </span>
               {displayRating && (
                 <>
@@ -617,16 +623,27 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
               <div className="space-y-2.5 border-b border-white/10 p-6 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-zinc-500">Fecha</span>
-                  <span className="text-right font-semibold text-white">{dateLabel}</span>
+                  <span className="text-right font-semibold text-white">{fullDateLabel}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-zinc-500">Hora</span>
                   <span className="font-semibold text-white">{event.start_time || "TBA"}{event.end_time ? ` - ${event.end_time}` : ""}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Precio</span>
-                  <span className="font-semibold text-white">{event.price || "TBA"}</span>
-                </div>
+                {priceTiers.length > 0 ? (
+                  <div className="space-y-1.5 pt-1">
+                    {priceTiers.map((tier, i) => (
+                      <div key={i} className="flex items-center justify-between">
+                        <span className="text-zinc-500">{tier.label}</span>
+                        <span className="font-semibold text-white">{tier.price}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-500">Precio</span>
+                    <span className="font-semibold text-white">{event.price || "TBA"}</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3 p-6">

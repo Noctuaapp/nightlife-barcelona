@@ -4,13 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useLanguage } from "../../context/LanguageContext"
+import { createSlug } from "../../lib/slug"
 
-const createSlug = (text: string) =>
-  text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, "-")
-
-const isEventPast = (date: string): boolean => {
+// Un evento de varios días (date_end) no se considera terminado hasta que pasa el último día,
+// no el primero.
+const isEventPast = (date: string, dateEnd?: string | null): boolean => {
   if (!date) return false
-  const eventDate = new Date(date)
+  const eventDate = new Date(dateEnd || date)
   const now = new Date()
   now.setHours(0, 0, 0, 0)
   return eventDate < now
@@ -141,7 +141,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
         !userLng ||
         (event.latitude && event.longitude && getDistance(userLat, userLng, event.latitude, event.longitude) <= 5)
 
-      const matchesPast = !hidePast || !isEventPast(event.date)
+      const matchesPast = !hidePast || !isEventPast(event.date, event.date_end)
 
       return matchesFilters && matchesSearch && matchesNearMe && matchesPast
     })
@@ -322,11 +322,17 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
             </div>
           ) : (
             visibleEvents.map((event, index) => {
-              const past = isEventPast(event.date)
+              const past = isEventPast(event.date, event.date_end)
               const upcomingSoon = !past && isUpcomingSoon(event.date)
               const dateLabel = event.date
                 ? new Date(event.date).toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })
                 : ""
+              // Si tiene date_end distinto de date, es un evento de varios días -> se muestra
+              // como rango en vez de un solo día.
+              const dateEndLabel =
+                event.date_end && event.date_end !== event.date
+                  ? new Date(event.date_end).toLocaleDateString("es-ES", { day: "numeric", month: "short" })
+                  : null
               return (
                 <Reveal key={event.id} style={{ transitionDelay: `${Math.min(index, 8) * 60}ms` }}>
                   <Link
@@ -389,7 +395,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                         {event.description && <p className="mt-3 text-zinc-300 line-clamp-2">{event.description}</p>}
                         <div className="mt-5 flex items-center justify-between text-sm text-zinc-300">
                           <span>📍 {event.club_name || "Barcelona"}</span>
-                          <span>{past ? "Terminado" : dateLabel}</span>
+                          <span>{past ? "Terminado" : dateEndLabel ? `${dateLabel} - ${dateEndLabel}` : dateLabel}</span>
                         </div>
                         <div className="mt-5 flex flex-wrap gap-3">
                           {(event.start_time || event.end_time) && (

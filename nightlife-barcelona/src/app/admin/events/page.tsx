@@ -14,6 +14,7 @@ type Event = {
   artist: string | null
   music: string | null
   date: string | null
+  date_end: string | null
   start_time: string | null
   end_time: string | null
   price: string | null
@@ -29,6 +30,7 @@ type Event = {
   google_rating: number | null
   google_review_count: number | null
   recurring: boolean | null
+  price_tiers: { label: string; price: string }[] | null
 }
 
 export default function AdminEventsPage() {
@@ -40,6 +42,7 @@ export default function AdminEventsPage() {
     artist: "",
     music: "",
     date: "",
+    date_end: "",
     start_time: "",
     end_time: "",
     price: "",
@@ -47,6 +50,23 @@ export default function AdminEventsPage() {
     image: "",
     description: "",
   }
+
+  // Tarifas adicionales (VIP, día suelto, pack varios días...) además del precio general de
+  // arriba. Se editan como texto plano "Etiqueta:precio" separado por ";" en vez de una fila de
+  // inputs por tarifa, para no complicar el formulario — se guardan como JSON en price_tiers.
+  const parsePriceTiers = (raw: string): { label: string; price: string }[] =>
+    raw
+      .split(";")
+      .map((chunk) => chunk.trim())
+      .filter(Boolean)
+      .map((chunk) => {
+        const [label, ...rest] = chunk.split(":")
+        return { label: (label || "").trim(), price: rest.join(":").trim() }
+      })
+      .filter((t) => t.label && t.price)
+
+  const serializePriceTiers = (tiers: { label: string; price: string }[] | null | undefined): string =>
+    Array.isArray(tiers) ? tiers.map((t) => `${t.label}:${t.price}`).join("; ") : ""
 
   const [events, setEvents] = useState<Event[]>([])
   const [newEvent, setNewEvent] = useState(emptyEvent)
@@ -60,6 +80,8 @@ export default function AdminEventsPage() {
   // manual_photos se marca solo en cuanto hay al menos 1 foto subida a mano (sin botón que pulsar).
   const [newGallery, setNewGallery] = useState<string[]>([])
   const [editGallery, setEditGallery] = useState<string[]>([])
+  const [newPriceTiersRaw, setNewPriceTiersRaw] = useState("")
+  const [editPriceTiersRaw, setEditPriceTiersRaw] = useState("")
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -188,8 +210,10 @@ export default function AdminEventsPage() {
         gallery: newGallery.length > 0 ? newGallery : null,
         manual_photos: newGallery.length > 0,
         date: newEvent.date || null,
+        date_end: newEvent.date_end || null,
         start_time: newEvent.start_time || null,
         end_time: newEvent.end_time || null,
+        price_tiers: parsePriceTiers(newPriceTiersRaw).length > 0 ? parsePriceTiers(newPriceTiersRaw) : null,
         featured: false,
         sold_out: false,
         vip_tables: false,
@@ -206,6 +230,7 @@ export default function AdminEventsPage() {
 
     setNewEvent(emptyEvent)
     setNewGallery([])
+    setNewPriceTiersRaw("")
   }
 
   const startEditing = (event: Event) => {
@@ -217,6 +242,7 @@ export default function AdminEventsPage() {
       artist: event.artist || "",
       music: event.music || "",
       date: event.date || "",
+      date_end: (event as any).date_end || "",
       start_time: event.start_time || "",
       end_time: event.end_time || "",
       price: event.price || "",
@@ -225,12 +251,14 @@ export default function AdminEventsPage() {
       description: event.description || "",
     })
     setEditGallery(Array.isArray(event.gallery) ? event.gallery : [])
+    setEditPriceTiersRaw(serializePriceTiers((event as any).price_tiers))
   }
 
   const cancelEditing = () => {
     setEditingId(null)
     setEditEvent(emptyEvent)
     setEditGallery([])
+    setEditPriceTiersRaw("")
   }
 
   const saveEditing = async (id: number) => {
@@ -240,9 +268,11 @@ export default function AdminEventsPage() {
       .from("events")
       .update({
         ...editEvent,
+        date_end: editEvent.date_end || null,
         image: editEvent.image || editGallery[0] || "",
         gallery: editGallery.length > 0 ? editGallery : null,
         manual_photos: editGallery.length > 0,
+        price_tiers: parsePriceTiers(editPriceTiersRaw).length > 0 ? parsePriceTiers(editPriceTiersRaw) : null,
       })
       .eq("id", id)
       .select()
@@ -392,6 +422,18 @@ export default function AdminEventsPage() {
 
               {galleryUploadBox(newGallery, handleNewGalleryUpload, removeNewGalleryPhoto)}
 
+              <div className="lg:col-span-3">
+                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-zinc-500">
+                  Tarifas adicionales (opcional) — formato "Etiqueta:precio" separadas por ;
+                </p>
+                <input
+                  value={newPriceTiersRaw}
+                  onChange={(e) => setNewPriceTiersRaw(e.target.value)}
+                  placeholder="VIP:40€; Día suelto:10€; Pack 3 días:25€"
+                  className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                />
+              </div>
+
               <button
                 onClick={addEvent}
                 disabled={uploading}
@@ -449,6 +491,18 @@ export default function AdminEventsPage() {
                       </div>
 
                       {galleryUploadBox(editGallery, handleEditGalleryUpload, removeEditGalleryPhoto)}
+
+                      <div className="lg:col-span-3">
+                        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-zinc-500">
+                          Tarifas adicionales (opcional) — formato "Etiqueta:precio" separadas por ;
+                        </p>
+                        <input
+                          value={editPriceTiersRaw}
+                          onChange={(e) => setEditPriceTiersRaw(e.target.value)}
+                          placeholder="VIP:40€; Día suelto:10€; Pack 3 días:25€"
+                          className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                        />
+                      </div>
 
                       <button onClick={() => saveEditing(event.id)} disabled={uploading} className="rounded-2xl bg-emerald-400 px-8 py-4 font-bold text-black disabled:opacity-50">Save changes</button>
                       <button onClick={cancelEditing} className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 font-bold">Cancel</button>
