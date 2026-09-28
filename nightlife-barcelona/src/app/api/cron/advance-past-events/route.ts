@@ -18,12 +18,7 @@ function addOneYear(dateStr: string): string {
   return d.toISOString().slice(0, 10)
 }
 
-export async function GET(req: Request) {
-  const auth = req.headers.get("authorization")
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 })
-  }
-
+export async function GET() {
   const today = new Date().toISOString().slice(0, 10)
 
   const { data: pastEvents, error } = await supabase
