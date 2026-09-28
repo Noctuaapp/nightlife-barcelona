@@ -13,6 +13,7 @@ const categoryConfig: Record<string, { icon: string; color: string }> = {
   Food:          { icon: "🍔", color: "#f97316" },
   Transport:     { icon: "🚌", color: "#8b5cf6" },
   Metro:         { icon: "🚇", color: "#dc2626" },
+  Nitbus:        { icon: "🌙", color: "#6366f1" },
   Taxi:          { icon: "🚕", color: "#eab308" },
   Supermarket:   { icon: "🛒", color: "#ec4899" },
   Hotel:         { icon: "🏨", color: "#14b8a6" },
@@ -241,6 +242,43 @@ export default function EssentialsPage() {
 
         {!search.trim() && (
           <>
+            {/* Transporte nocturno — lo primero que se busca de madrugada, así que tiene su
+                propia franja destacada en vez de quedar mezclado en el grid genérico de abajo. */}
+            {!loading && ["Metro", "Nitbus", "Taxi"].some((c) => countByCategory(c) > 0) && (
+              <section className="mx-auto mt-12 max-w-7xl px-4">
+                <div className="mb-5 flex items-baseline justify-between">
+                  <h2 className="text-xl font-black text-white">🌙 Transporte nocturno</h2>
+                  <span className="text-xs font-medium text-zinc-500">metro, Nitbus y taxi</span>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {["Metro", "Nitbus", "Taxi"].map((cat) => {
+                    const config = categoryConfig[cat] || { icon: "📍", color: "#6b7280" }
+                    const count = countByCategory(cat)
+                    if (count === 0) return null
+                    return (
+                      <Link
+                        key={cat}
+                        href={`/essentials/${cat.toLowerCase().replace(/\s+/g, "-")}`}
+                        className="group relative flex items-center gap-4 overflow-hidden rounded-[22px] border p-5 backdrop-blur-xl transition duration-300 hover:-translate-y-1"
+                        style={{ borderColor: `${config.color}35`, background: `linear-gradient(135deg, ${config.color}1c, rgba(255,255,255,0.02))`, boxShadow: `0 0 0 rgba(0,0,0,0)` }}
+                        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 20px 50px -25px ${config.color}80` }}
+                        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = `0 0 0 rgba(0,0,0,0)` }}
+                      >
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-3xl" style={{ background: `${config.color}30`, border: `1px solid ${config.color}55` }}>
+                          {config.icon}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-black text-white">{t(`essentials.category_names.${cat}`) || cat}</p>
+                          <p className="mt-0.5 text-xs text-zinc-400">{count} {count === 1 ? t("essentials.locations") : t("essentials.locations_plural")}</p>
+                        </div>
+                        <span className="ml-auto text-sm text-zinc-500 transition group-hover:translate-x-1 group-hover:text-white">→</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
             {/* Cerca de ti ahora */}
             {nearby.length > 0 && (
               <section className="mt-14">

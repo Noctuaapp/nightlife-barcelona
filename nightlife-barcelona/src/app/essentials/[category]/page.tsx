@@ -16,6 +16,7 @@ const categoryConfig: Record<string, { icon: string; color: string; key: string 
   food: { icon: "🍔", color: "#f97316", key: "Food" },
   transport: { icon: "🚌", color: "#8b5cf6", key: "Transport" },
   metro: { icon: "🚇", color: "#dc2626", key: "Metro" },
+  nitbus: { icon: "🌙", color: "#6366f1", key: "Nitbus" },
   taxi: { icon: "🚕", color: "#eab308", key: "Taxi" },
   supermarket: { icon: "🛒", color: "#ec4899", key: "Supermarket" },
   hotel: { icon: "🏨", color: "#14b8a6", key: "Hotel" },
@@ -382,6 +383,19 @@ export default function EssentialCategoryPage() {
               <p className="text-lg font-black text-white">{getMetroSchedule().label}</p>
               <p className="mt-1 text-xs text-zinc-500">
                 Entre semana hasta las 00:00 · sábados hasta las 02:00 · domingos y festivos 24h · abre siempre a las 05:00.
+              </p>
+            </div>
+          </section>
+        )}
+
+        {category === "nitbus" && (
+          <section className="mx-auto mt-6 max-w-7xl px-4">
+            <div className="rounded-[24px] border border-indigo-500/25 bg-indigo-500/[0.06] p-5">
+              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-indigo-300">🌙 Nitbus · autobuses nocturnos</p>
+              <p className="text-lg font-black text-white">Cada noche, aprox. 23:00 – 05:00</p>
+              <p className="mt-1 text-xs text-zinc-500">
+                17 líneas nocturnas cubren Barcelona cuando el metro está cerrado. Estas son las paradas/nudos principales
+                donde confluyen varias líneas — consulta la app TMB o el panel de la parada para el horario exacto de cada línea.
               </p>
             </div>
           </section>

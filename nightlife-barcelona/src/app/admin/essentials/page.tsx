@@ -32,7 +32,7 @@ const emptyForm = {
   longitude: "",
 }
 
-const categories = ["Pharmacy", "ATM", "Food", "Transport", "Metro", "Taxi", "Supermarket", "Hotel", "Casino", "Other"]
+const categories = ["Pharmacy", "ATM", "Food", "Transport", "Metro", "Nitbus", "Taxi", "Supermarket", "Hotel", "Casino", "Other"]
 
 export default function AdminEssentialsPage() {
   const [essentials, setEssentials] = useState<Essential[]>([])
