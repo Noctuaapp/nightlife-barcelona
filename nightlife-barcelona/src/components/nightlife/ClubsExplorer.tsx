@@ -56,7 +56,7 @@ function toggleInSet(set: Set<string>, value: string): Set<string> {
 }
 
 const GENRE_FILTERS = ["Techno", "Commercial", "Cocktail Bar"]
-const ATTRIBUTE_FILTERS = ["Trending", "LGTBI+", "Sin cola"]
+const ATTRIBUTE_FILTERS = ["Trending", "LGTBI+", "Sin cola", "Futbolín/Billar", "Descuento hoy", "Entrada gratis"]
 const AGE_FILTERS = ["+18", "+21", "+25"]
 const PAGE_SIZE = 9
 
@@ -161,6 +161,9 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     if (a === "Trending") return club.trending === true
     if (a === "LGTBI+") return club.lgtbi_friendly === true
     if (a === "Sin cola") return club.queue === "No queue" || !club.queue
+    if (a === "Futbolín/Billar") return club.has_foosball === true
+    if (a === "Descuento hoy") return !!club.discount_info
+    if (a === "Entrada gratis") return !!club.free_entry_info
     return false
   }
 
@@ -468,6 +471,9 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                   dresscode={club.dresscode}
                   lgtbi_friendly={club.lgtbi_friendly}
                   verified={club.verified}
+                  hasFoosball={club.has_foosball}
+                  discountInfo={club.discount_info}
+                  freeEntryInfo={club.free_entry_info}
                 />
               </Reveal>
             ))

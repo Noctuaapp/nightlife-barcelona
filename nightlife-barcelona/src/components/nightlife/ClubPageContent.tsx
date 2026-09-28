@@ -9,11 +9,7 @@ import ClubNightsCalendar from "../nightlife/ClubNightsCalendar"
 import TransportButtons from "../ui/TransportButtons"
 import { supabase } from "../../lib/supabase"
 import { FALLBACK_IMAGE as FALLBACK_CLUB_IMAGE } from "../../lib/fallbackImage"
-
-const ACCENT_PATTERN = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g")
-
-const createSlug = (text: string) =>
-  (text || "").toLowerCase().normalize("NFD").replace(ACCENT_PATTERN, "").replace(/\s+/g, "-")
+import { createSlug } from "../../lib/slug"
 
 const ACCENT_PALETTE = [
   { from: "#8b5cf6", to: "#ec4899", glow: "139,92,246" },
@@ -334,6 +330,9 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
     club.queue && { q: "¿Suele haber cola?", a: `Estado actual de la cola: ${club.queue}.` },
     minAge && { q: "¿Cuál es la edad mínima?", a: `La edad mínima para entrar es de ${minAge} años.` },
     capacity && { q: "¿Cuál es el aforo del local?", a: `Este local tiene un aforo de ${capacity} personas.` },
+    club.has_foosball && { q: "¿Tienen futbolín o billar?", a: "Sí, este local cuenta con futbolín o mesa de billar." },
+    club.discount_info && { q: "¿Hay algún descuento o promo?", a: club.discount_info },
+    club.free_entry_info && { q: "¿Hay entrada gratis?", a: club.free_entry_info },
   ].filter(Boolean) as { q: string; a: string }[]
 
   const accentGradient = { background: `linear-gradient(135deg, ${accent.from} 0%, ${accent.to} 100%)` }

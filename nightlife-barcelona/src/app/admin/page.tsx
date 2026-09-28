@@ -27,6 +27,11 @@ type Club = {
   vip_tables?: boolean
   venue_type?: string
   open_days?: string[] | null
+  metro_lines?: string
+  night_buses?: string
+  has_foosball?: boolean
+  discount_info?: string
+  free_entry_info?: string
 }
 
 const VENUE_TYPE_OPTIONS = ["Discoteca", "Pub", "Bar musical"]
@@ -54,6 +59,11 @@ type ClubFormData = {
   hidden: boolean
   venue_type: string
   open_days: string[]
+  metro_lines: string
+  night_buses: string
+  has_foosball: boolean
+  discount_info: string
+  free_entry_info: string
 }
 
 const emptyForm: ClubFormData = {
@@ -78,6 +88,11 @@ const emptyForm: ClubFormData = {
   hidden: false,
   venue_type: "Discoteca",
   open_days: [],
+  metro_lines: "",
+  night_buses: "",
+  has_foosball: false,
+  discount_info: "",
+  free_entry_info: "",
 }
 
 const clubToForm = (club: Club): ClubFormData => ({
@@ -102,6 +117,11 @@ const clubToForm = (club: Club): ClubFormData => ({
   hidden: !!club.hidden,
   venue_type: club.venue_type || "Discoteca",
   open_days: club.open_days || [],
+  metro_lines: club.metro_lines || "",
+  night_buses: club.night_buses || "",
+  has_foosball: !!club.has_foosball,
+  discount_info: club.discount_info || "",
+  free_entry_info: club.free_entry_info || "",
 })
 
 export default function AdminPage() {
@@ -190,6 +210,11 @@ export default function AdminPage() {
     venue_type: form.venue_type,
     // Vacío = "sin dato" -> Planifica tu noche no filtra por día para este club.
     open_days: form.open_days.length > 0 ? form.open_days : null,
+    metro_lines: form.metro_lines.trim(),
+    night_buses: form.night_buses.trim(),
+    has_foosball: form.has_foosball,
+    discount_info: form.discount_info.trim(),
+    free_entry_info: form.free_entry_info.trim(),
   })
 
   const addClub = async () => {
@@ -379,12 +404,29 @@ export default function AdminPage() {
           })}
         </div>
       </div>
+      <div>
+        <label className={labelClass}>Líneas de metro cercanas (separadas por comas)</label>
+        <input value={form.metro_lines} onChange={(e) => setForm({ ...form, metro_lines: e.target.value })} placeholder="L1, L4" className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Buses nocturnos cercanos (separados por comas)</label>
+        <input value={form.night_buses} onChange={(e) => setForm({ ...form, night_buses: e.target.value })} placeholder="N0, N6" className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Descuento o promo de hoy (vacío = ninguno)</label>
+        <input value={form.discount_info} onChange={(e) => setForm({ ...form, discount_info: e.target.value })} placeholder="2x1 en copas hasta las 02:00" className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Entrada gratis — condiciones (vacío = ninguna)</label>
+        <input value={form.free_entry_info} onChange={(e) => setForm({ ...form, free_entry_info: e.target.value })} placeholder="Gratis para chicas hasta las 00:30" className={inputClass} />
+      </div>
       <div className="md:col-span-2 flex flex-wrap gap-2 pt-2">
         {[
           { key: "terrace" as const, label: "🌿 Terraza" },
           { key: "smoking_area" as const, label: "🚬 Zona fumadores" },
           { key: "table_booking" as const, label: "🍾 Reserva de mesas" },
           { key: "vip_tables" as const, label: "🛋️ Mesa VIP" },
+          { key: "has_foosball" as const, label: "🎱 Futbolín/Billar" },
           { key: "lgtbi_friendly" as const, label: "🏳️‍🌈 LGTBI+" },
           { key: "verified" as const, label: "✓ Verified" },
           { key: "trending" as const, label: "🔥 Trending" },

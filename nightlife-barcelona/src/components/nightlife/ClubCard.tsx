@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { createSlug } from "../../lib/slug"
 
 interface ClubCardProps {
   id: number
@@ -23,13 +24,14 @@ interface ClubCardProps {
   dresscode?: string
   lgtbi_friendly?: boolean
   verified?: boolean
+  hasFoosball?: boolean
+  discountInfo?: string
+  freeEntryInfo?: string
 }
-
-const createSlug = (text: string) =>
-  text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
 
 export default function ClubCard({
   id, name, music, area, price, hours, image, rating, people, badges = [], vip, lgtbi_friendly, verified,
+  hasFoosball, discountInfo, freeEntryInfo,
 }: ClubCardProps) {
   const [liveBadges, setLiveBadges] = useState(badges)
   const router = useRouter()
@@ -82,6 +84,21 @@ export default function ClubCard({
             <div className="flex items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/20 px-3 py-2 text-xs font-semibold text-purple-300 backdrop-blur-xl">
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-purple-500 text-white font-black text-[10px]">N</span>
               Noctua Verified
+            </div>
+          )}
+          {freeEntryInfo && (
+            <div className="rounded-full border border-emerald-500/30 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-300 backdrop-blur-xl">
+              🎫 Entrada gratis
+            </div>
+          )}
+          {discountInfo && (
+            <div className="rounded-full border border-orange-500/30 bg-orange-500/20 px-3 py-2 text-xs font-semibold text-orange-300 backdrop-blur-xl">
+              💸 Promo hoy
+            </div>
+          )}
+          {hasFoosball && (
+            <div className="rounded-full border border-sky-500/30 bg-sky-500/20 px-3 py-2 text-xs font-semibold text-sky-300 backdrop-blur-xl">
+              🎱 Futbolín/Billar
             </div>
           )}
           <button
