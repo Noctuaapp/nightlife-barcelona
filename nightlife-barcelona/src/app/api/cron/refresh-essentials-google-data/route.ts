@@ -227,7 +227,7 @@ export async function GET() {
           )
         }
 
-        await supabase
+        const { error: updateError } = await supabase
           .from("essentials")
           .update({
             gallery: cachedUrls.length > 0 ? cachedUrls : null,
@@ -237,6 +237,11 @@ export async function GET() {
             google_last_refreshed_at: new Date().toISOString(),
           })
           .eq("id", item.id)
+
+        if (updateError) {
+          results.push({ essential: item.name, status: "update_failed", error: updateError.message })
+          return
+        }
 
         results.push({ essential: item.name, status: "ok", photos: cachedUrls.length, reviews: reviews.length })
       })
