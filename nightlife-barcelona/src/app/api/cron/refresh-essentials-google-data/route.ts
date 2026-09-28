@@ -10,7 +10,8 @@ const supabase = createClient(
 )
 
 const GOOGLE_KEY = process.env.GOOGLE_PLACES_API_KEY!
-const BATCH_SIZE = 15
+const ASSIGN_BATCH_SIZE = 15
+const REFRESH_BATCH_SIZE = 6
 const MAX_PHOTOS = 4
 
 const BARCELONA_BIAS = { circle: { center: { latitude: 41.3874, longitude: 2.1686 }, radius: 20000 } }
@@ -134,7 +135,7 @@ export async function GET() {
     .is("google_place_id", null)
     .or("manual_photos.is.null,manual_photos.eq.false")
     .or("google_match_failed.is.null,google_match_failed.eq.false")
-    .limit(BATCH_SIZE)
+    .limit(ASSIGN_BATCH_SIZE)
 
   const newlyAssigned: any[] = []
 
@@ -175,7 +176,7 @@ export async function GET() {
     .select("id, name, address, neighborhood, category, image, google_place_id")
     .not("google_place_id", "is", null)
     .or("manual_photos.is.null,manual_photos.eq.false")
-    .limit(BATCH_SIZE)
+    .limit(REFRESH_BATCH_SIZE)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -209,12 +210,8 @@ export async function GET() {
         }
 
         const photos = (data?.photos || []).slice(0, MAX_PHOTOS)
-        const cachedUrls: string[] = []
-
-        for (let i = 0; i < photos.length; i++) {
-          const cached = await cachePhoto(photos[i].name, item.id, i)
-          if (cached) cachedUrls.push(cached)
-        }
+        const cached = await Promise.all(photos.map((p: any, i: number) => cachePhoto(p.name, item.id, i)))
+        const cachedUrls = cached.filter((u): u is string => Boolean(u))
 
         const reviews = data?.reviews || []
         if (reviews.length > 0) {
