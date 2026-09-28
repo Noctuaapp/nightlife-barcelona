@@ -2,19 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import Header from "../../../components/layout/Header"
-import BottomNav from "../../../components/layout/BottomNav"
+import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
-
-const adminLinks = [
-  { href: "/admin/dashboard", label: "Dashboard" },
-  { href: "/admin", label: "Clubs" },
-  { href: "/admin/events", label: "Events" },
-  { href: "/admin/club-events", label: "Club nights" },
-  { href: "/admin/essentials", label: "Essentials" },
-  { href: "/admin/tickets", label: "Tickets" },
-  { href: "/admin/messages", label: "Messages" },
-]
 
 export default function AdminDashboardPage() {
   const [checkingAdmin, setCheckingAdmin] = useState(true)
@@ -82,70 +71,39 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-black pb-40 text-white">
-        <section className="px-4 pt-14">
-          <div className="mx-auto max-w-7xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Admin</p>
-            <h1 className="mt-4 text-6xl font-black tracking-tight text-white">Dashboard</h1>
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
-              Overview of Noctua activity, users, favorites and nightlife content.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              {adminLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`rounded-full px-5 py-3 text-sm font-bold transition ${
-                    link.href === "/admin/dashboard"
-                      ? "bg-white text-black"
-                      : "border border-white/10 bg-white/5 text-white hover:bg-white hover:text-black"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
+    <AdminShell title="Dashboard" subtitle="Overview of Noctua activity, users, favorites and nightlife content.">
+      <div className="grid gap-8">
 
-        <section className="mx-auto mt-10 max-w-7xl px-4">
-          <div className="grid gap-8">
+        <StatsGroup title="Clubs" icon="🎵" color="#a855f7">
+          <StatCard title="Total clubs" value={stats.clubs} subtitle="Active venues" href="/admin" icon="🏛️" color="#a855f7" />
+          <StatCard title="Trending" value={stats.trendingClubs} subtitle="Live demand" href="/admin" icon="🔥" color="#10b981" />
+          <StatCard title="Sold out" value={stats.soldOutClubs} subtitle="Capacity alerts" href="/admin" icon="🚫" color="#ef4444" />
+          <StatCard title="Club nights" value={stats.clubEvents} subtitle="Scheduled nights" href="/admin/club-events" icon="🎧" color="#06b6d4" />
+        </StatsGroup>
 
-            <StatsGroup title="Clubs" icon="🎵" color="#a855f7">
-              <StatCard title="Total clubs" value={stats.clubs} subtitle="Active venues" href="/admin" icon="🏛️" color="#a855f7" />
-              <StatCard title="Trending" value={stats.trendingClubs} subtitle="Live demand" href="/admin" icon="🔥" color="#10b981" />
-              <StatCard title="Sold out" value={stats.soldOutClubs} subtitle="Capacity alerts" href="/admin" icon="🚫" color="#ef4444" />
-              <StatCard title="Club nights" value={stats.clubEvents} subtitle="Scheduled nights" href="/admin/club-events" icon="🎧" color="#06b6d4" />
-            </StatsGroup>
+        <StatsGroup title="Events" icon="🎉" color="#ec4899">
+          <StatCard title="Total events" value={stats.events} subtitle="Listed events" href="/admin/events" icon="📅" color="#ec4899" />
+          <StatCard title="Featured" value={stats.featuredEvents} subtitle="Promoted events" href="/admin/events" icon="⭐" color="#f97316" />
+          <StatCard title="Sold out" value={stats.soldOutEvents} subtitle="Ticket pressure" href="/admin/events" icon="🎟️" color="#ef4444" />
+        </StatsGroup>
 
-            <StatsGroup title="Events" icon="🎉" color="#ec4899">
-              <StatCard title="Total events" value={stats.events} subtitle="Listed events" href="/admin/events" icon="📅" color="#ec4899" />
-              <StatCard title="Featured" value={stats.featuredEvents} subtitle="Promoted events" href="/admin/events" icon="⭐" color="#f97316" />
-              <StatCard title="Sold out" value={stats.soldOutEvents} subtitle="Ticket pressure" href="/admin/events" icon="🎟️" color="#ef4444" />
-            </StatsGroup>
+        <StatsGroup title="Essentials" icon="🗺️" color="#10b981">
+          <StatCard title="Total essentials" value={stats.essentials} subtitle="Listed services" href="/admin/essentials" icon="📍" color="#10b981" />
+        </StatsGroup>
 
-            <StatsGroup title="Essentials" icon="🗺️" color="#10b981">
-              <StatCard title="Total essentials" value={stats.essentials} subtitle="Listed services" href="/admin/essentials" icon="📍" color="#10b981" />
-            </StatsGroup>
+        <StatsGroup title="Users" icon="👤" color="#3b82f6">
+          <StatCard title="Registered users" value={stats.users} subtitle="Noctua accounts" href="/admin/dashboard" icon="👥" color="#3b82f6" />
+        </StatsGroup>
 
-            <StatsGroup title="Users" icon="👤" color="#3b82f6">
-              <StatCard title="Registered users" value={stats.users} subtitle="Noctua accounts" href="/admin/dashboard" icon="👥" color="#3b82f6" />
-            </StatsGroup>
+        <StatsGroup title="Favorites" icon="❤️" color="#f43f5e">
+          <StatCard title="Total favorites" value={stats.favorites} subtitle="Saved items" href="/admin/dashboard" icon="❤️" color="#f43f5e" />
+          <StatCard title="Fav clubs" value={stats.favoriteClubs} subtitle="Saved venues" href="/admin" icon="🏛️" color="#d946ef" />
+          <StatCard title="Fav events" value={stats.favoriteEvents} subtitle="Saved events" href="/admin/events" icon="📅" color="#8b5cf6" />
+          <StatCard title="Fav club nights" value={stats.favoriteClubEvents} subtitle="Saved nights" href="/admin/club-events" icon="🎧" color="#6366f1" />
+        </StatsGroup>
 
-            <StatsGroup title="Favorites" icon="❤️" color="#f43f5e">
-              <StatCard title="Total favorites" value={stats.favorites} subtitle="Saved items" href="/admin/dashboard" icon="❤️" color="#f43f5e" />
-              <StatCard title="Fav clubs" value={stats.favoriteClubs} subtitle="Saved venues" href="/admin" icon="🏛️" color="#d946ef" />
-              <StatCard title="Fav events" value={stats.favoriteEvents} subtitle="Saved events" href="/admin/events" icon="📅" color="#8b5cf6" />
-              <StatCard title="Fav club nights" value={stats.favoriteClubEvents} subtitle="Saved nights" href="/admin/club-events" icon="🎧" color="#6366f1" />
-            </StatsGroup>
-
-          </div>
-        </section>
-      </main>
-      <BottomNav />
-    </>
+      </div>
+    </AdminShell>
   )
 }
 

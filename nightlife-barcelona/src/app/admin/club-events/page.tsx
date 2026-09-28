@@ -1,8 +1,7 @@
 "use client"
 
 import { useEffect, useState, type ChangeEvent } from "react"
-import Header from "../../../components/layout/Header"
-import BottomNav from "../../../components/layout/BottomNav"
+import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 
 type Club = {
@@ -210,24 +209,9 @@ export default function AdminClubEventsPage() {
   }
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-black pb-40 text-white">
-        <section className="px-4 pt-14">
-          <div className="mx-auto max-w-7xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Admin club nights</p>
-            <h1 className="mt-4 text-6xl font-black tracking-tight">Club nights control</h1>
-            <p className="mt-6 max-w-2xl text-lg text-zinc-400">Create, edit and manage nights inside each club.</p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <a href="/admin" className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black">Clubs admin</a>
-              <a href="/admin/events" className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black">Events admin</a>
-              <a href="/admin/tickets" className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black">Tickets admin</a>
-              <a href="/admin/club-events" className="rounded-full bg-white px-5 py-3 text-sm font-bold text-black">Club nights admin</a>
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto mt-10 max-w-7xl px-4">
+    <AdminShell title="Club nights control" subtitle="Create, edit and manage nights inside each club.">
+      <>
+        <section className="mx-auto max-w-7xl">
           <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
             <div className="grid gap-4 lg:grid-cols-3">
               <select value={newClubEvent.club_id} onChange={(e) => handleNewClubChange(e.target.value)} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none">
@@ -338,8 +322,7 @@ export default function AdminClubEventsPage() {
             ))}
           </div>
         </section>
-      </main>
-      <BottomNav />
-    </>
+      </>
+    </AdminShell>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "../../lib/supabase"
+import AdminShell from "../../components/admin/AdminShell"
 
 type Club = {
   id: number
@@ -102,16 +103,6 @@ const clubToForm = (club: Club): ClubFormData => ({
   venue_type: club.venue_type || "Discoteca",
   open_days: club.open_days || [],
 })
-
-const adminLinks = [
-  { href: "/admin", label: "Clubs" },
-  { href: "/admin/events", label: "Events" },
-  { href: "/admin/club-events", label: "Club nights" },
-  { href: "/admin/essentials", label: "Essentials" },
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/messages", label: "Messages" },
-  { href: "/admin/analytics", label: "Analytics" },
-]
 
 export default function AdminPage() {
   const [clubs, setClubs] = useState<Club[]>([])
@@ -360,7 +351,9 @@ export default function AdminPage() {
       <div>
         <label className={labelClass}>Tipo de local</label>
         <select value={form.venue_type} onChange={(e) => setForm({ ...form, venue_type: e.target.value })} className={inputClass}>
-          {VENUE_TYPE_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+          {VENUE_TYPE_OPTIONS.map((v) => (
+            <option key={v} value={v} className="bg-black text-white">{v}</option>
+          ))}
         </select>
       </div>
       <div className="md:col-span-2">
@@ -408,26 +401,8 @@ export default function AdminPage() {
   )
 
   return (
-    <main className="min-h-screen bg-black pb-40 text-white">
-      <section className="px-4 pt-10">
-        <div className="mx-auto max-w-7xl">
-
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">Noctua Admin</p>
-              <h1 className="mt-2 text-5xl font-black tracking-tight">Clubs</h1>
-            </div>
-            <a href="/" className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-bold text-white hover:bg-white hover:text-black transition">← Web</a>
-          </div>
-
-          {/* Nav */}
-          <div className="flex flex-wrap gap-2 mb-8">
-            {adminLinks.map((link) => (
-              <a key={link.href} href={link.href} className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${link.href === "/admin" ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white hover:text-black"}`}>{link.label}</a>
-            ))}
-          </div>
-
+    <AdminShell title="Clubs" subtitle="Gestiona las discotecas, pubs y bares musicales de Noctua.">
+      <>
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4 mb-8 md:grid-cols-4">
             {[
@@ -586,8 +561,7 @@ export default function AdminPage() {
               )}
             </div>
           )}
-        </div>
-      </section>
-    </main>
+      </>
+    </AdminShell>
   )
 }

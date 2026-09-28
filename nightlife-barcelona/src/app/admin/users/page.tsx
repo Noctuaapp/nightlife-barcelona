@@ -1,8 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Header from "../../../components/layout/Header"
-import BottomNav from "../../../components/layout/BottomNav"
+import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 
 type User = {
@@ -12,17 +11,6 @@ type User = {
   created_at: string
   last_sign_in_at: string | null
 }
-
-const adminLinks = [
-  { href: "/admin/dashboard", label: "Dashboard" },
-  { href: "/admin", label: "Clubs" },
-  { href: "/admin/events", label: "Events" },
-  { href: "/admin/club-events", label: "Club nights" },
-  { href: "/admin/essentials", label: "Essentials" },
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/tickets", label: "Tickets" },
-  { href: "/admin/messages", label: "Messages" },
-]
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -67,30 +55,9 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-black pb-40 text-white">
-        <section className="px-4 pt-14">
-          <div className="mx-auto max-w-7xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Admin</p>
-            <h1 className="mt-4 text-6xl font-black tracking-tight">Users</h1>
-            <p className="mt-6 max-w-2xl text-lg text-zinc-400">
-              {users.length} usuarios registrados en Noctua.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              {adminLinks.map((link) => (
-                <a key={link.href} href={link.href}
-                  className={`rounded-full px-5 py-3 text-sm font-bold transition ${
-                    link.href === "/admin/users" ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white hover:text-black"
-                  }`}>
-                  {link.label}
-                </a>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto mt-10 max-w-7xl px-4">
+    <AdminShell title="Users" subtitle={`${users.length} usuarios registrados en Noctua.`}>
+      <>
+        <section className="mx-auto max-w-7xl">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -133,8 +100,7 @@ export default function AdminUsersPage() {
             </div>
           )}
         </section>
-      </main>
-      <BottomNav />
-    </>
+      </>
+    </AdminShell>
   )
 }

@@ -1,10 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
 
-import Header from "../../../components/layout/Header"
-import BottomNav from "../../../components/layout/BottomNav"
+import AdminShell from "../../../components/admin/AdminShell"
 
 import { supabase } from "../../../lib/supabase"
 
@@ -208,34 +206,9 @@ export default function AdminMessagesPage() {
   }
 
   return (
-    <>
-      <Header />
-
-      <main className="min-h-screen bg-black pb-40 text-white">
-        <section className="px-4 pt-14">
-          <div className="mx-auto max-w-7xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Admin messages</p>
-
-            <h1 className="mt-4 text-6xl font-black tracking-tight text-white">Contact inbox</h1>
-
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
-              Review user support, reports, venue suggestions and partnership requests.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-4">
-              <AdminLink href="/admin/dashboard">Dashboard</AdminLink>
-              <AdminLink href="/admin">Clubs</AdminLink>
-              <AdminLink href="/admin/events">Events</AdminLink>
-              <AdminLink href="/admin/club-events">Club nights</AdminLink>
-              <AdminLink href="/admin/tickets">Tickets</AdminLink>
-              <AdminLink href="/admin/messages" active>
-                Messages
-              </AdminLink>
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto mt-10 max-w-7xl px-4">
+    <AdminShell title="Contact inbox" subtitle="Review user support, reports, venue suggestions and partnership requests.">
+      <>
+        <section className="mx-auto max-w-7xl">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <FilterCard label="All" value={stats.all} active={filter === "all"} onClick={() => setFilter("all")} />
             <FilterCard label="New" value={stats.new} active={filter === "new"} onClick={() => setFilter("new")} />
@@ -439,23 +412,8 @@ export default function AdminMessagesPage() {
             </div>
           </div>
         </section>
-      </main>
-
-      <BottomNav />
-    </>
-  )
-}
-
-function AdminLink({ href, active = false, children }: { href: string; active?: boolean; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className={`rounded-2xl px-5 py-3 text-sm font-bold transition ${
-        active ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white hover:text-black"
-      }`}
-    >
-      {children}
-    </Link>
+      </>
+    </AdminShell>
   )
 }
 
