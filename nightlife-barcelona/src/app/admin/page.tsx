@@ -24,7 +24,12 @@ type Club = {
   lgtbi_friendly: boolean
   verified?: boolean
   vip_tables?: boolean
+  venue_type?: string
+  open_days?: string[] | null
 }
+
+const VENUE_TYPE_OPTIONS = ["Discoteca", "Pub", "Bar musical"]
+const DAY_OPTIONS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
 
 type ClubFormData = {
   name: string
@@ -46,6 +51,8 @@ type ClubFormData = {
   trending: boolean
   sold_out: boolean
   hidden: boolean
+  venue_type: string
+  open_days: string[]
 }
 
 const emptyForm: ClubFormData = {
@@ -68,6 +75,8 @@ const emptyForm: ClubFormData = {
   trending: false,
   sold_out: false,
   hidden: false,
+  venue_type: "Discoteca",
+  open_days: [],
 }
 
 const clubToForm = (club: Club): ClubFormData => ({
@@ -90,6 +99,8 @@ const clubToForm = (club: Club): ClubFormData => ({
   trending: !!club.trending,
   sold_out: !!club.sold_out,
   hidden: !!club.hidden,
+  venue_type: club.venue_type || "Discoteca",
+  open_days: club.open_days || [],
 })
 
 const adminLinks = [
@@ -171,7 +182,11 @@ export default function AdminPage() {
     image: form.image.trim(),
     rating: form.rating.trim() ? Number(form.rating.trim()) : null,
     people: form.people.trim(),
-    dress_code: form.dresscode.trim(),
+    // OJO: esto escribía "dress_code" (con guion bajo), un nombre de columna que la app nunca
+    // ha leído en ningún sitio — en todas partes se lee "club.dresscode" (sin guion bajo). El
+    // dresscode que se guardaba desde el admin nunca llegaba de vuelta a la ficha del club ni
+    // al emparejamiento de "Planifica tu noche". Corregido para que ambos usen el mismo nombre.
+    dresscode: form.dresscode.trim(),
     terrace: form.terrace,
     smoking_area: form.smoking_area,
     table_booking: form.table_booking,
@@ -181,6 +196,9 @@ export default function AdminPage() {
     trending: form.trending,
     sold_out: form.sold_out,
     hidden: form.hidden,
+    venue_type: form.venue_type,
+    // Vacío = "sin dato" -> Planifica tu noche no filtra por día para este club.
+    open_days: form.open_days.length > 0 ? form.open_days : null,
   })
 
   const addClub = async () => {
@@ -338,6 +356,35 @@ export default function AdminPage() {
       <div>
         <label className={labelClass}>Dress code</label>
         <input value={form.dresscode} onChange={(e) => setForm({ ...form, dresscode: e.target.value })} placeholder="Elegante, casual..." className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Tipo de local</label>
+        <select value={form.venue_type} onChange={(e) => setForm({ ...form, venue_type: e.target.value })} className={inputClass}>
+          {VENUE_TYPE_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+        </select>
+      </div>
+      <div className="md:col-span-2">
+        <label className={labelClass}>Días que abre (vacío = sin dato, no se filtra en Planifica tu noche)</label>
+        <div className="flex flex-wrap gap-2">
+          {DAY_OPTIONS.map((day) => {
+            const active = form.open_days.includes(day)
+            return (
+              <button
+                key={day}
+                type="button"
+                onClick={() =>
+                  setForm({
+                    ...form,
+                    open_days: active ? form.open_days.filter((d) => d !== day) : [...form.open_days, day],
+                  })
+                }
+                className={`rounded-full px-4 py-2 text-xs font-bold transition ${active ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}
+              >
+                {day}
+              </button>
+            )
+          })}
+        </div>
       </div>
       <div className="md:col-span-2 flex flex-wrap gap-2 pt-2">
         {[

@@ -42,6 +42,7 @@ type Prefs = {
   vibeKey: string | null
   musicSet: Set<string>
   areaSet: Set<string>
+  venueTypeSet: Set<string>
   dresscode: string
   lgtbi: boolean
 }
@@ -65,6 +66,18 @@ function scoreClub(club: any, prefs: Prefs): { score: number; reasons: string[] 
     }
   } else {
     score += 5
+  }
+
+  // Sin esto, el algoritmo no distinguía discotecas de pubs o bares musicales — el filtro de
+  // música (techno, reggaeton...) sesgaba casi siempre hacia discotecas. Con una preferencia de
+  // tipo de local explícita, se puede pedir de verdad "solo pubs" o "solo bares musicales".
+  if (prefs.venueTypeSet.size > 0) {
+    if (club.venue_type && prefs.venueTypeSet.has(club.venue_type)) {
+      score += 28
+      reasons.push(`🏠 ${club.venue_type.toLowerCase()}`)
+    } else if (club.venue_type) {
+      score -= 20
+    }
   }
 
   if (prefs.areaSet.size > 0) {
@@ -155,7 +168,7 @@ function scoreEvent(event: any, prefs: Prefs, todayStr: string): { score: number
 
 const GROUP_OPTIONS = [
   { key: "solo", label: "Yo solo/a", icon: "🧍", desc: "Plan en solitario" },
-  { key: "pareja", label: "En pareja", icon: "💑", desc: "Los dos" },
+  { key: "pareja", label: "2 personas", icon: "👥", desc: "Los dos" },
   { key: "grupo", label: "Grupo pequeño", icon: "👯", desc: "3 a 6 personas" },
   { key: "grande", label: "Grupo grande", icon: "🎉", desc: "7 o más" },
 ]
@@ -176,6 +189,7 @@ const VIBE_PRESETS = [
   { key: "live", emoji: "🎷", label: "Sorpréndeme", desc: "Déjate llevar por Noctua" },
 ]
 
+const VENUE_TYPE_OPTIONS = ["Discoteca", "Pub", "Bar musical"]
 const MUSIC_OPTIONS = ["Techno", "Commercial", "House", "Reggaeton", "Rock", "Cocktail Bar"]
 const AREA_OPTIONS = ["Eixample", "Gràcia", "Barceloneta", "Poblenou", "Raval", "El Born", "Paral·lel", "Les Corts", "Montjuïc"]
 const DRESSCODE_OPTIONS = ["Cualquiera", "Casual", "Smart casual", "Elegante", "Dark casual"]
@@ -187,7 +201,7 @@ const TIME_WINDOWS: Record<string, { label: string; sub: string; emoji: string; 
   allnight: { label: "Toda la noche", sub: "sin prisas", emoji: "♾️", start: "23:30" },
 }
 
-const STEP_TITLES = ["Grupo", "Presupuesto", "Vibe", "Música", "Zona", "Toque final"]
+const STEP_TITLES = ["Grupo", "Presupuesto", "Vibe", "Tipo de local", "Música", "Zona", "Toque final"]
 const LOADING_MESSAGES = [
   "Analizando tu vibe...",
   "Explorando Barcelona...",
@@ -221,6 +235,7 @@ export default function PlanPage() {
   const [groupKey, setGroupKey] = useState("pareja")
   const [budgetKey, setBudgetKey] = useState("moderado")
   const [vibeKey, setVibeKey] = useState<string | null>(null)
+  const [venueTypeSet, setVenueTypeSet] = useState<Set<string>>(new Set())
   const [musicSet, setMusicSet] = useState<Set<string>>(new Set())
   const [areaSet, setAreaSet] = useState<Set<string>>(new Set())
   const [dresscode, setDresscode] = useState("Cualquiera")
@@ -231,6 +246,9 @@ export default function PlanPage() {
   const [alternatives, setAlternatives] = useState<any[]>([])
   const [otherEvents, setOtherEvents] = useState<any[]>([])
   const [noResults, setNoResults] = useState(false)
+  // Clubs ya mostrados en planes anteriores de esta sesión (se resetea al editar preferencias
+  // o al volver a empezar). "Rehacer plan" los excluye para no devolver siempre lo mismo.
+  const [seenClubIds, setSeenClubIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const checkSession = async () => {
@@ -293,12 +311,33 @@ export default function PlanPage() {
   }
 
   const computePlan = () => {
-    const prefs: Prefs = { groupKey, budgetMax, vibeKey, musicSet, areaSet, dresscode, lgtbi }
+    const prefs: Prefs = { groupKey, budgetMax, vibeKey, musicSet, areaSet, venueTypeSet, dresscode, lgtbi }
 
-    const scoredClubs = clubs
+    // Pequeño factor aleatorio sobre el score: sin esto, "Rehacer plan" con las mismas
+    // preferencias siempre calculaba exactamente los mismos clubs (el orden era 100%
+    // determinista). Con este jitter, los clubs con puntuación parecida pueden intercambiar
+    // el orden entre una generación y otra, dando variedad real al pulsar "Rehacer plan".
+    const jitter = () => Math.random() * 8
+
+    // Día de la semana de hoy, en el mismo formato que se guarda en "open_days" desde el admin
+    // (Lun..Dom). Si un club no tiene open_days puesto (todavía sin ese dato), no lo excluimos —
+    // solo filtramos los que SÍ tienen el dato y hoy no abren, para no proponer un plan a un
+    // club cerrado.
+    const DAY_ABBR = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
+    const todayDay = DAY_ABBR[new Date().getDay()]
+
+    const allScoredClubs = clubs
       .filter((c) => !c.sold_out)
+      .filter((c) => !c.open_days || c.open_days.length === 0 || c.open_days.includes(todayDay))
       .map((c) => ({ ...c, ...scoreClub(c, prefs) }))
-      .sort((a, b) => b.score - a.score)
+      .map((c) => ({ ...c, sortScore: c.score + jitter() }))
+      .sort((a, b) => b.sortScore - a.sortScore)
+
+    // Además del jitter, en un "Rehacer plan" evitamos repetir los clubs que ya salieron como
+    // pick principal/segundo en un intento anterior de esta misma sesión, mientras haya
+    // suficientes alternativas — así no vuelve a proponer literalmente lo mismo.
+    const freshClubs = allScoredClubs.filter((c) => !seenClubIds.has(String(c.id)))
+    const scoredClubs = freshClubs.length >= 2 ? freshClubs : allScoredClubs
 
     const scoredEvents = events
       .filter((e) => !e.sold_out)
@@ -313,7 +352,25 @@ export default function PlanPage() {
 
     const top = scoredClubs[0]
     const second = scoredClubs[1]
-    const alts = scoredClubs.slice(2, 6)
+
+    // Alternativas: priorizamos clubs con el MISMO dresscode y/o barrio que el pick principal
+    // (para que sean de verdad "alternativas cercanas y del mismo rollo"), y solo si no hay
+    // suficientes rellenamos con los siguientes mejor puntuados.
+    const restScored = allScoredClubs.filter((c) => c.id !== top?.id && c.id !== second?.id)
+    const closeMatches = top
+      ? restScored.filter((c) => c.neighborhood === top.neighborhood || (top.dresscode && c.dresscode === top.dresscode))
+      : []
+    const filler = restScored.filter((c) => !closeMatches.includes(c))
+    const alts = [...closeMatches, ...filler].slice(0, 4)
+
+    if (top || second) {
+      setSeenClubIds((prev) => {
+        const next = new Set(prev)
+        if (top) next.add(String(top.id))
+        if (second) next.add(String(second.id))
+        return next
+      })
+    }
 
     const win = TIME_WINDOWS[timeKey]
     const newStops: Stop[] = []
@@ -373,6 +430,7 @@ export default function PlanPage() {
     setGroupKey("pareja")
     setBudgetKey("moderado")
     setVibeKey(null)
+    setVenueTypeSet(new Set())
     setMusicSet(new Set())
     setAreaSet(new Set())
     setDresscode("Cualquiera")
@@ -380,11 +438,13 @@ export default function PlanPage() {
     setLgtbi(false)
     setPhase("form")
     setStep(0)
+    setSeenClubIds(new Set())
   }
 
   const editPlan = () => {
     setPhase("form")
     setStep(0)
+    setSeenClubIds(new Set())
   }
 
   const Glow = () => (
@@ -524,6 +584,27 @@ export default function PlanPage() {
 
               {step === 3 && (
                 <div>
+                  <p className="mb-4 text-sm text-zinc-400">
+                    Para que no siempre te llevemos a una discoteca — elige uno o varios tipos (opcional).
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {VENUE_TYPE_OPTIONS.map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => setVenueTypeSet((s) => toggleInSet(s, v))}
+                        className={`rounded-full px-5 py-3 text-sm font-medium transition ${
+                          venueTypeSet.has(v) ? "bg-white text-black" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                        }`}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {step === 4 && (
+                <div>
                   <p className="mb-4 text-sm text-zinc-400">Elige uno o varios estilos (opcional).</p>
                   <div className="flex flex-wrap gap-3">
                     {MUSIC_OPTIONS.map((m) => (
@@ -541,7 +622,7 @@ export default function PlanPage() {
                 </div>
               )}
 
-              {step === 4 && (
+              {step === 5 && (
                 <div>
                   <p className="mb-4 text-sm text-zinc-400">Elige uno o varios barrios (opcional).</p>
                   <div className="flex flex-wrap gap-3">
@@ -560,7 +641,7 @@ export default function PlanPage() {
                 </div>
               )}
 
-              {step === 5 && (
+              {step === 6 && (
                 <div className="space-y-8">
                   <div>
                     <p className="mb-4 text-xs uppercase tracking-widest text-zinc-500">¿A qué hora sales?</p>
