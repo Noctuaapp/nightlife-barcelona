@@ -7,6 +7,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import BottomNav from "../../components/layout/BottomNav"
+import { createSlug } from "../../lib/slug"
 
 type Club = {
   id: number
@@ -44,9 +45,6 @@ type Essential = {
 }
 
 type Filter = "clubs" | "events" | "essentials"
-
-const createSlug = (text: string) =>
-  text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
 
 const COLORS: Record<Filter, string> = {
   clubs: "#a855f7",
@@ -92,18 +90,29 @@ const getImage = (item: Club | Event | Essential): string | null => {
   return null
 }
 
-const SearchInput = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+const getInitials = (label: string | null | undefined) =>
+  (label || "?")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+
+const SearchInput = ({ value, onChange, accent }: { value: string; onChange: (v: string) => void; accent?: string }) => (
   <div style={{ position: "relative" }}>
     <input
       type="text"
       placeholder="Buscar..."
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      onFocus={(e) => { e.currentTarget.style.borderColor = accent || "rgba(255,255,255,0.3)"; e.currentTarget.style.boxShadow = `0 0 0 3px ${accent || "rgba(255,255,255,0.1)"}22` }}
+      onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.boxShadow = "none" }}
       style={{
         width: "100%", background: "rgba(255,255,255,0.06)",
         border: "1px solid rgba(255,255,255,0.12)", borderRadius: "12px",
         padding: "11px 36px 11px 14px", fontSize: "13px", color: "#fff",
-        outline: "none", boxSizing: "border-box",
+        outline: "none", boxSizing: "border-box", transition: "border-color 0.2s ease, box-shadow 0.2s ease",
       }}
     />
     <svg style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -200,9 +209,29 @@ export default function MapPage() {
     setSelected(null)
     setWalkingTime(null)
     const color = COLORS[filter]
+    // Antes los pines eran el marcador de Mapbox por defecto (una gota de color, todos
+    // idénticos) — no había forma de saber qué club era cuál sin pulsarlo uno a uno. Ahora cada
+    // pin muestra la foto del club/evento recortada en círculo, o sus iniciales sobre el color
+    // de la categoría si no tiene foto.
     const addMarker = (lat: number, lng: number, item: Club | Event | Essential) => {
-      const marker = new mapboxgl.Marker({ color }).setLngLat([lng, lat]).addTo(map.current!)
-      marker.getElement().addEventListener("click", () => {
+      const label = "name" in item ? item.name : item.title
+      const image = getImage(item)
+      const initials = getInitials(label)
+
+      const el = document.createElement("div")
+      el.style.cssText = `width: 34px; height: 34px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.5); cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center; background: ${color}; font-size: 11px; font-weight: 800; color: #fff; font-family: inherit;`
+      if (image) {
+        const img = document.createElement("img")
+        img.src = image
+        img.alt = label || ""
+        img.style.cssText = "width: 100%; height: 100%; object-fit: cover;"
+        el.appendChild(img)
+      } else {
+        el.textContent = initials
+      }
+
+      const marker = new mapboxgl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map.current!)
+      el.addEventListener("click", () => {
         setSelected(item)
         map.current?.flyTo({ center: [lng, lat], zoom: 15, duration: 800 })
       })
@@ -301,6 +330,22 @@ export default function MapPage() {
     return ""
   }
 
+  // Miniatura compartida para las filas de lista y el panel de detalle: foto recortada en
+  // círculo si el club/evento tiene, o un círculo degradado con las iniciales si no — así nunca
+  // se ve una fila vacía o un hueco gris, coherente con los pines del mapa.
+  const renderAvatar = (item: Club | Event | Essential, size: number) => {
+    const label = getName(item)
+    const image = getImage(item)
+    const color = COLORS[filter]
+    return image ? (
+      <img src={image} alt={label} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "1px solid rgba(255,255,255,0.15)" }} />
+    ) : (
+      <div style={{ width: size, height: size, borderRadius: "50%", background: `linear-gradient(135deg, ${color}, ${color}66)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(size * 0.32), fontWeight: 800, color: "#fff", flexShrink: 0, border: "1px solid rgba(255,255,255,0.15)" }}>
+        {getInitials(label)}
+      </div>
+    )
+  }
+
   const rawList = filter === "clubs" ? clubs : filter === "events" ? events : essentials
   const currentList = rawList.filter((item) => {
     if (!search) return true
@@ -311,8 +356,10 @@ export default function MapPage() {
 
   if (isLoggedIn === null) {
     return (
-      <main style={{ display: "flex", minHeight: "100dvh", alignItems: "center", justifyContent: "center", background: "#050308", color: "#fff" }}>
+      <main style={{ display: "flex", minHeight: "100dvh", flexDirection: "column", gap: "14px", alignItems: "center", justifyContent: "center", background: "#050308", color: "#fff" }}>
+        <div style={{ width: "44px", height: "44px", borderRadius: "50%", border: "3px solid rgba(168,85,247,0.2)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
         <p style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(255,255,255,0.4)" }}>Cargando...</p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
       </main>
     )
   }
@@ -327,7 +374,9 @@ export default function MapPage() {
             <div style={{ position: "absolute", right: "-160px", top: "30%", width: "450px", height: "450px", borderRadius: "9999px", background: "rgba(245,180,60,0.1)", filter: "blur(130px)" }} />
           </div>
           <div style={{ position: "relative", maxWidth: "420px", textAlign: "center" }}>
-            <div style={{ fontSize: "64px", marginBottom: "24px" }}>🗺️</div>
+            <div style={{ width: "96px", height: "96px", margin: "0 auto 24px", borderRadius: "50%", background: "linear-gradient(135deg, rgba(168,85,247,0.35), rgba(236,72,153,0.15))", border: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "44px", boxShadow: "0 0 40px -10px rgba(168,85,247,0.5)" }}>
+              🗺️
+            </div>
             <h1 style={{ fontSize: "38px", fontWeight: 900, color: "#fff" }}>Explora Barcelona</h1>
             <p style={{ marginTop: "16px", color: "rgba(255,255,255,0.5)", fontSize: "17px", lineHeight: 1.6 }}>
               Crea una cuenta gratis para explorar el mapa interactivo de la vida nocturna de Barcelona.
@@ -344,18 +393,32 @@ export default function MapPage() {
 
   return (
     <div style={{ height: "100dvh", background: "#050308", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(16px)", gap: "8px", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      <div style={{ borderBottom: `1px solid ${COLORS[filter]}33`, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10, background: "linear-gradient(180deg, rgba(10,6,16,0.92), rgba(0,0,0,0.75))", backdropFilter: "blur(16px)", gap: "8px", flexShrink: 0, minWidth: 0, transition: "border-color 0.3s ease" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "6px", borderRadius: "999px", padding: "7px 14px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", fontSize: "13px", fontWeight: 700, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8L10 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             Volver
           </Link>
-          <span style={{ fontSize: "15px", fontWeight: 900, color: "#fff", whiteSpace: "nowrap" }}>Barcelona</span>
+          <span className="hidden sm:inline" style={{ fontSize: "15px", fontWeight: 900, color: "#fff", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>
+            🗺️ Mapa <span style={{ fontWeight: 500, color: "rgba(255,255,255,0.4)" }}>· Barcelona</span>
+          </span>
         </div>
-        <div style={{ display: "flex", gap: "6px", flexWrap: "nowrap" }}>
+        {/* Antes este grupo de botones (clubs/eventos/esenciales) no tenía forma de encoger ni
+            de hacer scroll: en pantallas estrechas el bar de arriba se desbordaba y "esenciales"
+            (el último botón) quedaba fuera de la pantalla, sin poder pulsarlo. Ahora hace scroll
+            horizontal y el contenedor puede encogerse (minWidth:0) en vez de desbordar. */}
+        <div style={{ display: "flex", gap: "6px", flexWrap: "nowrap", overflowX: "auto", WebkitOverflowScrolling: "touch", minWidth: 0 }}>
           {(["clubs", "events", "essentials"] as Filter[]).map((f) => (
             <button key={f} onClick={() => { setFilter(f); setSearch("") }}
-              style={{ padding: "6px 12px", borderRadius: "999px", border: filter === f ? `1px solid ${COLORS[f]}` : "1px solid rgba(255,255,255,0.1)", background: filter === f ? `${COLORS[f]}22` : "rgba(255,255,255,0.03)", color: filter === f ? COLORS[f] : "rgba(255,255,255,0.5)", fontSize: "11px", fontWeight: 700, cursor: "pointer", textTransform: "capitalize", whiteSpace: "nowrap" }}>
+              style={{
+                padding: "7px 13px", borderRadius: "999px",
+                border: filter === f ? `1px solid ${COLORS[f]}` : "1px solid rgba(255,255,255,0.1)",
+                background: filter === f ? `linear-gradient(135deg, ${COLORS[f]}33, ${COLORS[f]}11)` : "rgba(255,255,255,0.03)",
+                boxShadow: filter === f ? `0 0 18px ${COLORS[f]}40` : "none",
+                color: filter === f ? "#fff" : "rgba(255,255,255,0.5)",
+                fontSize: "11px", fontWeight: 700, cursor: "pointer", textTransform: "capitalize",
+                whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.2s ease",
+              }}>
               {FILTER_ICONS[f]} {f}
             </button>
           ))}
@@ -365,29 +428,41 @@ export default function MapPage() {
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0, minWidth: 0 }}>
       <aside className="hidden lg:flex" style={{ width: showList === false ? "0px" : "320px", borderRight: showList === false ? "none" : "1px solid rgba(255,255,255,0.1)", background: "#050308", flexDirection: "column", overflow: "hidden", flexShrink: 0, transition: "width 0.3s ease", minWidth: 0 }}>
           <div style={{ padding: "14px 14px 0" }}>
-            <SearchInput value={search} onChange={setSearch} />
+            <SearchInput value={search} onChange={setSearch} accent={COLORS[filter]} />
             <p style={{ marginTop: "10px", fontSize: "11px", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.15em" }}>
               {currentList.filter((i) => i.latitude && i.longitude).length} resultados
             </p>
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {(currentList as (Club | Event | Essential)[]).filter((item) => item.latitude && item.longitude).map((item) => (
-                <button key={item.id}
-                  onClick={() => { setSelected(item); map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 }) }}
-                  style={{ textAlign: "left", borderRadius: "16px", border: selected && "id" in selected && selected.id === item.id ? `1px solid ${COLORS[filter]}88` : "1px solid rgba(255,255,255,0.08)", background: selected && "id" in selected && selected.id === item.id ? `${COLORS[filter]}18` : "rgba(255,255,255,0.03)", padding: "13px", cursor: "pointer", width: "100%", transition: "background 0.2s" }}>
-                  <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px" }}>{getName(item)}</p>
-                  <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>{getSub(item)}</p>
-                </button>
-              ))}
+              {(currentList as (Club | Event | Essential)[]).filter((item) => item.latitude && item.longitude).map((item) => {
+                const isSelected = !!(selected && "id" in selected && selected.id === item.id)
+                return (
+                  <button key={item.id}
+                    onClick={() => { setSelected(item); map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 }) }}
+                    style={{ display: "flex", alignItems: "center", gap: "11px", textAlign: "left", borderRadius: "16px", border: isSelected ? `1px solid ${COLORS[filter]}88` : "1px solid rgba(255,255,255,0.08)", background: isSelected ? `linear-gradient(135deg, ${COLORS[filter]}22, ${COLORS[filter]}08)` : "rgba(255,255,255,0.03)", boxShadow: isSelected ? `0 0 14px ${COLORS[filter]}25` : "none", padding: "10px 13px", cursor: "pointer", width: "100%", transition: "all 0.2s" }}>
+                    {renderAvatar(item, 38)}
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getName(item)}</p>
+                      <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getSub(item)}</p>
+                    </div>
+                  </button>
+                )
+              })}
               {currentList.filter(i => i.latitude && i.longitude).length === 0 && (
                 <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)", padding: "16px", textAlign: "center" }}>No se encontraron resultados.</p>
               )}
             </div>
           </div>
           {selected && (
-            <div style={{ borderTop: `1px solid ${COLORS[filter]}30`, padding: "16px", background: `linear-gradient(180deg, ${COLORS[filter]}10, rgba(255,255,255,0.02))`, flexShrink: 0 }}>
-              {getImage(selected) && <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "12px", marginBottom: "12px" }} />}
+            <div style={{ borderTop: `1px solid ${COLORS[filter]}30`, padding: "16px", background: `linear-gradient(180deg, ${COLORS[filter]}12, rgba(255,255,255,0.02))`, flexShrink: 0 }}>
+              {getImage(selected) ? (
+                <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "12px", marginBottom: "12px", border: `1px solid ${COLORS[filter]}30` }} />
+              ) : (
+                <div style={{ width: "100%", height: "120px", borderRadius: "12px", marginBottom: "12px", background: `linear-gradient(135deg, ${COLORS[filter]}55, ${COLORS[filter]}15)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "40px" }}>
+                  {FILTER_ICONS[filter]}
+                </div>
+              )}
               <p style={{ fontWeight: 900, fontSize: "16px", color: "#fff" }}>{getName(selected)}</p>
               <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", marginTop: "4px" }}>{getSub(selected)}</p>
               {"address" in selected && selected.address && <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)", marginTop: "4px" }}>📍 {selected.address}</p>}
@@ -421,14 +496,17 @@ export default function MapPage() {
                   <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", textTransform: "capitalize" }}>{FILTER_ICONS[filter]} {filter}</p>
                   <button onClick={() => setShowList(false)} style={{ color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 10px", fontSize: "13px", cursor: "pointer" }}>✕</button>
                 </div>
-                <div style={{ marginBottom: "10px" }}><SearchInput value={search} onChange={setSearch} /></div>
+                <div style={{ marginBottom: "10px" }}><SearchInput value={search} onChange={setSearch} accent={COLORS[filter]} /></div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {(currentList as (Club | Event | Essential)[]).filter((item) => item.latitude && item.longitude).map((item) => (
                     <button key={item.id}
                       onClick={() => { setSelected(item); setShowList(false); map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 }) }}
-                      style={{ textAlign: "left", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", padding: "13px", cursor: "pointer", width: "100%" }}>
-                      <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px" }}>{getName(item)}</p>
-                      <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>{getSub(item)}</p>
+                      style={{ display: "flex", alignItems: "center", gap: "11px", textAlign: "left", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", padding: "10px 13px", cursor: "pointer", width: "100%" }}>
+                      {renderAvatar(item, 38)}
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getName(item)}</p>
+                        <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getSub(item)}</p>
+                      </div>
                     </button>
                   ))}
                   {currentList.filter(i => i.latitude && i.longitude).length === 0 && (
@@ -440,8 +518,14 @@ export default function MapPage() {
           )}
 
           {selected && (
-            <div style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "20px", border: `1px solid ${COLORS[filter]}40`, background: "rgba(0,0,0,0.92)", padding: "16px", backdropFilter: "blur(16px)", boxShadow: "0 20px 50px -20px rgba(0,0,0,0.6)" }}>
-              {getImage(selected) && <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "12px", marginBottom: "12px" }} />}
+            <div style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "20px", border: `1px solid ${COLORS[filter]}40`, background: "rgba(0,0,0,0.92)", padding: "16px", backdropFilter: "blur(16px)", boxShadow: `0 20px 50px -20px rgba(0,0,0,0.6), 0 0 30px -10px ${COLORS[filter]}30` }}>
+              {getImage(selected) ? (
+                <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "12px", marginBottom: "12px", border: `1px solid ${COLORS[filter]}30` }} />
+              ) : (
+                <div style={{ width: "100%", height: "120px", borderRadius: "12px", marginBottom: "12px", background: `linear-gradient(135deg, ${COLORS[filter]}55, ${COLORS[filter]}15)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "40px" }}>
+                  {FILTER_ICONS[filter]}
+                </div>
+              )}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <p style={{ fontWeight: 900, color: "#fff", fontSize: "15px" }}>{getName(selected)}</p>
