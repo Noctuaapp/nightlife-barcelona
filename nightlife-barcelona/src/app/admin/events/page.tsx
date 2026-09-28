@@ -25,6 +25,10 @@ type Event = {
   sold_out: boolean | null
   hidden: boolean | null
   vip_tables: boolean | null
+  gallery: string[] | null
+  manual_photos: boolean | null
+  google_rating: number | null
+  google_review_count: number | null
 }
 
 export default function AdminEventsPage() {
@@ -51,6 +55,12 @@ export default function AdminEventsPage() {
   const [uploading, setUploading] = useState(false)
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [search, setSearch] = useState("")
+
+  // Galería manual — fotos que subes tú a mano cuando el pipeline de Google no trae las correctas.
+  const [newGallery, setNewGallery] = useState<string[]>([])
+  const [newManualPhotos, setNewManualPhotos] = useState(false)
+  const [editGallery, setEditGallery] = useState<string[]>([])
+  const [editManualPhotos, setEditManualPhotos] = useState(false)
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -106,6 +116,27 @@ export default function AdminEventsPage() {
     return data.publicUrl
   }
 
+  // Subida múltiple a la galería manual. Usa el bucket "event-photos" (el mismo que usa el
+  // pipeline automático de Google), así que estas fotos conviven con las automáticas sin líos.
+  const uploadGalleryFiles = async (files: FileList): Promise<string[]> => {
+    setUploading(true)
+    const urls: string[] = []
+    for (const file of Array.from(files)) {
+      const fileExt = file.name.split(".").pop()
+      const fileName = `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+      const filePath = `admin/${fileName}`
+      const { error } = await supabase.storage.from("event-photos").upload(filePath, file)
+      if (error) {
+        console.log("GALLERY UPLOAD ERROR:", error)
+        continue
+      }
+      const { data } = supabase.storage.from("event-photos").getPublicUrl(filePath)
+      urls.push(data.publicUrl)
+    }
+    setUploading(false)
+    return urls
+  }
+
   const handleNewImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -128,6 +159,25 @@ export default function AdminEventsPage() {
     }
   }
 
+  const handleNewGalleryUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const urls = await uploadGalleryFiles(files)
+    setNewGallery((prev) => [...prev, ...urls])
+    e.target.value = ""
+  }
+
+  const handleEditGalleryUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const urls = await uploadGalleryFiles(files)
+    setEditGallery((prev) => [...prev, ...urls])
+    e.target.value = ""
+  }
+
+  const removeNewGalleryPhoto = (url: string) => setNewGallery((prev) => prev.filter((u) => u !== url))
+  const removeEditGalleryPhoto = (url: string) => setEditGallery((prev) => prev.filter((u) => u !== url))
+
   const addEvent = async () => {
     if (!newEvent.title) return
 
@@ -135,6 +185,9 @@ export default function AdminEventsPage() {
       .from("events")
       .insert({
         ...newEvent,
+        image: newEvent.image || newGallery[0] || "",
+        gallery: newGallery.length > 0 ? newGallery : null,
+        manual_photos: newManualPhotos,
         date: newEvent.date || null,
         start_time: newEvent.start_time || null,
         end_time: newEvent.end_time || null,
@@ -153,6 +206,8 @@ export default function AdminEventsPage() {
     if (data) setEvents((prev) => [data, ...prev])
 
     setNewEvent(emptyEvent)
+    setNewGallery([])
+    setNewManualPhotos(false)
   }
 
   const startEditing = (event: Event) => {
@@ -171,17 +226,31 @@ export default function AdminEventsPage() {
       image: event.image || "",
       description: event.description || "",
     })
+    setEditGallery(Array.isArray(event.gallery) ? event.gallery : [])
+    setEditManualPhotos(!!event.manual_photos)
   }
 
   const cancelEditing = () => {
     setEditingId(null)
     setEditEvent(emptyEvent)
+    setEditGallery([])
+    setEditManualPhotos(false)
   }
 
   const saveEditing = async (id: number) => {
     if (!editEvent.title) return
 
-    const { data, error } = await supabase.from("events").update(editEvent).eq("id", id).select().single()
+    const { data, error } = await supabase
+      .from("events")
+      .update({
+        ...editEvent,
+        image: editEvent.image || editGallery[0] || "",
+        gallery: editGallery.length > 0 ? editGallery : null,
+        manual_photos: editManualPhotos,
+      })
+      .eq("id", id)
+      .select()
+      .single()
 
     if (error) {
       console.log("EDIT EVENT ERROR:", error)
@@ -226,6 +295,15 @@ export default function AdminEventsPage() {
     setEvents((prev) => prev.map((e) => (e.id === event.id ? { ...e, hidden: newValue } : e)))
   }
 
+  // Marca/desmarca el evento como gestionado a mano. Si lo activas aquí (sin pasar por "Editar"),
+  // el pipeline de Google lo dejará en paz a partir del próximo ciclo del cron.
+  const toggleManualPhotos = async (event: Event) => {
+    const newValue = !event.manual_photos
+    const { error } = await supabase.from("events").update({ manual_photos: newValue }).eq("id", event.id)
+    if (error) return console.log("MANUAL PHOTOS ERROR:", error)
+    setEvents((prev) => prev.map((item) => (item.id === event.id ? { ...item, manual_photos: newValue } : item)))
+  }
+
   const showAll = async () => {
     const { error } = await supabase.from("events").update({ hidden: false }).neq("id", 0)
     if (error) return
@@ -253,6 +331,38 @@ export default function AdminEventsPage() {
       </main>
     )
   }
+
+  const galleryUploadBox = (
+    gallery: string[],
+    onUpload: (e: ChangeEvent<HTMLInputElement>) => void,
+    onRemove: (url: string) => void
+  ) => (
+    <div className="lg:col-span-3">
+      <p className="mb-2 text-xs font-bold uppercase tracking-widest text-zinc-500">
+        Galería manual ({gallery.length} foto{gallery.length === 1 ? "" : "s"})
+      </p>
+      <label className="block cursor-pointer rounded-2xl border border-dashed border-white/20 bg-white/[0.02] px-5 py-4 text-center text-sm font-bold text-zinc-400 transition hover:border-purple-500/50 hover:text-white">
+        {uploading ? "Subiendo..." : "📁 Subir una o varias fotos"}
+        <input type="file" accept="image/*" multiple disabled={uploading} onChange={onUpload} className="hidden" />
+      </label>
+      {gallery.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-3">
+          {gallery.map((url) => (
+            <div key={url} className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-white/10">
+              <img src={url} alt="" className="h-full w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => onRemove(url)}
+                className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white opacity-0 transition group-hover:opacity-100"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 
   return (
     <>
@@ -288,16 +398,30 @@ export default function AdminEventsPage() {
                 />
               ))}
 
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleNewImageUpload}
-                className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none lg:col-span-3"
-              />
+              <div className="lg:col-span-3">
+                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-zinc-500">Foto de portada</p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleNewImageUpload}
+                  className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none w-full"
+                />
+                {newEvent.image && (
+                  <img src={newEvent.image} alt="Preview" className="mt-3 h-44 w-full rounded-2xl object-cover" />
+                )}
+              </div>
 
-              {newEvent.image && (
-                <img src={newEvent.image} alt="Preview" className="h-44 w-full rounded-2xl object-cover lg:col-span-3" />
-              )}
+              {galleryUploadBox(newGallery, handleNewGalleryUpload, removeNewGalleryPhoto)}
+
+              <button
+                type="button"
+                onClick={() => setNewManualPhotos((v) => !v)}
+                className={`lg:col-span-3 rounded-2xl px-5 py-3 text-sm font-bold transition ${
+                  newManualPhotos ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                }`}
+              >
+                {newManualPhotos ? "✋ Fotos manuales (el pipeline de Google no lo tocará)" : "🤖 Dejar que Google Places busque fotos automáticamente"}
+              </button>
 
               <button
                 onClick={addEvent}
@@ -342,16 +466,30 @@ export default function AdminEventsPage() {
                         />
                       ))}
 
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleEditImageUpload}
-                        className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none lg:col-span-3"
-                      />
+                      <div className="lg:col-span-3">
+                        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-zinc-500">Foto de portada</p>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleEditImageUpload}
+                          className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none w-full"
+                        />
+                        {editEvent.image && (
+                          <img src={editEvent.image} alt="Preview" className="mt-3 h-52 w-full rounded-2xl object-cover" />
+                        )}
+                      </div>
 
-                      {editEvent.image && (
-                        <img src={editEvent.image} alt="Preview" className="h-52 w-full rounded-2xl object-cover lg:col-span-3" />
-                      )}
+                      {galleryUploadBox(editGallery, handleEditGalleryUpload, removeEditGalleryPhoto)}
+
+                      <button
+                        type="button"
+                        onClick={() => setEditManualPhotos((v) => !v)}
+                        className={`lg:col-span-3 rounded-2xl px-5 py-3 text-sm font-bold transition ${
+                          editManualPhotos ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                        }`}
+                      >
+                        {editManualPhotos ? "✋ Fotos manuales (el pipeline de Google no lo tocará)" : "🤖 Dejar que Google Places busque fotos automáticamente"}
+                      </button>
 
                       <button onClick={() => saveEditing(event.id)} disabled={uploading} className="rounded-2xl bg-emerald-400 px-8 py-4 font-bold text-black disabled:opacity-50">Save changes</button>
                       <button onClick={cancelEditing} className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 font-bold">Cancel</button>
@@ -360,7 +498,20 @@ export default function AdminEventsPage() {
                     <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                       <div>
                         {event.image && (
-                          <img src={event.image} alt={event.title} className="mb-6 h-48 w-full rounded-3xl object-cover lg:w-[420px]" />
+                          <img src={event.image} alt={event.title} className="mb-3 h-48 w-full rounded-3xl object-cover lg:w-[420px]" />
+                        )}
+
+                        {Array.isArray(event.gallery) && event.gallery.length > 0 && (
+                          <div className="mb-6 flex gap-2 lg:w-[420px]">
+                            {event.gallery.slice(0, 4).map((url, i) => (
+                              <img key={i} src={url} alt="" className="h-14 w-14 rounded-lg object-cover" />
+                            ))}
+                            {event.gallery.length > 4 && (
+                              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-white/10 text-xs font-bold text-zinc-400">
+                                +{event.gallery.length - 4}
+                              </div>
+                            )}
+                          </div>
                         )}
 
                         <p className="text-sm uppercase tracking-wide text-zinc-500">{event.club_name} · {event.music}</p>
@@ -375,6 +526,14 @@ export default function AdminEventsPage() {
                           {event.vip_tables && (
                             <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-4 py-2 text-sm text-amber-300">🛋️ Mesa VIP</span>
                           )}
+                          {event.google_rating ? (
+                            <span className="rounded-full bg-blue-500/20 border border-blue-500/30 px-4 py-2 text-sm text-blue-300">
+                              ⭐ {event.google_rating} ({event.google_review_count || 0})
+                            </span>
+                          ) : null}
+                          <span className={`rounded-full px-4 py-2 text-sm border ${event.manual_photos ? "bg-purple-500/20 border-purple-500/30 text-purple-300" : "bg-white/5 border-white/10 text-zinc-400"}`}>
+                            {event.manual_photos ? "✋ Fotos manuales" : "🤖 Google automático"}
+                          </span>
                         </div>
 
                         <p className="mt-5 max-w-2xl text-zinc-400">{event.description}</p>
@@ -385,6 +544,7 @@ export default function AdminEventsPage() {
                         <button onClick={() => toggleFeatured(event)} className={`rounded-full px-5 py-3 text-sm font-bold ${event.featured ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5"}`}>🔥 Featured</button>
                         <button onClick={() => toggleSoldOut(event)} className={`rounded-full px-5 py-3 text-sm font-bold ${event.sold_out ? "bg-red-500 text-white" : "border border-white/10 bg-white/5"}`}>🚫 Sold out</button>
                         <button onClick={() => toggleVipTables(event)} className={`rounded-full px-5 py-3 text-sm font-bold ${event.vip_tables ? "bg-amber-400 text-black" : "border border-white/10 bg-white/5"}`}>🛋️ Mesa VIP</button>
+                        <button onClick={() => toggleManualPhotos(event)} className={`rounded-full px-5 py-3 text-sm font-bold ${event.manual_photos ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5"}`}>✋ Manual</button>
                         <button onClick={() => toggleHidden(event)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${event.hidden ? "bg-zinc-600 text-white" : "border border-white/10 bg-white/5"}`}>{event.hidden ? "👁️ Hidden" : "👁️ Visible"}</button>
                         <button onClick={() => deleteEvent(event.id)} className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400">Delete</button>
                       </div>
