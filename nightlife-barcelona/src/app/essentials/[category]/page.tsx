@@ -101,6 +101,7 @@ export default function EssentialCategoryPage() {
   const [mapReady, setMapReady] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [sortByDistance, setSortByDistance] = useState(false)
+  const [mobileView, setMobileView] = useState<"list" | "map">("list")
 
   useEffect(() => {
     const fetchEssentials = async () => {
@@ -135,11 +136,7 @@ export default function EssentialCategoryPage() {
 
           new mapboxgl.Marker({ color: "#a855f7" }).setLngLat([longitude, latitude]).addTo(map.current!)
 
-          map.current?.flyTo({
-            center: [longitude, latitude],
-            zoom: 14,
-            duration: 1000,
-          })
+          map.current?.flyTo({ center: [longitude, latitude], zoom: 14, duration: 1000 })
         })
       }
     })
@@ -149,6 +146,14 @@ export default function EssentialCategoryPage() {
       map.current = null
     }
   }, [])
+
+  // El mapa está oculto (display:none) en móvil cuando la vista es "list", así que
+  // hace falta forzar un resize cuando se vuelve a mostrar o Mapbox lo pinta mal.
+  useEffect(() => {
+    if (mobileView === "map") {
+      setTimeout(() => map.current?.resize(), 50)
+    }
+  }, [mobileView])
 
   useEffect(() => {
     if (!mapReady || !map.current || essentials.length === 0) return
@@ -163,11 +168,7 @@ export default function EssentialCategoryPage() {
 
         marker.getElement().addEventListener("click", () => {
           setSelected(item)
-          map.current?.flyTo({
-            center: [item.longitude!, item.latitude!],
-            zoom: 16,
-            duration: 800,
-          })
+          map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 16, duration: 800 })
         })
 
         markersRef.current.push(marker)
@@ -186,66 +187,154 @@ export default function EssentialCategoryPage() {
       return da - db
     })
 
+  const heroImage = essentials.find((e) => e.image)?.image || null
+
+  const renderCard = (item: Essential, index: number) => {
+    const hasCoords = Boolean(item.latitude && item.longitude)
+
+    let distanceLabel = ""
+    if (userLocation && hasCoords) {
+      const d = getDistance(userLocation.lat, userLocation.lng, item.latitude as number, item.longitude as number)
+      distanceLabel = d < 1 ? Math.round(d * 1000) + " m" : d.toFixed(1) + " km"
+    }
+
+    let directionsHref = ""
+    if (hasCoords) {
+      directionsHref = userLocation
+        ? `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${item.latitude},${item.longitude}`
+        : `https://www.google.com/maps/dir/?api=1&destination=${item.latitude},${item.longitude}`
+    }
+
+    const reportHref = "/contact?type=report_issue&subject=" + encodeURIComponent("Reporte: " + item.name)
+    const isSelected = selected != null && selected.id === item.id
+
+    const handleCardClick = () => {
+      setSelected(item)
+      setMobileView("map")
+      if (hasCoords) {
+        map.current?.flyTo({ center: [item.longitude as number, item.latitude as number], zoom: 16, duration: 800 })
+      }
+    }
+
+    const stopPropagation = (e: React.MouseEvent) => e.stopPropagation()
+
+    return (
+      <Reveal key={item.id} style={{ transitionDelay: Math.min(index, 8) * 50 + "ms" }}>
+        <div
+          onClick={handleCardClick}
+          className="group cursor-pointer overflow-hidden rounded-[22px] border backdrop-blur-xl transition duration-300 hover:-translate-y-0.5"
+          style={{
+            borderColor: isSelected ? config.color + "70" : "rgba(255,255,255,0.08)",
+            background: isSelected ? config.color + "12" : "rgba(255,255,255,0.03)",
+          }}
+        >
+          <div className="flex gap-4 p-4">
+            <div
+              className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-cover bg-center transition duration-500 group-hover:scale-105"
+              style={item.image ? { backgroundImage: `url(${item.image})` } : { background: `${config.color}18` }}
+            >
+              {!item.image && <div className="flex h-full w-full items-center justify-center text-3xl">{config.icon}</div>}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="truncate font-bold text-white">{item.name}</h3>
+                {item.open_hours && (
+                  <span className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: config.color + "20", color: config.color }}>
+                    {item.open_hours}
+                  </span>
+                )}
+              </div>
+              {item.address && <p className="mt-0.5 truncate text-xs text-zinc-400">{item.address}</p>}
+              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                {item.neighborhood && <span>📍 {item.neighborhood}</span>}
+                {distanceLabel && (
+                  <span className="rounded-full bg-purple-400/10 px-2 py-0.5 font-semibold text-purple-300">{distanceLabel}</span>
+                )}
+              </div>
+              {item.description && <p className="mt-1.5 text-xs text-zinc-500 line-clamp-1">{item.description}</p>}
+
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {item.maps_link && (
+                  <a href={item.maps_link} target="_blank" rel="noopener noreferrer" onClick={stopPropagation} className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-white hover:text-black">
+                    Maps →
+                  </a>
+                )}
+                {hasCoords && (
+                  <a href={directionsHref} target="_blank" rel="noopener noreferrer" onClick={stopPropagation} className="rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-[11px] font-semibold text-purple-300 transition hover:bg-purple-500 hover:text-white">
+                    🧭 Cómo llegar
+                  </a>
+                )}
+                <a href={reportHref} onClick={stopPropagation} className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-zinc-500 transition hover:text-white">
+                  ⚑
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Reveal>
+    )
+  }
+
   return (
     <>
       <Header />
       <main className="relative min-h-screen pb-40 text-white">
-        <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#050308]">
+        {/* Hero */}
+        <div className="relative h-[280px] w-full overflow-hidden md:h-[320px]">
+          {heroImage ? (
+            <>
+              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroImage})` }} />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(5,3,8,0.55) 0%, rgba(5,3,8,0.75) 60%, #050308 100%)" }} />
+            </>
+          ) : (
+            <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 30% 20%, ${config.color}30, #050308 70%)` }} />
+          )}
           <div
-            className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full blur-[120px] animate-[float_18s_ease-in-out_infinite]"
-            style={{ background: config.color + "25" }}
-          />
-          <div className="absolute -right-40 top-1/3 h-[450px] w-[450px] rounded-full bg-purple-600/10 blur-[130px] animate-[float_22s_ease-in-out_infinite_reverse]" />
-          <div
-            className="absolute inset-0 opacity-30"
+            className="absolute inset-0 opacity-[0.15]"
             style={{
-              backgroundImage:
-                "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)",
-              backgroundSize: "56px 56px",
+              backgroundImage: "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)",
+              backgroundSize: "50px 50px",
             }}
           />
-        </div>
 
-        <section className="px-4 pt-14">
-          <div className="mx-auto max-w-7xl">
-            <Link href="/essentials" className="text-sm text-zinc-500 transition hover:text-white">
+          <div className="relative mx-auto flex h-full max-w-7xl flex-col justify-end px-4 pb-8">
+            <Link href="/essentials" className="mb-4 w-fit text-sm text-zinc-300 transition hover:text-white">
               ← {t("essentials.title")}
             </Link>
-            <div className="mt-4 flex items-center gap-4">
+            <div className="flex items-center gap-4">
               <span
-                className="flex h-16 w-16 items-center justify-center rounded-2xl text-4xl"
-                style={{ background: config.color + "20", border: "1px solid " + config.color + "40" }}
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-4xl backdrop-blur-xl"
+                style={{ background: config.color + "30", border: "1px solid " + config.color + "55" }}
               >
                 {config.icon}
               </span>
               <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("essentials.title")}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-zinc-300">{t("essentials.title")}</p>
                 <h1 className="text-4xl font-black tracking-tight text-white md:text-5xl">{label}</h1>
               </div>
             </div>
-            <p className="mt-4 max-w-2xl text-zinc-400">
+            <p className="mt-3 text-sm text-zinc-300">
               {filteredEssentials.length} {filteredEssentials.length !== 1 ? t("essentials.locations_plural") : t("essentials.locations")}
             </p>
           </div>
-        </section>
+        </div>
 
-        <Reveal className="mx-auto mt-10 max-w-7xl px-4">
-          <div className="overflow-hidden rounded-[32px] border" style={{ height: "420px", borderColor: config.color + "30" }}>
-            <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
-          </div>
-        </Reveal>
-
-        <section className="mx-auto mt-8 max-w-7xl px-4">
+        {/* Filters */}
+        <section className="mx-auto mt-6 max-w-7xl px-4">
           <div className="flex flex-wrap items-center gap-3">
             {neighborhoods.length > 2 && (
-              <div className="flex flex-1 gap-3 overflow-x-auto pb-2">
+              <div className="flex flex-1 gap-2.5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {neighborhoods.map((n) => {
                   const isActive = selectedNeighborhood === n
-                  const chipClass = isActive
-                    ? "whitespace-nowrap rounded-full px-5 py-3 text-sm font-medium transition bg-white text-black"
-                    : "whitespace-nowrap rounded-full px-5 py-3 text-sm font-medium transition border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
                   return (
-                    <button key={n || "all"} onClick={() => setSelectedNeighborhood(n || "All")} className={chipClass}>
+                    <button
+                      key={n || "all"}
+                      onClick={() => setSelectedNeighborhood(n || "All")}
+                      className={`whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium transition ${
+                        isActive ? "bg-white text-black" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                      }`}
+                    >
                       {n}
                     </button>
                   )
@@ -255,148 +344,59 @@ export default function EssentialCategoryPage() {
             {userLocation && (
               <button
                 onClick={() => setSortByDistance(!sortByDistance)}
-                className={
-                  sortByDistance
-                    ? "shrink-0 rounded-full px-5 py-3 text-sm font-bold transition bg-purple-500 text-white"
-                    : "shrink-0 rounded-full px-5 py-3 text-sm font-bold transition border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
-                }
+                className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-bold transition ${
+                  sortByDistance ? "bg-purple-500 text-white" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                }`}
               >
-                📍 Más cercano primero
+                📍 Más cercano
               </button>
             )}
           </div>
+
+          {/* Toggle lista/mapa — solo móvil */}
+          <div className="mt-3 flex gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-1.5 md:hidden">
+            {(["list", "map"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setMobileView(v)}
+                className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition ${
+                  mobileView === v ? "bg-white text-black" : "text-zinc-400"
+                }`}
+              >
+                {v === "list" ? "☰ Lista" : "🗺️ Mapa"}
+              </button>
+            ))}
+          </div>
         </section>
 
-        <section className="mx-auto mt-8 max-w-7xl px-4">
-          {loading ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {[0, 1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-40 animate-pulse rounded-[24px] bg-white/[0.03]" />
-              ))}
+        {/* Content: lista + mapa lado a lado en escritorio */}
+        <section className="mx-auto mt-6 max-w-7xl px-4">
+          <div className="grid gap-6 md:grid-cols-12">
+            <div className={`md:col-span-5 ${mobileView === "map" ? "hidden md:block" : ""}`}>
+              {loading ? (
+                <div className="grid gap-3">
+                  {[0, 1, 2, 3].map((i) => <div key={i} className="h-32 animate-pulse rounded-[22px] bg-white/[0.03]" />)}
+                </div>
+              ) : filteredEssentials.length === 0 ? (
+                <div className="py-20 text-center">
+                  <p className="text-lg font-bold text-zinc-300">No hay resultados en este barrio</p>
+                </div>
+              ) : (
+                <div className="grid gap-3 md:max-h-[640px] md:overflow-y-auto md:pr-1 [scrollbar-width:thin]">
+                  {filteredEssentials.map((item, index) => renderCard(item, index))}
+                </div>
+              )}
             </div>
-          ) : filteredEssentials.length === 0 ? (
-            <div className="py-20 text-center">
-              <p className="text-lg font-bold text-zinc-300">No hay resultados en este barrio</p>
+
+            <div className={`md:col-span-7 ${mobileView === "list" ? "hidden md:block" : ""}`}>
+              <div className="overflow-hidden rounded-[28px] border md:sticky md:top-24" style={{ height: "640px", borderColor: config.color + "30" }}>
+                <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
+              </div>
             </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {filteredEssentials.map((item, index) => {
-                const hasCoords = Boolean(item.latitude && item.longitude)
-
-                let distanceLabel = ""
-                if (userLocation && hasCoords) {
-                  const d = getDistance(userLocation.lat, userLocation.lng, item.latitude as number, item.longitude as number)
-                  distanceLabel = d < 1 ? Math.round(d * 1000) + " m" : d.toFixed(1) + " km"
-                }
-
-                let directionsHref = ""
-                if (hasCoords) {
-                  if (userLocation) {
-                    directionsHref =
-                      "https://www.google.com/maps/dir/?api=1&origin=" +
-                      userLocation.lat +
-                      "," +
-                      userLocation.lng +
-                      "&destination=" +
-                      item.latitude +
-                      "," +
-                      item.longitude
-                  } else {
-                    directionsHref = "https://www.google.com/maps/dir/?api=1&destination=" + item.latitude + "," + item.longitude
-                  }
-                }
-
-                const reportHref = "/contact?type=report_issue&subject=" + encodeURIComponent("Reporte: " + item.name)
-
-                const isSelected = selected != null && selected.id === item.id
-                const cardBorderColor = isSelected ? config.color + "60" : "rgba(255,255,255,0.08)"
-                const cardBackground = isSelected ? config.color + "15" : "rgba(255,255,255,0.03)"
-
-                const handleCardClick = () => {
-                  setSelected(item)
-                  if (hasCoords) {
-                    map.current?.flyTo({
-                      center: [item.longitude as number, item.latitude as number],
-                      zoom: 16,
-                      duration: 800,
-                    })
-                  }
-                }
-
-                const stopPropagation = (e: React.MouseEvent) => {
-                  e.stopPropagation()
-                }
-
-                return (
-                  <Reveal key={item.id} style={{ transitionDelay: Math.min(index, 8) * 60 + "ms" }}>
-                    <div
-                      onClick={handleCardClick}
-                      className="cursor-pointer rounded-[24px] border p-6 backdrop-blur-xl transition duration-300 hover:-translate-y-1"
-                      style={{ borderColor: cardBorderColor, background: cardBackground }}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="font-bold text-white">{item.name}</h3>
-                          {item.address && <p className="mt-1 text-sm text-zinc-400">{item.address}</p>}
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-                            {item.neighborhood && <span>📍 {item.neighborhood}</span>}
-                            {distanceLabel && (
-                              <span className="rounded-full bg-purple-400/10 px-2 py-0.5 font-semibold text-purple-300">
-                                {distanceLabel}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {item.open_hours && (
-                          <span
-                            className="shrink-0 rounded-full px-3 py-1 text-xs font-semibold"
-                            style={{ background: config.color + "20", color: config.color }}
-                          >
-                            {item.open_hours}
-                          </span>
-                        )}
-                      </div>
-
-                      {item.description && <p className="mt-3 text-sm text-zinc-400 line-clamp-2">{item.description}</p>}
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {item.maps_link && (
-                          <a href={item.maps_link} target="_blank" rel="noopener noreferrer" onClick={stopPropagation} className="inline-block rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white hover:text-black">
-                            Ver en Maps →
-                          </a>
-                        )}
-
-                        {hasCoords && (
-                          <a href={directionsHref} target="_blank" rel="noopener noreferrer" onClick={stopPropagation} className="inline-block rounded-full border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-xs font-semibold text-purple-300 transition hover:bg-purple-500 hover:text-white">
-                            🧭 Cómo llegar
-                          </a>
-                        )}
-
-                        <a href={reportHref} onClick={stopPropagation} className="inline-block rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-zinc-500 transition hover:text-white">
-                          ⚑ Reportar
-                        </a>
-                      </div>
-                    </div>
-                  </Reveal>
-                )
-              })}
-            </div>
-          )}
+          </div>
         </section>
       </main>
       <BottomNav />
-
-      <style jsx global>{`
-        @keyframes float {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          50% {
-            transform: translate(30px, -20px) scale(1.08);
-          }
-        }
-      `}</style>
     </>
   )
 }
