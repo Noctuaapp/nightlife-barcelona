@@ -176,6 +176,7 @@ export async function GET() {
     .select("id, name, address, neighborhood, category, image, google_place_id")
     .not("google_place_id", "is", null)
     .or("manual_photos.is.null,manual_photos.eq.false")
+    .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
     .limit(REFRESH_BATCH_SIZE)
 
   if (error) {
