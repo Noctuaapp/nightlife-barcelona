@@ -38,13 +38,23 @@ export default function ClubCard({
   return (
     <Link href={`/clubs/${slug}`} className="group block overflow-hidden rounded-[30px] border border-white/10 bg-black transition duration-500 hover:-translate-y-2 hover:border-white/20">
       <div className="relative h-[420px] overflow-hidden">
-        <Image
-          src={image || "/clubs/razz.jpg"}
-          alt={name}
-          fill
-          sizes="(max-width: 768px) 100vw, 33vw"
-          className="object-cover transition duration-700 group-hover:scale-110"
-        />
+        {image ? (
+          <Image
+            src={image}
+            alt={name}
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            className="object-cover transition duration-700 group-hover:scale-110"
+          />
+        ) : (
+          // Antes esto caía en un fallback fijo "/clubs/razz.jpg" (un archivo que ni siquiera
+          // existe en el repo, así que daba 404) y hacía que cualquier club sin foto propia
+          // mostrase la misma imagen de otro club. Ahora, sin foto, mostramos un degradado con
+          // el emoji de música en vez de una imagen fija de otro local.
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-900/60 via-black to-black">
+            <span className="text-6xl opacity-30">🎵</span>
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
 
         <div className="absolute left-5 top-5 flex flex-wrap gap-2">
@@ -96,7 +106,7 @@ export default function ClubCard({
           <div className="mt-5 flex flex-wrap gap-3">
             <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">🔥 {people}+ tonight</div>
             <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">🎟 {price}</div>
-            <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">🕒 {hours}</div>
+            <div className="max-w-[70vw] truncate rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl sm:max-w-[220px]">🕒 {hours}</div>
           </div>
         </div>
       </div>

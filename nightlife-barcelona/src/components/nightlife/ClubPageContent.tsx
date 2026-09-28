@@ -8,6 +8,7 @@ import ClubMap from "../map/ClubMap"
 import ClubNightsCalendar from "../nightlife/ClubNightsCalendar"
 import TransportButtons from "../ui/TransportButtons"
 import { supabase } from "../../lib/supabase"
+import { FALLBACK_IMAGE as FALLBACK_CLUB_IMAGE } from "../../lib/fallbackImage"
 
 const ACCENT_PATTERN = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g")
 
@@ -148,7 +149,6 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
   const [activeTab, setActiveTab] = useState<"about" | "nights" | "location">("about")
   const [related, setRelated] = useState<any[]>([])
   const [favCount, setFavCount] = useState<number | null>(null)
-  const [weatherTemp, setWeatherTemp] = useState<number | null>(null)
   const [scrolled, setScrolled] = useState(false)
   const [pastHero, setPastHero] = useState(false)
   const [scrollY, setScrollY] = useState(0)
@@ -205,15 +205,6 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
         .eq("item_id", club.id)
       setFavCount(count ?? 0)
     }
-    const loadWeather = async () => {
-      try {
-        const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=41.3874&longitude=2.1686&current_weather=true")
-        const data = await res.json()
-        if (data?.current_weather?.temperature != null) {
-          setWeatherTemp(Math.round(data.current_weather.temperature))
-        }
-      } catch {}
-    }
     const loadReviews = async () => {
       const { data } = await supabase
         .from("club_reviews")
@@ -224,7 +215,6 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
     }
     loadRelated()
     loadFavCount()
-    loadWeather()
     loadReviews()
   }, [club.id])
 
@@ -353,7 +343,6 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
     { key: "price", icon: "ticket", value: club.price || "TBA", label: t("club.price") },
     { key: "hours", icon: "clock", value: club.hours || "TBA", label: t("club.hours") },
     { key: "queue", icon: "hourglass", value: club.queue || t("club.no_queue"), label: t("club.queue") },
-    ...(weatherTemp !== null ? [{ key: "weather", icon: "thermometer", value: `${weatherTemp}°C`, label: "Barcelona ahora" }] : []),
   ]
 
   return (
@@ -378,7 +367,7 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
             style={{ opacity: pastHero ? 1 : 0 }}
           >
             <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg">
-              <img src={club.image || "/clubs/razz.jpg"} alt={club.name} className="h-full w-full object-cover" />
+              <img src={club.image || FALLBACK_CLUB_IMAGE} alt={club.name} className="h-full w-full object-cover" />
             </div>
             <p className="truncate text-sm font-black text-white">{club.name}</p>
             {displayRating && (
@@ -413,7 +402,7 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
       >
         <div className="absolute inset-0 overflow-hidden">
           <img
-            src={club.image || "/clubs/razz.jpg"}
+            src={club.image || FALLBACK_CLUB_IMAGE}
             alt={club.name}
             style={{ transform: `translateY(${scrollY * 0.3}px) scale(1.12)` }}
             className="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out will-change-transform"
@@ -811,6 +800,22 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
                       <Icon name="map" className="h-4 w-4" /> Abrir ruta en Google Maps
                     </button>
                   </>
+                ) : club.address ? (
+                  // Antes, sin latitude/longitude en la ficha del club (aunque hubiera dirección),
+                  // esto mostraba directamente "Ubicación no disponible" — pasó con Costa Breve.
+                  // Ahora, si hay dirección aunque falten coordenadas, la mostramos igualmente y
+                  // el botón abre la búsqueda en Google Maps por dirección (openDirections ya
+                  // sabe hacer ese fallback).
+                  <>
+                    <p className="text-sm text-zinc-400">{club.address}</p>
+                    <button
+                      onClick={openDirections}
+                      style={accentGradient}
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 font-bold text-white transition hover:scale-[1.01]"
+                    >
+                      <Icon name="map" className="h-4 w-4" /> Buscar en Google Maps
+                    </button>
+                  </>
                 ) : (
                   <p className="text-sm text-zinc-500">Ubicación no disponible.</p>
                 )}
@@ -826,7 +831,7 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
             <Card innerClassName="">
               <div className="flex items-center gap-4 border-b border-white/10 p-6">
                 <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl">
-                  <img src={club.image || "/clubs/razz.jpg"} alt={club.name} className="h-full w-full object-cover" />
+                  <img src={club.image || FALLBACK_CLUB_IMAGE} alt={club.name} className="h-full w-full object-cover" />
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-lg font-black text-white">{club.name}</p>
@@ -968,7 +973,7 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
               return (
                 <Link key={r.id} href={`/clubs/${createSlug(r.name)}`} className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] transition hover:border-white/20">
                   <div className="relative h-44 overflow-hidden">
-                    <img src={r.image || "/clubs/razz.jpg"} alt={r.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
+                    <img src={r.image || FALLBACK_CLUB_IMAGE} alt={r.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
                     {rRating && (
                       <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-xl">

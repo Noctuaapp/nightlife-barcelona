@@ -16,6 +16,18 @@ const isEventPast = (date: string): boolean => {
   return eventDate < now
 }
 
+// "Próximamente": el evento cae dentro de los próximos 7 días (incluyendo hoy), pero no es hoy
+// mismo (eso ya se nota por la fecha) ni ya ha pasado.
+const isUpcomingSoon = (date: string): boolean => {
+  if (!date) return false
+  const eventDate = new Date(date)
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const inOneWeek = new Date(now)
+  inOneWeek.setDate(inOneWeek.getDate() + 7)
+  return eventDate >= now && eventDate <= inOneWeek
+}
+
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T>(null)
   const [visible, setVisible] = useState(false)
@@ -311,6 +323,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
           ) : (
             visibleEvents.map((event, index) => {
               const past = isEventPast(event.date)
+              const upcomingSoon = !past && isUpcomingSoon(event.date)
               const dateLabel = event.date
                 ? new Date(event.date).toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })
                 : ""
@@ -323,12 +336,21 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                     }`}
                   >
                     <div className="relative h-[460px] overflow-hidden">
-                      <Image
-                        src={event.image || "/clubs/razz.jpg"}
-                        alt={event.title}
-                        fill
-                        className="object-cover transition duration-700 group-hover:scale-110"
-                      />
+                      {event.image ? (
+                        <Image
+                          src={event.image}
+                          alt={event.title}
+                          fill
+                          className="object-cover transition duration-700 group-hover:scale-110"
+                        />
+                      ) : (
+                        // Antes caía en el fallback fijo "/clubs/razz.jpg" (archivo inexistente,
+                        // 404, y compartido con otros clubs/eventos). Ahora, sin foto propia, un
+                        // degradado neutro en vez de la imagen de otro club.
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-900/60 via-black to-black">
+                          <span className="text-6xl opacity-30">🎉</span>
+                        </div>
+                      )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
 
                       <div className="absolute left-5 top-5 flex flex-wrap gap-2">
@@ -340,6 +362,11 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                         {event.featured && !past && (
                           <div className="rounded-full border border-white/10 bg-black/50 px-4 py-2 text-xs font-semibold text-white backdrop-blur-xl">
                             ⭐ {t("events.featured")}
+                          </div>
+                        )}
+                        {upcomingSoon && (
+                          <div className="rounded-full border border-purple-400/30 bg-purple-500/20 px-4 py-2 text-xs font-semibold text-purple-200 backdrop-blur-xl">
+                            🔜 Próximamente
                           </div>
                         )}
                         {event.sold_out && !past && (

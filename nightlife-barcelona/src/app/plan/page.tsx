@@ -5,6 +5,7 @@ import Link from "next/link"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
+import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 
 const ACCENT_PATTERN = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g")
 
@@ -839,7 +840,7 @@ export default function PlanPage() {
                           className="group w-52 shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] transition hover:border-white/20"
                         >
                           <div className="relative h-32 overflow-hidden">
-                            <img src={club.image || "/clubs/razz.jpg"} alt={club.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
+                            <img src={club.image || FALLBACK_IMAGE} alt={club.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                           </div>
                           <div className="p-3">

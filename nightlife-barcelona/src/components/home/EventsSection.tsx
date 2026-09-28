@@ -30,6 +30,17 @@ type Event = {
 const createSlug = (title: string) =>
   title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
 
+// "Pr\u00f3ximamente": el evento cae dentro de los pr\u00f3ximos 7 d\u00edas (incluyendo hoy).
+const isUpcomingSoon = (date: string | null): boolean => {
+  if (!date) return false
+  const eventDate = new Date(date)
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const inOneWeek = new Date(now)
+  inOneWeek.setDate(inOneWeek.getDate() + 7)
+  return eventDate >= now && eventDate <= inOneWeek
+}
+
 export default function EventsSection() {
   const [events, setEvents] = useState<Event[]>([])
   const [selectedCategory, setSelectedCategory] = useState("All")
@@ -103,13 +114,22 @@ export default function EventsSection() {
               style={{ animationDelay: `${index * 0.08}s` }}
             >
               <div className="relative h-[420px] overflow-hidden">
-                <Image
-                  src={event.image || "/clubs/razz.jpg"}
-                  alt={event.title}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 33vw"
-                  className="object-cover transition duration-700 group-hover:scale-110"
-                />
+                {event.image ? (
+                  <Image
+                    src={event.image}
+                    alt={event.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-cover transition duration-700 group-hover:scale-110"
+                  />
+                ) : (
+                  // Antes caía en el fallback fijo "/clubs/razz.jpg" (archivo inexistente, 404,
+                  // compartido con otros clubs/eventos). Ahora, sin foto propia, un degradado
+                  // neutro en vez de la imagen de otro local.
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-900/60 via-black to-black">
+                    <span className="text-6xl opacity-30">🎉</span>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
 
                 <div className="absolute left-5 top-5 flex flex-wrap gap-2">
@@ -121,6 +141,11 @@ export default function EventsSection() {
                   {event.sold_out && (
                     <div className="rounded-full border border-red-500/20 bg-red-500/20 px-3 py-2 text-xs font-semibold text-red-200 backdrop-blur-xl">
                       🚫 {t("events.sold_out")}
+                    </div>
+                  )}
+                  {isUpcomingSoon(event.date) && (
+                    <div className="rounded-full border border-purple-400/30 bg-purple-500/20 px-3 py-2 text-xs font-semibold text-purple-200 backdrop-blur-xl">
+                      🔜 Próximamente
                     </div>
                   )}
                   <button
