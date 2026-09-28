@@ -24,10 +24,29 @@ function isGeographicMismatch(types?: string[]) {
   return types?.some((t) => GEOGRAPHIC_TYPES.has(t)) ?? false
 }
 
-const STOPWORDS = new Set([
-  "de", "del", "la", "el", "los", "las", "en", "y", "the", "a", "al", "un", "una",
-  "farmacia", "supermercado", "super", "hotel", "casino", "taxi", "restaurante", "bar",
-])
+// A diferencia de clubs/eventos, aquí NO metemos la palabra de categoría (farmacia, taxi, hotel...)
+// en las stopwords: en esenciales suele ser justo la palabra que confirma el match (p.ej. "Farmàcia Muntaner").
+const STOPWORDS = new Set(["de", "del", "la", "el", "los", "las", "en", "y", "the", "a", "al", "un", "una"])
+
+// Si Google clasifica el sitio con un tipo que encaja con la categoría del esencial, cuenta como
+// señal de match aunque el nombre no coincida palabra por palabra (útil para sitios con nombre genérico).
+const CATEGORY_TYPE_MAP: Record<string, string[]> = {
+  Pharmacy: ["pharmacy", "drugstore"],
+  ATM: ["atm", "bank"],
+  Food: ["restaurant", "meal_takeaway", "meal_delivery", "food", "fast_food_restaurant", "cafe"],
+  Transport: ["transit_station", "bus_station", "subway_station", "train_station"],
+  Taxi: ["taxi_stand"],
+  Supermarket: ["supermarket", "grocery_store", "convenience_store"],
+  Hotel: ["lodging", "hotel"],
+  Casino: ["casino"],
+  "Gas Station": ["gas_station"],
+  Hospital: ["hospital"],
+}
+function categoryTypeMatches(category: string, types?: string[]): boolean {
+  const expected = CATEGORY_TYPE_MAP[category]
+  if (!expected || !types) return false
+  return types.some((t) => expected.includes(t))
+}
 
 function normalizeWords(str: string): Set<string> {
   const normalized = (str || "")
@@ -130,7 +149,9 @@ export async function GET() {
         }
 
         const googleName = found.displayName?.text
-        const match = googleName && isLikelyMatch(item.name, item.address, item.neighborhood, googleName)
+        const match =
+          (googleName && isLikelyMatch(item.name, item.address, item.neighborhood, googleName)) ||
+          categoryTypeMatches(item.category, found.types)
         const geoMismatch = isGeographicMismatch(found.types)
 
         if (!match || geoMismatch) {
@@ -163,9 +184,10 @@ export async function GET() {
         const data = await placeDetails(item.google_place_id as string)
         const googleName = data?.displayName?.text
 
-        const badMatch =
-          (googleName && !isLikelyMatch(item.name, item.address, item.neighborhood, googleName)) ||
-          isGeographicMismatch(data?.types)
+        const hasMatch =
+          (googleName && isLikelyMatch(item.name, item.address, item.neighborhood, googleName)) ||
+          categoryTypeMatches(item.category, data?.types)
+        const badMatch = !hasMatch || isGeographicMismatch(data?.types)
 
         if (badMatch) {
           await supabase
