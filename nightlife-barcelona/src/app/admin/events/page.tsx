@@ -29,6 +29,7 @@ type Event = {
   manual_photos: boolean | null
   google_rating: number | null
   google_review_count: number | null
+  recurring: boolean | null
 }
 
 export default function AdminEventsPage() {
@@ -57,10 +58,9 @@ export default function AdminEventsPage() {
   const [search, setSearch] = useState("")
 
   // Galería manual — fotos que subes tú a mano cuando el pipeline de Google no trae las correctas.
+  // manual_photos se marca solo en cuanto hay al menos 1 foto subida a mano (sin botón que pulsar).
   const [newGallery, setNewGallery] = useState<string[]>([])
-  const [newManualPhotos, setNewManualPhotos] = useState(false)
   const [editGallery, setEditGallery] = useState<string[]>([])
-  const [editManualPhotos, setEditManualPhotos] = useState(false)
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -187,7 +187,7 @@ export default function AdminEventsPage() {
         ...newEvent,
         image: newEvent.image || newGallery[0] || "",
         gallery: newGallery.length > 0 ? newGallery : null,
-        manual_photos: newManualPhotos,
+        manual_photos: newGallery.length > 0,
         date: newEvent.date || null,
         start_time: newEvent.start_time || null,
         end_time: newEvent.end_time || null,
@@ -207,7 +207,6 @@ export default function AdminEventsPage() {
 
     setNewEvent(emptyEvent)
     setNewGallery([])
-    setNewManualPhotos(false)
   }
 
   const startEditing = (event: Event) => {
@@ -227,14 +226,12 @@ export default function AdminEventsPage() {
       description: event.description || "",
     })
     setEditGallery(Array.isArray(event.gallery) ? event.gallery : [])
-    setEditManualPhotos(!!event.manual_photos)
   }
 
   const cancelEditing = () => {
     setEditingId(null)
     setEditEvent(emptyEvent)
     setEditGallery([])
-    setEditManualPhotos(false)
   }
 
   const saveEditing = async (id: number) => {
@@ -246,7 +243,7 @@ export default function AdminEventsPage() {
         ...editEvent,
         image: editEvent.image || editGallery[0] || "",
         gallery: editGallery.length > 0 ? editGallery : null,
-        manual_photos: editManualPhotos,
+        manual_photos: editGallery.length > 0,
       })
       .eq("id", id)
       .select()
@@ -295,13 +292,14 @@ export default function AdminEventsPage() {
     setEvents((prev) => prev.map((e) => (e.id === event.id ? { ...e, hidden: newValue } : e)))
   }
 
-  // Marca/desmarca el evento como gestionado a mano. Si lo activas aquí (sin pasar por "Editar"),
-  // el pipeline de Google lo dejará en paz a partir del próximo ciclo del cron.
-  const toggleManualPhotos = async (event: Event) => {
-    const newValue = !event.manual_photos
-    const { error } = await supabase.from("events").update({ manual_photos: newValue }).eq("id", event.id)
-    if (error) return console.log("MANUAL PHOTOS ERROR:", error)
-    setEvents((prev) => prev.map((item) => (item.id === event.id ? { ...item, manual_photos: newValue } : item)))
+  // Recurrente = se repite cada año (fiestas mayores, festivales). Cuando pasa la fecha, el cron
+  // le pone automáticamente la fecha del año siguiente y lo oculta para que lo revises.
+  // Si lo desmarcas (evento puntual, no se repite), el cron simplemente lo oculta cuando pase y no lo vuelve a tocar.
+  const toggleRecurring = async (event: Event) => {
+    const newValue = !(event.recurring ?? true)
+    const { error } = await supabase.from("events").update({ recurring: newValue }).eq("id", event.id)
+    if (error) return console.log("RECURRING ERROR:", error)
+    setEvents((prev) => prev.map((item) => (item.id === event.id ? { ...item, recurring: newValue } : item)))
   }
 
   const showAll = async () => {
@@ -414,16 +412,6 @@ export default function AdminEventsPage() {
               {galleryUploadBox(newGallery, handleNewGalleryUpload, removeNewGalleryPhoto)}
 
               <button
-                type="button"
-                onClick={() => setNewManualPhotos((v) => !v)}
-                className={`lg:col-span-3 rounded-2xl px-5 py-3 text-sm font-bold transition ${
-                  newManualPhotos ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                }`}
-              >
-                {newManualPhotos ? "✋ Fotos manuales (el pipeline de Google no lo tocará)" : "🤖 Dejar que Google Places busque fotos automáticamente"}
-              </button>
-
-              <button
                 onClick={addEvent}
                 disabled={uploading}
                 className="rounded-2xl bg-white px-8 py-4 font-bold text-black disabled:opacity-50 lg:col-span-3"
@@ -481,16 +469,6 @@ export default function AdminEventsPage() {
 
                       {galleryUploadBox(editGallery, handleEditGalleryUpload, removeEditGalleryPhoto)}
 
-                      <button
-                        type="button"
-                        onClick={() => setEditManualPhotos((v) => !v)}
-                        className={`lg:col-span-3 rounded-2xl px-5 py-3 text-sm font-bold transition ${
-                          editManualPhotos ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                        }`}
-                      >
-                        {editManualPhotos ? "✋ Fotos manuales (el pipeline de Google no lo tocará)" : "🤖 Dejar que Google Places busque fotos automáticamente"}
-                      </button>
-
                       <button onClick={() => saveEditing(event.id)} disabled={uploading} className="rounded-2xl bg-emerald-400 px-8 py-4 font-bold text-black disabled:opacity-50">Save changes</button>
                       <button onClick={cancelEditing} className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 font-bold">Cancel</button>
                     </div>
@@ -534,6 +512,9 @@ export default function AdminEventsPage() {
                           <span className={`rounded-full px-4 py-2 text-sm border ${event.manual_photos ? "bg-purple-500/20 border-purple-500/30 text-purple-300" : "bg-white/5 border-white/10 text-zinc-400"}`}>
                             {event.manual_photos ? "✋ Fotos manuales" : "🤖 Google automático"}
                           </span>
+                          <span className={`rounded-full px-4 py-2 text-sm border ${event.recurring === false ? "bg-white/5 border-white/10 text-zinc-400" : "bg-cyan-500/20 border-cyan-500/30 text-cyan-300"}`}>
+                            {event.recurring === false ? "1️⃣ Evento único" : "🔁 Recurrente"}
+                          </span>
                         </div>
 
                         <p className="mt-5 max-w-2xl text-zinc-400">{event.description}</p>
@@ -544,7 +525,7 @@ export default function AdminEventsPage() {
                         <button onClick={() => toggleFeatured(event)} className={`rounded-full px-5 py-3 text-sm font-bold ${event.featured ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5"}`}>🔥 Featured</button>
                         <button onClick={() => toggleSoldOut(event)} className={`rounded-full px-5 py-3 text-sm font-bold ${event.sold_out ? "bg-red-500 text-white" : "border border-white/10 bg-white/5"}`}>🚫 Sold out</button>
                         <button onClick={() => toggleVipTables(event)} className={`rounded-full px-5 py-3 text-sm font-bold ${event.vip_tables ? "bg-amber-400 text-black" : "border border-white/10 bg-white/5"}`}>🛋️ Mesa VIP</button>
-                        <button onClick={() => toggleManualPhotos(event)} className={`rounded-full px-5 py-3 text-sm font-bold ${event.manual_photos ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5"}`}>✋ Manual</button>
+                        <button onClick={() => toggleRecurring(event)} className={`rounded-full px-5 py-3 text-sm font-bold ${event.recurring === false ? "border border-white/10 bg-white/5" : "bg-cyan-500 text-white"}`}>🔁 Recurrente</button>
                         <button onClick={() => toggleHidden(event)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${event.hidden ? "bg-zinc-600 text-white" : "border border-white/10 bg-white/5"}`}>{event.hidden ? "👁️ Hidden" : "👁️ Visible"}</button>
                         <button onClick={() => deleteEvent(event.id)} className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400">Delete</button>
                       </div>

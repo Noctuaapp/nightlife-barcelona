@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/cron/refresh-google-data", "schedule": "0 4 * * *" },
-    { "path": "/api/cron/refresh-events-google-data", "schedule": "30 4 * * *" }
+    { "path": "/api/cron/refresh-events-google-data", "schedule": "30 4 * * *" },
+    { "path": "/api/cron/advance-past-events", "schedule": "0 5 * * *" }
   ]
 }
