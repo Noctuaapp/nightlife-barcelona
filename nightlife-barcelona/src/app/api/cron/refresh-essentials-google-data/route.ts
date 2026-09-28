@@ -10,8 +10,8 @@ const supabase = createClient(
 )
 
 const GOOGLE_KEY = process.env.GOOGLE_PLACES_API_KEY!
-const ASSIGN_BATCH_SIZE = 15
-const REFRESH_BATCH_SIZE = 6
+const ASSIGN_BATCH_SIZE = 10
+const REFRESH_BATCH_SIZE = 4
 const MAX_PHOTOS = 4
 
 const BARCELONA_BIAS = { circle: { center: { latitude: 41.3874, longitude: 2.1686 }, radius: 20000 } }
@@ -35,7 +35,8 @@ const CATEGORY_TYPE_MAP: Record<string, string[]> = {
   Pharmacy: ["pharmacy", "drugstore"],
   ATM: ["atm", "bank"],
   Food: ["restaurant", "meal_takeaway", "meal_delivery", "food", "fast_food_restaurant", "cafe"],
-  Transport: ["transit_station", "bus_station", "subway_station", "train_station"],
+  Transport: ["transit_station", "bus_station", "train_station"],
+  Metro: ["subway_station", "transit_station"],
   Taxi: ["taxi_stand"],
   Supermarket: ["supermarket", "grocery_store", "convenience_store"],
   Hotel: ["lodging", "hotel"],

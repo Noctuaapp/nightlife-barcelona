@@ -34,7 +34,7 @@ const emptyForm = {
   longitude: "",
 }
 
-const categories = ["Pharmacy", "ATM", "Food", "Transport", "Taxi", "Supermarket", "Hotel", "Casino", "Other"]
+const categories = ["Pharmacy", "ATM", "Food", "Transport", "Metro", "Taxi", "Supermarket", "Hotel", "Casino", "Other"]
 
 const adminLinks = [
   { href: "/admin/dashboard", label: "Dashboard" },
@@ -199,7 +199,7 @@ export default function AdminEssentialsPage() {
             <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Admin</p>
             <h1 className="mt-4 text-6xl font-black tracking-tight text-white">Essentials</h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
-              Manage pharmacies, ATMs, food, transport and other essential services.
+              Manage pharmacies, ATMs, food, transport, metro and other essential services.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               {adminLinks.map((link) => (

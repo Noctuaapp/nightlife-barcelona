@@ -15,6 +15,7 @@ const categoryConfig: Record<string, { icon: string; color: string; key: string 
   atm: { icon: "🏧", color: "#3b82f6", key: "ATM" },
   food: { icon: "🍔", color: "#f97316", key: "Food" },
   transport: { icon: "🚌", color: "#8b5cf6", key: "Transport" },
+  metro: { icon: "🚇", color: "#dc2626", key: "Metro" },
   taxi: { icon: "🚕", color: "#eab308", key: "Taxi" },
   supermarket: { icon: "🛒", color: "#ec4899", key: "Supermarket" },
   hotel: { icon: "🏨", color: "#14b8a6", key: "Hotel" },
@@ -22,6 +23,28 @@ const categoryConfig: Record<string, { icon: string; color: string; key: string 
   "gas-station": { icon: "⛽", color: "#f59e0b", key: "GasStation" },
   hospital: { icon: "🏥", color: "#ef4444", key: "Hospital" },
 }
+
+// Horario real del Metro de Barcelona (igual todos los días salvo el cierre):
+// abre siempre a las 05:00, cierra a las 00:00 entre semana, 02:00 los sábados,
+// y los domingos y festivos no cierra (24h). No tenemos calendario de festivos,
+// así que festivos concretos no se detectan todavía.
+function getMetroSchedule(): { label: string; isLate: boolean } {
+  const day = new Date().getDay() // 0 = domingo, 6 = sábado
+  if (day === 0) return { label: "🟢 Abierto 24h (domingo)", isLate: false }
+  if (day === 6) return { label: "🟡 Abierto hasta las 02:00 · abre a las 05:00", isLate: true }
+  return { label: "Abierto hasta las 00:00 · abre a las 05:00", isLate: false }
+}
+
+const TAXI_APPS = [
+  { name: "FreeNow", url: "https://www.free-now.com/es/" },
+  { name: "Cabify", url: "https://cabify.com/es" },
+  { name: "Uber", url: "https://www.uber.com/es/es/" },
+]
+
+const TAXI_PHONES = [
+  { name: "Radio Taxi 033", phone: "933033033" },
+  { name: "Fonotaxi", phone: "933001100" },
+]
 
 type Essential = {
   id: number
@@ -319,6 +342,50 @@ export default function EssentialCategoryPage() {
             </p>
           </div>
         </div>
+
+        {/* Panel de contexto: pedir taxi ya / horario del metro */}
+        {category === "taxi" && (
+          <section className="mx-auto mt-6 max-w-7xl px-4">
+            <div className="rounded-[24px] border border-yellow-500/25 bg-yellow-500/[0.06] p-5">
+              <p className="mb-3 text-xs font-bold uppercase tracking-widest text-yellow-300">🚕 Pedir un taxi ahora</p>
+              <div className="flex flex-wrap gap-2.5">
+                {TAXI_APPS.map((app) => (
+                  <a
+                    key={app.name}
+                    href={app.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full border border-white/15 bg-white/[0.06] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white hover:text-black"
+                  >
+                    {app.name} →
+                  </a>
+                ))}
+                {TAXI_PHONES.map((p) => (
+                  <a
+                    key={p.name}
+                    href={`tel:${p.phone}`}
+                    className="rounded-full border border-yellow-500/40 bg-yellow-500/10 px-4 py-2.5 text-sm font-bold text-yellow-300 transition hover:bg-yellow-500 hover:text-black"
+                  >
+                    📞 {p.name}
+                  </a>
+                ))}
+              </div>
+              <p className="mt-3 text-xs text-zinc-500">O usa las paradas de taxi reales de abajo si prefieres ir a coger uno directamente.</p>
+            </div>
+          </section>
+        )}
+
+        {category === "metro" && (
+          <section className="mx-auto mt-6 max-w-7xl px-4">
+            <div className="rounded-[24px] border border-red-500/25 bg-red-500/[0.06] p-5">
+              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-red-300">🚇 Horario del Metro de Barcelona</p>
+              <p className="text-lg font-black text-white">{getMetroSchedule().label}</p>
+              <p className="mt-1 text-xs text-zinc-500">
+                Entre semana hasta las 00:00 · sábados hasta las 02:00 · domingos y festivos 24h · abre siempre a las 05:00.
+              </p>
+            </div>
+          </section>
+        )}
 
         {/* Filters */}
         <section className="mx-auto mt-6 max-w-7xl px-4">

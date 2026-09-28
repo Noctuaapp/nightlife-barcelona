@@ -12,6 +12,7 @@ const categoryConfig: Record<string, { icon: string; color: string }> = {
   ATM:           { icon: "🏧", color: "#3b82f6" },
   Food:          { icon: "🍔", color: "#f97316" },
   Transport:     { icon: "🚌", color: "#8b5cf6" },
+  Metro:         { icon: "🚇", color: "#dc2626" },
   Taxi:          { icon: "🚕", color: "#eab308" },
   Supermarket:   { icon: "🛒", color: "#ec4899" },
   Hotel:         { icon: "🏨", color: "#14b8a6" },
