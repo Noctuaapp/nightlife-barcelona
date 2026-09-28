@@ -140,9 +140,9 @@ function Stars({ rating, size = "h-3.5 w-3.5", color }: { rating: number; size?:
   )
 }
 
-export default function ClubPageContent({ club, clubEvents }: { club: any; clubEvents: any[] }) {
+export default function ClubPageContent({ club, clubEvents, clubSessions = [] }: { club: any; clubEvents: any[]; clubSessions?: any[] }) {
   const { t } = useLanguage()
-  const [activeTab, setActiveTab] = useState<"about" | "nights" | "location">("about")
+  const [activeTab, setActiveTab] = useState<"about" | "nights" | "sessions" | "location">("about")
   const [related, setRelated] = useState<any[]>([])
   const [favCount, setFavCount] = useState<number | null>(null)
   const [scrolled, setScrolled] = useState(false)
@@ -265,6 +265,7 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
   }
 
   const hasNights = clubEvents && clubEvents.length > 0
+  const hasSessions = clubSessions && clubSessions.length > 0
 
   const nextEvent = hasNights
     ? [...clubEvents]
@@ -651,6 +652,7 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
             <div className="sticky top-[68px] z-30 mt-8 mb-8 flex gap-2 overflow-x-auto bg-[#050308]/90 py-3 backdrop-blur-xl">
               {[
                 { key: "about", label: "Sobre el club" },
+                ...(hasSessions ? [{ key: "sessions", label: "Sesiones semanales" }] : []),
                 ...(hasNights ? [{ key: "nights", label: "Próximas noches" }] : []),
                 { key: "location", label: "Ubicación" },
               ].map((tab) => (
@@ -658,8 +660,13 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key as any)}
                   className={`shrink-0 rounded-full px-6 py-3 text-sm font-bold transition ${
-                    activeTab === tab.key ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                    activeTab === tab.key ? "text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
                   }`}
+                  style={
+                    activeTab === tab.key
+                      ? { background: `linear-gradient(135deg, ${accent.from}, ${accent.to})`, boxShadow: `0 0 20px -4px rgba(${accent.glow},0.6)` }
+                      : undefined
+                  }
                 >
                   {tab.label}
                 </button>
@@ -773,6 +780,39 @@ export default function ClubPageContent({ club, clubEvents }: { club: any; clubE
                     </Card>
                   </Reveal>
                 )}
+              </div>
+            )}
+
+            {activeTab === "sessions" && hasSessions && (
+              <div className="space-y-4">
+                {clubSessions.map((session: any) => (
+                  <Reveal key={session.id}>
+                    <Card innerClassName="p-6">
+                      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                        {session.image ? (
+                          <img src={session.image} alt={session.name} className="h-24 w-24 shrink-0 rounded-2xl object-cover" style={{ border: `1px solid ${accent.from}40` }} />
+                        ) : (
+                          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl text-3xl" style={{ background: `linear-gradient(135deg, ${accent.from}33, ${accent.to}15)`, border: `1px solid ${accent.from}40` }}>
+                            🗓️
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          {session.day_of_week && (
+                            <span className="inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider" style={{ background: `${accent.from}25`, color: accent.from }}>
+                              {session.day_of_week}
+                            </span>
+                          )}
+                          <h3 className="mt-2 text-xl font-black text-white">{session.name}</h3>
+                          <div className="mt-2 flex flex-wrap gap-2 text-sm text-zinc-400">
+                            {session.music && <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">🎧 {session.music}</span>}
+                            {session.price && <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">🎟 {session.price}</span>}
+                            {session.dresscode && <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">👔 {session.dresscode}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  </Reveal>
+                ))}
               </div>
             )}
 

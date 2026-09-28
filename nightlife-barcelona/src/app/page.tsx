@@ -10,17 +10,9 @@ import EventsSection from "../components/home/EventsSection"
 import AreasSection from "../components/home/AreasSection"
 import { supabase } from "../lib/supabase"
 import { useLanguage } from "../context/LanguageContext"
+import { createSlug } from "../lib/slug"
 
 const display = Manrope({ subsets: ["latin"], weight: ["700", "800"] })
-
-function createSlug(name: string) {
-  return name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-}
 
 function isOpenNow(hours?: string): boolean | null {
   if (!hours) return null

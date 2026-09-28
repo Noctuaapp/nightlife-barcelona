@@ -44,8 +44,13 @@ function isGeographicMismatch(types: string[] | undefined): boolean {
   return types.some((t) => GEOGRAPHIC_TYPES.has(t))
 }
 
+// Antes esto solo reconocía el viejo fallback roto de Razzmatazz. Pero muchos clubs se cargaron
+// al principio con fotos de stock de Unsplash (genéricas, repetidas entre varios locales sin
+// relación) como placeholder inicial, y el cron nunca las sustituía porque no las consideraba
+// "placeholder". Ahora también se reconocen como tal, así el cron las reemplaza por la foto real
+// de Google la próxima vez que procese ese club.
 const isPlaceholderImage = (img: string | null | undefined) =>
-  !img || img.includes("razz") || img.trim() === ""
+  !img || img.includes("razz") || img.includes("images.unsplash.com") || img.trim() === ""
 
 // Barcelona ciudad — sesgamos aquí las búsquedas para que Google no devuelva coincidencias
 // genéricas de cualquier parte del mundo.

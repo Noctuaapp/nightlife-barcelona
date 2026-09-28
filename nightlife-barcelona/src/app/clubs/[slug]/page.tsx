@@ -3,13 +3,11 @@ import BottomNav from "../../../components/layout/BottomNav"
 import ClubPageContent from "../../../components/nightlife/ClubPageContent"
 import Link from "next/link"
 import { supabase } from "../../../lib/supabase"
+import { createSlug } from "../../../lib/slug"
 
 type ClubPageProps = {
   params: Promise<{ slug: string }>
 }
-
-const createSlug = (text: string) =>
-  text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
 
 export default async function ClubPage({ params }: ClubPageProps) {
   const { slug } = await params
@@ -36,10 +34,16 @@ export default async function ClubPage({ params }: ClubPageProps) {
     .eq("club_id", club.id)
     .order("date", { ascending: true })
 
+  const { data: clubSessions } = await supabase
+    .from("club_sessions")
+    .select("*")
+    .eq("club_id", club.id)
+    .order("sort_order", { ascending: true })
+
   return (
     <>
       <Header />
-      <ClubPageContent club={club} clubEvents={clubEvents || []} />
+      <ClubPageContent club={club} clubEvents={clubEvents || []} clubSessions={clubSessions || []} />
       <BottomNav />
     </>
   )

@@ -6,6 +6,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
+import { createSlug } from "../../lib/slug"
 
 type Event = {
   id: number
@@ -26,9 +27,6 @@ type Event = {
   latitude: number | null
   longitude: number | null
 }
-
-const createSlug = (title: string) =>
-  title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
 
 // "Pr\u00f3ximamente": el evento cae dentro de los pr\u00f3ximos 7 d\u00edas (incluyendo hoy).
 const isUpcomingSoon = (date: string | null): boolean => {

@@ -3,15 +3,11 @@ import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import EventPageContent from "../../../components/nightlife/EventPageContent"
 import { supabase } from "../../../lib/supabase"
+import { createSlug } from "../../../lib/slug"
 
 type EventPageProps = {
   params: Promise<{ slug: string }>
 }
-
-const ACCENT_PATTERN = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g")
-
-const createSlug = (text: string) =>
-  (text || "").toLowerCase().normalize("NFD").replace(ACCENT_PATTERN, "").replace(/\s+/g, "-")
 
 export default async function EventPage({ params }: EventPageProps) {
   const { slug } = await params

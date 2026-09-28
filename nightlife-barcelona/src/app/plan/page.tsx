@@ -6,11 +6,7 @@ import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
-
-const ACCENT_PATTERN = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g")
-
-const createSlug = (text: string) =>
-  (text || "").toLowerCase().normalize("NFD").replace(ACCENT_PATTERN, "").replace(/\s+/g, "-")
+import { createSlug } from "../../lib/slug"
 
 function toggleInSet(set: Set<string>, value: string): Set<string> {
   const next = new Set(set)

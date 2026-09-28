@@ -58,8 +58,11 @@ function isGeographicMismatch(types: string[] | undefined): boolean {
   return types.some((t) => GEOGRAPHIC_TYPES.has(t))
 }
 
+// Misma corrección que en /api/cron/refresh-google-data: las fotos de stock de Unsplash
+// cargadas como placeholder inicial tampoco se reconocían como tal, así que nunca se
+// sustituían por la foto real de Google.
 const isPlaceholderImage = (img: string | null | undefined) =>
-  !img || img.includes("razz") || img.trim() === ""
+  !img || img.includes("razz") || img.includes("images.unsplash.com") || img.trim() === ""
 
 // Barcelona ciudad — sesgamos aquí las búsquedas para que Google no devuelva coincidencias
 // genéricas de cualquier parte del mundo (p.ej. "Grecia" el país en vez del festival Grec).
