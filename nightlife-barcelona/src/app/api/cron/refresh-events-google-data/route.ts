@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { isOverBudget, recordGoogleCalls, createCounter, googleFetch } from "@/lib/googlePlacesBudget"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -70,6 +71,10 @@ const BARCELONA_BIAS = { circle: { center: { latitude: 41.3874, longitude: 2.168
 // tiene su propio google_place_id, no comparte el de ningún club.
 // Al principio: visita esta URL repetidamente hasta que "remaining" salga en 0.
 // https://TU_DOMINIO/api/cron/refresh-events-google-data?secret=TU_ADMIN_SECRET
+//
+// IMPORTANTE: cada ciclo comprueba primero cuánto se ha gastado hoy (tabla api_call_budget) y,
+// si ya se ha llegado al límite diario (GOOGLE_PLACES_DAILY_LIMIT), no hace ninguna llamada a
+// Google en este ciclo — corta aquí en vez de seguir gastando. Ver src/lib/googlePlacesBudget.ts.
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const authHeader = req.headers.get("authorization")
@@ -83,6 +88,14 @@ export async function GET(req: Request) {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY!
   const BATCH_SIZE = 4
   const PHOTOS_PER_EVENT = 4
+  const DAILY_LIMIT = Number(process.env.GOOGLE_PLACES_DAILY_LIMIT) || undefined
+
+  const budget = await isOverBudget(supabase, DAILY_LIMIT)
+  if (budget.over) {
+    return NextResponse.json({ skipped: true, reason: "daily_budget_reached", usedToday: budget.used })
+  }
+
+  const counter = createCounter()
 
   // Paso 0: eventos nuevos sin google_place_id -> se lo asignamos aquí, comprobando que el
   // nombre se parece de verdad Y que no sea un país/región/localidad entera.
@@ -97,7 +110,7 @@ export async function GET(req: Request) {
     (newEvents || []).map(async (ev) => {
       const query = `${ev.title} ${ev.address || ev.club_name || ""} Barcelona`.trim()
       try {
-        const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+        const res = await googleFetch(counter, "https://places.googleapis.com/v1/places:searchText", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -154,7 +167,7 @@ export async function GET(req: Request) {
   const results = await Promise.all(
     (evs || []).map(async (ev) => {
       try {
-        const detailsRes = await fetch(`https://places.googleapis.com/v1/places/${ev.google_place_id}`, {
+        const detailsRes = await googleFetch(counter, `https://places.googleapis.com/v1/places/${ev.google_place_id}`, {
           headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "displayName,types,rating,userRatingCount,reviews,photos" },
         })
         const data = await detailsRes.json()
@@ -181,7 +194,7 @@ export async function GET(req: Request) {
         const photoResults = await Promise.all(
           (data.photos || []).slice(0, PHOTOS_PER_EVENT).map(async (p: any) => {
             try {
-              const photoRes = await fetch(`https://places.googleapis.com/v1/${p.name}/media?maxWidthPx=1000&key=${apiKey}`)
+              const photoRes = await googleFetch(counter, `https://places.googleapis.com/v1/${p.name}/media?maxWidthPx=1000&key=${apiKey}`)
               const buffer = await photoRes.arrayBuffer()
               const fileName = `${ev.id}/${p.name.split("/").pop()}.jpg`
               await supabase.storage.from("event-photos").upload(fileName, Buffer.from(buffer), { contentType: "image/jpeg", upsert: true })
@@ -224,11 +237,14 @@ export async function GET(req: Request) {
     })
   )
 
+  await recordGoogleCalls(supabase, counter.count)
+
   const remaining = (totalWithPlaceId ?? 0) - (alreadyRefreshed ?? 0) - results.length
   return NextResponse.json({
     newlyAssigned,
     processed: results.length,
     remaining: remaining < 0 ? 0 : remaining,
+    googleCallsThisRun: counter.count,
     results,
   })
 }

@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { isOverBudget, recordGoogleCalls, createCounter, googleFetch } from "@/lib/googlePlacesBudget"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 10
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 const GOOGLE_KEY = process.env.GOOGLE_PLACES_API_KEY!
 const ASSIGN_BATCH_SIZE = 10
@@ -80,8 +76,8 @@ function isPlaceholderImage(image: string | null | undefined): boolean {
   return !image || image.trim() === ""
 }
 
-async function textSearch(query: string) {
-  const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+async function textSearch(counter: ReturnType<typeof createCounter>, query: string) {
+  const res = await googleFetch(counter, "https://places.googleapis.com/v1/places:searchText", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -95,8 +91,8 @@ async function textSearch(query: string) {
   return data.places?.[0] || null
 }
 
-async function placeDetails(placeId: string) {
-  const res = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
+async function placeDetails(counter: ReturnType<typeof createCounter>, placeId: string) {
+  const res = await googleFetch(counter, `https://places.googleapis.com/v1/places/${placeId}`, {
     headers: {
       "X-Goog-Api-Key": GOOGLE_KEY,
       "X-Goog-FieldMask": "displayName,types,rating,userRatingCount,reviews,photos",
@@ -106,9 +102,15 @@ async function placeDetails(placeId: string) {
   return res.json()
 }
 
-async function cachePhoto(photoName: string, essentialId: number, index: number): Promise<string | null> {
+async function cachePhoto(
+  supabase: any,
+  counter: ReturnType<typeof createCounter>,
+  photoName: string,
+  essentialId: number,
+  index: number
+): Promise<string | null> {
   const url = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=1000&key=${GOOGLE_KEY}`
-  const res = await fetch(url)
+  const res = await googleFetch(counter, url)
   if (!res.ok) return null
   const buffer = Buffer.from(await res.arrayBuffer())
   const contentType = res.headers.get("content-type") || "image/jpeg"
@@ -125,7 +127,22 @@ async function cachePhoto(photoName: string, essentialId: number, index: number)
   return data.publicUrl
 }
 
+// IMPORTANTE: cada ciclo comprueba primero cuánto se ha gastado hoy (tabla api_call_budget) y,
+// si ya se ha llegado al límite diario (GOOGLE_PLACES_DAILY_LIMIT), no hace ninguna llamada a
+// Google en este ciclo — corta aquí en vez de seguir gastando. Ver src/lib/googlePlacesBudget.ts.
 export async function GET() {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const DAILY_LIMIT = Number(process.env.GOOGLE_PLACES_DAILY_LIMIT) || undefined
+  const budget = await isOverBudget(supabase, DAILY_LIMIT)
+  if (budget.over) {
+    return NextResponse.json({ skipped: true, reason: "daily_budget_reached", usedToday: budget.used })
+  }
+
+  const counter = createCounter()
   const results: any[] = []
 
   // Paso 0: asignar google_place_id a los esenciales que todavía no lo tienen
@@ -144,7 +161,7 @@ export async function GET() {
     await Promise.all(
       unassigned.map(async (item) => {
         const query = [item.name, item.address || item.neighborhood || "Barcelona"].filter(Boolean).join(" ")
-        const found = await textSearch(query)
+        const found = await textSearch(counter, query)
 
         if (!found) {
           await supabase.from("essentials").update({ google_match_failed: true }).eq("id", item.id)
@@ -187,7 +204,7 @@ export async function GET() {
   if (toRefresh && toRefresh.length > 0) {
     await Promise.all(
       toRefresh.map(async (item) => {
-        const data = await placeDetails(item.google_place_id as string)
+        const data = await placeDetails(counter, item.google_place_id as string)
         const googleName = data?.displayName?.text
 
         const hasMatch =
@@ -212,7 +229,7 @@ export async function GET() {
         }
 
         const photos = (data?.photos || []).slice(0, MAX_PHOTOS)
-        const cached = await Promise.all(photos.map((p: any, i: number) => cachePhoto(p.name, item.id, i)))
+        const cached = await Promise.all(photos.map((p: any, i: number) => cachePhoto(supabase, counter, p.name, item.id, i)))
         const cachedUrls = cached.filter((u): u is string => Boolean(u))
 
         const reviews = data?.reviews || []
@@ -271,11 +288,14 @@ export async function GET() {
 
   const remaining = (pendingAssign || 0) + (pendingRefresh || 0)
 
+  await recordGoogleCalls(supabase, counter.count)
+
   return NextResponse.json({
     newlyAssigned,
     processed: results.length,
     remaining: remaining || 0,
     needsManualReview: failedCount || 0,
+    googleCallsThisRun: counter.count,
     results,
   })
 }
