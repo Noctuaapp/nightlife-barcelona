@@ -10,7 +10,7 @@ const supabase = createClient(
 )
 
 const GOOGLE_KEY = process.env.GOOGLE_PLACES_API_KEY!
-const BATCH_SIZE = 8
+const BATCH_SIZE = 15
 const MAX_PHOTOS = 4
 
 const BARCELONA_BIAS = { circle: { center: { latitude: 41.3874, longitude: 2.1686 }, radius: 20000 } }
@@ -133,6 +133,7 @@ export async function GET() {
     .select("id, name, address, neighborhood, category")
     .is("google_place_id", null)
     .or("manual_photos.is.null,manual_photos.eq.false")
+    .or("google_match_failed.is.null,google_match_failed.eq.false")
     .limit(BATCH_SIZE)
 
   const newlyAssigned: any[] = []
@@ -144,6 +145,7 @@ export async function GET() {
         const found = await textSearch(query)
 
         if (!found) {
+          await supabase.from("essentials").update({ google_match_failed: true }).eq("id", item.id)
           newlyAssigned.push({ essential: item.name, status: "not_found" })
           return
         }
@@ -155,6 +157,7 @@ export async function GET() {
         const geoMismatch = isGeographicMismatch(found.types)
 
         if (!match || geoMismatch) {
+          await supabase.from("essentials").update({ google_match_failed: true }).eq("id", item.id)
           newlyAssigned.push({ essential: item.name, status: "rejected_mismatch", googleSaid: googleName })
           return
         }
@@ -248,6 +251,12 @@ export async function GET() {
     .select("id", { count: "exact", head: true })
     .is("google_place_id", null)
     .or("manual_photos.is.null,manual_photos.eq.false")
+    .or("google_match_failed.is.null,google_match_failed.eq.false")
+
+  const { count: failedCount } = await supabase
+    .from("essentials")
+    .select("id", { count: "exact", head: true })
+    .eq("google_match_failed", true)
 
   const { count: pendingRefresh } = await supabase
     .from("essentials")
@@ -262,6 +271,7 @@ export async function GET() {
     newlyAssigned,
     processed: results.length,
     remaining: remaining || 0,
+    needsManualReview: failedCount || 0,
     results,
   })
 }
