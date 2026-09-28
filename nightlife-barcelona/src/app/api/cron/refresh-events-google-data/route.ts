@@ -6,8 +6,13 @@ export const maxDuration = 60
 
 const ACCENT_PATTERN = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g")
 
+// "festa"/"major"/"fiesta" se repiten en el nombre de decenas de fiestas de barrio distintas
+// ("Festa Major de Gràcia", "... de Sarrià", "... del Poblenou"...), así que si no los tratamos
+// como genéricos, dos fiestas de barrios totalmente distintos "coinciden" por esas palabras
+// sueltas. Se tratan igual que "festival"/"club"/etc: no cuentan para decidir si es el mismo sitio.
 const STOPWORDS = new Set([
-  "the", "bar", "club", "sala", "disco", "discoteca", "pub", "lounge", "festival", "fiesta", "fiestas",
+  "the", "bar", "club", "sala", "disco", "discoteca", "pub", "lounge",
+  "festival", "fiesta", "fiestas", "festa", "major", "mayor",
   "de", "del", "la", "el", "los", "las", "en", "y", "and", "of", "barcelona",
 ])
 
@@ -21,15 +26,44 @@ function normalizeWords(s: string): string[] {
     .filter((w) => w.length >= 3 && !STOPWORDS.has(w))
 }
 
-function namesLikelyMatch(eventName: string, googleName: string): boolean {
-  const a = normalizeWords(eventName)
-  const b = normalizeWords(googleName)
-  if (a.length === 0 || b.length === 0) return true
+function wordsOverlap(a: string[], b: string[]): boolean {
+  if (a.length === 0 || b.length === 0) return false
   return a.some((w) => b.includes(w)) || b.some((w) => a.includes(w))
+}
+
+// Comprueba el nombre del evento Y su dirección/lugar contra lo que dice Google, y acepta si
+// cualquiera de los dos coincide. Hace falta lo de la dirección porque muchos festivales se
+// llaman de forma totalmente distinta al recinto donde se celebran (p.ej. "Primavera Sound"
+// se celebra en "Parc del Fòrum" — cero palabras en común, pero es el sitio correcto).
+function isLikelyMatch(eventTitle: string, eventAddress: string | null | undefined, googleName: string): boolean {
+  const g = normalizeWords(googleName)
+  const t = normalizeWords(eventTitle)
+  const a = normalizeWords(eventAddress || "")
+  if (g.length === 0) return true // no hay suficiente info para descartar, no bloqueamos
+  if (t.length === 0 && a.length === 0) return true
+  return wordsOverlap(t, g) || wordsOverlap(a, g)
+}
+
+// Un país, región o localidad entera nunca es el festival/fiesta en sí (p.ej. "Grec" emparejado
+// por error con "Grecia" el país). Si Google devuelve uno de estos tipos, lo descartamos siempre,
+// aunque el nombre coincidiera por casualidad.
+const GEOGRAPHIC_TYPES = new Set([
+  "country", "locality", "sublocality", "sublocality_level_1", "political",
+  "administrative_area_level_1", "administrative_area_level_2", "administrative_area_level_3",
+  "administrative_area_level_4", "administrative_area_level_5", "continent", "postal_code", "natural_feature",
+])
+
+function isGeographicMismatch(types: string[] | undefined): boolean {
+  if (!types || types.length === 0) return false
+  return types.some((t) => GEOGRAPHIC_TYPES.has(t))
 }
 
 const isPlaceholderImage = (img: string | null | undefined) =>
   !img || img.includes("razz") || img.trim() === ""
+
+// Barcelona ciudad — sesgamos aquí las búsquedas para que Google no devuelva coincidencias
+// genéricas de cualquier parte del mundo (p.ej. "Grecia" el país en vez del festival Grec).
+const BARCELONA_BIAS = { circle: { center: { latitude: 41.3874, longitude: 2.1686 }, radius: 20000 } }
 
 // Igual que /api/cron/refresh-google-data pero para la tabla "events" (festivales / fiestas de
 // barrio, no noches dentro de un club). Cada evento es un sitio real distinto en Google, así que
@@ -51,7 +85,7 @@ export async function GET(req: Request) {
   const PHOTOS_PER_EVENT = 4
 
   // Paso 0: eventos nuevos sin google_place_id -> se lo asignamos aquí, comprobando que el
-  // nombre que devuelve Google se parece de verdad al del evento antes de aceptarlo.
+  // nombre se parece de verdad Y que no sea un país/región/localidad entera.
   const { data: newEvents } = await supabase
     .from("events")
     .select("id, title, address, club_name")
@@ -67,16 +101,19 @@ export async function GET(req: Request) {
           headers: {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": apiKey,
-            "X-Goog-FieldMask": "places.id,places.displayName",
+            "X-Goog-FieldMask": "places.id,places.displayName,places.types",
           },
-          body: JSON.stringify({ textQuery: query }),
+          body: JSON.stringify({ textQuery: query, locationBias: BARCELONA_BIAS }),
         })
         const json = await res.json()
         const place = json?.places?.[0]
         const placeId = place?.id
         const placeName = place?.displayName?.text || ""
 
-        if (placeId && namesLikelyMatch(ev.title, placeName)) {
+        if (placeId && isGeographicMismatch(place?.types)) {
+          return { event: ev.title, status: "rejected_geographic", googleSaid: placeName, types: place?.types }
+        }
+        if (placeId && isLikelyMatch(ev.title, ev.address, placeName)) {
           await supabase.from("events").update({ google_place_id: placeId }).eq("id", ev.id)
           return { event: ev.title, placeId, matchedAs: placeName, status: "assigned" }
         }
@@ -90,7 +127,7 @@ export async function GET(req: Request) {
 
   const { data: evs, error } = await supabase
     .from("events")
-    .select("id, title, image, google_place_id")
+    .select("id, title, address, image, google_place_id")
     .not("google_place_id", "is", null)
     .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
     .limit(BATCH_SIZE)
@@ -112,23 +149,27 @@ export async function GET(req: Request) {
     (evs || []).map(async (ev) => {
       try {
         const detailsRes = await fetch(`https://places.googleapis.com/v1/places/${ev.google_place_id}`, {
-          headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "displayName,rating,userRatingCount,reviews,photos" },
+          headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "displayName,types,rating,userRatingCount,reviews,photos" },
         })
         const data = await detailsRes.json()
         const googleName = data?.displayName?.text || ""
 
-        if (googleName && !namesLikelyMatch(ev.title, googleName)) {
-          const wasFromGoogle = typeof ev.image === "string" && ev.image.includes("event-photos")
+        const badMatch = (googleName && !isLikelyMatch(ev.title, ev.address, googleName)) || isGeographicMismatch(data?.types)
+        if (badMatch) {
           await supabase
             .from("events")
             .update({
               google_place_id: null,
               google_last_refreshed_at: null,
               gallery: null,
-              ...(wasFromGoogle ? { image: "/clubs/razz.jpg" } : {}),
+              // Nunca dejamos "image" a null (ya viniera de Google o estuviera vacía desde el
+              // origen): así la tarjeta del listado nunca se queda con un hueco en blanco.
+              ...(isPlaceholderImage(ev.image) || (typeof ev.image === "string" && ev.image.includes("event-photos"))
+                ? { image: "/clubs/razz.jpg" }
+                : {}),
             })
             .eq("id", ev.id)
-          return { event: ev.title, status: "mismatch_reset", googleSaid: googleName }
+          return { event: ev.title, status: "mismatch_reset", googleSaid: googleName, types: data?.types }
         }
 
         const photoResults = await Promise.all(

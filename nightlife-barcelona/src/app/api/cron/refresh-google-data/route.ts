@@ -31,8 +31,25 @@ function namesLikelyMatch(clubName: string, googleName: string): boolean {
   return a.some((w) => b.includes(w)) || b.some((w) => a.includes(w))
 }
 
+// Un país, región o localidad entera nunca es el club en sí (p.ej. "Costa Breve" emparejado por
+// error con "Costa Brava"). Si Google devuelve uno de estos tipos, lo descartamos siempre.
+const GEOGRAPHIC_TYPES = new Set([
+  "country", "locality", "sublocality", "sublocality_level_1", "political",
+  "administrative_area_level_1", "administrative_area_level_2", "administrative_area_level_3",
+  "administrative_area_level_4", "administrative_area_level_5", "continent", "postal_code", "natural_feature",
+])
+
+function isGeographicMismatch(types: string[] | undefined): boolean {
+  if (!types || types.length === 0) return false
+  return types.some((t) => GEOGRAPHIC_TYPES.has(t))
+}
+
 const isPlaceholderImage = (img: string | null | undefined) =>
   !img || img.includes("razz") || img.trim() === ""
+
+// Barcelona ciudad — sesgamos aquí las búsquedas para que Google no devuelva coincidencias
+// genéricas de cualquier parte del mundo.
+const BARCELONA_BIAS = { circle: { center: { latitude: 41.3874, longitude: 2.1686 }, radius: 20000 } }
 
 // Al principio: visita esta URL repetidamente (recarga la página) hasta que "remaining" salga en 0,
 // para traer las fotos/reseñas de los 130 clubs por primera vez.
@@ -69,15 +86,18 @@ export async function GET(req: Request) {
           headers: {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": apiKey,
-            "X-Goog-FieldMask": "places.id,places.displayName",
+            "X-Goog-FieldMask": "places.id,places.displayName,places.types",
           },
-          body: JSON.stringify({ textQuery: query }),
+          body: JSON.stringify({ textQuery: query, locationBias: BARCELONA_BIAS }),
         })
         const json = await res.json()
         const place = json?.places?.[0]
         const placeId = place?.id
         const placeName = place?.displayName?.text || ""
 
+        if (placeId && isGeographicMismatch(place?.types)) {
+          return { club: club.name, status: "rejected_geographic", googleSaid: placeName, types: place?.types }
+        }
         if (placeId && namesLikelyMatch(club.name, placeName)) {
           await supabase.from("clubs").update({ google_place_id: placeId }).eq("id", club.id)
           return { club: club.name, placeId, matchedAs: placeName, status: "assigned" }
@@ -121,16 +141,17 @@ export async function GET(req: Request) {
         const detailsRes = await fetch(`https://places.googleapis.com/v1/places/${club.google_place_id}`, {
           headers: {
             "X-Goog-Api-Key": apiKey,
-            "X-Goog-FieldMask": "displayName,rating,userRatingCount,reviews,photos",
+            "X-Goog-FieldMask": "displayName,types,rating,userRatingCount,reviews,photos",
           },
         })
         const data = await detailsRes.json()
         const googleName = data?.displayName?.text || ""
 
         // Si el place_id guardado no corresponde de verdad a este club (mal emparejado en su
-        // día), no le pegamos fotos/reseñas ajenas: lo desasignamos para que el Paso 0 lo
-        // vuelva a buscar bien en el próximo ciclo, sin tocar nada a mano.
-        if (googleName && !namesLikelyMatch(club.name, googleName)) {
+        // día, o es una región/país entero), no le pegamos fotos/reseñas ajenas: lo desasignamos
+        // para que el Paso 0 lo vuelva a buscar bien en el próximo ciclo, sin tocar nada a mano.
+        const badMatch = (googleName && !namesLikelyMatch(club.name, googleName)) || isGeographicMismatch(data?.types)
+        if (badMatch) {
           const wasFromGoogle = typeof club.image === "string" && club.image.includes("club-photos")
           await supabase
             .from("clubs")

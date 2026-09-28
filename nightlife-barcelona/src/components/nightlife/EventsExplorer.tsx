@@ -6,7 +6,7 @@ import Link from "next/link"
 import { useLanguage } from "../../context/LanguageContext"
 
 const createSlug = (text: string) =>
-  text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")
+  text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, "-")
 
 const isEventPast = (date: string): boolean => {
   if (!date) return false
@@ -323,11 +323,12 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                     }`}
                   >
                     <div className="relative h-[460px] overflow-hidden">
-                      {event.image ? (
-                        <Image src={event.image} alt={event.title} fill className="object-cover transition duration-700 group-hover:scale-110" />
-                      ) : (
-                        <div className="absolute inset-0 bg-zinc-900" />
-                      )}
+                      <Image
+                        src={event.image || "/clubs/razz.jpg"}
+                        alt={event.title}
+                        fill
+                        className="object-cover transition duration-700 group-hover:scale-110"
+                      />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
 
                       <div className="absolute left-5 top-5 flex flex-wrap gap-2">
