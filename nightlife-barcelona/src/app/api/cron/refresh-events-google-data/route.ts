@@ -90,6 +90,7 @@ export async function GET(req: Request) {
     .from("events")
     .select("id, title, address, club_name")
     .is("google_place_id", null)
+    .or("manual_photos.is.null,manual_photos.eq.false")
     .limit(5)
 
   const newlyAssigned = await Promise.all(
@@ -125,10 +126,13 @@ export async function GET(req: Request) {
     })
   )
 
+  // Los eventos marcados como "manual_photos" los gestionas tú a mano desde Supabase: el pipeline
+  // automático nunca los toca (ni fotos ni place_id), para no pisar lo que hayas subido.
   const { data: evs, error } = await supabase
     .from("events")
     .select("id, title, address, image, google_place_id")
     .not("google_place_id", "is", null)
+    .or("manual_photos.is.null,manual_photos.eq.false")
     .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
     .limit(BATCH_SIZE)
 
@@ -136,11 +140,13 @@ export async function GET(req: Request) {
     .from("events")
     .select("*", { count: "exact", head: true })
     .not("google_place_id", "is", null)
+    .or("manual_photos.is.null,manual_photos.eq.false")
 
   const { count: alreadyRefreshed } = await supabase
     .from("events")
     .select("*", { count: "exact", head: true })
     .not("google_place_id", "is", null)
+    .or("manual_photos.is.null,manual_photos.eq.false")
     .not("google_last_refreshed_at", "is", null)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
