@@ -7,8 +7,8 @@ export const maxDuration = 60
 const ACCENT_PATTERN = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g")
 
 const STOPWORDS = new Set([
-  "the", "bar", "club", "sala", "disco", "discoteca", "pub", "lounge",
-  "de", "del", "la", "el", "los", "las", "en", "y", "and", "of",
+  "the", "bar", "club", "sala", "disco", "discoteca", "pub", "lounge", "festival", "fiesta", "fiestas",
+  "de", "del", "la", "el", "los", "las", "en", "y", "and", "of", "barcelona",
 ])
 
 function normalizeWords(s: string): string[] {
@@ -21,23 +21,21 @@ function normalizeWords(s: string): string[] {
     .filter((w) => w.length >= 3 && !STOPWORDS.has(w))
 }
 
-// Comprueba que el nombre que devuelve Google se parece de verdad al nombre del club,
-// para no asignarle a un club el place_id de un sitio totalmente distinto
-// (p.ej. "Costa Breve" emparejado por error con "Costa Brava").
-function namesLikelyMatch(clubName: string, googleName: string): boolean {
-  const a = normalizeWords(clubName)
+function namesLikelyMatch(eventName: string, googleName: string): boolean {
+  const a = normalizeWords(eventName)
   const b = normalizeWords(googleName)
-  if (a.length === 0 || b.length === 0) return true // no hay suficiente info para descartar, no bloqueamos
+  if (a.length === 0 || b.length === 0) return true
   return a.some((w) => b.includes(w)) || b.some((w) => a.includes(w))
 }
 
 const isPlaceholderImage = (img: string | null | undefined) =>
   !img || img.includes("razz") || img.trim() === ""
 
-// Al principio: visita esta URL repetidamente (recarga la página) hasta que "remaining" salga en 0,
-// para traer las fotos/reseñas de los 130 clubs por primera vez.
-// Luego el cron diario va reciclando los más antiguos automáticamente, unos pocos cada vez.
-// Para probarla a mano: https://TU_DOMINIO/api/cron/refresh-google-data?secret=TU_ADMIN_SECRET
+// Igual que /api/cron/refresh-google-data pero para la tabla "events" (festivales / fiestas de
+// barrio, no noches dentro de un club). Cada evento es un sitio real distinto en Google, así que
+// tiene su propio google_place_id, no comparte el de ningún club.
+// Al principio: visita esta URL repetidamente hasta que "remaining" salga en 0.
+// https://TU_DOMINIO/api/cron/refresh-events-google-data?secret=TU_ADMIN_SECRET
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const authHeader = req.headers.get("authorization")
@@ -50,19 +48,19 @@ export async function GET(req: Request) {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
   const apiKey = process.env.GOOGLE_MAPS_API_KEY!
   const BATCH_SIZE = 4
-  const PHOTOS_PER_CLUB = 4
+  const PHOTOS_PER_EVENT = 4
 
-  // Paso 0: si hay clubs nuevos sin google_place_id (los añadiste después de la carga inicial),
-  // les asignamos uno automáticamente aquí mismo, así nunca hace falta volver a tocar esto a mano.
-  const { data: newClubs } = await supabase
-    .from("clubs")
-    .select("id, name, address, neighborhood")
+  // Paso 0: eventos nuevos sin google_place_id -> se lo asignamos aquí, comprobando que el
+  // nombre que devuelve Google se parece de verdad al del evento antes de aceptarlo.
+  const { data: newEvents } = await supabase
+    .from("events")
+    .select("id, title, address, club_name")
     .is("google_place_id", null)
     .limit(5)
 
   const newlyAssigned = await Promise.all(
-    (newClubs || []).map(async (club) => {
-      const query = `${club.name} ${club.address || club.neighborhood || ""} Barcelona`.trim()
+    (newEvents || []).map(async (ev) => {
+      const query = `${ev.title} ${ev.address || ev.club_name || ""} Barcelona`.trim()
       try {
         const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
           method: "POST",
@@ -78,87 +76,69 @@ export async function GET(req: Request) {
         const placeId = place?.id
         const placeName = place?.displayName?.text || ""
 
-        if (placeId && namesLikelyMatch(club.name, placeName)) {
-          await supabase.from("clubs").update({ google_place_id: placeId }).eq("id", club.id)
-          return { club: club.name, placeId, matchedAs: placeName, status: "assigned" }
+        if (placeId && namesLikelyMatch(ev.title, placeName)) {
+          await supabase.from("events").update({ google_place_id: placeId }).eq("id", ev.id)
+          return { event: ev.title, placeId, matchedAs: placeName, status: "assigned" }
         }
-        if (placeId) {
-          return { club: club.name, status: "rejected_mismatch", googleSaid: placeName }
-        }
-        return { club: club.name, status: "not_found" }
+        if (placeId) return { event: ev.title, status: "rejected_mismatch", googleSaid: placeName }
+        return { event: ev.title, status: "not_found" }
       } catch (e: any) {
-        return { club: club.name, status: "error", message: e.message }
+        return { event: ev.title, status: "error", message: e.message }
       }
     })
   )
 
-  const { data: clubs, error } = await supabase
-    .from("clubs")
-    .select("id, name, image, google_place_id")
+  const { data: evs, error } = await supabase
+    .from("events")
+    .select("id, title, image, google_place_id")
     .not("google_place_id", "is", null)
     .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
     .limit(BATCH_SIZE)
 
   const { count: totalWithPlaceId } = await supabase
-    .from("clubs")
+    .from("events")
     .select("*", { count: "exact", head: true })
     .not("google_place_id", "is", null)
 
   const { count: alreadyRefreshed } = await supabase
-    .from("clubs")
+    .from("events")
     .select("*", { count: "exact", head: true })
     .not("google_place_id", "is", null)
     .not("google_last_refreshed_at", "is", null)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Procesamos todos los clubs de la tanda EN PARALELO (y las fotos de cada uno también en
-  // paralelo). Es el mismo trabajo, pero como son llamadas de red, en paralelo tarda una
-  // fracción del tiempo que en serie — clave para no pasarnos del límite de 10s de Vercel Hobby.
   const results = await Promise.all(
-    (clubs || []).map(async (club) => {
+    (evs || []).map(async (ev) => {
       try {
-        const detailsRes = await fetch(`https://places.googleapis.com/v1/places/${club.google_place_id}`, {
-          headers: {
-            "X-Goog-Api-Key": apiKey,
-            "X-Goog-FieldMask": "displayName,rating,userRatingCount,reviews,photos",
-          },
+        const detailsRes = await fetch(`https://places.googleapis.com/v1/places/${ev.google_place_id}`, {
+          headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "displayName,rating,userRatingCount,reviews,photos" },
         })
         const data = await detailsRes.json()
         const googleName = data?.displayName?.text || ""
 
-        // Si el place_id guardado no corresponde de verdad a este club (mal emparejado en su
-        // día), no le pegamos fotos/reseñas ajenas: lo desasignamos para que el Paso 0 lo
-        // vuelva a buscar bien en el próximo ciclo, sin tocar nada a mano.
-        if (googleName && !namesLikelyMatch(club.name, googleName)) {
-          const wasFromGoogle = typeof club.image === "string" && club.image.includes("club-photos")
+        if (googleName && !namesLikelyMatch(ev.title, googleName)) {
+          const wasFromGoogle = typeof ev.image === "string" && ev.image.includes("event-photos")
           await supabase
-            .from("clubs")
+            .from("events")
             .update({
               google_place_id: null,
               google_last_refreshed_at: null,
               gallery: null,
-              // Nunca dejamos "image" a null para que la tarjeta nunca se quede sin foto.
               ...(wasFromGoogle ? { image: "/clubs/razz.jpg" } : {}),
             })
-            .eq("id", club.id)
-          return { club: club.name, status: "mismatch_reset", googleSaid: googleName }
+            .eq("id", ev.id)
+          return { event: ev.title, status: "mismatch_reset", googleSaid: googleName }
         }
 
-        // Descargamos las fotos y las guardamos en tu propio Storage (NUNCA guardar la URL
-        // directa de Google: si no, cada visita a la web sería una llamada de pago a Google).
         const photoResults = await Promise.all(
-          (data.photos || []).slice(0, PHOTOS_PER_CLUB).map(async (p: any) => {
+          (data.photos || []).slice(0, PHOTOS_PER_EVENT).map(async (p: any) => {
             try {
-              const photoRes = await fetch(
-                `https://places.googleapis.com/v1/${p.name}/media?maxWidthPx=1000&key=${apiKey}`
-              )
+              const photoRes = await fetch(`https://places.googleapis.com/v1/${p.name}/media?maxWidthPx=1000&key=${apiKey}`)
               const buffer = await photoRes.arrayBuffer()
-              const fileName = `${club.id}/${p.name.split("/").pop()}.jpg`
-              await supabase.storage
-                .from("club-photos")
-                .upload(fileName, Buffer.from(buffer), { contentType: "image/jpeg", upsert: true })
-              const { data: pub } = supabase.storage.from("club-photos").getPublicUrl(fileName)
+              const fileName = `${ev.id}/${p.name.split("/").pop()}.jpg`
+              await supabase.storage.from("event-photos").upload(fileName, Buffer.from(buffer), { contentType: "image/jpeg", upsert: true })
+              const { data: pub } = supabase.storage.from("event-photos").getPublicUrl(fileName)
               return pub.publicUrl
             } catch {
               return null
@@ -168,33 +148,31 @@ export async function GET(req: Request) {
         const photoUrls = photoResults.filter((u): u is string => !!u)
 
         await supabase
-          .from("clubs")
+          .from("events")
           .update({
             google_rating: data.rating ?? null,
             google_review_count: data.userRatingCount ?? null,
             google_last_refreshed_at: new Date().toISOString(),
             ...(photoUrls.length > 0 ? { gallery: photoUrls } : {}),
-            // Si el club no tenía foto principal propia (o seguía con el placeholder de
-            // Razzmatazz de los datos de partida), usamos la primera de Google como portada.
-            ...(isPlaceholderImage(club.image) && photoUrls.length > 0 ? { image: photoUrls[0] } : {}),
+            ...(isPlaceholderImage(ev.image) && photoUrls.length > 0 ? { image: photoUrls[0] } : {}),
           })
-          .eq("id", club.id)
+          .eq("id", ev.id)
 
         if (Array.isArray(data.reviews)) {
-          await supabase.from("club_reviews").delete().eq("club_id", club.id)
+          await supabase.from("event_reviews").delete().eq("event_id", ev.id)
           const rows = data.reviews.slice(0, 5).map((r: any) => ({
-            club_id: club.id,
+            event_id: ev.id,
             author_name: r.authorAttribution?.displayName || "Anónimo",
             rating: r.rating || null,
             text: r.text?.text || r.originalText?.text || "",
             relative_time: r.relativePublishTimeDescription || "",
           }))
-          if (rows.length > 0) await supabase.from("club_reviews").insert(rows)
+          if (rows.length > 0) await supabase.from("event_reviews").insert(rows)
         }
 
-        return { club: club.name, status: "ok", photos: photoUrls.length, reviews: data.reviews?.length || 0 }
+        return { event: ev.title, status: "ok", photos: photoUrls.length, reviews: data.reviews?.length || 0 }
       } catch (e: any) {
-        return { club: club.name, status: "error", message: e.message }
+        return { event: ev.title, status: "error", message: e.message }
       }
     })
   )
