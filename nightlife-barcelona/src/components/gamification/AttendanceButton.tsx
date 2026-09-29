@@ -103,6 +103,15 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
           +{XP_AMOUNTS.attendance} XP
         </span>
       )}
+      {!attending && (
+        <p className="mt-2 text-center text-[11px] leading-snug text-zinc-500">
+          {t("attendance.hint").replace("{xp}", String(XP_AMOUNTS.attendance))}
+          {" · "}
+          <a href="/club-noctua" className="font-semibold text-zinc-400 underline underline-offset-2 hover:text-zinc-300">
+            {t("levels.viewMine")}
+          </a>
+        </p>
+      )}
     </div>
   )
 }

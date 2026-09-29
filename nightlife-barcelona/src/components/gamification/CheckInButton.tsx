@@ -151,6 +151,15 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
           +{XP_AMOUNTS.checkin} XP
         </span>
       )}
+      {!checkedInToday && (
+        <p className="mt-2 text-center text-[11px] leading-snug text-zinc-500">
+          {t("checkin.hint").replace("{xp}", String(XP_AMOUNTS.checkin))}
+          {" · "}
+          <a href="/club-noctua" className="font-semibold text-zinc-400 underline underline-offset-2 hover:text-zinc-300">
+            {t("levels.viewMine")}
+          </a>
+        </p>
+      )}
       {error && <p className="mt-2 text-center text-xs text-red-400">{error}</p>}
     </div>
   )

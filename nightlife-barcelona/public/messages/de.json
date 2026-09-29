@@ -346,7 +346,8 @@
   },
   "attendance": {
     "willGo": "Ich bin heute Nacht dabei",
-    "going": "Bin dabei"
+    "going": "Bin dabei",
+    "hint": "Markiere, dass du hingehst, und erhalte +{xp} XP, um aufzusteigen"
   },
   "checkin": {
     "cta": "Hier einchecken",
@@ -355,7 +356,8 @@
     "tooFar": "Sieht so aus, als wärst du noch nicht vor Ort. Versuch's noch mal, wenn du angekommen bist.",
     "noGeolocation": "Dein Browser unterstützt keine Standortfreigabe.",
     "permissionDenied": "Wir brauchen deinen Standort, um den Check-in zu bestätigen.",
-    "error": "Check-in konnte nicht gespeichert werden, versuch es noch einmal."
+    "error": "Check-in konnte nicht gespeichert werden, versuch es noch einmal.",
+    "hint": "Bestätige, dass du vor Ort bist, und erhalte +{xp} XP, um aufzusteigen"
   },
   "levels": {
     "title": "Dein Level",
@@ -366,6 +368,11 @@
     "xpLabel": "XP",
     "nextIn": "Dir fehlen",
     "toNextLevel": "XP bis zum nächsten Level",
-    "maxLevel": "Höchstes Level erreicht!"
+    "maxLevel": "Höchstes Level erreicht!",
+    "viewMine": "Mein Level ansehen",
+    "platino": "Platin",
+    "zafiro": "Saphir",
+    "diamante": "Diamant",
+    "viewAll": "Level und Vorteile ansehen"
   }
 }

@@ -346,7 +346,8 @@
   },
   "attendance": {
     "willGo": "I'll be there tonight",
-    "going": "Going"
+    "going": "Going",
+    "hint": "Mark that you're going and earn +{xp} XP to level up"
   },
   "checkin": {
     "cta": "Check in here",
@@ -355,7 +356,8 @@
     "tooFar": "Looks like you're not at the venue yet. Try again once you arrive.",
     "noGeolocation": "Your browser doesn't support sharing location.",
     "permissionDenied": "We need your location to confirm the check-in.",
-    "error": "Couldn't register the check-in, try again."
+    "error": "Couldn't register the check-in, try again.",
+    "hint": "Confirm you're at the venue and earn +{xp} XP to level up"
   },
   "levels": {
     "title": "Your level",
@@ -366,6 +368,11 @@
     "xpLabel": "XP",
     "nextIn": "You need",
     "toNextLevel": "XP for the next level",
-    "maxLevel": "Max level reached!"
+    "maxLevel": "Max level reached!",
+    "viewMine": "See my level",
+    "platino": "Platinum",
+    "zafiro": "Sapphire",
+    "diamante": "Diamond",
+    "viewAll": "See levels and perks"
   }
 }

@@ -1,12 +1,19 @@
 import { SupabaseClient } from "@supabase/supabase-js"
 
 // Sistema de niveles de Noctua — v1: solo XP y niveles visibles, sin descuentos reales todavía.
-// Los umbrales son fáciles de ajustar más adelante si hace falta recalibrarlos.
+// Umbrales recalibrados (antes 0/100/300/700 subía demasiado rápido: con 25 XP por check-in
+// se llegaba a Plata en 4 check-ins). Ahora hay más niveles y cuesta más avanzar, para que sea
+// una progresión real a lo largo de varias semanas/meses de uso, no algo que se agote enseguida.
+// "perks" es texto descriptivo para la página de Club Noctua — de momento son ventajas futuras
+// (marcadas como tal en la UI), salvo la insignia de perfil, que ya es real desde el primer XP.
 export const LEVELS = [
-  { key: "bronce", name: "Bronce", min: 0, icon: "🥉", color: "#c98a4b" },
-  { key: "plata", name: "Plata", min: 100, icon: "🥈", color: "#b8c0cc" },
-  { key: "oro", name: "Oro", min: 300, icon: "🥇", color: "#f5c542" },
-  { key: "elite", name: "Élite", min: 700, icon: "👑", color: "#a855f7" },
+  { key: "bronce", name: "Bronce", min: 0, icon: "🥉", color: "#c98a4b", perkKey: "bronce" },
+  { key: "plata", name: "Plata", min: 200, icon: "🥈", color: "#b8c0cc", perkKey: "plata" },
+  { key: "oro", name: "Oro", min: 500, icon: "🥇", color: "#f5c542", perkKey: "oro" },
+  { key: "platino", name: "Platino", min: 1000, icon: "🔷", color: "#7dd3fc", perkKey: "platino" },
+  { key: "zafiro", name: "Zafiro", min: 1800, icon: "🔵", color: "#3b82f6", perkKey: "zafiro" },
+  { key: "diamante", name: "Diamante", min: 3000, icon: "💎", color: "#67e8f9", perkKey: "diamante" },
+  { key: "elite", name: "Élite", min: 5000, icon: "👑", color: "#a855f7", perkKey: "elite" },
 ] as const
 
 export type LevelInfo = {
@@ -36,11 +43,13 @@ export function getLevelInfo(xp: number): LevelInfo {
 }
 
 // Cantidades de XP por acción. Centralizado aquí para no tener números mágicos repartidos por
-// distintos componentes.
+// distintos componentes. Bajado el check-in (25→15) porque en una noche se puede hacer en varios
+// locales seguidos, y sería la acción más fácil de repetir; subida la racha semanal (20→30) porque
+// premia el uso real y sostenido de la app, que es más difícil de "farmear".
 export const XP_AMOUNTS = {
   attendance: 10, // marcar "Asistiré esta noche"
-  checkin: 25, // check-in geolocalizado en el club
-  streak: 20, // racha semanal (>=3 días distintos de actividad en los últimos 7 días)
+  checkin: 15, // check-in geolocalizado en el club
+  streak: 30, // racha semanal (>=3 días distintos de actividad en los últimos 7 días)
 }
 
 // Llama a la función de Postgres award_xp(), que inserta la fila en xp_events (con protección

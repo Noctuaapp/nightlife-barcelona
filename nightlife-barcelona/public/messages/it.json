@@ -346,7 +346,8 @@
   },
   "attendance": {
     "willGo": "Ci sarò stasera",
-    "going": "Ci vado"
+    "going": "Ci vado",
+    "hint": "Segna che ci andrai e guadagna +{xp} XP per salire di livello"
   },
   "checkin": {
     "cta": "Fai il check-in qui",
@@ -355,7 +356,8 @@
     "tooFar": "Sembra che tu non sia ancora nel locale. Riprova quando arrivi.",
     "noGeolocation": "Il tuo browser non consente di condividere la posizione.",
     "permissionDenied": "Ci serve la tua posizione per confermare il check-in.",
-    "error": "Non è stato possibile registrare il check-in, riprova."
+    "error": "Non è stato possibile registrare il check-in, riprova.",
+    "hint": "Conferma che sei nel locale e guadagna +{xp} XP per salire di livello"
   },
   "levels": {
     "title": "Il tuo livello",
@@ -366,6 +368,11 @@
     "xpLabel": "XP",
     "nextIn": "Ti mancano",
     "toNextLevel": "XP per il prossimo livello",
-    "maxLevel": "Livello massimo raggiunto!"
+    "maxLevel": "Livello massimo raggiunto!",
+    "viewMine": "Vedi il mio livello",
+    "platino": "Platino",
+    "zafiro": "Zaffiro",
+    "diamante": "Diamante",
+    "viewAll": "Vedi livelli e vantaggi"
   }
 }

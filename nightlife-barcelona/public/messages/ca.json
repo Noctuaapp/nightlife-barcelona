@@ -346,7 +346,8 @@
   },
   "attendance": {
     "willGo": "Hi seré aquesta nit",
-    "going": "Hi vaig"
+    "going": "Hi vaig",
+    "hint": "Marca que hi aniràs i guanya +{xp} XP per pujar de nivell"
   },
   "checkin": {
     "cta": "Fes check-in aquí",
@@ -355,7 +356,8 @@
     "tooFar": "Sembla que encara no ets al local. Torna-ho a provar quan hi arribis.",
     "noGeolocation": "El teu navegador no permet compartir ubicació.",
     "permissionDenied": "Necessitem la teva ubicació per confirmar el check-in.",
-    "error": "No s'ha pogut registrar el check-in, torna-ho a provar."
+    "error": "No s'ha pogut registrar el check-in, torna-ho a provar.",
+    "hint": "Confirma que ets al local i guanya +{xp} XP per pujar de nivell"
   },
   "levels": {
     "title": "El teu nivell",
@@ -366,6 +368,11 @@
     "xpLabel": "XP",
     "nextIn": "Et falten",
     "toNextLevel": "XP pel següent nivell",
-    "maxLevel": "Nivell màxim assolit!"
+    "maxLevel": "Nivell màxim assolit!",
+    "viewMine": "Veure el meu nivell",
+    "platino": "Platí",
+    "zafiro": "Safir",
+    "diamante": "Diamant",
+    "viewAll": "Veure nivells i avantatges"
   }
 }

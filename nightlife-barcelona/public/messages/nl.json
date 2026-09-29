@@ -346,7 +346,8 @@
   },
   "attendance": {
     "willGo": "Ik ben er vanavond bij",
-    "going": "Ik ga"
+    "going": "Ik ga",
+    "hint": "Geef aan dat je gaat en verdien +{xp} XP om level te stijgen"
   },
   "checkin": {
     "cta": "Check hier in",
@@ -355,7 +356,8 @@
     "tooFar": "Het lijkt erop dat je nog niet bij de zaak bent. Probeer het opnieuw als je er bent.",
     "noGeolocation": "Je browser staat het delen van locatie niet toe.",
     "permissionDenied": "We hebben je locatie nodig om de check-in te bevestigen.",
-    "error": "Check-in kon niet worden geregistreerd, probeer het opnieuw."
+    "error": "Check-in kon niet worden geregistreerd, probeer het opnieuw.",
+    "hint": "Bevestig dat je aanwezig bent en verdien +{xp} XP om level te stijgen"
   },
   "levels": {
     "title": "Jouw niveau",
@@ -366,6 +368,11 @@
     "xpLabel": "XP",
     "nextIn": "Je hebt nog",
     "toNextLevel": "XP nodig voor het volgende niveau",
-    "maxLevel": "Maximale niveau bereikt!"
+    "maxLevel": "Maximale niveau bereikt!",
+    "viewMine": "Bekijk mijn niveau",
+    "platino": "Platina",
+    "zafiro": "Saffier",
+    "diamante": "Diamant",
+    "viewAll": "Bekijk niveaus en voordelen"
   }
 }
