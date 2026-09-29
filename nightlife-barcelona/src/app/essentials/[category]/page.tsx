@@ -129,7 +129,9 @@ export default function EssentialCategoryPage() {
 
   useEffect(() => {
     const fetchEssentials = async () => {
-      const { data } = await supabase.from("essentials").select("*").ilike("category", category).order("name")
+      // .eq("hidden", false) igual que en el listado — si no, un esencial oculto desde el admin
+      // seguía siendo visitable por enlace directo.
+      const { data } = await supabase.from("essentials").select("*").ilike("category", category).eq("hidden", false).order("name")
       if (data) setEssentials(data)
       setLoading(false)
     }

@@ -229,8 +229,6 @@ export default function Header() {
         .eq("user_id", userId)
         .in("item_type", ["event", "club_event"])
 
-      console.log("REMINDER DEBUG - favs:", favs)
-
       if (!favs || favs.length === 0) return
 
       const eventIds = favs.filter((f) => f.item_type === "event").map((f) => f.item_id)
@@ -244,8 +242,6 @@ export default function Header() {
           ? supabase.from("club_events").select("id, title, date, start_time").in("id", clubEventIds)
           : Promise.resolve({ data: [] as any[] }),
       ])
-
-      console.log("REMINDER DEBUG - eventsRes:", eventsRes, "clubEventsRes:", clubEventsRes)
 
       const items = [
         ...(eventsRes.data || []).map((e: any) => ({ ...e, kind: "event" })),
@@ -265,8 +261,6 @@ export default function Header() {
         eventDate.setHours(0, 0, 0, 0)
         const daysUntil = Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
-        console.log("REMINDER DEBUG - item:", item.title, "date:", item.date, "daysUntil:", daysUntil, "daysBefore:", daysBefore)
-
         if (daysUntil !== daysBefore) continue
 
         const { data: existing } = await supabase
@@ -275,8 +269,6 @@ export default function Header() {
           .eq("user_id", userId)
           .eq("related_event_id", item.id)
           .eq("related_event_type", item.kind)
-
-        console.log("REMINDER DEBUG - existing:", existing)
 
         if (existing && existing.length > 0) continue
 

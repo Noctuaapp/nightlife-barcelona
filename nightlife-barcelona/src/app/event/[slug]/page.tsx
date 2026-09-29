@@ -12,7 +12,9 @@ type EventPageProps = {
 export default async function EventPage({ params }: EventPageProps) {
   const { slug } = await params
 
-  const { data: events } = await supabase.from("events").select("*")
+  // Filtramos hidden igual que en el listado, si no un evento oculto seguía siendo visitable
+  // por enlace directo.
+  const { data: events } = await supabase.from("events").select("*").eq("hidden", false)
   const event = events?.find((e) => createSlug(e.title) === slug)
 
   if (!event) {

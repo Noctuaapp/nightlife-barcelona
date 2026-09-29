@@ -24,15 +24,15 @@ export default function SignupPage() {
     setError("")
 
     if (!email || !password || !username) {
-      setError("Por favor rellena todos los campos.")
+      setError(t("signup.error_fill_all"))
       return
     }
     if (!acceptedTerms) {
-      setError("Debes aceptar los términos y condiciones para continuar.")
+      setError(t("signup.error_terms"))
       return
     }
     if (!confirmedAge) {
-      setError("Debes confirmar que eres mayor de 18 años para continuar.")
+      setError(t("signup.error_age"))
       return
     }
 

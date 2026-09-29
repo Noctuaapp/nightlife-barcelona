@@ -27,7 +27,8 @@
   "common": {
     "back": "Back",
     "search": "Search",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "cancel": "Cancel"
   },
   "login": {
     "title": "Log in",
@@ -54,7 +55,10 @@
     "gender_female": "Female",
     "create": "Create account",
     "creating": "Creating account...",
-    "existing": "Already have an account? Log in"
+    "existing": "Already have an account? Log in",
+    "error_fill_all": "Please fill in all fields.",
+    "error_terms": "You must accept the terms and conditions to continue.",
+    "error_age": "You must confirm you are over 18 to continue."
   },
   "clubs": {
     "title": "Clubs",
@@ -156,7 +160,17 @@
     "danger": "Danger zone",
     "delete": "Delete account",
     "deleting": "Deleting...",
-    "delete_subtitle": "Permanently delete your Noctua account."
+    "delete_subtitle": "Permanently delete your Noctua account.",
+    "username_too_short": "Username must be at least 3 characters.",
+    "username_taken": "Username already taken. Try another one.",
+    "username_updated": "Username updated successfully!",
+    "avatar_must_be_image": "The file must be an image.",
+    "avatar_too_big": "The image can't be larger than 5MB.",
+    "delete_confirm_title": "Delete your account?",
+    "delete_confirm_body_1": "This action is",
+    "delete_confirm_body_2": "permanent",
+    "delete_confirm_body_3": "Your profile, favorites and full history on Noctua will be deleted. You won't be able to recover it.",
+    "delete_confirm_yes": "Yes, delete my account"
   },
   "club": {
     "experience": "Club experience",
@@ -204,7 +218,8 @@
     "viewOnMap": "View on map",
     "tonight": "tonight",
     "trending": "Trending",
-    "liveNow": "LIVE NOW"
+    "liveNow": "LIVE NOW",
+    "verified": "Noctua Verified"
   },
   "clubEvent": {
     "defaultClubName": "Barcelona club night",
@@ -374,5 +389,28 @@
     "zafiro": "Sapphire",
     "diamante": "Diamond",
     "viewAll": "See levels and perks"
+  },
+  "favorites": {
+    "saved": "Saved",
+    "save": "Save to favorites",
+    "remindMe": "Remind me",
+    "reminder_same_day": "Same day",
+    "reminder_1_day": "1 day before",
+    "reminder_3_days": "3 days before",
+    "reminder_1_week": "1 week before"
+  },
+  "changePassword": {
+    "eyebrow": "Account security",
+    "title": "Change password",
+    "subtitle": "Update your Noctua account password.",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "errorFillBoth": "Please fill in both password fields.",
+    "errorMinLength": "Password must be at least 6 characters.",
+    "errorMismatch": "Passwords do not match.",
+    "success": "Password updated successfully.",
+    "updating": "Updating...",
+    "update": "Update password",
+    "back": "Back to profile"
   }
 }

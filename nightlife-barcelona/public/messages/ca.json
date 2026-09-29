@@ -27,7 +27,8 @@
   "common": {
     "back": "Tornar",
     "search": "Cercar",
-    "loading": "Carregant..."
+    "loading": "Carregant...",
+    "cancel": "Cancel·lar"
   },
   "login": {
     "title": "Iniciar sessió",
@@ -54,7 +55,10 @@
     "gender_female": "Dona",
     "create": "Crear compte",
     "creating": "Creant compte...",
-    "existing": "Ja tens compte? Iniciar sessió"
+    "existing": "Ja tens compte? Iniciar sessió",
+    "error_fill_all": "Omple tots els camps, si us plau.",
+    "error_terms": "Has d'acceptar els termes i condicions per continuar.",
+    "error_age": "Has de confirmar que ets major de 18 anys per continuar."
   },
   "clubs": {
     "title": "Clubs",
@@ -156,7 +160,17 @@
     "danger": "Zona de perill",
     "delete": "Eliminar compte",
     "deleting": "Eliminant...",
-    "delete_subtitle": "Elimina el teu compte de Noctua permanentment."
+    "delete_subtitle": "Elimina el teu compte de Noctua permanentment.",
+    "username_too_short": "El nom d'usuari ha de tenir almenys 3 caràcters.",
+    "username_taken": "Aquest nom d'usuari ja s'utilitza. Prova'n un altre.",
+    "username_updated": "Nom d'usuari actualitzat!",
+    "avatar_must_be_image": "L'arxiu ha de ser una imatge.",
+    "avatar_too_big": "La imatge no pot pesar més de 5MB.",
+    "delete_confirm_title": "Eliminar el teu compte?",
+    "delete_confirm_body_1": "Aquesta acció és",
+    "delete_confirm_body_2": "permanent",
+    "delete_confirm_body_3": "S'esborraran el teu perfil, els teus favorits i tot el teu historial a Noctua. No podràs recuperar-ho.",
+    "delete_confirm_yes": "Sí, eliminar el meu compte"
   },
   "club": {
     "experience": "Experiència al club",
@@ -204,7 +218,8 @@
     "viewOnMap": "Veure al mapa",
     "tonight": "aquesta nit",
     "trending": "Tendència",
-    "liveNow": "En directe"
+    "liveNow": "En directe",
+    "verified": "Noctua Verified"
   },
   "clubEvent": {
     "defaultClubName": "Nit de club a Barcelona",
@@ -374,5 +389,28 @@
     "zafiro": "Safir",
     "diamante": "Diamant",
     "viewAll": "Veure nivells i avantatges"
+  },
+  "favorites": {
+    "saved": "Desat",
+    "save": "Desar a favorits",
+    "remindMe": "Avisa'm",
+    "reminder_same_day": "El mateix dia",
+    "reminder_1_day": "1 dia abans",
+    "reminder_3_days": "3 dies abans",
+    "reminder_1_week": "1 setmana abans"
+  },
+  "changePassword": {
+    "eyebrow": "Seguretat del compte",
+    "title": "Canviar contrasenya",
+    "subtitle": "Actualitza la contrasenya del teu compte de Noctua.",
+    "newPassword": "Nova contrasenya",
+    "confirmPassword": "Confirma la nova contrasenya",
+    "errorFillBoth": "Omple els dos camps de contrasenya, si us plau.",
+    "errorMinLength": "La contrasenya ha de tenir almenys 6 caràcters.",
+    "errorMismatch": "Les contrasenyes no coincideixen.",
+    "success": "Contrasenya actualitzada correctament.",
+    "updating": "Actualitzant...",
+    "update": "Actualitzar contrasenya",
+    "back": "Tornar al perfil"
   }
 }

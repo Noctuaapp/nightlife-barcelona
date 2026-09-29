@@ -27,7 +27,8 @@
   "common": {
     "back": "Retour",
     "search": "Rechercher",
-    "loading": "Chargement..."
+    "loading": "Chargement...",
+    "cancel": "Annuler"
   },
   "login": {
     "title": "Se connecter",
@@ -54,7 +55,10 @@
     "gender_female": "Femme",
     "create": "Créer un compte",
     "creating": "Création du compte...",
-    "existing": "Vous avez déjà un compte ? Se connecter"
+    "existing": "Vous avez déjà un compte ? Se connecter",
+    "error_fill_all": "Merci de remplir tous les champs.",
+    "error_terms": "Tu dois accepter les conditions générales pour continuer.",
+    "error_age": "Tu dois confirmer que tu as plus de 18 ans pour continuer."
   },
   "clubs": {
     "title": "Clubs",
@@ -156,7 +160,17 @@
     "danger": "Zone dangereuse",
     "delete": "Supprimer le compte",
     "deleting": "Suppression...",
-    "delete_subtitle": "Supprimez définitivement votre compte Noctua."
+    "delete_subtitle": "Supprimez définitivement votre compte Noctua.",
+    "username_too_short": "Le nom d'utilisateur doit contenir au moins 3 caractères.",
+    "username_taken": "Ce nom d'utilisateur est déjà pris. Essaie-en un autre.",
+    "username_updated": "Nom d'utilisateur mis à jour !",
+    "avatar_must_be_image": "Le fichier doit être une image.",
+    "avatar_too_big": "L'image ne peut pas dépasser 5 Mo.",
+    "delete_confirm_title": "Supprimer ton compte ?",
+    "delete_confirm_body_1": "Cette action est",
+    "delete_confirm_body_2": "définitive",
+    "delete_confirm_body_3": "Ton profil, tes favoris et tout ton historique sur Noctua seront supprimés. Tu ne pourras pas les récupérer.",
+    "delete_confirm_yes": "Oui, supprimer mon compte"
   },
   "club": {
     "experience": "Expérience du club",
@@ -204,7 +218,8 @@
     "viewOnMap": "Voir sur la carte",
     "tonight": "ce soir",
     "trending": "Tendance",
-    "liveNow": "EN DIRECT"
+    "liveNow": "EN DIRECT",
+    "verified": "Noctua Verified"
   },
   "clubEvent": {
     "defaultClubName": "Soirée club à Barcelone",
@@ -374,5 +389,28 @@
     "zafiro": "Saphir",
     "diamante": "Diamant",
     "viewAll": "Voir les niveaux et avantages"
+  },
+  "favorites": {
+    "saved": "Enregistré",
+    "save": "Ajouter aux favoris",
+    "remindMe": "Me prévenir",
+    "reminder_same_day": "Le jour même",
+    "reminder_1_day": "1 jour avant",
+    "reminder_3_days": "3 jours avant",
+    "reminder_1_week": "1 semaine avant"
+  },
+  "changePassword": {
+    "eyebrow": "Sécurité du compte",
+    "title": "Changer le mot de passe",
+    "subtitle": "Mets à jour le mot de passe de ton compte Noctua.",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le nouveau mot de passe",
+    "errorFillBoth": "Merci de remplir les deux champs de mot de passe.",
+    "errorMinLength": "Le mot de passe doit contenir au moins 6 caractères.",
+    "errorMismatch": "Les mots de passe ne correspondent pas.",
+    "success": "Mot de passe mis à jour avec succès.",
+    "updating": "Mise à jour...",
+    "update": "Mettre à jour le mot de passe",
+    "back": "Retour au profil"
   }
 }

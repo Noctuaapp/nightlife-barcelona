@@ -11,6 +11,7 @@ import AreasSection from "../components/home/AreasSection"
 import { supabase } from "../lib/supabase"
 import { useLanguage } from "../context/LanguageContext"
 import { createSlug } from "../lib/slug"
+import { FALLBACK_IMAGE } from "../lib/fallbackImage"
 
 const display = Manrope({ subsets: ["latin"], weight: ["700", "800"] })
 
@@ -366,7 +367,7 @@ export default function Home() {
                         className="group relative flex h-80 flex-col justify-end overflow-hidden rounded-[28px] border border-white/10 transition duration-500 hover:-translate-y-1.5 hover:border-purple-400/30 hover:shadow-[0_20px_60px_-15px_rgba(168,85,247,0.35)]"
                       >
                         <img
-                          src={club.image || "/clubs/razz.jpg"}
+                          src={club.image || FALLBACK_IMAGE}
                           alt={club.name}
                           loading="lazy"
                           className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-110"

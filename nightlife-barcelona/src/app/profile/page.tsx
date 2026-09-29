@@ -240,7 +240,7 @@ export default function ProfilePage() {
   const saveUsername = async () => {
     setUsernameError("")
     setUsernameSuccess("")
-    if (!newUsername || newUsername.length < 3) { setUsernameError("Username must be at least 3 characters."); return }
+    if (!newUsername || newUsername.length < 3) { setUsernameError(t("profile.username_too_short")); return }
     if (newUsername === username) { setEditingUsername(false); return }
     if (!canChangeUsername()) { setUsernameError(t("profile.days_until_change").replace("{days}", String(daysUntilChange()))); return }
 
@@ -257,7 +257,7 @@ export default function ProfilePage() {
 
     if (error) {
       if (error.code === "23505") {
-        setUsernameError("Username already taken. Try another one.")
+        setUsernameError(t("profile.username_taken"))
       } else {
         setUsernameError(error.message)
       }
@@ -266,7 +266,7 @@ export default function ProfilePage() {
 
     setUsername(newUsername.toLowerCase().trim())
     setUsernameUpdatedAt(new Date().toISOString())
-    setUsernameSuccess("Username updated successfully!")
+    setUsernameSuccess(t("profile.username_updated"))
     setEditingUsername(false)
   }
 
@@ -274,8 +274,8 @@ export default function ProfilePage() {
     if (!userId) return
     setAvatarError("")
 
-    if (!file.type.startsWith("image/")) { setAvatarError("El archivo tiene que ser una imagen."); return }
-    if (file.size > 5 * 1024 * 1024) { setAvatarError("La imagen no puede pesar más de 5MB."); return }
+    if (!file.type.startsWith("image/")) { setAvatarError(t("profile.avatar_must_be_image")); return }
+    if (file.size > 5 * 1024 * 1024) { setAvatarError(t("profile.avatar_too_big")); return }
 
     setUploadingAvatar(true)
     const fileExt = file.name.split(".").pop()
@@ -493,7 +493,7 @@ export default function ProfilePage() {
           <div className="mb-6 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
             <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">Tu calendario</p>
             {loadingCalendar ? (
-              <p className="text-sm text-zinc-500">Cargando...</p>
+              <p className="text-sm text-zinc-500">{t("common.loading")}</p>
             ) : calendarItems.length === 0 ? (
               <p className="text-sm text-zinc-500">Guarda eventos o noches de club en favoritos para verlos aquí.</p>
             ) : (
@@ -522,7 +522,7 @@ export default function ProfilePage() {
                   return item.kind === "event" ? (
                     <Link key={`event-${item.id}`} href={`/event/${item.slug}`}>{card}</Link>
                   ) : (
-                    <Link key={`club_event-${item.id}`} href="/favorites">{card}</Link>
+                    <Link key={`club_event-${item.id}`} href={`/club-event/${item.id}`}>{card}</Link>
                   )
                 })}
               </div>
@@ -533,7 +533,7 @@ export default function ProfilePage() {
           <div className="mb-6 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
             <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">Últimos visitados</p>
             {loadingVisits ? (
-              <p className="text-sm text-zinc-500">Cargando...</p>
+              <p className="text-sm text-zinc-500">{t("common.loading")}</p>
             ) : recentVisits.length === 0 ? (
               <p className="text-sm text-zinc-500">Todavía no has visitado ningún club o evento.</p>
             ) : (
@@ -588,7 +588,7 @@ export default function ProfilePage() {
             </div>
 
             {loadingInbox ? (
-              <p className="text-sm text-zinc-500">Cargando...</p>
+              <p className="text-sm text-zinc-500">{t("common.loading")}</p>
             ) : inboxTab === "notifications" ? (
               notifHistory.length === 0 ? (
                 <p className="text-sm text-zinc-500">Todavía no tienes notificaciones.</p>
@@ -791,9 +791,9 @@ export default function ProfilePage() {
           <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
             <div className="w-full max-w-md rounded-[32px] border border-red-500/30 bg-[#111] p-8">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-3xl">⚠️</div>
-              <h2 className="mt-5 text-2xl font-black text-white">¿Eliminar tu cuenta?</h2>
+              <h2 className="mt-5 text-2xl font-black text-white">{t("profile.delete_confirm_title")}</h2>
               <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-                Esta acción es <span className="font-bold text-red-400">permanente</span>. Se borrarán tu perfil, tus favoritos y todo tu historial en Noctua. No podrás recuperarlo.
+                {t("profile.delete_confirm_body_1")} <span className="font-bold text-red-400">{t("profile.delete_confirm_body_2")}</span>. {t("profile.delete_confirm_body_3")}
               </p>
               <div className="mt-8 flex flex-col gap-3">
                 <button
@@ -801,14 +801,14 @@ export default function ProfilePage() {
                   disabled={deleting}
                   className="rounded-2xl bg-red-500 px-6 py-4 text-sm font-bold text-white transition hover:bg-red-600 disabled:opacity-50"
                 >
-                  {deleting ? "Eliminando..." : "Sí, eliminar mi cuenta"}
+                  {deleting ? t("profile.deleting") : t("profile.delete_confirm_yes")}
                 </button>
                 <button
                   onClick={() => setShowDeleteModal(false)}
                   disabled={deleting}
                   className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10"
                 >
-                  Cancelar
+                  {t("common.cancel")}
                 </button>
               </div>
             </div>

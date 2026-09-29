@@ -6,6 +6,7 @@ import AttendanceButton from "../gamification/AttendanceButton"
 import ClubMap from "../map/ClubMap"
 import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
+import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 
 type Ticket = {
   id: number
@@ -50,7 +51,7 @@ export default function ClubEventPageContent({ clubEvent, tickets, clubSlug }: C
 
       <section className="relative h-[75vh] overflow-hidden">
         <img
-          src={clubEvent.image || "/clubs/razz.jpg"}
+          src={clubEvent.image || FALLBACK_IMAGE}
           alt={clubEvent.title}
           className="absolute inset-0 h-full w-full object-cover"
         />

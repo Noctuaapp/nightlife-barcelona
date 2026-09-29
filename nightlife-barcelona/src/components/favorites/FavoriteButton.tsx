@@ -1,6 +1,7 @@
 "use client"
 
 import { useFavorites } from "../../context/FavoritesContext"
+import { useLanguage } from "../../context/LanguageContext"
 
 type FavoriteButtonProps = {
   itemType: "club" | "event" | "club_event"
@@ -8,10 +9,10 @@ type FavoriteButtonProps = {
 }
 
 const REMINDER_OPTIONS = [
-  { value: 0, label: "El mismo día" },
-  { value: 1, label: "1 día antes" },
-  { value: 3, label: "3 días antes" },
-  { value: 7, label: "1 semana antes" },
+  { value: 0, key: "favorites.reminder_same_day" },
+  { value: 1, key: "favorites.reminder_1_day" },
+  { value: 3, key: "favorites.reminder_3_days" },
+  { value: 7, key: "favorites.reminder_1_week" },
 ]
 
 export default function FavoriteButton({
@@ -19,6 +20,7 @@ export default function FavoriteButton({
   itemId,
 }: FavoriteButtonProps) {
   const { isFavorite, toggleFavorite, setReminder, getReminder } = useFavorites()
+  const { t } = useLanguage()
 
   const active = isFavorite(itemType, itemId)
   const showReminder = active && (itemType === "event" || itemType === "club_event")
@@ -34,12 +36,12 @@ export default function FavoriteButton({
             : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
         }`}
       >
-        {active ? "❤️ Guardado" : "🤍 Guardar en favoritos"}
+        {active ? `❤️ ${t("favorites.saved")}` : `🤍 ${t("favorites.save")}`}
       </button>
 
       {showReminder && (
         <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs uppercase tracking-widest text-zinc-500 mb-3">Avisarme</p>
+          <p className="text-xs uppercase tracking-widest text-zinc-500 mb-3">{t("favorites.remindMe")}</p>
           <div className="flex flex-wrap gap-2">
             {REMINDER_OPTIONS.map((opt) => (
               <button
@@ -51,7 +53,7 @@ export default function FavoriteButton({
                     : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/10"
                 }`}
               >
-                {opt.label}
+                {t(opt.key)}
               </button>
             ))}
           </div>

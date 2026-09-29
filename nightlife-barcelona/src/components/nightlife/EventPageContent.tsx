@@ -10,6 +10,7 @@ import TransportButtons from "../ui/TransportButtons"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
+import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 
 // Un evento de varios días (date_end) no se considera terminado hasta que pasa el último día,
 // no el primero.
@@ -305,7 +306,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
             style={{ opacity: pastHero ? 1 : 0 }}
           >
             <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg">
-              <img src={event.image || "/clubs/razz.jpg"} alt={event.title} className="h-full w-full object-cover" />
+              <img src={event.image || FALLBACK_IMAGE} alt={event.title} className="h-full w-full object-cover" />
             </div>
             <p className="truncate text-sm font-black text-white">{event.title}</p>
           </div>
@@ -337,7 +338,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
       >
         <div className="absolute inset-0 overflow-hidden">
           <img
-            src={event.image || "/clubs/razz.jpg"}
+            src={event.image || FALLBACK_IMAGE}
             alt={event.title}
             style={{ transform: `translateY(${scrollY * 0.3}px) scale(1.12)` }}
             className="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out will-change-transform"
@@ -626,7 +627,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
             <Card innerClassName="">
               <div className="flex items-center gap-4 border-b border-white/10 p-6">
                 <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl">
-                  <img src={event.image || "/clubs/razz.jpg"} alt={event.title} className="h-full w-full object-cover" />
+                  <img src={event.image || FALLBACK_IMAGE} alt={event.title} className="h-full w-full object-cover" />
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-lg font-black text-white">{event.title}</p>

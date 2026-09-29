@@ -27,7 +27,8 @@
   "common": {
     "back": "Indietro",
     "search": "Cerca",
-    "loading": "Caricamento..."
+    "loading": "Caricamento...",
+    "cancel": "Annulla"
   },
   "login": {
     "title": "Accedi",
@@ -54,7 +55,10 @@
     "gender_female": "Donna",
     "create": "Crea account",
     "creating": "Creazione account...",
-    "existing": "Hai già un account? Accedi"
+    "existing": "Hai già un account? Accedi",
+    "error_fill_all": "Per favore compila tutti i campi.",
+    "error_terms": "Devi accettare i termini e condizioni per continuare.",
+    "error_age": "Devi confermare di avere più di 18 anni per continuare."
   },
   "clubs": {
     "title": "Club",
@@ -156,7 +160,17 @@
     "danger": "Zona pericolosa",
     "delete": "Elimina account",
     "deleting": "Eliminazione...",
-    "delete_subtitle": "Elimina definitivamente il tuo account Noctua."
+    "delete_subtitle": "Elimina definitivamente il tuo account Noctua.",
+    "username_too_short": "Il nome utente deve contenere almeno 3 caratteri.",
+    "username_taken": "Nome utente già in uso. Provane un altro.",
+    "username_updated": "Nome utente aggiornato!",
+    "avatar_must_be_image": "Il file deve essere un'immagine.",
+    "avatar_too_big": "L'immagine non può superare i 5MB.",
+    "delete_confirm_title": "Eliminare il tuo account?",
+    "delete_confirm_body_1": "Questa azione è",
+    "delete_confirm_body_2": "permanente",
+    "delete_confirm_body_3": "Verranno eliminati il tuo profilo, i tuoi preferiti e tutta la tua cronologia su Noctua. Non potrai recuperarli.",
+    "delete_confirm_yes": "Sì, elimina il mio account"
   },
   "club": {
     "experience": "Esperienza nel club",
@@ -204,7 +218,8 @@
     "viewOnMap": "Vedi sulla mappa",
     "tonight": "stasera",
     "trending": "Di tendenza",
-    "liveNow": "IN DIRETTA"
+    "liveNow": "IN DIRETTA",
+    "verified": "Noctua Verified"
   },
   "clubEvent": {
     "defaultClubName": "Serata in un club di Barcellona",
@@ -374,5 +389,28 @@
     "zafiro": "Zaffiro",
     "diamante": "Diamante",
     "viewAll": "Vedi livelli e vantaggi"
+  },
+  "favorites": {
+    "saved": "Salvato",
+    "save": "Salva nei preferiti",
+    "remindMe": "Avvisami",
+    "reminder_same_day": "Lo stesso giorno",
+    "reminder_1_day": "1 giorno prima",
+    "reminder_3_days": "3 giorni prima",
+    "reminder_1_week": "1 settimana prima"
+  },
+  "changePassword": {
+    "eyebrow": "Sicurezza dell'account",
+    "title": "Cambia password",
+    "subtitle": "Aggiorna la password del tuo account Noctua.",
+    "newPassword": "Nuova password",
+    "confirmPassword": "Conferma nuova password",
+    "errorFillBoth": "Per favore compila entrambi i campi password.",
+    "errorMinLength": "La password deve contenere almeno 6 caratteri.",
+    "errorMismatch": "Le password non corrispondono.",
+    "success": "Password aggiornata con successo.",
+    "updating": "Aggiornamento...",
+    "update": "Aggiorna password",
+    "back": "Torna al profilo"
   }
 }

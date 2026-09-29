@@ -27,7 +27,8 @@
   "common": {
     "back": "Zurück",
     "search": "Suchen",
-    "loading": "Laden..."
+    "loading": "Wird geladen...",
+    "cancel": "Abbrechen"
   },
   "login": {
     "title": "Anmelden",
@@ -54,7 +55,10 @@
     "gender_female": "Weiblich",
     "create": "Konto erstellen",
     "creating": "Konto wird erstellt...",
-    "existing": "Hast du bereits ein Konto? Anmelden"
+    "existing": "Hast du bereits ein Konto? Anmelden",
+    "error_fill_all": "Bitte fülle alle Felder aus.",
+    "error_terms": "Du musst die AGB akzeptieren, um fortzufahren.",
+    "error_age": "Du musst bestätigen, dass du über 18 bist, um fortzufahren."
   },
   "clubs": {
     "title": "Clubs",
@@ -156,7 +160,17 @@
     "danger": "Gefahrenzone",
     "delete": "Konto löschen",
     "deleting": "Löschen...",
-    "delete_subtitle": "Lösche dein Noctua-Konto dauerhaft."
+    "delete_subtitle": "Lösche dein Noctua-Konto dauerhaft.",
+    "username_too_short": "Der Benutzername muss mindestens 3 Zeichen lang sein.",
+    "username_taken": "Dieser Benutzername ist bereits vergeben. Versuch einen anderen.",
+    "username_updated": "Benutzername aktualisiert!",
+    "avatar_must_be_image": "Die Datei muss ein Bild sein.",
+    "avatar_too_big": "Das Bild darf nicht größer als 5MB sein.",
+    "delete_confirm_title": "Konto löschen?",
+    "delete_confirm_body_1": "Diese Aktion ist",
+    "delete_confirm_body_2": "endgültig",
+    "delete_confirm_body_3": "Dein Profil, deine Favoriten und dein gesamter Verlauf auf Noctua werden gelöscht. Du kannst sie nicht wiederherstellen.",
+    "delete_confirm_yes": "Ja, mein Konto löschen"
   },
   "club": {
     "experience": "Club-Erlebnis",
@@ -204,7 +218,8 @@
     "viewOnMap": "Auf der Karte ansehen",
     "tonight": "heute Abend",
     "trending": "Angesagt",
-    "liveNow": "LIVE"
+    "liveNow": "LIVE",
+    "verified": "Noctua Verified"
   },
   "clubEvent": {
     "defaultClubName": "Clubnacht in Barcelona",
@@ -374,5 +389,28 @@
     "zafiro": "Saphir",
     "diamante": "Diamant",
     "viewAll": "Level und Vorteile ansehen"
+  },
+  "favorites": {
+    "saved": "Gespeichert",
+    "save": "Zu Favoriten hinzufügen",
+    "remindMe": "Erinnere mich",
+    "reminder_same_day": "Am selben Tag",
+    "reminder_1_day": "1 Tag vorher",
+    "reminder_3_days": "3 Tage vorher",
+    "reminder_1_week": "1 Woche vorher"
+  },
+  "changePassword": {
+    "eyebrow": "Kontosicherheit",
+    "title": "Passwort ändern",
+    "subtitle": "Aktualisiere das Passwort deines Noctua-Kontos.",
+    "newPassword": "Neues Passwort",
+    "confirmPassword": "Neues Passwort bestätigen",
+    "errorFillBoth": "Bitte fülle beide Passwortfelder aus.",
+    "errorMinLength": "Das Passwort muss mindestens 6 Zeichen lang sein.",
+    "errorMismatch": "Die Passwörter stimmen nicht überein.",
+    "success": "Passwort erfolgreich aktualisiert.",
+    "updating": "Wird aktualisiert...",
+    "update": "Passwort aktualisieren",
+    "back": "Zurück zum Profil"
   }
 }

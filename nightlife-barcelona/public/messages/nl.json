@@ -27,7 +27,8 @@
   "common": {
     "back": "Terug",
     "search": "Zoeken",
-    "loading": "Laden..."
+    "loading": "Laden...",
+    "cancel": "Annuleren"
   },
   "login": {
     "title": "Inloggen",
@@ -54,7 +55,10 @@
     "gender_female": "Vrouw",
     "create": "Account aanmaken",
     "creating": "Account aanmaken...",
-    "existing": "Heb je al een account? Inloggen"
+    "existing": "Heb je al een account? Inloggen",
+    "error_fill_all": "Vul alle velden in.",
+    "error_terms": "Je moet de algemene voorwaarden accepteren om door te gaan.",
+    "error_age": "Je moet bevestigen dat je ouder dan 18 bent om door te gaan."
   },
   "clubs": {
     "title": "Clubs",
@@ -156,7 +160,17 @@
     "danger": "Gevaarlijke zone",
     "delete": "Account verwijderen",
     "deleting": "Verwijderen...",
-    "delete_subtitle": "Verwijder je Noctua-account permanent."
+    "delete_subtitle": "Verwijder je Noctua-account permanent.",
+    "username_too_short": "Gebruikersnaam moet minstens 3 tekens bevatten.",
+    "username_taken": "Deze gebruikersnaam is al bezet. Probeer een andere.",
+    "username_updated": "Gebruikersnaam bijgewerkt!",
+    "avatar_must_be_image": "Het bestand moet een afbeelding zijn.",
+    "avatar_too_big": "De afbeelding mag niet groter zijn dan 5MB.",
+    "delete_confirm_title": "Je account verwijderen?",
+    "delete_confirm_body_1": "Deze actie is",
+    "delete_confirm_body_2": "definitief",
+    "delete_confirm_body_3": "Je profiel, favorieten en volledige geschiedenis op Noctua worden verwijderd. Je kunt dit niet ongedaan maken.",
+    "delete_confirm_yes": "Ja, mijn account verwijderen"
   },
   "club": {
     "experience": "Club ervaring",
@@ -204,7 +218,8 @@
     "viewOnMap": "Bekijk op kaart",
     "tonight": "vanavond",
     "trending": "Trending",
-    "liveNow": "LIVE NU"
+    "liveNow": "LIVE NU",
+    "verified": "Noctua Verified"
   },
   "clubEvent": {
     "defaultClubName": "Clubnacht in Barcelona",
@@ -374,5 +389,28 @@
     "zafiro": "Saffier",
     "diamante": "Diamant",
     "viewAll": "Bekijk niveaus en voordelen"
+  },
+  "favorites": {
+    "saved": "Opgeslagen",
+    "save": "Opslaan bij favorieten",
+    "remindMe": "Herinner mij",
+    "reminder_same_day": "Dezelfde dag",
+    "reminder_1_day": "1 dag van tevoren",
+    "reminder_3_days": "3 dagen van tevoren",
+    "reminder_1_week": "1 week van tevoren"
+  },
+  "changePassword": {
+    "eyebrow": "Accountbeveiliging",
+    "title": "Wachtwoord wijzigen",
+    "subtitle": "Werk het wachtwoord van je Noctua-account bij.",
+    "newPassword": "Nieuw wachtwoord",
+    "confirmPassword": "Bevestig nieuw wachtwoord",
+    "errorFillBoth": "Vul beide wachtwoordvelden in.",
+    "errorMinLength": "Het wachtwoord moet minstens 6 tekens bevatten.",
+    "errorMismatch": "Wachtwoorden komen niet overeen.",
+    "success": "Wachtwoord succesvol bijgewerkt.",
+    "updating": "Bijwerken...",
+    "update": "Wachtwoord bijwerken",
+    "back": "Terug naar profiel"
   }
 }

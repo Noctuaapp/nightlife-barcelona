@@ -12,7 +12,10 @@ type ClubPageProps = {
 export default async function ClubPage({ params }: ClubPageProps) {
   const { slug } = await params
 
-  const { data: clubs } = await supabase.from("clubs").select("*")
+  // Filtramos hidden igual que en el listado — si no, un club oculto desde el admin seguía siendo
+  // visitable por enlace directo (compartido, indexado por Google, guardado en favoritos antes de
+  // ocultarlo...), que es justo lo que "ocultar" pretende evitar.
+  const { data: clubs } = await supabase.from("clubs").select("*").eq("hidden", false)
   const club = clubs?.find((club) => createSlug(club.name) === slug)
 
   if (!club) {
