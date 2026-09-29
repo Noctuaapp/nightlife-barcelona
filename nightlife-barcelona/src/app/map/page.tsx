@@ -150,6 +150,25 @@ export default function MapPage() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [trackingActive, setTrackingActive] = useState(false)
   const [walkingTime, setWalkingTime] = useState<string | null>(null)
+
+  // Analítica de búsquedas: guarda lo que la gente busca en el mapa (con un pequeño debounce
+  // para no insertar una fila por cada letra) para poder verlo luego en el admin.
+  useEffect(() => {
+    const query = search.trim()
+    if (query.length < 2) return
+    const timeout = setTimeout(async () => {
+      const { data: userData } = await supabase.auth.getUser()
+      await supabase.from("analytics").insert({
+        event_type: "search",
+        item_type: filter,
+        item_name: query,
+        user_id: userData.user?.id || null,
+      })
+    }, 1200)
+    return () => clearTimeout(timeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search])
+
   useEffect(() => {
     const start = Date.now()
     const duration = 300

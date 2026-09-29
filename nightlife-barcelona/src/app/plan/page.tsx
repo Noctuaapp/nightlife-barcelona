@@ -352,7 +352,27 @@ export default function PlanPage() {
     if (hint && musicSet.size === 0) setMusicSet(new Set([hint]))
   }
 
+  // Analítica de "Planifica tu noche": registra qué combinación de filtros eligió la persona
+  // cada vez que genera un plan, para poder ver en el admin qué filtros/búsquedas usa más la
+  // gente. Una sola fila por generación (no una por cada toggle) para no llenar la tabla.
+  const trackPlanFilters = async () => {
+    const parts: string[] = []
+    if (venueTypeSet.size > 0) parts.push(`tipo:${Array.from(venueTypeSet).join("/")}`)
+    if (musicSet.size > 0) parts.push(`musica:${Array.from(musicSet).join("/")}`)
+    if (areaSet.size > 0) parts.push(`zona:${Array.from(areaSet).join("/")}`)
+    if (dresscode && dresscode !== "Cualquiera") parts.push(`dresscode:${dresscode}`)
+    if (parts.length === 0) return
+    const { data: userData } = await supabase.auth.getUser()
+    await supabase.from("analytics").insert({
+      event_type: "filter_used",
+      item_type: "plan",
+      item_name: parts.join(" | "),
+      user_id: userData.user?.id || null,
+    })
+  }
+
   const generatePlan = () => {
+    trackPlanFilters()
     setPhase("loading")
     setLoadingMsgIndex(0)
     let i = 0

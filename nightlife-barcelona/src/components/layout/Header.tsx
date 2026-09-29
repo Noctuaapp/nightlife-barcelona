@@ -65,7 +65,7 @@ export default function Header() {
     // el alta por Google (que no pasa por el formulario de registro con sus checkboxes) como
     // cualquier cuenta creada antes de que existiera esta confirmación.
     const checkTermsAccepted = async (userId: string) => {
-      if (window.location.pathname === "/confirm-age") return
+      if (window.location.pathname === "/confirm-age" || window.location.pathname === "/blocked") return
       const { data: profile } = await supabase
         .from("profiles")
         .select("terms_accepted_at")
@@ -76,17 +76,37 @@ export default function Header() {
       }
     }
 
+    // Cuenta bloqueada desde el admin: si el usuario está marcado como is_blocked en su perfil,
+    // se le manda a /blocked (que a su vez le ofrece cerrar sesión o contactar con soporte).
+    const checkBlocked = async (userId: string) => {
+      if (window.location.pathname === "/blocked") return
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_blocked")
+        .eq("id", userId)
+        .maybeSingle()
+      if (profile?.is_blocked) {
+        router.push("/blocked")
+      }
+    }
+
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession()
       setIsLoggedIn(!!data.session)
       setIsAdmin(data.session?.user.email === "info@noctuaapp.com")
-      if (data.session) checkTermsAccepted(data.session.user.id)
+      if (data.session) {
+        checkBlocked(data.session.user.id)
+        checkTermsAccepted(data.session.user.id)
+      }
     }
     checkSession()
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session)
       setIsAdmin(session?.user.email === "info@noctuaapp.com")
-      if (session) checkTermsAccepted(session.user.id)
+      if (session) {
+        checkBlocked(session.user.id)
+        checkTermsAccepted(session.user.id)
+      }
     })
     return () => { subscription.unsubscribe() }
   }, [router])
