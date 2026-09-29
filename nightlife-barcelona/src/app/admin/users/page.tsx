@@ -61,6 +61,14 @@ export default function AdminUsersPage() {
     if (ownableClubs.length === 0 && ownableFestivals.length === 0) loadOwnables()
   }
 
+  // Aviso al usuario, como notificación dentro de la app, de que ya puede gestionar su club o
+  // festival — mismo mecanismo que usa el botón "💬 Mensaje" (tabla notifications).
+  const notifyOwnerAccess = async (userId: string, title: string, body: string) => {
+    await supabase.from("notifications").insert([
+      { user_id: userId, title, body, type: "admin_message" },
+    ])
+  }
+
   const setUserClub = async (userId: string, clubId: number | null) => {
     setSavingLink(true)
     // Si este usuario ya tenía otro club vinculado, lo desvinculamos primero — una persona no
@@ -81,6 +89,15 @@ export default function AdminUsersPage() {
       })
     )
     setSavingLink(false)
+
+    if (clubId) {
+      const club = ownableClubs.find((c) => c.id === clubId)
+      await notifyOwnerAccess(
+        userId,
+        "Ya puedes gestionar tu club",
+        `Te hemos dado acceso a "${club?.name ?? "tu club"}". Entra en /mi-club para editar su ficha y sus noches.`
+      )
+    }
   }
 
   const toggleUserFestival = async (userId: string, festivalId: number, currentlyOwned: boolean) => {
@@ -94,6 +111,15 @@ export default function AdminUsersPage() {
     setOwnableFestivals((prev) =>
       prev.map((e) => (e.id === festivalId ? { ...e, owner_user_id: currentlyOwned ? null : userId } : e))
     )
+
+    if (!currentlyOwned) {
+      const festival = ownableFestivals.find((e) => e.id === festivalId)
+      await notifyOwnerAccess(
+        userId,
+        "Ya puedes gestionar tu festival",
+        `Te hemos dado acceso a "${festival?.title ?? "tu festival"}". Entra en /mi-festival para editar su ficha y su line-up.`
+      )
+    }
   }
 
   useEffect(() => {
@@ -302,9 +328,9 @@ export default function AdminUsersPage() {
                             style={{ colorScheme: "dark" }}
                             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500/50"
                           >
-                            <option value="">Sin especificar</option>
-                            <option value="Hombre">Hombre</option>
-                            <option value="Mujer">Mujer</option>
+                            <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">Sin especificar</option>
+                            <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">Hombre</option>
+                            <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Mujer">Mujer</option>
                           </select>
                         </div>
                       </div>
@@ -367,9 +393,9 @@ export default function AdminUsersPage() {
                         style={{ colorScheme: "dark" }}
                         className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500/50"
                       >
-                        <option value="">Ninguno</option>
+                        <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">Ninguno</option>
                         {ownableClubs.map((c) => (
-                          <option key={c.id} value={c.id}>
+                          <option key={c.id} value={c.id} style={{ backgroundColor: "#18181b", color: "#fff" }}>
                             {c.name}{c.owner_user_id && c.owner_user_id !== user.id ? " (ya vinculado a otro usuario)" : ""}
                           </option>
                         ))}
