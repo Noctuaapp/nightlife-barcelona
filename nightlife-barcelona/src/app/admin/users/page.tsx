@@ -299,6 +299,7 @@ export default function AdminUsersPage() {
                           <select
                             value={editGender}
                             onChange={(e) => setEditGender(e.target.value)}
+                            style={{ colorScheme: "dark" }}
                             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500/50"
                           >
                             <option value="">Sin especificar</option>
@@ -363,6 +364,7 @@ export default function AdminUsersPage() {
                         value={ownableClubs.find((c) => c.owner_user_id === user.id)?.id ?? ""}
                         onChange={(e) => setUserClub(user.id, e.target.value ? Number(e.target.value) : null)}
                         disabled={savingLink}
+                        style={{ colorScheme: "dark" }}
                         className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500/50"
                       >
                         <option value="">Ninguno</option>
