@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "../../lib/supabase"
+import AdminShell from "../../components/admin/AdminShell"
 
 type Club = {
   id: number
@@ -24,7 +25,24 @@ type Club = {
   lgtbi_friendly: boolean
   verified?: boolean
   vip_tables?: boolean
+  venue_type?: string
+  open_days?: string[] | null
+  metro_lines?: string
+  night_buses?: string
+  has_foosball?: boolean
+  discount_info?: string
+  free_entry_info?: string
+  gallery?: string[] | null
+  manual_photos?: boolean | null
 }
+
+// Antes este desplegable no existía en ningún sitio del panel de admin: la página de Clubs se
+// quedó con el diseño antiguo (sin AdminShell) mientras el resto de pantallas del admin se
+// actualizaron, así que campos como el tipo de local, los días que abre, el metro/bus cercano,
+// el futbolín/billar y los descuentos/entrada gratis nunca tuvieron un sitio desde el que
+// editarse aunque ya se usaran en la web (ficha de club, filtros de "Planifica tu noche", etc.).
+const VENUE_TYPE_OPTIONS = ["Discoteca", "Pub", "Bar musical"]
+const DAY_OPTIONS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
 
 type ClubFormData = {
   name: string
@@ -46,6 +64,14 @@ type ClubFormData = {
   trending: boolean
   sold_out: boolean
   hidden: boolean
+  venue_type: string
+  open_days: string[]
+  metro_lines: string
+  night_buses: string
+  has_foosball: boolean
+  discount_info: string
+  free_entry_info: string
+  gallery: string[]
 }
 
 const emptyForm: ClubFormData = {
@@ -68,6 +94,14 @@ const emptyForm: ClubFormData = {
   trending: false,
   sold_out: false,
   hidden: false,
+  venue_type: "Discoteca",
+  open_days: [],
+  metro_lines: "",
+  night_buses: "",
+  has_foosball: false,
+  discount_info: "",
+  free_entry_info: "",
+  gallery: [],
 }
 
 const clubToForm = (club: Club): ClubFormData => ({
@@ -90,17 +124,15 @@ const clubToForm = (club: Club): ClubFormData => ({
   trending: !!club.trending,
   sold_out: !!club.sold_out,
   hidden: !!club.hidden,
+  venue_type: club.venue_type || "Discoteca",
+  open_days: club.open_days || [],
+  metro_lines: club.metro_lines || "",
+  night_buses: club.night_buses || "",
+  has_foosball: !!club.has_foosball,
+  discount_info: club.discount_info || "",
+  free_entry_info: club.free_entry_info || "",
+  gallery: Array.isArray(club.gallery) ? club.gallery : [],
 })
-
-const adminLinks = [
-  { href: "/admin", label: "Clubs" },
-  { href: "/admin/events", label: "Events" },
-  { href: "/admin/club-events", label: "Club nights" },
-  { href: "/admin/essentials", label: "Essentials" },
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/messages", label: "Messages" },
-  { href: "/admin/analytics", label: "Analytics" },
-]
 
 export default function AdminPage() {
   const [clubs, setClubs] = useState<Club[]>([])
@@ -181,6 +213,19 @@ export default function AdminPage() {
     trending: form.trending,
     sold_out: form.sold_out,
     hidden: form.hidden,
+    venue_type: form.venue_type,
+    open_days: form.open_days.length ? form.open_days : null,
+    metro_lines: form.metro_lines.trim(),
+    night_buses: form.night_buses.trim(),
+    has_foosball: form.has_foosball,
+    discount_info: form.discount_info.trim(),
+    free_entry_info: form.free_entry_info.trim(),
+    gallery: form.gallery.length > 0 ? form.gallery : null,
+    // En cuanto guardas el formulario con alguna foto en la galería (ya sea porque las trajo el
+    // pipeline de Google y las has dejado, o porque has quitado/subido alguna a mano), este club
+    // queda marcado como "gestionado a mano": el cron de Google ya no le toca la galería ni la
+    // portada, así no te vuelve a poner una foto que ya habías quitado por no encajar.
+    manual_photos: form.gallery.length > 0,
   })
 
   const addClub = async () => {
@@ -223,6 +268,37 @@ export default function AdminPage() {
     setForm({ ...form, image: data.publicUrl })
     setUploadingImage(false)
     e.target.value = ""
+  }
+
+  // Galería del club (las fotos que se ven en la ficha, debajo de la principal). Usa el mismo
+  // bucket "club-photos" que rellena el cron de Google, así conviven sin problema — la diferencia
+  // es que estas se suben con el prefijo "admin/" en vez de "<id-del-club>/...".
+  const [uploadingGallery, setUploadingGallery] = useState(false)
+
+  const handleGalleryUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    form: ClubFormData,
+    setForm: (f: ClubFormData) => void
+  ) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    setUploadingGallery(true)
+    const urls: string[] = []
+    for (const file of Array.from(files)) {
+      const fileExt = file.name.split(".").pop()
+      const fileName = `admin/manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+      const { error } = await supabase.storage.from("club-photos").upload(fileName, file)
+      if (error) continue
+      const { data } = supabase.storage.from("club-photos").getPublicUrl(fileName)
+      urls.push(data.publicUrl)
+    }
+    setUploadingGallery(false)
+    if (urls.length > 0) setForm({ ...form, gallery: [...form.gallery, ...urls] })
+    e.target.value = ""
+  }
+
+  const removeGalleryPhoto = (url: string, form: ClubFormData, setForm: (f: ClubFormData) => void) => {
+    setForm({ ...form, gallery: form.gallery.filter((u) => u !== url) })
   }
 
   const startEdit = (club: Club) => {
@@ -327,6 +403,32 @@ export default function AdminPage() {
           </div>
         </div>
       </div>
+      <div className="md:col-span-2">
+        <label className={labelClass}>
+          Galería ({form.gallery.length} foto{form.gallery.length === 1 ? "" : "s"})
+          {form.gallery.length > 0 && <span className="ml-2 normal-case font-normal text-zinc-600">— quita las que no encajen con la ✕</span>}
+        </label>
+        <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploadingGallery ? "border-white/10 text-zinc-600" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
+          {uploadingGallery ? "Subiendo..." : "📁 Añadir fotos a la galería"}
+          <input type="file" accept="image/*" multiple className="hidden" disabled={uploadingGallery} onChange={(e) => handleGalleryUpload(e, form, setForm)} />
+        </label>
+        {form.gallery.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-3">
+            {form.gallery.map((url) => (
+              <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10">
+                <img src={url} alt="" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeGalleryPhoto(url, form, setForm)}
+                  className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white opacity-0 transition group-hover:opacity-100"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       <div>
         <label className={labelClass}>Rating</label>
         <input value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} placeholder="4.5" className={inputClass} />
@@ -339,12 +441,60 @@ export default function AdminPage() {
         <label className={labelClass}>Dress code</label>
         <input value={form.dresscode} onChange={(e) => setForm({ ...form, dresscode: e.target.value })} placeholder="Elegante, casual..." className={inputClass} />
       </div>
+      <div>
+        <label className={labelClass}>Tipo de local</label>
+        <select value={form.venue_type} onChange={(e) => setForm({ ...form, venue_type: e.target.value })} className={inputClass}>
+          {VENUE_TYPE_OPTIONS.map((v) => (
+            <option key={v} value={v} className="bg-black text-white">{v}</option>
+          ))}
+        </select>
+      </div>
+      <div className="md:col-span-2">
+        <label className={labelClass}>Días que abre (vacío = sin dato, no se filtra en Planifica tu noche)</label>
+        <div className="flex flex-wrap gap-2">
+          {DAY_OPTIONS.map((day) => {
+            const active = form.open_days.includes(day)
+            return (
+              <button
+                key={day}
+                type="button"
+                onClick={() =>
+                  setForm({
+                    ...form,
+                    open_days: active ? form.open_days.filter((d) => d !== day) : [...form.open_days, day],
+                  })
+                }
+                className={`rounded-full px-4 py-2 text-xs font-bold transition ${active ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}
+              >
+                {day}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <div>
+        <label className={labelClass}>Líneas de metro cercanas (separadas por comas)</label>
+        <input value={form.metro_lines} onChange={(e) => setForm({ ...form, metro_lines: e.target.value })} placeholder="L1, L4" className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Buses nocturnos cercanos (separados por comas)</label>
+        <input value={form.night_buses} onChange={(e) => setForm({ ...form, night_buses: e.target.value })} placeholder="N0, N6" className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Descuento o promo de hoy (vacío = ninguno)</label>
+        <input value={form.discount_info} onChange={(e) => setForm({ ...form, discount_info: e.target.value })} placeholder="2x1 en copas hasta las 02:00" className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Entrada gratis — condiciones (vacío = ninguna)</label>
+        <input value={form.free_entry_info} onChange={(e) => setForm({ ...form, free_entry_info: e.target.value })} placeholder="Gratis para chicas hasta las 00:30" className={inputClass} />
+      </div>
       <div className="md:col-span-2 flex flex-wrap gap-2 pt-2">
         {[
           { key: "terrace" as const, label: "🌿 Terraza" },
           { key: "smoking_area" as const, label: "🚬 Zona fumadores" },
           { key: "table_booking" as const, label: "🍾 Reserva de mesas" },
           { key: "vip_tables" as const, label: "🛋️ Mesa VIP" },
+          { key: "has_foosball" as const, label: "🎱 Futbolín/Billar" },
           { key: "lgtbi_friendly" as const, label: "🏳️‍🌈 LGTBI+" },
           { key: "verified" as const, label: "✓ Verified" },
           { key: "trending" as const, label: "🔥 Trending" },
@@ -361,26 +511,8 @@ export default function AdminPage() {
   )
 
   return (
-    <main className="min-h-screen bg-black pb-40 text-white">
-      <section className="px-4 pt-10">
-        <div className="mx-auto max-w-7xl">
-
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">Noctua Admin</p>
-              <h1 className="mt-2 text-5xl font-black tracking-tight">Clubs</h1>
-            </div>
-            <a href="/" className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-bold text-white hover:bg-white hover:text-black transition">← Web</a>
-          </div>
-
-          {/* Nav */}
-          <div className="flex flex-wrap gap-2 mb-8">
-            {adminLinks.map((link) => (
-              <a key={link.href} href={link.href} className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${link.href === "/admin" ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white hover:text-black"}`}>{link.label}</a>
-            ))}
-          </div>
-
+    <AdminShell title="Clubs" subtitle="Gestiona las discotecas, pubs y bares musicales de Noctua.">
+      <>
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4 mb-8 md:grid-cols-4">
             {[
@@ -539,8 +671,7 @@ export default function AdminPage() {
               )}
             </div>
           )}
-        </div>
-      </section>
-    </main>
+      </>
+    </AdminShell>
   )
 }

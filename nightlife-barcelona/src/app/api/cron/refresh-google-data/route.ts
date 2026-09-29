@@ -80,6 +80,7 @@ export async function GET(req: Request) {
     .from("clubs")
     .select("id, name, address, neighborhood")
     .is("google_place_id", null)
+    .or("manual_photos.is.null,manual_photos.eq.false")
     .limit(5)
 
   const newlyAssigned = await Promise.all(
@@ -117,10 +118,14 @@ export async function GET(req: Request) {
     })
   )
 
+  // Los clubs marcados como "manual_photos" (el admin ha quitado o subido fotos a mano desde el
+  // panel) los deja en paz el pipeline automático — ni fotos ni place_id — para no pisar lo que
+  // se haya curado a mano.
   const { data: clubs, error } = await supabase
     .from("clubs")
     .select("id, name, image, google_place_id")
     .not("google_place_id", "is", null)
+    .or("manual_photos.is.null,manual_photos.eq.false")
     .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
     .limit(BATCH_SIZE)
 
@@ -128,11 +133,13 @@ export async function GET(req: Request) {
     .from("clubs")
     .select("*", { count: "exact", head: true })
     .not("google_place_id", "is", null)
+    .or("manual_photos.is.null,manual_photos.eq.false")
 
   const { count: alreadyRefreshed } = await supabase
     .from("clubs")
     .select("*", { count: "exact", head: true })
     .not("google_place_id", "is", null)
+    .or("manual_photos.is.null,manual_photos.eq.false")
     .not("google_last_refreshed_at", "is", null)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -143,7 +150,10 @@ export async function GET(req: Request) {
   const results = await Promise.all(
     (clubs || []).map(async (club) => {
       try {
-        const detailsRes = await fetch(`https://places.googleapis.com/v1/places/${club.google_place_id}`, {
+        // languageCode=es hace que Google traduzca automáticamente el texto de las reseñas al
+        // español (server-side, sin necesitar la API de Traducción aparte) — "text" viene ya
+        // traducido y "originalText" es el texto tal cual lo escribió la persona.
+        const detailsRes = await fetch(`https://places.googleapis.com/v1/places/${club.google_place_id}?languageCode=es`, {
           headers: {
             "X-Goog-Api-Key": apiKey,
             "X-Goog-FieldMask": "displayName,types,rating,userRatingCount,reviews,photos",
