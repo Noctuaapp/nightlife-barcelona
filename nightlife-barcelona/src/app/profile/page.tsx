@@ -558,7 +558,7 @@ export default function ProfilePage() {
           </div>
 
           {/* BUZON */}
-          <div className="mb-6 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
+          <div id="buzon" className="mb-6 scroll-mt-24 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
             <div className="flex items-center justify-between mb-6">
               <p className="text-xs uppercase tracking-widest text-zinc-500">📥 Buzón</p>
               {unreadCount > 0 && (

@@ -441,21 +441,21 @@ export default function Header() {
                     <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
                     {/* Antes: "absolute right-0" tomaba como referencia el propio botón de la
                         campana, que no está pegado al borde derecho de la pantalla (a su derecha
-                        sigue el botón del menú ☰). En móviles estrechos eso hacía que el panel se
-                        calculara con un ancho pensado para el viewport completo pero anclado más
-                        a la izquierda de lo que le correspondía, saliéndose por el borde
-                        izquierdo de la pantalla (fuera de vista, "desplazado"). Ahora se ancla
-                        directamente al viewport (fixed) con el mismo margen a cada lado que el
-                        padding del header (right-6 = 24px), así siempre queda centrado y visible
-                        sea cual sea el ancho de pantalla. */}
-                    <div className="fixed right-6 top-[84px] z-50 max-h-[70vh] w-[min(20rem,calc(100vw-3rem))] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl" style={{ background: "#111" }}>
+                        sigue el botón del menú ☰), y un primer intento con
+                        w-[min(20rem,calc(100vw-3rem))] seguía saliéndose por la izquierda en
+                        móvil (min()+calc() anidados en un valor arbitrario de Tailwind no siempre
+                        compilan bien). Ahora se fija con márgenes simples (left-4/right-4, sin
+                        calc ni min): el panel siempre mide "todo el ancho menos 16px a cada
+                        lado", tope de 22rem, nunca se sale de la pantalla. En pantallas grandes
+                        (sm:) vuelve a anclarse bajo la campana con ancho fijo. */}
+                    <div className="fixed left-4 right-4 top-[84px] z-50 mx-auto max-h-[70vh] max-w-[22rem] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl sm:left-auto sm:right-6 sm:w-80 sm:max-w-none" style={{ background: "#111" }}>
                       <div className="border-b border-white/10 px-4 py-3">
                         <p className="text-sm font-bold text-white">Notificaciones</p>
                       </div>
                       {notifications.length === 0 ? (
                         <p className="px-4 py-6 text-center text-sm text-zinc-500">No tienes notificaciones</p>
                       ) : (
-                        notifications.map((n) => {
+                        notifications.slice(0, 8).map((n) => {
                           const content = (
                             <>
                               <p className="text-sm font-bold text-white">{n.title}</p>
@@ -485,6 +485,18 @@ export default function Header() {
                             </div>
                           )
                         })
+                      )}
+                      {/* Antes se listaban TODAS las notificaciones sin límite — con muchas
+                          acumuladas el desplegable se hacía interminable. Ahora se corta en 8 y,
+                          si hay más, un enlace lleva al buzón completo del perfil. */}
+                      {notifications.length > 8 && (
+                        <Link
+                          href="/profile#buzon"
+                          onClick={() => setNotifOpen(false)}
+                          className="block px-4 py-3 text-center text-sm font-bold text-purple-300 transition hover:bg-white/[0.06]"
+                        >
+                          Ver más ({notifications.length - 8})
+                        </Link>
                       )}
                     </div>
                   </>
