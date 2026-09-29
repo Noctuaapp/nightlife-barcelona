@@ -77,6 +77,19 @@ export default function FavoritesPage() {
   // para no hacer una llamada a la base de datos en cada pulsación de tecla.
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
 
+  // Estado de las tarjetas: antes el selector de lista era un <select> nativo del navegador (el
+  // único elemento de toda la web con ese estilo — desentona con los botones/pills del resto de
+  // la app) y la nota estaba siempre visible ocupando sitio en TODAS las tarjetas aunque casi
+  // nadie la usara. Ahora el desplegable de listas es un botón + menú propio (mismo patrón que el
+  // selector de ciudad del header) y la nota queda oculta detrás de un botón "+ Nota", solo
+  // visible por defecto si ya tenías una escrita.
+  // (Estos dos useState tienen que declararse aquí, junto con el resto — declararlos después del
+  // "return" de la pantalla de carga rompía las Rules of Hooks: React dejaba de ver estos hooks
+  // en cuanto checkingSession/loadingFavorites pasaban a false, y eso desincronizaba el orden de
+  // hooks entre renders.)
+  const [openListMenu, setOpenListMenu] = useState<string | null>(null)
+  const [openNote, setOpenNote] = useState<Record<string, boolean>>({})
+
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession()
@@ -179,15 +192,6 @@ export default function FavoritesPage() {
       </main>
     )
   }
-
-  // Estado de las tarjetas: antes el selector de lista era un <select> nativo del navegador (el
-  // único elemento de toda la web con ese estilo — desentona con los botones/pills del resto de
-  // la app) y la nota estaba siempre visible ocupando sitio en TODAS las tarjetas aunque casi
-  // nadie la usara. Ahora el desplegable de listas es un botón + menú propio (mismo patrón que el
-  // selector de ciudad del header) y la nota queda oculta detrás de un botón "+ Nota", solo
-  // visible por defecto si ya tenías una escrita.
-  const [openListMenu, setOpenListMenu] = useState<string | null>(null)
-  const [openNote, setOpenNote] = useState<Record<string, boolean>>({})
 
   const renderCard = (
     item: (Club | EventItem | ClubEvent) & { type: FavType },
