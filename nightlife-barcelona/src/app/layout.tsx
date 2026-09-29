@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/react"
 import { NightlifeProvider } from "../context/NightlifeContext"
 import { FavoritesProvider } from "../context/FavoritesContext"
 import { LanguageProvider } from "../context/LanguageContext"
+import MaintenanceGate from "../components/system/MaintenanceGate"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -50,8 +51,8 @@ export default function RootLayout({
       <body>
         <LanguageProvider>
           <FavoritesProvider>
-            <NightlifeProvider>              
-              {children}
+            <NightlifeProvider>
+              <MaintenanceGate>{children}</MaintenanceGate>
             </NightlifeProvider>
           </FavoritesProvider>
         </LanguageProvider>

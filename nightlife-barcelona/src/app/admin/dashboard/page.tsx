@@ -13,6 +13,10 @@ export default function AdminDashboardPage() {
     users: 0, favorites: 0, favoriteClubs: 0, favoriteEvents: 0, favoriteClubEvents: 0,
   })
 
+  const [maintenanceMode, setMaintenanceMode] = useState(false)
+  const [loadingMaintenance, setLoadingMaintenance] = useState(true)
+  const [savingMaintenance, setSavingMaintenance] = useState(false)
+
   useEffect(() => {
     const checkAdmin = async () => {
       const { data, error } = await supabase.auth.getSession()
@@ -62,6 +66,31 @@ export default function AdminDashboardPage() {
     fetchStats()
   }, [checkingAdmin])
 
+  useEffect(() => {
+    if (checkingAdmin) return
+    const loadMaintenance = async () => {
+      const { data } = await supabase.from("app_settings").select("maintenance_mode").eq("id", true).maybeSingle()
+      setMaintenanceMode(!!data?.maintenance_mode)
+      setLoadingMaintenance(false)
+    }
+    loadMaintenance()
+  }, [checkingAdmin])
+
+  const toggleMaintenance = async () => {
+    const next = !maintenanceMode
+    if (
+      next &&
+      !window.confirm("¿Activar el modo mantenimiento? Nadie excepto tú podrá usar la app hasta que lo desactives.")
+    ) {
+      return
+    }
+    setSavingMaintenance(true)
+    const { error } = await supabase.from("app_settings").update({ maintenance_mode: next }).eq("id", true)
+    setSavingMaintenance(false)
+    if (error) { window.alert("No se pudo actualizar el modo mantenimiento: " + error.message); return }
+    setMaintenanceMode(next)
+  }
+
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
@@ -73,6 +102,35 @@ export default function AdminDashboardPage() {
   return (
     <AdminShell title="Dashboard" subtitle="Overview of Noctua activity, users, favorites and nightlife content.">
       <div className="grid gap-8">
+
+        <div
+          className={`rounded-[36px] border p-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between ${
+            maintenanceMode ? "border-red-500/30 bg-red-500/[0.06]" : "border-white/10 bg-white/[0.03]"
+          }`}
+        >
+          <div className="flex items-center gap-4">
+            <span className="text-3xl">🛠️</span>
+            <div>
+              <p className="font-bold text-white">Modo mantenimiento</p>
+              <p className="text-sm text-zinc-400">
+                {maintenanceMode
+                  ? "Activo: solo tú puedes usar la app ahora mismo."
+                  : "Apagado: la app funciona con normalidad para todos."}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={toggleMaintenance}
+            disabled={loadingMaintenance || savingMaintenance}
+            className={`rounded-xl px-6 py-3 text-sm font-bold transition disabled:opacity-40 ${
+              maintenanceMode
+                ? "bg-white text-black hover:scale-[1.02]"
+                : "border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20"
+            }`}
+          >
+            {savingMaintenance ? "..." : maintenanceMode ? "Desactivar" : "Activar mantenimiento"}
+          </button>
+        </div>
 
         <StatsGroup title="Clubs" icon="🎵" color="#a855f7">
           <StatCard title="Total clubs" value={stats.clubs} subtitle="Active venues" href="/admin" icon="🏛️" color="#a855f7" />
