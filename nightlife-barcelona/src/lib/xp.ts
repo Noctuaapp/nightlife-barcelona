@@ -28,7 +28,7 @@ export type LevelInfo = {
 }
 
 export function getLevelInfo(xp: number): LevelInfo {
-  let current = LEVELS[0]
+  let current: (typeof LEVELS)[number] = LEVELS[0]
   for (const l of LEVELS) {
     if (xp >= l.min) current = l
   }
