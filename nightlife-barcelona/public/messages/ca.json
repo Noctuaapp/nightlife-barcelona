@@ -357,7 +357,8 @@
     "nightsSavedEyebrow": "Nits desades",
     "nightsSavedTitle": "Nits",
     "eventsSavedEyebrow": "Esdeveniments desats",
-    "eventsSavedTitle": "Esdeveniments"
+    "eventsSavedTitle": "Esdeveniments",
+    "listsExplainer": "Agrupa els teus preferits en llistes (per exemple \"Per al cap de setmana\" o \"Amb amics\") per trobar-los més ràpid — és opcional, no cal fer-lo servir."
   },
   "attendance": {
     "willGo": "Hi seré aquesta nit",

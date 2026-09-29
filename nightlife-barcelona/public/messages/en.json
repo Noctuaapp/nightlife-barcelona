@@ -357,7 +357,8 @@
     "nightsSavedEyebrow": "Saved nights",
     "nightsSavedTitle": "Nights",
     "eventsSavedEyebrow": "Saved events",
-    "eventsSavedTitle": "Events"
+    "eventsSavedTitle": "Events",
+    "listsExplainer": "Group your favorites into lists (like \"Weekend plans\" or \"With friends\") to find them faster — it's optional, you don't need to use it."
   },
   "attendance": {
     "willGo": "I'll be there tonight",

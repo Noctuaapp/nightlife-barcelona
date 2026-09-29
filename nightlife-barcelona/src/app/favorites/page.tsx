@@ -180,6 +180,15 @@ export default function FavoritesPage() {
     )
   }
 
+  // Estado de las tarjetas: antes el selector de lista era un <select> nativo del navegador (el
+  // único elemento de toda la web con ese estilo — desentona con los botones/pills del resto de
+  // la app) y la nota estaba siempre visible ocupando sitio en TODAS las tarjetas aunque casi
+  // nadie la usara. Ahora el desplegable de listas es un botón + menú propio (mismo patrón que el
+  // selector de ciudad del header) y la nota queda oculta detrás de un botón "+ Nota", solo
+  // visible por defecto si ya tenías una escrita.
+  const [openListMenu, setOpenListMenu] = useState<string | null>(null)
+  const [openNote, setOpenNote] = useState<Record<string, boolean>>({})
+
   const renderCard = (
     item: (Club | EventItem | ClubEvent) & { type: FavType },
     title: string,
@@ -189,6 +198,8 @@ export default function FavoritesPage() {
   ) => {
     const key = draftKey(item.type, item.id)
     const noteValue = noteDrafts[key] ?? item.note ?? ""
+    const currentList = collections.find((c) => c.id === item.collectionId)
+    const noteVisible = openNote[key] ?? !!item.note
 
     return (
       <div key={`${item.type}-${item.id}`} className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] transition hover:border-white/20">
@@ -223,27 +234,71 @@ export default function FavoritesPage() {
             ))}
           </div>
 
-          {/* Organizar: asignar a una lista */}
-          <select
-            value={item.collectionId ?? ""}
-            onChange={(e) => setFavoriteCollection(item.type, item.id, e.target.value ? Number(e.target.value) : null)}
-            className="mt-4 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-zinc-300 outline-none focus:border-purple-500/50"
-          >
-            <option value="">{t("favoritesPage.noList")}</option>
-            {collections.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {/* Organizar: asignar a una lista — botón + menú propio en vez del <select> nativo */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setOpenListMenu(openListMenu === key ? null : key)}
+                className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition ${
+                  currentList ? "border border-purple-500/30 bg-purple-500/10 text-purple-300" : "border border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10"
+                }`}
+              >
+                <span>🗂️</span>
+                <span>{currentList ? currentList.name : t("favoritesPage.noList")}</span>
+                <svg width="8" height="5" viewBox="0 0 10 6" fill="none" style={{ transform: openListMenu === key ? "rotate(180deg)" : "rotate(0deg)" }}>
+                  <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              {openListMenu === key && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setOpenListMenu(null)} />
+                  <div className="absolute left-0 top-11 z-50 w-52 overflow-hidden rounded-2xl border border-white/10 shadow-2xl" style={{ background: "#111" }}>
+                    <button
+                      onClick={() => { setFavoriteCollection(item.type, item.id, null); setOpenListMenu(null) }}
+                      className={`flex w-full items-center justify-between px-4 py-2.5 text-sm font-semibold transition hover:bg-white/10 ${!currentList ? "text-white bg-white/10" : "text-zinc-400"}`}
+                    >
+                      {t("favoritesPage.noList")}
+                      {!currentList && <span className="text-emerald-400 text-xs">✓</span>}
+                    </button>
+                    {collections.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => { setFavoriteCollection(item.type, item.id, c.id); setOpenListMenu(null) }}
+                        className={`flex w-full items-center justify-between px-4 py-2.5 text-sm font-semibold transition hover:bg-white/10 ${currentList?.id === c.id ? "text-white bg-white/10" : "text-zinc-400"}`}
+                      >
+                        {c.name}
+                        {currentList?.id === c.id && <span className="text-emerald-400 text-xs">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {!noteVisible && (
+              <button
+                type="button"
+                onClick={() => setOpenNote((prev) => ({ ...prev, [key]: true }))}
+                className="rounded-full border border-dashed border-white/15 px-4 py-2 text-xs font-bold text-zinc-500 transition hover:border-white/30 hover:text-zinc-300"
+              >
+                + {t("favoritesPage.notePlaceholder")}
+              </button>
+            )}
+          </div>
 
           {/* Nota personal */}
-          <input
-            type="text"
-            value={noteValue}
-            onChange={(e) => setNoteDrafts((prev) => ({ ...prev, [key]: e.target.value }))}
-            onBlur={(e) => setNote(item.type, item.id, e.target.value)}
-            placeholder={t("favoritesPage.notePlaceholder")}
-            className="mt-3 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-purple-500/50"
-          />
+          {noteVisible && (
+            <input
+              type="text"
+              autoFocus={openNote[key] === true}
+              value={noteValue}
+              onChange={(e) => setNoteDrafts((prev) => ({ ...prev, [key]: e.target.value }))}
+              onBlur={(e) => setNote(item.type, item.id, e.target.value)}
+              placeholder={t("favoritesPage.notePlaceholder")}
+              className="mt-3 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-purple-500/50"
+            />
+          )}
         </div>
       </div>
     )
@@ -277,6 +332,7 @@ export default function FavoritesPage() {
 
         {totalFavorites > 0 && (
           <section className="mx-auto mt-10 max-w-7xl px-4">
+            <p className="mb-3 text-sm text-zinc-500">{t("favoritesPage.listsExplainer")}</p>
             <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setActiveCollection("all")}
