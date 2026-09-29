@@ -343,5 +343,29 @@
     "nightsSavedTitle": "Nights",
     "eventsSavedEyebrow": "Saved events",
     "eventsSavedTitle": "Events"
+  },
+  "attendance": {
+    "willGo": "I'll be there tonight",
+    "going": "Going"
+  },
+  "checkin": {
+    "cta": "Check in here",
+    "done": "Checked in today",
+    "locating": "Locating...",
+    "tooFar": "Looks like you're not at the venue yet. Try again once you arrive.",
+    "noGeolocation": "Your browser doesn't support sharing location.",
+    "permissionDenied": "We need your location to confirm the check-in.",
+    "error": "Couldn't register the check-in, try again."
+  },
+  "levels": {
+    "title": "Your level",
+    "bronce": "Bronze",
+    "plata": "Silver",
+    "oro": "Gold",
+    "elite": "Elite",
+    "xpLabel": "XP",
+    "nextIn": "You need",
+    "toNextLevel": "XP for the next level",
+    "maxLevel": "Max level reached!"
   }
 }

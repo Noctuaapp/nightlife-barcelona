@@ -128,7 +128,7 @@ export default function ClubCard({
           <div className="mt-5 flex flex-wrap gap-3">
             <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">🔥 {people}+ {t("clubCard.tonight")}</div>
             <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">🎟 {price}</div>
-            <div className="max-w-[70vw] truncate rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl sm:max-w-[220px]">🕒 {hours}</div>
+            <div className="max-w-full whitespace-normal break-words leading-snug rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">🕒 {hours}</div>
           </div>
         </div>
       </div>

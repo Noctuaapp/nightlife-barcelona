@@ -7,6 +7,7 @@ import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { useFavorites } from "../../context/FavoritesContext"
 import { useLanguage } from "../../context/LanguageContext"
+import { getLevelInfo } from "../../lib/xp"
 
 const ACCENT_PATTERN = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g")
 
@@ -92,6 +93,7 @@ export default function ProfilePage() {
   const [editingUsername, setEditingUsername] = useState(false)
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [xp, setXp] = useState(0)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [avatarError, setAvatarError] = useState("")
 
@@ -113,12 +115,13 @@ export default function ProfilePage() {
       setUserId(data.user.id)
       setEmail(data.user.email || "")
 
-      const { data: profile } = await supabase.from("profiles").select("username, username_updated_at, avatar_url").eq("id", data.user.id).single()
+      const { data: profile } = await supabase.from("profiles").select("username, username_updated_at, avatar_url, xp").eq("id", data.user.id).single()
       if (profile) {
         setUsername(profile.username || "")
         setNewUsername(profile.username || "")
         setUsernameUpdatedAt(profile.username_updated_at || null)
         setAvatarUrl(profile.avatar_url || null)
+        setXp(profile.xp || 0)
       }
 
       setLoading(false)
@@ -425,6 +428,33 @@ export default function ProfilePage() {
                 <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
                 <span className="text-sm text-purple-300">Noctua Member</span>
               </div>
+
+              {/* Nivel / XP */}
+              {(() => {
+                const level = getLevelInfo(xp)
+                return (
+                  <div className="mt-6 w-full max-w-xs rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 text-lg font-black text-white">
+                        <span>{level.icon}</span>
+                        <span>{t(`levels.${level.key}`)}</span>
+                      </span>
+                      <span className="text-sm font-bold text-zinc-400">{xp} {t("levels.xpLabel")}</span>
+                    </div>
+                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${level.progressPct}%`, background: level.color }}
+                      />
+                    </div>
+                    <p className="mt-2 text-xs text-zinc-500">
+                      {level.next
+                        ? `${t("levels.nextIn")} ${level.xpToNext} ${t("levels.toNextLevel")}`
+                        : t("levels.maxLevel")}
+                    </p>
+                  </div>
+                )
+              })()}
             </div>
           </div>
         </section>

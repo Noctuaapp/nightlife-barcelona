@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import FavoriteButton from "../favorites/FavoriteButton"
+import AttendanceButton from "../gamification/AttendanceButton"
 import ClubMap from "../map/ClubMap"
 import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
@@ -208,6 +209,7 @@ export default function ClubEventPageContent({ clubEvent, tickets, clubSlug }: C
             )}
 
             <FavoriteButton itemType="club_event" itemId={clubEvent.id} />
+            {!clubEvent.sold_out && <AttendanceButton itemType="club_event" itemId={clubEvent.id} />}
 
             <Link
               href={clubSlug ? `/clubs/${clubSlug}` : "/clubs"}

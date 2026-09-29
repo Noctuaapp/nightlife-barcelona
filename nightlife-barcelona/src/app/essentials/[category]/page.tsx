@@ -262,9 +262,9 @@ export default function EssentialCategoryPage() {
 
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="truncate font-bold text-white">{item.name}</h3>
+                <h3 className="min-w-0 truncate font-bold text-white">{item.name}</h3>
                 {item.open_hours && (
-                  <span className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: config.color + "20", color: config.color }}>
+                  <span className="shrink-0 whitespace-normal break-words text-right rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: config.color + "20", color: config.color }}>
                     {item.open_hours}
                   </span>
                 )}

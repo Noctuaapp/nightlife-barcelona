@@ -83,15 +83,19 @@ export default function TermsPage() {
             <p>La Plataforma se ofrece &quot;tal cual&quot; y &quot;según disponibilidad&quot;, sin garantías de ningún tipo, expresas o implícitas. No garantizamos que la Plataforma esté libre de interrupciones o errores.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">10. Cancelación de cuenta</h2>
+            <h2 className="text-white font-semibold text-base mb-3">10. Programa de puntos (XP)</h2>
+            <p>Noctua ofrece un sistema opcional de puntos de experiencia (XP) y niveles que premia ciertas acciones dentro de la app (marcar asistencia, hacer check-in en un local, rachas de uso, etc.). Los puntos de XP no tienen valor monetario, no son transferibles ni canjeables por dinero, y no constituyen una moneda ni un producto financiero. Nos reservamos el derecho de modificar, reiniciar o discontinuar el programa de puntos, así como de ajustar la forma en que se otorgan, en cualquier momento.</p>
+          </section>
+          <section>
+            <h2 className="text-white font-semibold text-base mb-3">11. Cancelación de cuenta</h2>
             <p>Nos reservamos el derecho de suspender o cancelar tu cuenta a nuestra discreción si incumples estos Términos de Servicio. Puedes eliminar tu cuenta en cualquier momento desde tu página de Perfil.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">11. Ley aplicable</h2>
+            <h2 className="text-white font-semibold text-base mb-3">12. Ley aplicable</h2>
             <p>Estos Términos de Servicio se rigen por las leyes de España. Cualquier disputa quedará sujeta a la jurisdicción exclusiva de los tribunales de Barcelona, España.</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">12. Contacto</h2>
+            <h2 className="text-white font-semibold text-base mb-3">13. Contacto</h2>
             <p>Para cualquier pregunta sobre estos Términos de Servicio, contáctanos en <a href="mailto:info@noctuaapp.com" className="text-purple-400 hover:text-purple-300 transition-colors">info@noctuaapp.com</a>.</p>
           </section>
         </div>

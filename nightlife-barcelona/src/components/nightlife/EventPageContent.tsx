@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import FavoriteButton from "../favorites/FavoriteButton"
+import AttendanceButton from "../gamification/AttendanceButton"
 import ClubMap from "../map/ClubMap"
 import EventSessionsCalendar from "../nightlife/EventSessionsCalendar"
 import TransportButtons from "../ui/TransportButtons"
@@ -441,7 +442,14 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                 <Icon name={f.icon} className="h-4 w-4" />
               </span>
               <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-white">{f.value}</p>
+                <p
+                  className={`text-sm font-bold text-white ${
+                    f.key === "date" || f.key === "time" ? "whitespace-normal break-words leading-snug" : "truncate"
+                  }`}
+                  title={f.key === "date" || f.key === "time" ? String(f.value) : undefined}
+                >
+                  {f.value}
+                </p>
                 <p className="text-[10px] uppercase tracking-widest text-zinc-500">{f.label}</p>
               </div>
             </div>
@@ -707,6 +715,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                 ) : null}
 
                 <FavoriteButton itemType="event" itemId={event.id} />
+                {!past && <AttendanceButton itemType="event" itemId={event.id} />}
 
                 <button
                   onClick={shareEvent}

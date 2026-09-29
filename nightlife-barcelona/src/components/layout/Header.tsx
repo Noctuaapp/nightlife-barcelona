@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
+import { awardXp, XP_AMOUNTS, currentIsoWeek } from "../../lib/xp"
 
 const cities = [
   { name: "Barcelona", slug: "barcelona", active: true, lat: 41.3851, lng: 2.1734 },
@@ -23,7 +24,7 @@ type NotificationRow = {
   id: number
   title: string
   body: string
-  type: "reply" | "broadcast" | "favorite_reminder"
+  type: "reply" | "broadcast" | "favorite_reminder" | "admin_message" | "xp_streak"
   read: boolean
   created_at: string | null
   related_message_id: number | null
@@ -90,6 +91,44 @@ export default function Header() {
       }
     }
 
+    // Racha semanal del sistema de XP: si en los últimos 7 días hay actividad en al menos 3
+    // días distintos (usando las visitas a fichas de club/evento que ya se registraban en
+    // "analytics"), se da la recompensa una vez por semana ISO y se avisa por notificación.
+    const checkWeeklyStreak = async (userId: string) => {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("streak_week")
+        .eq("id", userId)
+        .maybeSingle()
+
+      const thisWeek = currentIsoWeek()
+      if (profile?.streak_week === thisWeek) return
+
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString()
+      const { data: events } = await supabase
+        .from("analytics")
+        .select("created_at")
+        .eq("user_id", userId)
+        .eq("event_type", "page_view")
+        .gte("created_at", sevenDaysAgo)
+
+      const distinctDays = new Set((events || []).map((e: any) => String(e.created_at).slice(0, 10)))
+      if (distinctDays.size < 3) return
+
+      const { error: streakError } = await supabase.from("profiles").update({ streak_week: thisWeek }).eq("id", userId)
+      if (streakError) return
+
+      const { awarded } = await awardXp(supabase, { userId, actionType: "streak", amount: XP_AMOUNTS.streak })
+      if (awarded) {
+        await supabase.from("notifications").insert({
+          user_id: userId,
+          title: "🔥 Racha semanal",
+          body: `Has ganado +${XP_AMOUNTS.streak} XP por usar Noctua varios días esta semana.`,
+          type: "xp_streak",
+        })
+      }
+    }
+
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession()
       setIsLoggedIn(!!data.session)
@@ -97,6 +136,7 @@ export default function Header() {
       if (data.session) {
         checkBlocked(data.session.user.id)
         checkTermsAccepted(data.session.user.id)
+        checkWeeklyStreak(data.session.user.id)
       }
     }
     checkSession()
@@ -106,6 +146,7 @@ export default function Header() {
       if (session) {
         checkBlocked(session.user.id)
         checkTermsAccepted(session.user.id)
+        checkWeeklyStreak(session.user.id)
       }
     })
     return () => { subscription.unsubscribe() }

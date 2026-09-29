@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useLanguage } from "../../context/LanguageContext"
 import FavoriteButton from "../favorites/FavoriteButton"
+import CheckInButton from "../gamification/CheckInButton"
 import ClubMap from "../map/ClubMap"
 import ClubNightsCalendar from "../nightlife/ClubNightsCalendar"
 import TransportButtons from "../ui/TransportButtons"
@@ -944,6 +945,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                 )}
 
                 <FavoriteButton itemType="club" itemId={club.id} />
+                <CheckInButton clubId={club.id} latitude={club.latitude} longitude={club.longitude} />
 
                 <div className="flex gap-3">
                   <button
@@ -1047,14 +1049,37 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
         </Reveal>
       )}
 
-      {/* FLOATING MOBILE ACTION BAR */}
+      {/* FLOATING MOBILE ACTION BAR — la compra de entradas siempre visible, como en Dice/Fever/Ticketmaster */}
       <div className="fixed inset-x-4 bottom-24 z-40 flex items-center gap-2 rounded-2xl border border-white/10 bg-black/85 p-2 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] backdrop-blur-2xl lg:hidden">
-        <button onClick={openDirections} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-xs font-bold text-black">
-          <Icon name="map" className="h-4 w-4" /> Cómo llegar
-        </button>
-        <button onClick={shareClub} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5">
-          <Icon name="share" className="h-4 w-4" />
-        </button>
+        {ticketUrl ? (
+          <>
+            <a
+              href={ticketUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackClick("tickets_click")}
+              style={accentGradient}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-black text-white shadow-[0_6px_20px_-4px_rgba(0,0,0,0.5)]"
+            >
+              <Icon name="ticket" className="h-4 w-4" /> Comprar entradas
+            </a>
+            <button onClick={openDirections} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5">
+              <Icon name="map" className="h-4 w-4" />
+            </button>
+            <button onClick={shareClub} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5">
+              <Icon name="share" className="h-4 w-4" />
+            </button>
+          </>
+        ) : (
+          <>
+            <button onClick={openDirections} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-xs font-bold text-black">
+              <Icon name="map" className="h-4 w-4" /> Cómo llegar
+            </button>
+            <button onClick={shareClub} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5">
+              <Icon name="share" className="h-4 w-4" />
+            </button>
+          </>
+        )}
       </div>
 
       <style jsx global>{`

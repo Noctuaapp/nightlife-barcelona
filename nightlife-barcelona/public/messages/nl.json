@@ -343,5 +343,29 @@
     "nightsSavedTitle": "Avonden",
     "eventsSavedEyebrow": "Opgeslagen evenementen",
     "eventsSavedTitle": "Evenementen"
+  },
+  "attendance": {
+    "willGo": "Ik ben er vanavond bij",
+    "going": "Ik ga"
+  },
+  "checkin": {
+    "cta": "Check hier in",
+    "done": "Vandaag ingecheckt",
+    "locating": "Locatie zoeken...",
+    "tooFar": "Het lijkt erop dat je nog niet bij de zaak bent. Probeer het opnieuw als je er bent.",
+    "noGeolocation": "Je browser staat het delen van locatie niet toe.",
+    "permissionDenied": "We hebben je locatie nodig om de check-in te bevestigen.",
+    "error": "Check-in kon niet worden geregistreerd, probeer het opnieuw."
+  },
+  "levels": {
+    "title": "Jouw niveau",
+    "bronce": "Brons",
+    "plata": "Zilver",
+    "oro": "Goud",
+    "elite": "Elite",
+    "xpLabel": "XP",
+    "nextIn": "Je hebt nog",
+    "toNextLevel": "XP nodig voor het volgende niveau",
+    "maxLevel": "Maximale niveau bereikt!"
   }
 }

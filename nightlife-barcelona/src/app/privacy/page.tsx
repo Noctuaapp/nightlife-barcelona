@@ -30,6 +30,8 @@ export default function PrivacyPage() {
                 { label: "Foto de perfil", desc: "La imagen que subas voluntariamente como avatar de tu cuenta." },
                 { label: "Datos de uso", desc: "Páginas visitadas, clubs y eventos vistos, y búsquedas realizadas." },
                 { label: "Favoritos", desc: "Clubs, eventos y noches de club que decidas guardar, junto con las listas y notas personales que crees para organizarlos." },
+                { label: "Actividad y puntos (XP)", desc: "Si marcas que asistirás a un evento, haces check-in en un club o ganas puntos de experiencia, guardamos esa actividad para mostrarte tu progreso y nivel dentro de la app." },
+                { label: "Ubicación precisa (solo para check-in)", desc: "Cuando decides hacer check-in en la ficha de un club, accedemos una única vez a tu ubicación GPS para comprobar que estás cerca del local. No guardamos tus coordenadas: solo se registra en qué club y qué día hiciste check-in." },
                 { label: "Mensajes de contacto", desc: "Cualquier mensaje que nos envíes a través de la página de Contacto." },
                 { label: "Datos del dispositivo", desc: "Tipo de navegador, tipo de dispositivo y ubicación aproximada (a nivel de país/ciudad) para análisis." },
               ].map(({ label, desc }) => (
@@ -47,7 +49,9 @@ export default function PrivacyPage() {
               {[
                 "Proporcionar y operar la plataforma Noctua.",
                 "Guardar y mostrar tus clubs, eventos y noches de club favoritos.",
-                "Responder a mensajes y solicitudes de soporte.",
+                "Calcular tu progreso y nivel dentro del sistema de puntos (XP) de Noctua.",
+                "Verificar tu ubicación en el momento del check-in en un club (nunca la almacenamos, solo el resultado).",
+                "Responder a mensajes y solicitudes de soporte, incluidos mensajes que el equipo de Noctua te envíe directamente.",
                 "Mejorar la plataforma en base a patrones de uso.",
                 "Enviar comunicaciones importantes del servicio (sin marketing sin tu consentimiento).",
               ].map((item) => (

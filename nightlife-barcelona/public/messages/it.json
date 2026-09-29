@@ -343,5 +343,29 @@
     "nightsSavedTitle": "Serate",
     "eventsSavedEyebrow": "Eventi salvati",
     "eventsSavedTitle": "Eventi"
+  },
+  "attendance": {
+    "willGo": "Ci sarò stasera",
+    "going": "Ci vado"
+  },
+  "checkin": {
+    "cta": "Fai il check-in qui",
+    "done": "Check-in fatto oggi",
+    "locating": "Localizzazione...",
+    "tooFar": "Sembra che tu non sia ancora nel locale. Riprova quando arrivi.",
+    "noGeolocation": "Il tuo browser non consente di condividere la posizione.",
+    "permissionDenied": "Ci serve la tua posizione per confermare il check-in.",
+    "error": "Non è stato possibile registrare il check-in, riprova."
+  },
+  "levels": {
+    "title": "Il tuo livello",
+    "bronce": "Bronzo",
+    "plata": "Argento",
+    "oro": "Oro",
+    "elite": "Elite",
+    "xpLabel": "XP",
+    "nextIn": "Ti mancano",
+    "toNextLevel": "XP per il prossimo livello",
+    "maxLevel": "Livello massimo raggiunto!"
   }
 }

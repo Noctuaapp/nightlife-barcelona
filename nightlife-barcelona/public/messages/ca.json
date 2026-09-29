@@ -343,5 +343,29 @@
     "nightsSavedTitle": "Nits",
     "eventsSavedEyebrow": "Esdeveniments desats",
     "eventsSavedTitle": "Esdeveniments"
+  },
+  "attendance": {
+    "willGo": "Hi seré aquesta nit",
+    "going": "Hi vaig"
+  },
+  "checkin": {
+    "cta": "Fes check-in aquí",
+    "done": "Check-in fet avui",
+    "locating": "Localitzant...",
+    "tooFar": "Sembla que encara no ets al local. Torna-ho a provar quan hi arribis.",
+    "noGeolocation": "El teu navegador no permet compartir ubicació.",
+    "permissionDenied": "Necessitem la teva ubicació per confirmar el check-in.",
+    "error": "No s'ha pogut registrar el check-in, torna-ho a provar."
+  },
+  "levels": {
+    "title": "El teu nivell",
+    "bronce": "Bronze",
+    "plata": "Plata",
+    "oro": "Or",
+    "elite": "Elit",
+    "xpLabel": "XP",
+    "nextIn": "Et falten",
+    "toNextLevel": "XP pel següent nivell",
+    "maxLevel": "Nivell màxim assolit!"
   }
 }
