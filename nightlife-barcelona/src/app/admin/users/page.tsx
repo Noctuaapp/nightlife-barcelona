@@ -14,6 +14,12 @@ type User = {
   is_blocked: boolean
 }
 
+type OwnableClub = { id: number; name: string; owner_user_id: string | null }
+// Festivales (tabla "events", distinta de las noches de club "club_events"). Una noche de club
+// pertenece automáticamente al dueño del club (se gestiona dentro de /mi-club), pero un festival
+// no está atado a ningún club, así que cada uno se vincula a mano aquí, igual que un club.
+type OwnableFestival = { id: number; title: string; date: string | null; owner_user_id: string | null }
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -31,6 +37,64 @@ export default function AdminUsersPage() {
   const [messageSentId, setMessageSentId] = useState<string | null>(null)
 
   const [blockingId, setBlockingId] = useState<string | null>(null)
+
+  // Vincular un usuario a "su" club y/o "sus" festivales (owner_user_id en clubs / events), para
+  // que luego pueda gestionarlos él mismo desde /mi-club y /mi-festival sin tocar SQL a mano. Las
+  // noches de club (club_events) NO se vinculan aquí — pertenecen automáticamente al club y se
+  // gestionan dentro de /mi-club.
+  const [linkingId, setLinkingId] = useState<string | null>(null)
+  const [ownableClubs, setOwnableClubs] = useState<OwnableClub[]>([])
+  const [ownableFestivals, setOwnableFestivals] = useState<OwnableFestival[]>([])
+  const [savingLink, setSavingLink] = useState(false)
+
+  const loadOwnables = async () => {
+    const [{ data: clubsData }, { data: festivalsData }] = await Promise.all([
+      supabase.from("clubs").select("id, name, owner_user_id").order("name"),
+      supabase.from("events").select("id, title, date, owner_user_id").order("date", { ascending: true }),
+    ])
+    setOwnableClubs(clubsData || [])
+    setOwnableFestivals(festivalsData || [])
+  }
+
+  const startLinking = (userId: string) => {
+    setLinkingId(userId)
+    if (ownableClubs.length === 0 && ownableFestivals.length === 0) loadOwnables()
+  }
+
+  const setUserClub = async (userId: string, clubId: number | null) => {
+    setSavingLink(true)
+    // Si este usuario ya tenía otro club vinculado, lo desvinculamos primero — una persona no
+    // debería quedar vinculada a dos clubs a la vez por error.
+    const previousClub = ownableClubs.find((c) => c.owner_user_id === userId && c.id !== clubId)
+    if (previousClub) {
+      await supabase.from("clubs").update({ owner_user_id: null }).eq("id", previousClub.id)
+    }
+    if (clubId) {
+      const { error } = await supabase.from("clubs").update({ owner_user_id: userId }).eq("id", clubId)
+      if (error) { window.alert("No se pudo vincular el club: " + error.message); setSavingLink(false); return }
+    }
+    setOwnableClubs((prev) =>
+      prev.map((c) => {
+        if (c.id === clubId) return { ...c, owner_user_id: userId }
+        if (previousClub && c.id === previousClub.id) return { ...c, owner_user_id: null }
+        return c
+      })
+    )
+    setSavingLink(false)
+  }
+
+  const toggleUserFestival = async (userId: string, festivalId: number, currentlyOwned: boolean) => {
+    setSavingLink(true)
+    const { error } = await supabase
+      .from("events")
+      .update({ owner_user_id: currentlyOwned ? null : userId })
+      .eq("id", festivalId)
+    setSavingLink(false)
+    if (error) { window.alert("No se pudo actualizar el festival: " + error.message); return }
+    setOwnableFestivals((prev) =>
+      prev.map((e) => (e.id === festivalId ? { ...e, owner_user_id: currentlyOwned ? null : userId } : e))
+    )
+  }
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -290,6 +354,60 @@ export default function AdminUsersPage() {
                         )}
                       </div>
                     </div>
+                  ) : linkingId === user.id ? (
+                    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                      <label className="mb-1 block text-xs uppercase tracking-widest text-zinc-500">
+                        Club vinculado (puede editar su propia ficha en /mi-club)
+                      </label>
+                      <select
+                        value={ownableClubs.find((c) => c.owner_user_id === user.id)?.id ?? ""}
+                        onChange={(e) => setUserClub(user.id, e.target.value ? Number(e.target.value) : null)}
+                        disabled={savingLink}
+                        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500/50"
+                      >
+                        <option value="">Ninguno</option>
+                        {ownableClubs.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}{c.owner_user_id && c.owner_user_id !== user.id ? " (ya vinculado a otro usuario)" : ""}
+                          </option>
+                        ))}
+                      </select>
+
+                      <label className="mb-2 mt-4 block text-xs uppercase tracking-widest text-zinc-500">
+                        Festivales vinculados (puede editarlos en /mi-festival)
+                      </label>
+                      <div className="flex max-h-56 flex-wrap gap-2 overflow-y-auto">
+                        {ownableFestivals.length === 0 && <p className="text-xs text-zinc-600">No hay festivales creados todavía.</p>}
+                        {ownableFestivals.map((f) => {
+                          const owned = f.owner_user_id === user.id
+                          return (
+                            <button
+                              key={f.id}
+                              type="button"
+                              disabled={savingLink}
+                              onClick={() => toggleUserFestival(user.id, f.id, owned)}
+                              title={f.owner_user_id && !owned ? "Ya vinculado a otro usuario" : undefined}
+                              className={`rounded-full px-3 py-1.5 text-xs font-bold transition disabled:opacity-40 ${
+                                owned
+                                  ? "bg-purple-500 text-white"
+                                  : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                              }`}
+                            >
+                              {f.title} {f.date ? `· ${f.date}` : ""}
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                      <div className="mt-4">
+                        <button
+                          onClick={() => setLinkingId(null)}
+                          className="rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-white/10"
+                        >
+                          Cerrar
+                        </button>
+                      </div>
+                    </div>
                   ) : (
                     <div className="flex flex-wrap gap-3">
                       <button
@@ -303,6 +421,12 @@ export default function AdminUsersPage() {
                         className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/10"
                       >
                         💬 Mensaje
+                      </button>
+                      <button
+                        onClick={() => startLinking(user.id)}
+                        className="rounded-xl border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-xs font-bold text-purple-300 transition hover:bg-purple-500/20"
+                      >
+                        🔑 Vincular
                       </button>
                       <button
                         onClick={() => toggleBlocked(user)}

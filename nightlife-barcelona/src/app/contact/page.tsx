@@ -83,6 +83,7 @@ export default function ContactPage() {
     { value: "suggest_essential", label: "🧭 Sugerir un esencial", desc: "Cajero, farmacia, transporte... que no aparezca" },
     { value: "club_partnership", label: "🤝 Partnership con local", desc: "Colaboración para clubs y bares" },
     { value: "festival_partnership", label: "🎪 Partnership con festival", desc: "Colaboración para eventos y festivales" },
+    { value: "owner_access", label: "🔑 Gestionar mi club o evento", desc: "Eres el responsable y quieres editar tu ficha tú mismo" },
   ]
 
   return (

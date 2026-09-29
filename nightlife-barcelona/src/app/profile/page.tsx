@@ -108,6 +108,13 @@ export default function ProfilePage() {
   const [sentMessages, setSentMessages] = useState<any[]>([])
   const [loadingInbox, setLoadingInbox] = useState(true)
 
+  // Los botones "Mi club" / "Mis festivales" solo se enseñan a quien de verdad tiene algo
+  // vinculado a su cuenta (owner_user_id en clubs / events) — mostrarlos a todo el mundo solo
+  // generaría confusión y mensajes de gente que no es dueña de nada. Las noches de club no
+  // llevan link propio aquí: se gestionan dentro de /mi-club, ligadas al club.
+  const [hasLinkedClub, setHasLinkedClub] = useState(false)
+  const [hasLinkedFestival, setHasLinkedFestival] = useState(false)
+
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser()
@@ -123,6 +130,13 @@ export default function ProfilePage() {
         setAvatarUrl(profile.avatar_url || null)
         setXp(profile.xp || 0)
       }
+
+      const [{ data: ownedClub }, { data: ownedFestival }] = await Promise.all([
+        supabase.from("clubs").select("id").eq("owner_user_id", data.user.id).maybeSingle(),
+        supabase.from("events").select("id").eq("owner_user_id", data.user.id).limit(1).maybeSingle(),
+      ])
+      setHasLinkedClub(!!ownedClub)
+      setHasLinkedFestival(!!ownedFestival)
 
       setLoading(false)
     }
@@ -766,6 +780,22 @@ export default function ProfilePage() {
               >
                 {t("profile.change_password")}
               </Link>
+              {hasLinkedClub && (
+                <Link
+                  href="/mi-club"
+                  className="rounded-full border border-purple-500/30 bg-purple-500/10 px-6 py-3 text-sm font-bold text-purple-300 transition hover:bg-purple-500 hover:text-white"
+                >
+                  🏛️ Mi club
+                </Link>
+              )}
+              {hasLinkedFestival && (
+                <Link
+                  href="/mi-festival"
+                  className="rounded-full border border-purple-500/30 bg-purple-500/10 px-6 py-3 text-sm font-bold text-purple-300 transition hover:bg-purple-500 hover:text-white"
+                >
+                  🎧 Mis festivales
+                </Link>
+              )}
             </div>
           </div>
 

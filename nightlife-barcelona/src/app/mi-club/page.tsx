@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, type ChangeEvent } from "react"
 import Link from "next/link"
 
 import Header from "../../components/layout/Header"
@@ -142,6 +142,51 @@ const formToPayload = (form: ClubFormData) => ({
   manual_photos: form.gallery.length > 0,
 })
 
+// Noches del club. No llevan su propio owner_user_id: pertenecen automáticamente al dueño del
+// club (club_id = el club vinculado a esta cuenta), así que basta con poder editar/crear/borrar
+// club_events cuyo club_id sea el de tu club — sin tener que marcar noche por noche a mano.
+type ClubEvent = {
+  id: number
+  club_id: number | null
+  club_name: string | null
+  title: string
+  artist: string | null
+  music: string | null
+  date: string | null
+  start_time: string | null
+  end_time: string | null
+  price: string | null
+  ticket_url: string | null
+  image: string | null
+  description: string | null
+  featured: boolean | null
+  sold_out: boolean | null
+  age_min: number | null
+}
+
+const ageLevels = [18, 21, 25]
+
+const emptyEventForm = {
+  title: "", artist: "", music: "", date: "", start_time: "", end_time: "",
+  price: "", ticket_url: "", image: "", description: "", age_min: 18, sold_out: false,
+}
+type EventFormData = typeof emptyEventForm
+
+const eventToForm = (e: ClubEvent): EventFormData => ({
+  title: e.title || "",
+  artist: e.artist || "",
+  music: e.music || "",
+  date: e.date || "",
+  start_time: e.start_time || "",
+  end_time: e.end_time || "",
+  price: e.price || "",
+  ticket_url: e.ticket_url || "",
+  image: e.image || "",
+  description: e.description || "",
+  age_min: e.age_min || 18,
+  sold_out: !!e.sold_out,
+})
+
 export default function MiClubPage() {
   const [checkingAccess, setCheckingAccess] = useState(true)
   const [club, setClub] = useState<Club | null>(null)
@@ -152,6 +197,14 @@ export default function MiClubPage() {
   const [savedFlash, setSavedFlash] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [uploadingGallery, setUploadingGallery] = useState(false)
+
+  const [events, setEvents] = useState<ClubEvent[]>([])
+  const [showAddEventForm, setShowAddEventForm] = useState(false)
+  const [newEventForm, setNewEventForm] = useState<EventFormData>(emptyEventForm)
+  const [editingEventId, setEditingEventId] = useState<number | null>(null)
+  const [editEventForm, setEditEventForm] = useState<EventFormData>(emptyEventForm)
+  const [savingEvent, setSavingEvent] = useState(false)
+  const [uploadingEventImage, setUploadingEventImage] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -174,11 +227,101 @@ export default function MiClubPage() {
       } else {
         setClub(data as Club)
         setForm(clubToForm(data as Club))
+        const { data: eventsData } = await supabase
+          .from("club_events")
+          .select("*")
+          .eq("club_id", data.id)
+          .order("date", { ascending: true })
+        setEvents(eventsData || [])
       }
       setCheckingAccess(false)
     }
     load()
   }, [])
+
+  const eventFormToPayload = (form: EventFormData, clubId: number, clubName: string) => ({
+    club_id: clubId,
+    club_name: clubName,
+    title: form.title.trim(),
+    artist: form.artist.trim(),
+    music: form.music.trim(),
+    date: form.date || null,
+    start_time: form.start_time,
+    end_time: form.end_time,
+    price: form.price,
+    ticket_url: form.ticket_url,
+    image: form.image,
+    description: form.description,
+    age_min: form.age_min || 18,
+    sold_out: form.sold_out,
+  })
+
+  const uploadEventImage = async (file: File) => {
+    setUploadingEventImage(true)
+    const fileExt = file.name.split(".").pop()
+    const fileName = `owner-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+    const { error } = await supabase.storage.from("event-photos").upload(fileName, file)
+    setUploadingEventImage(false)
+    if (error) { alert("Error al subir la imagen: " + error.message); return null }
+    const { data } = supabase.storage.from("event-photos").getPublicUrl(fileName)
+    return data.publicUrl
+  }
+
+  const handleNewEventImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const url = await uploadEventImage(file)
+    if (url) setNewEventForm((prev) => ({ ...prev, image: url }))
+    e.target.value = ""
+  }
+
+  const handleEditEventImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const url = await uploadEventImage(file)
+    if (url) setEditEventForm((prev) => ({ ...prev, image: url }))
+    e.target.value = ""
+  }
+
+  const addEvent = async () => {
+    if (!club) return
+    if (!newEventForm.title.trim()) { alert("Escribe un título para la noche"); return }
+    setSavingEvent(true)
+    const { data, error } = await supabase.from("club_events").insert(eventFormToPayload(newEventForm, club.id, club.name)).select().single()
+    setSavingEvent(false)
+    if (error) { alert("Error al crear la noche: " + error.message); return }
+    if (data) setEvents((prev) => [...prev, data].sort((a, b) => (a.date || "").localeCompare(b.date || "")))
+    setNewEventForm(emptyEventForm)
+    setShowAddEventForm(false)
+  }
+
+  const startEditEvent = (event: ClubEvent) => {
+    setEditingEventId(event.id)
+    setEditEventForm(eventToForm(event))
+  }
+
+  const cancelEditEvent = () => {
+    setEditingEventId(null)
+    setEditEventForm(emptyEventForm)
+  }
+
+  const saveEditEvent = async (id: number) => {
+    if (!club) return
+    if (!editEventForm.title.trim()) { alert("Escribe un título para la noche"); return }
+    setSavingEvent(true)
+    const { data, error } = await supabase.from("club_events").update(eventFormToPayload(editEventForm, club.id, club.name)).eq("id", id).select().single()
+    setSavingEvent(false)
+    if (error) { alert("Error al guardar los cambios: " + error.message); return }
+    if (data) setEvents((prev) => prev.map((e) => (e.id === id ? data : e)))
+    setEditingEventId(null)
+  }
+
+  const deleteEvent = async (id: number) => {
+    if (!confirm("¿Seguro que quieres borrar esta noche?")) return
+    const { error } = await supabase.from("club_events").delete().eq("id", id)
+    if (error) { alert("Error al borrar: " + error.message); return }
+    setEvents((prev) => prev.filter((e) => e.id !== id))
+  }
 
   const saveChanges = async () => {
     if (!club || !form) return
@@ -251,6 +394,77 @@ export default function MiClubPage() {
   const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-purple-500/50 transition placeholder:text-zinc-600"
   const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1.5"
 
+  const renderEventForm = (
+    eventForm: EventFormData,
+    setEventForm: (f: EventFormData) => void,
+    handleImageUpload: (e: ChangeEvent<HTMLInputElement>) => void
+  ) => (
+    <div className="grid gap-4 md:grid-cols-2">
+      <div className="md:col-span-2">
+        <label className={labelClass}>Título de la noche *</label>
+        <input value={eventForm.title} onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })} placeholder="Ej. Techno Fridays" className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Artista</label>
+        <input value={eventForm.artist} onChange={(e) => setEventForm({ ...eventForm, artist: e.target.value })} placeholder="DJ o artista principal" className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Música</label>
+        <input value={eventForm.music} onChange={(e) => setEventForm({ ...eventForm, music: e.target.value })} placeholder="Techno, House..." className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Fecha</label>
+        <input type="date" value={eventForm.date} onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })} className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Precio</label>
+        <input value={eventForm.price} onChange={(e) => setEventForm({ ...eventForm, price: e.target.value })} placeholder="15€" className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Hora de inicio</label>
+        <input value={eventForm.start_time} onChange={(e) => setEventForm({ ...eventForm, start_time: e.target.value })} placeholder="23:55" className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Hora de fin</label>
+        <input value={eventForm.end_time} onChange={(e) => setEventForm({ ...eventForm, end_time: e.target.value })} placeholder="06:00" className={inputClass} />
+      </div>
+      <div className="md:col-span-2">
+        <label className={labelClass}>Enlace de entradas</label>
+        <input value={eventForm.ticket_url} onChange={(e) => setEventForm({ ...eventForm, ticket_url: e.target.value })} placeholder="https://..." className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Edad mínima</label>
+        <div className="flex gap-2">
+          {ageLevels.map((age) => (
+            <button key={age} type="button" onClick={() => setEventForm({ ...eventForm, age_min: age })}
+              className={`rounded-full px-4 py-2 text-sm font-bold transition ${eventForm.age_min === age ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
+              +{age}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex items-end">
+        <button type="button" onClick={() => setEventForm({ ...eventForm, sold_out: !eventForm.sold_out })}
+          className={`rounded-full px-4 py-2 text-sm font-bold transition ${eventForm.sold_out ? "bg-red-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
+          🚫 Sold out
+        </button>
+      </div>
+      <div className="md:col-span-2">
+        <label className={labelClass}>Imagen de la noche</label>
+        <input value={eventForm.image} onChange={(e) => setEventForm({ ...eventForm, image: e.target.value })} placeholder="https://... (o sube una abajo)" className={inputClass} />
+        <label className={`mt-2 block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploadingEventImage ? "border-white/10 text-zinc-600" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
+          {uploadingEventImage ? "Subiendo..." : "📁 Subir imagen desde tu ordenador"}
+          <input type="file" accept="image/*" className="hidden" disabled={uploadingEventImage} onChange={handleImageUpload} />
+        </label>
+        {eventForm.image && <img src={eventForm.image} alt="Vista previa" className="mt-3 h-32 w-full rounded-xl object-cover" />}
+      </div>
+      <div className="md:col-span-2">
+        <label className={labelClass}>Descripción</label>
+        <textarea value={eventForm.description} onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })} placeholder="Descripción de la noche" className={`min-h-[100px] ${inputClass}`} />
+      </div>
+    </div>
+  )
+
   if (checkingAccess) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
@@ -280,11 +494,15 @@ export default function MiClubPage() {
           <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-4xl">🏛️</div>
           <h1 className="text-3xl font-black tracking-tight">Aún no tienes un club vinculado</h1>
           <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-            Si eres el responsable de un local en Noctua y quieres gestionar tu propia ficha, escríbenos a{" "}
-            <a href="mailto:info@noctuaapp.com" className="font-bold text-purple-300 underline">info@noctuaapp.com</a>{" "}
-            desde el correo con el que te registraste y te activamos el acceso.
+            Si eres el responsable de un local en Noctua y quieres gestionar tu propia ficha, cuéntanoslo y te activamos el acceso.
           </p>
-          <Link href="/" className="mt-2 rounded-full bg-white px-6 py-3 text-sm font-black text-black transition hover:scale-105">
+          <Link
+            href="/contact?type=owner_access&subject=Quiero%20gestionar%20mi%20club%20en%20Noctua"
+            className="mt-2 rounded-full bg-white px-6 py-3 text-sm font-black text-black transition hover:scale-105"
+          >
+            Contactar con Noctua
+          </Link>
+          <Link href="/" className="text-sm text-zinc-500 underline transition hover:text-zinc-300">
             Volver a Noctua
           </Link>
         </main>
@@ -467,6 +685,81 @@ export default function MiClubPage() {
               {saving ? "Guardando..." : "Guardar cambios"}
             </button>
             {savedFlash && <p className="text-sm font-bold text-emerald-400">✓ Cambios guardados</p>}
+          </div>
+
+          {/* Noches del club */}
+          <div className="mt-16 border-t border-white/10 pt-10">
+            <h2 className="text-2xl font-black tracking-tight">Noches de {club.name}</h2>
+            <p className="mt-2 text-sm text-zinc-400">Crea y edita las noches de tu club. Se publican en cuanto las guardas.</p>
+
+            <div className="mt-6">
+              <button
+                onClick={() => { setShowAddEventForm((v) => !v); setEditingEventId(null) }}
+                className={`w-full rounded-2xl px-6 py-4 text-sm font-black transition md:w-auto ${showAddEventForm ? "bg-white text-black" : "bg-purple-500 text-white hover:bg-purple-400"}`}
+              >
+                {showAddEventForm ? "✕ Cerrar formulario" : "+ Nueva noche"}
+              </button>
+              {showAddEventForm && (
+                <div className="mt-4 rounded-[24px] border border-purple-500/30 bg-purple-500/[0.04] p-6">
+                  <h3 className="mb-4 text-lg font-black">Nueva noche</h3>
+                  {renderEventForm(newEventForm, setNewEventForm, handleNewEventImageUpload)}
+                  <div className="mt-5 flex gap-3">
+                    <button onClick={addEvent} disabled={savingEvent} className="rounded-full bg-purple-500 px-6 py-3 text-sm font-black text-white transition hover:bg-purple-400 disabled:opacity-50">
+                      {savingEvent ? "Guardando..." : "Crear noche"}
+                    </button>
+                    <button onClick={() => { setShowAddEventForm(false); setNewEventForm(emptyEventForm) }} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10">
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {events.length === 0 ? (
+              <p className="mt-6 text-sm text-zinc-500">Todavía no tienes ninguna noche creada.</p>
+            ) : (
+              <div className="mt-8 grid gap-6">
+                {events.map((event) => (
+                  <div key={event.id} className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
+                    {editingEventId === event.id ? (
+                      <div>
+                        <h3 className="mb-4 text-lg font-black">Editando: {event.title}</h3>
+                        {renderEventForm(editEventForm, setEditEventForm, handleEditEventImageUpload)}
+                        <div className="mt-5 flex gap-3">
+                          <button onClick={() => saveEditEvent(event.id)} disabled={savingEvent} className="rounded-full bg-purple-500 px-6 py-3 text-sm font-black text-white transition hover:bg-purple-400 disabled:opacity-50">
+                            {savingEvent ? "Guardando..." : "Guardar cambios"}
+                          </button>
+                          <button onClick={cancelEditEvent} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10">
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                          {event.image && <img src={event.image} alt={event.title} className="mb-4 h-40 w-full rounded-2xl object-cover lg:w-80" />}
+                          <h3 className="text-2xl font-black">{event.title}</h3>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs">📅 {event.date || "TBA"}</span>
+                            <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs">🕒 {event.start_time || "TBA"}</span>
+                            <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs">🎟 {event.price || "TBA"}</span>
+                            {event.sold_out && <span className="rounded-full bg-red-500/20 border border-red-500/30 px-3 py-1.5 text-xs text-red-300">🚫 Sold out</span>}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                          <button onClick={() => startEditEvent(event)} className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black">
+                            ✏️ Editar
+                          </button>
+                          <button onClick={() => deleteEvent(event.id)} className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500 hover:text-white">
+                            🗑️ Borrar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </main>
