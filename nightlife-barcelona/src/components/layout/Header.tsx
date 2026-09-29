@@ -439,9 +439,16 @@ export default function Header() {
                 {notifOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
-                    {/* w-[min(20rem,calc(100vw-2rem))] en vez de w-80 fijo: en móviles estrechos
-                        (320-360px) un ancho fijo de 320px se salía de la pantalla por la izquierda. */}
-                    <div className="absolute right-0 top-12 z-50 max-h-[70vh] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl" style={{ background: "#111" }}>
+                    {/* Antes: "absolute right-0" tomaba como referencia el propio botón de la
+                        campana, que no está pegado al borde derecho de la pantalla (a su derecha
+                        sigue el botón del menú ☰). En móviles estrechos eso hacía que el panel se
+                        calculara con un ancho pensado para el viewport completo pero anclado más
+                        a la izquierda de lo que le correspondía, saliéndose por el borde
+                        izquierdo de la pantalla (fuera de vista, "desplazado"). Ahora se ancla
+                        directamente al viewport (fixed) con el mismo margen a cada lado que el
+                        padding del header (right-6 = 24px), así siempre queda centrado y visible
+                        sea cual sea el ancho de pantalla. */}
+                    <div className="fixed right-6 top-[84px] z-50 max-h-[70vh] w-[min(20rem,calc(100vw-3rem))] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl" style={{ background: "#111" }}>
                       <div className="border-b border-white/10 px-4 py-3">
                         <p className="text-sm font-bold text-white">Notificaciones</p>
                       </div>
