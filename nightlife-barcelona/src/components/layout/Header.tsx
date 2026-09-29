@@ -186,10 +186,13 @@ export default function Header() {
           return d
         }
 
+        // Antes se cortaba a las primeras 4 horas próximas con ".slice(0, 4)" — si eran, por
+        // ejemplo, las 20:00, solo se mostraban 23h-02h y ya no aparecían ni las 04h, 05h ni 06h.
+        // Ahora se muestran todas las horas de la franja nocturna (23h a 06h) que aún quedan por
+        // venir, hasta 8 en total.
         const upcoming = nightHourValues
           .map((hour) => ({ hour, date: buildDateFor(hour) }))
           .filter(({ date }) => date.getTime() >= now.getTime() - 30 * 60 * 1000)
-          .slice(0, 4)
 
         const nightHours: WeatherHour[] = upcoming.map(({ hour, date }) => {
           const iso = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(hour)}:00`
@@ -554,20 +557,33 @@ export default function Header() {
           </Link>
         </div>
 
+        {/* Antes: título fijo en inglés ("Barcelona tonight", sin traducir), sin mostrar la
+            temperatura/condición actual (se calculaban pero nunca se pintaban en pantalla), y una
+            cuadrícula de columnas fijas que se apretujaba cuanto más horas se mostraban. Ahora:
+            título traducido, la condición actual destacada arriba a la derecha, y la fila de
+            horas en una tira con scroll horizontal propio que nunca se aprieta aunque haya 8. */}
         {weather !== null && weather.nightHours.length > 0 && (
           <div style={{
             margin: "0 16px 12px 16px",
             border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: "16px",
-            background: "rgba(255,255,255,0.05)",
-            padding: "12px",
+            background: "linear-gradient(135deg, rgba(168,85,247,0.12), rgba(255,255,255,0.04))",
+            padding: "14px",
           }}>
-            <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", marginBottom: "10px", textTransform: "uppercase", letterSpacing: "0.1em" }}>Barcelona tonight</p>
-            <div style={{ display: "grid", gridTemplateColumns: `repeat(${weather.nightHours.length}, 1fr)`, gap: "4px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                {t("weather.tonightTitle")}
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ fontSize: "16px" }}>{weather.icon}</span>
+                <span style={{ fontSize: "14px", fontWeight: 900, color: "#fff" }}>{weather.temp}°</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "14px", overflowX: "auto", marginTop: "12px", paddingBottom: "2px" }}>
               {weather.nightHours.map((h) => (
-                <div key={h.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
+                <div key={h.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px", flexShrink: 0, minWidth: "32px" }}>
                   <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)" }}>{h.label}</p>
-                  <span style={{ fontSize: "18px" }}>{h.icon}</span>
+                  <span style={{ fontSize: "19px" }}>{h.icon}</span>
                   <p style={{ fontSize: "13px", fontWeight: 900, color: "#fff" }}>{h.temp}°</p>
                 </div>
               ))}

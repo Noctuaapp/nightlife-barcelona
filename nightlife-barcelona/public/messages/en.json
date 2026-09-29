@@ -413,5 +413,8 @@
     "updating": "Updating...",
     "update": "Update password",
     "back": "Back to profile"
+  },
+  "weather": {
+    "tonightTitle": "Barcelona tonight"
   }
 }

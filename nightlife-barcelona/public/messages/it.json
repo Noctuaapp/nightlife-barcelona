@@ -413,5 +413,8 @@
     "updating": "Aggiornamento...",
     "update": "Aggiorna password",
     "back": "Torna al profilo"
+  },
+  "weather": {
+    "tonightTitle": "Barcellona stanotte"
   }
 }

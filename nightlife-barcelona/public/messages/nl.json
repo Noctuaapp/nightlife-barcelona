@@ -413,5 +413,8 @@
     "updating": "Bijwerken...",
     "update": "Wachtwoord bijwerken",
     "back": "Terug naar profiel"
+  },
+  "weather": {
+    "tonightTitle": "Barcelona vanavond"
   }
 }

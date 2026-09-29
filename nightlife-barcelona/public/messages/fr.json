@@ -413,5 +413,8 @@
     "updating": "Mise à jour...",
     "update": "Mettre à jour le mot de passe",
     "back": "Retour au profil"
+  },
+  "weather": {
+    "tonightTitle": "Barcelone ce soir"
   }
 }
