@@ -5,6 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { createSlug } from "../../lib/slug"
+import { useLanguage } from "../../context/LanguageContext"
 
 interface ClubCardProps {
   id: number
@@ -36,6 +37,7 @@ export default function ClubCard({
   const [liveBadges, setLiveBadges] = useState(badges)
   const router = useRouter()
   const slug = createSlug(name)
+  const { t } = useLanguage()
 
   return (
     <Link href={`/clubs/${slug}`} className="group block overflow-hidden rounded-[30px] border border-white/10 bg-black transition duration-500 hover:-translate-y-2 hover:border-white/20">
@@ -64,7 +66,10 @@ export default function ClubCard({
             <button key={badge} onClick={(e) => {
               e.preventDefault()
               const updated = [...liveBadges]
-              updated[index] = badge === "🔥 Trending" ? "🟢 LIVE NOW" : "🔥 Trending"
+              // Se compara solo por el emoji (no por el texto completo) para que el toggle
+              // funcione igual aunque el texto mostrado esté traducido a otro idioma.
+              const isTrending = badge.includes("🔥")
+              updated[index] = isTrending ? `🟢 ${t("clubCard.liveNow")}` : `🔥 ${t("clubCard.trending")}`
               setLiveBadges(updated)
             }} className="rounded-full border border-white/10 bg-black/50 px-3 py-2 text-xs font-semibold text-white backdrop-blur-xl transition hover:scale-105 hover:bg-white/20">
               {badge}
@@ -77,7 +82,7 @@ export default function ClubCard({
           )}
           {vip && (
             <div className="rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-2 text-xs font-semibold text-amber-300 backdrop-blur-xl">
-              🛋️ Mesa VIP
+              🛋️ {t("clubCard.vipTable")}
             </div>
           )}
           {verified && (
@@ -88,17 +93,17 @@ export default function ClubCard({
           )}
           {freeEntryInfo && (
             <div className="rounded-full border border-emerald-500/30 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-300 backdrop-blur-xl">
-              🎫 Entrada gratis
+              🎫 {t("clubCard.freeEntry")}
             </div>
           )}
           {discountInfo && (
             <div className="rounded-full border border-orange-500/30 bg-orange-500/20 px-3 py-2 text-xs font-semibold text-orange-300 backdrop-blur-xl">
-              💸 Promo hoy
+              💸 {t("clubCard.promoToday")}
             </div>
           )}
           {hasFoosball && (
             <div className="rounded-full border border-sky-500/30 bg-sky-500/20 px-3 py-2 text-xs font-semibold text-sky-300 backdrop-blur-xl">
-              🎱 Futbolín/Billar
+              🎱 {t("clubCard.foosballBilliards")}
             </div>
           )}
           <button
@@ -109,7 +114,7 @@ export default function ClubCard({
             }}
             className="rounded-full border border-white/10 bg-black/50 px-3 py-2 text-xs font-semibold text-white backdrop-blur-xl transition hover:scale-105 hover:bg-white/20"
           >
-            🗺️ Ver en mapa
+            🗺️ {t("clubCard.viewOnMap")}
           </button>
         </div>
 
@@ -121,7 +126,7 @@ export default function ClubCard({
             <span>⭐ {rating}</span>
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
-            <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">🔥 {people}+ tonight</div>
+            <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">🔥 {people}+ {t("clubCard.tonight")}</div>
             <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">🎟 {price}</div>
             <div className="max-w-[70vw] truncate rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl sm:max-w-[220px]">🕒 {hours}</div>
           </div>

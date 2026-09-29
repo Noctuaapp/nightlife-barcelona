@@ -13,9 +13,11 @@ export default function SignupPage() {
   const [password, setPassword] = useState("")
   const [username, setUsername] = useState("")
   const [country, setCountry] = useState("")
+  const [gender, setGender] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [confirmedAge, setConfirmedAge] = useState(false)
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,6 +29,10 @@ export default function SignupPage() {
     }
     if (!acceptedTerms) {
       setError("Debes aceptar los términos y condiciones para continuar.")
+      return
+    }
+    if (!confirmedAge) {
+      setError("Debes confirmar que eres mayor de 18 años para continuar.")
       return
     }
 
@@ -50,6 +56,8 @@ export default function SignupPage() {
       await supabase.from("profiles").upsert({
         id: data.user.id,
         username: username.toLowerCase().trim(),
+        gender: gender || null,
+        terms_accepted_at: new Date().toISOString(),
       })
     }
 
@@ -127,6 +135,15 @@ export default function SignupPage() {
                 onChange={(e) => setCountry(e.target.value)}
                 className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
               />
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition text-zinc-300"
+              >
+                <option value="">{t("signup.gender")}</option>
+                <option value="Hombre">{t("signup.gender_male")}</option>
+                <option value="Mujer">{t("signup.gender_female")}</option>
+              </select>
 
               <label className="flex items-start gap-3 cursor-pointer pt-2">
                 <input
@@ -141,6 +158,18 @@ export default function SignupPage() {
                   {" "}y la{" "}
                   <a href="/privacy" className="text-purple-400 hover:text-purple-300 transition">política de privacidad</a>
                   {" "}de Noctua, incluyendo el uso de mi ubicación para mostrar contenido relevante.
+                </span>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={confirmedAge}
+                  onChange={(e) => setConfirmedAge(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded accent-purple-500 flex-shrink-0"
+                />
+                <span className="text-sm text-zinc-400 leading-relaxed">
+                  Confirmo que soy mayor de 18 años.
                 </span>
               </label>
 

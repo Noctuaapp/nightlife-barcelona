@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 
 import Header from "../../components/layout/Header"
@@ -8,19 +8,29 @@ import BottomNav from "../../components/layout/BottomNav"
 
 import { supabase } from "../../lib/supabase"
 import { useFavorites } from "../../context/FavoritesContext"
+import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
+import { createSlug } from "../../lib/slug"
+import { useLanguage } from "../../context/LanguageContext"
+import { toDateLocale } from "../../lib/dateLocale"
 
-type Club = {
+type FavType = "club" | "event" | "club_event"
+
+type BaseItem = {
   id: number
+  favoriteId: number
+  note: string | null
+  collectionId: number | null
+}
+
+type Club = BaseItem & {
   name: string
   music: string | null
   neighborhood: string | null
   image: string | null
   price: string | null
-  hours: string | null
 }
 
-type EventItem = {
-  id: number
+type EventItem = BaseItem & {
   title: string
   club_name: string | null
   image: string | null
@@ -29,90 +39,99 @@ type EventItem = {
   price: string | null
 }
 
-type ClubEvent = {
-  id: number
+type ClubEvent = BaseItem & {
   title: string
   club_name: string | null
   image: string | null
   music: string | null
   date: string | null
   price: string | null
-}
-
-const createSlug = (text: string) => {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, "-")
 }
 
 export default function FavoritesPage() {
-  const { favorites, loadingFavorites } = useFavorites()
+  const { t, locale } = useLanguage()
+  const {
+    favorites,
+    loadingFavorites,
+    toggleFavorite,
+    setNote,
+    setFavoriteCollection,
+    collections,
+    createCollection,
+    renameCollection,
+    deleteCollection,
+  } = useFavorites()
 
   const [clubs, setClubs] = useState<Club[]>([])
   const [events, setEvents] = useState<EventItem[]>([])
   const [clubEvents, setClubEvents] = useState<ClubEvent[]>([])
   const [checkingSession, setCheckingSession] = useState(true)
 
+  const [activeCollection, setActiveCollection] = useState<"all" | "none" | number>("all")
+  const [addingList, setAddingList] = useState(false)
+  const [newListName, setNewListName] = useState("")
+  const [editingListId, setEditingListId] = useState<number | null>(null)
+  const [editingListName, setEditingListName] = useState("")
+
+  // Notas: borrador local mientras el usuario escribe, se guarda al salir del campo (onBlur)
+  // para no hacer una llamada a la base de datos en cada pulsación de tecla.
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
+
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession()
-
       if (!data.session) {
         setCheckingSession(false)
         return
       }
-
       setCheckingSession(false)
     }
-
     checkSession()
   }, [])
 
   useEffect(() => {
     const fetchData = async () => {
-      const clubIds = favorites
-        .filter((favorite) => favorite.item_type === "club")
-        .map((favorite) => favorite.item_id)
+      const clubFavs = favorites.filter((f) => f.item_type === "club")
+      const eventFavs = favorites.filter((f) => f.item_type === "event")
+      const clubEventFavs = favorites.filter((f) => f.item_type === "club_event")
 
-      const eventIds = favorites
-        .filter((favorite) => favorite.item_type === "event")
-        .map((favorite) => favorite.item_id)
+      const attach = <T extends { id: number }>(rows: T[], favs: typeof favorites): (T & BaseItem)[] =>
+        rows.map((row) => {
+          const fav = favs.find((f) => f.item_id === row.id)
+          return {
+            ...row,
+            favoriteId: fav?.id ?? 0,
+            note: fav?.note ?? null,
+            collectionId: fav?.collection_id ?? null,
+          }
+        })
 
-      const clubEventIds = favorites
-        .filter((favorite) => favorite.item_type === "club_event")
-        .map((favorite) => favorite.item_id)
-
-      if (clubIds.length > 0) {
+      if (clubFavs.length > 0) {
         const { data } = await supabase
           .from("clubs")
-          .select("id, name, music, neighborhood, image, price, hours")
-          .in("id", clubIds)
-
-        setClubs(data || [])
+          .select("id, name, music, neighborhood, image, price")
+          .in("id", clubFavs.map((f) => f.item_id))
+        setClubs(attach(data || [], clubFavs))
       } else {
         setClubs([])
       }
 
-      if (eventIds.length > 0) {
+      if (eventFavs.length > 0) {
         const { data } = await supabase
           .from("events")
           .select("id, title, club_name, image, music, date, price")
-          .in("id", eventIds)
-
-        setEvents(data || [])
+          .in("id", eventFavs.map((f) => f.item_id))
+        setEvents(attach(data || [], eventFavs))
       } else {
         setEvents([])
       }
 
-      if (clubEventIds.length > 0) {
+      if (clubEventFavs.length > 0) {
         const { data } = await supabase
           .from("club_events")
           .select("id, title, club_name, image, music, date, price")
-          .in("id", clubEventIds)
-
-        setClubEvents(data || [])
+          .in("id", clubEventFavs.map((f) => f.item_id))
+        setClubEvents(attach(data || [], clubEventFavs))
       } else {
         setClubEvents([])
       }
@@ -123,16 +142,110 @@ export default function FavoritesPage() {
     }
   }, [favorites, loadingFavorites])
 
-  const totalFavorites =
-    clubs.length + events.length + clubEvents.length
+  const matchesCollection = (collectionId: number | null) => {
+    if (activeCollection === "all") return true
+    if (activeCollection === "none") return collectionId === null
+    return collectionId === activeCollection
+  }
+
+  const filteredClubs = useMemo(() => clubs.filter((c) => matchesCollection(c.collectionId)), [clubs, activeCollection])
+  const filteredClubEvents = useMemo(() => clubEvents.filter((c) => matchesCollection(c.collectionId)), [clubEvents, activeCollection])
+  const filteredEvents = useMemo(() => events.filter((e) => matchesCollection(e.collectionId)), [events, activeCollection])
+
+  const totalFavorites = clubs.length + events.length + clubEvents.length
+  const totalFiltered = filteredClubs.length + filteredClubEvents.length + filteredEvents.length
+  const uncategorizedCount = [...clubs, ...clubEvents, ...events].filter((i) => i.collectionId === null).length
+
+  const draftKey = (type: FavType, id: number) => `${type}-${id}`
+
+  const handleCreateList = async () => {
+    if (!newListName.trim()) return
+    const created = await createCollection(newListName)
+    setNewListName("")
+    setAddingList(false)
+    if (created) setActiveCollection(created.id)
+  }
+
+  const handleDeleteList = async (id: number) => {
+    if (!window.confirm(t("favoritesPage.confirmDeleteList"))) return
+    await deleteCollection(id)
+    if (activeCollection === id) setActiveCollection("all")
+  }
 
   if (checkingSession || loadingFavorites) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
-          Loading favorites...
-        </p>
+        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("favoritesPage.loading")}</p>
       </main>
+    )
+  }
+
+  const renderCard = (
+    item: (Club | EventItem | ClubEvent) & { type: FavType },
+    title: string,
+    image: string | null,
+    meta: { label: string; value: string }[],
+    href: string
+  ) => {
+    const key = draftKey(item.type, item.id)
+    const noteValue = noteDrafts[key] ?? item.note ?? ""
+
+    return (
+      <div key={`${item.type}-${item.id}`} className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] transition hover:border-white/20">
+        <Link href={href} className="block">
+          <img
+            src={image || FALLBACK_IMAGE}
+            alt={title}
+            className="h-56 w-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
+          />
+        </Link>
+
+        <div className="p-6">
+          <div className="flex items-start justify-between gap-3">
+            <Link href={href} className="min-w-0">
+              <h3 className="truncate text-2xl font-black text-white">{title}</h3>
+            </Link>
+            <button
+              onClick={() => toggleFavorite(item.type, item.id)}
+              title={t("favoritesPage.removeFromFavorites")}
+              className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-zinc-400 transition hover:border-red-500/40 hover:text-red-400"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            {meta.map((m, i) => (
+              <span key={i} className="rounded-full bg-white/10 px-4 py-2 text-sm text-zinc-300">
+                {m.label} {m.value}
+              </span>
+            ))}
+          </div>
+
+          {/* Organizar: asignar a una lista */}
+          <select
+            value={item.collectionId ?? ""}
+            onChange={(e) => setFavoriteCollection(item.type, item.id, e.target.value ? Number(e.target.value) : null)}
+            className="mt-4 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-zinc-300 outline-none focus:border-purple-500/50"
+          >
+            <option value="">{t("favoritesPage.noList")}</option>
+            {collections.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+
+          {/* Nota personal */}
+          <input
+            type="text"
+            value={noteValue}
+            onChange={(e) => setNoteDrafts((prev) => ({ ...prev, [key]: e.target.value }))}
+            onBlur={(e) => setNote(item.type, item.id, e.target.value)}
+            placeholder={t("favoritesPage.notePlaceholder")}
+            className="mt-3 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-purple-500/50"
+          />
+        </div>
+      </div>
     )
   }
 
@@ -145,31 +258,106 @@ export default function FavoritesPage() {
           <div className="mx-auto max-w-7xl">
             <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
-                  Favorites
-                </p>
-
+                <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("nav.favorites")}</p>
                 <h1 className="mt-4 text-5xl font-black tracking-tight text-white md:text-7xl">
-                  Your nightlife collection
+                  {t("favoritesPage.title")}
                 </h1>
-
                 <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
-                  Saved clubs, events and club nights across Barcelona.
+                  {t("favoritesPage.subtitle")}
                 </p>
               </div>
 
               <div className="rounded-[28px] border border-white/10 bg-white/[0.03] px-6 py-5 backdrop-blur-xl">
-                <p className="text-sm uppercase tracking-wide text-zinc-500">
-                  Saved items
-                </p>
-
-                <p className="mt-2 text-3xl font-black text-white">
-                  {totalFavorites}
-                </p>
+                <p className="text-sm uppercase tracking-wide text-zinc-500">{t("favoritesPage.saved")}</p>
+                <p className="mt-2 text-3xl font-black text-white">{totalFavorites}</p>
               </div>
             </div>
           </div>
         </section>
+
+        {totalFavorites > 0 && (
+          <section className="mx-auto mt-10 max-w-7xl px-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setActiveCollection("all")}
+                className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${
+                  activeCollection === "all" ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                }`}
+              >
+                {t("favoritesPage.all")} ({totalFavorites})
+              </button>
+
+              {collections.map((c) => {
+                const count = [...clubs, ...clubEvents, ...events].filter((i) => i.collectionId === c.id).length
+                const isEditing = editingListId === c.id
+                return (
+                  <div key={c.id} className="group relative">
+                    {isEditing ? (
+                      <input
+                        autoFocus
+                        value={editingListName}
+                        onChange={(e) => setEditingListName(e.target.value)}
+                        onBlur={() => { renameCollection(c.id, editingListName); setEditingListId(null) }}
+                        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur() }}
+                        className="rounded-full border border-purple-500/50 bg-black/60 px-5 py-2.5 text-sm text-white outline-none"
+                      />
+                    ) : (
+                      <button
+                        onClick={() => setActiveCollection(c.id)}
+                        onDoubleClick={() => { setEditingListId(c.id); setEditingListName(c.name) }}
+                        title={t("favoritesPage.renameHint")}
+                        className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${
+                          activeCollection === c.id ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                        }`}
+                      >
+                        {c.name} ({count})
+                      </button>
+                    )}
+                    {!isEditing && (
+                      <button
+                        onClick={() => handleDeleteList(c.id)}
+                        title={t("favoritesPage.deleteList")}
+                        className="absolute -right-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white group-hover:flex"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+
+              {uncategorizedCount > 0 && (
+                <button
+                  onClick={() => setActiveCollection("none")}
+                  className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${
+                    activeCollection === "none" ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  }`}
+                >
+                  {t("favoritesPage.noList")} ({uncategorizedCount})
+                </button>
+              )}
+
+              {addingList ? (
+                <input
+                  autoFocus
+                  value={newListName}
+                  onChange={(e) => setNewListName(e.target.value)}
+                  onBlur={handleCreateList}
+                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur() }}
+                  placeholder={t("favoritesPage.newListPlaceholder")}
+                  className="rounded-full border border-purple-500/50 bg-black/60 px-5 py-2.5 text-sm text-white outline-none placeholder:text-zinc-600"
+                />
+              ) : (
+                <button
+                  onClick={() => setAddingList(true)}
+                  className="rounded-full border border-dashed border-white/20 px-5 py-2.5 text-sm font-bold text-zinc-400 transition hover:border-white/40 hover:text-white"
+                >
+                  {t("favoritesPage.newList")}
+                </button>
+              )}
+            </div>
+          </section>
+        )}
 
         {totalFavorites === 0 && (
           <section className="mx-auto mt-24 max-w-4xl px-4">
@@ -177,167 +365,84 @@ export default function FavoritesPage() {
               <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-6xl backdrop-blur-xl">
                 ❤️
               </div>
-
-              <h2 className="mt-8 text-4xl font-black tracking-tight text-white">
-                No favorites yet
-              </h2>
-
+              <h2 className="mt-8 text-4xl font-black tracking-tight text-white">{t("favoritesPage.emptyTitle")}</h2>
               <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-zinc-400">
-                Save clubs and nights to build your own Barcelona nightlife collection.
+                {t("favoritesPage.emptySubtitle")}
               </p>
-
               <div className="mt-10 flex justify-center">
-                <Link
-                  href="/clubs"
-                  className="rounded-full bg-white px-8 py-4 text-sm font-bold text-black transition hover:scale-105"
-                >
-                  Discover clubs
+                <Link href="/clubs" className="rounded-full bg-white px-8 py-4 text-sm font-bold text-black transition hover:scale-105">
+                  {t("favoritesPage.discoverClubs")}
                 </Link>
               </div>
             </div>
           </section>
         )}
 
-        {clubs.length > 0 && (
+        {totalFavorites > 0 && totalFiltered === 0 && (
+          <p className="mx-auto mt-16 max-w-7xl px-4 text-center text-zinc-500">
+            {t("favoritesPage.emptyListMessage")}
+          </p>
+        )}
+
+        {filteredClubs.length > 0 && (
           <section className="mx-auto mt-16 max-w-7xl px-4">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
-              Saved clubs
-            </p>
-
-            <h2 className="mt-3 text-4xl font-black tracking-tight text-white">
-              Places
-            </h2>
-
+            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("favoritesPage.clubsSavedEyebrow")}</p>
+            <h2 className="mt-3 text-4xl font-black tracking-tight text-white">{t("favoritesPage.clubsSavedTitle")}</h2>
             <div className="mt-8 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-              {clubs.map((club) => (
-                <Link
-                  key={club.id}
-                  href={`/clubs/${createSlug(club.name)}`}
-                  className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] transition hover:scale-[1.02]"
-                >
-                  <img
-                    src={club.image || "/clubs/razz.jpg"}
-                    alt={club.name}
-                    className="h-56 w-full object-cover"
-                  />
-
-                  <div className="p-6">
-                    <p className="text-sm uppercase tracking-wide text-zinc-500">
-                      {club.music || "Music"}
-                    </p>
-
-                    <h3 className="mt-2 text-3xl font-black">
-                      {club.name}
-                    </h3>
-
-                    <div className="mt-5 flex flex-wrap gap-3">
-                      <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                        📍 {club.neighborhood || "Barcelona"}
-                      </span>
-
-                      <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                        🎟 {club.price || "TBA"}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+              {filteredClubs.map((club) =>
+                renderCard(
+                  { ...club, type: "club" },
+                  club.name,
+                  club.image,
+                  [
+                    { label: "📍", value: club.neighborhood || "Barcelona" },
+                    { label: "🎟", value: club.price || t("clubEvent.tba") },
+                  ],
+                  `/clubs/${createSlug(club.name)}`
+                )
+              )}
             </div>
           </section>
         )}
 
-        {clubEvents.length > 0 && (
+        {filteredClubEvents.length > 0 && (
           <section className="mx-auto mt-16 max-w-7xl px-4">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
-              Saved club nights
-            </p>
-
-            <h2 className="mt-3 text-4xl font-black tracking-tight text-white">
-              Nights
-            </h2>
-
+            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("favoritesPage.nightsSavedEyebrow")}</p>
+            <h2 className="mt-3 text-4xl font-black tracking-tight text-white">{t("favoritesPage.nightsSavedTitle")}</h2>
             <div className="mt-8 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-              {clubEvents.map((clubEvent) => (
-                <Link
-                  key={clubEvent.id}
-                  href={`/club-event/${clubEvent.id}`}
-                  className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] transition hover:scale-[1.02]"
-                >
-                  <img
-                    src={clubEvent.image || "/clubs/razz.jpg"}
-                    alt={clubEvent.title}
-                    className="h-56 w-full object-cover"
-                  />
-
-                  <div className="p-6">
-                    <p className="text-sm uppercase tracking-wide text-zinc-500">
-                      {clubEvent.club_name || "Barcelona"}
-                    </p>
-
-                    <h3 className="mt-2 text-3xl font-black">
-                      {clubEvent.title}
-                    </h3>
-
-                    <div className="mt-5 flex flex-wrap gap-3">
-                    <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                        📅 {clubEvent.date ? new Date(clubEvent.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "TBA"}
-                      </span>
-
-                      <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                        🎵 {clubEvent.music || "Music"}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+              {filteredClubEvents.map((ce) =>
+                renderCard(
+                  { ...ce, type: "club_event" },
+                  ce.title,
+                  ce.image,
+                  [
+                    { label: "📅", value: ce.date ? new Date(ce.date).toLocaleDateString(toDateLocale(locale), { day: "numeric", month: "short" }) : t("clubEvent.tba") },
+                    { label: "🎵", value: ce.music || t("club.music") },
+                  ],
+                  `/club-event/${ce.id}`
+                )
+              )}
             </div>
           </section>
         )}
 
-        {events.length > 0 && (
+        {filteredEvents.length > 0 && (
           <section className="mx-auto mt-16 max-w-7xl px-4">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
-              Saved events
-            </p>
-
-            <h2 className="mt-3 text-4xl font-black tracking-tight text-white">
-              Events
-            </h2>
-
+            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("favoritesPage.eventsSavedEyebrow")}</p>
+            <h2 className="mt-3 text-4xl font-black tracking-tight text-white">{t("favoritesPage.eventsSavedTitle")}</h2>
             <div className="mt-8 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-              {events.map((event) => (
-                <Link
-                  key={event.id}
-                  href={`/event/${createSlug(event.title)}`}
-                  className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] transition hover:scale-[1.02]"
-                >
-                  <img
-                    src={event.image || "/clubs/razz.jpg"}
-                    alt={event.title}
-                    className="h-56 w-full object-cover"
-                  />
-
-                  <div className="p-6">
-                    <p className="text-sm uppercase tracking-wide text-zinc-500">
-                      {event.club_name || "Barcelona event"}
-                    </p>
-
-                    <h3 className="mt-2 text-3xl font-black">
-                      {event.title}
-                    </h3>
-
-                    <div className="mt-5 flex flex-wrap gap-3">
-                    <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                        📅 {event.date ? new Date(event.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "TBA"}
-                      </span>
-
-                      <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                        🎟 {event.price || "TBA"}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+              {filteredEvents.map((event) =>
+                renderCard(
+                  { ...event, type: "event" },
+                  event.title,
+                  event.image,
+                  [
+                    { label: "📅", value: event.date ? new Date(event.date).toLocaleDateString(toDateLocale(locale), { day: "numeric", month: "short" }) : t("clubEvent.tba") },
+                    { label: "🎟", value: event.price || t("clubEvent.tba") },
+                  ],
+                  `/event/${createSlug(event.title)}`
+                )
+              )}
             </div>
           </section>
         )}

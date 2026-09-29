@@ -215,13 +215,22 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
   }, [club.id])
 
   const trackClick = async (eventType: string) => {
+    const { data: userData } = await supabase.auth.getUser()
     await supabase.from("analytics").insert({
       event_type: eventType,
       item_type: "club",
       item_id: club.id,
       item_name: club.name,
+      user_id: userData.user?.id || null,
     })
   }
+
+  // Registra la visita a esta ficha (solo si el usuario ha iniciado sesión) para poder mostrar
+  // "últimos clubes visitados" en su perfil.
+  useEffect(() => {
+    trackClick("page_view")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [club.id])
 
   const shareClub = async () => {
     const url = typeof window !== "undefined" ? window.location.href : ""
@@ -532,7 +541,14 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                 <Icon name={f.icon} className="h-4 w-4" />
               </span>
               <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-white">{f.value}</p>
+                <p
+                  className={`text-sm font-bold text-white ${
+                    f.key === "hours" ? "whitespace-normal break-words leading-snug" : "truncate"
+                  }`}
+                  title={f.key === "hours" ? String(f.value) : undefined}
+                >
+                  {f.value}
+                </p>
                 <p className="text-[10px] uppercase tracking-widest text-zinc-500">{f.label}</p>
               </div>
             </div>

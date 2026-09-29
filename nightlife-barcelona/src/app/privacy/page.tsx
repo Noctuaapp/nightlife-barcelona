@@ -26,9 +26,10 @@ export default function PrivacyPage() {
             <p className="mb-3">Recopilamos las siguientes categorías de datos:</p>
             <ul className="space-y-2 pl-4">
               {[
-                { label: "Datos de cuenta", desc: "Dirección de correo electrónico y contraseña cifrada al registrarte." },
+                { label: "Datos de cuenta", desc: "Dirección de correo electrónico, contraseña cifrada, nombre de usuario y, si lo indicas, género, al registrarte." },
+                { label: "Foto de perfil", desc: "La imagen que subas voluntariamente como avatar de tu cuenta." },
                 { label: "Datos de uso", desc: "Páginas visitadas, clubs y eventos vistos, y búsquedas realizadas." },
-                { label: "Favoritos", desc: "Clubs, eventos y noches de club que decidas guardar." },
+                { label: "Favoritos", desc: "Clubs, eventos y noches de club que decidas guardar, junto con las listas y notas personales que crees para organizarlos." },
                 { label: "Mensajes de contacto", desc: "Cualquier mensaje que nos envíes a través de la página de Contacto." },
                 { label: "Datos del dispositivo", desc: "Tipo de navegador, tipo de dispositivo y ubicación aproximada (a nivel de país/ciudad) para análisis." },
               ].map(({ label, desc }) => (
@@ -91,7 +92,7 @@ export default function PrivacyPage() {
           </section>
           <section>
             <h2 className="text-white font-semibold text-base mb-3">8. Cookies</h2>
-            <p>Usamos únicamente cookies esenciales necesarias para la autenticación y la gestión de sesión. No usamos cookies publicitarias ni de seguimiento. Ninguna red publicitaria de terceros tiene acceso a tus datos.</p>
+            <p>Usamos únicamente cookies esenciales necesarias para la autenticación y la gestión de sesión, además de almacenamiento local del navegador (localStorage) para recordar preferencias como qué avisos ya has leído. No usamos cookies publicitarias ni de seguimiento. Ninguna red publicitaria de terceros tiene acceso a tus datos.</p>
           </section>
           <section>
             <h2 className="text-white font-semibold text-base mb-3">9. Servicios de terceros</h2>

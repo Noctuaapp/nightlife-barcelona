@@ -61,18 +61,35 @@ export default function Header() {
   const hideHeader = pathname === "/map"
 
   useEffect(() => {
+    // Comprueba que el usuario logueado haya confirmado términos + edad. Esto cubre tanto
+    // el alta por Google (que no pasa por el formulario de registro con sus checkboxes) como
+    // cualquier cuenta creada antes de que existiera esta confirmación.
+    const checkTermsAccepted = async (userId: string) => {
+      if (window.location.pathname === "/confirm-age") return
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("terms_accepted_at")
+        .eq("id", userId)
+        .maybeSingle()
+      if (!profile?.terms_accepted_at) {
+        router.push("/confirm-age")
+      }
+    }
+
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession()
       setIsLoggedIn(!!data.session)
       setIsAdmin(data.session?.user.email === "info@noctuaapp.com")
+      if (data.session) checkTermsAccepted(data.session.user.id)
     }
     checkSession()
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session)
       setIsAdmin(session?.user.email === "info@noctuaapp.com")
+      if (session) checkTermsAccepted(session.user.id)
     })
     return () => { subscription.unsubscribe() }
-  }, [])
+  }, [router])
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -253,6 +270,11 @@ export default function Header() {
     }
 
     fetchNotifications()
+    // Antes solo se cargaban una vez al iniciar sesión: si llegaba un aviso nuevo (broadcast del
+    // admin, o un recordatorio) mientras la persona ya tenía la app abierta, no aparecía hasta
+    // recargar la página. Con este intervalo se refresca solo, igual que el tiempo del header.
+    const interval = setInterval(fetchNotifications, 2 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [isLoggedIn])
 
   const isUnread = (n: NotificationRow) =>
@@ -364,7 +386,9 @@ export default function Header() {
                 {notifOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
-                    <div className="absolute right-0 top-12 z-50 max-h-[70vh] w-80 overflow-y-auto rounded-2xl border border-white/10 shadow-2xl" style={{ background: "#111" }}>
+                    {/* w-[min(20rem,calc(100vw-2rem))] en vez de w-80 fijo: en móviles estrechos
+                        (320-360px) un ancho fijo de 320px se salía de la pantalla por la izquierda. */}
+                    <div className="absolute right-0 top-12 z-50 max-h-[70vh] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl" style={{ background: "#111" }}>
                       <div className="border-b border-white/10 px-4 py-3">
                         <p className="text-sm font-bold text-white">Notificaciones</p>
                       </div>

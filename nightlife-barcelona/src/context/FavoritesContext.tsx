@@ -18,6 +18,16 @@ type Favorite = {
   item_type: FavoriteType
   item_id: number
   reminder_days_before: number
+  note: string | null
+  collection_id: number | null
+}
+
+export type FavoriteCollection = {
+  id: number
+  user_id: string
+  name: string
+  sort_order: number
+  created_at: string
 }
 
 interface FavoritesContextType {
@@ -28,6 +38,12 @@ interface FavoritesContextType {
   refreshFavorites: () => Promise<void>
   setReminder: (itemType: FavoriteType, itemId: number, daysBefore: number) => Promise<void>
   getReminder: (itemType: FavoriteType, itemId: number) => number
+  setNote: (itemType: FavoriteType, itemId: number, note: string) => Promise<void>
+  setFavoriteCollection: (itemType: FavoriteType, itemId: number, collectionId: number | null) => Promise<void>
+  collections: FavoriteCollection[]
+  createCollection: (name: string) => Promise<FavoriteCollection | null>
+  renameCollection: (id: number, name: string) => Promise<void>
+  deleteCollection: (id: number) => Promise<void>
 }
 
 const FavoritesContext =
@@ -40,6 +56,26 @@ export function FavoritesProvider({
 }) {
   const [favorites, setFavorites] = useState<Favorite[]>([])
   const [loadingFavorites, setLoadingFavorites] = useState(true)
+  const [collections, setCollections] = useState<FavoriteCollection[]>([])
+
+  const refreshCollections = async () => {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const user = sessionData.session?.user
+    if (!user) {
+      setCollections([])
+      return
+    }
+    const { data, error } = await supabase
+      .from("favorite_collections")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("sort_order", { ascending: true })
+    if (error) {
+      console.log("FAVORITE COLLECTIONS ERROR:", error)
+      return
+    }
+    setCollections(data || [])
+  }
 
   const refreshFavorites = async () => {
     setLoadingFavorites(true)
@@ -70,11 +106,13 @@ export function FavoritesProvider({
 
   useEffect(() => {
     refreshFavorites()
+    refreshCollections()
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {
       refreshFavorites()
+      refreshCollections()
     })
 
     return () => {
@@ -119,6 +157,90 @@ export function FavoritesProvider({
     setFavorites((prev) =>
       prev.map((f) => (f.id === fav.id ? { ...f, reminder_days_before: daysBefore } : f))
     )
+  }
+
+  const setNote = async (itemType: FavoriteType, itemId: number, note: string) => {
+    const fav = favorites.find((favorite) => favorite.item_type === itemType && favorite.item_id === itemId)
+    if (!fav) return
+
+    const trimmed = note.trim()
+    const { error } = await supabase
+      .from("favorites")
+      .update({ note: trimmed || null })
+      .eq("id", fav.id)
+
+    if (error) {
+      console.log("SET NOTE ERROR:", error)
+      return
+    }
+
+    setFavorites((prev) => prev.map((f) => (f.id === fav.id ? { ...f, note: trimmed || null } : f)))
+  }
+
+  const setFavoriteCollection = async (itemType: FavoriteType, itemId: number, collectionId: number | null) => {
+    const fav = favorites.find((favorite) => favorite.item_type === itemType && favorite.item_id === itemId)
+    if (!fav) return
+
+    const { error } = await supabase
+      .from("favorites")
+      .update({ collection_id: collectionId })
+      .eq("id", fav.id)
+
+    if (error) {
+      console.log("SET FAVORITE COLLECTION ERROR:", error)
+      return
+    }
+
+    setFavorites((prev) => prev.map((f) => (f.id === fav.id ? { ...f, collection_id: collectionId } : f)))
+  }
+
+  const createCollection = async (name: string): Promise<FavoriteCollection | null> => {
+    const trimmed = name.trim()
+    if (!trimmed) return null
+
+    const { data: sessionData } = await supabase.auth.getSession()
+    const user = sessionData.session?.user
+    if (!user) return null
+
+    const { data, error } = await supabase
+      .from("favorite_collections")
+      .insert({ user_id: user.id, name: trimmed, sort_order: collections.length })
+      .select()
+      .single()
+
+    if (error) {
+      console.log("CREATE COLLECTION ERROR:", error)
+      return null
+    }
+
+    setCollections((prev) => [...prev, data])
+    return data
+  }
+
+  const renameCollection = async (id: number, name: string) => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+
+    const { error } = await supabase.from("favorite_collections").update({ name: trimmed }).eq("id", id)
+    if (error) {
+      console.log("RENAME COLLECTION ERROR:", error)
+      return
+    }
+
+    setCollections((prev) => prev.map((c) => (c.id === id ? { ...c, name: trimmed } : c)))
+  }
+
+  const deleteCollection = async (id: number) => {
+    const { error } = await supabase.from("favorite_collections").delete().eq("id", id)
+    if (error) {
+      console.log("DELETE COLLECTION ERROR:", error)
+      return
+    }
+
+    setCollections((prev) => prev.filter((c) => c.id !== id))
+    // Los favoritos de esa lista no se borran, solo se quedan sin categoría (collection_id null
+    // por el ON DELETE SET NULL de la base de datos).
+    setFavorites((prev) => prev.map((f) => (f.collection_id === id ? { ...f, collection_id: null } : f)))
   }
 
   const toggleFavorite = async (
@@ -188,6 +310,12 @@ export function FavoritesProvider({
         refreshFavorites,
         setReminder,
         getReminder,
+        setNote,
+        setFavoriteCollection,
+        collections,
+        createCollection,
+        renameCollection,
+        deleteCollection,
       }}
     >
       {children}

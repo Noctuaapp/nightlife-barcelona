@@ -80,6 +80,7 @@ export default function ContactPage() {
     { value: "user_support", label: "🙋 Soporte de usuario", desc: "Ayuda con tu cuenta o la app" },
     { value: "report_issue", label: "⚑ Reportar información incorrecta", desc: "Horarios, precios o datos erróneos" },
     { value: "suggest_venue", label: "📍 Sugerir un local", desc: "¿Conoces un club o bar que falta?" },
+    { value: "suggest_essential", label: "🧭 Sugerir un esencial", desc: "Cajero, farmacia, transporte... que no aparezca" },
     { value: "club_partnership", label: "🤝 Partnership con local", desc: "Colaboración para clubs y bares" },
     { value: "festival_partnership", label: "🎪 Partnership con festival", desc: "Colaboración para eventos y festivales" },
   ]

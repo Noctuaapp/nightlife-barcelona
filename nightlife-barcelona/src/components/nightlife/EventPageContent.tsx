@@ -7,6 +7,8 @@ import ClubMap from "../map/ClubMap"
 import EventSessionsCalendar from "../nightlife/EventSessionsCalendar"
 import TransportButtons from "../ui/TransportButtons"
 import { supabase } from "../../lib/supabase"
+import { useLanguage } from "../../context/LanguageContext"
+import { toDateLocale } from "../../lib/dateLocale"
 
 // Un evento de varios días (date_end) no se considera terminado hasta que pasa el último día,
 // no el primero.
@@ -138,6 +140,7 @@ function Stars({ rating, size = "h-3.5 w-3.5", color }: { rating: number; size?:
 }
 
 export default function EventPageContent({ event, tickets, sessions }: { event: any; tickets: any[]; sessions: any[] }) {
+  const { t, locale } = useLanguage()
   const [scrolled, setScrolled] = useState(false)
   const [pastHero, setPastHero] = useState(false)
   const [scrollY, setScrollY] = useState(0)
@@ -190,23 +193,32 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
   }, [event.id])
 
   const trackClick = async (eventType: string) => {
+    const { data: userData } = await supabase.auth.getUser()
     await supabase.from("analytics").insert({
       event_type: eventType,
       item_type: "event",
       item_id: event.id,
       item_name: event.title,
+      user_id: userData.user?.id || null,
     })
   }
+
+  // Registra la visita a esta ficha (solo si el usuario ha iniciado sesión) para poder mostrar
+  // "últimos eventos visitados" en su perfil.
+  useEffect(() => {
+    trackClick("page_view")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event.id])
 
   const shareEvent = async () => {
     const url = typeof window !== "undefined" ? window.location.href : ""
     if (typeof navigator !== "undefined" && (navigator as any).share) {
       try {
-        await (navigator as any).share({ title: event.title, text: `Mira ${event.title} en Noctua`, url })
+        await (navigator as any).share({ title: event.title, text: `${t("event.shareTextPrefix")} ${event.title} ${t("event.shareTextSuffix")}`, url })
       } catch {}
     } else if (typeof navigator !== "undefined" && navigator.clipboard) {
       await navigator.clipboard.writeText(url)
-      window.alert("Enlace copiado")
+      window.alert(t("event.linkCopied"))
     }
   }
 
@@ -243,13 +255,13 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
   })()
 
   const dateLabel = event.date
-    ? new Date(event.date).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
-    : "TBA"
+    ? new Date(event.date).toLocaleDateString(toDateLocale(locale), { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+    : t("clubEvent.tba")
 
   // Si tiene date_end distinto de date, es un evento de varios días -> se muestra como rango.
   const dateEndLabel =
     event.date_end && event.date_end !== event.date
-      ? new Date(event.date_end).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+      ? new Date(event.date_end).toLocaleDateString(toDateLocale(locale), { weekday: "long", day: "numeric", month: "long", year: "numeric" })
       : null
   const fullDateLabel = dateEndLabel ? `${dateLabel} - ${dateEndLabel}` : dateLabel
 
@@ -261,11 +273,11 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
   const allImages = [event.image, ...galleryImages].filter(Boolean)
 
   const quickFacts = [
-    { key: "date", icon: "calendar", value: past ? "Terminado" : dateEndLabel ? `${dateLabel.split(",")[0]} - ${dateEndLabel.split(",")[0]}` : dateLabel.split(",")[0] || dateLabel, label: "Fecha" },
-    { key: "time", icon: "clock", value: event.start_time ? `${event.start_time}${event.end_time ? ` - ${event.end_time}` : ""}` : "TBA", label: "Horario" },
-    { key: "price", icon: "ticket", value: event.price || "TBA", label: "Precio" },
-    { key: "music", icon: "music", value: event.music || "TBA", label: "Música" },
-    { key: "venue", icon: "map", value: venue, label: "Lugar" },
+    { key: "date", icon: "calendar", value: past ? t("event.finishedValue") : dateEndLabel ? `${dateLabel.split(",")[0]} - ${dateEndLabel.split(",")[0]}` : dateLabel.split(",")[0] || dateLabel, label: t("event.date") },
+    { key: "time", icon: "clock", value: event.start_time ? `${event.start_time}${event.end_time ? ` - ${event.end_time}` : ""}` : t("clubEvent.tba"), label: t("event.schedule") },
+    { key: "price", icon: "ticket", value: event.price || t("clubEvent.tba"), label: t("event.price") },
+    { key: "music", icon: "music", value: event.music || t("clubEvent.tba"), label: t("club.music") },
+    { key: "venue", icon: "map", value: venue, label: t("event.venue") },
   ]
 
   const accentGradient = { background: `linear-gradient(135deg, ${accent.from} 0%, ${accent.to} 100%)` }
@@ -310,7 +322,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
               onClick={openDirections}
               className="rounded-full bg-white px-4 py-2.5 text-xs font-black text-black transition hover:scale-105 sm:px-5 sm:text-sm"
             >
-              Cómo llegar
+              {t("event.directions")}
             </button>
           )}
         </div>
@@ -345,22 +357,22 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
             <div className={`flex flex-wrap items-center gap-2 transition-all duration-700 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
               {past && (
                 <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-black/50 px-3.5 py-1.5 text-[11px] font-bold text-zinc-300 backdrop-blur-xl">
-                  Evento terminado
+                  {t("event.finished")}
                 </span>
               )}
               {event.featured && !past && (
                 <span className="flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3.5 py-1.5 text-[11px] font-bold text-amber-300 backdrop-blur-xl">
-                  <Icon name="star" className="h-3 w-3" /> Destacado
+                  <Icon name="star" className="h-3 w-3" /> {t("event.featured")}
                 </span>
               )}
               {event.sold_out && (
                 <span className="flex items-center gap-1.5 rounded-full border border-red-400/30 bg-red-400/10 px-3.5 py-1.5 text-[11px] font-bold text-red-300 backdrop-blur-xl">
-                  <Icon name="ban" className="h-3 w-3" /> Agotado
+                  <Icon name="ban" className="h-3 w-3" /> {t("event.soldOut")}
                 </span>
               )}
               {event.vip_tables && !past && (
                 <span className="flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-400/10 px-3.5 py-1.5 text-[11px] font-bold text-purple-300 backdrop-blur-xl">
-                  <Icon name="sofa" className="h-3 w-3" /> Mesa VIP
+                  <Icon name="sofa" className="h-3 w-3" /> {t("event.vipTable")}
                 </span>
               )}
             </div>
@@ -388,7 +400,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                   <span className="flex items-center gap-2">
                     <Stars rating={displayRating} color={accent.from} />
                     <span className="text-sm font-bold text-white"><CountUp value={displayRating} decimals={1} /></span>
-                    {reviewCount && <span className="text-sm text-zinc-500">({reviewCount} reseñas de Google)</span>}
+                    {reviewCount && <span className="text-sm text-zinc-500">({reviewCount} {t("event.reviewsOfGoogle")})</span>}
                   </span>
                 </>
               )}
@@ -404,7 +416,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                   style={accentGradient}
                   className="flex items-center gap-2 rounded-2xl px-7 py-4 font-black text-white transition hover:scale-[1.02] hover:opacity-90"
                 >
-                  <Icon name="ticket" className="h-4 w-4" /> Comprar entradas
+                  <Icon name="ticket" className="h-4 w-4" /> {t("event.buyTickets")}
                 </a>
               )}
               {event.latitude && event.longitude && (
@@ -412,7 +424,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                   onClick={openDirections}
                   className="flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-6 py-4 font-bold text-white backdrop-blur-xl transition hover:bg-white/10"
                 >
-                  <Icon name="map" className="h-4 w-4" /> Cómo llegar
+                  <Icon name="map" className="h-4 w-4" /> {t("event.directions")}
                 </button>
               )}
             </div>
@@ -445,14 +457,14 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
             className="flex w-full flex-col items-stretch gap-5 overflow-hidden rounded-[28px] border border-white/10 p-6 backdrop-blur-2xl sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-[0.3em]" style={{ color: accent.from }}>Empieza en</p>
+              <p className="text-xs font-bold uppercase tracking-[0.3em]" style={{ color: accent.from }}>{t("event.startsIn")}</p>
               <p className="mt-2 truncate text-xl font-black text-white md:text-2xl">{event.title}</p>
             </div>
             <div className="flex items-center gap-3 sm:gap-5">
               {[
-                { v: countdown.days, l: "días" },
-                { v: countdown.hours, l: "horas" },
-                { v: countdown.mins, l: "min" },
+                { v: countdown.days, l: t("event.days") },
+                { v: countdown.hours, l: t("event.hours") },
+                { v: countdown.mins, l: t("event.minutes") },
               ].map((u) => (
                 <div key={u.l} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-center">
                   <p className="text-2xl font-black text-white tabular-nums">{u.v}</p>
@@ -467,7 +479,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
       {/* GALERIA */}
       {allImages.length > 1 && (
         <Reveal className="mt-16">
-          <p className="mx-auto max-w-6xl px-4 text-xs uppercase tracking-[0.3em] text-zinc-500 mb-5 sm:px-6">Galería</p>
+          <p className="mx-auto max-w-6xl px-4 text-xs uppercase tracking-[0.3em] text-zinc-500 mb-5 sm:px-6">{t("event.gallery")}</p>
           <div className="mx-auto hidden max-w-6xl grid-cols-4 grid-rows-2 gap-3 px-6 sm:grid" style={{ height: 420 }}>
             {allImages.slice(0, 5).map((src: string, i: number) => (
               <button
@@ -521,9 +533,9 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
           <div className="space-y-8 lg:col-span-2">
             <Reveal>
               <Card innerClassName="p-8">
-                <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">Sobre el evento</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">{t("event.about")}</p>
                 <p className="mt-4 text-lg leading-relaxed text-zinc-200 first-letter:float-left first-letter:mr-2 first-letter:text-6xl first-letter:font-black first-letter:leading-[0.8] first-letter:text-white">
-                  {event.description || `${event.title} es uno de los eventos destacados de la agenda de Barcelona.`}
+                  {event.description || `${event.title} ${t("event.defaultDescriptionSuffix")}`}
                 </p>
                 {event.artist && (
                   <div className="mt-8 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-5">
@@ -531,7 +543,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                       <Icon name="headphones" className="h-4.5 w-4.5" />
                     </span>
                     <div>
-                      <p className="text-[10px] uppercase tracking-widest text-zinc-500">Artista</p>
+                      <p className="text-[10px] uppercase tracking-widest text-zinc-500">{t("event.artist")}</p>
                       <p className="text-sm font-bold text-white">{event.artist}</p>
                     </div>
                   </div>
@@ -555,11 +567,11 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                       <p className="text-4xl font-black text-white">{Number(displayRating).toFixed(1)}</p>
                       <div>
                         <Stars rating={displayRating || 0} size="h-4 w-4" color={accent.from} />
-                        <p className="mt-1 text-xs text-zinc-500">{reviewCount ? `${reviewCount} reseñas` : `${reviews.length} reseñas`}</p>
+                        <p className="mt-1 text-xs text-zinc-500">{reviewCount ? `${reviewCount} ${t("event.reviews")}` : `${reviews.length} ${t("event.reviews")}`}</p>
                       </div>
                     </div>
                     <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                      <Icon name="google" className="h-3.5 w-3.5" /> Reseñas de Google
+                      <Icon name="google" className="h-3.5 w-3.5" /> {t("event.googleReviewsLabel")}
                     </span>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -581,7 +593,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
             {event.latitude && event.longitude && (
               <Reveal>
                 <Card innerClassName="p-8">
-                  <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 mb-4">Ubicación</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 mb-4">{t("event.location")}</p>
                   <div className="overflow-hidden rounded-2xl">
                     <ClubMap latitude={event.latitude} longitude={event.longitude} name={event.title} />
                   </div>
@@ -591,7 +603,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                     style={accentGradient}
                     className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 font-bold text-white transition hover:scale-[1.01]"
                   >
-                    <Icon name="map" className="h-4 w-4" /> Abrir ruta en Google Maps
+                    <Icon name="map" className="h-4 w-4" /> {t("event.openRouteGoogleMaps")}
                   </button>
                   <div className="mt-6">
                     <TransportButtons name={event.title} address={event.address} lat={event.latitude} lng={event.longitude} />
@@ -622,12 +634,12 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
 
               <div className="space-y-2.5 border-b border-white/10 p-6 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Fecha</span>
+                  <span className="text-zinc-500">{t("event.date")}</span>
                   <span className="text-right font-semibold text-white">{fullDateLabel}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-500">Hora</span>
-                  <span className="font-semibold text-white">{event.start_time || "TBA"}{event.end_time ? ` - ${event.end_time}` : ""}</span>
+                  <span className="text-zinc-500">{t("event.time")}</span>
+                  <span className="font-semibold text-white">{event.start_time || t("clubEvent.tba")}{event.end_time ? ` - ${event.end_time}` : ""}</span>
                 </div>
                 {priceTiers.length > 0 ? (
                   <div className="space-y-1.5 pt-1">
@@ -640,8 +652,8 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-500">Precio</span>
-                    <span className="font-semibold text-white">{event.price || "TBA"}</span>
+                    <span className="text-zinc-500">{t("event.price")}</span>
+                    <span className="font-semibold text-white">{event.price || t("clubEvent.tba")}</span>
                   </div>
                 )}
               </div>
@@ -656,7 +668,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                             <p className="truncate font-bold text-white">{ticket.name}</p>
                             {ticket.description && <p className="mt-1 text-xs text-zinc-500">{ticket.description}</p>}
                           </div>
-                          <p className="shrink-0 font-black text-white">{ticket.price ? `${ticket.price} ${ticket.currency || "EUR"}` : "TBA"}</p>
+                          <p className="shrink-0 font-black text-white">{ticket.price ? `${ticket.price} ${ticket.currency || "EUR"}` : t("clubEvent.tba")}</p>
                         </div>
                         {ticket.external_url && !event.sold_out && !past && (
                           <a
@@ -667,7 +679,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                             style={accentGradient}
                             className="mt-3 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black text-white transition hover:scale-[1.02]"
                           >
-                            <Icon name="ticket" className="h-4 w-4" /> Comprar
+                            <Icon name="ticket" className="h-4 w-4" /> {t("event.buy")}
                           </a>
                         )}
                       </div>
@@ -682,15 +694,15 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                     style={accentGradient}
                     className="flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 font-black text-white transition hover:scale-[1.02]"
                   >
-                    <Icon name="ticket" className="h-4 w-4" /> Comprar entradas
+                    <Icon name="ticket" className="h-4 w-4" /> {t("event.buyTickets")}
                   </a>
                 ) : event.sold_out ? (
                   <div className="flex items-center justify-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-6 py-4 font-bold text-red-300">
-                    <Icon name="ban" className="h-4 w-4" /> Agotado
+                    <Icon name="ban" className="h-4 w-4" /> {t("event.soldOut")}
                   </div>
                 ) : past ? (
                   <div className="flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-zinc-400">
-                    Evento terminado
+                    {t("event.finished")}
                   </div>
                 ) : null}
 
@@ -700,7 +712,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                   onClick={shareEvent}
                   className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10"
                 >
-                  <Icon name="share" className="h-4 w-4" /> Compartir
+                  <Icon name="share" className="h-4 w-4" /> {t("event.share")}
                 </button>
 
                 {event.latitude && event.longitude && (
@@ -708,15 +720,15 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                     onClick={openDirections}
                     className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02]"
                   >
-                    <Icon name="map" className="h-4 w-4" /> Cómo llegar
+                    <Icon name="map" className="h-4 w-4" /> {t("event.directions")}
                   </button>
                 )}
 
                 <a
-                  href={"/contact?type=report_issue&subject=" + encodeURIComponent("Reporte evento: " + event.title)}
+                  href={"/contact?type=report_issue&subject=" + encodeURIComponent(t("event.reportSubjectPrefix") + " " + event.title)}
                   className="flex items-center justify-center gap-2 rounded-2xl border border-white/5 bg-transparent px-6 py-3 text-xs font-semibold text-zinc-500 transition hover:text-zinc-300"
                 >
-                  <Icon name="flag" className="h-3.5 w-3.5" /> Reportar información incorrecta
+                  <Icon name="flag" className="h-3.5 w-3.5" /> {t("event.reportIncorrectInfo")}
                 </a>
               </div>
             </Card>
@@ -739,9 +751,9 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
       {ticketUrl && (
         <Reveal className="w-full px-4 sm:px-6">
           <div style={accentGradient} className="mx-auto max-w-6xl rounded-[36px] px-8 py-14 text-center sm:py-20">
-            <p className="text-xs font-bold uppercase tracking-[0.4em] text-white/80">¿Te lo vas a perder?</p>
-            <h2 className="mt-4 text-4xl font-black leading-tight text-white sm:text-6xl">Asegura tu entrada</h2>
-            <p className="mx-auto mt-4 max-w-xl text-white/85">Las entradas para {event.title} se agotan rápido.</p>
+            <p className="text-xs font-bold uppercase tracking-[0.4em] text-white/80">{t("event.dontMissIt")}</p>
+            <h2 className="mt-4 text-4xl font-black leading-tight text-white sm:text-6xl">{t("event.secureYourTicket")}</h2>
+            <p className="mx-auto mt-4 max-w-xl text-white/85">{t("event.ticketsForPrefix")} {event.title} {t("event.sellFastSuffix")}</p>
             <a
               href={ticketUrl}
               target="_blank"
@@ -749,7 +761,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
               onClick={() => trackClick("tickets_click")}
               className="mt-8 inline-flex items-center gap-2 rounded-full bg-black px-8 py-4 font-bold text-white transition hover:scale-105"
             >
-              Comprar entradas <Icon name="arrow" className="h-4 w-4" />
+              {t("event.buyTickets")} <Icon name="arrow" className="h-4 w-4" />
             </a>
           </div>
         </Reveal>

@@ -16,9 +16,24 @@ const LanguageContext = createContext<LanguageContextType>({
   t: (key) => key,
 })
 
+// Español es el idioma "fuente": siempre se carga como red de seguridad para que, si a un
+// idioma le falta una clave (una traducción que aún no se ha añadido a ese JSON), el usuario
+// vea el texto en español en vez de la clave técnica en crudo (ej. "profile.title").
+const FALLBACK_LOCALE: Locale = "es"
+
+function lookup(messages: Record<string, any>, key: string): string | undefined {
+  const keys = key.split(".")
+  let value: any = messages
+  for (const k of keys) {
+    value = value?.[k]
+  }
+  return typeof value === "string" ? value : undefined
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("es")
   const [messages, setMessages] = useState<Record<string, any>>({})
+  const [fallbackMessages, setFallbackMessages] = useState<Record<string, any>>({})
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
@@ -37,6 +52,19 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       .catch(() => setLoaded(true))
   }, [locale])
 
+  // Se carga aparte, una sola vez, salvo que el idioma activo ya sea español (entonces no hace
+  // falta pedirlo dos veces).
+  useEffect(() => {
+    if (locale === FALLBACK_LOCALE) {
+      setFallbackMessages(messages)
+      return
+    }
+    fetch(`/messages/${FALLBACK_LOCALE}.json?v=${Date.now()}`)
+      .then((res) => res.json())
+      .then((data) => setFallbackMessages(data))
+      .catch(() => {})
+  }, [locale, messages])
+
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale)
     localStorage.setItem("noctua_locale", newLocale)
@@ -44,12 +72,21 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const t = (key: string): string => {
     if (!loaded) return ""
-    const keys = key.split(".")
-    let value: any = messages
-    for (const k of keys) {
-      value = value?.[k]
+    const direct = lookup(messages, key)
+    if (direct !== undefined) return direct
+
+    const fallback = lookup(fallbackMessages, key)
+    if (fallback !== undefined) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(`[i18n] Falta la clave "${key}" en "${locale}.json" — usando español de respaldo.`)
+      }
+      return fallback
     }
-    return typeof value === "string" ? value : key
+
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(`[i18n] Clave "${key}" no encontrada en ningún idioma.`)
+    }
+    return key
   }
 
   return (

@@ -8,6 +8,7 @@ type User = {
   id: string
   email: string
   username: string | null
+  gender: string | null
   created_at: string
   last_sign_in_at: string | null
 }
@@ -83,6 +84,11 @@ export default function AdminUsersPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
+                    {user.gender && (
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                        {user.gender === "Hombre" ? "♂️" : "♀️"} {user.gender}
+                      </span>
+                    )}
                     <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
                       📅 Registrado: {new Date(user.created_at).toLocaleDateString("es-ES")}
                     </span>

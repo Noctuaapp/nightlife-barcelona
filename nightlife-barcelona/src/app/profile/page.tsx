@@ -32,6 +32,39 @@ const NOTIF_ICON: Record<string, string> = {
   favorite_reminder: "⏰",
 }
 
+// Los avisos "broadcast" son UNA fila compartida por todos los usuarios (user_id = null), así
+// que su estado de leído/prioridad/borrado no puede escribirse en esa fila en Supabase — eso
+// cambiaría el aviso para todo el mundo. En vez de eso, cada persona guarda su propio estado en
+// su navegador. Usa las mismas claves que el badge de notificaciones del Header, así los dos
+// sitios están siempre de acuerdo sobre qué avisos ha leído.
+const readBroadcastIds = (): number[] => {
+  try {
+    return JSON.parse(localStorage.getItem("noctua_read_broadcasts") || "[]")
+  } catch { return [] }
+}
+const pinnedBroadcastIds = (): number[] => {
+  try {
+    return JSON.parse(localStorage.getItem("noctua_pinned_broadcasts") || "[]")
+  } catch { return [] }
+}
+const hiddenBroadcastIds = (): number[] => {
+  try {
+    return JSON.parse(localStorage.getItem("noctua_hidden_broadcasts") || "[]")
+  } catch { return [] }
+}
+const addToLocalIdSet = (key: string, id: number) => {
+  try {
+    const current: number[] = JSON.parse(localStorage.getItem(key) || "[]")
+    if (!current.includes(id)) localStorage.setItem(key, JSON.stringify([...current, id]))
+  } catch {}
+}
+const removeFromLocalIdSet = (key: string, id: number) => {
+  try {
+    const current: number[] = JSON.parse(localStorage.getItem(key) || "[]")
+    localStorage.setItem(key, JSON.stringify(current.filter((x) => x !== id)))
+  } catch {}
+}
+
 const sortByPinned = <T extends { pinned?: boolean | null; created_at?: string | null }>(list: T[]): T[] =>
   [...list].sort((a, b) => {
     const pinDiff = (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)
@@ -58,8 +91,15 @@ export default function ProfilePage() {
   const [savingUsername, setSavingUsername] = useState(false)
   const [editingUsername, setEditingUsername] = useState(false)
 
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [avatarError, setAvatarError] = useState("")
+
   const [calendarItems, setCalendarItems] = useState<any[]>([])
   const [loadingCalendar, setLoadingCalendar] = useState(true)
+
+  const [recentVisits, setRecentVisits] = useState<any[]>([])
+  const [loadingVisits, setLoadingVisits] = useState(true)
 
   const [inboxTab, setInboxTab] = useState<"notifications" | "messages">("notifications")
   const [notifHistory, setNotifHistory] = useState<any[]>([])
@@ -73,11 +113,12 @@ export default function ProfilePage() {
       setUserId(data.user.id)
       setEmail(data.user.email || "")
 
-      const { data: profile } = await supabase.from("profiles").select("username, username_updated_at").eq("id", data.user.id).single()
+      const { data: profile } = await supabase.from("profiles").select("username, username_updated_at, avatar_url").eq("id", data.user.id).single()
       if (profile) {
         setUsername(profile.username || "")
         setNewUsername(profile.username || "")
         setUsernameUpdatedAt(profile.username_updated_at || null)
+        setAvatarUrl(profile.avatar_url || null)
       }
 
       setLoading(false)
@@ -124,14 +165,53 @@ export default function ProfilePage() {
   }, [favorites])
 
   useEffect(() => {
+    if (!userId) return
+    const loadRecentVisits = async () => {
+      setLoadingVisits(true)
+      // Traemos más de la cuenta porque un mismo club/evento puede aparecer varias veces
+      // (visitas repetidas) — nos quedamos solo con la más reciente de cada uno.
+      const { data } = await supabase
+        .from("analytics")
+        .select("item_type, item_id, item_name, created_at")
+        .eq("user_id", userId)
+        .eq("event_type", "page_view")
+        .order("created_at", { ascending: false })
+        .limit(40)
+
+      const seen = new Set<string>()
+      const unique: any[] = []
+      for (const row of data || []) {
+        const key = `${row.item_type}-${row.item_id}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        unique.push(row)
+        if (unique.length >= 6) break
+      }
+      setRecentVisits(unique)
+      setLoadingVisits(false)
+    }
+    loadRecentVisits()
+  }, [userId])
+
+  useEffect(() => {
     if (!userId || !email) return
     const loadInbox = async () => {
       setLoadingInbox(true)
       const [notifRes, messagesRes] = await Promise.all([
-        supabase.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
+        // Antes esto era .eq("user_id", userId), lo que excluía los avisos "broadcast" del admin
+        // (user_id = null) — nunca aparecían en el buzón de nadie. Con .or() se incluyen también.
+        supabase.from("notifications").select("*").or(`user_id.eq.${userId},user_id.is.null`).order("created_at", { ascending: false }).limit(50),
         supabase.from("contact_messages").select("*").eq("email", email).order("created_at", { ascending: false }).limit(50),
       ])
-      setNotifHistory(sortByPinned(notifRes.data || []))
+
+      const readIds = readBroadcastIds()
+      const pinnedIds = pinnedBroadcastIds()
+      const hiddenIds = hiddenBroadcastIds()
+      const withLocalState = (notifRes.data || [])
+        .filter((n: any) => n.type !== "broadcast" || !hiddenIds.includes(n.id))
+        .map((n: any) => (n.type === "broadcast" ? { ...n, read: readIds.includes(n.id), pinned: pinnedIds.includes(n.id) } : n))
+
+      setNotifHistory(sortByPinned(withLocalState))
       setSentMessages(sortByPinned(messagesRes.data || []))
       setLoadingInbox(false)
     }
@@ -187,6 +267,42 @@ export default function ProfilePage() {
     setEditingUsername(false)
   }
 
+  const uploadAvatar = async (file: File) => {
+    if (!userId) return
+    setAvatarError("")
+
+    if (!file.type.startsWith("image/")) { setAvatarError("El archivo tiene que ser una imagen."); return }
+    if (file.size > 5 * 1024 * 1024) { setAvatarError("La imagen no puede pesar más de 5MB."); return }
+
+    setUploadingAvatar(true)
+    const fileExt = file.name.split(".").pop()
+    // Carpeta = userId, así las políticas de Storage solo dejan a cada usuario subir/borrar
+    // dentro de su propia carpeta (auth.uid() = primer segmento de la ruta).
+    const fileName = `${userId}/avatar-${Date.now()}.${fileExt}`
+
+    const { error: uploadError } = await supabase.storage.from("avatars").upload(fileName, file, { upsert: true })
+    if (uploadError) {
+      setUploadingAvatar(false)
+      setAvatarError(uploadError.message)
+      return
+    }
+
+    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(fileName)
+    const publicUrl = pub.publicUrl
+
+    const { error: updateError } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", userId)
+    setUploadingAvatar(false)
+    if (updateError) { setAvatarError(updateError.message); return }
+
+    setAvatarUrl(publicUrl)
+  }
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) uploadAvatar(file)
+    e.target.value = ""
+  }
+
   const logout = async () => {
     await supabase.auth.signOut()
     window.location.href = "/login"
@@ -209,18 +325,41 @@ export default function ProfilePage() {
 
   const toggleNotifRead = async (id: number, current: boolean) => {
     const next = !current
+    const notif = notifHistory.find((n) => n.id === id)
     setNotifHistory((prev) => prev.map((n) => (n.id === id ? { ...n, read: next } : n)))
+
+    if (notif?.type === "broadcast") {
+      // Fila compartida por todos los usuarios: el estado de leído se guarda solo en este
+      // navegador, nunca se escribe en la fila de Supabase (afectaría a todo el mundo).
+      if (next) addToLocalIdSet("noctua_read_broadcasts", id)
+      else removeFromLocalIdSet("noctua_read_broadcasts", id)
+      return
+    }
     await supabase.from("notifications").update({ read: next }).eq("id", id)
   }
 
   const toggleNotifPinned = async (id: number, current: boolean) => {
     const next = !current
+    const notif = notifHistory.find((n) => n.id === id)
     setNotifHistory((prev) => sortByPinned(prev.map((n) => (n.id === id ? { ...n, pinned: next } : n))))
+
+    if (notif?.type === "broadcast") {
+      if (next) addToLocalIdSet("noctua_pinned_broadcasts", id)
+      else removeFromLocalIdSet("noctua_pinned_broadcasts", id)
+      return
+    }
     await supabase.from("notifications").update({ pinned: next }).eq("id", id)
   }
 
   const deleteNotif = async (id: number) => {
+    const notif = notifHistory.find((n) => n.id === id)
     setNotifHistory((prev) => prev.filter((n) => n.id !== id))
+
+    if (notif?.type === "broadcast") {
+      // No se borra la fila (es de todos) — solo se oculta para este usuario/navegador.
+      addToLocalIdSet("noctua_hidden_broadcasts", id)
+      return
+    }
     await supabase.from("notifications").delete().eq("id", id)
   }
 
@@ -260,9 +399,24 @@ export default function ProfilePage() {
           <div className="relative mx-auto max-w-5xl">
             <div className="flex flex-col items-center text-center">
               {/* Avatar */}
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-3xl font-black text-white shadow-lg">
-                {initials}
-              </div>
+              <label className="group relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-full shadow-lg">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={username || "Avatar"} className="h-24 w-24 rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-3xl font-black text-white">
+                    {initials}
+                  </div>
+                )}
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/60 opacity-0 transition group-hover:opacity-100">
+                  {uploadingAvatar ? (
+                    <span className="text-xs font-bold text-white">...</span>
+                  ) : (
+                    <span className="text-xl">📷</span>
+                  )}
+                </div>
+                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={uploadingAvatar} />
+              </label>
+              {avatarError && <p className="mt-2 text-xs text-red-400">{avatarError}</p>}
               <h1 className="mt-5 text-4xl font-black tracking-tight">
                 {username ? `@${username}` : t("profile.title")}
               </h1>
@@ -335,6 +489,34 @@ export default function ProfilePage() {
                     <Link key={`club_event-${item.id}`} href="/favorites">{card}</Link>
                   )
                 })}
+              </div>
+            )}
+          </div>
+
+          {/* Últimos visitados */}
+          <div className="mb-6 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
+            <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">Últimos visitados</p>
+            {loadingVisits ? (
+              <p className="text-sm text-zinc-500">Cargando...</p>
+            ) : recentVisits.length === 0 ? (
+              <p className="text-sm text-zinc-500">Todavía no has visitado ningún club o evento.</p>
+            ) : (
+              <div className="space-y-3">
+                {recentVisits.map((visit) => (
+                  <Link
+                    key={`${visit.item_type}-${visit.item_id}`}
+                    href={visit.item_type === "event" ? `/event/${createSlug(visit.item_name || "")}` : `/clubs/${createSlug(visit.item_name || "")}`}
+                    className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 p-4 transition hover:border-white/30"
+                  >
+                    <div>
+                      <p className="font-bold text-white">{visit.item_name}</p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        {visit.item_type === "event" ? "🎉 Evento" : "🏠 Club"} · {timeAgo(visit.created_at)}
+                      </p>
+                    </div>
+                    <span className="text-zinc-500">→</span>
+                  </Link>
+                ))}
               </div>
             )}
           </div>

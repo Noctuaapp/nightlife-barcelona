@@ -7,6 +7,8 @@ import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
+import { useLanguage } from "../../context/LanguageContext"
+import { toDateLocale } from "../../lib/dateLocale"
 
 function toggleInSet(set: Set<string>, value: string): Set<string> {
   const next = new Set(set)
@@ -51,7 +53,7 @@ const VIBE_MUSIC_HINT: Record<string, string> = {
   chill: "Cocktail Bar",
 }
 
-function scoreClub(club: any, prefs: Prefs): { score: number; reasons: string[] } {
+function scoreClub(club: any, prefs: Prefs, t: (key: string) => string): { score: number; reasons: string[] } {
   let score = 0
   const reasons: string[] = []
 
@@ -59,7 +61,7 @@ function scoreClub(club: any, prefs: Prefs): { score: number; reasons: string[] 
     const match = club.music && Array.from(prefs.musicSet).some((m) => club.music.toLowerCase().includes(m.toLowerCase()))
     if (match) {
       score += 30
-      reasons.push("🎵 tu estilo musical")
+      reasons.push(t("planPage.reasonMusicMatch"))
     }
   } else {
     score += 5
@@ -89,14 +91,14 @@ function scoreClub(club: any, prefs: Prefs): { score: number; reasons: string[] 
   const price = parseBudget(club.price)
   if (price === 0 || price <= prefs.budgetMax) {
     score += 20
-    reasons.push("💶 dentro de tu presupuesto")
+    reasons.push(t("planPage.reasonBudget"))
   } else {
     score -= 15
   }
 
   if (prefs.lgtbi && club.lgtbi_friendly) {
     score += 18
-    reasons.push("🏳️‍🌈 ambiente inclusivo")
+    reasons.push(t("planPage.reasonLgtbi"))
   }
 
   if (prefs.dresscode !== "Cualquiera" && club.dresscode === prefs.dresscode) {
@@ -106,58 +108,58 @@ function scoreClub(club: any, prefs: Prefs): { score: number; reasons: string[] 
 
   if (club.trending) {
     score += 14
-    reasons.push("🔥 trending esta semana")
+    reasons.push(t("planPage.reasonTrending"))
   }
 
   if (club.verified) {
     score += 8
-    reasons.push("✅ verificado por Noctua")
+    reasons.push(t("planPage.reasonVerified"))
   }
 
   if (!club.queue || /no queue|sin cola/i.test(club.queue)) {
     score += 6
-    reasons.push("⏳ sin cola")
+    reasons.push(t("planPage.reasonNoQueue"))
   }
 
   if (prefs.groupKey === "grande" && club.vip_tables) {
     score += 15
-    reasons.push("🛋️ mesas VIP para grupos")
+    reasons.push(t("planPage.reasonVipGroups"))
   }
 
   if (prefs.vibeKey && VIBE_MUSIC_HINT[prefs.vibeKey] && club.music && club.music.toLowerCase().includes(VIBE_MUSIC_HINT[prefs.vibeKey].toLowerCase())) {
     score += 12
-    reasons.push("✨ combina con tu vibe")
+    reasons.push(t("planPage.reasonMatchesVibe"))
   }
 
   return { score, reasons }
 }
 
-function scoreEvent(event: any, prefs: Prefs, todayStr: string): { score: number; reasons: string[] } {
+function scoreEvent(event: any, prefs: Prefs, todayStr: string, t: (key: string) => string): { score: number; reasons: string[] } {
   let score = 0
   const reasons: string[] = []
 
   if (event.date === todayStr) {
     score += 40
-    reasons.push("🌙 es esta noche")
+    reasons.push(t("planPage.reasonTonight"))
   }
 
   if (prefs.musicSet.size > 0 && event.music) {
     const match = Array.from(prefs.musicSet).some((m) => event.music.toLowerCase().includes(m.toLowerCase()))
     if (match) {
       score += 25
-      reasons.push("🎵 tu estilo musical")
+      reasons.push(t("planPage.reasonMusicMatch"))
     }
   }
 
   const price = parseBudget(event.price)
   if (price === 0 || price <= prefs.budgetMax) {
     score += 15
-    reasons.push("💶 dentro de tu presupuesto")
+    reasons.push(t("planPage.reasonBudget"))
   }
 
   if (event.featured) {
     score += 12
-    reasons.push("⭐ destacado")
+    reasons.push(t("planPage.reasonFeatured"))
   }
 
   return { score, reasons }
@@ -198,14 +200,8 @@ const TIME_WINDOWS: Record<string, { label: string; sub: string; emoji: string; 
   allnight: { label: "Toda la noche", sub: "sin prisas", emoji: "♾️", start: "23:30" },
 }
 
-const STEP_TITLES = ["Grupo", "Presupuesto", "Vibe", "Tipo de local", "Música", "Zona", "Toque final"]
-const LOADING_MESSAGES = [
-  "Analizando tu vibe...",
-  "Explorando Barcelona...",
-  "Filtrando los mejores planes...",
-  "Comprobando el ambiente...",
-  "Montando tu plan perfecto...",
-]
+// Los títulos de paso y los mensajes de carga se generan dentro del componente
+// (STEP_TITLES_T / LOADING_MESSAGES_T) para poder traducirlos con t().
 
 type Stop = {
   id: string
@@ -220,6 +216,7 @@ type Stop = {
 }
 
 export default function PlanPage() {
+  const { t, locale } = useLanguage()
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
   const [clubs, setClubs] = useState<any[]>([])
   const [events, setEvents] = useState<any[]>([])
@@ -247,10 +244,14 @@ export default function PlanPage() {
   // o al volver a empezar). "Rehacer plan" los excluye para no devolver siempre lo mismo.
   const [seenClubIds, setSeenClubIds] = useState<Set<string>>(new Set())
 
+  const [userId, setUserId] = useState<string | null>(null)
+  const [autoDetectedNote, setAutoDetectedNote] = useState<string | null>(null)
+
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession()
       setIsLoggedIn(!!data.session)
+      setUserId(data.session?.user.id || null)
     }
     checkSession()
   }, [])
@@ -268,15 +269,76 @@ export default function PlanPage() {
     fetchData()
   }, [])
 
+  // Si el usuario está logueado, miramos sus favoritos y últimas visitas (clubs) para
+  // pre-rellenar sus preferencias en el formulario — sin obligarle, solo como punto de partida
+  // que puede cambiar libremente. Solo se aplica una vez y solo si no ha tocado nada todavía.
+  useEffect(() => {
+    if (!userId || clubs.length === 0) return
+    if (musicSet.size > 0 || venueTypeSet.size > 0 || areaSet.size > 0) return
+
+    const detectPreferences = async () => {
+      const [{ data: favData }, { data: visitData }] = await Promise.all([
+        supabase.from("favorites").select("item_id").eq("user_id", userId).eq("item_type", "club"),
+        supabase.from("analytics").select("item_id").eq("user_id", userId).eq("item_type", "club").eq("event_type", "page_view").limit(30),
+      ])
+
+      const clubIds = new Set<string>([
+        ...(favData || []).map((f: any) => String(f.item_id)),
+        ...(visitData || []).map((v: any) => String(v.item_id)),
+      ])
+      if (clubIds.size === 0) return
+
+      const history = clubs.filter((c) => clubIds.has(String(c.id)))
+      if (history.length === 0) return
+
+      const tally = (options: string[], getValue: (c: any) => string | null) => {
+        const counts: Record<string, number> = {}
+        history.forEach((c) => {
+          const value = getValue(c)
+          if (!value) return
+          options.forEach((opt) => {
+            if (value.toLowerCase().includes(opt.toLowerCase())) counts[opt] = (counts[opt] || 0) + 1
+          })
+        })
+        return Object.entries(counts)
+          .filter(([, n]) => n >= 2)
+          .sort((a, b) => b[1] - a[1])
+          .map(([k]) => k)
+          .slice(0, 2)
+      }
+
+      const topMusic = tally(MUSIC_OPTIONS, (c) => c.music)
+      const topVenue = tally(VENUE_TYPE_OPTIONS, (c) => c.venue_type)
+      const topArea = tally(AREA_OPTIONS, (c) => c.neighborhood)
+
+      if (topMusic.length === 0 && topVenue.length === 0 && topArea.length === 0) return
+
+      if (topMusic.length > 0) setMusicSet(new Set(topMusic))
+      if (topVenue.length > 0) setVenueTypeSet(new Set(topVenue))
+      if (topArea.length > 0) setAreaSet(new Set(topArea))
+      setAutoDetectedNote(t("planPage.autoDetectedNote"))
+    }
+    detectPreferences()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, clubs])
+
   const budgetMax = BUDGET_OPTIONS.find((b) => b.key === budgetKey)?.max ?? 9999
   const groupLabel = GROUP_OPTIONS.find((g) => g.key === groupKey)?.label || ""
   const budgetLabel = BUDGET_OPTIONS.find((b) => b.key === budgetKey)?.label || ""
-  const vibeLabel = VIBE_PRESETS.find((v) => v.key === vibeKey)?.label || "Sorpresa"
+  const vibeLabel = VIBE_PRESETS.find((v) => v.key === vibeKey)?.label || t("planPage.surprise")
   const vibeEmoji = VIBE_PRESETS.find((v) => v.key === vibeKey)?.emoji || "🎲"
   const timeLabel = TIME_WINDOWS[timeKey].label
 
   const todayStr = new Date().toISOString().split("T")[0]
-  const todayFormatted = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })
+  const todayFormatted = new Date().toLocaleDateString(toDateLocale(locale), { weekday: "long", day: "numeric", month: "long" })
+
+  const STEP_TITLES_T = [
+    t("planPage.stepGroup"), t("planPage.stepBudget"), t("planPage.stepVibe"),
+    t("planPage.stepVenueType"), t("planPage.stepMusic"), t("planPage.stepArea"), t("planPage.stepFinal"),
+  ]
+  const LOADING_MESSAGES_T = [
+    t("planPage.loading1"), t("planPage.loading2"), t("planPage.loading3"), t("planPage.loading4"), t("planPage.loading5"),
+  ]
 
   const selectVibe = (key: string) => {
     if (vibeKey === key) {
@@ -296,7 +358,7 @@ export default function PlanPage() {
     let i = 0
     const interval = setInterval(() => {
       i++
-      setLoadingMsgIndex(i % LOADING_MESSAGES.length)
+      setLoadingMsgIndex(i % LOADING_MESSAGES_T.length)
     }, 450)
 
     setTimeout(() => {
@@ -326,7 +388,7 @@ export default function PlanPage() {
     const allScoredClubs = clubs
       .filter((c) => !c.sold_out)
       .filter((c) => !c.open_days || c.open_days.length === 0 || c.open_days.includes(todayDay))
-      .map((c) => ({ ...c, ...scoreClub(c, prefs) }))
+      .map((c) => ({ ...c, ...scoreClub(c, prefs, t) }))
       .map((c) => ({ ...c, sortScore: c.score + jitter() }))
       .sort((a, b) => b.sortScore - a.sortScore)
 
@@ -338,7 +400,7 @@ export default function PlanPage() {
 
     const scoredEvents = events
       .filter((e) => !e.sold_out)
-      .map((e) => ({ ...e, ...scoreEvent(e, prefs, todayStr) }))
+      .map((e) => ({ ...e, ...scoreEvent(e, prefs, todayStr, t) }))
       .sort((a, b) => b.score - a.score)
 
     const tonightEvent = scoredEvents.find((e) => e.date === todayStr)
@@ -379,8 +441,8 @@ export default function PlanPage() {
         time: tonightEvent.start_time || win.start,
         kind: "event",
         title: tonightEvent.title,
-        subtitle: tonightEvent.club_name || "Evento especial",
-        reasons: (tonightEvent.reasons?.length ? tonightEvent.reasons : ["🌙 es esta noche"]).slice(0, 3),
+        subtitle: tonightEvent.club_name || t("planPage.specialEvent"),
+        reasons: (tonightEvent.reasons?.length ? tonightEvent.reasons : [t("planPage.reasonTonight")]).slice(0, 3),
         image: tonightEvent.image,
         href: `/event/${createSlug(tonightEvent.title)}`,
         mapHref: tonightEvent.latitude && tonightEvent.longitude ? `/map?type=events&id=${tonightEvent.id}` : null,
@@ -463,7 +525,7 @@ export default function PlanPage() {
     return (
       <main className="relative flex min-h-screen items-center justify-center text-white">
         <Glow />
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Cargando...</p>
+        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("common.loading")}</p>
       </main>
     )
   }
@@ -476,16 +538,16 @@ export default function PlanPage() {
           <Glow />
           <div className="max-w-md text-center">
             <div className="mb-6 text-7xl">✨</div>
-            <h1 className="text-4xl font-black text-white">Planifica tu noche</h1>
+            <h1 className="text-4xl font-black text-white">{t("nav.plan")}</h1>
             <p className="mt-4 text-lg leading-relaxed text-zinc-400">
-              Regístrate para crear tu plan perfecto en Barcelona, a tu medida y sin gastar un euro de más.
+              {t("planPage.notLoggedInSubtitle")}
             </p>
             <div className="mt-8 flex justify-center gap-4">
               <Link href="/signup" className="rounded-full bg-white px-8 py-4 font-bold text-black transition hover:scale-105">
-                Crear cuenta
+                {t("nav.signup")}
               </Link>
               <Link href="/login" className="rounded-full border border-white/10 bg-white/5 px-8 py-4 font-bold text-white transition hover:bg-white/10">
-                Iniciar sesión
+                {t("nav.login")}
               </Link>
             </div>
           </div>
@@ -505,23 +567,23 @@ export default function PlanPage() {
           <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-sm font-semibold text-purple-300">
             ✨ Noctua
           </div>
-          <h1 className="text-5xl font-black tracking-tight text-white md:text-7xl">Planifica tu noche</h1>
+          <h1 className="text-5xl font-black tracking-tight text-white md:text-7xl">{t("nav.plan")}</h1>
           <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-zinc-400">
-            Dinos qué buscas y te montamos el plan perfecto por Barcelona, sin coste ni sorpresas.
+            {t("planPage.subtitle")}
           </p>
         </section>
 
         {phase === "form" && (
           <section className="mx-auto max-w-2xl px-4">
             <div className="mb-8 flex items-center gap-2">
-              {STEP_TITLES.map((title, i) => (
+              {STEP_TITLES_T.map((title, i) => (
                 <div key={title} className="flex-1">
                   <div className={`h-1.5 rounded-full transition-all ${i <= step ? "bg-gradient-to-r from-purple-500 to-pink-500" : "bg-white/10"}`} />
                 </div>
               ))}
             </div>
             <p className="mb-6 text-center text-xs uppercase tracking-[0.3em] text-zinc-500">
-              Paso {step + 1} de {STEP_TITLES.length} · {STEP_TITLES[step]}
+              {t("planPage.step")} {step + 1} {t("planPage.of")} {STEP_TITLES_T.length} · {STEP_TITLES_T[step]}
             </p>
 
             <div key={step} className="animate-[fadeSlide_.4s_ease] rounded-[32px] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-2xl">
@@ -582,8 +644,11 @@ export default function PlanPage() {
               {step === 3 && (
                 <div>
                   <p className="mb-4 text-sm text-zinc-400">
-                    Para que no siempre te llevemos a una discoteca — elige uno o varios tipos (opcional).
+                    {t("planPage.venueTypeInstruction")}
                   </p>
+                  {autoDetectedNote && (
+                    <p className="mb-4 text-xs text-purple-300">{autoDetectedNote}</p>
+                  )}
                   <div className="flex flex-wrap gap-3">
                     {VENUE_TYPE_OPTIONS.map((v) => (
                       <button
@@ -602,7 +667,7 @@ export default function PlanPage() {
 
               {step === 4 && (
                 <div>
-                  <p className="mb-4 text-sm text-zinc-400">Elige uno o varios estilos (opcional).</p>
+                  <p className="mb-4 text-sm text-zinc-400">{t("planPage.musicInstruction")}</p>
                   <div className="flex flex-wrap gap-3">
                     {MUSIC_OPTIONS.map((m) => (
                       <button
@@ -621,7 +686,7 @@ export default function PlanPage() {
 
               {step === 5 && (
                 <div>
-                  <p className="mb-4 text-sm text-zinc-400">Elige uno o varios barrios (opcional).</p>
+                  <p className="mb-4 text-sm text-zinc-400">{t("planPage.areaInstruction")}</p>
                   <div className="flex flex-wrap gap-3">
                     {AREA_OPTIONS.map((a) => (
                       <button
@@ -641,7 +706,7 @@ export default function PlanPage() {
               {step === 6 && (
                 <div className="space-y-8">
                   <div>
-                    <p className="mb-4 text-xs uppercase tracking-widest text-zinc-500">¿A qué hora sales?</p>
+                    <p className="mb-4 text-xs uppercase tracking-widest text-zinc-500">{t("planPage.departureTimeQuestion")}</p>
                     <div className="grid grid-cols-2 gap-3">
                       {Object.entries(TIME_WINDOWS).map(([key, w]) => (
                         <button
@@ -682,7 +747,7 @@ export default function PlanPage() {
                       lgtbi ? "border-pink-500/40 bg-pink-500/10 text-pink-300" : "border-white/10 bg-white/5 text-white hover:bg-white/10"
                     }`}
                   >
-                    🏳️‍🌈 Priorizar ambiente LGTBI+ friendly
+                    🏳️‍🌈 {t("planPage.lgtbiPriority")}
                   </button>
                 </div>
               )}
@@ -694,16 +759,16 @@ export default function PlanPage() {
                   onClick={() => setStep((s) => s - 1)}
                   className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white/10"
                 >
-                  Atrás
+                  {t("common.back")}
                 </button>
               )}
-              {step < STEP_TITLES.length - 1 ? (
+              {step < STEP_TITLES_T.length - 1 ? (
                 <button
                   onClick={() => setStep((s) => s + 1)}
                   className="flex-1 rounded-2xl py-4 font-black text-white transition hover:opacity-90"
                   style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
                 >
-                  Siguiente
+                  {t("planPage.next")}
                 </button>
               ) : (
                 <button
@@ -711,7 +776,7 @@ export default function PlanPage() {
                   className="flex-1 rounded-2xl py-4 font-black text-white transition hover:scale-[1.01] hover:opacity-90"
                   style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
                 >
-                  🌙 Generar mi plan
+                  {t("planPage.generatePlanCta")}
                 </button>
               )}
             </div>
@@ -724,7 +789,7 @@ export default function PlanPage() {
               <div className="absolute inset-0 animate-spin rounded-full border-4 border-white/10 border-t-purple-400" />
               <div className="absolute inset-0 flex items-center justify-center text-3xl">🌙</div>
             </div>
-            <p className="text-xl font-bold text-white transition-all">{LOADING_MESSAGES[loadingMsgIndex]}</p>
+            <p className="text-xl font-bold text-white transition-all">{LOADING_MESSAGES_T[loadingMsgIndex]}</p>
           </section>
         )}
 
@@ -733,13 +798,13 @@ export default function PlanPage() {
             {noResults ? (
               <div className="rounded-[32px] border border-white/10 bg-white/[0.03] py-20 text-center">
                 <p className="text-5xl">🌚</p>
-                <p className="mt-4 text-lg font-bold text-white">No hemos encontrado planes con estos filtros</p>
-                <p className="mt-2 text-sm text-zinc-500">Prueba quitando algún filtro para abrir el abanico.</p>
+                <p className="mt-4 text-lg font-bold text-white">{t("planPage.noResultsTitle")}</p>
+                <p className="mt-2 text-sm text-zinc-500">{t("planPage.noResultsSubtitle")}</p>
                 <button
                   onClick={resetFilters}
                   className="mt-6 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
                 >
-                  Quitar filtros
+                  {t("planPage.removeFilters")}
                 </button>
               </div>
             ) : (
@@ -747,7 +812,7 @@ export default function PlanPage() {
                 {/* PASE DE LA NOCHE */}
                 <div className="overflow-hidden rounded-[32px] border border-white/10" style={{ background: "linear-gradient(135deg, rgba(168,85,247,0.18) 0%, rgba(236,72,153,0.12) 100%)" }}>
                   <div className="flex items-center justify-between px-8 pt-7">
-                    <p className="text-xs uppercase tracking-[0.3em] text-purple-200">Tu pase de esta noche</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-purple-200">{t("planPage.yourPassTonight")}</p>
                     <p className="text-xs font-semibold text-purple-200">Noctua ✦</p>
                   </div>
                   <div className="px-8 pb-6 pt-3">
@@ -756,19 +821,19 @@ export default function PlanPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4 border-t border-dashed border-white/20 px-8 py-6 sm:grid-cols-4">
                     <div>
-                      <p className="text-xs text-zinc-400">Grupo</p>
+                      <p className="text-xs text-zinc-400">{t("planPage.stepGroup")}</p>
                       <p className="mt-1 font-bold text-white">{groupLabel}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-zinc-400">Presupuesto</p>
+                      <p className="text-xs text-zinc-400">{t("planPage.stepBudget")}</p>
                       <p className="mt-1 font-bold text-white">{budgetLabel}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-zinc-400">Vibe</p>
+                      <p className="text-xs text-zinc-400">{t("planPage.stepVibe")}</p>
                       <p className="mt-1 font-bold text-white">{vibeEmoji} {vibeLabel}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-zinc-400">Horario</p>
+                      <p className="text-xs text-zinc-400">{t("event.schedule")}</p>
                       <p className="mt-1 font-bold text-white">{timeLabel}</p>
                     </div>
                   </div>
@@ -782,7 +847,7 @@ export default function PlanPage() {
 
                 {/* TIMELINE */}
                 <div>
-                  <p className="mb-6 text-xs uppercase tracking-widest text-zinc-500">Tu itinerario</p>
+                  <p className="mb-6 text-xs uppercase tracking-widest text-zinc-500">{t("planPage.yourItinerary")}</p>
                   <div className="relative space-y-8 pl-2">
                     <div className="absolute bottom-4 left-[27px] top-4 w-px bg-gradient-to-b from-purple-500 via-pink-500 to-amber-400" />
                     {stops.map((stop) => (
@@ -803,7 +868,7 @@ export default function PlanPage() {
                             <div className="flex items-center justify-between gap-2">
                               <p className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white">🕒 {stop.time}</p>
                               {stop.mapHref && (
-                                <span className="shrink-0 text-xs font-semibold text-zinc-400 group-hover:text-white">🗺️ mapa</span>
+                                <span className="shrink-0 text-xs font-semibold text-zinc-400 group-hover:text-white">🗺️ {t("nav.map").toLowerCase()}</span>
                               )}
                             </div>
                             <p className="mt-2 truncate text-lg font-black text-white">{stop.title}</p>
@@ -827,7 +892,7 @@ export default function PlanPage() {
                 {/* ALTERNATIVAS */}
                 {alternatives.length > 0 && (
                   <div>
-                    <p className="mb-5 text-xs uppercase tracking-widest text-zinc-500">Otras joyas para esta noche</p>
+                    <p className="mb-5 text-xs uppercase tracking-widest text-zinc-500">{t("planPage.otherGems")}</p>
                     <div className="flex gap-4 overflow-x-auto pb-2">
                       {alternatives.map((club) => (
                         <Link
@@ -852,7 +917,7 @@ export default function PlanPage() {
                 {/* PROXIMOS EVENTOS */}
                 {otherEvents.length > 0 && (
                   <div>
-                    <p className="mb-5 text-xs uppercase tracking-widest text-zinc-500">Eventos próximos que te pueden gustar</p>
+                    <p className="mb-5 text-xs uppercase tracking-widest text-zinc-500">{t("planPage.upcomingEventsForYou")}</p>
                     <div className="grid gap-4 sm:grid-cols-2">
                       {otherEvents.map((event) => (
                         <Link
@@ -866,7 +931,7 @@ export default function PlanPage() {
                           <div className="min-w-0">
                             <p className="truncate font-bold text-white">{event.title}</p>
                             <p className="text-xs text-zinc-500">
-                              {event.date ? new Date(event.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" }) : "TBA"}
+                              {event.date ? new Date(event.date).toLocaleDateString(toDateLocale(locale), { day: "numeric", month: "short" }) : t("clubEvent.tba")}
                               {event.price ? ` · ${event.price}` : ""}
                             </p>
                           </div>
@@ -881,14 +946,14 @@ export default function PlanPage() {
                     onClick={editPlan}
                     className="flex-1 rounded-2xl border border-white/10 bg-white/5 py-4 font-bold text-white transition hover:bg-white/10"
                   >
-                    Editar preferencias
+                    {t("planPage.editPreferences")}
                   </button>
                   <button
                     onClick={generatePlan}
                     className="flex-1 rounded-2xl py-4 font-black text-white transition hover:opacity-90"
                     style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
                   >
-                    🔄 Rehacer plan
+                    {t("planPage.redoPlan")}
                   </button>
                 </div>
               </div>
