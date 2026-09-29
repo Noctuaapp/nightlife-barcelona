@@ -389,12 +389,12 @@ export default function Header() {
               <div className="relative">
                 <button
                   onClick={() => setCityOpen(!cityOpen)}
-                  className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold text-white transition hover:bg-white/10"
+                  className="flex items-center gap-1 sm:gap-2 rounded-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-white transition hover:bg-white/10"
                   style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
                 >
-                  <span>📍</span>
+                  <span className="text-xs sm:text-sm">📍</span>
                   <span>{selectedCity.name}</span>
-                  <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+                  <svg width="8" height="5" viewBox="0 0 10 6" fill="none" className="sm:w-[10px] sm:h-[6px]">
                     <path d="M1 1L5 5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
