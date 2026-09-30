@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 import { createSlug } from "../../lib/slug"
@@ -79,6 +80,10 @@ export default function NearbyVenuesSheet({ excludeClubId, name, latitude, longi
   // Guardamos la posición GPS real (si llega) para poder re-ordenar al cambiar el motivo
   // sin tener que volver a pedir la ubicación.
   const liveOriginRef = useRef<[number, number] | null>(null)
+  // La hoja se monta con un portal a document.body (ver más abajo, junto al motivo). document
+  // no existe en el render de servidor, así que esperamos a estar en el cliente.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   if (!latitude || !longitude) return null
 
@@ -145,7 +150,7 @@ export default function NearbyVenuesSheet({ excludeClubId, name, latitude, longi
         🚫 {t("nearby.triggerButton")}
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
         <div
           className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-xl sm:items-center sm:p-6"
           onClick={() => setOpen(false)}
@@ -258,7 +263,8 @@ export default function NearbyVenuesSheet({ excludeClubId, name, latitude, longi
                 })}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
