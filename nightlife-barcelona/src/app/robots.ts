@@ -4,9 +4,10 @@ const BASE_URL = "https://noctuaapp.com"
 
 // Antes no existía robots.txt, así que Google usaba su comportamiento por defecto: rastrear todo,
 // incluidas zonas que no deberían indexarse (el panel de admin, los paneles de gestión de
-// club/festival de cada dueño, la cuenta de cada usuario) y la ruta antigua /club/[name] — una
-// versión previa de la ficha de club, con datos estáticos desactualizados, que ahora vive
-// duplicada junto a /clubs/[slug] y solo generaría contenido duplicado en el buscador.
+// club/festival de cada dueño, la cuenta de cada usuario). La ruta antigua /club/[name] (una
+// versión previa de la ficha de club, ya rota porque su fuente de datos ni siquiera existe) se ha
+// borrado directamente en vez de solo bloquearla aquí — ver la entrada de /club-event/, que sigue
+// existiendo y sí necesita quedar fuera del rastreo.
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
@@ -22,7 +23,6 @@ export default function robots(): MetadataRoute.Robots {
         "/profile",
         "/confirm-age",
         "/blocked",
-        "/club/",
         "/club-event/",
       ],
     },
