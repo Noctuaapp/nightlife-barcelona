@@ -8,11 +8,18 @@ import { createSlug } from "../../lib/slug"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { useLanguage } from "../../context/LanguageContext"
+import AuthGateModal from "../ui/AuthGateModal"
 
 type NearbyVenuesSheetProps = {
   // Id del club a excluir de los resultados (si se abre desde la ficha de un club). En la
   // ficha de un evento/festival no hay club propio que excluir, así que es opcional.
   excludeClubId?: number
+  // Identifican el local/evento desde el que se abre esto, para poder guardar en
+  // entry_denials qué motivo se eligió y en qué sitio. Para una ficha de club son los mismos
+  // datos que excludeClubId, pero se piden aparte porque en la ficha de un evento no hay
+  // excludeClubId (ahí no se excluye ningún club de los resultados).
+  venueType: "club" | "event"
+  venueId: number
   name: string
   latitude: number | null
   longitude: number | null
@@ -36,6 +43,10 @@ type VenueResult = ClubRow & { distanceMeters: number; noQueue: boolean }
 type Reason = "dress" | "full" | "group" | "other" | null
 
 const MAX_RESULTS = 8
+// Sin cuenta se ven los 3 locales más cercanos gratis; el resto y la selección de motivo
+// quedan detrás del modal de registro (decisión de producto: mantener abierto lo que ayuda a
+// descubrir/compartir, topar lo que es personal o cuesta recursos).
+const FREE_RESULTS = 3
 
 function sortVenues(rows: ClubRow[], fromLat: number, fromLng: number, reason: Reason): VenueResult[] {
   const withDistance: VenueResult[] = rows
@@ -69,13 +80,23 @@ function SkeletonRow({ delay }: { delay: number }) {
   )
 }
 
-export default function NearbyVenuesSheet({ excludeClubId, name, latitude, longitude }: NearbyVenuesSheetProps) {
+export default function NearbyVenuesSheet({
+  excludeClubId,
+  venueType,
+  venueId,
+  name,
+  latitude,
+  longitude,
+}: NearbyVenuesSheetProps) {
   const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [venues, setVenues] = useState<VenueResult[] | null>(null)
   const [reason, setReason] = useState<Reason>(null)
   const [usingLiveLocation, setUsingLiveLocation] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [reasonSaved, setReasonSaved] = useState(false)
+  const [showAuthGate, setShowAuthGate] = useState(false)
   const rowsRef = useRef<ClubRow[] | null>(null)
   // Guardamos la posición GPS real (si llega) para poder re-ordenar al cambiar el motivo
   // sin tener que volver a pedir la ubicación.
@@ -85,6 +106,10 @@ export default function NearbyVenuesSheet({ excludeClubId, name, latitude, longi
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id || null))
+  }, [])
+
   if (!latitude || !longitude) return null
 
   const applyReason = (next: Reason) => {
@@ -93,6 +118,28 @@ export default function NearbyVenuesSheet({ excludeClubId, name, latitude, longi
     const origin = usingLiveLocation ? liveOriginRef.current : null
     const [fromLat, fromLng] = origin || [latitude, longitude]
     setVenues(sortVenues(rowsRef.current, fromLat, fromLng, next))
+
+    // Guardamos qué motivo se eligió (solo al elegir uno, no al deseleccionarlo) para poder
+    // verlo agregado en admin. Es "fire and forget": si falla, no interrumpe la experiencia
+    // del usuario ni bloquea el listado de locales cercanos. No hay botón de "enviar" aparte
+    // — elegir el chip ya guarda el motivo — así que mostramos una confirmación breve para que
+    // quede claro que se ha registrado algo, en vez de no dar ninguna señal.
+    if (next) {
+      setReasonSaved(false)
+      supabase
+        .from("entry_denials")
+        .insert({ user_id: userId, venue_type: venueType, venue_id: venueId, venue_name: name, reason: next })
+        .then(({ error }) => {
+          if (error) {
+            console.log("ENTRY DENIAL INSERT ERROR:", error)
+            return
+          }
+          setReasonSaved(true)
+          setTimeout(() => setReasonSaved(false), 3000)
+        })
+    } else {
+      setReasonSaved(false)
+    }
   }
 
   const handleOpen = useCallback(async () => {
@@ -175,20 +222,36 @@ export default function NearbyVenuesSheet({ excludeClubId, name, latitude, longi
               </button>
             </div>
 
-            <div className="flex gap-2 overflow-x-auto border-b border-white/5 p-4">
-              {reasons.map((r) => (
-                <button
-                  key={r.key}
-                  onClick={() => applyReason(reason === r.key ? null : r.key)}
-                  className={`shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition ${
-                    reason === r.key
-                      ? "border-purple-400/40 bg-purple-500/20 text-purple-200"
-                      : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"
-                  }`}
-                >
-                  {r.label}
-                </button>
-              ))}
+            {/* Solo 4 motivos: mejor que hagan wrap en dos líneas que depender de un scroll
+                horizontal que en desktop (sin trackpad) no se puede accionar sin una barra
+                visible. Así siempre se ven los 4 sin gestos raros. */}
+            <div className="border-b border-white/5 p-4">
+              <div className="flex flex-wrap gap-2">
+                {reasons.map((r) => (
+                  <button
+                    key={r.key}
+                    onClick={() => {
+                      if (!userId) {
+                        setShowAuthGate(true)
+                        return
+                      }
+                      applyReason(reason === r.key ? null : r.key)
+                    }}
+                    className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                      reason === r.key
+                        ? "border-purple-400/40 bg-purple-500/20 text-purple-200"
+                        : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+              {reasonSaved && (
+                <p className="mt-2.5 text-xs font-semibold text-emerald-400">
+                  {t("nearby.reasonSaved")}
+                </p>
+              )}
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto p-4">
@@ -216,7 +279,7 @@ export default function NearbyVenuesSheet({ excludeClubId, name, latitude, longi
               )}
 
               {venues !== null &&
-                venues.map((v) => {
+                (userId ? venues : venues.slice(0, FREE_RESULTS)).map((v) => {
                   const slug = createSlug(v.name)
                   return (
                     <div
@@ -261,11 +324,32 @@ export default function NearbyVenuesSheet({ excludeClubId, name, latitude, longi
                     </div>
                   )
                 })}
+
+              {venues !== null && !userId && venues.length > FREE_RESULTS && (
+                <button
+                  onClick={() => setShowAuthGate(true)}
+                  className="flex w-full flex-col items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-5 text-center transition hover:bg-white/[0.05]"
+                >
+                  <p className="text-2xl">🔒</p>
+                  <p className="text-sm font-bold text-white">
+                    +{venues.length - FREE_RESULTS} {t("nearby.moreNearby")}
+                  </p>
+                  <span className="mt-1 rounded-full bg-white px-4 py-2 text-xs font-black text-black">
+                    {t("nearby.unlockAll")}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         </div>,
         document.body
       )}
+
+      <AuthGateModal
+        open={showAuthGate}
+        onClose={() => setShowAuthGate(false)}
+        subtitleKey="authGate.subtitleNearby"
+      />
     </>
   )
 }

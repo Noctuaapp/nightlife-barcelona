@@ -314,11 +314,14 @@
     "reasonFull": "🚪 Capienza esaurita",
     "reasonGroup": "👥 Siamo in tanti",
     "reasonOther": "🤷 Altro motivo",
+    "reasonSaved": "✓ Motivo salvato, grazie",
     "nearVenue": "Locali vicino a {name} per continuare la festa",
     "nearYou": "Locali vicino a te per continuare la festa",
     "empty": "Al momento non abbiamo trovato altri locali nelle vicinanze. Prova la mappa per vedere tutta Barcellona.",
     "viewMap": "Vedi mappa",
-    "directions": "Indicazioni"
+    "directions": "Indicazioni",
+    "moreNearby": "altri locali vicino a te",
+    "unlockAll": "Vedi tutti"
   },
   "clubCard": {
     "vipTable": "Tavolo VIP",
@@ -509,6 +512,19 @@
     "reminder_1_day": "1 giorno prima",
     "reminder_3_days": "3 giorni prima",
     "reminder_1_week": "1 settimana prima"
+  },
+  "authGate": {
+    "title": "Registrati e goditi tutto Noctua",
+    "subtitleFavorites": "Crea un account gratuito per salvare i tuoi locali ed eventi preferiti.",
+    "subtitlePlan": "Crea un account gratuito per generare piani serali personalizzati con l'IA.",
+    "subtitleNearby": "Crea un account gratuito per vedere tutti i locali vicini disponibili.",
+    "benefit1": "✨ Salva i tuoi locali ed eventi preferiti",
+    "benefit2": "🤖 Piani serali personalizzati con l'IA",
+    "benefit3": "📍 Scopri subito tutti i locali vicini",
+    "benefit4": "🔔 Promemoria e consigli su misura per te",
+    "ctaSignup": "Crea account gratuito",
+    "ctaLogin": "Ho già un account",
+    "maybeLater": "Non ora"
   },
   "changePassword": {
     "eyebrow": "Sicurezza dell'account",

@@ -314,11 +314,14 @@
     "reasonFull": "🚪 Voll ausgelastet",
     "reasonGroup": "👥 Wir sind viele",
     "reasonOther": "🤷 Anderer Grund",
+    "reasonSaved": "✓ Grund gespeichert, danke",
     "nearVenue": "Lokale in der Nähe von {name}, um weiterzufeiern",
     "nearYou": "Lokale in deiner Nähe, um weiterzufeiern",
     "empty": "Wir haben gerade keine weiteren Lokale in der Nähe gefunden. Schau auf der Karte nach ganz Barcelona.",
     "viewMap": "Karte ansehen",
-    "directions": "Route"
+    "directions": "Route",
+    "moreNearby": "weitere Locations in deiner Nähe",
+    "unlockAll": "Alle anzeigen"
   },
   "clubCard": {
     "vipTable": "VIP-Tisch",
@@ -509,6 +512,19 @@
     "reminder_1_day": "1 Tag vorher",
     "reminder_3_days": "3 Tage vorher",
     "reminder_1_week": "1 Woche vorher"
+  },
+  "authGate": {
+    "title": "Registrier dich und genieße alles von Noctua",
+    "subtitleFavorites": "Erstelle ein kostenloses Konto, um deine Lieblingslocations und -events zu speichern.",
+    "subtitlePlan": "Erstelle ein kostenloses Konto, um personalisierte KI-Nachtpläne zu erstellen.",
+    "subtitleNearby": "Erstelle ein kostenloses Konto, um alle Locations in deiner Nähe zu sehen.",
+    "benefit1": "✨ Speichere deine Lieblingslocations und -events",
+    "benefit2": "🤖 Personalisierte Nachtpläne mit KI",
+    "benefit3": "📍 Entdecke sofort alle Locations in der Nähe",
+    "benefit4": "🔔 Erinnerungen und Empfehlungen für dich",
+    "ctaSignup": "Kostenloses Konto erstellen",
+    "ctaLogin": "Ich habe schon ein Konto",
+    "maybeLater": "Jetzt nicht"
   },
   "changePassword": {
     "eyebrow": "Kontosicherheit",

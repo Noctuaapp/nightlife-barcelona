@@ -15,6 +15,7 @@ const ADMIN_NAV = [
   { href: "/admin/essentials", label: "Essentials", icon: "📍" },
   { href: "/admin/users", label: "Users", icon: "👥" },
   { href: "/admin/messages", label: "Messages", icon: "💬" },
+  { href: "/admin/entry-denials", label: "No dejan entrar", icon: "🚫" },
   { href: "/admin/analytics", label: "Analytics", icon: "📈" },
 ]
 

@@ -1,7 +1,10 @@
 "use client"
 
+import { useState } from "react"
+
 import { useFavorites } from "../../context/FavoritesContext"
 import { useLanguage } from "../../context/LanguageContext"
+import AuthGateModal from "../ui/AuthGateModal"
 
 type FavoriteButtonProps = {
   itemType: "club" | "event" | "club_event"
@@ -21,15 +24,21 @@ export default function FavoriteButton({
 }: FavoriteButtonProps) {
   const { isFavorite, toggleFavorite, setReminder, getReminder } = useFavorites()
   const { t } = useLanguage()
+  const [showAuthGate, setShowAuthGate] = useState(false)
 
   const active = isFavorite(itemType, itemId)
   const showReminder = active && (itemType === "event" || itemType === "club_event")
   const currentReminder = getReminder(itemType, itemId)
 
+  const handleToggle = async () => {
+    const ok = await toggleFavorite(itemType, itemId)
+    if (!ok) setShowAuthGate(true)
+  }
+
   return (
     <>
       <button
-        onClick={() => toggleFavorite(itemType, itemId)}
+        onClick={handleToggle}
         className={`mt-6 flex w-full items-center justify-center rounded-2xl px-6 py-4 font-bold transition hover:scale-[1.02] ${
           active
             ? "bg-pink-500 text-white"
@@ -59,6 +68,12 @@ export default function FavoriteButton({
           </div>
         </div>
       )}
+
+      <AuthGateModal
+        open={showAuthGate}
+        onClose={() => setShowAuthGate(false)}
+        subtitleKey="authGate.subtitleFavorites"
+      />
     </>
   )
 }

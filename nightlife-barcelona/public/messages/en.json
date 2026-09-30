@@ -314,11 +314,14 @@
     "reasonFull": "🚪 At capacity",
     "reasonGroup": "👥 Big group",
     "reasonOther": "🤷 Other reason",
+    "reasonSaved": "✓ Reason saved, thanks",
     "nearVenue": "Venues near {name} to keep the party going",
     "nearYou": "Venues near you to keep the party going",
     "empty": "We couldn't find any more venues nearby right now. Try the map to see all of Barcelona.",
     "viewMap": "View map",
-    "directions": "Directions"
+    "directions": "Directions",
+    "moreNearby": "more venues near you",
+    "unlockAll": "See all"
   },
   "clubCard": {
     "vipTable": "VIP Table",
@@ -509,6 +512,19 @@
     "reminder_1_day": "1 day before",
     "reminder_3_days": "3 days before",
     "reminder_1_week": "1 week before"
+  },
+  "authGate": {
+    "title": "Sign up and enjoy all of Noctua",
+    "subtitleFavorites": "Create a free account to save your favorite venues and events.",
+    "subtitlePlan": "Create a free account to generate personalized AI night plans.",
+    "subtitleNearby": "Create a free account to see all the nearby venues available.",
+    "benefit1": "✨ Save your favorite venues and events",
+    "benefit2": "🤖 Personalized AI-powered night plans",
+    "benefit3": "📍 Discover every nearby venue instantly",
+    "benefit4": "🔔 Reminders and recommendations made for you",
+    "ctaSignup": "Create free account",
+    "ctaLogin": "I already have an account",
+    "maybeLater": "Not now"
   },
   "changePassword": {
     "eyebrow": "Account security",

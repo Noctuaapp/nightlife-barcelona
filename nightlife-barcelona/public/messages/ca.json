@@ -314,11 +314,14 @@
     "reasonFull": "🚪 Aforament complet",
     "reasonGroup": "👥 Som molts",
     "reasonOther": "🤷 Un altre motiu",
+    "reasonSaved": "✓ Motiu desat, gràcies",
     "nearVenue": "Locals a prop de {name} per seguir la festa",
     "nearYou": "Locals a prop teu per seguir la festa",
     "empty": "No hem trobat més locals a prop ara mateix. Prova el mapa per veure tota Barcelona.",
     "viewMap": "Veure mapa",
-    "directions": "Com arribar-hi"
+    "directions": "Com arribar-hi",
+    "moreNearby": "locals més a prop teu",
+    "unlockAll": "Veure'ls tots"
   },
   "clubCard": {
     "vipTable": "Taula VIP",
@@ -509,6 +512,19 @@
     "reminder_1_day": "1 dia abans",
     "reminder_3_days": "3 dies abans",
     "reminder_1_week": "1 setmana abans"
+  },
+  "authGate": {
+    "title": "Registra't i gaudeix de tot Noctua",
+    "subtitleFavorites": "Crea un compte gratuït per guardar els teus locals i esdeveniments preferits.",
+    "subtitlePlan": "Crea un compte gratuït per generar plans de nit personalitzats amb IA.",
+    "subtitleNearby": "Crea un compte gratuït per veure tots els locals propers disponibles.",
+    "benefit1": "✨ Guarda els teus locals i esdeveniments preferits",
+    "benefit2": "🤖 Plans de nit personalitzats amb IA",
+    "benefit3": "📍 Descobreix tots els locals propers a l'instant",
+    "benefit4": "🔔 Recordatoris i recomanacions fetes per a tu",
+    "ctaSignup": "Crear compte gratuït",
+    "ctaLogin": "Ja tinc compte",
+    "maybeLater": "Ara no"
   },
   "changePassword": {
     "eyebrow": "Seguretat del compte",

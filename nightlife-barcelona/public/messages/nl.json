@@ -314,11 +314,14 @@
     "reasonFull": "🚪 Vol",
     "reasonGroup": "👥 We zijn met veel",
     "reasonOther": "🤷 Andere reden",
+    "reasonSaved": "✓ Reden opgeslagen, bedankt",
     "nearVenue": "Locaties in de buurt van {name} om door te feesten",
     "nearYou": "Locaties bij jou in de buurt om door te feesten",
     "empty": "We hebben nu geen andere locaties in de buurt gevonden. Bekijk de kaart voor heel Barcelona.",
     "viewMap": "Bekijk kaart",
-    "directions": "Route"
+    "directions": "Route",
+    "moreNearby": "meer locaties in de buurt",
+    "unlockAll": "Alles bekijken"
   },
   "clubCard": {
     "vipTable": "VIP-tafel",
@@ -509,6 +512,19 @@
     "reminder_1_day": "1 dag van tevoren",
     "reminder_3_days": "3 dagen van tevoren",
     "reminder_1_week": "1 week van tevoren"
+  },
+  "authGate": {
+    "title": "Registreer je en geniet van heel Noctua",
+    "subtitleFavorites": "Maak een gratis account aan om je favoriete locaties en evenementen op te slaan.",
+    "subtitlePlan": "Maak een gratis account aan om gepersonaliseerde AI-avondplannen te maken.",
+    "subtitleNearby": "Maak een gratis account aan om alle locaties in de buurt te zien.",
+    "benefit1": "✨ Sla je favoriete locaties en evenementen op",
+    "benefit2": "🤖 Gepersonaliseerde avondplannen met AI",
+    "benefit3": "📍 Ontdek direct alle locaties in de buurt",
+    "benefit4": "🔔 Herinneringen en aanbevelingen op maat",
+    "ctaSignup": "Gratis account aanmaken",
+    "ctaLogin": "Ik heb al een account",
+    "maybeLater": "Niet nu"
   },
   "changePassword": {
     "eyebrow": "Accountbeveiliging",

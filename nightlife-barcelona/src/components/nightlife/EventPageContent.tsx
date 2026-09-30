@@ -719,7 +719,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                 <FavoriteButton itemType="event" itemId={event.id} />
                 {!past && <AttendanceButton itemType="event" itemId={event.id} />}
                 {!past && (
-                  <NearbyVenuesSheet name={event.title} latitude={event.latitude} longitude={event.longitude} />
+                  <NearbyVenuesSheet venueType="event" venueId={event.id} name={event.title} latitude={event.latitude} longitude={event.longitude} />
                 )}
 
                 <button

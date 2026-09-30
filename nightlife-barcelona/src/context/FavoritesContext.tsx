@@ -33,7 +33,9 @@ export type FavoriteCollection = {
 interface FavoritesContextType {
   favorites: Favorite[]
   loadingFavorites: boolean
-  toggleFavorite: (itemType: FavoriteType, itemId: number) => Promise<void>
+  // Devuelve false cuando no hay usuario logueado (en vez de redirigir sola a /login como antes),
+  // para que el componente que la llama pueda mostrar el modal de registro en su sitio.
+  toggleFavorite: (itemType: FavoriteType, itemId: number) => Promise<boolean>
   isFavorite: (itemType: FavoriteType, itemId: number) => boolean
   refreshFavorites: () => Promise<void>
   setReminder: (itemType: FavoriteType, itemId: number, daysBefore: number) => Promise<void>
@@ -246,13 +248,12 @@ export function FavoritesProvider({
   const toggleFavorite = async (
     itemType: FavoriteType,
     itemId: number
-  ) => {
+  ): Promise<boolean> => {
     const { data: sessionData } = await supabase.auth.getSession()
     const user = sessionData.session?.user
 
     if (!user) {
-      window.location.href = "/login"
-      return
+      return false
     }
 
     const existingFavorite = favorites.find(
@@ -269,14 +270,14 @@ export function FavoritesProvider({
 
       if (error) {
         console.log("REMOVE FAVORITE ERROR:", error)
-        return
+        return true
       }
 
       setFavorites((prev) =>
         prev.filter((favorite) => favorite.id !== existingFavorite.id)
       )
 
-      return
+      return true
     }
 
     const { data, error } = await supabase
@@ -292,12 +293,14 @@ export function FavoritesProvider({
 
     if (error) {
       console.log("ADD FAVORITE ERROR:", error)
-      return
+      return true
     }
 
     if (data) {
       setFavorites((prev) => [...prev, data])
     }
+
+    return true
   }
 
   return (

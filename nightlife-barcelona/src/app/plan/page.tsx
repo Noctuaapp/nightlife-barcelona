@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
+import AuthGateModal from "../../components/ui/AuthGateModal"
 import { supabase } from "../../lib/supabase"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
@@ -551,28 +552,31 @@ export default function PlanPage() {
   }
 
   if (!isLoggedIn) {
+    // En vez del cartel de "regístrate o inicia sesión" fijo, se muestra un adelanto borroso
+    // de la propia pantalla de plan con el modal reutilizable de registro encima — mismo look
+    // que el resto de la app (favoritos, locales cercanos). Como esta pantalla no tiene nada
+    // que ofrecer sin cuenta, "Ahora no" en el modal lleva a inicio en vez de quedarse aquí.
     return (
       <>
         <Header />
         <main className="relative flex min-h-screen items-center justify-center px-4 text-white">
           <Glow />
-          <div className="max-w-md text-center">
+          <div className="max-w-md select-none text-center opacity-30 blur-sm">
             <div className="mb-6 text-7xl">✨</div>
             <h1 className="text-4xl font-black text-white">{t("nav.plan")}</h1>
             <p className="mt-4 text-lg leading-relaxed text-zinc-400">
               {t("planPage.notLoggedInSubtitle")}
             </p>
-            <div className="mt-8 flex justify-center gap-4">
-              <Link href="/signup" className="rounded-full bg-white px-8 py-4 font-bold text-black transition hover:scale-105">
-                {t("nav.signup")}
-              </Link>
-              <Link href="/login" className="rounded-full border border-white/10 bg-white/5 px-8 py-4 font-bold text-white transition hover:bg-white/10">
-                {t("nav.login")}
-              </Link>
-            </div>
           </div>
         </main>
         <BottomNav />
+        <AuthGateModal
+          open
+          onClose={() => {
+            window.location.href = "/"
+          }}
+          subtitleKey="authGate.subtitlePlan"
+        />
       </>
     )
   }
