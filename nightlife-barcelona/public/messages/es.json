@@ -50,7 +50,7 @@
     "email": "Email",
     "password": "Contraseña",
     "country": "¿De dónde eres?",
-    "gender": "Género (opcional)",
+    "gender": "Género",
     "gender_male": "Hombre",
     "gender_female": "Mujer",
     "create": "Crear cuenta",

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { getSortedCountries } from "../../../lib/countries"
+import CountrySelect from "../../../components/ui/CountrySelect"
 
 // El admin es una herramienta interna en español, así que aquí no depende del idioma del
 // visitante — siempre se muestra (y se guarda) en español, con bandera.
@@ -363,19 +364,7 @@ export default function AdminUsersPage() {
                         </div>
                         <div>
                           <label className="mb-1 block text-xs uppercase tracking-widest text-zinc-500">País</label>
-                          <select
-                            value={editCountry}
-                            onChange={(e) => setEditCountry(e.target.value)}
-                            style={{ colorScheme: "dark" }}
-                            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500/50"
-                          >
-                            <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">Sin especificar</option>
-                            {ADMIN_COUNTRIES.map((c) => (
-                              <option key={c.code} value={c.es} style={{ backgroundColor: "#18181b", color: "#fff" }}>
-                                {c.flag} {c.es}
-                              </option>
-                            ))}
-                          </select>
+                          <CountrySelect value={editCountry} onChange={setEditCountry} locale="es" placeholder="Sin especificar" size="sm" />
                         </div>
                       </div>
                       <div className="mt-3 flex gap-3">

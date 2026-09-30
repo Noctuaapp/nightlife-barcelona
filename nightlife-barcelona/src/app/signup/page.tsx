@@ -6,11 +6,10 @@ import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
-import { getSortedCountries } from "../../lib/countries"
+import CountrySelect from "../../components/ui/CountrySelect"
 
 export default function SignupPage() {
   const { t, locale } = useLanguage()
-  const countries = getSortedCountries(locale)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [username, setUsername] = useState("")
@@ -25,7 +24,7 @@ export default function SignupPage() {
     e.preventDefault()
     setError("")
 
-    if (!email || !password || !username) {
+    if (!email || !password || !username || !gender) {
       setError(t("signup.error_fill_all"))
       return
     }
@@ -134,28 +133,20 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
               />
-              <select
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                style={{ colorScheme: "dark" }}
-                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition text-zinc-300"
-              >
-                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">
-                  {t("signup.country")}
-                </option>
-                {countries.map((c) => (
-                  <option key={c.code} value={c.es} style={{ backgroundColor: "#18181b", color: "#fff" }}>
-                    {c.flag} {c[locale]}
-                  </option>
-                ))}
-              </select>
+              <CountrySelect value={country} onChange={setCountry} locale={locale} placeholder={t("signup.country")} />
+              {/* Antes había una opción vacía seleccionable ("Género") que dejaba enviar el
+                  formulario sin elegir nada — de ahí que pareciera opcional aunque no lo fuera
+                  de verdad. Ahora esa opción es solo un placeholder (disabled + hidden): se ve
+                  al abrir el desplegable la primera vez, pero no se puede volver a seleccionar,
+                  y el formulario no se envía hasta elegir una de las tres reales. */}
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
+                required
                 style={{ colorScheme: "dark" }}
                 className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition text-zinc-300"
               >
-                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">
+                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="" disabled hidden>
                   {t("signup.gender")}
                 </option>
                 <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">

@@ -50,7 +50,7 @@
     "email": "Email",
     "password": "Contrasenya",
     "country": "D'on ets?",
-    "gender": "Gènere (opcional)",
+    "gender": "Gènere",
     "gender_male": "Home",
     "gender_female": "Dona",
     "create": "Crear compte",

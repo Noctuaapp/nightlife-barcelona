@@ -50,7 +50,7 @@
     "email": "Email",
     "password": "Wachtwoord",
     "country": "Waar kom je vandaan?",
-    "gender": "Geslacht (optioneel)",
+    "gender": "Geslacht",
     "gender_male": "Man",
     "gender_female": "Vrouw",
     "create": "Account aanmaken",

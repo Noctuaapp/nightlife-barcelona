@@ -50,7 +50,7 @@
     "email": "Email",
     "password": "Password",
     "country": "Where are you from?",
-    "gender": "Gender (optional)",
+    "gender": "Gender",
     "gender_male": "Male",
     "gender_female": "Female",
     "create": "Create account",

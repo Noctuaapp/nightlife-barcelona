@@ -59,52 +59,6 @@ const FILTER_ICONS: Record<Filter, string> = {
   essentials: "📍",
 }
 
-const getTransportLinks = (name: string, address: string | null, lat: number | null, lng: number | null) => {
-  const dest = encodeURIComponent(address || name)
-  const uberLink = lat && lng
-    ? `https://m.uber.com/ul/?action=setPickup&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}&dropoff[nickname]=${encodeURIComponent(name)}`
-    : `https://m.uber.com/ul/?action=setPickup&dropoff[formatted_address]=${dest}`
-  const cabifyLink = `https://cabify.com/es`
-  const freeNowLink = `https://free-now.com`
-  return { uberLink, cabifyLink, freeNowLink }
-}
-
-// Segunda pasada de diseño de esta fila: la primera (fondo con degradado de color + borde a
-// juego) seguía sin encajar — demasiado "botón de colores" y poco "icono de servicio". Ahora
-// cada opción es un icono en círculo (con su acento) + etiqueta debajo, sin fondo ni borde propio
-// en el bloque — el mismo patrón "icono → texto" que usan apps de transporte reales, en vez de
-// tres pastillas de color compitiendo por atención.
-const transportBtnStyle: CSSProperties = {
-  flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px",
-  padding: "8px 4px", borderRadius: "16px", textDecoration: "none",
-  transition: "background 0.15s ease, transform 0.15s ease",
-}
-
-const transportIconStyle = (accent: string): CSSProperties => ({
-  width: "34px", height: "34px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-  fontSize: "15px", background: `${accent}1f`, border: `1px solid ${accent}40`,
-})
-
-const TransportButtons = ({ name, address, lat, lng }: { name: string; address: string | null; lat: number | null; lng: number | null }) => {
-  const { uberLink, cabifyLink, freeNowLink } = getTransportLinks(name, address, lat, lng)
-  return (
-    <div style={{ display: "flex", gap: "2px", marginTop: "14px", borderRadius: "16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", padding: "6px" }}>
-      <a href={uberLink} target="_blank" rel="noopener noreferrer" style={transportBtnStyle}>
-        <span style={transportIconStyle("#e2e8f0")}>🚗</span>
-        <span style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.01em" }}>Uber</span>
-      </a>
-      <a href={cabifyLink} target="_blank" rel="noopener noreferrer" style={transportBtnStyle}>
-        <span style={transportIconStyle("#a855f7")}>🟣</span>
-        <span style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.01em" }}>Cabify</span>
-      </a>
-      <a href={freeNowLink} target="_blank" rel="noopener noreferrer" style={transportBtnStyle}>
-        <span style={transportIconStyle("#f59e0b")}>🚕</span>
-        <span style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.01em" }}>Free Now</span>
-      </a>
-    </div>
-  )
-}
-
 // Botón principal "Ver club/evento": antes era un rectángulo de esquinas suaves con un "→" de
 // texto pegado al final. Ahora es una píldora completa (rounded-full, como el resto de CTAs de
 // la app: banner del header, Crear cuenta...) con el nombre a la izquierda y un círculo de
@@ -172,6 +126,23 @@ const getSub = (item: Club | Event | Essential) => {
   return ""
 }
 
+// Un dato breve y útil por tipo, en vez de los botones de Uber/Cabify/Free Now (quitados: no
+// aportaban nada a la decisión de "¿voy o no voy?" y ocupaban media tarjeta). Un club enseña
+// género musical y precio, un evento su precio, un esencial su horario — solo si el dato existe.
+const getMeta = (item: Club | Event | Essential, filter: Filter): string | null => {
+  if (filter === "clubs" && "music" in item) {
+    const parts = [item.music ? `🎧 ${item.music}` : null, item.price ? `💶 ${item.price}` : null].filter(Boolean)
+    return parts.length ? parts.join("   ") : null
+  }
+  if (filter === "events" && "price" in item) {
+    return item.price ? `🎟 ${item.price}` : null
+  }
+  if (filter === "essentials" && "open_hours" in item) {
+    return item.open_hours ? `🕐 ${item.open_hours}` : null
+  }
+  return null
+}
+
 // Tarjeta de detalle compartida entre el panel de escritorio (siempre visible, a la izquierda
 // del mapa) y la ficha flotante de móvil (aparece al pulsar un pin). Antes cada una tenía su
 // propio JSX duplicado con la imagen y el texto apilados debajo, sin relación entre ambos. Ahora
@@ -193,6 +164,7 @@ const DetailCard = ({
   const sub = getSub(item)
   const image = getImage(item)
   const address = "address" in item ? item.address : null
+  const meta = getMeta(item, filter)
 
   return (
     <>
@@ -232,10 +204,16 @@ const DetailCard = ({
         </div>
       </div>
 
+      {meta && (
+        <p style={{ marginTop: "13px", fontSize: "12.5px", fontWeight: 600, color: "rgba(255,255,255,0.65)", letterSpacing: "0.01em" }}>
+          {meta}
+        </p>
+      )}
+
       {(address || walkingTime) && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "12px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "8px" }}>
           {address && (
-            <span style={{ fontSize: "11.5px", color: "rgba(255,255,255,0.5)", display: "flex", alignItems: "center", gap: "4px" }}>
+            <span style={{ fontSize: "11.5px", color: "rgba(255,255,255,0.45)", display: "flex", alignItems: "center", gap: "4px" }}>
               📍 {address}
             </span>
           )}
@@ -246,8 +224,6 @@ const DetailCard = ({
           )}
         </div>
       )}
-
-      <TransportButtons name={name} address={address} lat={item.latitude} lng={item.longitude} />
 
       {filter === "clubs" && (
         <Link href={`/clubs/${createSlug(name)}`} style={viewButtonStyle}>
@@ -609,11 +585,6 @@ export default function MapPage() {
               )}
             </div>
           </div>
-          {selected && (
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "16px", background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))", flexShrink: 0 }}>
-              <DetailCard item={selected} filter={filter} walkingTime={walkingTime} t={t} />
-            </div>
-          )}
         </aside>
 
         <div style={{ flex: 1, position: "relative", minWidth: 0, minHeight: 0 }}>
@@ -659,14 +630,31 @@ export default function MapPage() {
             </div>
           )}
 
+          {/* Antes esta ficha flotante no tenía ninguna clase responsive, así que se mostraba
+              también en escritorio — a la vez que el panel de la izquierda (aside), que enseñaba
+              lo mismo. Ahora en móvil/tablet sigue siendo esta ficha ancha pegada abajo; en
+              escritorio la ficha vive flotando sobre el mapa, en la esquina inferior derecha, con
+              el mismo tamaño compacto que antes tenía dentro de la barra lateral (justo debajo). */}
           {selected && (
-            <div style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "26px", border: `1px solid ${COLORS[filter]}35`, background: "linear-gradient(180deg, rgba(15,12,20,0.97), rgba(0,0,0,0.96))", padding: "14px 16px 16px", backdropFilter: "blur(20px)", boxShadow: `0 24px 60px -20px rgba(0,0,0,0.7), 0 0 40px -12px ${COLORS[filter]}35` }}>
+            <div className="lg:hidden" style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "26px", border: `1px solid ${COLORS[filter]}35`, background: "linear-gradient(180deg, rgba(15,12,20,0.97), rgba(0,0,0,0.96))", padding: "14px 16px 16px", backdropFilter: "blur(20px)", boxShadow: `0 24px 60px -20px rgba(0,0,0,0.7), 0 0 40px -12px ${COLORS[filter]}35` }}>
               <DetailCard
                 item={selected}
                 filter={filter}
                 walkingTime={walkingTime}
                 onClose={() => { setSelected(null); setWalkingTime(null) }}
                 showHandle
+                t={t}
+              />
+            </div>
+          )}
+
+          {selected && (
+            <div className="hidden lg:block" style={{ position: "absolute", bottom: "20px", right: "20px", zIndex: 10, width: "300px", maxHeight: "calc(100% - 40px)", overflowY: "auto", borderRadius: "22px", border: `1px solid ${COLORS[filter]}35`, background: "linear-gradient(180deg, rgba(15,12,20,0.97), rgba(0,0,0,0.96))", padding: "14px 16px 16px", backdropFilter: "blur(20px)", boxShadow: `0 24px 60px -20px rgba(0,0,0,0.7), 0 0 40px -12px ${COLORS[filter]}35` }}>
+              <DetailCard
+                item={selected}
+                filter={filter}
+                walkingTime={walkingTime}
+                onClose={() => { setSelected(null); setWalkingTime(null) }}
                 t={t}
               />
             </div>
