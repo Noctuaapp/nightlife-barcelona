@@ -544,28 +544,21 @@ export default function Header() {
       </header>
 
       {!isLoggedIn && !bannerDismissed && (
-        <div
-          className="sticky top-20 z-40 border-b border-white/10 backdrop-blur-xl"
-          style={{ background: "linear-gradient(90deg, rgba(168,85,247,0.95) 0%, rgba(217,70,239,0.9) 50%, rgba(236,72,153,0.95) 100%)" }}
-        >
-          <div className="mx-auto flex max-w-5xl items-center gap-2.5 px-3 py-2.5 sm:gap-3 sm:px-6">
-            <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-base sm:flex">
-              ✨
-            </span>
-            <p className="min-w-0 flex-1 truncate text-[11px] font-bold text-white sm:text-sm">
-              <span className="sm:hidden">✨ </span>
-              {t("authGate.bannerText")}
+        <div className="sticky top-20 z-40 border-b border-white/5 bg-black/70 backdrop-blur-2xl">
+          <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2.5 sm:px-6">
+            <p className="min-w-0 flex-1 truncate text-xs text-zinc-300 sm:text-sm">
+              <span className="text-white">{t("authGate.bannerText")}</span>
             </p>
             <Link
               href="/signup"
-              className="flex shrink-0 items-center gap-1 rounded-full bg-white px-3 py-1.5 text-[11px] font-black text-black shadow-sm transition hover:scale-105 hover:shadow-md sm:px-4 sm:py-2 sm:text-xs"
+              className="shrink-0 rounded-full px-4 py-1.5 text-xs font-bold text-white transition hover:opacity-90 sm:text-sm"
+              style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
             >
               {t("authGate.bannerCta")}
-              <span aria-hidden>→</span>
             </Link>
             <button
               onClick={dismissBanner}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/70 transition hover:bg-white/15 hover:text-white"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-500 transition hover:text-white"
               aria-label="Cerrar"
             >
               ✕
