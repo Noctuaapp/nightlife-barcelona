@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useLanguage } from "../../context/LanguageContext"
 import { createSlug } from "../../lib/slug"
+import { SearchIcon, CloseIcon, LocationIcon, CalendarIcon, ChevronDownIcon } from "../ui/FilterIcons"
 
 // Un evento de varios días (date_end) no se considera terminado hasta que pasa el último día,
 // no el primero.
@@ -165,7 +166,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
     .map((f) => ({ label: f.label, onRemove: () => setSelectedFilters((s) => toggleInSet(s, f.key)) }))
   if (nearMe)
     activeFilters.push({
-      label: "📍 Cerca de mí",
+      label: "Cerca de mí",
       onRemove: () => {
         setNearMe(false)
         setUserLat(null)
@@ -220,7 +221,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
         <div className="sticky top-0 z-30 mt-8 border-y border-white/10 bg-black/70 py-4 backdrop-blur-xl">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4">
             <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3.5 backdrop-blur-xl transition focus-within:border-purple-400/50 focus-within:bg-white/[0.08]">
-              <span className="text-zinc-500 transition group-focus-within:text-purple-300">🔍</span>
+              <SearchIcon className="h-4 w-4 shrink-0 text-zinc-500 transition group-focus-within:text-purple-300" />
               <input
                 type="text"
                 placeholder={t("events.search")}
@@ -230,38 +231,45 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
               />
               {search && (
                 <button onClick={() => setSearch("")} className="text-zinc-500 transition hover:text-white" aria-label="Limpiar búsqueda">
-                  ✕
+                  <CloseIcon className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
 
             <button
               onClick={nearMe ? () => { setNearMe(false); setUserLat(null); setUserLng(null) } : requestNearMe}
-              className={`shrink-0 rounded-full px-4 py-3.5 text-sm font-bold transition ${
-                nearMe ? "bg-purple-500 text-white" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition ${
+                nearMe ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
+              style={nearMe ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
             >
-              📍 Cerca
+              <LocationIcon className="h-4 w-4" />
+              Cerca
             </button>
 
             <button
               onClick={() => setHidePast(!hidePast)}
-              className={`shrink-0 rounded-full px-4 py-3.5 text-sm font-bold transition ${
-                hidePast ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition ${
+                hidePast ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
+              style={hidePast ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
             >
-              📅 Solo próximos
+              <CalendarIcon className="h-4 w-4" />
+              Solo próximos
             </button>
 
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-4 py-3.5 text-sm font-medium text-white outline-none"
-            >
-              <option value="date" className="bg-black">Próximos primero</option>
-              <option value="date_desc" className="bg-black">Más lejanos primero</option>
-              <option value="featured" className="bg-black">⭐ Destacados primero</option>
-            </select>
+            <div className="relative shrink-0">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                className="appearance-none rounded-full border border-white/10 bg-white/[0.04] py-3.5 pl-4 pr-9 text-sm font-medium text-white outline-none"
+              >
+                <option value="date" className="bg-black">Próximos primero</option>
+                <option value="date_desc" className="bg-black">Más lejanos primero</option>
+                <option value="featured" className="bg-black">Destacados primero</option>
+              </select>
+              <ChevronDownIcon className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+            </div>
           </div>
 
           <div className="mx-auto mt-3 flex max-w-7xl flex-wrap gap-2 px-4">
@@ -271,9 +279,10 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                 onClick={() => setSelectedFilters((s) => toggleInSet(s, f.key))}
                 className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition ${
                   selectedFilters.has(f.key)
-                    ? "bg-white text-black"
+                    ? "text-white shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
                     : "border border-white/10 bg-white/[0.04] text-white hover:border-purple-400/30 hover:bg-white/[0.08]"
                 }`}
+                style={selectedFilters.has(f.key) ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
               >
                 {f.label}
               </button>
@@ -288,7 +297,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                   onClick={f.onRemove}
                   className="flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-400/10 px-3 py-1.5 text-xs font-semibold text-purple-200 transition hover:bg-purple-400/20"
                 >
-                  {f.label} <span className="text-purple-300">✕</span>
+                  {f.label} <CloseIcon className="h-3 w-3 text-purple-300" />
                 </button>
               ))}
               <button onClick={clearAll} className="text-xs font-semibold text-zinc-500 underline-offset-2 hover:text-white hover:underline">

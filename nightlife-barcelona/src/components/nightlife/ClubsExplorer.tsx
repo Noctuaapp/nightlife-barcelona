@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import ClubCard from "./ClubCard"
 import { useLanguage } from "../../context/LanguageContext"
+import { SearchIcon, CloseIcon, LocationIcon, FlameIcon, SlidersIcon, ChevronDownIcon } from "../ui/FilterIcons"
 
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T>(null)
@@ -224,10 +225,10 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     ...Array.from(selectedAges).map((age) => ({ label: age, onRemove: () => setSelectedAges((s) => toggleInSet(s, age)) })),
     ...Array.from(selectedNeighborhoods).map((n) => ({ label: n, onRemove: () => setSelectedNeighborhoods((s) => toggleInSet(s, n)) })),
   ]
-  if (openNow) activeFilters.push({ label: "🟢 Abierto ahora", onRemove: () => setOpenNow(false) })
+  if (openNow) activeFilters.push({ label: "Abierto ahora", onRemove: () => setOpenNow(false) })
   if (nearMe)
     activeFilters.push({
-      label: "📍 Cerca de mí",
+      label: "Cerca de mí",
       onRemove: () => {
         setNearMe(false)
         setUserLat(null)
@@ -279,9 +280,10 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
             onClick={() => onToggle(opt)}
             className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium transition ${
               selected.has(opt)
-                ? "bg-white text-black"
+                ? "text-white shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
                 : "border border-white/10 bg-white/[0.04] text-white hover:border-purple-400/30 hover:bg-white/[0.08]"
             }`}
+            style={selected.has(opt) ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
           >
             {opt}
           </button>
@@ -317,7 +319,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         <div className="sticky top-0 z-30 mt-8 border-y border-white/10 bg-black/70 py-4 backdrop-blur-xl">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4">
             <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3.5 backdrop-blur-xl transition focus-within:border-purple-400/50 focus-within:bg-white/[0.08]">
-              <span className="text-zinc-500 transition group-focus-within:text-purple-300">🔍</span>
+              <SearchIcon className="h-4 w-4 shrink-0 text-zinc-500 transition group-focus-within:text-purple-300" />
               <input
                 type="text"
                 placeholder={t("clubs.search")}
@@ -327,54 +329,71 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
               />
               {search && (
                 <button onClick={() => setSearch("")} className="text-zinc-500 transition hover:text-white" aria-label="Limpiar búsqueda">
-                  ✕
+                  <CloseIcon className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
 
             <button
               onClick={() => setOpenNow(!openNow)}
-              className={`shrink-0 rounded-full px-4 py-3.5 text-sm font-bold transition ${
-                openNow ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold transition ${
+                openNow
+                  ? "border border-emerald-400/40 bg-emerald-400/15 text-emerald-300"
+                  : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
               }`}
             >
-              🟢 Ahora
+              <span className="relative flex h-2 w-2 shrink-0">
+                {openNow && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />}
+                <span className={`relative inline-flex h-2 w-2 rounded-full ${openNow ? "bg-emerald-400" : "bg-zinc-600"}`} />
+              </span>
+              Ahora
             </button>
             <button
               onClick={nearMe ? () => { setNearMe(false); setUserLat(null); setUserLng(null) } : requestNearMe}
-              className={`shrink-0 rounded-full px-4 py-3.5 text-sm font-bold transition ${
-                nearMe ? "bg-purple-500 text-white" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition ${
+                nearMe ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
+              style={nearMe ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
             >
-              📍 Cerca
+              <LocationIcon className="h-4 w-4" />
+              Cerca
             </button>
             <button
               onClick={() => setSelectedAttributes((s) => toggleInSet(s, "Trending"))}
-              className={`shrink-0 rounded-full px-4 py-3.5 text-sm font-bold transition ${
-                selectedAttributes.has("Trending") ? "bg-orange-400 text-black" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition ${
+                selectedAttributes.has("Trending")
+                  ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
+                  : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
+              style={selectedAttributes.has("Trending") ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
             >
-              🔥 Trending
+              <FlameIcon className="h-4 w-4" />
+              Trending
             </button>
 
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-4 py-3.5 text-sm font-medium text-white outline-none"
-            >
-              <option value="recommended" className="bg-black">Recomendado</option>
-              <option value="rating" className="bg-black">⭐ Mejor valorados</option>
-              <option value="name" className="bg-black">A-Z</option>
-              {nearMe && <option value="distance" className="bg-black">📍 Más cercanos</option>}
-            </select>
+            <div className="relative shrink-0">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                className="appearance-none rounded-full border border-white/10 bg-white/[0.04] py-3.5 pl-4 pr-9 text-sm font-medium text-white outline-none"
+              >
+                <option value="recommended" className="bg-black">Recomendado</option>
+                <option value="rating" className="bg-black">Mejor valorados</option>
+                <option value="name" className="bg-black">A-Z</option>
+                {nearMe && <option value="distance" className="bg-black">Más cercanos</option>}
+              </select>
+              <ChevronDownIcon className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+            </div>
 
             <button
               onClick={() => setFiltersOpen(!filtersOpen)}
-              className={`shrink-0 rounded-full px-5 py-3.5 text-sm font-bold transition ${
-                filtersOpen ? "bg-white text-black" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+              className={`flex shrink-0 items-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold text-white transition ${
+                filtersOpen ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
+              style={filtersOpen ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
             >
-              ☰ Filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+              <SlidersIcon className="h-4 w-4" />
+              Filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
             </button>
           </div>
 
@@ -386,7 +405,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                   onClick={f.onRemove}
                   className="flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-400/10 px-3 py-1.5 text-xs font-semibold text-purple-200 transition hover:bg-purple-400/20"
                 >
-                  {f.label} <span className="text-purple-300">✕</span>
+                  {f.label} <CloseIcon className="h-3 w-3 text-purple-300" />
                 </button>
               ))}
               <button onClick={clearAll} className="text-xs font-semibold text-zinc-500 underline-offset-2 hover:text-white hover:underline">
@@ -419,7 +438,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                 onToggle={(v) => setSelectedAges((s) => toggleInSet(s, v))}
               />
               <ChipGroup
-                title="📍 Barrio (elige varios)"
+                title="Barrio (elige varios)"
                 options={neighborhoods}
                 selected={selectedNeighborhoods}
                 onToggle={(v) => setSelectedNeighborhoods((s) => toggleInSet(s, v))}
