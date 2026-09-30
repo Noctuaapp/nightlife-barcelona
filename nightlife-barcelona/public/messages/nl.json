@@ -524,7 +524,9 @@
     "benefit4": "🔔 Herinneringen en aanbevelingen op maat",
     "ctaSignup": "Gratis account aanmaken",
     "ctaLogin": "Ik heb al een account",
-    "maybeLater": "Niet nu"
+    "maybeLater": "Niet nu",
+    "bannerText": "Registreer gratis: favorieten, AI-avondplannen en meer",
+    "bannerCta": "Account aanmaken"
   },
   "changePassword": {
     "eyebrow": "Accountbeveiliging",

@@ -47,6 +47,10 @@ export default function Header() {
   const [cityOpen, setCityOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
   const [selectedCity, setSelectedCity] = useState(cities[0])
+  // Barra de registro en el header: solo para quien no tiene sesión, y se puede cerrar (se
+  // recuerda en localStorage, igual que las notificaciones leídas). Empieza en "true" (oculta)
+  // para no hacerla parpadear un instante antes de comprobar localStorage tras montar.
+  const [bannerDismissed, setBannerDismissed] = useState(true)
   const [weather, setWeather] = useState<{
     temp: number
     icon: string
@@ -333,6 +337,23 @@ export default function Header() {
     return () => clearInterval(interval)
   }, [isLoggedIn])
 
+  useEffect(() => {
+    try {
+      setBannerDismissed(localStorage.getItem("noctua_auth_banner_dismissed") === "1")
+    } catch (e) {
+      console.log("LOCALSTORAGE ERROR:", e)
+    }
+  }, [])
+
+  const dismissBanner = () => {
+    setBannerDismissed(true)
+    try {
+      localStorage.setItem("noctua_auth_banner_dismissed", "1")
+    } catch (e) {
+      console.log("LOCALSTORAGE ERROR:", e)
+    }
+  }
+
   const isUnread = (n: NotificationRow) =>
     n.type === "broadcast" ? !readBroadcastIds.includes(n.id) : !n.read
 
@@ -522,6 +543,37 @@ export default function Header() {
         </div>
       </header>
 
+      {!isLoggedIn && !bannerDismissed && (
+        <div
+          className="sticky top-20 z-40 border-b border-white/10 backdrop-blur-xl"
+          style={{ background: "linear-gradient(90deg, rgba(168,85,247,0.95) 0%, rgba(217,70,239,0.9) 50%, rgba(236,72,153,0.95) 100%)" }}
+        >
+          <div className="mx-auto flex max-w-5xl items-center gap-2.5 px-3 py-2.5 sm:gap-3 sm:px-6">
+            <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-base sm:flex">
+              ✨
+            </span>
+            <p className="min-w-0 flex-1 truncate text-[11px] font-bold text-white sm:text-sm">
+              <span className="sm:hidden">✨ </span>
+              {t("authGate.bannerText")}
+            </p>
+            <Link
+              href="/signup"
+              className="flex shrink-0 items-center gap-1 rounded-full bg-white px-3 py-1.5 text-[11px] font-black text-black shadow-sm transition hover:scale-105 hover:shadow-md sm:px-4 sm:py-2 sm:text-xs"
+            >
+              {t("authGate.bannerCta")}
+              <span aria-hidden>→</span>
+            </Link>
+            <button
+              onClick={dismissBanner}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/70 transition hover:bg-white/15 hover:text-white"
+              aria-label="Cerrar"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {menuOpen && (
         <div className="fixed inset-0 z-[190] bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
       )}
@@ -539,6 +591,26 @@ export default function Header() {
           <p className="text-sm uppercase tracking-widest text-zinc-500">Menu</p>
           <button onClick={() => setMenuOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-white hover:bg-white/10 transition text-lg outline-none">✕</button>
         </div>
+
+        {!isLoggedIn && (
+          <div className="mx-4 mt-4 rounded-2xl border border-purple-400/20 bg-gradient-to-br from-purple-500/15 to-pink-500/10 p-5">
+            <p className="text-lg font-black leading-tight text-white">✨ {t("authGate.title")}</p>
+            <div className="mt-3 space-y-1.5">
+              <p className="text-xs text-zinc-300">{t("authGate.benefit1")}</p>
+              <p className="text-xs text-zinc-300">{t("authGate.benefit2")}</p>
+              <p className="text-xs text-zinc-300">{t("authGate.benefit3")}</p>
+              <p className="text-xs text-zinc-300">{t("authGate.benefit4")}</p>
+            </div>
+            <Link
+              href="/signup"
+              onClick={() => setMenuOpen(false)}
+              className="mt-4 flex items-center justify-center rounded-xl py-3 text-sm font-black text-white transition hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+            >
+              {t("authGate.ctaSignup")}
+            </Link>
+          </div>
+        )}
 
         <div className="flex flex-col gap-1 px-4 py-4 flex-1">
           {isLoggedIn && (

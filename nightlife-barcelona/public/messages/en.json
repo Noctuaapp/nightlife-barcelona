@@ -524,7 +524,9 @@
     "benefit4": "🔔 Reminders and recommendations made for you",
     "ctaSignup": "Create free account",
     "ctaLogin": "I already have an account",
-    "maybeLater": "Not now"
+    "maybeLater": "Not now",
+    "bannerText": "Sign up free: favorites, AI night plans and more",
+    "bannerCta": "Create account"
   },
   "changePassword": {
     "eyebrow": "Account security",
