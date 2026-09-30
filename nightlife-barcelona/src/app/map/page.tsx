@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type CSSProperties } from "react"
 import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
 import Link from "next/link"
@@ -69,21 +69,59 @@ const getTransportLinks = (name: string, address: string | null, lat: number | n
   return { uberLink, cabifyLink, freeNowLink }
 }
 
+// Segunda pasada de diseño de esta fila: la primera (fondo con degradado de color + borde a
+// juego) seguía sin encajar — demasiado "botón de colores" y poco "icono de servicio". Ahora
+// cada opción es un icono en círculo (con su acento) + etiqueta debajo, sin fondo ni borde propio
+// en el bloque — el mismo patrón "icono → texto" que usan apps de transporte reales, en vez de
+// tres pastillas de color compitiendo por atención.
+const transportBtnStyle: CSSProperties = {
+  flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px",
+  padding: "8px 4px", borderRadius: "16px", textDecoration: "none",
+  transition: "background 0.15s ease, transform 0.15s ease",
+}
+
+const transportIconStyle = (accent: string): CSSProperties => ({
+  width: "34px", height: "34px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+  fontSize: "15px", background: `${accent}1f`, border: `1px solid ${accent}40`,
+})
+
 const TransportButtons = ({ name, address, lat, lng }: { name: string; address: string | null; lat: number | null; lng: number | null }) => {
   const { uberLink, cabifyLink, freeNowLink } = getTransportLinks(name, address, lat, lng)
   return (
-    <div style={{ display: "flex", gap: "6px", marginTop: "10px" }}>
-      <a href={uberLink} target="_blank" rel="noopener noreferrer" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", borderRadius: "10px", background: "#000", border: "1px solid rgba(255,255,255,0.2)", padding: "8px 4px", fontSize: "11px", fontWeight: 700, color: "#fff", textDecoration: "none" }}>
-        🚗 Uber
+    <div style={{ display: "flex", gap: "2px", marginTop: "14px", borderRadius: "16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", padding: "6px" }}>
+      <a href={uberLink} target="_blank" rel="noopener noreferrer" style={transportBtnStyle}>
+        <span style={transportIconStyle("#e2e8f0")}>🚗</span>
+        <span style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.01em" }}>Uber</span>
       </a>
-      <a href={cabifyLink} target="_blank" rel="noopener noreferrer" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", borderRadius: "10px", background: "#7c3aed", border: "1px solid rgba(124,58,237,0.5)", padding: "8px 4px", fontSize: "11px", fontWeight: 700, color: "#fff", textDecoration: "none" }}>
-        🟣 Cabify
+      <a href={cabifyLink} target="_blank" rel="noopener noreferrer" style={transportBtnStyle}>
+        <span style={transportIconStyle("#a855f7")}>🟣</span>
+        <span style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.01em" }}>Cabify</span>
       </a>
-      <a href={freeNowLink} target="_blank" rel="noopener noreferrer" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", borderRadius: "10px", background: "#ca8a04", border: "1px solid rgba(202,138,4,0.5)", padding: "8px 4px", fontSize: "11px", fontWeight: 700, color: "#fff", textDecoration: "none" }}>
-        🚕 FREE NOW
+      <a href={freeNowLink} target="_blank" rel="noopener noreferrer" style={transportBtnStyle}>
+        <span style={transportIconStyle("#f59e0b")}>🚕</span>
+        <span style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.01em" }}>Free Now</span>
       </a>
     </div>
   )
+}
+
+// Botón principal "Ver club/evento": antes era un rectángulo de esquinas suaves con un "→" de
+// texto pegado al final. Ahora es una píldora completa (rounded-full, como el resto de CTAs de
+// la app: banner del header, Crear cuenta...) con el nombre a la izquierda y un círculo de
+// flecha a la derecha — el mismo lenguaje del botón circular que ya usamos en las cards de
+// clubs y esenciales de la home, para que todo el sitio se sienta como un único producto.
+const viewButtonStyle: CSSProperties = {
+  marginTop: "14px", display: "flex", alignItems: "center", justifyContent: "space-between",
+  borderRadius: "999px", background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
+  padding: "6px 6px 6px 22px", fontSize: "13.5px", fontWeight: 800, color: "#fff",
+  textDecoration: "none", letterSpacing: "0.01em",
+  boxShadow: "0 14px 30px -12px rgba(168,85,247,0.6)",
+}
+
+const arrowCircleStyle: CSSProperties = {
+  width: "34px", height: "34px", borderRadius: "50%", background: "rgba(255,255,255,0.22)",
+  display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px", color: "#fff",
+  border: "1px solid rgba(255,255,255,0.3)", flexShrink: 0,
 }
 
 const getImage = (item: Club | Event | Essential): string | null => {
@@ -123,6 +161,107 @@ const SearchInput = ({ value, onChange, accent }: { value: string; onChange: (v:
       <path d="M16.5 16.5L21 21" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round"/>
     </svg>
   </div>
+  )
+}
+
+const getName = (item: Club | Event | Essential) => ("name" in item ? item.name : item.title)
+const getSub = (item: Club | Event | Essential) => {
+  if ("music" in item) return item.neighborhood || ""
+  if ("title" in item && "date" in item) return (item as Event).date || ""
+  if ("category" in item) return (item as Essential).category || ""
+  return ""
+}
+
+// Tarjeta de detalle compartida entre el panel de escritorio (siempre visible, a la izquierda
+// del mapa) y la ficha flotante de móvil (aparece al pulsar un pin). Antes cada una tenía su
+// propio JSX duplicado con la imagen y el texto apilados debajo, sin relación entre ambos. Ahora
+// la foto es una "hero image": el nombre va superpuesto sobre ella con degradado de legibilidad,
+// más un badge de categoría arriba — el mismo lenguaje editorial que ya usan las cards de eventos
+// de la home, en vez de una imagen-banner seguida de texto plano.
+const DetailCard = ({
+  item, filter, walkingTime, onClose, showHandle, t,
+}: {
+  item: Club | Event | Essential
+  filter: Filter
+  walkingTime: string | null
+  onClose?: () => void
+  showHandle?: boolean
+  t: (key: string) => string
+}) => {
+  const color = COLORS[filter]
+  const name = getName(item)
+  const sub = getSub(item)
+  const image = getImage(item)
+  const address = "address" in item ? item.address : null
+
+  return (
+    <>
+      {showHandle && (
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "10px" }}>
+          <div style={{ width: "36px", height: "4px", borderRadius: "999px", background: "rgba(255,255,255,0.2)" }} />
+        </div>
+      )}
+
+      <div style={{ position: "relative", borderRadius: "18px", overflow: "hidden" }}>
+        {image ? (
+          <img src={image} alt={name} style={{ width: "100%", height: "160px", objectFit: "cover", display: "block" }} />
+        ) : (
+          <div style={{ width: "100%", height: "160px", background: `linear-gradient(135deg, ${color}66, ${color}18)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "42px" }}>
+            {FILTER_ICONS[filter]}
+          </div>
+        )}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0) 38%, rgba(0,0,0,0.55) 75%, rgba(0,0,0,0.92) 100%)" }} />
+        <div style={{
+          position: "absolute", left: "12px", top: "12px", borderRadius: "999px", padding: "5px 12px",
+          fontSize: "10.5px", fontWeight: 800, color: "#fff", background: "rgba(0,0,0,0.5)",
+          border: `1px solid ${color}55`, backdropFilter: "blur(8px)", letterSpacing: "0.02em", textTransform: "capitalize",
+        }}>
+          {FILTER_ICONS[filter]} {t(`nav.${filter}`)}
+        </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            style={{ position: "absolute", top: "10px", right: "10px", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", color: "#fff", background: "rgba(0,0,0,0.55)", border: "1px solid rgba(255,255,255,0.15)", fontSize: "14px", cursor: "pointer", backdropFilter: "blur(6px)" }}
+          >
+            ✕
+          </button>
+        )}
+        <div style={{ position: "absolute", left: "16px", right: "16px", bottom: "13px" }}>
+          <p style={{ fontWeight: 900, color: "#fff", fontSize: "19px", letterSpacing: "-0.01em", textShadow: "0 2px 14px rgba(0,0,0,0.7)" }}>{name}</p>
+          {sub && <p style={{ fontSize: "12.5px", color: "rgba(255,255,255,0.8)", marginTop: "3px", textShadow: "0 1px 10px rgba(0,0,0,0.7)" }}>{sub}</p>}
+        </div>
+      </div>
+
+      {(address || walkingTime) && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "12px" }}>
+          {address && (
+            <span style={{ fontSize: "11.5px", color: "rgba(255,255,255,0.5)", display: "flex", alignItems: "center", gap: "4px" }}>
+              📍 {address}
+            </span>
+          )}
+          {walkingTime && (
+            <span style={{ fontSize: "11.5px", color: "#60a5fa", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
+              🚶 {walkingTime}
+            </span>
+          )}
+        </div>
+      )}
+
+      <TransportButtons name={name} address={address} lat={item.latitude} lng={item.longitude} />
+
+      {filter === "clubs" && (
+        <Link href={`/clubs/${createSlug(name)}`} style={viewButtonStyle}>
+          {t("map.viewClub")}
+          <span style={arrowCircleStyle}>→</span>
+        </Link>
+      )}
+      {filter === "events" && (
+        <Link href={`/event/${createSlug(name)}`} style={viewButtonStyle}>
+          {t("map.viewEvent")}
+          <span style={arrowCircleStyle}>→</span>
+        </Link>
+      )}
+    </>
   )
 }
 
@@ -346,14 +485,6 @@ export default function MapPage() {
     setTrackingActive(true)
   }
 
-  const getName = (item: Club | Event | Essential) => "name" in item ? item.name : item.title
-  const getSub = (item: Club | Event | Essential) => {
-    if ("music" in item) return item.neighborhood || ""
-    if ("title" in item && "date" in item) return (item as Event).date || ""
-    if ("category" in item) return (item as Essential).category || ""
-    return ""
-  }
-
   // Miniatura compartida para las filas de lista y el panel de detalle: foto recortada en
   // círculo si el club/evento tiene, o un círculo degradado con las iniciales si no — así nunca
   // se ve una fila vacía o un hueco gris, coherente con los pines del mapa.
@@ -479,21 +610,8 @@ export default function MapPage() {
             </div>
           </div>
           {selected && (
-            <div style={{ borderTop: `1px solid ${COLORS[filter]}30`, padding: "16px", background: `linear-gradient(180deg, ${COLORS[filter]}12, rgba(255,255,255,0.02))`, flexShrink: 0 }}>
-              {getImage(selected) ? (
-                <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "12px", marginBottom: "12px", border: `1px solid ${COLORS[filter]}30` }} />
-              ) : (
-                <div style={{ width: "100%", height: "120px", borderRadius: "12px", marginBottom: "12px", background: `linear-gradient(135deg, ${COLORS[filter]}55, ${COLORS[filter]}15)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "40px" }}>
-                  {FILTER_ICONS[filter]}
-                </div>
-              )}
-              <p style={{ fontWeight: 900, fontSize: "16px", color: "#fff" }}>{getName(selected)}</p>
-              <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", marginTop: "4px" }}>{getSub(selected)}</p>
-              {"address" in selected && selected.address && <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)", marginTop: "4px" }}>📍 {selected.address}</p>}
-              {walkingTime && <p style={{ fontSize: "12px", color: "#3b82f6", marginTop: "6px", fontWeight: 700 }}>🚶 {walkingTime}</p>}
-              <TransportButtons name={getName(selected)} address={"address" in selected ? selected.address : null} lat={selected.latitude} lng={selected.longitude} />
-              {filter === "clubs" && <Link href={`/clubs/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>{t("map.viewClub")}</Link>}
-              {filter === "events" && <Link href={`/event/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>{t("map.viewEvent")}</Link>}
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "16px", background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))", flexShrink: 0 }}>
+              <DetailCard item={selected} filter={filter} walkingTime={walkingTime} t={t} />
             </div>
           )}
         </aside>
@@ -542,25 +660,15 @@ export default function MapPage() {
           )}
 
           {selected && (
-            <div style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "20px", border: `1px solid ${COLORS[filter]}40`, background: "rgba(0,0,0,0.92)", padding: "16px", backdropFilter: "blur(16px)", boxShadow: `0 20px 50px -20px rgba(0,0,0,0.6), 0 0 30px -10px ${COLORS[filter]}30` }}>
-              {getImage(selected) ? (
-                <img src={getImage(selected)!} alt={getName(selected)} style={{ width: "100%", height: "120px", objectFit: "cover", borderRadius: "12px", marginBottom: "12px", border: `1px solid ${COLORS[filter]}30` }} />
-              ) : (
-                <div style={{ width: "100%", height: "120px", borderRadius: "12px", marginBottom: "12px", background: `linear-gradient(135deg, ${COLORS[filter]}55, ${COLORS[filter]}15)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "40px" }}>
-                  {FILTER_ICONS[filter]}
-                </div>
-              )}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div>
-                  <p style={{ fontWeight: 900, color: "#fff", fontSize: "15px" }}>{getName(selected)}</p>
-                  <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginTop: "2px" }}>{getSub(selected)}</p>
-                  {walkingTime && <p style={{ fontSize: "12px", color: "#3b82f6", marginTop: "4px", fontWeight: 700 }}>🚶 {walkingTime}</p>}
-                </div>
-                <button onClick={() => { setSelected(null); setWalkingTime(null) }} style={{ color: "rgba(255,255,255,0.4)", background: "none", border: "none", fontSize: "18px", cursor: "pointer", padding: "0 0 0 8px" }}>✕</button>
-              </div>
-              <TransportButtons name={getName(selected)} address={"address" in selected ? selected.address : null} lat={selected.latitude} lng={selected.longitude} />
-              {filter === "clubs" && <Link href={`/clubs/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>{t("map.viewClub")}</Link>}
-              {filter === "events" && <Link href={`/event/${createSlug(getName(selected))}`} style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "10px", background: "#fff", padding: "10px", fontSize: "13px", fontWeight: 700, color: "#000", textDecoration: "none" }}>{t("map.viewEvent")}</Link>}
+            <div style={{ position: "absolute", bottom: "80px", left: "16px", right: "16px", zIndex: 10, borderRadius: "26px", border: `1px solid ${COLORS[filter]}35`, background: "linear-gradient(180deg, rgba(15,12,20,0.97), rgba(0,0,0,0.96))", padding: "14px 16px 16px", backdropFilter: "blur(20px)", boxShadow: `0 24px 60px -20px rgba(0,0,0,0.7), 0 0 40px -12px ${COLORS[filter]}35` }}>
+              <DetailCard
+                item={selected}
+                filter={filter}
+                walkingTime={walkingTime}
+                onClose={() => { setSelected(null); setWalkingTime(null) }}
+                showHandle
+                t={t}
+              />
             </div>
           )}
         </div>

@@ -58,7 +58,8 @@
     "existing": "Ja tens compte? Iniciar sessió",
     "error_fill_all": "Omple tots els camps, si us plau.",
     "error_terms": "Has d'acceptar els termes i condicions per continuar.",
-    "error_age": "Has de confirmar que ets major de 18 anys per continuar."
+    "error_age": "Has de confirmar que ets major de 18 anys per continuar.",
+    "gender_unspecified": "Prefereixo no dir-ho"
   },
   "clubs": {
     "title": "Clubs",

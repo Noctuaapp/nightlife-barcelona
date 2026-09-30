@@ -58,7 +58,8 @@
     "existing": "Hast du bereits ein Konto? Anmelden",
     "error_fill_all": "Bitte fülle alle Felder aus.",
     "error_terms": "Du musst die AGB akzeptieren, um fortzufahren.",
-    "error_age": "Du musst bestätigen, dass du über 18 bist, um fortzufahren."
+    "error_age": "Du musst bestätigen, dass du über 18 bist, um fortzufahren.",
+    "gender_unspecified": "Keine Angabe"
   },
   "clubs": {
     "title": "Clubs",

@@ -58,7 +58,8 @@
     "existing": "¿Ya tienes cuenta? Iniciar sesión",
     "error_fill_all": "Por favor rellena todos los campos.",
     "error_terms": "Debes aceptar los términos y condiciones para continuar.",
-    "error_age": "Debes confirmar que eres mayor de 18 años para continuar."
+    "error_age": "Debes confirmar que eres mayor de 18 años para continuar.",
+    "gender_unspecified": "Prefiero no decirlo"
   },
   "clubs": {
     "title": "Clubs",

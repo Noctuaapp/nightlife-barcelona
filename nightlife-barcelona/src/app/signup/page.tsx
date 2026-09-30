@@ -6,9 +6,11 @@ import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
+import { getSortedCountries } from "../../lib/countries"
 
 export default function SignupPage() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
+  const countries = getSortedCountries(locale)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [username, setUsername] = useState("")
@@ -57,6 +59,10 @@ export default function SignupPage() {
         id: data.user.id,
         username: username.toLowerCase().trim(),
         gender: gender || null,
+        // Antes el país solo se guardaba en los metadatos de auth (options.data), que el admin
+        // no puede consultar cómodamente. Ahora también se guarda en profiles, para que la ficha
+        // de usuario en /admin/users pueda mostrarlo.
+        country: country || null,
         terms_accepted_at: new Date().toISOString(),
       })
     }
@@ -128,21 +134,39 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
               />
-              <input
-                type="text"
-                placeholder={t("signup.country")}
+              <select
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
-              />
+                style={{ colorScheme: "dark" }}
+                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition text-zinc-300"
+              >
+                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">
+                  {t("signup.country")}
+                </option>
+                {countries.map((c) => (
+                  <option key={c.code} value={c.es} style={{ backgroundColor: "#18181b", color: "#fff" }}>
+                    {c.flag} {c[locale]}
+                  </option>
+                ))}
+              </select>
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
+                style={{ colorScheme: "dark" }}
                 className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition text-zinc-300"
               >
-                <option value="">{t("signup.gender")}</option>
-                <option value="Hombre">{t("signup.gender_male")}</option>
-                <option value="Mujer">{t("signup.gender_female")}</option>
+                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">
+                  {t("signup.gender")}
+                </option>
+                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">
+                  {t("signup.gender_male")}
+                </option>
+                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Mujer">
+                  {t("signup.gender_female")}
+                </option>
+                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Prefiero no decirlo">
+                  {t("signup.gender_unspecified")}
+                </option>
               </select>
 
               <label className="flex items-start gap-3 cursor-pointer pt-2">

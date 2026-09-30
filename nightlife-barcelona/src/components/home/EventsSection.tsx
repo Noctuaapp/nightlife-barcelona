@@ -61,6 +61,10 @@ export default function EventsSection() {
   }, [])
 
   const today = new Date().toISOString().split("T")[0]
+  // Antes esta insignia "● Eventos en directo" se mostraba siempre, aunque no hubiera ningún
+  // evento esta noche — dando a entender que algo está pasando ahora mismo cuando no es así.
+  // Ahora solo aparece cuando de verdad hay un evento con fecha de hoy.
+  const hasLiveTonight = events.some((event) => event.date === today)
 
   const filteredEvents = events.filter((event) => {
     if (selectedCategory === "All") return event.featured === true
@@ -79,9 +83,11 @@ export default function EventsSection() {
             {t("events.happening")}
           </h2>
         </div>
-        <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-300">
-          ● {t("events.live")}
-        </div>
+        {hasLiveTonight && (
+          <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-300">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" /> {t("events.tonight")}
+          </div>
+        )}
       </div>
 
       <div className="mt-12 flex gap-3 overflow-x-auto pb-2">

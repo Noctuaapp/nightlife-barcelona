@@ -107,13 +107,6 @@ function useCountUp(target: number, active: boolean, duration = 1000) {
   return value
 }
 
-const QUICK_GENRES = [
-  { label: "Techno", emoji: "🎛" },
-  { label: "Commercial", emoji: "🎤" },
-  { label: "Cocktail Bar", emoji: "🍸" },
-  { label: "LGTBI+", emoji: "🏳️‍🌈" },
-]
-
 const TABS = [
   { key: "all", label: "✨ Para ti" },
   { key: "trending", label: "🔥 Trending" },
@@ -271,21 +264,17 @@ export default function Home() {
                   </button>
                 </form>
 
-                <div className="fade-up mt-5 flex flex-wrap items-center gap-3" style={{ animationDelay: "0.3s" }}>
-                  {QUICK_GENRES.map((g) => (
-                    <Link
-                      key={g.label}
-                      href={`/clubs?music=${encodeURIComponent(g.label)}`}
-                      className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-semibold text-zinc-300 transition hover:border-purple-400/40 hover:bg-purple-400/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-400"
-                    >
-                      {g.emoji} {g.label}
-                    </Link>
-                  ))}
+                {/* Antes había aquí una segunda fila de chips de género (Techno/Commercial/...)
+                    que duplicaba casi exactamente las pestañas de "Destacados" un poco más
+                    abajo (incluido LGTBI+ en las dos) — dos mecanismos de filtro distintos para
+                    lo mismo, en la misma pantalla. Se ha quitado: el filtrado real vive en las
+                    pestañas de Destacados, justo encima de los resultados a los que afecta. */}
+                <div className="fade-up mt-5" style={{ animationDelay: "0.3s" }}>
                   <Link
                     href="/map"
-                    className="rounded-full border border-white/10 bg-transparent px-4 py-2 text-xs font-semibold text-zinc-500 underline-offset-4 transition hover:text-white hover:underline"
+                    className="group inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-semibold text-zinc-300 transition hover:border-purple-400/40 hover:bg-purple-400/10 hover:text-white"
                   >
-                    Ver mapa en directo →
+                    🗺️ Ver mapa en directo <span className="transition group-hover:translate-x-0.5">→</span>
                   </Link>
                 </div>
 
@@ -418,9 +407,12 @@ export default function Home() {
                               </>
                             )}
                           </div>
-                          <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-white opacity-0 transition group-hover:opacity-100">
-                            Ver ficha <span className="transition group-hover:translate-x-1">→</span>
-                          </span>
+                          <div className="mt-4 flex items-center justify-between">
+                            <span className="text-sm font-semibold text-zinc-300">Ver ficha</span>
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-black transition duration-300 group-hover:scale-110 group-hover:bg-gradient-to-br group-hover:from-purple-400 group-hover:to-pink-400 group-hover:text-white">
+                              →
+                            </span>
+                          </div>
                         </div>
                       </Link>
                     </Reveal>

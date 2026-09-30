@@ -3,12 +3,18 @@
 import { useEffect, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
+import { getSortedCountries } from "../../../lib/countries"
+
+// El admin es una herramienta interna en español, así que aquí no depende del idioma del
+// visitante — siempre se muestra (y se guarda) en español, con bandera.
+const ADMIN_COUNTRIES = getSortedCountries("es")
 
 type User = {
   id: string
   email: string
   username: string | null
   gender: string | null
+  country: string | null
   created_at: string
   last_sign_in_at: string | null
   is_blocked: boolean
@@ -29,6 +35,7 @@ export default function AdminUsersPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editUsername, setEditUsername] = useState("")
   const [editGender, setEditGender] = useState("")
+  const [editCountry, setEditCountry] = useState("")
   const [savingEdit, setSavingEdit] = useState(false)
 
   const [messagingId, setMessagingId] = useState<string | null>(null)
@@ -138,13 +145,22 @@ export default function AdminUsersPage() {
     const { data, error } = await supabase.from("users_view").select("*").order("created_at", { ascending: false })
     if (error) { console.log("USERS ERROR:", error); return }
 
-    const { data: profiles, error: profilesError } = await supabase.from("profiles").select("id, is_blocked")
+    // country se pide aparte de users_view (igual que is_blocked) porque la vista de Supabase
+    // no incluía esta columna hasta ahora: así no hace falta tocar la vista para que aparezca.
+    const { data: profiles, error: profilesError } = await supabase.from("profiles").select("id, is_blocked, country")
     if (profilesError) console.log("PROFILES ERROR:", profilesError)
 
     const blockedMap = new Map((profiles || []).map((p) => [p.id, !!p.is_blocked]))
+    const countryMap = new Map((profiles || []).map((p) => [p.id, p.country as string | null]))
 
     if (data) {
-      setUsers(data.map((u) => ({ ...u, is_blocked: blockedMap.get(u.id) ?? false })))
+      setUsers(
+        data.map((u) => ({
+          ...u,
+          is_blocked: blockedMap.get(u.id) ?? false,
+          country: u.country ?? countryMap.get(u.id) ?? null,
+        }))
+      )
     }
     setLoading(false)
   }
@@ -163,19 +179,21 @@ export default function AdminUsersPage() {
     setEditingId(user.id)
     setEditUsername(user.username || "")
     setEditGender(user.gender || "")
+    setEditCountry(user.country || "")
   }
 
   const cancelEditing = () => {
     setEditingId(null)
     setEditUsername("")
     setEditGender("")
+    setEditCountry("")
   }
 
   const saveEditing = async (userId: string) => {
     setSavingEdit(true)
     const { error } = await supabase
       .from("profiles")
-      .update({ username: editUsername.trim() || null, gender: editGender || null })
+      .update({ username: editUsername.trim() || null, gender: editGender || null, country: editCountry || null })
       .eq("id", userId)
     setSavingEdit(false)
 
@@ -186,7 +204,11 @@ export default function AdminUsersPage() {
     }
 
     setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, username: editUsername.trim() || null, gender: editGender || null } : u))
+      prev.map((u) =>
+        u.id === userId
+          ? { ...u, username: editUsername.trim() || null, gender: editGender || null, country: editCountry || null }
+          : u
+      )
     )
     cancelEditing()
   }
@@ -295,7 +317,12 @@ export default function AdminUsersPage() {
                     <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
                       {user.gender && (
                         <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                          {user.gender === "Hombre" ? "♂️" : "♀️"} {user.gender}
+                          {user.gender === "Hombre" ? "♂️" : user.gender === "Mujer" ? "♀️" : "🧑"} {user.gender}
+                        </span>
+                      )}
+                      {user.country && (
+                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                          {ADMIN_COUNTRIES.find((c) => c.es === user.country)?.flag || "🌍"} {user.country}
                         </span>
                       )}
                       <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
@@ -331,6 +358,23 @@ export default function AdminUsersPage() {
                             <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">Sin especificar</option>
                             <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">Hombre</option>
                             <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Mujer">Mujer</option>
+                            <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Prefiero no decirlo">Prefiero no decirlo</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs uppercase tracking-widest text-zinc-500">País</label>
+                          <select
+                            value={editCountry}
+                            onChange={(e) => setEditCountry(e.target.value)}
+                            style={{ colorScheme: "dark" }}
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500/50"
+                          >
+                            <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">Sin especificar</option>
+                            {ADMIN_COUNTRIES.map((c) => (
+                              <option key={c.code} value={c.es} style={{ backgroundColor: "#18181b", color: "#fff" }}>
+                                {c.flag} {c.es}
+                              </option>
+                            ))}
                           </select>
                         </div>
                       </div>

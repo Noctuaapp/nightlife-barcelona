@@ -52,7 +52,10 @@ export default function AreasSection() {
             <div className="p-5">
               <p className="text-sm text-zinc-400">{t(`essentials.categories.${cat.key}`)}</p>
               <div className="mt-4 flex items-center justify-between">
-                <span className="text-sm font-semibold text-white">{t("essentials.view_all")}</span>
+                <span className="text-sm font-semibold text-zinc-300">{t("essentials.view_all")}</span>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-black transition duration-300 group-hover:scale-110 group-hover:bg-gradient-to-br group-hover:from-purple-400 group-hover:to-pink-400 group-hover:text-white">
+                  →
+                </span>
               </div>
             </div>
           </Link>

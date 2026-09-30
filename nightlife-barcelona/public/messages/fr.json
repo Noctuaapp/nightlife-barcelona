@@ -58,7 +58,8 @@
     "existing": "Vous avez déjà un compte ? Se connecter",
     "error_fill_all": "Merci de remplir tous les champs.",
     "error_terms": "Tu dois accepter les conditions générales pour continuer.",
-    "error_age": "Tu dois confirmer que tu as plus de 18 ans pour continuer."
+    "error_age": "Tu dois confirmer que tu as plus de 18 ans pour continuer.",
+    "gender_unspecified": "Je préfère ne pas le dire"
   },
   "clubs": {
     "title": "Clubs",

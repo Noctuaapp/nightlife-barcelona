@@ -58,7 +58,8 @@
     "existing": "Heb je al een account? Inloggen",
     "error_fill_all": "Vul alle velden in.",
     "error_terms": "Je moet de algemene voorwaarden accepteren om door te gaan.",
-    "error_age": "Je moet bevestigen dat je ouder dan 18 bent om door te gaan."
+    "error_age": "Je moet bevestigen dat je ouder dan 18 bent om door te gaan.",
+    "gender_unspecified": "Zeg ik liever niet"
   },
   "clubs": {
     "title": "Clubs",
