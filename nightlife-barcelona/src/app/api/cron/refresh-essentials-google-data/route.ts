@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isOverBudget, recordGoogleCalls, createCounter, googleFetch } from "@/lib/googlePlacesBudget"
+import { isAuthorizedCronRequest } from "@/lib/cronAuth"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 10
@@ -92,7 +93,9 @@ async function textSearch(counter: ReturnType<typeof createCounter>, query: stri
 }
 
 async function placeDetails(counter: ReturnType<typeof createCounter>, placeId: string) {
-  const res = await googleFetch(counter, `https://places.googleapis.com/v1/places/${placeId}`, {
+  // languageCode=es hace que Google traduzca automáticamente el texto de las reseñas al
+  // castellano — sin esto, Google devuelve las reseñas en inglés por defecto.
+  const res = await googleFetch(counter, `https://places.googleapis.com/v1/places/${placeId}?languageCode=es`, {
     headers: {
       "X-Goog-Api-Key": GOOGLE_KEY,
       "X-Goog-FieldMask": "displayName,types,rating,userRatingCount,reviews,photos",
@@ -130,7 +133,11 @@ async function cachePhoto(
 // IMPORTANTE: cada ciclo comprueba primero cuánto se ha gastado hoy (tabla api_call_budget) y,
 // si ya se ha llegado al límite diario (GOOGLE_PLACES_DAILY_LIMIT), no hace ninguna llamada a
 // Google en este ciclo — corta aquí en vez de seguir gastando. Ver src/lib/googlePlacesBudget.ts.
-export async function GET() {
+export async function GET(req: Request) {
+  if (!isAuthorizedCronRequest(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!

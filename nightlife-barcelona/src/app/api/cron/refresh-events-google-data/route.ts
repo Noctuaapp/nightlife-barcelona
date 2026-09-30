@@ -157,7 +157,9 @@ export async function GET(req: Request) {
   const results = await Promise.all(
     (evs || []).map(async (ev) => {
       try {
-        const detailsRes = await fetch(`https://places.googleapis.com/v1/places/${ev.google_place_id}`, {
+        // languageCode=es hace que Google traduzca automáticamente el texto de las reseñas al
+        // castellano — sin esto, Google devuelve las reseñas en inglés por defecto.
+        const detailsRes = await fetch(`https://places.googleapis.com/v1/places/${ev.google_place_id}?languageCode=es`, {
           headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "displayName,types,rating,userRatingCount,reviews,photos" },
         })
         const data = await detailsRes.json()

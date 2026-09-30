@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useLanguage } from "../../context/LanguageContext"
 import FavoriteButton from "../favorites/FavoriteButton"
 import CheckInButton from "../gamification/CheckInButton"
+import NearbyVenuesSheet from "../nightlife/NearbyVenuesSheet"
 import ClubMap from "../map/ClubMap"
 import ClubNightsCalendar from "../nightlife/ClubNightsCalendar"
 import TransportButtons from "../ui/TransportButtons"
@@ -946,6 +947,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
 
                 <FavoriteButton itemType="club" itemId={club.id} />
                 <CheckInButton clubId={club.id} latitude={club.latitude} longitude={club.longitude} />
+                <NearbyVenuesSheet excludeClubId={club.id} name={club.name} latitude={club.latitude} longitude={club.longitude} />
 
                 <div className="flex gap-3">
                   <button

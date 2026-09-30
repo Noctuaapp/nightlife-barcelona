@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import FavoriteButton from "../favorites/FavoriteButton"
 import AttendanceButton from "../gamification/AttendanceButton"
+import NearbyVenuesSheet from "../nightlife/NearbyVenuesSheet"
 import ClubMap from "../map/ClubMap"
 import EventSessionsCalendar from "../nightlife/EventSessionsCalendar"
 import TransportButtons from "../ui/TransportButtons"
@@ -717,6 +718,9 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
 
                 <FavoriteButton itemType="event" itemId={event.id} />
                 {!past && <AttendanceButton itemType="event" itemId={event.id} />}
+                {!past && (
+                  <NearbyVenuesSheet name={event.title} latitude={event.latitude} longitude={event.longitude} />
+                )}
 
                 <button
                   onClick={shareEvent}

@@ -4,6 +4,22 @@ import { useLanguage } from "../../context/LanguageContext"
 import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"
 import BottomNav from "@/components/layout/BottomNav"
+import { splitLines, renderWithLinks } from "@/lib/legalText"
+
+const EMAIL_LINK = { email: { href: "mailto:info@noctuaapp.com", label: "info@noctuaapp.com" } }
+
+function SimpleList({ text }: { text: string }) {
+  return (
+    <ul className="space-y-2 pl-4">
+      {splitLines(text).map((item) => (
+        <li key={item} className="flex gap-2">
+          <span className="text-purple-400 mt-0.5 flex-shrink-0">—</span>
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 export default function TermsPage() {
   const { t } = useLanguage()
@@ -18,85 +34,64 @@ export default function TermsPage() {
         </div>
         <div className="space-y-10 text-white/65 text-sm leading-relaxed">
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">1. Aceptación de los términos</h2>
-            <p>Al acceder o usar Noctua (&quot;la Plataforma&quot;), aceptas quedar vinculado por estos Términos de Servicio. Si no estás de acuerdo con estos términos, por favor no uses la Plataforma. Nos reservamos el derecho de actualizar estos términos en cualquier momento; el uso continuado constituye la aceptación de cualquier cambio.</p>
+            <h2 className="text-white font-semibold text-base mb-3">1. {t("terms.s1_title")}</h2>
+            <p>{t("terms.s1_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">2. Descripción del servicio</h2>
-            <p>Noctua es una plataforma de descubrimiento de vida nocturna que ofrece información sobre clubs, eventos y ocio nocturno en Barcelona. Somos una plataforma informativa — no operamos locales, organizamos eventos ni vendemos entradas directamente.</p>
+            <h2 className="text-white font-semibold text-base mb-3">2. {t("terms.s2_title")}</h2>
+            <p>{t("terms.s2_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">3. Cuentas de usuario</h2>
-            <p className="mb-3">Al crear una cuenta, aceptas:</p>
-            <ul className="space-y-2 pl-4">
-              {[
-                "Proporcionar información precisa y completa.",
-                "Mantener tu contraseña segura y confidencial.",
-                "Notificarnos inmediatamente de cualquier uso no autorizado de tu cuenta.",
-                "Ser responsable de toda actividad que ocurra bajo tu cuenta.",
-              ].map((item) => (
-                <li key={item} className="flex gap-2">
-                  <span className="text-purple-400 mt-0.5 flex-shrink-0">—</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3">Debes tener al menos 18 años para crear una cuenta en Noctua, acorde a la naturaleza del contenido de ocio nocturno.</p>
+            <h2 className="text-white font-semibold text-base mb-3">3. {t("terms.s3_title")}</h2>
+            <p className="mb-3">{t("terms.s3_intro")}</p>
+            <SimpleList text={t("terms.s3_items")} />
+            <p className="mt-3">{t("terms.s3_closing")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">4. Uso aceptable</h2>
-            <p className="mb-3">Aceptas no:</p>
-            <ul className="space-y-2 pl-4">
-              {[
-                "Usar la Plataforma con fines ilícitos.",
-                "Extraer, copiar o reproducir contenido sin permiso.",
-                "Intentar acceder sin autorización a cualquier parte de la Plataforma.",
-                "Enviar información falsa, engañosa o difamatoria.",
-                "Interferir o interrumpir el funcionamiento de la Plataforma.",
-                "Usar la Plataforma para enviar comunicaciones comerciales no solicitadas.",
-              ].map((item) => (
-                <li key={item} className="flex gap-2">
-                  <span className="text-purple-400 mt-0.5 flex-shrink-0">—</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+            <h2 className="text-white font-semibold text-base mb-3">4. {t("terms.s4_title")}</h2>
+            <p className="mb-3">{t("terms.s4_intro")}</p>
+            <SimpleList text={t("terms.s4_items")} />
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">5. Exactitud del contenido</h2>
-            <p>Nos esforzamos por mantener toda la información de locales y eventos precisa y actualizada. Sin embargo, no podemos garantizar la exactitud, integridad o vigencia de la información en la Plataforma. Verifica siempre los detalles directamente con el local antes de asistir.</p>
+            <h2 className="text-white font-semibold text-base mb-3">5. {t("terms.s5_title")}</h2>
+            <p className="mb-3">{t("terms.s5_intro")}</p>
+            <SimpleList text={t("terms.s5_items")} />
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">6. Propiedad intelectual</h2>
-            <p>Todo el contenido de la Plataforma, incluidos textos, gráficos, logotipos y diseño, es propiedad de Noctua o de sus proveedores de contenido y está protegido por las leyes de propiedad intelectual aplicables. No puedes reproducir, distribuir ni crear obras derivadas sin nuestro permiso expreso por escrito.</p>
+            <h2 className="text-white font-semibold text-base mb-3">6. {t("terms.s6_title")}</h2>
+            <p>{t("terms.s6_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">7. Enlaces a terceros</h2>
-            <p>La Plataforma puede contener enlaces a sitios web de terceros, incluidas webs de locales y plataformas de venta de entradas. Estos enlaces se ofrecen únicamente por comodidad. No tenemos control ni asumimos responsabilidad alguna sobre el contenido o las prácticas de dichos sitios.</p>
+            <h2 className="text-white font-semibold text-base mb-3">7. {t("terms.s7_title")}</h2>
+            <p>{t("terms.s7_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">8. Limitación de responsabilidad</h2>
-            <p>En la máxima medida permitida por la ley, Noctua no será responsable de daños indirectos, incidentales, especiales, consecuentes o punitivos derivados del uso de la Plataforma. Nuestra responsabilidad total por cualquier reclamación no excederá el importe pagado por ti por el uso de la Plataforma en los 12 meses anteriores a la reclamación.</p>
+            <h2 className="text-white font-semibold text-base mb-3">8. {t("terms.s8_title")}</h2>
+            <p>{t("terms.s8_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">9. Exclusión de garantías</h2>
-            <p>La Plataforma se ofrece &quot;tal cual&quot; y &quot;según disponibilidad&quot;, sin garantías de ningún tipo, expresas o implícitas. No garantizamos que la Plataforma esté libre de interrupciones o errores.</p>
+            <h2 className="text-white font-semibold text-base mb-3">9. {t("terms.s9_title")}</h2>
+            <p>{t("terms.s9_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">10. Programa de puntos (XP)</h2>
-            <p>Noctua ofrece un sistema opcional de puntos de experiencia (XP) y niveles que premia ciertas acciones dentro de la app (marcar asistencia, hacer check-in en un local, rachas de uso, etc.). Los puntos de XP no tienen valor monetario, no son transferibles ni canjeables por dinero, y no constituyen una moneda ni un producto financiero. Nos reservamos el derecho de modificar, reiniciar o discontinuar el programa de puntos, así como de ajustar la forma en que se otorgan, en cualquier momento.</p>
+            <h2 className="text-white font-semibold text-base mb-3">10. {t("terms.s10_title")}</h2>
+            <p>{t("terms.s10_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">11. Cancelación de cuenta</h2>
-            <p>Nos reservamos el derecho de suspender o cancelar tu cuenta a nuestra discreción si incumples estos Términos de Servicio. Puedes eliminar tu cuenta en cualquier momento desde tu página de Perfil.</p>
+            <h2 className="text-white font-semibold text-base mb-3">11. {t("terms.s11_title")}</h2>
+            <p>{t("terms.s11_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">12. Ley aplicable</h2>
-            <p>Estos Términos de Servicio se rigen por las leyes de España. Cualquier disputa quedará sujeta a la jurisdicción exclusiva de los tribunales de Barcelona, España.</p>
+            <h2 className="text-white font-semibold text-base mb-3">12. {t("terms.s12_title")}</h2>
+            <p>{t("terms.s12_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">13. Contacto</h2>
-            <p>Para cualquier pregunta sobre estos Términos de Servicio, contáctanos en <a href="mailto:info@noctuaapp.com" className="text-purple-400 hover:text-purple-300 transition-colors">info@noctuaapp.com</a>.</p>
+            <h2 className="text-white font-semibold text-base mb-3">13. {t("terms.s13_title")}</h2>
+            <p>{t("terms.s13_body")}</p>
+          </section>
+          <section>
+            <h2 className="text-white font-semibold text-base mb-3">14. {t("terms.s14_title")}</h2>
+            <p>{renderWithLinks(t("terms.s14_body"), EMAIL_LINK)}</p>
           </section>
         </div>
       </main>

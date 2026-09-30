@@ -4,9 +4,49 @@ import { useLanguage } from "../../context/LanguageContext"
 import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"
 import BottomNav from "@/components/layout/BottomNav"
+import { splitLines, splitLabelItems, renderWithLinks } from "@/lib/legalText"
+
+const EMAIL_LINK = { email: { href: "mailto:info@noctuaapp.com", label: "info@noctuaapp.com" } }
+
+function SimpleList({ text }: { text: string }) {
+  return (
+    <ul className="space-y-2 pl-4">
+      {splitLines(text).map((item) => (
+        <li key={item} className="flex gap-2">
+          <span className="text-purple-400 mt-0.5 flex-shrink-0">—</span>
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function LabelList({ text }: { text: string }) {
+  return (
+    <ul className="space-y-2 pl-4">
+      {splitLabelItems(text).map(({ label, desc }) => (
+        <li key={label} className="flex gap-2">
+          <span className="text-purple-400 mt-0.5 flex-shrink-0">—</span>
+          <span><span className="text-white/80 font-medium">{label}:</span> {desc}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 export default function PrivacyPage() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
+
+  const googleSettingsLabel: Record<string, string> = {
+    es: "configuración de cuenta de Google", en: "Google Account settings", ca: "configuració del compte de Google",
+    fr: "paramètres de votre compte Google", de: "Google-Kontoeinstellungen", it: "impostazioni dell'account Google",
+    nl: "Google-accountinstellingen",
+  }
+  const links = {
+    ...EMAIL_LINK,
+    googleSettings: { href: "https://myaccount.google.com/permissions", label: googleSettingsLabel[locale] || googleSettingsLabel.es, external: true },
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -18,114 +58,60 @@ export default function PrivacyPage() {
         </div>
         <div className="space-y-10 text-white/65 text-sm leading-relaxed">
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">1. Quiénes somos</h2>
-            <p>Noctua (&quot;nosotros&quot;, &quot;nuestro&quot;) es una plataforma de descubrimiento de vida nocturna centrada en Barcelona. Operamos el sitio web y la aplicación disponibles en noctuaapp.com. Para cualquier consulta relacionada con privacidad, contáctanos en <a href="mailto:info@noctuaapp.com" className="text-purple-400 hover:text-purple-300 transition-colors">info@noctuaapp.com</a>.</p>
+            <h2 className="text-white font-semibold text-base mb-3">1. {t("privacy.s1_title")}</h2>
+            <p>{renderWithLinks(t("privacy.s1_body"), links)}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">2. Datos que recopilamos</h2>
-            <p className="mb-3">Recopilamos las siguientes categorías de datos:</p>
-            <ul className="space-y-2 pl-4">
-              {[
-                { label: "Datos de cuenta", desc: "Dirección de correo electrónico, contraseña cifrada, nombre de usuario y, si lo indicas, género, al registrarte." },
-                { label: "Foto de perfil", desc: "La imagen que subas voluntariamente como avatar de tu cuenta." },
-                { label: "Datos de uso", desc: "Páginas visitadas, clubs y eventos vistos, y búsquedas realizadas." },
-                { label: "Favoritos", desc: "Clubs, eventos y noches de club que decidas guardar, junto con las listas y notas personales que crees para organizarlos." },
-                { label: "Actividad y puntos (XP)", desc: "Si marcas que asistirás a un evento, haces check-in en un club o ganas puntos de experiencia, guardamos esa actividad para mostrarte tu progreso y nivel dentro de la app." },
-                { label: "Ubicación precisa (solo para check-in)", desc: "Cuando decides hacer check-in en la ficha de un club, accedemos una única vez a tu ubicación GPS para comprobar que estás cerca del local. No guardamos tus coordenadas: solo se registra en qué club y qué día hiciste check-in." },
-                { label: "Mensajes de contacto", desc: "Cualquier mensaje que nos envíes a través de la página de Contacto." },
-                { label: "Datos del dispositivo", desc: "Tipo de navegador, tipo de dispositivo y ubicación aproximada (a nivel de país/ciudad) para análisis." },
-              ].map(({ label, desc }) => (
-                <li key={label} className="flex gap-2">
-                  <span className="text-purple-400 mt-0.5 flex-shrink-0">—</span>
-                  <span><span className="text-white/80 font-medium">{label}:</span> {desc}</span>
-                </li>
-              ))}
-            </ul>
+            <h2 className="text-white font-semibold text-base mb-3">2. {t("privacy.s2_title")}</h2>
+            <p className="mb-3">{t("privacy.s2_intro")}</p>
+            <LabelList text={t("privacy.s2_items")} />
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">3. Cómo usamos tus datos</h2>
-            <p className="mb-3">Usamos los datos que recopilamos para:</p>
-            <ul className="space-y-2 pl-4">
-              {[
-                "Proporcionar y operar la plataforma Noctua.",
-                "Guardar y mostrar tus clubs, eventos y noches de club favoritos.",
-                "Calcular tu progreso y nivel dentro del sistema de puntos (XP) de Noctua.",
-                "Verificar tu ubicación en el momento del check-in en un club (nunca la almacenamos, solo el resultado).",
-                "Responder a mensajes y solicitudes de soporte, incluidos mensajes que el equipo de Noctua te envíe directamente.",
-                "Mejorar la plataforma en base a patrones de uso.",
-                "Enviar comunicaciones importantes del servicio (sin marketing sin tu consentimiento).",
-              ].map((item) => (
-                <li key={item} className="flex gap-2">
-                  <span className="text-purple-400 mt-0.5 flex-shrink-0">—</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+            <h2 className="text-white font-semibold text-base mb-3">3. {t("privacy.s3_title")}</h2>
+            <p className="mb-3">{t("privacy.s3_intro")}</p>
+            <SimpleList text={t("privacy.s3_items")} />
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">4. Base legal (RGPD)</h2>
-            <p>Procesamos tus datos bajo las siguientes bases legales definidas por el Reglamento General de Protección de Datos (RGPD): ejecución de contrato (para prestarte el servicio al que te suscribiste), interés legítimo (para mejorar y proteger la plataforma) y consentimiento (para comunicaciones opcionales). Puedes retirar tu consentimiento en cualquier momento.</p>
+            <h2 className="text-white font-semibold text-base mb-3">4. {t("privacy.s4_title")}</h2>
+            <p>{t("privacy.s4_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">5. Almacenamiento y seguridad de los datos</h2>
-            <p>Tus datos se almacenan de forma segura mediante Supabase, que ofrece cifrado de nivel profesional tanto en reposo como en tránsito. No vendemos tus datos personales a terceros. El acceso a los datos personales está restringido únicamente a personal autorizado.</p>
+            <h2 className="text-white font-semibold text-base mb-3">5. {t("privacy.s5_title")}</h2>
+            <p>{t("privacy.s5_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">6. Conservación de datos</h2>
-            <p>Conservamos los datos de tu cuenta mientras esta permanezca activa. Si eliminas tu cuenta, todos los datos personales asociados se eliminarán de forma permanente en un plazo de 30 días. Los mensajes de contacto se conservan hasta 12 meses con fines de soporte.</p>
+            <h2 className="text-white font-semibold text-base mb-3">6. {t("privacy.s6_title")}</h2>
+            <p>{t("privacy.s6_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">7. Tus derechos</h2>
-            <p className="mb-3">Bajo el RGPD, tienes derecho a:</p>
-            <ul className="space-y-2 pl-4">
-              {[
-                "Acceder a los datos personales que tenemos sobre ti.",
-                "Solicitar la corrección de datos inexactos.",
-                "Solicitar la eliminación de tus datos ('derecho al olvido').",
-                "Oponerte o restringir el tratamiento de tus datos.",
-                "Recibir una copia de tus datos en un formato portable.",
-                "Presentar una reclamación ante tu autoridad local de protección de datos.",
-              ].map((item) => (
-                <li key={item} className="flex gap-2">
-                  <span className="text-purple-400 mt-0.5 flex-shrink-0">—</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3">Para ejercer cualquiera de estos derechos, contáctanos en <a href="mailto:info@noctuaapp.com" className="text-purple-400 hover:text-purple-300 transition-colors">info@noctuaapp.com</a>.</p>
+            <h2 className="text-white font-semibold text-base mb-3">7. {t("privacy.s7_title")}</h2>
+            <p className="mb-3">{t("privacy.s7_intro")}</p>
+            <SimpleList text={t("privacy.s7_items")} />
+            <p className="mt-3">{renderWithLinks(t("privacy.s7_closing"), links)}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">8. Cookies</h2>
-            <p>Usamos únicamente cookies esenciales necesarias para la autenticación y la gestión de sesión, además de almacenamiento local del navegador (localStorage) para recordar preferencias como qué avisos ya has leído. No usamos cookies publicitarias ni de seguimiento. Ninguna red publicitaria de terceros tiene acceso a tus datos.</p>
+            <h2 className="text-white font-semibold text-base mb-3">8. {t("privacy.s8_title")}</h2>
+            <p>{t("privacy.s8_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">9. Servicios de terceros</h2>
-            <p>Usamos Supabase para los servicios de autenticación y base de datos. Supabase procesa los datos de acuerdo con el RGPD. No compartimos tus datos personales con ningún otro tercero salvo que la ley lo exija.</p>
+            <h2 className="text-white font-semibold text-base mb-3">9. {t("privacy.s9_title")}</h2>
+            <p className="mb-3">{t("privacy.s9_intro")}</p>
+            <LabelList text={t("privacy.s9_items")} />
+            <p className="mt-3">{t("privacy.s9_closing")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">10. Inicio de sesión con Google</h2>
-            <p className="mb-3">Noctua permite a los usuarios iniciar sesión con su cuenta de Google mediante Google OAuth 2.0. Cuando eliges iniciar sesión con Google, recibimos la siguiente información de Google:</p>
-            <ul className="space-y-2 pl-4">
-              {[
-                { label: "Nombre", desc: "Tu nombre de perfil registrado en Google." },
-                { label: "Correo electrónico", desc: "Usado para crear e identificar tu cuenta de Noctua." },
-                { label: "Foto de perfil", desc: "Mostrada opcionalmente en tu perfil de Noctua." },
-              ].map(({ label, desc }) => (
-                <li key={label} className="flex gap-2">
-                  <span className="text-purple-400 mt-0.5 flex-shrink-0">—</span>
-                  <span><span className="text-white/80 font-medium">{label}:</span> {desc}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3">No accedemos a tus contactos de Google, Google Drive, Gmail ni a ningún otro servicio de Google. Los datos recibidos de Google se usan únicamente para crear y gestionar tu cuenta de Noctua. Puedes revocar el acceso de Noctua a tu cuenta de Google en cualquier momento desde tu <a href="https://myaccount.google.com/permissions" target="_blank" className="text-purple-400 hover:text-purple-300 transition-colors">configuración de cuenta de Google</a>.</p>
+            <h2 className="text-white font-semibold text-base mb-3">10. {t("privacy.s10_title")}</h2>
+            <p className="mb-3">{t("privacy.s10_intro")}</p>
+            <LabelList text={t("privacy.s10_items")} />
+            <p className="mt-3">{renderWithLinks(t("privacy.s10_closing"), links)}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">11. Cambios en esta política</h2>
-            <p>Podemos actualizar esta Política de Privacidad de vez en cuando. Cuando lo hagamos, actualizaremos la fecha en la parte superior de esta página. El uso continuado de Noctua tras los cambios constituye la aceptación de la política actualizada.</p>
+            <h2 className="text-white font-semibold text-base mb-3">11. {t("privacy.s11_title")}</h2>
+            <p>{t("privacy.s11_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">12. Contacto</h2>
-            <p>Para cualquier pregunta sobre esta Política de Privacidad, contáctanos en <a href="mailto:info@noctuaapp.com" className="text-purple-400 hover:text-purple-300 transition-colors">info@noctuaapp.com</a>.</p>
+            <h2 className="text-white font-semibold text-base mb-3">12. {t("privacy.s12_title")}</h2>
+            <p>{renderWithLinks(t("privacy.s12_body"), links)}</p>
           </section>
         </div>
       </main>

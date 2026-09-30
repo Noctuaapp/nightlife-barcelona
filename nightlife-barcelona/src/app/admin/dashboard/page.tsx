@@ -5,6 +5,10 @@ import Link from "next/link"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 
+// Categorías fijas de essentials — mismas que usa /admin/essentials, así el desglose siempre
+// muestra las 11 aunque alguna tenga 0 elementos.
+const ESSENTIAL_CATEGORIES = ["Pharmacy", "ATM", "Food", "Transport", "Metro", "Nitbus", "Taxi", "Supermarket", "Hotel", "Casino", "Other"]
+
 export default function AdminDashboardPage() {
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [stats, setStats] = useState({
@@ -12,6 +16,17 @@ export default function AdminDashboardPage() {
     trendingClubs: 0, soldOutClubs: 0, featuredEvents: 0, soldOutEvents: 0,
     users: 0, favorites: 0, favoriteClubs: 0, favoriteEvents: 0, favoriteClubEvents: 0,
   })
+
+  // Info "de un vistazo" para el admin: qué necesita atención ahora mismo.
+  const [alerts, setAlerts] = useState({
+    newMessages: 0,
+    recentSignups: 0,
+    blockedUsers: 0,
+    clubsWithoutOwner: 0,
+    festivalsWithoutOwner: 0,
+  })
+
+  const [essentialsByCategory, setEssentialsByCategory] = useState<Record<string, number>>({})
 
   const [maintenanceMode, setMaintenanceMode] = useState(false)
   const [loadingMaintenance, setLoadingMaintenance] = useState(true)
@@ -38,12 +53,18 @@ export default function AdminDashboardPage() {
         { data: clubEventsData },
         { data: essentialsData },
         { data: adminStatsData },
+        { data: messagesData },
+        { data: usersData },
+        { data: profilesData },
       ] = await Promise.all([
-        supabase.from("clubs").select("id, trending, sold_out"),
-        supabase.from("events").select("id, featured, sold_out"),
+        supabase.from("clubs").select("id, trending, sold_out, owner_user_id"),
+        supabase.from("events").select("id, featured, sold_out, owner_user_id"),
         supabase.from("club_events").select("id, sold_out"),
-        supabase.from("essentials").select("id"),
+        supabase.from("essentials").select("id, category"),
         supabase.rpc("get_admin_stats"),
+        supabase.from("contact_messages").select("id, status"),
+        supabase.from("users_view").select("id, created_at"),
+        supabase.from("profiles").select("id, is_blocked"),
       ])
       const adminStats = Array.isArray(adminStatsData) ? adminStatsData[0] : adminStatsData
       setStats({
@@ -61,6 +82,22 @@ export default function AdminDashboardPage() {
         favoriteClubs: adminStats?.favorite_clubs || 0,
         favoriteEvents: adminStats?.favorite_events || 0,
         favoriteClubEvents: adminStats?.favorite_club_events || 0,
+      })
+
+      const byCategory: Record<string, number> = {}
+      for (const cat of ESSENTIAL_CATEGORIES) byCategory[cat] = 0
+      for (const item of essentialsData || []) {
+        byCategory[item.category] = (byCategory[item.category] || 0) + 1
+      }
+      setEssentialsByCategory(byCategory)
+
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      setAlerts({
+        newMessages: (messagesData || []).filter((m) => m.status === "new").length,
+        recentSignups: (usersData || []).filter((u) => u.created_at && new Date(u.created_at) >= sevenDaysAgo).length,
+        blockedUsers: (profilesData || []).filter((p) => p.is_blocked).length,
+        clubsWithoutOwner: (clubsData || []).filter((c) => !c.owner_user_id).length,
+        festivalsWithoutOwner: (eventsData || []).filter((e) => !e.owner_user_id).length,
       })
     }
     fetchStats()
@@ -132,6 +169,14 @@ export default function AdminDashboardPage() {
           </button>
         </div>
 
+        <StatsGroup title="Atención" icon="🔔" color="#f59e0b">
+          <StatCard title="Mensajes nuevos" value={alerts.newMessages} subtitle="Sin responder" href="/admin/messages" icon="💬" color="#f59e0b" />
+          <StatCard title="Altas (7 días)" value={alerts.recentSignups} subtitle="Usuarios nuevos" href="/admin/users" icon="🆕" color="#3b82f6" />
+          <StatCard title="Usuarios bloqueados" value={alerts.blockedUsers} subtitle="Cuentas suspendidas" href="/admin/users" icon="🚫" color="#ef4444" />
+          <StatCard title="Clubs sin dueño" value={alerts.clubsWithoutOwner} subtitle="Sin acceso vinculado" href="/admin/users" icon="🏛️" color="#a855f7" />
+          <StatCard title="Festivales sin dueño" value={alerts.festivalsWithoutOwner} subtitle="Sin acceso vinculado" href="/admin/users" icon="🎉" color="#ec4899" />
+        </StatsGroup>
+
         <StatsGroup title="Clubs" icon="🎵" color="#a855f7">
           <StatCard title="Total clubs" value={stats.clubs} subtitle="Active venues" href="/admin" icon="🏛️" color="#a855f7" />
           <StatCard title="Trending" value={stats.trendingClubs} subtitle="Live demand" href="/admin" icon="🔥" color="#10b981" />
@@ -148,6 +193,22 @@ export default function AdminDashboardPage() {
         <StatsGroup title="Essentials" icon="🗺️" color="#10b981">
           <StatCard title="Total essentials" value={stats.essentials} subtitle="Listed services" href="/admin/essentials" icon="📍" color="#10b981" />
         </StatsGroup>
+
+        <div className="rounded-[36px] border border-white/10 bg-white/[0.03] p-8">
+          <p className="text-sm font-bold uppercase tracking-[0.3em] text-zinc-500">Essentials por categoría</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            {ESSENTIAL_CATEGORIES.map((cat) => (
+              <Link
+                key={cat}
+                href="/admin/essentials"
+                className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm transition hover:bg-white/[0.08]"
+              >
+                <span className="font-bold text-white">{essentialsByCategory[cat] ?? 0}</span>
+                <span className="text-zinc-400">{cat}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
 
         <StatsGroup title="Users" icon="👤" color="#3b82f6">
           <StatCard title="Registered users" value={stats.users} subtitle="Noctua accounts" href="/admin/dashboard" icon="👥" color="#3b82f6" />

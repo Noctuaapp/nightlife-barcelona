@@ -13,7 +13,6 @@ const ADMIN_NAV = [
   { href: "/admin/events", label: "Events", icon: "🎉" },
   { href: "/admin/club-events", label: "Club nights", icon: "🎧" },
   { href: "/admin/essentials", label: "Essentials", icon: "📍" },
-  { href: "/admin/tickets", label: "Tickets", icon: "🎟️" },
   { href: "/admin/users", label: "Users", icon: "👥" },
   { href: "/admin/messages", label: "Messages", icon: "💬" },
   { href: "/admin/analytics", label: "Analytics", icon: "📈" },

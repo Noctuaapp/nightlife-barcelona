@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { isAuthorizedCronRequest } from "@/lib/cronAuth"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 10
@@ -22,7 +23,11 @@ function addOneYear(dateStr: string): string {
 // primero, así que la comparación con "hoy" usa date_end cuando existe.
 const NOT_OVER_FILTER = (today: string) => `date_end.lt.${today},and(date_end.is.null,date.lt.${today})`
 
-export async function GET() {
+export async function GET(req: Request) {
+  if (!isAuthorizedCronRequest(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const today = new Date().toISOString().slice(0, 10)
 
   const { data: pastEvents, error } = await supabase
