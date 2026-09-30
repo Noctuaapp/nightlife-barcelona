@@ -8,6 +8,7 @@ import { supabase } from "../../lib/supabase"
 import { useFavorites } from "../../context/FavoritesContext"
 import { useLanguage } from "../../context/LanguageContext"
 import { getLevelInfo } from "../../lib/xp"
+import ArrowIcon from "../../components/ui/ArrowIcon"
 
 const ACCENT_PATTERN = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g")
 
@@ -497,7 +498,7 @@ export default function ProfilePage() {
             </div>
             <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6 text-center">
               <Link href="/favorites" className="block">
-                <p className="text-3xl font-black text-purple-400">→</p>
+                <ArrowIcon className="mx-auto h-8 w-8 text-purple-400" />
                 <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">{t("profile.view_favorites")}</p>
               </Link>
             </div>
@@ -530,7 +531,7 @@ export default function ProfilePage() {
                           {isToday ? "🟢 Hoy" : dateLabel}{item.time ? ` · ${item.time}` : ""}
                         </p>
                       </div>
-                      <span className="text-zinc-500">→</span>
+                      <ArrowIcon className="h-4 w-4 shrink-0 text-zinc-500" />
                     </div>
                   )
                   return item.kind === "event" ? (
@@ -564,7 +565,7 @@ export default function ProfilePage() {
                         {visit.item_type === "event" ? "🎉 Evento" : "🏠 Club"} · {timeAgo(visit.created_at)}
                       </p>
                     </div>
-                    <span className="text-zinc-500">→</span>
+                    <ArrowIcon className="h-4 w-4 shrink-0 text-zinc-500" />
                   </Link>
                 ))}
               </div>

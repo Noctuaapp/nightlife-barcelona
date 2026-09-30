@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter, usePathname } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
@@ -441,7 +442,12 @@ export default function Header() {
           </div>
 
           <Link href="/" className="absolute left-1/2 -translate-x-1/2">
-            <img src="/noctua_logo.png" alt="Noctua" className="h-12 w-auto object-contain" style={{ maxWidth: "160px" }} />
+            {/* Antes era un <img> normal de 324KB sin optimizar, cargado en TODAS las páginas.
+                Con next/image (y el archivo ya reducido a 600px de ancho) el navegador recibe
+                una versión comprimida y en el formato óptimo (WebP/AVIF) según soporte, y con
+                priority=true se prioriza su carga porque es el elemento visible más arriba del
+                header en cada página. */}
+            <Image src="/noctua_logo.png" alt="Noctua" width={160} height={98} className="h-12 w-auto object-contain" style={{ maxWidth: "160px" }} priority />
           </Link>
 
           <div className="flex items-center gap-2">
@@ -619,6 +625,11 @@ export default function Header() {
           </Link>
           <Link href="/favorites" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
             <span className="text-xl">❤️</span>{t("nav.favorites")}
+          </Link>
+          {/* Antes no había ninguna forma de contactar con soporte desde el menú — solo se
+              llegaba a /contact si alguien encontraba el enlace en el footer. */}
+          <Link href="/contact" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
+            <span className="text-xl">💬</span>{t("nav.contact")}
           </Link>
         </div>
 

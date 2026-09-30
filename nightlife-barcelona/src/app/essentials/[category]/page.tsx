@@ -9,6 +9,7 @@ import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import { supabase } from "../../../lib/supabase"
 import { useLanguage } from "../../../context/LanguageContext"
+import ArrowIcon from "../../../components/ui/ArrowIcon"
 
 const categoryConfig: Record<string, { icon: string; color: string; key: string }> = {
   pharmacy: { icon: "💊", color: "#10b981", key: "Pharmacy" },
@@ -282,8 +283,8 @@ export default function EssentialCategoryPage() {
 
               <div className="mt-2.5 flex flex-wrap gap-1.5">
                 {item.maps_link && (
-                  <a href={item.maps_link} target="_blank" rel="noopener noreferrer" onClick={stopPropagation} className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-white hover:text-black">
-                    Maps →
+                  <a href={item.maps_link} target="_blank" rel="noopener noreferrer" onClick={stopPropagation} className="flex items-center gap-1 rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-white hover:text-black">
+                    Maps <ArrowIcon className="h-3 w-3" />
                   </a>
                 )}
                 {hasCoords && (
@@ -358,9 +359,9 @@ export default function EssentialCategoryPage() {
                     href={app.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-full border border-white/15 bg-white/[0.06] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white hover:text-black"
+                    className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white hover:text-black"
                   >
-                    {app.name} →
+                    {app.name} <ArrowIcon className="h-3.5 w-3.5" />
                   </a>
                 ))}
                 {TAXI_PHONES.map((p) => (

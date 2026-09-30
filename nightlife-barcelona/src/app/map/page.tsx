@@ -9,6 +9,7 @@ import { supabase } from "../../lib/supabase"
 import BottomNav from "../../components/layout/BottomNav"
 import { createSlug } from "../../lib/slug"
 import { useLanguage } from "../../context/LanguageContext"
+import ArrowIcon from "../../components/ui/ArrowIcon"
 
 type Club = {
   id: number
@@ -228,13 +229,13 @@ const DetailCard = ({
       {filter === "clubs" && (
         <Link href={`/clubs/${createSlug(name)}`} style={viewButtonStyle}>
           {t("map.viewClub")}
-          <span style={arrowCircleStyle}>→</span>
+          <span style={arrowCircleStyle}><ArrowIcon className="h-3.5 w-3.5" /></span>
         </Link>
       )}
       {filter === "events" && (
         <Link href={`/event/${createSlug(name)}`} style={viewButtonStyle}>
           {t("map.viewEvent")}
-          <span style={arrowCircleStyle}>→</span>
+          <span style={arrowCircleStyle}><ArrowIcon className="h-3.5 w-3.5" /></span>
         </Link>
       )}
     </>

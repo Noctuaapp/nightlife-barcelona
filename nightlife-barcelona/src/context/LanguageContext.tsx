@@ -43,7 +43,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setLoaded(false)
-    fetch(`/messages/${locale}.json?v=${Date.now()}`)
+    // Antes esto llevaba "?v=" + Date.now(), que invalidaba el caché del navegador en cada
+    // carga y obligaba a descargar el JSON entero (35-40KB) en cada página/navegación. Los
+    // archivos son estáticos y cambian solo cuando se despliega una versión nueva del sitio,
+    // así que dejamos que el navegador los cachee con normalidad.
+    fetch(`/messages/${locale}.json`)
       .then((res) => res.json())
       .then((data) => {
         setMessages(data)
@@ -59,7 +63,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       setFallbackMessages(messages)
       return
     }
-    fetch(`/messages/${FALLBACK_LOCALE}.json?v=${Date.now()}`)
+    fetch(`/messages/${FALLBACK_LOCALE}.json`)
       .then((res) => res.json())
       .then((data) => setFallbackMessages(data))
       .catch(() => {})

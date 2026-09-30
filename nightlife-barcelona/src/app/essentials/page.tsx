@@ -6,6 +6,7 @@ import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
+import ArrowIcon from "../../components/ui/ArrowIcon"
 
 const categoryConfig: Record<string, { icon: string; color: string }> = {
   Pharmacy:      { icon: "💊", color: "#10b981" },
@@ -271,7 +272,7 @@ export default function EssentialsPage() {
                           <p className="font-black text-white">{t(`essentials.category_names.${cat}`) || cat}</p>
                           <p className="mt-0.5 text-xs text-zinc-400">{count} {count === 1 ? t("essentials.locations") : t("essentials.locations_plural")}</p>
                         </div>
-                        <span className="ml-auto text-sm text-zinc-500 transition group-hover:translate-x-1 group-hover:text-white">→</span>
+                        <span className="ml-auto text-zinc-500 transition group-hover:translate-x-1 group-hover:text-white"><ArrowIcon className="h-4 w-4" /></span>
                       </Link>
                     )
                   })}
@@ -377,8 +378,8 @@ export default function EssentialsPage() {
                               <span className="rounded-full px-3 py-1 text-xs font-semibold backdrop-blur-xl" style={{ background: `${config.color}30`, color: "#fff" }}>
                                 {count} {locationsLabel}
                               </span>
-                              <span className="text-xs text-zinc-300 opacity-0 transition group-hover:opacity-100">
-                                {t("essentials.view_all")} →
+                              <span className="flex items-center gap-1 text-xs text-zinc-300 opacity-0 transition group-hover:opacity-100">
+                                {t("essentials.view_all")} <ArrowIcon className="h-3.5 w-3.5" />
                               </span>
                             </div>
                           </div>

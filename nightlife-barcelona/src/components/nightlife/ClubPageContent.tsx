@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useLanguage } from "../../context/LanguageContext"
 import FavoriteButton from "../favorites/FavoriteButton"
 import CheckInButton from "../gamification/CheckInButton"
@@ -412,11 +413,20 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
         className="relative flex h-[88vh] min-h-[620px] items-end overflow-hidden"
       >
         <div className="absolute inset-0 overflow-hidden">
-          <img
+          {/* Antes era un <img> normal: sin conversión a WebP/AVIF, sin tamaños responsive y sin
+              indicarle al navegador que es el elemento más importante de la página (LCP). Con
+              next/image y priority, el navegador la prioriza sobre cualquier otra imagen/script
+              y recibe una versión ya optimizada para su pantalla. unoptimized solo se activa para
+              el SVG de respaldo en línea (data:), que no tiene sentido pasar por el optimizador. */}
+          <Image
             src={club.image || FALLBACK_CLUB_IMAGE}
             alt={club.name}
+            fill
+            priority
+            sizes="100vw"
+            unoptimized={!club.image}
             style={{ transform: `translateY(${scrollY * 0.3}px) scale(1.12)` }}
-            className="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out will-change-transform"
+            className="object-cover motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out will-change-transform"
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-[#050308] via-black/45 to-black/10" />
@@ -604,7 +614,18 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                 onClick={() => setLightboxIndex(i)}
                 className={`group relative overflow-hidden rounded-3xl ${i === 0 ? "col-span-2 row-span-2" : "col-span-1 row-span-1"}`}
               >
-                <img src={src} alt={`${club.name} ${i + 1}`} className="h-full w-full object-cover transition duration-700 group-hover:scale-110" />
+                {/* Antes era <img> normal — la primera foto del mosaico (col-span-2 row-span-2) es
+                    el elemento más grande y probablemente el LCP de la página, así que lleva
+                    priority para que el navegador la cargue cuanto antes; el resto se cargan de
+                    forma perezosa (comportamiento por defecto de next/image). */}
+                <Image
+                  src={src}
+                  alt={`${club.name} ${i + 1}`}
+                  fill
+                  sizes={i === 0 ? "(max-width: 640px) 0px, 50vw" : "(max-width: 640px) 0px, 25vw"}
+                  priority={i === 0}
+                  className="object-cover transition duration-700 group-hover:scale-110"
+                />
                 <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
                 {i === 4 && allImages.length > 5 && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-lg font-black text-white">
@@ -623,7 +644,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                 onClick={() => setLightboxIndex(i)}
                 className="group relative h-[60vw] w-[78vw] shrink-0 snap-center overflow-hidden rounded-[28px]"
               >
-                <img src={src} alt={`${club.name} ${i + 1}`} className="h-full w-full object-cover transition duration-700 group-hover:scale-110" />
+                <Image src={src} alt={`${club.name} ${i + 1}`} fill sizes="78vw" className="object-cover transition duration-700 group-hover:scale-110" />
               </button>
             ))}
           </div>

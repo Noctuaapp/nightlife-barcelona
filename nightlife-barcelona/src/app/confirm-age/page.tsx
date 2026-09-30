@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
+import ArrowIcon from "../../components/ui/ArrowIcon"
 
 export default function ConfirmAgePage() {
   const router = useRouter()
@@ -109,9 +110,9 @@ export default function ConfirmAgePage() {
         <button
           onClick={handleConfirm}
           disabled={saving}
-          className="mt-6 w-full rounded-2xl bg-white py-4 font-bold text-black transition hover:scale-[1.02] disabled:opacity-50"
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-4 font-bold text-black transition hover:scale-[1.02] disabled:opacity-50"
         >
-          {saving ? "Guardando..." : "Continuar →"}
+          {saving ? "Guardando..." : (<>Continuar <ArrowIcon className="h-4 w-4" /></>)}
         </button>
       </div>
     </main>

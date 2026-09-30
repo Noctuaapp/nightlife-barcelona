@@ -950,7 +950,10 @@ export default function PlanPage() {
                           className="group flex items-center gap-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-3 transition hover:border-white/20"
                         >
                           <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl">
-                            <img src={event.image || "/events/gracia.jpg"} alt={event.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
+                            {/* Antes caía en "/events/gracia.jpg" (2,85MB sin comprimir) cuando el evento no
+                                tenía foto propia. Usamos el mismo FALLBACK_IMAGE (SVG en línea, 0 bytes de red)
+                                que ya se usa un poco más arriba para los clubs sin foto. */}
+                            <img src={event.image || FALLBACK_IMAGE} alt={event.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
                           </div>
                           <div className="min-w-0">
                             <p className="truncate font-bold text-white">{event.title}</p>

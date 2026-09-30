@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import FavoriteButton from "../favorites/FavoriteButton"
 import AttendanceButton from "../gamification/AttendanceButton"
 import NearbyVenuesSheet from "../nightlife/NearbyVenuesSheet"
@@ -338,11 +339,20 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
         className="relative flex h-[80vh] min-h-[560px] items-end overflow-hidden"
       >
         <div className="absolute inset-0 overflow-hidden">
-          <img
+          {/* Antes era un <img> normal: sin conversión a WebP/AVIF, sin tamaños responsive y sin
+              indicarle al navegador que es el elemento más importante de la página (LCP). Con
+              next/image y priority, el navegador la prioriza sobre cualquier otra imagen/script
+              y recibe una versión ya optimizada para su pantalla. unoptimized solo se activa para
+              el SVG de respaldo en línea (data:), que no tiene sentido pasar por el optimizador. */}
+          <Image
             src={event.image || FALLBACK_IMAGE}
             alt={event.title}
+            fill
+            priority
+            sizes="100vw"
+            unoptimized={!event.image}
             style={{ transform: `translateY(${scrollY * 0.3}px) scale(1.12)` }}
-            className="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out will-change-transform"
+            className="object-cover motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out will-change-transform"
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-[#050308] via-black/45 to-black/10" />
@@ -497,7 +507,16 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                 onClick={() => setLightboxIndex(i)}
                 className={`group relative overflow-hidden rounded-3xl ${i === 0 ? "col-span-2 row-span-2" : "col-span-1 row-span-1"}`}
               >
-                <img src={src} alt={`${event.title} ${i + 1}`} className="h-full w-full object-cover transition duration-700 group-hover:scale-110" />
+                {/* La primera foto del mosaico (col-span-2 row-span-2) es probablemente el LCP de la
+                    página, por eso lleva priority; el resto se cargan de forma perezosa. */}
+                <Image
+                  src={src}
+                  alt={`${event.title} ${i + 1}`}
+                  fill
+                  sizes={i === 0 ? "(max-width: 640px) 0px, 50vw" : "(max-width: 640px) 0px, 25vw"}
+                  priority={i === 0}
+                  className="object-cover transition duration-700 group-hover:scale-110"
+                />
                 {i === 4 && allImages.length > 5 && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-lg font-black text-white">
                     +{allImages.length - 5}
@@ -509,7 +528,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
           <div className="flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:hidden">
             {allImages.map((src: string, i: number) => (
               <button key={i} onClick={() => setLightboxIndex(i)} className="group relative h-[60vw] w-[78vw] shrink-0 snap-center overflow-hidden rounded-[28px]">
-                <img src={src} alt={`${event.title} ${i + 1}`} className="h-full w-full object-cover" />
+                <Image src={src} alt={`${event.title} ${i + 1}`} fill sizes="78vw" className="object-cover" />
               </button>
             ))}
           </div>
