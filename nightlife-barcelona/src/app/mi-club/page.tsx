@@ -44,6 +44,24 @@ type Club = {
   gallery?: string[] | null
   manual_photos?: boolean | null
   owner_user_id?: string | null
+  live_status?: string | null
+  live_status_updated_at?: string | null
+}
+
+const LIVE_STATUS_OPTIONS = [
+  { key: "tranquilo", label: "Tranquilo", emoji: "🟢", color: "bg-emerald-500" },
+  { key: "animado", label: "Animado", emoji: "🟡", color: "bg-amber-500" },
+  { key: "lleno", label: "Lleno / cola", emoji: "🔴", color: "bg-red-500" },
+] as const
+
+function timeAgoEs(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const ms = Date.now() - new Date(iso).getTime()
+  const mins = Math.max(0, Math.round(ms / 60000))
+  if (mins < 1) return "justo ahora"
+  if (mins < 60) return `hace ${mins} min`
+  const hours = Math.round(mins / 60)
+  return `hace ${hours} h`
 }
 
 const VENUE_TYPE_OPTIONS = ["Discoteca", "Pub", "Bar musical"]
@@ -195,6 +213,7 @@ export default function MiClubPage() {
   const [loadErrorMsg, setLoadErrorMsg] = useState("")
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [uploadingGallery, setUploadingGallery] = useState(false)
 
@@ -347,6 +366,29 @@ export default function MiClubPage() {
     }
     setSavedFlash(true)
     setTimeout(() => setSavedFlash(false), 3000)
+  }
+
+  // Estado en directo (cola/aforo). Se guarda al instante al tocar un botón — no espera a
+  // "Guardar cambios" porque esto es información que caduca en minutos, no una ficha que se
+  // revisa una vez. club_id ya identifica el club del dueño, así que no hace falta más que
+  // escribir live_status + un timestamp; ClubPageContent decide si está "reciente" (4h) para
+  // mostrarlo como en directo o descartarlo.
+  const setLiveStatus = async (status: string) => {
+    if (!club) return
+    setUpdatingStatus(true)
+    const nowIso = new Date().toISOString()
+    const { data, error } = await supabase
+      .from("clubs")
+      .update({ live_status: status, live_status_updated_at: nowIso })
+      .eq("id", club.id)
+      .select()
+      .maybeSingle()
+    setUpdatingStatus(false)
+    if (error) {
+      alert("Error al actualizar el estado: " + error.message)
+      return
+    }
+    setClub((data as Club) || { ...club, live_status: status, live_status_updated_at: nowIso })
   }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -521,6 +563,42 @@ export default function MiClubPage() {
           <p className="mt-3 max-w-xl text-sm text-zinc-400">
             Gestiona la información de tu ficha en Noctua. Los cambios se publican en cuanto los guardas.
           </p>
+
+          {/* Estado en directo: lo único de esta página que se publica al instante, sin botón de
+              "Guardar". Es la señal más valiosa que puede dar un local — cómo está la cola AHORA
+              mismo — y solo la tiene el propio local, así que la aislamos del resto del formulario. */}
+          <div className="mt-8 rounded-[28px] border border-emerald-500/20 bg-emerald-500/[0.04] p-6">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
+              <h2 className="text-sm font-black uppercase tracking-widest text-emerald-300">Estado en directo</h2>
+            </div>
+            <p className="mt-2 text-sm text-zinc-400">
+              Dile a la gente cómo está la cola ahora mismo. Se muestra en tu ficha durante 4 horas, luego desaparece solo.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {LIVE_STATUS_OPTIONS.map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  disabled={updatingStatus}
+                  onClick={() => setLiveStatus(opt.key)}
+                  className={`rounded-full px-5 py-3 text-sm font-black transition disabled:opacity-50 ${
+                    club.live_status === opt.key
+                      ? `${opt.color} text-white`
+                      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  }`}
+                >
+                  {opt.emoji} {opt.label}
+                </button>
+              ))}
+            </div>
+            {club.live_status && club.live_status_updated_at && (
+              <p className="mt-3 text-xs text-zinc-500">
+                Marcado como <strong className="text-zinc-300">{LIVE_STATUS_OPTIONS.find((o) => o.key === club.live_status)?.label}</strong>
+                {" "}· {timeAgoEs(club.live_status_updated_at)}
+              </p>
+            )}
+          </div>
 
           <div className="mt-10 grid gap-4 md:grid-cols-2">
             <div>

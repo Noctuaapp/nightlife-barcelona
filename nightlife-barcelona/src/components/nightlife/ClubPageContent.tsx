@@ -157,6 +157,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
   const [now, setNow] = useState(() => Date.now())
   const [mounted, setMounted] = useState(false)
   const [reviews, setReviews] = useState<any[]>([])
+  const [liveNotes, setLiveNotes] = useState<any[]>([])
   const heroRef = useRef<HTMLDivElement>(null)
 
   const accent = hashAccent(club.music || club.name || "noctua")
@@ -212,9 +213,26 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
         .order("rating", { ascending: false })
       if (data) setReviews(data)
     }
+    // Notas de check-in: a diferencia de las reseñas de Google (que pueden ser de hace meses),
+    // esto solo lo puede dejar alguien a quien el GPS acaba de confirmar en la puerta — así que
+    // se lee de una vista pública (club_live_notes) que no expone qué usuario la escribió, solo
+    // el texto y cuándo. Se filtran las de más de 6h aquí también, por si la vista no lo hiciera.
+    const loadLiveNotes = async () => {
+      const { data } = await supabase
+        .from("club_live_notes")
+        .select("*")
+        .eq("club_id", club.id)
+        .order("note_created_at", { ascending: false })
+        .limit(5)
+      if (data) {
+        const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000
+        setLiveNotes(data.filter((n) => n.note_created_at && new Date(n.note_created_at).getTime() > sixHoursAgo))
+      }
+    }
     loadRelated()
     loadFavCount()
     loadReviews()
+    loadLiveNotes()
   }, [club.id])
 
   const trackClick = async (eventType: string) => {
@@ -316,13 +334,33 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
 
   const ratingRounded = displayRating ? Math.round(displayRating) : 0
 
-  const energyLevel = club.sold_out
+  // Antes "energyLevel" era pura apariencia: se inventaba a partir de sold_out/queue/trending,
+  // estuviera el local abierto o cerrado, actualizado hoy o hace un mes. Ahora, si el propio
+  // local ha marcado su estado desde el portal mi-club en las últimas horas, usamos ese dato
+  // real (LIVE_STATUS_MAX_AGE_MS de margen); si no hay dato reciente, caemos al cálculo anterior
+  // como estimación — pero ya no lo mostramos como si fuera en directo (ver isLiveStatus abajo).
+  const LIVE_STATUS_MAX_AGE_MS = 4 * 60 * 60 * 1000 // 4h
+  const LIVE_STATUS_STYLES: Record<string, { label: string; bars: number; color: string }> = {
+    tranquilo: { label: "Tranquilo", bars: 1, color: "bg-emerald-400" },
+    animado: { label: "Animado", bars: 3, color: "bg-amber-400" },
+    lleno: { label: "Lleno", bars: 5, color: "bg-red-400" },
+  }
+  const liveStatusAgeMs = club.live_status_updated_at
+    ? Date.now() - new Date(club.live_status_updated_at).getTime()
+    : Infinity
+  const isLiveStatus = !!(club.live_status && LIVE_STATUS_STYLES[club.live_status] && liveStatusAgeMs < LIVE_STATUS_MAX_AGE_MS)
+
+  const energyLevel = isLiveStatus
+    ? LIVE_STATUS_STYLES[club.live_status]
+    : club.sold_out
     ? { label: "Lleno", bars: 5, color: "bg-red-400" }
     : club.queue && !/no queue|sin cola/i.test(club.queue)
     ? { label: "Animado", bars: 3, color: "bg-amber-400" }
     : club.trending
     ? { label: "Animado", bars: 3, color: "bg-amber-400" }
     : { label: "Tranquilo", bars: 1, color: "bg-emerald-400" }
+
+  const liveStatusMinsAgo = Number.isFinite(liveStatusAgeMs) ? Math.max(0, Math.round(liveStatusAgeMs / 60000)) : null
 
   const galleryImages: string[] = (Array.isArray(club.gallery)
     ? club.gallery
@@ -468,7 +506,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
               <p className="mt-5 text-xs font-bold uppercase tracking-[0.4em]" style={{ color: accent.from }}>
                 {club.music || "Barcelona nightlife"}
               </p>
-              <h1 className="mt-3 text-[13vw] font-black leading-[0.9] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+              <h1 className="font-display mt-3 text-[13vw] font-black leading-[0.9] text-white sm:text-6xl md:text-7xl lg:text-[5.5rem]">
                 {club.name}
               </h1>
             </div>
@@ -513,7 +551,15 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                     />
                   ))}
                 </span>
-                <span className="text-xs font-semibold text-zinc-300">{energyLevel.label} ahora</span>
+                <span className="text-xs font-semibold text-zinc-300">
+                  {energyLevel.label} ahora
+                  {isLiveStatus && (
+                    <span className="ml-1.5 inline-flex items-center gap-1 text-emerald-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
+                      en directo{liveStatusMinsAgo != null && liveStatusMinsAgo > 0 ? ` · hace ${liveStatusMinsAgo} min` : ""}
+                    </span>
+                  )}
+                </span>
               </span>
             </div>
 
@@ -674,8 +720,11 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
 
       <section id="club-content" className="mx-auto max-w-6xl scroll-mt-24 px-4 pt-16 pb-24 sm:px-6">
         <div className="grid gap-10 lg:grid-cols-3">
-          {/* LEFT */}
-          <div className="lg:col-span-2">
+          {/* LEFT — en móvil va DESPUÉS del sidebar (ver order-last de abajo): antes, comprar
+              entradas/guardar en favoritos quedaba al final del todo del scroll, detrás de la
+              descripción, pestañas y reseñas. En desktop no cambia nada (el grid ya los coloca
+              en columnas separadas). */}
+          <div className="order-last lg:order-none lg:col-span-2">
             <Reveal>
               <Card innerClassName="p-8">
                 <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">{t("club.experience")}</p>
@@ -766,32 +815,27 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                   </Reveal>
                 )}
 
-                {reviews.length > 0 && (
+                {/* Notas en directo: van ANTES de las reseñas de Google a propósito — son el
+                    contenido más fresco de la página (minutos, no meses) y el único que viene
+                    de alguien confirmado por GPS en la puerta ahora mismo. */}
+                {liveNotes.length > 0 && (
                   <Reveal>
                     <Card innerClassName="p-8">
-                      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
-                        <div className="flex items-center gap-4">
-                          <p className="text-4xl font-black text-white">{Number(displayRating).toFixed(1)}</p>
-                          <div>
-                            <Stars rating={displayRating || 0} size="h-4 w-4" color={accent.from} />
-                            <p className="mt-1 text-xs text-zinc-500">{reviewCount ? `${reviewCount} reseñas` : `${reviews.length} reseñas`}</p>
-                          </div>
-                        </div>
-                        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                          <Icon name="google" className="h-3.5 w-3.5" /> Reseñas de Google
-                        </span>
+                      <div className="mb-5 flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
+                        <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Notas en directo</p>
                       </div>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        {reviews.slice(0, 4).map((r) => (
-                          <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-bold text-white">{r.author_name}</p>
-                              {r.rating && <Stars rating={r.rating} color={accent.from} />}
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {liveNotes.map((n, i) => {
+                          const mins = Math.max(0, Math.round((Date.now() - new Date(n.note_created_at).getTime()) / 60000))
+                          const ago = mins < 1 ? "justo ahora" : mins < 60 ? `hace ${mins} min` : `hace ${Math.round(mins / 60)} h`
+                          return (
+                            <div key={i} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                              <p className="text-sm leading-relaxed text-zinc-300">"{n.note}"</p>
+                              <p className="mt-2 text-[11px] text-zinc-500">Alguien en la puerta · {ago}</p>
                             </div>
-                            {r.relative_time && <p className="mt-0.5 text-[11px] text-zinc-500">{r.relative_time}</p>}
-                            <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-zinc-400">{r.text}</p>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </Card>
                   </Reveal>
@@ -813,6 +857,39 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                                 <p className="text-sm leading-relaxed text-zinc-400">{f.a}</p>
                               </div>
                             </div>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  </Reveal>
+                )}
+
+                {/* Reseñas al final de la pestaña: es contenido de validación social que alguien
+                    lee cuando ya está convencido, no lo primero que necesita para decidir. */}
+                {reviews.length > 0 && (
+                  <Reveal>
+                    <Card innerClassName="p-8">
+                      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
+                        <div className="flex items-center gap-4">
+                          <p className="font-display text-4xl text-white">{Number(displayRating).toFixed(1)}</p>
+                          <div>
+                            <Stars rating={displayRating || 0} size="h-4 w-4" color={accent.from} />
+                            <p className="mt-1 text-xs text-zinc-500">{reviewCount ? `${reviewCount} reseñas` : `${reviews.length} reseñas`}</p>
+                          </div>
+                        </div>
+                        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                          <Icon name="google" className="h-3.5 w-3.5" /> Reseñas de Google
+                        </span>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {reviews.slice(0, 4).map((r) => (
+                          <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-bold text-white">{r.author_name}</p>
+                              {r.rating && <Stars rating={r.rating} color={accent.from} />}
+                            </div>
+                            {r.relative_time && <p className="mt-0.5 text-[11px] text-zinc-500">{r.relative_time}</p>}
+                            <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-zinc-400">{r.text}</p>
                           </div>
                         ))}
                       </div>
@@ -1026,7 +1103,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
         <Reveal className="w-full px-4 sm:px-6">
           <div style={accentGradient} className="mx-auto max-w-6xl rounded-[36px] px-8 py-14 text-center sm:py-20">
             <p className="text-xs font-bold uppercase tracking-[0.4em] text-white/80">¿Te vienes esta noche?</p>
-            <h2 className="mt-4 text-4xl font-black leading-tight text-white sm:text-6xl">Asegura tu entrada</h2>
+            <h2 className="font-display mt-4 text-4xl font-black leading-tight text-white sm:text-6xl">Asegura tu entrada</h2>
             <p className="mx-auto mt-4 max-w-xl text-white/85">
               Las mejores noches en {club.name} se llenan rápido. Compra ahora y evita la cola.
             </p>

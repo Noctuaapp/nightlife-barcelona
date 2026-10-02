@@ -111,13 +111,16 @@ export default function EventsSection() {
           <p className="col-span-3 text-center text-zinc-500 py-10">No events found.</p>
         ) : (
           filteredEvents.map((event, index) => (
+            // Misma forma de entrada que en /events (ver EventsExplorer.tsx): póster arriba,
+            // talón perforado abajo con los datos prácticos — para que un evento se reconozca
+            // como evento desde el primer vistazo, lo veas donde lo veas en la app.
             <Link
               href={`/event/${createSlug(event.title)}`}
               key={event.id}
-              className="group overflow-hidden rounded-[30px] border border-white/10 bg-black transition duration-500 hover:-translate-y-2 hover:border-white/20 fade-up"
+              className="group block overflow-hidden rounded-[26px] border border-white/10 bg-black transition duration-500 hover:-translate-y-2 hover:border-white/20 fade-up"
               style={{ animationDelay: `${index * 0.08}s` }}
             >
-              <div className="relative h-[420px] overflow-hidden">
+              <div className="relative h-[340px] overflow-hidden">
                 {event.image ? (
                   <Image
                     src={event.image}
@@ -172,13 +175,21 @@ export default function EventsSection() {
                   <h3 className="mt-2 text-3xl font-black tracking-tight text-white">
                     {event.title}
                   </h3>
-                  <div className="mt-5 flex items-center justify-between text-sm text-zinc-300">
-                    {event.start_time && <span>🕒 {event.start_time}</span>}
-                    <span>🎟 {event.price || "TBA"}</span>
-                  </div>
                   {event.description && (
                     <p className="mt-3 text-sm text-zinc-400 line-clamp-2">{event.description}</p>
                   )}
+                </div>
+              </div>
+
+              {/* Talón de la entrada */}
+              <div className="relative border-t border-dashed border-white/20 bg-black/40 px-6 py-5">
+                <span aria-hidden="true" className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-[#050505]" />
+                <span aria-hidden="true" className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-[#050505]" />
+                <div className="flex items-center justify-between gap-3 text-sm text-zinc-300">
+                  {event.start_time && <span>🕒 {event.start_time}</span>}
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-black">
+                    {event.price || "TBA"}
+                  </span>
                 </div>
               </div>
             </Link>

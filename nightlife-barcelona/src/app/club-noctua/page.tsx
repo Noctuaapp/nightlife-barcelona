@@ -42,9 +42,23 @@ const PERKS: Record<string, { active: string[]; soon: string[] }> = {
   },
 }
 
+// Insignias de barrio: no es una tabla nueva ni una columna nueva, es información que ya
+// existe (club_checkins + clubs.neighborhood) vista desde otro ángulo. Un check-in cuenta como
+// "una noche" en ese barrio; a partir de ahí, tres niveles según cuántas noches distintas lleva
+// en cada barrio — igual de reales que el XP, solo que agrupados por geografía en vez de en
+// total.
+type NeighborhoodBadge = { neighborhood: string; count: number }
+
+function badgeTier(count: number): { label: string; icon: string; color: string } {
+  if (count >= 6) return { label: "Leyenda", icon: "👑", color: "#a855f7" }
+  if (count >= 3) return { label: "Habitual", icon: "🔥", color: "#f59e0b" }
+  return { label: "Explorador", icon: "🧭", color: "#34d399" }
+}
+
 export default function ClubNoctuaPage() {
   const { t } = useLanguage()
   const [xp, setXp] = useState<number | null>(null)
+  const [neighborhoodBadges, setNeighborhoodBadges] = useState<NeighborhoodBadge[]>([])
 
   useEffect(() => {
     const load = async () => {
@@ -52,6 +66,27 @@ export default function ClubNoctuaPage() {
       if (!userData.user) return
       const { data } = await supabase.from("profiles").select("xp").eq("id", userData.user.id).maybeSingle()
       setXp(data?.xp ?? 0)
+
+      const { data: checkins } = await supabase
+        .from("club_checkins")
+        .select("club_id")
+        .eq("user_id", userData.user.id)
+
+      if (checkins && checkins.length > 0) {
+        const clubIds = Array.from(new Set(checkins.map((c) => c.club_id)))
+        const { data: clubsData } = await supabase.from("clubs").select("id, neighborhood").in("id", clubIds)
+        const neighborhoodById = new Map((clubsData || []).map((c) => [c.id, c.neighborhood || "Barcelona"]))
+
+        const counts: Record<string, number> = {}
+        for (const c of checkins) {
+          const n = neighborhoodById.get(c.club_id) || "Barcelona"
+          counts[n] = (counts[n] || 0) + 1
+        }
+        const badges = Object.entries(counts)
+          .map(([neighborhood, count]) => ({ neighborhood, count }))
+          .sort((a, b) => b.count - a.count)
+        setNeighborhoodBadges(badges)
+      }
     }
     load()
   }, [])
@@ -76,6 +111,40 @@ export default function ClubNoctuaPage() {
             </p>
           )}
         </div>
+
+        {neighborhoodBadges.length > 0 && (
+          <div className="mb-10">
+            <p className="text-xs font-semibold uppercase tracking-widest text-purple-400 mb-3">Barrios conquistados</p>
+            <p className="text-white/60 text-sm leading-relaxed max-w-xl mb-4">
+              Cada check-in cuenta como una noche en ese barrio. Tres check-ins y eres Habitual, seis y eres Leyenda.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {neighborhoodBadges.map((b) => {
+                const tier = badgeTier(b.count)
+                return (
+                  <div
+                    key={b.neighborhood}
+                    className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"
+                    style={{ borderColor: `${tier.color}40` }}
+                  >
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base"
+                      style={{ background: `${tier.color}22`, border: `1px solid ${tier.color}55` }}
+                    >
+                      {tier.icon}
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-white">{b.neighborhood}</p>
+                      <p className="text-[11px] text-zinc-500">
+                        {tier.label} · {b.count} {b.count === 1 ? "noche" : "noches"}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4">
           {LEVELS.map((level, i) => {

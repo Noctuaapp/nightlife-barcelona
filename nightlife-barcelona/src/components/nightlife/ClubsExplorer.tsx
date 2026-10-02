@@ -278,7 +278,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
           <button
             key={opt}
             onClick={() => onToggle(opt)}
-            className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium transition ${
+            className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium transition active:scale-95 ${
               selected.has(opt)
                 ? "text-white shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
                 : "border border-white/10 bg-white/[0.04] text-white hover:border-purple-400/30 hover:bg-white/[0.08]"
@@ -311,7 +311,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         <section className="px-4 pt-14">
           <div className="mx-auto max-w-7xl">
             <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("clubs.title")}</p>
-            <h1 className="mt-4 text-5xl font-black tracking-tight text-white md:text-6xl">{t("clubs.subtitle")}</h1>
+            <h1 className="font-display mt-4 text-5xl font-black text-white md:text-6xl">{t("clubs.subtitle")}</h1>
           </div>
         </section>
 
@@ -336,7 +336,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
 
             <button
               onClick={() => setOpenNow(!openNow)}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold transition ${
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold transition active:scale-95 ${
                 openNow
                   ? "border border-emerald-400/40 bg-emerald-400/15 text-emerald-300"
                   : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
@@ -350,7 +350,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
             </button>
             <button
               onClick={nearMe ? () => { setNearMe(false); setUserLat(null); setUserLng(null) } : requestNearMe}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition ${
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
                 nearMe ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
               style={nearMe ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
@@ -360,7 +360,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
             </button>
             <button
               onClick={() => setSelectedAttributes((s) => toggleInSet(s, "Trending"))}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition ${
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
                 selectedAttributes.has("Trending")
                   ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
                   : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
@@ -387,7 +387,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
 
             <button
               onClick={() => setFiltersOpen(!filtersOpen)}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold text-white transition ${
+              className={`flex shrink-0 items-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
                 filtersOpen ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
               style={filtersOpen ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
@@ -415,9 +415,16 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
           )}
         </div>
 
-        {/* ADVANCED FILTERS PANEL — todos multi-selección y combinables entre sí */}
-        {filtersOpen && (
-          <section className="mx-auto max-w-7xl px-4 pt-6">
+        {/* ADVANCED FILTERS PANEL — todos multi-selección y combinables entre sí. Se queda
+            siempre montado y anima su propia altura (grid-template-rows 0fr→1fr) en vez de
+            aparecer/desaparecer de golpe: la animación responde directamente a pulsar "Filtros",
+            no es un efecto suelto. */}
+        <section
+          className={`mx-auto grid max-w-7xl px-4 transition-[grid-template-rows,opacity] duration-300 ease-out ${
+            filtersOpen ? "grid-rows-[1fr] pt-6 opacity-100" : "grid-rows-[0fr] opacity-0"
+          }`}
+        >
+          <div className="overflow-hidden">
             <div className="space-y-6 rounded-[28px] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
               <ChipGroup
                 title="Estilo (elige varios)"
@@ -444,8 +451,8 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                 onToggle={(v) => setSelectedNeighborhoods((s) => toggleInSet(s, v))}
               />
             </div>
-          </section>
-        )}
+          </div>
+        </section>
 
         {/* Results count */}
         <section className="mx-auto max-w-7xl px-4 pt-8">

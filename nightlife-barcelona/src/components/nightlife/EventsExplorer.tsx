@@ -213,7 +213,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
         <section className="px-4 pt-14">
           <div className="mx-auto max-w-7xl">
             <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("events.title")}</p>
-            <h1 className="mt-4 text-5xl font-black tracking-tight text-white md:text-6xl">{t("events.subtitle")}</h1>
+            <h1 className="font-display mt-4 text-5xl font-black text-white md:text-6xl">{t("events.subtitle")}</h1>
           </div>
         </section>
 
@@ -238,7 +238,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
             <button
               onClick={nearMe ? () => { setNearMe(false); setUserLat(null); setUserLng(null) } : requestNearMe}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition ${
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
                 nearMe ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
               style={nearMe ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
@@ -249,7 +249,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
             <button
               onClick={() => setHidePast(!hidePast)}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition ${
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
                 hidePast ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
               style={hidePast ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
@@ -277,7 +277,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
               <button
                 key={f.key}
                 onClick={() => setSelectedFilters((s) => toggleInSet(s, f.key))}
-                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition ${
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition active:scale-95 ${
                   selectedFilters.has(f.key)
                     ? "text-white shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
                     : "border border-white/10 bg-white/[0.04] text-white hover:border-purple-400/30 hover:bg-white/[0.08]"
@@ -344,13 +344,19 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                   : null
               return (
                 <Reveal key={event.id} style={{ transitionDelay: `${Math.min(index, 8) * 60}ms` }}>
+                  {/* Antes era una tarjeta más (imagen + franja de chips abajo), igual que las de
+                      club — cualquier entrada se parecía a cualquier otra cosa de la app. Ahora
+                      tiene forma de entrada real: póster arriba, y debajo un talón separado por
+                      una línea perforada con muescas (los dos círculos -top-3, del color de fondo
+                      de la página, simulan el troquelado de una entrada física). Los datos
+                      prácticos — fecha, hora, precio — viven en el talón, no sobre la foto. */}
                   <Link
                     href={`/event/${createSlug(event.title)}`}
-                    className={`group block overflow-hidden rounded-[32px] border bg-white/[0.03] transition duration-500 hover:-translate-y-2 hover:border-purple-400/30 hover:shadow-[0_20px_60px_-15px_rgba(168,85,247,0.35)] ${
+                    className={`group block overflow-hidden rounded-[28px] border bg-white/[0.03] transition duration-500 hover:-translate-y-2 hover:border-purple-400/30 hover:shadow-[0_20px_60px_-15px_rgba(168,85,247,0.35)] ${
                       past ? "border-white/5 opacity-60" : "border-white/10"
                     }`}
                   >
-                    <div className="relative h-[460px] overflow-hidden">
+                    <div className="relative h-[380px] overflow-hidden">
                       {event.image ? (
                         <Image
                           src={event.image}
@@ -402,25 +408,33 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                         )}
                         <h2 className="mt-2 text-4xl font-black tracking-tight text-white">{event.title}</h2>
                         {event.description && <p className="mt-3 text-zinc-300 line-clamp-2">{event.description}</p>}
-                        <div className="mt-5 flex items-center justify-between text-sm text-zinc-300">
-                          <span>📍 {event.club_name || "Barcelona"}</span>
-                          <span>{past ? "Terminado" : dateEndLabel ? `${dateLabel} - ${dateEndLabel}` : dateLabel}</span>
+                      </div>
+                    </div>
+
+                    {/* Talón de la entrada */}
+                    <div className="relative border-t border-dashed border-white/20 bg-black/40 px-6 py-5">
+                      <span aria-hidden="true" className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-[#050505]" />
+                      <span aria-hidden="true" className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-[#050505]" />
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-white">
+                            {past ? "Terminado" : dateEndLabel ? `${dateLabel} - ${dateEndLabel}` : dateLabel}
+                          </p>
+                          <p className="mt-1 truncate text-xs text-zinc-500">
+                            📍 {event.club_name || "Barcelona"}
+                            {event.artist ? ` · 🎧 ${event.artist}` : ""}
+                          </p>
                         </div>
-                        <div className="mt-5 flex flex-wrap gap-3">
+                        <div className="flex shrink-0 items-center gap-2">
                           {(event.start_time || event.end_time) && (
-                            <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">
-                              🕒 {event.start_time}{event.end_time ? ` - ${event.end_time}` : ""}
-                            </div>
+                            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-300">
+                              {event.start_time}{event.end_time ? `-${event.end_time}` : ""}
+                            </span>
                           )}
                           {event.price && (
-                            <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">
-                              🎟 {event.price}
-                            </div>
-                          )}
-                          {event.artist && (
-                            <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">
-                              🎧 {event.artist}
-                            </div>
+                            <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-black">
+                              {event.price}
+                            </span>
                           )}
                         </div>
                       </div>

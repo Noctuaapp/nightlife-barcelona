@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { Manrope } from "next/font/google"
 import Header from "../layout/Header"
 import BottomNav from "../layout/BottomNav"
 import Footer from "../layout/Footer"
@@ -12,8 +11,6 @@ import { useLanguage } from "../../context/LanguageContext"
 import { createSlug } from "../../lib/slug"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import ArrowIcon from "../ui/ArrowIcon"
-
-const display = Manrope({ subsets: ["latin"], weight: ["700", "800"] })
 
 function isOpenNow(hours?: string): boolean | null {
   if (!hours) return null
@@ -236,7 +233,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
                 </div>
 
                 <h1
-                  className={`${display.className} fade-up mt-8 max-w-4xl text-[3.2rem] leading-[0.98] tracking-tight text-white md:text-7xl lg:text-[6.5rem]`}
+                  className="font-display fade-up mt-8 max-w-4xl text-[3.2rem] leading-[0.98] text-white md:text-7xl lg:text-[6.5rem]"
                   style={{ animationDelay: "0.08s" }}
                 >
                   {t("home.hero") || "Tu noche en Barcelona"}
@@ -330,7 +327,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
             <Reveal className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Esta noche</p>
-                <h2 className={`${display.className} mt-3 text-4xl tracking-tight md:text-5xl`}>Destacados</h2>
+                <h2 className="font-display mt-3 text-4xl md:text-5xl">Destacados</h2>
               </div>
               <div className="flex flex-wrap gap-2">
                 {TABS.map((tab) => (

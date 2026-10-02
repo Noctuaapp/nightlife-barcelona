@@ -37,6 +37,14 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
   const [error, setError] = useState("")
   const [justEarned, setJustEarned] = useState(false)
 
+  // Nota del check-in: lo único de verdad "en directo" que puede dejar alguien que ACABA de
+  // comprobarlo con el GPS — distinto de una reseña de Google, que puede ser de hace meses.
+  // Una nota por check-in (no por usuario), así que se guarda sobre la fila de hoy, no se crea
+  // una tabla nueva. noteSaved evita mostrar el formulario otra vez tras guardar.
+  const [note, setNote] = useState("")
+  const [noteSaved, setNoteSaved] = useState(false)
+  const [savingNote, setSavingNote] = useState(false)
+
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.auth.getUser()
@@ -46,17 +54,36 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
       const today = new Date().toISOString().slice(0, 10)
       const { data: existing } = await supabase
         .from("club_checkins")
-        .select("id")
+        .select("id, note")
         .eq("user_id", data.user.id)
         .eq("club_id", clubId)
         .eq("checkin_date", today)
         .maybeSingle()
 
       setCheckedInToday(!!existing)
+      if (existing?.note) setNoteSaved(true)
       setLoading(false)
     }
     load()
   }, [clubId])
+
+  const handleSaveNote = async () => {
+    if (!userId || !note.trim()) return
+    setSavingNote(true)
+    const today = new Date().toISOString().slice(0, 10)
+    const { error: noteError } = await supabase
+      .from("club_checkins")
+      .update({ note: note.trim().slice(0, 140), note_created_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .eq("club_id", clubId)
+      .eq("checkin_date", today)
+    setSavingNote(false)
+    if (noteError) {
+      console.log("CHECKIN NOTE ERROR:", noteError)
+      return
+    }
+    setNoteSaved(true)
+  }
 
   if (!latitude || !longitude) return null
 
@@ -150,6 +177,30 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
         <span className="absolute -top-3 right-2 rounded-full bg-purple-500 px-3 py-1 text-xs font-black text-white shadow-lg">
           +{XP_AMOUNTS.checkin} XP
         </span>
+      )}
+      {checkedInToday && !noteSaved && (
+        <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+          <p className="text-xs font-semibold text-zinc-400">¿Cómo está la noche? Déjale una nota a quien venga después.</p>
+          <div className="mt-2 flex gap-2">
+            <input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={140}
+              placeholder="Ej. cola corta, buen ambiente..."
+              className="flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none focus:border-purple-500/50"
+            />
+            <button
+              onClick={handleSaveNote}
+              disabled={savingNote || !note.trim()}
+              className="rounded-xl bg-purple-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-purple-400 disabled:opacity-50"
+            >
+              {savingNote ? "..." : "Publicar"}
+            </button>
+          </div>
+        </div>
+      )}
+      {checkedInToday && noteSaved && (
+        <p className="mt-2 text-center text-[11px] text-emerald-400">✓ Nota publicada — gracias por avisar</p>
       )}
       {!checkedInToday && (
         <p className="mt-2 text-center text-[11px] leading-snug text-zinc-500">

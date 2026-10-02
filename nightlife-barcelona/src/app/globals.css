@@ -24,12 +24,20 @@ body {
 
   color: var(--foreground);
 
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 
   margin: 0;
   padding: 0;
 
   overflow-x: hidden;
+}
+
+/* DISPLAY — reservada para titulares grandes (nombre del club/evento, portada, CTAs a toda
+   pantalla). No se usa en botones ni texto funcional: si está en todas partes, deja de ser
+   especial. Ver layout.tsx para la fuente (Unbounded). */
+.font-display {
+  font-family: var(--font-display), Arial, Helvetica, sans-serif;
+  letter-spacing: -0.02em;
 }
 
 /* PREMIUM SCROLLBAR */
@@ -69,6 +77,15 @@ body {
 .fade-up {
   animation: fadeUp 0.7s ease forwards;
 }
+
+/* Pantalla de carga (src/app/loading.tsx): el logo "respira" despacio en vez de un spinner
+   genérico. Definida aquí (no con styled-jsx en el propio archivo) porque loading.tsx es un
+   Server Component y styled-jsx exige un Client Component. */
+@keyframes breathe {
+  0%, 100% { opacity: 0.55; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
 button, a {
   cursor: pointer;
 }

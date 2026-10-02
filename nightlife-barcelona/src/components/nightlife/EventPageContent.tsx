@@ -394,7 +394,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
               <p className="mt-5 text-xs font-bold uppercase tracking-[0.4em]" style={{ color: accent.from }}>
                 {event.music || "Barcelona"}
               </p>
-              <h1 className="mt-3 text-[11vw] font-black leading-[0.9] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-[5rem]">
+              <h1 className="font-display mt-3 text-[11vw] font-black leading-[0.9] text-white sm:text-6xl md:text-7xl lg:text-[5rem]">
                 {event.title}
               </h1>
             </div>
