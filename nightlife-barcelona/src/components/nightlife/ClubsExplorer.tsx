@@ -72,6 +72,8 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   const [nearMe, setNearMe] = useState(false)
   const [userLat, setUserLat] = useState<number | null>(null)
   const [userLng, setUserLng] = useState<number | null>(null)
+  const [nearMeLoading, setNearMeLoading] = useState(false)
+  const [nearMeError, setNearMeError] = useState("")
   const [sortBy, setSortBy] = useState<"recommended" | "rating" | "name" | "distance">("recommended")
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
@@ -249,13 +251,37 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     setSearch("")
   }
 
+  // Antes esto no tenía callback de error ni estado de carga: si el móvil denegaba el permiso,
+  // tardaba (GPS en frío dentro de un local puede tardar bastante) o el navegador bloqueaba la
+  // geolocalización por no estar en un gesto directo del usuario, el botón "Cerca" simplemente
+  // no hacía nada — parecía roto, sin ningún mensaje. Ahora hay carga visible, mensaje de error
+  // explicado (incluyendo qué hacer) y un timeout para no dejarlo colgado indefinidamente.
   const requestNearMe = () => {
-    if (!navigator.geolocation) return
-    navigator.geolocation.getCurrentPosition((pos) => {
-      setUserLat(pos.coords.latitude)
-      setUserLng(pos.coords.longitude)
-      setNearMe(true)
-    })
+    setNearMeError("")
+    if (!navigator.geolocation) {
+      setNearMeError("Tu navegador no permite compartir ubicación.")
+      return
+    }
+    setNearMeLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLat(pos.coords.latitude)
+        setUserLng(pos.coords.longitude)
+        setNearMe(true)
+        setNearMeLoading(false)
+      },
+      (err) => {
+        setNearMeLoading(false)
+        if (err.code === err.PERMISSION_DENIED) {
+          setNearMeError("Necesitamos tu ubicación — revisa los permisos de ubicación de tu navegador para esta web.")
+        } else if (err.code === err.TIMEOUT) {
+          setNearMeError("No hemos podido obtener tu ubicación a tiempo. Inténtalo de nuevo.")
+        } else {
+          setNearMeError("No hemos podido obtener tu ubicación. Inténtalo de nuevo.")
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    )
   }
 
   const activeFilterCount = selectedGenres.size + selectedAttributes.size + selectedAges.size + selectedNeighborhoods.size
@@ -311,7 +337,10 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         <section className="px-4 pt-14">
           <div className="mx-auto max-w-7xl">
             <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("clubs.title")}</p>
-            <h1 className="font-display mt-4 text-5xl font-black text-white md:text-6xl">{t("clubs.subtitle")}</h1>
+            {/* text-5xl fijo se salía de un móvil de 375px con la fuente display nueva — igual
+                que el titular de la home (ver HomeClient.tsx). break-words + tamaño menor en
+                mobile. */}
+            <h1 className="font-display mt-4 break-words text-4xl font-black leading-[1.05] text-white sm:text-5xl md:text-6xl">{t("clubs.subtitle")}</h1>
           </div>
         </section>
 
@@ -350,13 +379,14 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
             </button>
             <button
               onClick={nearMe ? () => { setNearMe(false); setUserLat(null); setUserLng(null) } : requestNearMe}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
+              disabled={nearMeLoading}
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 disabled:opacity-60 ${
                 nearMe ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
               style={nearMe ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
             >
               <LocationIcon className="h-4 w-4" />
-              Cerca
+              {nearMeLoading ? "Localizando..." : "Cerca"}
             </button>
             <button
               onClick={() => setSelectedAttributes((s) => toggleInSet(s, "Trending"))}
@@ -396,6 +426,10 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
               Filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
             </button>
           </div>
+
+          {nearMeError && (
+            <p className="mx-auto mt-3 max-w-7xl px-4 text-xs font-semibold text-red-400">⚠️ {nearMeError}</p>
+          )}
 
           {activeFilters.length > 0 && (
             <div className="mx-auto mt-3 flex max-w-7xl flex-wrap items-center gap-2 px-4">

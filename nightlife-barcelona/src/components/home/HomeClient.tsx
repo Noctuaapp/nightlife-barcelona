@@ -232,8 +232,13 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
                   Barcelona · En directo
                 </div>
 
+                {/* Antes era text-[3.2rem] fijo desde el móvil más pequeño: con la fuente display
+                    nueva (Unbounded, más ancha que la Manrope que había antes) el titular en
+                    español ("Descubre Barcelona al anochecer.") se salía de la pantalla en un
+                    375px — se veía cortado a media palabra. break-words + un tamaño menor en
+                    mobile lo arregla sin tocar nada en desktop/tablet. */}
                 <h1
-                  className="font-display fade-up mt-8 max-w-4xl text-[3.2rem] leading-[0.98] text-white md:text-7xl lg:text-[6.5rem]"
+                  className="font-display fade-up mt-8 max-w-4xl break-words text-[2.3rem] leading-[1.05] text-white sm:text-[3.2rem] sm:leading-[0.98] md:text-7xl lg:text-[6.5rem]"
                   style={{ animationDelay: "0.08s" }}
                 >
                   {t("home.hero") || "Tu noche en Barcelona"}
