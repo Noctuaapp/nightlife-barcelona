@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { isOverBudget, recordGoogleCalls, createCounter, googleFetch, fetchRichData } from "@/lib/googlePlacesBudget"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -87,6 +88,15 @@ export async function GET(req: Request) {
   const BATCH_SIZE = 4
   const PHOTOS_PER_EVENT = 4
 
+  // Freno de seguridad: si hoy ya se ha llegado al límite diario compartido entre los 3 crons
+  // (GOOGLE_PLACES_DAILY_LIMIT, ver src/lib/googlePlacesBudget.ts), no se hace ninguna llamada
+  // de pago a Google en este ciclo — se reintenta al día siguiente.
+  const budget = await isOverBudget(supabase)
+  if (budget.over) {
+    return NextResponse.json({ skipped: true, reason: "daily_budget_reached", usedToday: budget.used })
+  }
+  const counter = createCounter()
+
   // Paso 0: eventos nuevos sin google_place_id -> se lo asignamos aquí, comprobando que el
   // nombre se parece de verdad Y que no sea un país/región/localidad entera.
   const { data: newEvents } = await supabase
@@ -100,7 +110,7 @@ export async function GET(req: Request) {
     (newEvents || []).map(async (ev) => {
       const query = `${ev.title} ${ev.address || ev.club_name || ""} Barcelona`.trim()
       try {
-        const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+        const res = await googleFetch(counter, "https://places.googleapis.com/v1/places:searchText", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -159,8 +169,11 @@ export async function GET(req: Request) {
       try {
         // languageCode=es hace que Google traduzca automáticamente el texto de las reseñas al
         // castellano — sin esto, Google devuelve las reseñas en inglés por defecto.
-        const detailsRes = await fetch(`https://places.googleapis.com/v1/places/${ev.google_place_id}?languageCode=es`, {
-          headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "displayName,types,rating,userRatingCount,reviews,photos" },
+        // reviews/photos solo se piden si GOOGLE_PLACES_FETCH_RICH_DATA está activado: ese
+        // fieldmask cae en el tier "Enterprise + Atmosphere" (mucho más caro) en vez del básico.
+        const fields = fetchRichData() ? "displayName,types,rating,userRatingCount,reviews,photos" : "displayName,types,rating,userRatingCount"
+        const detailsRes = await googleFetch(counter, `https://places.googleapis.com/v1/places/${ev.google_place_id}?languageCode=es`, {
+          headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": fields },
         })
         const data = await detailsRes.json()
         const googleName = data?.displayName?.text || ""
@@ -187,7 +200,7 @@ export async function GET(req: Request) {
         const photoResults = await Promise.all(
           (data.photos || []).slice(0, PHOTOS_PER_EVENT).map(async (p: any) => {
             try {
-              const photoRes = await fetch(`https://places.googleapis.com/v1/${p.name}/media?maxWidthPx=1000&key=${apiKey}`)
+              const photoRes = await googleFetch(counter, `https://places.googleapis.com/v1/${p.name}/media?maxWidthPx=1000&key=${apiKey}`)
               const buffer = await photoRes.arrayBuffer()
               const fileName = `${ev.id}/${p.name.split("/").pop()}.jpg`
               await supabase.storage.from("event-photos").upload(fileName, Buffer.from(buffer), { contentType: "image/jpeg", upsert: true })
@@ -231,10 +244,14 @@ export async function GET(req: Request) {
   )
 
   const remaining = (totalWithPlaceId ?? 0) - (alreadyRefreshed ?? 0) - results.length
+
+  await recordGoogleCalls(supabase, counter.count)
+
   return NextResponse.json({
     newlyAssigned,
     processed: results.length,
     remaining: remaining < 0 ? 0 : remaining,
+    googleCallsThisRun: counter.count,
     results,
   })
 }

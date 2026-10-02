@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { isOverBudget, recordGoogleCalls, createCounter, googleFetch } from "@/lib/googlePlacesBudget"
+import { isOverBudget, recordGoogleCalls, createCounter, googleFetch, fetchRichData } from "@/lib/googlePlacesBudget"
 import { isAuthorizedCronRequest } from "@/lib/cronAuth"
 
 export const dynamic = "force-dynamic"
@@ -95,10 +95,13 @@ async function textSearch(counter: ReturnType<typeof createCounter>, query: stri
 async function placeDetails(counter: ReturnType<typeof createCounter>, placeId: string) {
   // languageCode=es hace que Google traduzca automáticamente el texto de las reseñas al
   // castellano — sin esto, Google devuelve las reseñas en inglés por defecto.
+  // reviews/photos solo se piden si GOOGLE_PLACES_FETCH_RICH_DATA está activado: ese fieldmask
+  // cae en el tier "Enterprise + Atmosphere" (mucho más caro) en vez del básico.
+  const fields = fetchRichData() ? "displayName,types,rating,userRatingCount,reviews,photos" : "displayName,types,rating,userRatingCount"
   const res = await googleFetch(counter, `https://places.googleapis.com/v1/places/${placeId}?languageCode=es`, {
     headers: {
       "X-Goog-Api-Key": GOOGLE_KEY,
-      "X-Goog-FieldMask": "displayName,types,rating,userRatingCount,reviews,photos",
+      "X-Goog-FieldMask": fields,
     },
   })
   if (!res.ok) return null
