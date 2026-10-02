@@ -1,20 +1,19 @@
-// Helpers de geolocalización compartidos. El cálculo de distancia (Haversine) ya vivía
-// duplicado dentro de CheckInButton; aquí se centraliza para reutilizarlo en cualquier
-// función que necesite "qué tengo cerca" (como la de locales cercanos si te dejan sin entrar).
-
-export function distanceInMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
+// Utilidad de distancia compartida — Haversine. "distanceInMeters" y "formatDistance" (en
+// metros) ya existían y los usa NearbyVenuesSheet.tsx; se mantienen con la misma firma para no
+// romper nada que ya dependa de ellas. Lo único añadido aquí es reutilizar esta misma función en
+// vez de que cada sitio (ClubsExplorer, EventsExplorer, /essentials, metro/taxi en ClubPageContent)
+// tenga su propia copia pegada del cálculo.
+export function distanceInMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000
-  const toRad = (v: number) => (v * Math.PI) / 180
-  const dLat = toRad(lat2 - lat1)
-  const dLon = toRad(lon2 - lon1)
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
   const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-// Formatea metros a algo legible: "180 m" por debajo de 1km, "1.2 km" a partir de ahí.
-export function formatDistance(meters: number) {
-  if (meters < 1000) return `${Math.round(meters / 10) * 10} m`
+export function formatDistance(meters: number): string {
+  if (meters < 1000) return `${Math.round(meters)} m`
   return `${(meters / 1000).toFixed(1)} km`
 }

@@ -534,6 +534,8 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                   hasFoosball={club.has_foosball}
                   discountInfo={club.discount_info}
                   freeEntryInfo={club.free_entry_info}
+                  liveStatus={club.live_status}
+                  liveStatusUpdatedAt={club.live_status_updated_at}
                 />
               </Reveal>
             ))

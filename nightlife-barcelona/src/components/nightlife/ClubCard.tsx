@@ -28,16 +28,35 @@ interface ClubCardProps {
   hasFoosball?: boolean
   discountInfo?: string
   freeEntryInfo?: string
+  // Estado en directo marcado por el propio local desde /mi-club (ver ClubPageContent.tsx para
+  // la misma lógica de "reciente" — 4h). Si no hay dato o está caducado, no se muestra nada: es
+  // mejor no decir nada que enseñar un estado de hace dos días como si fuera de ahora mismo.
+  liveStatus?: string | null
+  liveStatusUpdatedAt?: string | null
+}
+
+const LIVE_STATUS_MAX_AGE_MS = 4 * 60 * 60 * 1000
+const LIVE_STATUS_BADGE: Record<string, { label: string; dot: string }> = {
+  tranquilo: { label: "Tranquilo", dot: "bg-emerald-400" },
+  animado: { label: "Animado", dot: "bg-amber-400" },
+  lleno: { label: "Lleno", dot: "bg-red-400" },
 }
 
 export default function ClubCard({
   id, name, music, area, price, hours, image, rating, people, badges = [], vip, lgtbi_friendly, verified,
-  hasFoosball, discountInfo, freeEntryInfo,
+  hasFoosball, discountInfo, freeEntryInfo, liveStatus, liveStatusUpdatedAt,
 }: ClubCardProps) {
   const [liveBadges, setLiveBadges] = useState(badges)
   const router = useRouter()
   const slug = createSlug(name)
   const { t } = useLanguage()
+
+  const isLiveStatusFresh =
+    !!liveStatus &&
+    !!liveStatusUpdatedAt &&
+    LIVE_STATUS_BADGE[liveStatus] &&
+    Date.now() - new Date(liveStatusUpdatedAt).getTime() < LIVE_STATUS_MAX_AGE_MS
+  const liveStatusInfo = isLiveStatusFresh ? LIVE_STATUS_BADGE[liveStatus as string] : null
 
   return (
     <Link href={`/clubs/${slug}`} className="group block overflow-hidden rounded-[30px] border border-white/10 bg-black transition duration-500 hover:-translate-y-2 hover:border-white/20">
@@ -62,6 +81,12 @@ export default function ClubCard({
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
 
         <div className="absolute left-5 top-5 flex flex-wrap gap-2">
+          {liveStatusInfo && (
+            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/60 px-3 py-2 text-xs font-semibold text-white backdrop-blur-xl">
+              <span className={`h-1.5 w-1.5 rounded-full ${liveStatusInfo.dot} motion-safe:animate-pulse`} />
+              {liveStatusInfo.label} ahora
+            </div>
+          )}
           {liveBadges?.slice(0, 2).map((badge, index) => (
             <button key={badge} onClick={(e) => {
               e.preventDefault()

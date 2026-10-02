@@ -6,6 +6,7 @@ import Image from "next/image"
 import { useLanguage } from "../../context/LanguageContext"
 import FavoriteButton from "../favorites/FavoriteButton"
 import CheckInButton from "../gamification/CheckInButton"
+import AttendanceButton from "../gamification/AttendanceButton"
 import NearbyVenuesSheet from "../nightlife/NearbyVenuesSheet"
 import ClubMap from "../map/ClubMap"
 import ClubNightsCalendar from "../nightlife/ClubNightsCalendar"
@@ -13,6 +14,9 @@ import TransportButtons from "../ui/TransportButtons"
 import { supabase } from "../../lib/supabase"
 import { FALLBACK_IMAGE as FALLBACK_CLUB_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
+import { getNightBusLine, splitNightBusCodes, nightBusStopsUrl } from "../../lib/nightBuses"
+import { nearestMetroStations } from "../../lib/metroStations"
+import { distanceInMeters, formatDistance } from "../../lib/geo"
 
 const ACCENT_PALETTE = [
   { from: "#8b5cf6", to: "#ec4899", glow: "139,92,246" },
@@ -158,6 +162,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
   const [mounted, setMounted] = useState(false)
   const [reviews, setReviews] = useState<any[]>([])
   const [liveNotes, setLiveNotes] = useState<any[]>([])
+  const [nearestTaxi, setNearestTaxi] = useState<{ name: string; address: string | null; distanceMeters: number } | null>(null)
   const heroRef = useRef<HTMLDivElement>(null)
 
   const accent = hashAccent(club.music || club.name || "noctua")
@@ -229,10 +234,30 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
         setLiveNotes(data.filter((n) => n.note_created_at && new Date(n.note_created_at).getTime() > sixHoursAgo))
       }
     }
+    // Parada de taxis más cercana: se reutiliza la tabla "essentials" (categoría Taxi) que ya
+    // alimenta /essentials, en vez de pedirle al admin que rellene un campo de taxi club a club
+    // que, como pasaba con metro y bus nocturno, en la práctica se quedaría vacío casi siempre.
+    const loadNearestTaxi = async () => {
+      if (!club.latitude || !club.longitude) return
+      const { data } = await supabase
+        .from("essentials")
+        .select("name, address, latitude, longitude")
+        .eq("category", "Taxi")
+        .eq("hidden", false)
+      if (!data || data.length === 0) return
+      const withDistance = data
+        .filter((e: any) => e.latitude && e.longitude)
+        .map((e: any) => ({ name: e.name, address: e.address, distanceMeters: distanceInMeters(club.latitude, club.longitude, e.latitude, e.longitude) }))
+        .sort((a: any, b: any) => a.distanceMeters - b.distanceMeters)
+      if (withDistance.length > 0 && withDistance[0].distanceMeters <= 1500) {
+        setNearestTaxi(withDistance[0])
+      }
+    }
     loadRelated()
     loadFavCount()
     loadReviews()
     loadLiveNotes()
+    loadNearestTaxi()
   }, [club.id])
 
   const trackClick = async (eventType: string) => {
@@ -361,6 +386,13 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
     : { label: "Tranquilo", bars: 1, color: "bg-emerald-400" }
 
   const liveStatusMinsAgo = Number.isFinite(liveStatusAgeMs) ? Math.max(0, Math.round(liveStatusAgeMs / 60000)) : null
+
+  // Metro y "distancia a Plaça Catalunya" calculados por geolocalización, no por un campo que
+  // haya que rellenar a mano local a local (ver src/lib/metroStations.ts). PLAÇA_CATALUNYA son
+  // las coordenadas fijas de la plaza, que es donde para casi toda la red Nitbus.
+  const PLACA_CATALUNYA = { lat: 41.3869, lon: 2.1701 }
+  const nearbyMetro = club.latitude && club.longitude ? nearestMetroStations(club.latitude, club.longitude) : []
+  const distToCatalunyaMeters = club.latitude && club.longitude ? distanceInMeters(club.latitude, club.longitude, PLACA_CATALUNYA.lat, PLACA_CATALUNYA.lon) : null
 
   const galleryImages: string[] = (Array.isArray(club.gallery)
     ? club.gallery
@@ -781,32 +813,132 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                   </Reveal>
                 )}
 
-                {(club.metro_lines || club.night_buses) && (
+                {(club.metro_lines || club.night_buses || nearbyMetro.length > 0 || distToCatalunyaMeters != null || nearestTaxi) && (
                   <Reveal>
                     <Card innerClassName="p-8">
                       <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 mb-6">{t("club.night_info")}</p>
-                      <div className="grid gap-6 sm:grid-cols-2">
-                        {club.metro_lines && (
+                      <div className="flex flex-col gap-7">
+                        {/* Metro: si el admin puso líneas a mano se muestran como venían (más
+                            preciso, confiamos en el dato humano); si no, calculamos la estación
+                            real más cercana por coordenadas, que es lo que había cero veces de
+                            las 300+ fichas de club — antes este bloque entero no aparecía casi
+                            nunca porque nadie rellenaba el campo a mano. */}
+                        {(club.metro_lines || nearbyMetro.length > 0) && (
                           <div>
                             <p className="text-xs text-zinc-500">{t("club.metro")}</p>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {club.metro_lines.split(",").map((line: string) => (
-                                <span key={line.trim()} className="rounded-full border border-red-500/30 bg-red-500/20 px-3 py-1 text-sm font-bold text-red-300">
-                                  {line.trim()}
-                                </span>
-                              ))}
-                            </div>
+                            {club.metro_lines ? (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {club.metro_lines.split(",").map((line: string) => (
+                                  <span key={line.trim()} className="rounded-full border border-red-500/30 bg-red-500/20 px-3 py-1 text-sm font-bold text-red-300">
+                                    {line.trim()}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="mt-2 flex flex-col gap-2">
+                                {nearbyMetro.map((s) => (
+                                  <div key={s.name} className="flex items-center gap-2.5 rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-2.5">
+                                    <span className="shrink-0 rounded-full border border-red-500/30 bg-red-500/20 px-2.5 py-1 text-xs font-bold text-red-300">
+                                      🚇 {formatDistance(s.distanceMeters)}
+                                    </span>
+                                    <span className="text-xs font-semibold leading-snug text-zinc-300">{s.name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
-                        {club.night_buses && (
+
+                        {(club.night_buses || distToCatalunyaMeters != null) && (
                           <div>
                             <p className="text-xs text-zinc-500">{t("club.night_buses")}</p>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {club.night_buses.split(",").map((bus: string) => (
-                                <span key={bus.trim()} className="rounded-full border border-blue-500/30 bg-blue-500/20 px-3 py-1 text-sm font-bold text-blue-300">
-                                  {bus.trim()}
-                                </span>
-                              ))}
+                            {club.night_buses ? (
+                              <div className="mt-2 flex flex-col gap-2">
+                                {splitNightBusCodes(club.night_buses).map((raw: string) => {
+                                  const line = getNightBusLine(raw)
+                                  // Si el código no lo reconocemos (línea nueva, typo, etc.), en vez de
+                                  // dejar un texto muerto mandamos a buscar paradas de bus nocturno
+                                  // cerca del local directamente en Google Maps — siempre clicable y
+                                  // útil, aunque no tengamos el dato verificado nosotros.
+                                  const mapsSearchUrl =
+                                    club.latitude && club.longitude
+                                      ? `https://www.google.com/maps/search/parada+bus+nocturno/@${club.latitude},${club.longitude},17z`
+                                      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`parada bus nocturno ${club.name} Barcelona`)}`
+                                  return (
+                                    <div key={raw} className="flex items-start gap-2.5 rounded-2xl border border-blue-500/20 bg-blue-500/10 px-3 py-2.5">
+                                      <span className="shrink-0 rounded-full border border-blue-500/30 bg-blue-500/20 px-2.5 py-1 text-xs font-bold text-blue-300">
+                                        {line ? line.code : raw}
+                                      </span>
+                                      {line ? (
+                                        <span className="text-xs leading-snug text-zinc-300">
+                                          {line.route}
+                                          {line.catalunya && <span className="text-zinc-500"> · para en Pl. Catalunya</span>}
+                                          {" · "}
+                                          <a
+                                            href={nightBusStopsUrl(line.code)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="font-semibold text-blue-300 underline underline-offset-2 hover:text-blue-200"
+                                          >
+                                            Ver todas las paradas
+                                          </a>
+                                        </span>
+                                      ) : (
+                                        <a
+                                          href={mapsSearchUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-xs font-semibold leading-snug text-blue-300 underline underline-offset-2 hover:text-blue-200"
+                                        >
+                                          Ver paradas cercanas en Google Maps
+                                        </a>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            ) : (
+                              distToCatalunyaMeters != null && (
+                                <div className="mt-2 flex items-start gap-2.5 rounded-2xl border border-blue-500/20 bg-blue-500/10 px-3 py-2.5">
+                                  <span className="shrink-0 rounded-full border border-blue-500/30 bg-blue-500/20 px-2.5 py-1 text-xs font-bold text-blue-300">
+                                    🌙 {formatDistance(distToCatalunyaMeters)}
+                                  </span>
+                                  <span className="text-xs leading-snug text-zinc-300">
+                                    Plaça Catalunya, donde para casi toda la red de autobuses nocturnos.{" "}
+                                    <a
+                                      href={`https://www.google.com/maps/search/parada+bus+nocturno/@${club.latitude},${club.longitude},17z`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="font-semibold text-blue-300 underline underline-offset-2 hover:text-blue-200"
+                                    >
+                                      Ver paradas cercanas
+                                    </a>
+                                  </span>
+                                </div>
+                              )
+                            )}
+                            {club.night_buses && (
+                              <p className="mt-2 text-[11px] text-zinc-600">
+                                La mayoría de líneas nocturnas hacen parada en Plaça Catalunya, el punto central de transbordo de la red nocturna.
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Taxi: parada real más cercana (tabla essentials, categoría Taxi) en vez
+                            de solo los botones de Uber/Cabify/FreeNow de más abajo — esos piden un
+                            coche, esto es la opción de ir caminando a parar un taxi en la calle. */}
+                        {nearestTaxi && (
+                          <div>
+                            <p className="text-xs text-zinc-500">Taxi</p>
+                            <div className="mt-2 flex items-center gap-2.5 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5">
+                              <span className="shrink-0 rounded-full border border-amber-500/30 bg-amber-500/20 px-2.5 py-1 text-xs font-bold text-amber-300">
+                                🚕 {formatDistance(nearestTaxi.distanceMeters)}
+                              </span>
+                              <span className="text-xs leading-snug text-zinc-300">
+                                {nearestTaxi.name}
+                                {nearestTaxi.address && <span className="text-zinc-500"> · {nearestTaxi.address}</span>}
+                              </span>
                             </div>
                           </div>
                         )}
@@ -1044,6 +1176,10 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                 )}
 
                 <FavoriteButton itemType="club" itemId={club.id} />
+                {/* "Voy esta noche" + compartir: antes de llegar. El check-in de abajo es para
+                    cuando ya estás en la puerta — esta es la señal previa, la que de verdad
+                    puede avisar a alguien de fuera de la app de que vas a salir. */}
+                <AttendanceButton itemType="club" itemId={club.id} title={club.name} />
                 <CheckInButton clubId={club.id} latitude={club.latitude} longitude={club.longitude} />
                 <NearbyVenuesSheet excludeClubId={club.id} venueType="club" venueId={club.id} name={club.name} latitude={club.latitude} longitude={club.longitude} />
 
