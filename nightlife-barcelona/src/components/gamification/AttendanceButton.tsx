@@ -6,8 +6,9 @@ import { awardXp, XP_AMOUNTS } from "../../lib/xp"
 import { useLanguage } from "../../context/LanguageContext"
 
 type AttendanceButtonProps = {
-  itemType: "event" | "club_event"
+  itemType: "event" | "club_event" | "club"
   itemId: number
+  title?: string
 }
 
 // Botón "Asistiré esta noche" — marca intención de asistencia (independiente de favoritos) y
