@@ -16,7 +16,7 @@ import { FALLBACK_IMAGE as FALLBACK_CLUB_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
 import { getNightBusLine, splitNightBusCodes, nightBusStopsUrl } from "../../lib/nightBuses"
 import { nearestMetroStations } from "../../lib/metroStations"
-import { distanceInMeters, formatDistance } from "../../lib/geo"
+import { distanceInMeters, formatDistance, walkingMinutes, walkingDirectionsUrl } from "../../lib/geo"
 
 const ACCENT_PALETTE = [
   { from: "#8b5cf6", to: "#ec4899", glow: "139,92,246" },
@@ -162,7 +162,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
   const [mounted, setMounted] = useState(false)
   const [reviews, setReviews] = useState<any[]>([])
   const [liveNotes, setLiveNotes] = useState<any[]>([])
-  const [nearestTaxi, setNearestTaxi] = useState<{ name: string; address: string | null; distanceMeters: number } | null>(null)
+  const [nearestTaxi, setNearestTaxi] = useState<{ name: string; address: string | null; latitude: number; longitude: number; distanceMeters: number } | null>(null)
   const heroRef = useRef<HTMLDivElement>(null)
 
   const accent = hashAccent(club.music || club.name || "noctua")
@@ -247,7 +247,13 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
       if (!data || data.length === 0) return
       const withDistance = data
         .filter((e: any) => e.latitude && e.longitude)
-        .map((e: any) => ({ name: e.name, address: e.address, distanceMeters: distanceInMeters(club.latitude, club.longitude, e.latitude, e.longitude) }))
+        .map((e: any) => ({
+          name: e.name,
+          address: e.address,
+          latitude: e.latitude,
+          longitude: e.longitude,
+          distanceMeters: distanceInMeters(club.latitude, club.longitude, e.latitude, e.longitude),
+        }))
         .sort((a: any, b: any) => a.distanceMeters - b.distanceMeters)
       if (withDistance.length > 0 && withDistance[0].distanceMeters <= 1500) {
         setNearestTaxi(withDistance[0])
@@ -839,9 +845,17 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                                 {nearbyMetro.map((s) => (
                                   <div key={s.name} className="flex items-center gap-2.5 rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-2.5">
                                     <span className="shrink-0 rounded-full border border-red-500/30 bg-red-500/20 px-2.5 py-1 text-xs font-bold text-red-300">
-                                      🚇 {formatDistance(s.distanceMeters)}
+                                      🚇 {formatDistance(s.distanceMeters)} · {walkingMinutes(s.distanceMeters)} min
                                     </span>
-                                    <span className="text-xs font-semibold leading-snug text-zinc-300">{s.name}</span>
+                                    <span className="min-w-0 flex-1 text-xs font-semibold leading-snug text-zinc-300">{s.name}</span>
+                                    <a
+                                      href={walkingDirectionsUrl(club.latitude, club.longitude, s.lat, s.lon)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="shrink-0 text-xs font-semibold text-red-300 underline underline-offset-2 hover:text-red-200"
+                                    >
+                                      Ir andando
+                                    </a>
                                   </div>
                                 ))}
                               </div>
@@ -901,17 +915,17 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                               distToCatalunyaMeters != null && (
                                 <div className="mt-2 flex items-start gap-2.5 rounded-2xl border border-blue-500/20 bg-blue-500/10 px-3 py-2.5">
                                   <span className="shrink-0 rounded-full border border-blue-500/30 bg-blue-500/20 px-2.5 py-1 text-xs font-bold text-blue-300">
-                                    🌙 {formatDistance(distToCatalunyaMeters)}
+                                    🌙 {formatDistance(distToCatalunyaMeters)} · {walkingMinutes(distToCatalunyaMeters)} min
                                   </span>
                                   <span className="text-xs leading-snug text-zinc-300">
                                     Plaça Catalunya, donde para casi toda la red de autobuses nocturnos.{" "}
                                     <a
-                                      href={`https://www.google.com/maps/search/parada+bus+nocturno/@${club.latitude},${club.longitude},17z`}
+                                      href={walkingDirectionsUrl(club.latitude, club.longitude, PLACA_CATALUNYA.lat, PLACA_CATALUNYA.lon)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="font-semibold text-blue-300 underline underline-offset-2 hover:text-blue-200"
                                     >
-                                      Ver paradas cercanas
+                                      Ir andando
                                     </a>
                                   </span>
                                 </div>
@@ -933,12 +947,20 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                             <p className="text-xs text-zinc-500">Taxi</p>
                             <div className="mt-2 flex items-center gap-2.5 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5">
                               <span className="shrink-0 rounded-full border border-amber-500/30 bg-amber-500/20 px-2.5 py-1 text-xs font-bold text-amber-300">
-                                🚕 {formatDistance(nearestTaxi.distanceMeters)}
+                                🚕 {formatDistance(nearestTaxi.distanceMeters)} · {walkingMinutes(nearestTaxi.distanceMeters)} min
                               </span>
-                              <span className="text-xs leading-snug text-zinc-300">
+                              <span className="min-w-0 flex-1 text-xs leading-snug text-zinc-300">
                                 {nearestTaxi.name}
                                 {nearestTaxi.address && <span className="text-zinc-500"> · {nearestTaxi.address}</span>}
                               </span>
+                              <a
+                                href={walkingDirectionsUrl(club.latitude, club.longitude, nearestTaxi.latitude, nearestTaxi.longitude)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="shrink-0 text-xs font-semibold text-amber-300 underline underline-offset-2 hover:text-amber-200"
+                              >
+                                Ir andando
+                              </a>
                             </div>
                           </div>
                         )}
