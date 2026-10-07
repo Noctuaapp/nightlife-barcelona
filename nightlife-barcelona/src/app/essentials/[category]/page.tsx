@@ -11,6 +11,8 @@ import { supabase } from "../../../lib/supabase"
 import { useLanguage } from "../../../context/LanguageContext"
 import ArrowIcon from "../../../components/ui/ArrowIcon"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../../lib/geo"
+import { getOpenStatus } from "../../../lib/openStatus"
+import EssentialPhoto from "../../../components/essentials/EssentialPhoto"
 
 const categoryConfig: Record<string, { icon: string; color: string; key: string }> = {
   pharmacy: { icon: "💊", color: "#10b981", key: "Pharmacy" },
@@ -119,6 +121,7 @@ export default function EssentialCategoryPage() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [sortByDistance, setSortByDistance] = useState(false)
   const [mobileView, setMobileView] = useState<"list" | "map">("list")
+  const [openOnly, setOpenOnly] = useState(false)
   const [locating, setLocating] = useState(false)
   const [locationDenied, setLocationDenied] = useState(false)
   const [farAway, setFarAway] = useState(false)
@@ -287,6 +290,7 @@ export default function EssentialCategoryPage() {
 
   const filteredEssentials = essentials
     .filter((e) => (selectedNeighborhood === "All" ? true : e.neighborhood === selectedNeighborhood))
+    .filter((e) => !openOnly || getOpenStatus(e.open_hours).state === "open")
     .slice()
     .sort((a, b) => {
       if (!sortByDistance || !userLocation) return 0
@@ -317,6 +321,8 @@ export default function EssentialCategoryPage() {
 
     const stopPropagation = (e: React.MouseEvent) => e.stopPropagation()
 
+    const status = getOpenStatus(item.open_hours)
+
     return (
       <Reveal key={item.id} style={{ transitionDelay: Math.min(index, 8) * 50 + "ms" }}>
         <div
@@ -327,47 +333,71 @@ export default function EssentialCategoryPage() {
             background: isSelected ? config.color + "12" : "rgba(255,255,255,0.03)",
           }}
         >
-          <div className="flex gap-4 p-4">
-            <div
-              className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-cover bg-center transition duration-500 group-hover:scale-105"
-              style={item.image ? { backgroundImage: `url(${item.image})` } : { background: `${config.color}18` }}
-            >
-              {!item.image && <div className="flex h-full w-full items-center justify-center text-3xl">{config.icon}</div>}
+          <div className="relative">
+            <EssentialPhoto
+              src={item.image}
+              alt={item.name}
+              icon={config.icon}
+              color={config.color}
+              className="h-40 w-full"
+              imgClassName="transition duration-500 group-hover:scale-105"
+            />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+              {status.state !== "unknown" && (
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold backdrop-blur-md ${
+                    status.state === "open"
+                      ? status.soon
+                        ? "bg-amber-500/80 text-black"
+                        : "bg-emerald-500/80 text-black"
+                      : "bg-red-500/80 text-white"
+                  }`}
+                >
+                  {status.label}
+                </span>
+              )}
+              {distanceLabel && (
+                <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-md">📍 {distanceLabel}</span>
+              )}
             </div>
+          </div>
 
-            <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="min-w-0 truncate font-bold text-white">{item.name}</h3>
-                {item.open_hours && (
-                  <span className="shrink-0 whitespace-normal break-words text-right rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: config.color + "20", color: config.color }}>
-                    {item.open_hours}
-                  </span>
-                )}
-              </div>
-              {item.address && <p className="mt-0.5 truncate text-xs text-zinc-400">{item.address}</p>}
-              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-                {item.neighborhood && <span>📍 {item.neighborhood}</span>}
-                {distanceLabel && (
-                  <span className="rounded-full bg-purple-400/10 px-2 py-0.5 font-semibold text-purple-300">{distanceLabel}</span>
-                )}
-              </div>
-              {item.description && <p className="mt-1.5 text-xs text-zinc-500 line-clamp-1">{item.description}</p>}
+          <div className="p-4">
+            <h3 className="font-bold text-white">{item.name}</h3>
+            {item.address && <p className="mt-0.5 text-xs text-zinc-400">{item.address}</p>}
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+              {item.neighborhood && <span>📍 {item.neighborhood}</span>}
+              {status.state === "unknown" && status.label && <span>🕒 {status.label}</span>}
+            </div>
+            {item.description && <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-zinc-400">{item.description}</p>}
 
-              <div className="mt-2.5 flex flex-wrap gap-1.5">
-                {item.maps_link && (
-                  <a href={item.maps_link} target="_blank" rel="noopener noreferrer" onClick={stopPropagation} className="flex items-center gap-1 rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-white hover:text-black">
-                    Maps <ArrowIcon className="h-3 w-3" />
-                  </a>
-                )}
-                {hasCoords && (
-                  <a href={directionsHref} target="_blank" rel="noopener noreferrer" onClick={stopPropagation} className="rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-[11px] font-semibold text-purple-300 transition hover:bg-purple-500 hover:text-white">
-                    🧭 Cómo llegar
-                  </a>
-                )}
-                <a href={reportHref} onClick={stopPropagation} className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-zinc-500 transition hover:text-white">
-                  ⚑
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {hasCoords && (
+                <a
+                  href={directionsHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={stopPropagation}
+                  className="rounded-full bg-purple-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-purple-400"
+                >
+                  🧭 Cómo llegar
                 </a>
-              </div>
+              )}
+              {item.maps_link && (
+                <a
+                  href={item.maps_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={stopPropagation}
+                  className="flex items-center gap-1 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white hover:text-black"
+                >
+                  Maps <ArrowIcon className="h-3 w-3" />
+                </a>
+              )}
+              <a href={reportHref} onClick={stopPropagation} className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-500 transition hover:text-white" title="Reportar un problema">
+                ⚑
+              </a>
             </div>
           </div>
         </div>
@@ -383,7 +413,8 @@ export default function EssentialCategoryPage() {
         <div className="relative h-[280px] w-full overflow-hidden md:h-[320px]">
           {heroImage ? (
             <>
-              <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroImage})` }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={heroImage} alt="" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover" />
               <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(5,3,8,0.55) 0%, rgba(5,3,8,0.75) 60%, #050308 100%)" }} />
             </>
           ) : (
@@ -506,6 +537,15 @@ export default function EssentialCategoryPage() {
             >
               {locating ? "Localizando..." : userLocation ? "📍 Más cercano" : "📍 Cerca de mí"}
             </button>
+            <button
+              onClick={() => setOpenOnly(!openOnly)}
+              aria-pressed={openOnly}
+              className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-bold transition ${
+                openOnly ? "bg-emerald-500 text-black" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+              }`}
+            >
+              🟢 Abierto ahora
+            </button>
           </div>
 
           {locationDenied && (
@@ -543,7 +583,7 @@ export default function EssentialCategoryPage() {
                 </div>
               ) : filteredEssentials.length === 0 ? (
                 <div className="py-20 text-center">
-                  <p className="text-lg font-bold text-zinc-300">No hay resultados en este barrio</p>
+                  <p className="text-lg font-bold text-zinc-300">No hay resultados con estos filtros</p>
                 </div>
               ) : (
                 <div className="grid gap-3 md:max-h-[640px] md:overflow-y-auto md:pr-1 [scrollbar-width:thin]">

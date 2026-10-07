@@ -7,7 +7,9 @@ import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import ArrowIcon from "../../components/ui/ArrowIcon"
-import { distanceInMeters, formatDistance } from "../../lib/geo"
+import { distanceInMeters, formatDistance, walkingMinutes } from "../../lib/geo"
+import { getOpenStatus } from "../../lib/openStatus"
+import EssentialPhoto from "../../components/essentials/EssentialPhoto"
 
 const categoryConfig: Record<string, { icon: string; color: string }> = {
   Pharmacy:      { icon: "💊", color: "#10b981" },
@@ -22,16 +24,6 @@ const categoryConfig: Record<string, { icon: string; color: string }> = {
   Casino:        { icon: "🎰", color: "#f43f5e" },
   "Gas Station": { icon: "⛽", color: "#f59e0b" },
   Hospital:      { icon: "🏥", color: "#ef4444" },
-}
-
-function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLng = ((lng2 - lng1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
 function useReveal<T extends HTMLElement>() {
@@ -98,12 +90,21 @@ export default function EssentialsPage() {
     }
     fetchEssentials()
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {},
-        { timeout: 6000 }
-      )
+    // Solo se usa la ubicación sin preguntar si el usuario ya dio el permiso antes; si no, no se
+    // lanza el aviso del navegador nada más entrar (se pide al pulsar "Cerca de mí").
+    if (navigator.geolocation && navigator.permissions) {
+      navigator.permissions
+        .query({ name: "geolocation" as PermissionName })
+        .then((r) => {
+          if (r.state === "granted") {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+              () => {},
+              { timeout: 6000 }
+            )
+          }
+        })
+        .catch(() => {})
     }
   }, [])
 
@@ -121,7 +122,7 @@ export default function EssentialsPage() {
   const nearby = userLocation
     ? essentials
         .filter((e) => e.latitude && e.longitude)
-        .map((e) => ({ ...e, _dist: getDistance(userLocation.lat, userLocation.lng, e.latitude, e.longitude) }))
+        .map((e) => ({ ...e, _dist: distanceInMeters(userLocation.lat, userLocation.lng, Number(e.latitude), Number(e.longitude)) }))
         .sort((a, b) => a._dist - b._dist)
         .slice(0, 8)
     : []
@@ -285,26 +286,35 @@ export default function EssentialsPage() {
                         className="flex items-start gap-4 rounded-[24px] border bg-white/[0.03] p-5 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-purple-400/30 hover:shadow-[0_20px_50px_-20px_rgba(168,85,247,0.35)]"
                         style={{ borderColor: `${config.color}30` }}
                       >
-                        <div
-                          className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-cover bg-center"
-                          style={item.image ? { backgroundImage: `url(${item.image})` } : { background: `${config.color}20` }}
-                        >
-                          {!item.image && <div className="flex h-full w-full items-center justify-center text-2xl">{config.icon}</div>}
-                        </div>
+                        <EssentialPhoto
+                          src={item.image}
+                          alt={item.name}
+                          icon={config.icon}
+                          color={config.color}
+                          className="h-20 w-20 shrink-0 rounded-2xl"
+                        />
                         <div className="min-w-0">
                           <h3 className="truncate font-bold text-white">{item.name}</h3>
                           {item.address && <p className="mt-1 truncate text-xs text-zinc-400">{item.address}</p>}
                           {item.neighborhood && <p className="mt-1 text-xs text-zinc-500">📍 {item.neighborhood}</p>}
                           {item._distM != null && (
                             <p className="mt-1 text-xs font-bold text-purple-300">
-                              {formatDistance(item._distM)} · {Math.max(1, Math.round(item._distM / 80))} min andando
+                              {formatDistance(item._distM)} · {walkingMinutes(item._distM)} min andando
                             </p>
                           )}
-                          {item.open_hours && (
-                            <span className="mt-2 inline-block rounded-full px-3 py-1 text-xs font-semibold" style={{ background: `${config.color}20`, color: config.color }}>
-                              {item.open_hours}
-                            </span>
-                          )}
+                          {(() => {
+                            const st = getOpenStatus(item.open_hours)
+                            if (!st.label) return null
+                            const cls =
+                              st.state === "open"
+                                ? st.soon
+                                  ? "bg-amber-500/20 text-amber-300"
+                                  : "bg-emerald-500/20 text-emerald-300"
+                                : st.state === "closed"
+                                ? "bg-red-500/20 text-red-300"
+                                : "bg-white/10 text-zinc-300"
+                            return <span className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-semibold ${cls}`}>{st.label}</span>
+                          })()}
                         </div>
                       </Link>
                     </Reveal>
@@ -317,6 +327,43 @@ export default function EssentialsPage() {
 
         {!showResults && (
           <>
+            {/* Lo que más se necesita de noche, con cuántos sitios hay abiertos ahora mismo */}
+            {!loading && essentials.length > 0 && (
+              <section className="mx-auto mt-12 max-w-7xl px-4">
+                <div className="mb-5 flex items-baseline justify-between">
+                  <h2 className="text-xl font-black text-white">⚡ Ahora mismo</h2>
+                  <span className="text-xs font-medium text-zinc-500">lo que más se busca de madrugada</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    { cat: "Taxi", label: "Taxi" },
+                    { cat: "Pharmacy", label: "Farmacia" },
+                    { cat: "ATM", label: "Cajero" },
+                    { cat: "Food", label: "Comer" },
+                  ].map(({ cat, label }) => {
+                    const config = categoryConfig[cat]
+                    const items = itemsByCategory(cat)
+                    if (items.length === 0) return null
+                    const openNow = items.filter((e) => getOpenStatus(e.open_hours).state === "open").length
+                    return (
+                      <Link
+                        key={cat}
+                        href={`/essentials/${cat.toLowerCase().replace(/\s+/g, "-")}`}
+                        className="group flex flex-col gap-2 rounded-[22px] border p-4 backdrop-blur-xl transition duration-300 hover:-translate-y-1"
+                        style={{ borderColor: `${config.color}40`, background: `linear-gradient(135deg, ${config.color}22, rgba(255,255,255,0.02))` }}
+                      >
+                        <span className="text-3xl">{config.icon}</span>
+                        <span className="font-black text-white">{label}</span>
+                        <span className="text-xs font-semibold" style={{ color: openNow > 0 ? "#6ee7b7" : "#a1a1aa" }}>
+                          {openNow > 0 ? `🟢 ${openNow} abiertos ahora` : `${items.length} sitios`}
+                        </span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
             {/* Transporte nocturno — lo primero que se busca de madrugada, así que tiene su
                 propia franja destacada en vez de quedar mezclado en el grid genérico de abajo. */}
             {!loading && ["Metro", "Nitbus", "Taxi"].some((c) => countByCategory(c) > 0) && (
@@ -366,18 +413,21 @@ export default function EssentialsPage() {
                 <div className="flex gap-4 overflow-x-auto px-4 pb-2 mx-auto max-w-7xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {nearby.map((item) => {
                     const config = categoryConfig[item.category] || { icon: "📍", color: "#6b7280" }
-                    const distLabel = item._dist < 1 ? `${Math.round(item._dist * 1000)} m` : `${item._dist.toFixed(1)} km`
+                    const distLabel = formatDistance(item._dist) + (item._dist <= 2500 ? ` · ${walkingMinutes(item._dist)} min` : "")
                     return (
                       <Link
                         key={item.id}
                         href={`/essentials/${item.category.toLowerCase().replace(/\s+/g, "-")}`}
                         className="group relative h-44 w-64 shrink-0 overflow-hidden rounded-[22px] border border-white/10 transition duration-300 hover:-translate-y-1 hover:border-white/25"
                       >
-                        {item.image ? (
-                          <div className="absolute inset-0 bg-cover bg-center transition duration-500 group-hover:scale-105" style={{ backgroundImage: `url(${item.image})` }} />
-                        ) : (
-                          <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${config.color}35, rgba(255,255,255,0.02))` }} />
-                        )}
+                        <EssentialPhoto
+                          src={item.image}
+                          alt={item.name}
+                          icon={config.icon}
+                          color={config.color}
+                          className="absolute inset-0"
+                          imgClassName="transition duration-500 group-hover:scale-105"
+                        />
                         <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(5,3,8,0.05) 30%, rgba(5,3,8,0.9) 100%)" }} />
                         <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1 text-xs font-bold text-white backdrop-blur-md">
                           {config.icon} {distLabel}
@@ -426,17 +476,15 @@ export default function EssentialsPage() {
                           className="group relative block h-full overflow-hidden rounded-[28px] border transition duration-500 hover:-translate-y-1.5"
                           style={{ borderColor: `${config.color}30` }}
                         >
-                          {cover ? (
-                            <>
-                              <div
-                                className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-110"
-                                style={{ backgroundImage: `url(${cover})` }}
-                              />
-                              <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(5,3,8,0.1) 0%, rgba(5,3,8,0.55) 55%, rgba(5,3,8,0.95) 100%)" }} />
-                            </>
-                          ) : (
-                            <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${config.color}28 0%, rgba(255,255,255,0.02) 100%)` }} />
-                          )}
+                          <EssentialPhoto
+                            src={cover}
+                            alt={cat}
+                            icon=""
+                            color={config.color}
+                            className="absolute inset-0"
+                            imgClassName="transition duration-700 group-hover:scale-110"
+                          />
+                          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(5,3,8,0.1) 0%, rgba(5,3,8,0.55) 55%, rgba(5,3,8,0.95) 100%)" }} />
 
                           <div className={`relative flex h-full flex-col justify-end ${isFeatured ? "p-8" : "p-6"}`}>
                             <div

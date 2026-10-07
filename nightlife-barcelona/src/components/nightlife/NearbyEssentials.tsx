@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
 import { distanceInMeters, formatDistance, walkingMinutes, walkingDirectionsUrl } from "../../lib/geo"
+import { getOpenStatus } from "../../lib/openStatus"
 
 // Sugerencias de "esenciales" (tabla essentials, la misma que alimenta /essentials) cerca del
 // local, por categoría. Se cargan al pulsar cada categoría, no todas de golpe.
@@ -106,9 +107,13 @@ export default function NearbyEssentials({ latitude, longitude }: { latitude: nu
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-white">{r.name}</p>
-                <p className="truncate text-xs text-zinc-500">
-                  {[r.address, r.open_hours].filter(Boolean).join(" · ") || "Barcelona"}
-                </p>
+                <p className="truncate text-xs text-zinc-500">{r.address || "Barcelona"}</p>
+                {(() => {
+                  const st = getOpenStatus(r.open_hours)
+                  if (!st.label) return null
+                  const color = st.state === "open" ? (st.soon ? "text-amber-300" : "text-emerald-300") : st.state === "closed" ? "text-red-300" : "text-zinc-400"
+                  return <p className={`truncate text-xs font-semibold ${color}`}>{st.label}</p>
+                })()}
               </div>
               <a
                 href={walkingDirectionsUrl(latitude, longitude, r.latitude, r.longitude)}
