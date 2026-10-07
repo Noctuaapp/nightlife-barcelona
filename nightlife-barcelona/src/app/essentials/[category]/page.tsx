@@ -536,7 +536,7 @@ export default function EssentialCategoryPage() {
         <section className="mx-auto mt-6 max-w-7xl px-4">
           <div className="flex flex-wrap items-center gap-3">
             {neighborhoods.length > 2 && (
-              <div className="flex flex-1 gap-2.5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex w-full gap-2.5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {neighborhoods.map((n) => {
                   const isActive = selectedNeighborhood === n
                   return (
@@ -556,7 +556,7 @@ export default function EssentialCategoryPage() {
             <button
               onClick={() => (userLocation ? setSortByDistance(!sortByDistance) : locateMe())}
               disabled={locating}
-              className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-bold transition ${
+              className={`flex-1 shrink-0 rounded-full px-4 py-2.5 text-center text-sm font-bold transition sm:flex-none ${
                 userLocation && sortByDistance ? "bg-purple-500 text-white" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
               }`}
             >
@@ -565,7 +565,7 @@ export default function EssentialCategoryPage() {
             <button
               onClick={() => setOpenOnly(!openOnly)}
               aria-pressed={openOnly}
-              className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-bold transition ${
+              className={`flex-1 shrink-0 rounded-full px-4 py-2.5 text-center text-sm font-bold transition sm:flex-none ${
                 openOnly ? "bg-emerald-500 text-black" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
               }`}
             >
@@ -707,7 +707,7 @@ export default function EssentialCategoryPage() {
       {mobileView === "list" && !loading && essentials.length > 0 && (
         <button
           onClick={() => setMobileView("map")}
-          className="fixed bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-full bg-white px-6 py-3 text-sm font-black text-black shadow-[0_10px_30px_rgba(0,0,0,0.5)] md:hidden"
+          className="fixed bottom-24 right-4 z-30 rounded-full bg-white px-4 py-2.5 text-xs font-black text-black shadow-[0_10px_30px_rgba(0,0,0,0.5)] md:hidden"
         >
           🗺️ Ver mapa
         </button>

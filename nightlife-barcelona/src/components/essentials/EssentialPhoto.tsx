@@ -35,7 +35,9 @@ export default function EssentialPhoto({
   }
 
   return (
-    <div className={`relative overflow-hidden ${className}`}>
+    // "relative" solo si quien lo usa no lo coloca ya (absolute/fixed/sticky): con ambas clases,
+    // Tailwind aplicaba "relative" y la foto empujaba el texto de la tarjeta fuera de la vista.
+    <div className={`${/\b(absolute|fixed|sticky)\b/.test(className) ? "" : "relative"} overflow-hidden ${className}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={clean}
