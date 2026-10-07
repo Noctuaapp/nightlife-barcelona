@@ -74,10 +74,9 @@ export default function AdminEntryDenialsPage() {
       const userIds = Array.from(new Set(rows.map((d) => d.user_id).filter(Boolean))) as string[]
       if (userIds.length === 0) return
 
-      const { data: users, error: usersError } = await supabase
-        .from("users_view")
-        .select("id, email, username")
-        .in("id", userIds)
+      // admin_list_users() es una función solo para admin (antes era la vista users_view, que
+      // Supabase marcaba como exposición de auth.users).
+      const { data: allUsers, error: usersError } = await supabase.rpc("admin_list_users")
 
       if (usersError) {
         console.log("ENTRY DENIALS USERS FETCH ERROR:", usersError)
@@ -85,7 +84,8 @@ export default function AdminEntryDenialsPage() {
       }
 
       const map: Record<string, DenialUser> = {}
-      for (const u of users || []) {
+      for (const u of (allUsers || []) as any[]) {
+        if (!userIds.includes(u.id)) continue
         map[u.id] = { email: u.email, username: u.username }
       }
       setUsersById(map)

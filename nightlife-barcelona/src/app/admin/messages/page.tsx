@@ -18,6 +18,7 @@ type ContactMessage = {
   admin_reply: string | null
   replied_at: string | null
   user_id: string | null
+  is_spam?: boolean | null
 }
 
 export default function AdminMessagesPage() {
@@ -98,6 +99,43 @@ export default function AdminMessagesPage() {
 
     setMessages((prev) => prev.filter((m) => m.id !== id))
     if (selectedId === id) setSelectedId(null)
+  }
+
+  // Spam va a su propia carpeta (columna is_spam) en vez de mezclarse con "Closed": así los
+  // contadores de nuevos/revisados no cuentan basura, y se puede vaciar de una vez.
+  const setSpam = async (id: number, isSpam: boolean) => {
+    const patch = isSpam ? { is_spam: true, status: "closed" } : { is_spam: false, status: "reviewed" }
+    const { error } = await supabase.from("contact_messages").update(patch).eq("id", id)
+
+    if (error) {
+      console.log("SPAM UPDATE ERROR:", error)
+      window.alert("No se pudo actualizar el mensaje")
+      return
+    }
+
+    setMessages((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, is_spam: isSpam, status: patch.status as ContactMessage["status"] } : m))
+    )
+  }
+
+  const emptySpam = async () => {
+    const count = messages.filter((m) => m.is_spam).length
+    if (count === 0) return
+    const confirmed = window.confirm(`¿Eliminar los ${count} mensajes de spam? No se puede deshacer.`)
+    if (!confirmed) return
+
+    const ids = messages.filter((m) => m.is_spam).map((m) => m.id)
+    const { error } = await supabase.from("contact_messages").delete().in("id", ids)
+
+    if (error) {
+      console.log("EMPTY SPAM ERROR:", error)
+      window.alert("No se pudo vaciar el spam")
+      return
+    }
+
+    await supabase.from("notifications").delete().in("related_message_id", ids)
+    setMessages((prev) => prev.filter((m) => !m.is_spam))
+    if (selectedId && ids.includes(selectedId)) setSelectedId(null)
   }
 
   const openMessage = (message: ContactMessage) => {
@@ -188,13 +226,20 @@ export default function AdminMessagesPage() {
     setBroadcastText("")
   }
 
-  const filteredMessages = filter === "all" ? messages : messages.filter((message) => message.status === filter)
+  const realMessages = messages.filter((message) => !message.is_spam)
+  const filteredMessages =
+    filter === "spam"
+      ? messages.filter((message) => message.is_spam)
+      : filter === "all"
+      ? realMessages
+      : realMessages.filter((message) => message.status === filter)
 
   const stats = {
-    all: messages.length,
-    new: messages.filter((message) => message.status === "new").length,
-    reviewed: messages.filter((message) => message.status === "reviewed").length,
-    closed: messages.filter((message) => message.status === "closed").length,
+    all: realMessages.length,
+    new: realMessages.filter((message) => message.status === "new").length,
+    reviewed: realMessages.filter((message) => message.status === "reviewed").length,
+    closed: realMessages.filter((message) => message.status === "closed").length,
+    spam: messages.filter((message) => message.is_spam).length,
   }
 
   if (checkingAdmin) {
@@ -209,7 +254,7 @@ export default function AdminMessagesPage() {
     <AdminShell title="Contact inbox" subtitle="Review user support, reports, venue suggestions and partnership requests.">
       <>
         <section className="mx-auto max-w-7xl">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <FilterCard label="All" value={stats.all} active={filter === "all"} onClick={() => setFilter("all")} />
             <FilterCard label="New" value={stats.new} active={filter === "new"} onClick={() => setFilter("new")} />
             <FilterCard
@@ -224,6 +269,7 @@ export default function AdminMessagesPage() {
               active={filter === "closed"}
               onClick={() => setFilter("closed")}
             />
+            <FilterCard label="Spam" value={stats.spam} active={filter === "spam"} onClick={() => setFilter("spam")} />
           </div>
         </section>
 
@@ -263,6 +309,14 @@ export default function AdminMessagesPage() {
         <section className="mx-auto mt-10 max-w-7xl px-4">
           <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
             <div className="flex max-h-[70vh] flex-col gap-3 overflow-y-auto rounded-[32px] border border-white/10 bg-white/[0.03] p-4">
+              {filter === "spam" && stats.spam > 0 && (
+                <button
+                  onClick={emptySpam}
+                  className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500 hover:text-white"
+                >
+                  Vaciar spam ({stats.spam})
+                </button>
+              )}
               {filteredMessages.length === 0 ? (
                 <p className="p-6 text-center text-zinc-400">No hay mensajes en este filtro.</p>
               ) : (
@@ -358,6 +412,12 @@ export default function AdminMessagesPage() {
                       className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300 transition hover:bg-emerald-500 hover:text-black"
                     >
                       Cerrado
+                    </button>
+                    <button
+                      onClick={() => setSpam(selectedMessage.id, !selectedMessage.is_spam)}
+                      className="rounded-2xl border border-orange-500/20 bg-orange-500/10 px-5 py-3 text-sm font-bold text-orange-300 transition hover:bg-orange-500 hover:text-black"
+                    >
+                      {selectedMessage.is_spam ? "No es spam" : "Marcar spam"}
                     </button>
                     <button
                       onClick={() => deleteMessage(selectedMessage.id)}

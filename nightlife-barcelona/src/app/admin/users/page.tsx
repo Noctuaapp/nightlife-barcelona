@@ -143,8 +143,12 @@ export default function AdminUsersPage() {
   }, [])
 
   const fetchUsers = async () => {
-    const { data, error } = await supabase.from("users_view").select("*").order("created_at", { ascending: false })
+    // admin_list_users() es una función solo para admin (antes la vista users_view).
+    const { data: rawUsers, error } = await supabase.rpc("admin_list_users")
     if (error) { console.log("USERS ERROR:", error); return }
+    const data = [...((rawUsers || []) as any[])].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
 
     // country se pide aparte de users_view (igual que is_blocked) porque la vista de Supabase
     // no incluía esta columna hasta ahora: así no hace falta tocar la vista para que aparezca.

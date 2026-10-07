@@ -63,7 +63,7 @@ export default function AdminDashboardPage() {
         supabase.from("essentials").select("id, category"),
         supabase.rpc("get_admin_stats"),
         supabase.from("contact_messages").select("id, status"),
-        supabase.from("users_view").select("id, created_at"),
+        supabase.rpc("admin_list_users"),
         supabase.from("profiles").select("id, is_blocked"),
       ])
       const adminStats = Array.isArray(adminStatsData) ? adminStatsData[0] : adminStatsData

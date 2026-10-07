@@ -7,6 +7,7 @@ import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import ArrowIcon from "../../components/ui/ArrowIcon"
+import { distanceInMeters, formatDistance } from "../../lib/geo"
 
 const categoryConfig: Record<string, { icon: string; color: string }> = {
   Pharmacy:      { icon: "💊", color: "#10b981" },
@@ -82,6 +83,11 @@ export default function EssentialsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+  // "Cerca de mí" en el buscador: ordena TODO (o lo que coincida con el texto) por distancia real
+  // a la ubicación del usuario. Se pide el permiso al pulsar el botón, no antes.
+  const [nearMe, setNearMe] = useState(false)
+  const [locating, setLocating] = useState(false)
+  const [locationDenied, setLocationDenied] = useState(false)
   const { t } = useLanguage()
 
   useEffect(() => {
@@ -120,7 +126,35 @@ export default function EssentialsPage() {
         .slice(0, 8)
     : []
 
-  const searchResults = search.trim()
+  const toggleNearMe = () => {
+    if (nearMe) {
+      setNearMe(false)
+      return
+    }
+    setNearMe(true)
+    setLocationDenied(false)
+    if (userLocation) return
+    if (!navigator.geolocation) {
+      setLocationDenied(true)
+      return
+    }
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setLocating(false)
+      },
+      () => {
+        setLocationDenied(true)
+        setLocating(false)
+      },
+      { timeout: 8000 }
+    )
+  }
+
+  const showResults = !!search.trim() || nearMe
+
+  const textMatches = search.trim()
     ? essentials.filter(
         (e) =>
           e.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -128,6 +162,18 @@ export default function EssentialsPage() {
           e.neighborhood?.toLowerCase().includes(search.toLowerCase()) ||
           e.address?.toLowerCase().includes(search.toLowerCase())
       )
+    : essentials
+
+  const searchResults: any[] = nearMe
+    ? userLocation
+      ? textMatches
+          .filter((e) => e.latitude && e.longitude)
+          .map((e) => ({ ...e, _distM: distanceInMeters(userLocation.lat, userLocation.lng, e.latitude, e.longitude) }))
+          .sort((a, b) => a._distM - b._distM)
+          .slice(0, 30)
+      : []
+    : search.trim()
+    ? textMatches
     : []
 
   return (
@@ -191,16 +237,39 @@ export default function EssentialsPage() {
                 </button>
               )}
             </div>
+
+            <button
+              onClick={toggleNearMe}
+              aria-pressed={nearMe}
+              className={`mt-3 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                nearMe
+                  ? "border-purple-400/60 bg-purple-500/20 text-purple-200"
+                  : "border-white/10 bg-white/[0.05] text-zinc-300 hover:bg-white/10"
+              }`}
+            >
+              📍 Cerca de mí
+            </button>
           </div>
         </section>
 
         {/* Search results */}
-        {search.trim() && (
+        {showResults && (
           <section className="mx-auto mt-10 max-w-7xl px-4">
-            <p className="mb-4 text-sm text-zinc-500">
-              {searchResults.length} {searchResults.length === 1 ? "resultado" : "resultados"}
-            </p>
-            {searchResults.length === 0 ? (
+            {nearMe && !userLocation ? (
+              <p className="mb-4 text-sm text-zinc-400">
+                {locating
+                  ? "Buscando tu ubicación..."
+                  : locationDenied
+                  ? "No podemos ver tu ubicación. Actívala en los permisos del navegador y vuelve a pulsar \"Cerca de mí\"."
+                  : "Pulsa \"Cerca de mí\" y permite el acceso a tu ubicación."}
+              </p>
+            ) : (
+              <p className="mb-4 text-sm text-zinc-500">
+                {searchResults.length} {searchResults.length === 1 ? "resultado" : "resultados"}
+                {nearMe ? " · ordenados por distancia" : ""}
+              </p>
+            )}
+            {nearMe && !userLocation ? null : searchResults.length === 0 ? (
               <div className="py-20 text-center">
                 <p className="text-lg font-bold text-zinc-300">No se encontraron resultados</p>
                 <p className="mt-2 text-sm text-zinc-500">Prueba con otro nombre, categoría o barrio.</p>
@@ -226,6 +295,11 @@ export default function EssentialsPage() {
                           <h3 className="truncate font-bold text-white">{item.name}</h3>
                           {item.address && <p className="mt-1 truncate text-xs text-zinc-400">{item.address}</p>}
                           {item.neighborhood && <p className="mt-1 text-xs text-zinc-500">📍 {item.neighborhood}</p>}
+                          {item._distM != null && (
+                            <p className="mt-1 text-xs font-bold text-purple-300">
+                              {formatDistance(item._distM)} · {Math.max(1, Math.round(item._distM / 80))} min andando
+                            </p>
+                          )}
                           {item.open_hours && (
                             <span className="mt-2 inline-block rounded-full px-3 py-1 text-xs font-semibold" style={{ background: `${config.color}20`, color: config.color }}>
                               {item.open_hours}
@@ -241,7 +315,7 @@ export default function EssentialsPage() {
           </section>
         )}
 
-        {!search.trim() && (
+        {!showResults && (
           <>
             {/* Transporte nocturno — lo primero que se busca de madrugada, así que tiene su
                 propia franja destacada en vez de quedar mezclado en el grid genérico de abajo. */}
