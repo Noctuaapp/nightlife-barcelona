@@ -122,6 +122,7 @@ export default function EssentialCategoryPage() {
   const [sortByDistance, setSortByDistance] = useState(false)
   const [mobileView, setMobileView] = useState<"list" | "map">("list")
   const [openOnly, setOpenOnly] = useState(false)
+  const [mapHint, setMapHint] = useState(false)
   const [locating, setLocating] = useState(false)
   const [locationDenied, setLocationDenied] = useState(false)
   const [farAway, setFarAway] = useState(false)
@@ -199,11 +200,50 @@ export default function EssentialCategoryPage() {
     map.current.dragRotate.disable()
     map.current.touchZoomRotate.disableRotation()
 
+    // En pantallas táctiles el mapa se comía el gesto de un dedo y no se podía desplazar la
+    // página. Ahora: un dedo desplaza la página; dos dedos mueven/hacen zoom en el mapa (se
+    // activa el arrastre solo mientras haya dos dedos). Con ratón no cambia nada.
+    const mapEl = mapContainer.current
+    const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches
+    let hintTimer: ReturnType<typeof setTimeout> | undefined
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length >= 2) {
+        map.current?.dragPan.enable()
+        if (e.cancelable) e.preventDefault()
+      }
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length >= 2) {
+        if (e.cancelable) e.preventDefault()
+        return
+      }
+      setMapHint(true)
+      if (hintTimer) clearTimeout(hintTimer)
+      hintTimer = setTimeout(() => setMapHint(false), 1200)
+    }
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length === 0) map.current?.dragPan.disable()
+    }
+    if (isTouch) {
+      map.current.dragPan.disable()
+      mapEl.addEventListener("touchstart", onTouchStart, { capture: true, passive: false })
+      mapEl.addEventListener("touchmove", onTouchMove, { capture: true, passive: false })
+      mapEl.addEventListener("touchend", onTouchEnd, { capture: true, passive: true })
+      mapEl.addEventListener("touchcancel", onTouchEnd, { capture: true, passive: true })
+    }
+
     map.current.on("load", () => {
       setMapReady(true)
     })
 
     return () => {
+      if (isTouch) {
+        mapEl.removeEventListener("touchstart", onTouchStart, { capture: true })
+        mapEl.removeEventListener("touchmove", onTouchMove, { capture: true })
+        mapEl.removeEventListener("touchend", onTouchEnd, { capture: true })
+        mapEl.removeEventListener("touchcancel", onTouchEnd, { capture: true })
+      }
+      if (hintTimer) clearTimeout(hintTimer)
       map.current?.remove()
       map.current = null
     }
@@ -620,10 +660,16 @@ export default function EssentialCategoryPage() {
             <div className={`md:col-span-7 ${mobileView === "list" ? "hidden md:block" : ""}`}>
               <div
                 ref={mapWrapperRef}
-                className="relative h-[calc(100dvh-230px)] min-h-[420px] scroll-mt-20 overflow-hidden rounded-[28px] border md:sticky md:top-24 md:h-[640px]"
+                className="relative h-[65dvh] min-h-[380px] scroll-mt-20 overflow-hidden rounded-[28px] border md:sticky md:top-24 md:h-[640px]"
                 style={{ borderColor: config.color + "30" }}
               >
                 <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
+
+                {mapHint && (
+                  <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-black/50 md:hidden">
+                    <p className="rounded-full bg-black/80 px-5 py-2.5 text-sm font-semibold text-white">Usa dos dedos para mover el mapa</p>
+                  </div>
+                )}
 
                 {/* Salida clara del mapa en el móvil: antes solo se podía volver con el selector de arriba */}
                 <button
