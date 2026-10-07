@@ -10,12 +10,12 @@ export const metadata: Metadata = {
   title: "Discotecas y clubs en Barcelona | Noctua",
   description:
     "Descubre las mejores discotecas y clubs de Barcelona: horarios, precios, estilo musical y ubicación. Filtra por barrio, género musical y ambiente.",
-  alternates: { canonical: "https://noctuaapp.com/clubs" },
+  alternates: { canonical: "https://www.noctuaapp.com/clubs" },
   openGraph: {
     title: "Discotecas y clubs en Barcelona | Noctua",
     description:
       "Descubre las mejores discotecas y clubs de Barcelona: horarios, precios, estilo musical y ubicación.",
-    url: "https://noctuaapp.com/clubs",
+    url: "https://www.noctuaapp.com/clubs",
     siteName: "Noctua",
     locale: "es_ES",
     type: "website",

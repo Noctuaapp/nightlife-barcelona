@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: ClubPageProps): Promise<Metad
     club.description ||
     `Toda la información de ${club.name}: horarios, precio de entrada, estilo musical y cómo llegar. Descúbrelo en Noctua.`
   ).slice(0, 160)
-  const url = `https://noctuaapp.com/clubs/${slug}`
+  const url = `https://www.noctuaapp.com/clubs/${slug}`
 
   return {
     title,
@@ -87,7 +87,7 @@ export default async function ClubPage({ params }: ClubPageProps) {
     name: club.name,
     description: club.description || undefined,
     image: club.image || undefined,
-    url: `https://noctuaapp.com/clubs/${slug}`,
+    url: `https://www.noctuaapp.com/clubs/${slug}`,
     address: {
       "@type": "PostalAddress",
       streetAddress: club.address || undefined,

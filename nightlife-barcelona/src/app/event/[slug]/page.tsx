@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: EventPageProps): Promise<Meta
     event.description ||
     `${event.title}${venue ? ` en ${event.club_name}` : ""}, Barcelona. Fecha, horario, precio de entrada y cómo conseguir tickets en Noctua.`
   ).slice(0, 160)
-  const url = `https://noctuaapp.com/event/${slug}`
+  const url = `https://www.noctuaapp.com/event/${slug}`
 
   return {
     title,
@@ -85,7 +85,7 @@ export default async function EventPage({ params }: EventPageProps) {
     name: event.title,
     description: event.description || undefined,
     image: event.image || undefined,
-    url: `https://noctuaapp.com/event/${slug}`,
+    url: `https://www.noctuaapp.com/event/${slug}`,
     startDate: event.date || undefined,
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
     eventStatus: event.sold_out

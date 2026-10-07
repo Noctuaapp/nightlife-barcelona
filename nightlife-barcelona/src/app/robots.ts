@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next"
 
-const BASE_URL = "https://noctuaapp.com"
+const BASE_URL = "https://www.noctuaapp.com"
 
 // Antes no existía robots.txt, así que Google usaba su comportamiento por defecto: rastrear todo,
 // incluidas zonas que no deberían indexarse (el panel de admin, los paneles de gestión de

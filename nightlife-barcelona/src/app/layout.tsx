@@ -33,7 +33,7 @@ const plusJakarta = Plus_Jakarta_Sans({
 // realmente el sitio, justo cuando el público objetivo (Barcelona) busca en español. Ahora todo
 // el sitio declara el mismo idioma.
 export const metadata: Metadata = {
-  metadataBase: new URL("https://noctuaapp.com"),
+  metadataBase: new URL("https://www.noctuaapp.com"),
   title: "Noctua — Vida nocturna en Barcelona",
   description: "Descubre las mejores discotecas, eventos y fiestas de Barcelona. Colas en directo, horarios, precios y todo lo que necesitas para salir de noche.",
   keywords: "vida nocturna Barcelona, discotecas Barcelona, clubs Barcelona, eventos Barcelona, fiesta Barcelona, ocio nocturno Barcelona",
@@ -44,11 +44,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Noctua — Vida nocturna en Barcelona",
     description: "Descubre las mejores discotecas, eventos y fiestas de Barcelona.",
-    url: "https://noctuaapp.com",
+    url: "https://www.noctuaapp.com",
     siteName: "Noctua",
     images: [
       {
-        url: "https://noctuaapp.com/hero/skyline_barcelona.jpeg",
+        url: "https://www.noctuaapp.com/hero/skyline_barcelona.jpeg",
         width: 1535,
         height: 1024,
         alt: "Vida nocturna de Barcelona — Noctua",
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Noctua — Vida nocturna en Barcelona",
     description: "Descubre las mejores discotecas, eventos y fiestas de Barcelona.",
-    images: ["https://noctuaapp.com/hero/skyline_barcelona.jpeg"],
+    images: ["https://www.noctuaapp.com/hero/skyline_barcelona.jpeg"],
   },
   robots: {
     index: true,

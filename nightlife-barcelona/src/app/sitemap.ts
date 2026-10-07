@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next"
 import { supabase } from "../lib/supabase"
 import { createSlug } from "../lib/slug"
 
-const BASE_URL = "https://noctuaapp.com"
+const BASE_URL = "https://www.noctuaapp.com"
 
 // Categorías fijas de /essentials/[category] — vienen de categoryConfig en esa página, no de una
 // tabla, así que se listan aquí a mano en vez de consultarlas.

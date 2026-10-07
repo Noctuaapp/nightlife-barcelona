@@ -10,11 +10,11 @@ export const metadata: Metadata = {
   title: "Eventos y fiestas en Barcelona | Noctua",
   description:
     "Los próximos eventos, festivales y fiestas en Barcelona: fecha, horario, precio y ubicación. Filtra por barrio, festival y entrada gratuita.",
-  alternates: { canonical: "https://noctuaapp.com/events" },
+  alternates: { canonical: "https://www.noctuaapp.com/events" },
   openGraph: {
     title: "Eventos y fiestas en Barcelona | Noctua",
     description: "Los próximos eventos, festivales y fiestas en Barcelona: fecha, horario, precio y ubicación.",
-    url: "https://noctuaapp.com/events",
+    url: "https://www.noctuaapp.com/events",
     siteName: "Noctua",
     locale: "es_ES",
     type: "website",
