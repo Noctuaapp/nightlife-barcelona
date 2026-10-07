@@ -30,6 +30,25 @@ export default function ContactPage() {
   const [success, setSuccess] = useState("")
   const [error, setError] = useState("")
   const [sending, setSending] = useState(false)
+  // Solo se puede escribir con sesión iniciada: antes cualquiera podía enviar un mensaje con un
+  // email escrito a mano, y al admin le era imposible contestar dentro de la app (la respuesta
+  // se entrega a la cuenta, y esa persona no tenía). Ahora el email sale siempre de la cuenta.
+  const [authChecked, setAuthChecked] = useState(false)
+  const [loggedIn, setLoggedIn] = useState(false)
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data } = await supabase.auth.getUser()
+      if (data.user) {
+        setLoggedIn(true)
+        setEmail(data.user.email || "")
+        const { data: profile } = await supabase.from("profiles").select("username").eq("id", data.user.id).single()
+        if (profile?.username) setName(profile.username)
+      }
+      setAuthChecked(true)
+    }
+    loadUser()
+  }, [])
 
   useEffect(() => {
     const typeParam = searchParams.get("type")
@@ -45,6 +64,13 @@ export default function ContactPage() {
     setSending(true)
 
     const { data: userData } = await supabase.auth.getUser()
+
+    if (!userData.user) {
+      setSending(false)
+      setLoggedIn(false)
+      setError("Inicia sesión para enviarnos un mensaje.")
+      return
+    }
 
     let finalName = name
 
@@ -62,17 +88,17 @@ export default function ContactPage() {
 
     const { error: insertError } = await supabase.from("contact_messages").insert({
       name: finalName,
-      email,
+      email: userData.user.email || email,
       type,
       subject,
       message,
-      user_id: userData.user?.id || null,
+      user_id: userData.user.id,
     })
 
     setSending(false)
     if (insertError) { setError(insertError.message); return }
     setSuccess(t("contact.successMessage"))
-    setName(""); setEmail(""); setType("user_support"); setSubject(""); setMessage("")
+    setType("user_support"); setSubject(""); setMessage("")
   }
 
   const contactTypes = parseContactTypes(t("contact.types"))
@@ -124,6 +150,25 @@ export default function ContactPage() {
             <div className="lg:col-span-2">
               <div className="rounded-[36px] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
                 <p className="mb-6 text-xs uppercase tracking-widest text-zinc-500">{t("contact.messageLabel")}</p>
+                {authChecked && !loggedIn ? (
+                  <div className="py-6 text-center">
+                    <p className="text-2xl font-black">Inicia sesión para escribirnos</p>
+                    <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-zinc-400">
+                      Así podemos responderte directamente dentro de Noctua y tú ves la respuesta en tu perfil.
+                    </p>
+                    <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                      <a href="/login" className="rounded-2xl bg-white px-8 py-4 font-bold text-black transition hover:scale-[1.02]">
+                        Iniciar sesión
+                      </a>
+                      <a href="/signup" className="rounded-2xl border border-white/15 bg-white/5 px-8 py-4 font-bold text-white transition hover:bg-white/10">
+                        Crear cuenta
+                      </a>
+                    </div>
+                  </div>
+                ) : !authChecked ? (
+                  <div className="h-40" />
+                ) : (
+                <>
                 <div className="grid gap-4 md:grid-cols-2">
                   <input
                     value={name}
@@ -133,9 +178,10 @@ export default function ContactPage() {
                   />
                   <input
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    readOnly
+                    title="Es el email de tu cuenta"
                     placeholder={t("contact.emailPlaceholder")}
-                    className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
+                    className="cursor-not-allowed rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-zinc-400 outline-none transition"
                   />
                   <input
                     value={subject}
@@ -162,6 +208,8 @@ export default function ContactPage() {
                 >
                   {sending ? t("contact.sending") : t("contact.sendButton")}
                 </button>
+                </>
+                )}
               </div>
             </div>
           </div>
