@@ -126,6 +126,7 @@ export default function EssentialCategoryPage() {
   const [locationDenied, setLocationDenied] = useState(false)
   const [farAway, setFarAway] = useState(false)
   const userMarkerRef = useRef<mapboxgl.Marker | null>(null)
+  const mapWrapperRef = useRef<HTMLDivElement>(null)
   const pendingFitRef = useRef<[number, number][] | null>(null)
   const didInitialFit = useRef(false)
 
@@ -194,6 +195,10 @@ export default function EssentialCategoryPage() {
       zoom: 13,
     })
 
+    // Sin rotación/inclinación: en el móvil se activaban sin querer al arrastrar con dos dedos.
+    map.current.dragRotate.disable()
+    map.current.touchZoomRotate.disableRotation()
+
     map.current.on("load", () => {
       setMapReady(true)
     })
@@ -209,6 +214,9 @@ export default function EssentialCategoryPage() {
   useEffect(() => {
     if (mobileView === "map") {
       setTimeout(() => {
+        // En el móvil, al pasar a "Mapa" se sube la página hasta el mapa (antes quedaba debajo
+        // del encabezado y los filtros y había que buscarlo deslizando).
+        if (window.innerWidth < 768) mapWrapperRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
         map.current?.resize()
         if (pendingFitRef.current) {
           const pts = pendingFitRef.current
@@ -263,7 +271,24 @@ export default function EssentialCategoryPage() {
     essentials
       .filter((e) => e.latitude && e.longitude)
       .forEach((item) => {
-        const marker = new mapboxgl.Marker({ color: config.color }).setLngLat([item.longitude!, item.latitude!]).addTo(map.current!)
+        // Marcador redondo con la foto del sitio (como en el mapa de clubs); si no hay foto o falla,
+        // el icono de la categoría. No se le pone transform propio: Mapbox lo usa para posicionarlo.
+        const el = document.createElement("div")
+        el.style.cssText = `width:42px;height:42px;border-radius:9999px;border:2px solid ${config.color};background:${config.color}40;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.55)`
+        if (item.image) {
+          const img = document.createElement("img")
+          img.src = item.image
+          img.referrerPolicy = "no-referrer"
+          img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"
+          img.onerror = () => {
+            img.remove()
+            el.textContent = config.icon
+          }
+          el.appendChild(img)
+        } else {
+          el.textContent = config.icon
+        }
+        const marker = new mapboxgl.Marker({ element: el }).setLngLat([Number(item.longitude), Number(item.latitude)]).addTo(map.current!)
 
         marker.getElement().addEventListener("click", () => {
           setSelected(item)
@@ -410,7 +435,7 @@ export default function EssentialCategoryPage() {
       <Header />
       <main className="relative min-h-screen pb-40 text-white">
         {/* Hero */}
-        <div className="relative h-[280px] w-full overflow-hidden md:h-[320px]">
+        <div className="relative h-[200px] w-full overflow-hidden md:h-[320px]">
           {heroImage ? (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -593,55 +618,83 @@ export default function EssentialCategoryPage() {
             </div>
 
             <div className={`md:col-span-7 ${mobileView === "list" ? "hidden md:block" : ""}`}>
-              <div className="relative overflow-hidden rounded-[28px] border md:sticky md:top-24" style={{ height: "640px", borderColor: config.color + "30" }}>
+              <div
+                ref={mapWrapperRef}
+                className="relative h-[calc(100dvh-230px)] min-h-[420px] scroll-mt-20 overflow-hidden rounded-[28px] border md:sticky md:top-24 md:h-[640px]"
+                style={{ borderColor: config.color + "30" }}
+              >
                 <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
 
-                {/* Ficha del sitio tocado: sin esto, en el móvil tocar un marcador no mostraba nada */}
+                {/* Salida clara del mapa en el móvil: antes solo se podía volver con el selector de arriba */}
+                <button
+                  onClick={() => setMobileView("list")}
+                  className="absolute left-3 top-3 z-10 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-bold text-white backdrop-blur-md md:hidden"
+                >
+                  ☰ Lista
+                </button>
+
+                {/* Ficha del sitio tocado: foto grande con el nombre encima, como en el mapa de clubs */}
                 {selected && (
-                  <div className="absolute inset-x-3 bottom-3 rounded-2xl border border-white/10 bg-[#0b0912]/95 p-4 backdrop-blur-xl">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-black text-white">{selected.name}</p>
-                        {selected.address && <p className="truncate text-xs text-zinc-400">{selected.address}</p>}
-                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-                          {selected.open_hours && <span>🕒 {selected.open_hours}</span>}
-                          {(() => {
-                            const d = distMeters(selected)
-                            return d != null ? (
-                              <span className="rounded-full bg-purple-400/10 px-2 py-0.5 font-semibold text-purple-300">{distanceText(d)}</span>
-                            ) : null
-                          })()}
-                        </div>
-                      </div>
+                  <div className="absolute inset-x-3 bottom-3 overflow-hidden rounded-2xl border border-white/10 bg-[#0b0912]/95 backdrop-blur-xl">
+                    <div className="relative">
+                      <EssentialPhoto src={selected.image} alt={selected.name} icon={config.icon} color={config.color} className="h-28 w-full md:h-36" />
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0b0912] via-black/25 to-transparent" />
                       <button
                         onClick={() => setSelected(null)}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white"
+                        className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur-md"
                         aria-label="Cerrar"
                       >
                         ✕
                       </button>
+                      <div className="absolute inset-x-0 bottom-0 px-4 pb-3">
+                        <p className="truncate text-base font-black text-white">{selected.name}</p>
+                        {selected.address && <p className="truncate text-xs text-zinc-300">{selected.address}</p>}
+                      </div>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {selected.latitude && selected.longitude && (
-                        <a
-                          href={directionsFor(selected)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-[11px] font-semibold text-purple-300 transition hover:bg-purple-500 hover:text-white"
-                        >
-                          🧭 Cómo llegar
-                        </a>
-                      )}
-                      {selected.maps_link && (
-                        <a
-                          href={selected.maps_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-white hover:text-black"
-                        >
-                          Maps
-                        </a>
-                      )}
+                    <div className="px-4 pb-4 pt-2">
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        {(() => {
+                          const st = getOpenStatus(selected.open_hours)
+                          if (!st.label) return null
+                          const cls =
+                            st.state === "open"
+                              ? st.soon
+                                ? "bg-amber-500/20 text-amber-300"
+                                : "bg-emerald-500/20 text-emerald-300"
+                              : st.state === "closed"
+                              ? "bg-red-500/20 text-red-300"
+                              : "bg-white/10 text-zinc-300"
+                          return <span className={`rounded-full px-2.5 py-1 font-semibold ${cls}`}>{st.label}</span>
+                        })()}
+                        {(() => {
+                          const d = distMeters(selected)
+                          return d != null ? (
+                            <span className="rounded-full bg-purple-400/10 px-2.5 py-1 font-semibold text-purple-300">{distanceText(d)}</span>
+                          ) : null
+                        })()}
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {selected.latitude && selected.longitude && (
+                          <a
+                            href={directionsFor(selected)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-full bg-purple-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-purple-400"
+                          >
+                            🧭 Cómo llegar
+                          </a>
+                        )}
+                        {selected.maps_link && (
+                          <a
+                            href={selected.maps_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white hover:text-black"
+                          >
+                            Maps
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -650,6 +703,15 @@ export default function EssentialCategoryPage() {
           </div>
         </section>
       </main>
+      {/* Acceso rápido al mapa mientras se mira la lista (solo móvil) */}
+      {mobileView === "list" && !loading && essentials.length > 0 && (
+        <button
+          onClick={() => setMobileView("map")}
+          className="fixed bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-full bg-white px-6 py-3 text-sm font-black text-black shadow-[0_10px_30px_rgba(0,0,0,0.5)] md:hidden"
+        >
+          🗺️ Ver mapa
+        </button>
+      )}
       <BottomNav />
     </>
   )
