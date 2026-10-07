@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { cache } from "react"
-import Link from "next/link"
+import { notFound } from "next/navigation"
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import EventPageContent from "../../../components/nightlife/EventPageContent"
@@ -63,18 +63,8 @@ export default async function EventPage({ params }: EventPageProps) {
   const { slug } = await params
   const event = await getEvent(slug)
 
-  if (!event) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <div className="text-center">
-          <h1 className="text-5xl font-black">Evento no encontrado</h1>
-          <Link href="/" className="mt-6 inline-block rounded-full bg-white px-6 py-3 font-bold text-black">
-            Volver al inicio
-          </Link>
-        </div>
-      </main>
-    )
-  }
+  // 404 real en vez de una página "no encontrado" con código 200 (soft 404 para Google).
+  if (!event) notFound()
 
   const { data: tickets } = await supabase
     .from("tickets")

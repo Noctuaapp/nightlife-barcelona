@@ -3,7 +3,7 @@ import { cache } from "react"
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import ClubPageContent from "../../../components/nightlife/ClubPageContent"
-import Link from "next/link"
+import { notFound } from "next/navigation"
 import { supabase } from "../../../lib/supabase"
 import { createSlug } from "../../../lib/slug"
 
@@ -65,18 +65,9 @@ export default async function ClubPage({ params }: ClubPageProps) {
   const { slug } = await params
   const club = await getClub(slug)
 
-  if (!club) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <div className="text-center">
-          <h1 className="text-5xl font-black">Club not found</h1>
-          <Link href="/" className="mt-6 inline-block rounded-full bg-white px-6 py-3 font-bold text-black">
-            Back home
-          </Link>
-        </div>
-      </main>
-    )
-  }
+  // notFound() devuelve un 404 real. Antes se pintaba "Club not found" pero con código 200, y
+  // Google lo cuenta como "soft 404" (página vacía que dice existir).
+  if (!club) notFound()
 
   const { data: clubEvents } = await supabase
     .from("club_events")

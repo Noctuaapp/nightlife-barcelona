@@ -37,7 +37,10 @@ export const metadata: Metadata = {
   title: "Noctua — Vida nocturna en Barcelona",
   description: "Descubre las mejores discotecas, eventos y fiestas de Barcelona. Colas en directo, horarios, precios y todo lo que necesitas para salir de noche.",
   keywords: "vida nocturna Barcelona, discotecas Barcelona, clubs Barcelona, eventos Barcelona, fiesta Barcelona, ocio nocturno Barcelona",
-  alternates: { canonical: "https://noctuaapp.com" },
+  // "./" = cada página se declara canónica a sí misma (sin parámetros ?...). Antes aquí había la
+  // URL de la portada fija, y toda página sin canonical propio (faq, privacy, essentials/*, map...)
+  // heredaba "soy una copia de la home", lo que confunde a Google y frena su indexación.
+  alternates: { canonical: "./" },
   openGraph: {
     title: "Noctua — Vida nocturna en Barcelona",
     description: "Descubre las mejores discotecas, eventos y fiestas de Barcelona.",
