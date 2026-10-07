@@ -94,7 +94,7 @@ export default function AdminDashboardPage() {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
       setAlerts({
         newMessages: (messagesData || []).filter((m) => m.status === "new").length,
-        recentSignups: (usersData || []).filter((u) => u.created_at && new Date(u.created_at) >= sevenDaysAgo).length,
+        recentSignups: ((usersData || []) as any[]).filter((u: any) => u.created_at && new Date(u.created_at) >= sevenDaysAgo).length,
         blockedUsers: (profilesData || []).filter((p) => p.is_blocked).length,
         clubsWithoutOwner: (clubsData || []).filter((c) => !c.owner_user_id).length,
         festivalsWithoutOwner: (eventsData || []).filter((e) => !e.owner_user_id).length,
