@@ -10,6 +10,7 @@ import BottomNav from "../../../components/layout/BottomNav"
 import { supabase } from "../../../lib/supabase"
 import { useLanguage } from "../../../context/LanguageContext"
 import ArrowIcon from "../../../components/ui/ArrowIcon"
+import { distanceInMeters, formatDistance, walkingMinutes } from "../../../lib/geo"
 
 const categoryConfig: Record<string, { icon: string; color: string; key: string }> = {
   pharmacy: { icon: "💊", color: "#10b981", key: "Pharmacy" },
@@ -62,16 +63,6 @@ type Essential = {
   longitude: number | null
 }
 
-function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLng = ((lng2 - lng1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T>(null)
   const [visible, setVisible] = useState(false)
@@ -111,9 +102,10 @@ function Reveal(props: { children: React.ReactNode; className?: string; style?: 
 export default function EssentialCategoryPage() {
   const params = useParams()
   const category = (params.category as string).toLowerCase()
-  const config = categoryConfig[category] || categoryConfig["other"]
+  const knownConfig = categoryConfig[category]
+  const config = knownConfig || { icon: "📍", color: "#a855f7", key: "Other" }
   const { t } = useLanguage()
-  const label = t("essentials.category_names." + config.key)
+  const label = knownConfig ? t("essentials.category_names." + config.key) : category
 
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
@@ -127,6 +119,54 @@ export default function EssentialCategoryPage() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [sortByDistance, setSortByDistance] = useState(false)
   const [mobileView, setMobileView] = useState<"list" | "map">("list")
+  const [locating, setLocating] = useState(false)
+  const [locationDenied, setLocationDenied] = useState(false)
+  const [farAway, setFarAway] = useState(false)
+  const userMarkerRef = useRef<mapboxgl.Marker | null>(null)
+  const pendingFitRef = useRef<[number, number][] | null>(null)
+  const didInitialFit = useRef(false)
+
+  // Encuadra el mapa a un conjunto de puntos. Si el mapa está oculto (móvil, vista lista) no
+  // tiene tamaño y Mapbox calcularía mal el encuadre: se guarda y se aplica al mostrar el mapa.
+  const fitMapTo = (points: [number, number][]) => {
+    const m = map.current
+    const el = mapContainer.current
+    if (!m || points.length === 0) return
+    if (!el || el.offsetWidth === 0) {
+      pendingFitRef.current = points
+      return
+    }
+    if (points.length === 1) {
+      m.flyTo({ center: points[0], zoom: 15, duration: 800 })
+      return
+    }
+    const bounds = new mapboxgl.LngLatBounds(points[0], points[0])
+    points.forEach((pt) => bounds.extend(pt))
+    m.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 800 })
+  }
+
+  // La ubicación solo se pide cuando el usuario pulsa "Cerca de mí" (antes se pedía al cargar,
+  // sin que nadie lo hubiera pedido, y movía el mapa de golpe).
+  const locateMe = () => {
+    if (!navigator.geolocation) {
+      setLocationDenied(true)
+      return
+    }
+    setLocating(true)
+    setLocationDenied(false)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setSortByDistance(true)
+        setLocating(false)
+      },
+      () => {
+        setLocationDenied(true)
+        setLocating(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    )
+  }
 
   useEffect(() => {
     const fetchEssentials = async () => {
@@ -153,19 +193,6 @@ export default function EssentialCategoryPage() {
 
     map.current.on("load", () => {
       setMapReady(true)
-
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((pos) => {
-          const latitude = pos.coords.latitude
-          const longitude = pos.coords.longitude
-
-          setUserLocation({ lat: latitude, lng: longitude })
-
-          new mapboxgl.Marker({ color: "#a855f7" }).setLngLat([longitude, latitude]).addTo(map.current!)
-
-          map.current?.flyTo({ center: [longitude, latitude], zoom: 14, duration: 1000 })
-        })
-      }
     })
 
     return () => {
@@ -178,9 +205,51 @@ export default function EssentialCategoryPage() {
   // hace falta forzar un resize cuando se vuelve a mostrar o Mapbox lo pinta mal.
   useEffect(() => {
     if (mobileView === "map") {
-      setTimeout(() => map.current?.resize(), 50)
+      setTimeout(() => {
+        map.current?.resize()
+        if (pendingFitRef.current) {
+          const pts = pendingFitRef.current
+          pendingFitRef.current = null
+          fitMapTo(pts)
+        }
+      }, 80)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mobileView])
+
+  // Primer encuadre: que se vean todos los marcadores de la categoría.
+  useEffect(() => {
+    if (!mapReady || essentials.length === 0 || didInitialFit.current) return
+    const pts = essentials
+      .filter((e) => e.latitude && e.longitude)
+      .map((e) => [Number(e.longitude), Number(e.latitude)] as [number, number])
+    if (pts.length === 0) return
+    didInitialFit.current = true
+    fitMapTo(pts)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapReady, essentials])
+
+  // Al localizar al usuario: marcador morado y encuadre con los 5 más cercanos.
+  useEffect(() => {
+    if (!mapReady || !map.current || !userLocation) return
+    userMarkerRef.current?.remove()
+    userMarkerRef.current = new mapboxgl.Marker({ color: "#a855f7" }).setLngLat([userLocation.lng, userLocation.lat]).addTo(map.current)
+
+    const nearest = essentials
+      .filter((e) => e.latitude && e.longitude)
+      .map((e) => ({ e, d: distanceInMeters(userLocation.lat, userLocation.lng, Number(e.latitude), Number(e.longitude)) }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, 5)
+
+    // Si el más cercano está a >20 km (p. ej. fuera de Barcelona) no tiene sentido acercar el
+    // mapa al usuario: se deja la vista de la categoría y se avisa en pantalla.
+    const far = nearest.length > 0 && nearest[0].d > 20000
+    setFarAway(far)
+    const pts = nearest.map((n) => [Number(n.e.longitude), Number(n.e.latitude)] as [number, number])
+    if (!far) pts.unshift([userLocation.lng, userLocation.lat])
+    fitMapTo(pts)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapReady, userLocation])
 
   useEffect(() => {
     if (!mapReady || !map.current || essentials.length === 0) return
@@ -202,6 +271,18 @@ export default function EssentialCategoryPage() {
       })
   }, [mapReady, essentials, config.color])
 
+  const distMeters = (item: Essential): number | null =>
+    userLocation && item.latitude && item.longitude
+      ? distanceInMeters(userLocation.lat, userLocation.lng, Number(item.latitude), Number(item.longitude))
+      : null
+
+  const directionsFor = (item: Essential): string =>
+    userLocation
+      ? `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${item.latitude},${item.longitude}`
+      : `https://www.google.com/maps/dir/?api=1&destination=${item.latitude},${item.longitude}`
+
+  const distanceText = (d: number): string => formatDistance(d) + (d <= 2500 ? " · " + walkingMinutes(d) + " min andando" : "")
+
   const neighborhoods = ["All", ...Array.from(new Set(essentials.map((e) => e.neighborhood).filter(Boolean)))]
 
   const filteredEssentials = essentials
@@ -209,8 +290,8 @@ export default function EssentialCategoryPage() {
     .slice()
     .sort((a, b) => {
       if (!sortByDistance || !userLocation) return 0
-      const da = a.latitude && a.longitude ? getDistance(userLocation.lat, userLocation.lng, a.latitude, a.longitude) : Infinity
-      const db = b.latitude && b.longitude ? getDistance(userLocation.lat, userLocation.lng, b.latitude, b.longitude) : Infinity
+      const da = distMeters(a) ?? Infinity
+      const db = distMeters(b) ?? Infinity
       return da - db
     })
 
@@ -219,18 +300,9 @@ export default function EssentialCategoryPage() {
   const renderCard = (item: Essential, index: number) => {
     const hasCoords = Boolean(item.latitude && item.longitude)
 
-    let distanceLabel = ""
-    if (userLocation && hasCoords) {
-      const d = getDistance(userLocation.lat, userLocation.lng, item.latitude as number, item.longitude as number)
-      distanceLabel = d < 1 ? Math.round(d * 1000) + " m" : d.toFixed(1) + " km"
-    }
-
-    let directionsHref = ""
-    if (hasCoords) {
-      directionsHref = userLocation
-        ? `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${item.latitude},${item.longitude}`
-        : `https://www.google.com/maps/dir/?api=1&destination=${item.latitude},${item.longitude}`
-    }
+    const dMeters = distMeters(item)
+    const distanceLabel = dMeters != null ? distanceText(dMeters) : ""
+    const directionsHref = hasCoords ? directionsFor(item) : ""
 
     const reportHref = "/contact?type=report_issue&subject=" + encodeURIComponent("Reporte: " + item.name)
     const isSelected = selected != null && selected.id === item.id
@@ -425,17 +497,25 @@ export default function EssentialCategoryPage() {
                 })}
               </div>
             )}
-            {userLocation && (
-              <button
-                onClick={() => setSortByDistance(!sortByDistance)}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-bold transition ${
-                  sortByDistance ? "bg-purple-500 text-white" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
-                }`}
-              >
-                📍 Más cercano
-              </button>
-            )}
+            <button
+              onClick={() => (userLocation ? setSortByDistance(!sortByDistance) : locateMe())}
+              disabled={locating}
+              className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-bold transition ${
+                userLocation && sortByDistance ? "bg-purple-500 text-white" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+              }`}
+            >
+              {locating ? "Localizando..." : userLocation ? "📍 Más cercano" : "📍 Cerca de mí"}
+            </button>
           </div>
+
+          {locationDenied && (
+            <p className="mt-3 text-xs text-amber-300">
+              No hemos podido acceder a tu ubicación. Activa el permiso de ubicación del navegador y vuelve a pulsar "Cerca de mí".
+            </p>
+          )}
+          {farAway && (
+            <p className="mt-3 text-xs text-zinc-400">Parece que estás lejos de Barcelona, así que mostramos la categoría completa.</p>
+          )}
 
           {/* Toggle lista/mapa — solo móvil */}
           <div className="mt-3 flex gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-1.5 md:hidden">
@@ -473,8 +553,58 @@ export default function EssentialCategoryPage() {
             </div>
 
             <div className={`md:col-span-7 ${mobileView === "list" ? "hidden md:block" : ""}`}>
-              <div className="overflow-hidden rounded-[28px] border md:sticky md:top-24" style={{ height: "640px", borderColor: config.color + "30" }}>
+              <div className="relative overflow-hidden rounded-[28px] border md:sticky md:top-24" style={{ height: "640px", borderColor: config.color + "30" }}>
                 <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
+
+                {/* Ficha del sitio tocado: sin esto, en el móvil tocar un marcador no mostraba nada */}
+                {selected && (
+                  <div className="absolute inset-x-3 bottom-3 rounded-2xl border border-white/10 bg-[#0b0912]/95 p-4 backdrop-blur-xl">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-black text-white">{selected.name}</p>
+                        {selected.address && <p className="truncate text-xs text-zinc-400">{selected.address}</p>}
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                          {selected.open_hours && <span>🕒 {selected.open_hours}</span>}
+                          {(() => {
+                            const d = distMeters(selected)
+                            return d != null ? (
+                              <span className="rounded-full bg-purple-400/10 px-2 py-0.5 font-semibold text-purple-300">{distanceText(d)}</span>
+                            ) : null
+                          })()}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setSelected(null)}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white"
+                        aria-label="Cerrar"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {selected.latitude && selected.longitude && (
+                        <a
+                          href={directionsFor(selected)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-[11px] font-semibold text-purple-300 transition hover:bg-purple-500 hover:text-white"
+                        >
+                          🧭 Cómo llegar
+                        </a>
+                      )}
+                      {selected.maps_link && (
+                        <a
+                          href={selected.maps_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-white hover:text-black"
+                        >
+                          Maps
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

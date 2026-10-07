@@ -10,6 +10,7 @@ import AttendanceButton from "../gamification/AttendanceButton"
 import NearbyVenuesSheet from "../nightlife/NearbyVenuesSheet"
 import ClubMap from "../map/ClubMap"
 import ClubNightsCalendar from "../nightlife/ClubNightsCalendar"
+import NearbyEssentials from "../nightlife/NearbyEssentials"
 import TransportButtons from "../ui/TransportButtons"
 import { supabase } from "../../lib/supabase"
 import { FALLBACK_IMAGE as FALLBACK_CLUB_IMAGE } from "../../lib/fallbackImage"
@@ -965,6 +966,15 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                           </div>
                         )}
                       </div>
+                    </Card>
+                  </Reveal>
+                )}
+
+                {/* Sugerencias cercanas por categoría (comida, súper, farmacia, cajero...) */}
+                {club.latitude && club.longitude && (
+                  <Reveal>
+                    <Card innerClassName="p-8">
+                      <NearbyEssentials latitude={Number(club.latitude)} longitude={Number(club.longitude)} />
                     </Card>
                   </Reveal>
                 )}
