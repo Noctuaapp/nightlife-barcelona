@@ -1,26 +1,23 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 import { distanceInMeters, formatDistance, walkingMinutes, walkingDirectionsUrl } from "../../lib/geo"
 import { getOpenStatus } from "../../lib/openStatus"
 
-// Sugerencias de "esenciales" (tabla essentials, la misma que alimenta /essentials) cerca del
-// local, por categoría. Se cargan al pulsar cada categoría, no todas de golpe.
-const CATEGORIES: { key: string; icon: string; label: string; maxMeters: number }[] = [
-  { key: "food", icon: "🍔", label: "Comer", maxMeters: 1500 },
+// Tres chips con lo más cercano al local (comida, súper, cajero), sacados de la tabla essentials
+// (la misma que alimenta /essentials), y un enlace a todos los esenciales. Cada chip abre la ruta
+// andando desde el local.
+const CATS = [
+  { key: "food", icon: "🍔", label: "Comida", maxMeters: 1500 },
   { key: "supermarket", icon: "🛒", label: "Súper", maxMeters: 1500 },
-  { key: "pharmacy", icon: "💊", label: "Farmacia", maxMeters: 2000 },
-  { key: "atm", icon: "🏧", label: "Cajero", maxMeters: 1000 },
-  { key: "hospital", icon: "🏥", label: "Hospital", maxMeters: 6000 },
-  { key: "gas-station", icon: "⛽", label: "Gasolinera", maxMeters: 6000 },
-  { key: "hotel", icon: "🏨", label: "Hotel", maxMeters: 2000 },
+  { key: "atm", icon: "🏧", label: "Cajero", maxMeters: 1200 },
 ]
 
-type Row = {
-  id: number
+type Nearest = {
+  key: string
   name: string
-  address: string | null
   open_hours: string | null
   latitude: number
   longitude: number
@@ -28,104 +25,81 @@ type Row = {
 }
 
 export default function NearbyEssentials({ latitude, longitude }: { latitude: number; longitude: number }) {
-  const [active, setActive] = useState("food")
-  const [cache, setCache] = useState<Record<string, Row[]>>({})
-  const [loading, setLoading] = useState(false)
+  const [items, setItems] = useState<Record<string, Nearest | null> | null>(null)
 
   useEffect(() => {
-    if (cache[active]) return
-    const cat = CATEGORIES.find((c) => c.key === active)
-    if (!cat) return
     let cancelled = false
-    setLoading(true)
-    supabase
-      .from("essentials")
-      .select("id, name, address, open_hours, latitude, longitude")
-      .ilike("category", active)
-      .eq("hidden", false)
-      .then(({ data }) => {
-        if (cancelled) return
-        const rows: Row[] = ((data || []) as any[])
+    Promise.all(
+      CATS.map(async (cat) => {
+        const { data } = await supabase
+          .from("essentials")
+          .select("name, open_hours, latitude, longitude")
+          .ilike("category", cat.key)
+          .eq("hidden", false)
+        const nearest = ((data || []) as any[])
           .filter((e) => e.latitude && e.longitude)
           .map((e) => ({
-            id: e.id,
-            name: e.name,
-            address: e.address,
-            open_hours: e.open_hours,
+            key: cat.key,
+            name: e.name as string,
+            open_hours: e.open_hours as string | null,
             latitude: Number(e.latitude),
             longitude: Number(e.longitude),
             distanceMeters: distanceInMeters(latitude, longitude, Number(e.latitude), Number(e.longitude)),
           }))
           .filter((r) => r.distanceMeters <= cat.maxMeters)
-          .sort((a, b) => a.distanceMeters - b.distanceMeters)
-          .slice(0, 3)
-        setCache((prev) => ({ ...prev, [active]: rows }))
-        setLoading(false)
+          .sort((a, b) => a.distanceMeters - b.distanceMeters)[0]
+        return [cat.key, nearest || null] as const
       })
+    ).then((pairs) => {
+      if (!cancelled) setItems(Object.fromEntries(pairs))
+    })
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, latitude, longitude])
+  }, [latitude, longitude])
 
-  const rows = cache[active]
-  const activeCat = CATEGORIES.find((c) => c.key === active)
+  const found = items ? CATS.filter((c) => items[c.key]) : []
 
   return (
     <div>
-      <p className="mb-1 text-xs uppercase tracking-[0.3em] text-zinc-500">Cerca de este local</p>
-      <p className="mb-4 text-sm text-zinc-400">Dónde comer, comprar o resolver algo sin alejarte mucho.</p>
+      <p className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-500">Cerca de este local</p>
 
-      <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {CATEGORIES.map((c) => (
-          <button
-            key={c.key}
-            onClick={() => setActive(c.key)}
-            className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
-              active === c.key ? "bg-white text-black" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
-            }`}
-          >
-            {c.icon} {c.label}
-          </button>
-        ))}
-      </div>
+      <div className="flex flex-wrap gap-2.5">
+        {items === null &&
+          CATS.map((c) => <div key={c.key} className="h-11 w-44 animate-pulse rounded-full bg-white/[0.04]" />)}
 
-      <div className="mt-3 grid gap-2.5">
-        {loading && !rows && [0, 1, 2].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-white/[0.04]" />)}
-
-        {rows && rows.length === 0 && (
-          <p className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-4 text-sm text-zinc-500">
-            No tenemos {activeCat?.label.toLowerCase()} registrados cerca de este local todavía.
-          </p>
-        )}
-
-        {rows &&
-          rows.map((r) => (
-            <div key={r.id} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-              <span className="shrink-0 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-bold text-zinc-200">
+        {found.map((cat) => {
+          const r = items![cat.key]!
+          const st = getOpenStatus(r.open_hours)
+          return (
+            <a
+              key={cat.key}
+              href={walkingDirectionsUrl(latitude, longitude, r.latitude, r.longitude)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`${cat.label}: ${r.name} — ir andando`}
+              className="flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white transition hover:bg-white/[0.1]"
+            >
+              <span>{cat.icon}</span>
+              <span className="min-w-0 truncate font-semibold">{r.name}</span>
+              <span className="shrink-0 text-xs text-zinc-400">
                 {formatDistance(r.distanceMeters)} · {walkingMinutes(r.distanceMeters)} min
               </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-white">{r.name}</p>
-                <p className="truncate text-xs text-zinc-500">{r.address || "Barcelona"}</p>
-                {(() => {
-                  const st = getOpenStatus(r.open_hours)
-                  if (!st.label) return null
-                  const color = st.state === "open" ? (st.soon ? "text-amber-300" : "text-emerald-300") : st.state === "closed" ? "text-red-300" : "text-zinc-400"
-                  return <p className={`truncate text-xs font-semibold ${color}`}>{st.label}</p>
-                })()}
-              </div>
-              <a
-                href={walkingDirectionsUrl(latitude, longitude, r.latitude, r.longitude)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0 text-xs font-semibold text-purple-300 underline underline-offset-2 hover:text-purple-200"
-              >
-                Ir andando
-              </a>
-            </div>
-          ))}
+              {st.state !== "unknown" && (
+                <span className={`h-2 w-2 shrink-0 rounded-full ${st.state === "open" ? "bg-emerald-400" : "bg-red-400"}`} aria-label={st.label} />
+              )}
+            </a>
+          )
+        })}
+
+        {items !== null && found.length === 0 && (
+          <p className="text-sm text-zinc-500">Aún no tenemos sitios registrados cerca de este local.</p>
+        )}
       </div>
+
+      <Link href="/essentials" className="mt-3 inline-block text-xs font-semibold text-zinc-400 underline underline-offset-2 hover:text-white">
+        Ver más esenciales →
+      </Link>
     </div>
   )
 }

@@ -970,15 +970,6 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                   </Reveal>
                 )}
 
-                {/* Sugerencias cercanas por categoría (comida, súper, farmacia, cajero...) */}
-                {club.latitude && club.longitude && (
-                  <Reveal>
-                    <Card innerClassName="p-8">
-                      <NearbyEssentials latitude={Number(club.latitude)} longitude={Number(club.longitude)} />
-                    </Card>
-                  </Reveal>
-                )}
-
                 {/* Notas en directo: van ANTES de las reseñas de Google a propósito — son el
                     contenido más fresco de la página (minutos, no meses) y el único que viene
                     de alguien confirmado por GPS en la puerta ahora mismo. */}
@@ -1057,6 +1048,15 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                           </div>
                         ))}
                       </div>
+                    </Card>
+                  </Reveal>
+                )}
+
+                {/* Sugerencias cercanas (comer, súper, cajero siempre visibles) — al final de la ficha */}
+                {club.latitude && club.longitude && (
+                  <Reveal>
+                    <Card innerClassName="p-6">
+                      <NearbyEssentials latitude={Number(club.latitude)} longitude={Number(club.longitude)} />
                     </Card>
                   </Reveal>
                 )}

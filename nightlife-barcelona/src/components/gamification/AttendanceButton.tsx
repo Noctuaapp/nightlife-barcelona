@@ -11,6 +11,24 @@ type AttendanceButtonProps = {
   title?: string
 }
 
+// Inicio de la "noche" actual: las 06:00 más recientes en Madrid. Una marca de asistencia a un
+// CLUB solo vale hasta ese momento (antes se quedaba marcada para siempre, y al día siguiente
+// seguía diciendo "Voy esta noche"). Los eventos y noches de club tienen fecha propia y la ficha
+// ni muestra el botón cuando ya han pasado, así que a esos no se les aplica.
+function currentNightStartMs(): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Madrid",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date())
+  const get = (t: string) => parseInt(parts.find((p) => p.type === t)?.value || "0", 10)
+  const hour = get("hour") % 24
+  const sinceSix = (((hour - 6 + 24) % 24) * 60 + get("minute")) * 60 + get("second")
+  return Date.now() - sinceSix * 1000
+}
+
 // Botón "Asistiré esta noche" — marca intención de asistencia (independiente de favoritos) y
 // da XP la primera vez que se marca. Quitarlo no resta XP (para no penalizar un cambio de
 // planes ni animar a "farmear" marcando/desmarcando).
@@ -29,13 +47,15 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
 
       const { data: existing } = await supabase
         .from("attendances")
-        .select("id")
+        .select("id, created_at")
         .eq("user_id", data.user.id)
         .eq("item_type", itemType)
         .eq("item_id", itemId)
         .maybeSingle()
 
-      setAttending(!!existing)
+      const stillValid =
+        !!existing && (itemType !== "club" || new Date(existing.created_at).getTime() >= currentNightStartMs())
+      setAttending(stillValid)
       setLoading(false)
     }
     load()
@@ -57,6 +77,10 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
       if (!error) setAttending(false)
       return
     }
+
+    // Si quedaba una marca de una noche anterior (la tabla no permite dos filas iguales),
+    // se borra antes de crear la de esta noche.
+    await supabase.from("attendances").delete().eq("user_id", userId).eq("item_type", itemType).eq("item_id", itemId)
 
     const { error } = await supabase.from("attendances").insert({
       user_id: userId,
