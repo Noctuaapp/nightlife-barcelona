@@ -322,7 +322,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
             </div>
           </section>
 
-          <section className="relative z-10 mx-auto -mt-6 max-w-7xl px-6">
+          <section className="relative z-10 mx-auto mt-8 max-w-7xl px-6">
             <SurpriseMe clubs={clubs} />
           </section>
 

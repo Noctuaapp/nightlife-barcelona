@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import { createPortal } from "react-dom"
 import NocOwl from "../mascot/NocOwl"
 import NocSays from "../mascot/NocSays"
 import { clubOpenNow } from "../../lib/clubHours"
@@ -40,6 +41,8 @@ export default function SurpriseMe({ clubs }: { clubs: any[] }) {
   const [result, setResult] = useState<any | null>(null)
   const [note, setNote] = useState("")
   const [seen, setSeen] = useState<number[]>([])
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const timer = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -127,8 +130,8 @@ export default function SurpriseMe({ clubs }: { clubs: any[] }) {
         </button>
       </div>
 
-      {open && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 p-0 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label="Sorpréndeme">
+      {open && mounted && createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/80 p-0 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label="Sorpréndeme">
           <div className="relative max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-white/10 bg-zinc-950 p-6 sm:rounded-3xl">
             <button onClick={close} aria-label="Cerrar" className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white">✕</button>
 
@@ -208,7 +211,8 @@ export default function SurpriseMe({ clubs }: { clubs: any[] }) {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
