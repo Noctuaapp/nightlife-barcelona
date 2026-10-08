@@ -44,7 +44,7 @@ function meters(lat1: number, lon1: number, lat2: number, lon2: number): number 
 // Los "pub" y "bar" de OpenStreetMap en España son, casi todos, bares de barrio. Solo se admiten
 // si hay una señal clara de ocio nocturno: música, baile, karaoke o un nombre tipo club/sala.
 // Se descartan siempre restaurantes, granjas, tapas y centros culturales.
-const NOT_NIGHTLIFE = /(restaur|granja|freidur|bocata|bocadill|cervecer|tapas|menjador|menjar|comedor|centro cultural|agrupaci|casal|panader|pasteler|helader|kebab|pizzer|hamburguesa|pollo|marisquer|mesón|meson|taberna)/i
+const NOT_NIGHTLIFE = /(petanca|bolera|bolos|boccia|deport|futbol|fútbol|tenis|padel|pádel|golf|caza y pesca|jubilad|restaur|granja|freidur|bocata|bocadill|cervecer|tapas|menjador|menjar|comedor|centro cultural|agrupaci|casal|panader|pasteler|helader|kebab|pizzer|hamburguesa|pollo|marisquer|mesón|meson|taberna)/i
 const NIGHT_NAME = /(music|musical|live|karaoke|lounge|disco|club|sala |cocktail|cocteler|coctel|night|noche|nit|dance|rumba|salsa|latino|latin|jazz|rock|blues|irish|chiringuito|terraza|rooftop)/i
 
 function isNightlifeBar(tags: Record<string, string>): boolean {
@@ -116,6 +116,12 @@ out center tags;`
         continue
       }
       const json = await res.json()
+      // Si el servidor se queda sin tiempo/memoria responde 200 con "elements" vacío y un "remark".
+      // Eso NO es "no hay locales": es un fallo, y se trata como tal.
+      if (json.remark && /runtime error|timed out|out of memory/i.test(String(json.remark))) {
+        errors.push(`${new URL(url).host}: ${String(json.remark).slice(0, 160)}`)
+        continue
+      }
       elements = json.elements || []
       break
     } catch (e: any) {
