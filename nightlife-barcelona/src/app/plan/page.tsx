@@ -914,6 +914,11 @@ export default function PlanPage() {
                   </div>
                 </div>
 
+                <SharePlanButton
+                  title={`Plan de la noche · ${todayFormatted}`}
+                  stops={stops.map((st) => ({ kind: st.kind, title: st.title, subtitle: st.subtitle, time: st.time, image: st.image, href: st.href }))}
+                />
+
                 {/* ALTERNATIVAS */}
                 {alternatives.length > 0 && (
                   <div>
@@ -968,11 +973,6 @@ export default function PlanPage() {
                     </div>
                   </div>
                 )}
-
-                <SharePlanButton
-                  title={`Plan de la noche · ${todayFormatted}`}
-                  stops={stops.map((st) => ({ kind: st.kind, title: st.title, subtitle: st.subtitle, time: st.time, image: st.image, href: st.href }))}
-                />
 
                 <div className="flex gap-3">
                   <button

@@ -31,6 +31,12 @@ export default function SharePlanButton({
     if (state === "working" || stops.length === 0) return
     setState("working")
     try {
+      // Crear un plan exige cuenta (ver el plan y apuntarse, no).
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) {
+        window.location.href = "/login"
+        return
+      }
       const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date())
       const clean = stops.slice(0, 8).map((s) => ({
         kind: s.kind,
