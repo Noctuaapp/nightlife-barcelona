@@ -74,15 +74,26 @@ export async function GET(req: Request) {
   // Consulta ligera: el servidor solo devuelve discotecas/salas de música y los pubs o bares con
   // señales de ocio nocturno (música, baile, karaoke o nombre tipo club/sala). Pedir TODOS los bares
   // de la ciudad saturaba los servidores públicos.
+  // Para ciudades grandes la consulta se parte en dos mitades ligeras:
+  //   part=1 -> discotecas, salas de música y bares con etiquetas de música/baile/karaoke
+  //   part=2 -> pubs y bares cuyo NOMBRE suena a ocio nocturno (club, sala, lounge, jazz...)
+  //   sin part -> las dos a la vez
+  const part = searchParams.get("part")
   const nameRx = "music|musical|live|karaoke|lounge|disco|club|sala |cocktail|cocteler|coctel|night|noche|dance|rumba|salsa|latin|jazz|rock|blues|irish|chiringuito|terraza|rooftop"
+  const blocks: string[] = []
+  if (part !== "2") {
+    blocks.push('nwr(area.a)["amenity"~"^(nightclub|music_venue)$"]["name"];')
+    blocks.push('nwr(area.a)["amenity"~"^(pub|bar)$"]["name"]["live_music"="yes"];')
+    blocks.push('nwr(area.a)["amenity"~"^(pub|bar)$"]["name"]["dance"="yes"];')
+    blocks.push('nwr(area.a)["amenity"~"^(pub|bar)$"]["name"]["karaoke"="yes"];')
+  }
+  if (part !== "1") {
+    blocks.push(`nwr(area.a)["amenity"~"^(pub|bar)$"]["name"~"${nameRx}",i];`)
+  }
   const query = `[out:json][timeout:45];
 area["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;
 (
-  nwr(area.a)["amenity"~"^(nightclub|music_venue)$"]["name"];
-  nwr(area.a)["amenity"~"^(pub|bar)$"]["name"]["name"~"${nameRx}",i];
-  nwr(area.a)["amenity"~"^(pub|bar)$"]["name"]["live_music"="yes"];
-  nwr(area.a)["amenity"~"^(pub|bar)$"]["name"]["dance"="yes"];
-  nwr(area.a)["amenity"~"^(pub|bar)$"]["name"]["karaoke"="yes"];
+  ${blocks.join("\n  ")}
 );
 out center tags;`
 
