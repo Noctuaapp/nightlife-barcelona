@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
 import { awardXp, XP_AMOUNTS } from "../../lib/xp"
+import XpBurst from "../mascot/XpBurst"
 import { useLanguage } from "../../context/LanguageContext"
 
 type AttendanceButtonProps = {
@@ -123,11 +124,7 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
       >
         {attending ? `✅ ${t("attendance.going")}` : `🙋 ${t("attendance.willGo")}`}
       </button>
-      {justEarned && (
-        <span className="absolute -top-3 right-2 rounded-full bg-purple-500 px-3 py-1 text-xs font-black text-white shadow-lg">
-          +{XP_AMOUNTS.attendance} XP
-        </span>
-      )}
+      <XpBurst show={justEarned} amount={XP_AMOUNTS.attendance} />
       {!attending && (
         <p className="mt-2 text-center text-[11px] leading-snug text-zinc-500">
           {t("attendance.hint").replace("{xp}", String(XP_AMOUNTS.attendance))}

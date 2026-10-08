@@ -6,6 +6,7 @@ import Header from "../layout/Header"
 import BottomNav from "../layout/BottomNav"
 import Footer from "../layout/Footer"
 import EventsSection from "./EventsSection"
+import SurpriseMe from "./SurpriseMe"
 import AreasSection from "./AreasSection"
 import { useLanguage } from "../../context/LanguageContext"
 import { createSlug } from "../../lib/slug"
@@ -319,6 +320,10 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
                 ))}
               </div>
             </div>
+          </section>
+
+          <section className="relative z-10 mx-auto -mt-6 max-w-7xl px-6">
+            <SurpriseMe clubs={clubs} />
           </section>
 
           {/* Hidden but crawlable — Google OAuth verification purpose statement */}

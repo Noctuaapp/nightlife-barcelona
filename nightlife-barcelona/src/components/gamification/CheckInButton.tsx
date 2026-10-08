@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
 import { awardXp, XP_AMOUNTS } from "../../lib/xp"
+import XpBurst from "../mascot/XpBurst"
 import { useLanguage } from "../../context/LanguageContext"
 
 type CheckInButtonProps = {
@@ -173,11 +174,7 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
       >
         {checkedInToday ? `📍 ${t("checkin.done")}` : working ? `${t("checkin.locating")}` : `📍 ${t("checkin.cta")}`}
       </button>
-      {justEarned && (
-        <span className="absolute -top-3 right-2 rounded-full bg-purple-500 px-3 py-1 text-xs font-black text-white shadow-lg">
-          +{XP_AMOUNTS.checkin} XP
-        </span>
-      )}
+      <XpBurst show={justEarned} amount={XP_AMOUNTS.checkin} />
       {checkedInToday && !noteSaved && (
         <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
           <p className="text-xs font-semibold text-zinc-400">¿Cómo está la noche? Déjale una nota a quien venga después.</p>
