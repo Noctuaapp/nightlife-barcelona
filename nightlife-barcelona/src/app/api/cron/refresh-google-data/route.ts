@@ -72,8 +72,10 @@ export async function GET(req: Request) {
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
   const apiKey = process.env.GOOGLE_MAPS_API_KEY!
-  const BATCH_SIZE = 4
-  const PHOTOS_PER_CLUB = 4
+  // Con las fotos activadas cada club cuesta 1 consulta + hasta 5 descargas = 6 llamadas;
+  // 3 clubs por ejecución (18 llamadas) caben en el tope diario de 20.
+  const PHOTOS_PER_CLUB = 5
+  const BATCH_SIZE = fetchRichData() ? 3 : 4
 
   // Freno de seguridad: si hoy ya se ha llegado al límite diario compartido entre los 3 crons
   // (GOOGLE_PLACES_DAILY_LIMIT, ver src/lib/googlePlacesBudget.ts), no se hace ninguna llamada
@@ -133,7 +135,7 @@ export async function GET(req: Request) {
   // se haya curado a mano.
   const { data: clubs, error } = await supabase
     .from("clubs")
-    .select("id, name, image, google_place_id")
+    .select("id, name, image, gallery, google_place_id")
     .not("google_place_id", "is", null)
     .or("manual_photos.is.null,manual_photos.eq.false")
     .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
@@ -165,7 +167,11 @@ export async function GET(req: Request) {
         // traducido y "originalText" es el texto tal cual lo escribió la persona.
         // reviews/photos solo se piden si GOOGLE_PLACES_FETCH_RICH_DATA está activado: ese
         // fieldmask cae en el tier "Enterprise + Atmosphere" (mucho más caro) en vez del básico.
-        const fields = fetchRichData() ? "displayName,types,rating,userRatingCount,reviews,photos" : "displayName,types,rating,userRatingCount"
+        // Solo se piden fotos (nunca reseñas, que es lo caro) y solo a los clubs que aún no tienen
+        // galería: así no se vuelven a descargar las fotos de los que ya las tienen.
+        const hasGallery = Array.isArray(club.gallery) && club.gallery.length > 0
+        const needsPhotos = fetchRichData() && !hasGallery
+        const fields = needsPhotos ? "displayName,types,rating,userRatingCount,photos" : "displayName,types,rating,userRatingCount"
         const detailsRes = await googleFetch(counter, `https://places.googleapis.com/v1/places/${club.google_place_id}?languageCode=es`, {
           headers: {
             "X-Goog-Api-Key": apiKey,
