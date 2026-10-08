@@ -71,10 +71,18 @@ export async function GET(req: Request) {
   if (!area) return NextResponse.json({ error: "area debe ser barcelona, hospitalet o badalona" }, { status: 400 })
   const dry = searchParams.get("dry") !== "0"
 
+  // Consulta ligera: el servidor solo devuelve discotecas/salas de música y los pubs o bares con
+  // señales de ocio nocturno (música, baile, karaoke o nombre tipo club/sala). Pedir TODOS los bares
+  // de la ciudad saturaba los servidores públicos.
+  const nameRx = "music|musical|live|karaoke|lounge|disco|club|sala |cocktail|cocteler|coctel|night|noche|dance|rumba|salsa|latin|jazz|rock|blues|irish|chiringuito|terraza|rooftop"
   const query = `[out:json][timeout:25];
 area["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;
 (
-  nwr(area.a)["amenity"~"^(nightclub|music_venue|pub|bar)$"]["name"];
+  nwr(area.a)["amenity"~"^(nightclub|music_venue)$"]["name"];
+  nwr(area.a)["amenity"~"^(pub|bar)$"]["name"]["name"~"${nameRx}",i];
+  nwr(area.a)["amenity"~"^(pub|bar)$"]["name"]["live_music"="yes"];
+  nwr(area.a)["amenity"~"^(pub|bar)$"]["name"]["dance"="yes"];
+  nwr(area.a)["amenity"~"^(pub|bar)$"]["name"]["karaoke"="yes"];
 );
 out center tags;`
 
@@ -97,7 +105,11 @@ out center tags;`
         signal: ctrl.signal,
       })
       clearTimeout(timer)
-      if (!res.ok) { errors.push(`${new URL(url).host}: ${res.status}`); continue }
+      if (!res.ok) {
+        const body = (await res.text().catch(() => "")).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160)
+        errors.push(`${new URL(url).host}: ${res.status} ${body}`)
+        continue
+      }
       const json = await res.json()
       elements = json.elements || []
       break
