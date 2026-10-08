@@ -71,76 +71,95 @@ export async function GET(req: Request) {
   if (!area) return NextResponse.json({ error: "area debe ser barcelona, hospitalet o badalona" }, { status: 400 })
   const dry = searchParams.get("dry") !== "0"
 
-  // Consulta ligera: el servidor solo devuelve discotecas/salas de música y los pubs o bares con
-  // señales de ocio nocturno (música, baile, karaoke o nombre tipo club/sala). Pedir TODOS los bares
-  // de la ciudad saturaba los servidores públicos.
-  // Para ciudades grandes la consulta se parte en dos mitades ligeras:
-  //   part=1 -> discotecas, salas de música y bares con etiquetas de música/baile/karaoke
-  //   part=2 -> pubs y bares cuyo NOMBRE suena a ocio nocturno (club, sala, lounge, jazz...)
-  //   sin part -> las dos a la vez
-  const part = searchParams.get("part")
+  // Solo se piden discotecas/salas de música y pubs o bares con señales claras de noche
+  // (etiquetas de música/baile/karaoke, o un nombre tipo club/sala/lounge/jazz...).
   const nameRx = "music|musical|live|karaoke|lounge|disco|club|sala |cocktail|cocteler|coctel|night|noche|dance|rumba|salsa|latin|jazz|rock|blues|irish|chiringuito|terraza|rooftop"
-  const blocks: string[] = []
-  if (part !== "2") {
-    blocks.push('nwr(area.a)["amenity"~"^(nightclub|music_venue)$"]["name"];')
-    blocks.push('nwr(area.a)["amenity"~"^(pub|bar)$"]["name"]["live_music"="yes"];')
-    blocks.push('nwr(area.a)["amenity"~"^(pub|bar)$"]["name"]["dance"="yes"];')
-    blocks.push('nwr(area.a)["amenity"~"^(pub|bar)$"]["name"]["karaoke"="yes"];')
-  }
-  if (part !== "1") {
-    blocks.push(`nwr(area.a)["amenity"~"^(pub|bar)$"]["name"~"${nameRx}",i];`)
-  }
-  const query = `[out:json][timeout:45];
-area["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;
-(
-  ${blocks.join("\n  ")}
-);
-out center tags;`
+  const blocksFor = (scope: string) => [
+    `nwr${scope}["amenity"~"^(nightclub|music_venue)$"]["name"];`,
+    `nwr${scope}["amenity"~"^(pub|bar)$"]["name"]["live_music"="yes"];`,
+    `nwr${scope}["amenity"~"^(pub|bar)$"]["name"]["dance"="yes"];`,
+    `nwr${scope}["amenity"~"^(pub|bar)$"]["name"]["karaoke"="yes"];`,
+    `nwr${scope}["amenity"~"^(pub|bar)$"]["name"~"${nameRx}",i];`,
+  ]
 
-  // Varios servidores espejo: el público de OpenStreetMap se satura a ratos (504).
   const MIRRORS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
   ]
-  let elements: any[] | null = null
-  const errors: string[] = []
-  const startedAt = Date.now()
-  for (const url of MIRRORS) {
-    // El servidor principal necesita tiempo (consultas de municipio completas): hasta ~47 s.
-    // Los espejos solo entran con lo que quede de margen hasta el límite de 60 s de Vercel.
-    const left = 57000 - (Date.now() - startedAt)
-    if (left < 4000) break
-    try {
-      const ctrl = new AbortController()
-      const timer = setTimeout(() => ctrl.abort(), Math.min(47000, left))
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "NoctuaApp/1.0 (info@noctuaapp.com)" },
-        body: "data=" + encodeURIComponent(query),
-        signal: ctrl.signal,
-      })
-      clearTimeout(timer)
-      if (!res.ok) {
-        const body = (await res.text().catch(() => "")).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160)
-        errors.push(`${new URL(url).host}: ${res.status} ${body}`)
-        continue
+
+  // Una consulta con varios servidores como respaldo. Devuelve null si ninguno responde a tiempo.
+  async function runQuery(query: string, perTryMs: number, errors: string[]): Promise<any[] | null> {
+    for (const url of MIRRORS) {
+      try {
+        const ctrl = new AbortController()
+        const timer = setTimeout(() => ctrl.abort(), perTryMs)
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "NoctuaApp/1.0 (info@noctuaapp.com)" },
+          body: "data=" + encodeURIComponent(query),
+          signal: ctrl.signal,
+        })
+        clearTimeout(timer)
+        if (!res.ok) { errors.push(`${new URL(url).host}: ${res.status}`); continue }
+        const json = await res.json()
+        if (json.remark && /runtime error|timed out|out of memory/i.test(String(json.remark))) {
+          errors.push(`${new URL(url).host}: ${String(json.remark).slice(0, 120)}`)
+          continue
+        }
+        return json.elements || []
+      } catch (e: any) {
+        errors.push(`${new URL(url).host}: ${e.name === "AbortError" ? "tiempo agotado" : e.message}`)
       }
-      const json = await res.json()
-      // Si el servidor se queda sin tiempo/memoria responde 200 con "elements" vacío y un "remark".
-      // Eso NO es "no hay locales": es un fallo, y se trata como tal.
-      if (json.remark && /runtime error|timed out|out of memory/i.test(String(json.remark))) {
-        errors.push(`${new URL(url).host}: ${String(json.remark).slice(0, 160)}`)
-        continue
-      }
-      elements = json.elements || []
-      break
-    } catch (e: any) {
-      errors.push(`${new URL(url).host}: ${e.name === "AbortError" ? "tiempo agotado" : e.message}`)
     }
+    return null
   }
-  if (!elements) {
-    return NextResponse.json({ error: "Los servidores de OpenStreetMap no respondieron. Prueba otra vez en uno o dos minutos.", detalle: errors }, { status: 502 })
+
+  const errors: string[] = []
+  let elements: any[] = []
+  let tilesInfo: { ok: number; failed: number } | null = null
+
+  if (areaKey === "barcelona") {
+    // Barcelona por cuadrículas: 12 consultas pequeñas (4 x 3) en vez de una enorme.
+    const S = 41.315, N = 41.470, W = 2.050, E = 2.232
+    const rows = 3, cols = 4
+    const tiles: string[] = []
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const s0 = S + ((N - S) * r) / rows, n0 = S + ((N - S) * (r + 1)) / rows
+        const w0 = W + ((E - W) * c) / cols, e0 = W + ((E - W) * (c + 1)) / cols
+        tiles.push(`(${s0.toFixed(5)},${w0.toFixed(5)},${n0.toFixed(5)},${e0.toFixed(5)})`)
+      }
+    }
+    const startedAt = Date.now()
+    const seenIds = new Set<string>()
+    let ok = 0, failed = 0
+    for (const bb of tiles) {
+      if (Date.now() - startedAt > 50000) { failed++; continue }
+      const q = `[out:json][timeout:12];\n(\n  ${blocksFor(bb).join("\n  ")}\n);\nout center tags;`
+      const els = await runQuery(q, 9000, errors)
+      if (els === null) { failed++; continue }
+      ok++
+      for (const el of els) {
+        const id = `${el.type}${el.id}`
+        if (seenIds.has(id)) continue
+        const city = (el.tags?.["addr:city"] || "").toString()
+        if (city && !/barcelona/i.test(city)) continue // quita los de municipios vecinos
+        seenIds.add(id)
+        elements.push(el)
+      }
+    }
+    tilesInfo = { ok, failed }
+    if (ok === 0) {
+      return NextResponse.json({ error: "Ninguna cuadrícula respondió. OpenStreetMap está caído ahora mismo.", detalle: errors.slice(0, 6) }, { status: 502 })
+    }
+  } else {
+    const q = `[out:json][timeout:45];\narea["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;\n(\n  ${blocksFor("(area.a)").join("\n  ")}\n);\nout center tags;`
+    const els = await runQuery(q, 47000, errors)
+    if (els === null) {
+      return NextResponse.json({ error: "Los servidores de OpenStreetMap no respondieron. Prueba otra vez en uno o dos minutos.", detalle: errors }, { status: 502 })
+    }
+    elements = els
   }
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -207,6 +226,7 @@ out center tags;`
     return NextResponse.json({
       modo: "VISTA PREVIA (no se ha escrito nada). Añade &dry=0 para importar.",
       area: area.city,
+      ...(tilesInfo ? { cuadriculas_ok: tilesInfo.ok, cuadriculas_fallidas: tilesInfo.failed, aviso: tilesInfo.failed ? "Faltan zonas: repite la URL para completar (no se duplica nada al importar)." : undefined } : {}),
       encontrados_en_osm: elements.length,
       pubs_y_bares_descartados_por_no_ser_nocturnos: skippedBar,
       ya_existian: skippedDup,
