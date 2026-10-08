@@ -75,7 +75,7 @@ export async function GET(req: Request) {
   // señales de ocio nocturno (música, baile, karaoke o nombre tipo club/sala). Pedir TODOS los bares
   // de la ciudad saturaba los servidores públicos.
   const nameRx = "music|musical|live|karaoke|lounge|disco|club|sala |cocktail|cocteler|coctel|night|noche|dance|rumba|salsa|latin|jazz|rock|blues|irish|chiringuito|terraza|rooftop"
-  const query = `[out:json][timeout:25];
+  const query = `[out:json][timeout:45];
 area["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;
 (
   nwr(area.a)["amenity"~"^(nightclub|music_venue)$"]["name"];
@@ -94,10 +94,15 @@ out center tags;`
   ]
   let elements: any[] | null = null
   const errors: string[] = []
+  const startedAt = Date.now()
   for (const url of MIRRORS) {
+    // El servidor principal necesita tiempo (consultas de municipio completas): hasta ~47 s.
+    // Los espejos solo entran con lo que quede de margen hasta el límite de 60 s de Vercel.
+    const left = 57000 - (Date.now() - startedAt)
+    if (left < 4000) break
     try {
       const ctrl = new AbortController()
-      const timer = setTimeout(() => ctrl.abort(), 17000)
+      const timer = setTimeout(() => ctrl.abort(), Math.min(47000, left))
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "NoctuaApp/1.0 (info@noctuaapp.com)" },
