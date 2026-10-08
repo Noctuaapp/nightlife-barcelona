@@ -17,6 +17,8 @@ export const BADGES: Record<string, { emoji: string; name: string; hint: string;
 // (las que se acaban de desbloquear). Si falla o no hay sesión, devuelve [] sin molestar.
 export async function evaluateBadges(supabase: SupabaseClient): Promise<string[]> {
   try {
+    // Si este usuario llegó invitado y ya hizo su primer check-in, se liquida el premio de invitación.
+    try { await supabase.rpc("settle_my_referral") } catch {}
     const { data, error } = await supabase.rpc("evaluate_badges")
     if (error || !Array.isArray(data)) return []
     return data as string[]

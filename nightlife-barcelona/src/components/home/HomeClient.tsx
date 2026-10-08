@@ -7,6 +7,7 @@ import BottomNav from "../layout/BottomNav"
 import Footer from "../layout/Footer"
 import EventsSection from "./EventsSection"
 import SurpriseMe from "./SurpriseMe"
+import ReferralBanner from "./ReferralBanner"
 import AreasSection from "./AreasSection"
 import { useLanguage } from "../../context/LanguageContext"
 import { createSlug } from "../../lib/slug"
@@ -323,6 +324,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
           </section>
 
           <section className="relative z-10 mx-auto mt-8 max-w-7xl px-6">
+            <ReferralBanner />
             <SurpriseMe clubs={clubs} />
           </section>
 

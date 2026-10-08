@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 import { awardXp, currentIsoWeek } from "../../lib/xp"
 import { BADGES, CHALLENGES, evaluateBadges } from "../../lib/badges"
@@ -88,6 +89,24 @@ export default function BadgesAndChallenges() {
   return (
     <>
       <BadgeToast keys={toast} onDone={() => setToast([])} />
+
+      <Link href="/mi-mes" className="mb-8 flex items-center gap-3 rounded-2xl border border-purple-400/30 bg-gradient-to-r from-purple-600/20 to-transparent p-4 transition hover:border-purple-400/60">
+        <NocOwl size={44} mood="party" />
+        <div className="flex-1">
+          <p className="text-sm font-black text-white">Tu mes en Noctua</p>
+          <p className="text-xs text-zinc-400">Mira tu resumen y compártelo</p>
+        </div>
+        <span className="text-zinc-400">→</span>
+      </Link>
+
+      <Link href="/invitar" className="mb-8 flex items-center gap-3 rounded-2xl border border-amber-400/30 bg-gradient-to-r from-amber-500/15 to-transparent p-4 transition hover:border-amber-400/60">
+        <span className="text-3xl">🎟️</span>
+        <div className="flex-1">
+          <p className="text-sm font-black text-white">Invita a un amigo</p>
+          <p className="text-xs text-zinc-400">+50 XP para ti y +25 para tu amigo</p>
+        </div>
+        <span className="text-zinc-400">→</span>
+      </Link>
 
       <div className="mb-10">
         <div className="mb-3 flex items-center gap-3">
