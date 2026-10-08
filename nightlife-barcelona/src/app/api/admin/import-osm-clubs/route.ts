@@ -160,20 +160,32 @@ export async function GET(req: Request) {
     }
     const startedAt = Date.now()
     const seenIds = new Set<string>()
-    let ok = 0, failed = 0
-    for (const bb of tiles) {
-      if (Date.now() - startedAt > 50000) { failed++; continue }
-      const q = `[out:json][timeout:12];\n(\n  ${blocksFor(bb).join("\n  ")}\n);\nout center tags;`
-      const els = await runQuery(q, 9000, errors)
-      if (els === null) { failed++; continue }
-      ok++
-      for (const el of els) {
-        const id = `${el.type}${el.id}`
-        if (seenIds.has(id)) continue
-        seenIds.add(id)
-        elements.push(el)
+    const BUDGET = 52000
+    let pending = [...tiles]
+    // Hasta 3 pasadas: lo que falla en una se reintenta en la siguiente, con 4 cuadrículas en paralelo.
+    for (let pass = 0; pass < 3 && pending.length > 0; pass++) {
+      const stillFailing: string[] = []
+      for (let i = 0; i < pending.length; i += 4) {
+        const batch = pending.slice(i, i + 4)
+        if (Date.now() - startedAt > BUDGET - 9000) { stillFailing.push(...batch); continue }
+        const results = await Promise.all(batch.map(async (bb) => {
+          const q = `[out:json][timeout:12];\n(\n  ${blocksFor(bb).join("\n  ")}\n);\nout center tags;`
+          return { bb, els: await runQuery(q, 9000, errors) }
+        }))
+        for (const r of results) {
+          if (r.els === null) { stillFailing.push(r.bb); continue }
+          for (const el of r.els) {
+            const id = `${el.type}${el.id}`
+            if (seenIds.has(id)) continue
+            seenIds.add(id)
+            elements.push(el)
+          }
+        }
       }
+      pending = stillFailing
     }
+    const failed = pending.length
+    const ok = tiles.length - failed
     tilesInfo = { ok, failed }
     if (ok === 0) {
       return NextResponse.json({ error: "Ninguna cuadrícula respondió. OpenStreetMap está caído ahora mismo.", detalle: errors.slice(0, 6) }, { status: 502 })
@@ -270,5 +282,11 @@ export async function GET(req: Request) {
     }
     inserted += chunk.length
   }
-  return NextResponse.json({ area: area.city, insertados: inserted, ocultos: true })
+  return NextResponse.json({
+    area: area.city,
+    insertados: inserted,
+    ocultos: true,
+    ...(tilesInfo ? { cuadriculas_ok: tilesInfo.ok, cuadriculas_fallidas: tilesInfo.failed, aviso: tilesInfo.failed ? "Faltan zonas: repite la URL hasta que cuadriculas_fallidas sea 0 (no se duplica nada)." : undefined } : {}),
+    ya_existian: skippedDup,
+  })
 }
