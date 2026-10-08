@@ -14,13 +14,13 @@ export const maxDuration = 60
 //   /api/admin/import-osm-clubs?secret=TU_ADMIN_SECRET&area=barcelona&dry=0
 //   area = barcelona | hospitalet | badalona
 
-const AREAS: Record<string, { osmName: string; city: string }> = {
-  barcelona: { osmName: "Barcelona", city: "Barcelona" },
-  hospitalet: { osmName: "L'Hospitalet de Llobregat", city: "L'Hospitalet de Llobregat" },
-  badalona: { osmName: "Badalona", city: "Badalona" },
+const AREAS: Record<string, { osmPattern: string; city: string }> = {
+  barcelona: { osmPattern: "Barcelona", city: "Barcelona" },
+  hospitalet: { osmPattern: "[Ll].[Hh]ospitalet de [Ll]lobregat", city: "L'Hospitalet de Llobregat" },
+  badalona: { osmPattern: "Badalona", city: "Badalona" },
 }
 
-const STOP_WORDS = ["bar", "pub", "club", "discoteca", "cafe", "restaurant", "restaurante", "the", "el", "la", "los", "las", "de", "del", "i", "y", "and"]
+const STOP_WORDS = ["bar", "pub", "club", "discoteca", "cafe", "restaurant", "restaurante", "bcn", "barcelona", "the", "el", "la", "los", "las", "de", "del", "i", "y", "and"]
 
 function normalize(name: string): string {
   const base = name
@@ -41,12 +41,18 @@ function meters(lat1: number, lon1: number, lat2: number, lon2: number): number 
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-function isLateBar(tags: Record<string, string>): boolean {
+// Los "pub" y "bar" de OpenStreetMap en España son, casi todos, bares de barrio. Solo se admiten
+// si hay una señal clara de ocio nocturno: música, baile, karaoke o un nombre tipo club/sala.
+// Se descartan siempre restaurantes, granjas, tapas y centros culturales.
+const NOT_NIGHTLIFE = /(restaur|granja|freidur|bocata|bocadill|cervecer|tapas|menjador|menjar|comedor|centro cultural|agrupaci|casal|panader|pasteler|helader|kebab|pizzer|hamburguesa|pollo|marisquer|mesón|meson|taberna)/i
+const NIGHT_NAME = /(music|musical|live|karaoke|lounge|disco|club|sala |cocktail|cocteler|coctel|night|noche|nit|dance|rumba|salsa|latino|latin|jazz|rock|blues|irish|chiringuito|terraza|rooftop)/i
+
+function isNightlifeBar(tags: Record<string, string>): boolean {
+  const name = tags.name || ""
+  if (NOT_NIGHTLIFE.test(name)) return false
   if (tags.live_music === "yes" || tags.dance === "yes" || tags.karaoke === "yes") return true
   if (tags.music || Object.keys(tags).some((k) => k.startsWith("music:"))) return true
-  if (/(music|musical|live|karaoke|lounge|disco|club|sala|cocktail|cocteler|coctel)/i.test(tags.name || "")) return true
-  const oh = tags.opening_hours || ""
-  return /-\s*(0[1-7])(:\d\d)?\b/.test(oh) || /-\s*24:00/.test(oh) || /-\s*00:[0-5]\d/.test(oh) && /(?:^|[^0-9])2[2-3]:/.test(oh)
+  return NIGHT_NAME.test(name)
 }
 
 function cleanUrl(v?: string): string | null {
@@ -65,29 +71,42 @@ export async function GET(req: Request) {
   if (!area) return NextResponse.json({ error: "area debe ser barcelona, hospitalet o badalona" }, { status: 400 })
   const dry = searchParams.get("dry") !== "0"
 
-  const query = `[out:json][timeout:50];
-area["boundary"="administrative"]["admin_level"="8"]["name"="${area.osmName.replace(/"/g, "")}"]->.a;
+  const query = `[out:json][timeout:25];
+area["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;
 (
   nwr(area.a)["amenity"~"^(nightclub|music_venue|pub|bar)$"]["name"];
 );
 out center tags;`
 
-  let elements: any[] = []
-  try {
-    const ctrl = new AbortController()
-    const timer = setTimeout(() => ctrl.abort(), 52000)
-    const res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "NoctuaApp/1.0 (info@noctuaapp.com)" },
-      body: "data=" + encodeURIComponent(query),
-      signal: ctrl.signal,
-    })
-    clearTimeout(timer)
-    if (!res.ok) return NextResponse.json({ error: `Overpass respondió ${res.status}. Prueba otra vez en un minuto.` }, { status: 502 })
-    const json = await res.json()
-    elements = json.elements || []
-  } catch (e: any) {
-    return NextResponse.json({ error: "No se pudo consultar OpenStreetMap: " + e.message }, { status: 502 })
+  // Varios servidores espejo: el público de OpenStreetMap se satura a ratos (504).
+  const MIRRORS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+  ]
+  let elements: any[] | null = null
+  const errors: string[] = []
+  for (const url of MIRRORS) {
+    try {
+      const ctrl = new AbortController()
+      const timer = setTimeout(() => ctrl.abort(), 17000)
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "NoctuaApp/1.0 (info@noctuaapp.com)" },
+        body: "data=" + encodeURIComponent(query),
+        signal: ctrl.signal,
+      })
+      clearTimeout(timer)
+      if (!res.ok) { errors.push(`${new URL(url).host}: ${res.status}`); continue }
+      const json = await res.json()
+      elements = json.elements || []
+      break
+    } catch (e: any) {
+      errors.push(`${new URL(url).host}: ${e.name === "AbortError" ? "tiempo agotado" : e.message}`)
+    }
+  }
+  if (!elements) {
+    return NextResponse.json({ error: "Los servidores de OpenStreetMap no respondieron. Prueba otra vez en uno o dos minutos.", detalle: errors }, { status: 502 })
   }
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -121,7 +140,7 @@ out center tags;`
     const lon = Number(el.lon ?? el.center?.lon)
     if (!name || !isFinite(lat) || !isFinite(lon)) continue
     const amenity = tags.amenity
-    if (amenity === "bar" && !isLateBar(tags)) { skippedBar++; continue }
+    if (amenity !== "nightclub" && amenity !== "music_venue" && !isNightlifeBar(tags)) { skippedBar++; continue }
 
     const norm = normalize(name)
     if (isDup(norm, lat, lon)) { skippedDup++; continue }
@@ -155,7 +174,7 @@ out center tags;`
       modo: "VISTA PREVIA (no se ha escrito nada). Añade &dry=0 para importar.",
       area: area.city,
       encontrados_en_osm: elements.length,
-      bares_descartados_por_no_ser_nocturnos: skippedBar,
+      pubs_y_bares_descartados_por_no_ser_nocturnos: skippedBar,
       ya_existian: skippedDup,
       nuevos: rows.length,
       muestra: rows.slice(0, 60).map((r) => `${r.name} (${r.venue_type}) ${r.address || ""}`.trim()),
