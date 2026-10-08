@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
 import { awardXp, XP_AMOUNTS } from "../../lib/xp"
 import XpBurst from "../mascot/XpBurst"
+import BadgeToast from "../mascot/BadgeToast"
+import { evaluateBadges } from "../../lib/badges"
 import { useLanguage } from "../../context/LanguageContext"
 
 type AttendanceButtonProps = {
@@ -39,6 +41,7 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
   const [attending, setAttending] = useState(false)
   const [loading, setLoading] = useState(true)
   const [justEarned, setJustEarned] = useState(false)
+  const [newBadges, setNewBadges] = useState<string[]>([])
 
   useEffect(() => {
     const load = async () => {
@@ -108,12 +111,15 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
       setJustEarned(true)
       setTimeout(() => setJustEarned(false), 2500)
     }
+    const nb = await evaluateBadges(supabase)
+    if (nb.length) setNewBadges(nb)
   }
 
   if (loading) return null
 
   return (
     <div className="relative">
+      <BadgeToast keys={newBadges} onDone={() => setNewBadges([])} />
       <button
         onClick={toggleAttendance}
         className={`mt-3 flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 font-bold transition hover:scale-[1.02] ${

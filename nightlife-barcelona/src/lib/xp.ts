@@ -60,7 +60,7 @@ export async function awardXp(
   supabase: SupabaseClient,
   params: {
     userId: string
-    actionType: "attendance" | "checkin" | "streak"
+    actionType: "attendance" | "checkin" | "streak" | "badge" | "challenge"
     itemType?: string | null
     itemId?: number | null
     amount: number

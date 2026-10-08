@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
 import { awardXp, XP_AMOUNTS } from "../../lib/xp"
 import XpBurst from "../mascot/XpBurst"
+import BadgeToast from "../mascot/BadgeToast"
+import { evaluateBadges } from "../../lib/badges"
 import { useLanguage } from "../../context/LanguageContext"
 
 type CheckInButtonProps = {
@@ -37,6 +39,7 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
   const [working, setWorking] = useState(false)
   const [error, setError] = useState("")
   const [justEarned, setJustEarned] = useState(false)
+  const [newBadges, setNewBadges] = useState<string[]>([])
 
   // Nota del check-in: lo único de verdad "en directo" que puede dejar alguien que ACABA de
   // comprobarlo con el GPS — distinto de una reseña de Google, que puede ser de hace meses.
@@ -84,6 +87,8 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
       return
     }
     setNoteSaved(true)
+    const nb = await evaluateBadges(supabase)
+    if (nb.length) setNewBadges(nb)
   }
 
   if (!latitude || !longitude) return null
@@ -150,6 +155,8 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
           setJustEarned(true)
           setTimeout(() => setJustEarned(false), 2500)
         }
+        const nb = await evaluateBadges(supabase)
+        if (nb.length) setNewBadges(nb)
       },
       () => {
         setError(t("checkin.permissionDenied"))
@@ -163,6 +170,7 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
 
   return (
     <div className="relative mt-3">
+      <BadgeToast keys={newBadges} onDone={() => setNewBadges([])} />
       <button
         onClick={handleCheckIn}
         disabled={working || checkedInToday}

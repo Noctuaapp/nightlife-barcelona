@@ -7,6 +7,7 @@ import { LEVELS, getLevelInfo } from "../../lib/xp"
 import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"
 import BottomNav from "@/components/layout/BottomNav"
+import BadgesAndChallenges from "@/components/gamification/BadgesAndChallenges"
 
 // Ventajas de cada nivel. De momento son el roadmap de Club Noctua — solo la insignia de perfil
 // (el nombre y el icono del nivel, visibles ya en /profile) está activa de verdad; el resto son
@@ -111,6 +112,8 @@ export default function ClubNoctuaPage() {
             </p>
           )}
         </div>
+
+        <BadgesAndChallenges />
 
         {neighborhoodBadges.length > 0 && (
           <div className="mb-10">
