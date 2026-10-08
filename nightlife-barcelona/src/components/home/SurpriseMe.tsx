@@ -53,14 +53,24 @@ export default function SurpriseMe({ clubs }: { clubs: any[] }) {
     }
   }, [open])
 
+  const [locating, setLocating] = useState(false)
   const toggleNear = () => {
+    if (locating) return
     if (near) { setNear(false); return }
     setGeoError("")
-    if (!navigator.geolocation) { setGeoError("Tu navegador no permite ubicación."); return }
+    if (!navigator.geolocation) { setGeoError("Este navegador no permite ubicación. Te sorprendo en toda Barcelona."); return }
+    setLocating(true)
     navigator.geolocation.getCurrentPosition(
-      (p) => { setPos({ lat: p.coords.latitude, lon: p.coords.longitude }); setNear(true) },
-      () => setGeoError("Sin permiso de ubicación: te sorprendo en toda Barcelona."),
-      { timeout: 8000 }
+      (p) => { setPos({ lat: p.coords.latitude, lon: p.coords.longitude }); setNear(true); setLocating(false) },
+      (err) => {
+        setLocating(false)
+        setGeoError(
+          err.code === 1
+            ? "Ubicación bloqueada. Actívala para noctuaapp.com en los ajustes del navegador (candado junto a la dirección) y vuelve a tocar."
+            : "No he podido localizarte (señal o tiempo agotado). Prueba de nuevo o sorpréndete sin esto."
+        )
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 }
     )
   }
 
@@ -159,7 +169,7 @@ export default function SurpriseMe({ clubs }: { clubs: any[] }) {
                   onClick={toggleNear}
                   className={`mt-4 w-full rounded-2xl px-4 py-3 text-sm font-bold transition ${near ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}
                 >
-                  📍 {near ? "Cerca de mí (activado)" : "Cerca de mí"}
+                  📍 {locating ? "Localizando…" : near ? "Cerca de mí (activado)" : "Cerca de mí"}
                 </button>
                 {geoError && <p className="mt-2 text-xs text-amber-300">{geoError}</p>}
                 <button onClick={draw} className="mt-5 w-full rounded-2xl bg-purple-500 px-6 py-4 text-base font-black text-white transition hover:bg-purple-400 active:scale-95">
