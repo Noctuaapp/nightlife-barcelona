@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { createPortal } from "react-dom"
 import NocOwl from "../mascot/NocOwl"
+import SharePlanButton from "../plan/SharePlanButton"
 import NocSays from "../mascot/NocSays"
 import { clubOpenNow } from "../../lib/clubHours"
 import { createSlug } from "../../lib/slug"
@@ -212,6 +213,12 @@ export default function SurpriseMe({ clubs }: { clubs: any[] }) {
                           Cómo llegar
                         </a>
                       )}
+                      <SharePlanButton
+                        label="🔗 Proponer a mis amigos"
+                        className="col-span-2 rounded-2xl border border-purple-400/40 bg-purple-500/10 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+                        title={`Plan de la noche · ${card.name}`}
+                        stops={[{ kind: "club", title: card.name, subtitle: [card.neighborhood, card.music].filter(Boolean).join(" · "), image: card.image, href: `/clubs/${card.slug || createSlug(card.name)}` }]}
+                      />
                       <button onClick={draw} className={`rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white ${pos && card.latitude ? "" : "col-span-2"}`}>
                         🎲 Otra opción
                       </button>

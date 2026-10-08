@@ -1,5 +1,6 @@
 "use client"
 
+import SharePlanButton from "@/components/plan/SharePlanButton"
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import Header from "../../components/layout/Header"
@@ -967,6 +968,11 @@ export default function PlanPage() {
                     </div>
                   </div>
                 )}
+
+                <SharePlanButton
+                  title={`Plan de la noche · ${todayFormatted}`}
+                  stops={stops.map((st) => ({ kind: st.kind, title: st.title, subtitle: st.subtitle, time: st.time, image: st.image, href: st.href }))}
+                />
 
                 <div className="flex gap-3">
                   <button
