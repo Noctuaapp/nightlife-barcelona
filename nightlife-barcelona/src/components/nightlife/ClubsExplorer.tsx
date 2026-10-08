@@ -1,5 +1,6 @@
 "use client"
 
+import { zoneOf, zonesPresent } from "../../lib/zones"
 import { useEffect, useMemo, useRef, useState } from "react"
 import ClubCard from "./ClubCard"
 import { useLanguage } from "../../context/LanguageContext"
@@ -57,7 +58,7 @@ function toggleInSet(set: Set<string>, value: string): Set<string> {
 }
 
 const GENRE_FILTERS = ["Techno", "Commercial", "Cocktail Bar"]
-const ATTRIBUTE_FILTERS = ["Trending", "LGTBI+", "Sin cola", "Futbolín/Billar", "Descuento hoy", "Entrada gratis"]
+const ATTRIBUTE_FILTERS = ["Trending", "LGTBI+", "Sin cola", "Futbolín/Billar", "Descuento hoy", "Entrada gratis", "Público +30"]
 const AGE_FILTERS = ["+18", "+21", "+25"]
 const PAGE_SIZE = 9
 
@@ -67,6 +68,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   const [selectedAttributes, setSelectedAttributes] = useState<Set<string>>(new Set())
   const [selectedAges, setSelectedAges] = useState<Set<string>>(new Set())
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<Set<string>>(new Set())
+  const [selectedZones, setSelectedZones] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState("")
   const [openNow, setOpenNow] = useState(false)
   const [nearMe, setNearMe] = useState(false)
@@ -81,7 +83,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
-  }, [selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, search, openNow, nearMe, sortBy])
+  }, [selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, selectedZones, search, openNow, nearMe, sortBy])
 
   const isOpenNow = (hours: string): boolean => {
     if (!hours) return false
@@ -167,6 +169,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     if (a === "Futbolín/Billar") return club.has_foosball === true
     if (a === "Descuento hoy") return !!club.discount_info
     if (a === "Entrada gratis") return !!club.free_entry_info
+    if (a === "Público +30") return club.audience === "+30" || club.audience === "+40"
     return false
   }
 
@@ -177,7 +180,16 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     return false
   }
 
-  const neighborhoods = Array.from(new Set(clubs.map((c) => c.neighborhood).filter(Boolean))).sort()
+  const availableZones = zonesPresent(clubs)
+  // Los barrios que se ofrecen dependen de la zona elegida (con cientos de locales, una lista plana es inmanejable).
+  const neighborhoods = Array.from(
+    new Set(
+      clubs
+        .filter((c) => selectedZones.size === 0 || selectedZones.has(zoneOf(c)))
+        .map((c) => c.neighborhood)
+        .filter(Boolean)
+    )
+  ).sort() as string[]
 
   const filteredClubs = useMemo(() => {
     return clubs.filter((club) => {
@@ -185,6 +197,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
       const matchesAttributes = Array.from(selectedAttributes).every((a) => attributeMatch(club, a))
       const matchesAge = selectedAges.size === 0 || Array.from(selectedAges).some((age) => ageMatch(club, age))
       const matchesNeighborhood = selectedNeighborhoods.size === 0 || selectedNeighborhoods.has(club.neighborhood)
+      const matchesZone = selectedZones.size === 0 || selectedZones.has(zoneOf(club))
 
       const matchesSearch =
         search === "" ||
@@ -200,10 +213,10 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         !userLng ||
         (club.latitude && club.longitude && getDistance(userLat, userLng, club.latitude, club.longitude) <= 2)
 
-      return matchesGenre && matchesAttributes && matchesAge && matchesNeighborhood && matchesSearch && matchesOpenNow && matchesNearMe
+      return matchesGenre && matchesAttributes && matchesAge && matchesNeighborhood && matchesZone && matchesSearch && matchesOpenNow && matchesNearMe
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clubs, selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, search, openNow, nearMe, userLat, userLng])
+  }, [clubs, selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, selectedZones, search, openNow, nearMe, userLat, userLng])
 
   const sortedClubs = useMemo(() => {
     const arr = [...filteredClubs]
@@ -225,6 +238,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     ...Array.from(selectedGenres).map((g) => ({ label: g, onRemove: () => setSelectedGenres((s) => toggleInSet(s, g)) })),
     ...Array.from(selectedAttributes).map((a) => ({ label: a, onRemove: () => setSelectedAttributes((s) => toggleInSet(s, a)) })),
     ...Array.from(selectedAges).map((age) => ({ label: age, onRemove: () => setSelectedAges((s) => toggleInSet(s, age)) })),
+    ...Array.from(selectedZones).map((z) => ({ label: z, onRemove: () => setSelectedZones((s) => toggleInSet(s, z)) })),
     ...Array.from(selectedNeighborhoods).map((n) => ({ label: n, onRemove: () => setSelectedNeighborhoods((s) => toggleInSet(s, n)) })),
   ]
   if (openNow) activeFilters.push({ label: "Abierto ahora", onRemove: () => setOpenNow(false) })
@@ -244,6 +258,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     setSelectedAttributes(new Set())
     setSelectedAges(new Set())
     setSelectedNeighborhoods(new Set())
+    setSelectedZones(new Set())
     setOpenNow(false)
     setNearMe(false)
     setUserLat(null)
@@ -284,7 +299,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     )
   }
 
-  const activeFilterCount = selectedGenres.size + selectedAttributes.size + selectedAges.size + selectedNeighborhoods.size
+  const activeFilterCount = selectedGenres.size + selectedAttributes.size + selectedAges.size + selectedNeighborhoods.size + selectedZones.size
 
   const ChipGroup = ({
     title,
@@ -478,6 +493,17 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                 selected={selectedAges}
                 onToggle={(v) => setSelectedAges((s) => toggleInSet(s, v))}
               />
+              {availableZones.length > 1 && (
+                <ChipGroup
+                  title="Zona (elige varias)"
+                  options={availableZones}
+                  selected={selectedZones}
+                  onToggle={(v) => {
+                    setSelectedZones((s) => toggleInSet(s, v))
+                    setSelectedNeighborhoods(new Set())
+                  }}
+                />
+              )}
               <ChipGroup
                 title="Barrio (elige varios)"
                 options={neighborhoods}

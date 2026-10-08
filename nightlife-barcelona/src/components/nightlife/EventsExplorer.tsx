@@ -1,5 +1,6 @@
 "use client"
 
+import { zoneOf, zonesPresent } from "../../lib/zones"
 import { useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
@@ -85,6 +86,7 @@ const PAGE_SIZE = 9
 export default function EventsExplorer({ initialEvents }: { initialEvents: any[] }) {
   const [events] = useState<any[]>(initialEvents)
   const [selectedFilters, setSelectedFilters] = useState<Set<string>>(new Set())
+  const [selectedZones, setSelectedZones] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState("")
   const [nearMe, setNearMe] = useState(false)
   const [userLat, setUserLat] = useState<number | null>(null)
@@ -96,6 +98,8 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const { t } = useLanguage()
 
+  const availableZones = zonesPresent(events)
+
   const filters = [
     { key: "festival", label: t("events.festival") },
     { key: "neighborhood", label: t("events.neighborhood") },
@@ -105,7 +109,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
-  }, [selectedFilters, search, nearMe, hidePast, sortBy])
+  }, [selectedFilters, selectedZones, search, nearMe, hidePast, sortBy])
 
   const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371
@@ -146,10 +150,12 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
       const matchesPast = !hidePast || !isEventPast(event.date, event.date_end)
 
-      return matchesFilters && matchesSearch && matchesNearMe && matchesPast
+      const matchesZone = selectedZones.size === 0 || selectedZones.has(zoneOf(event))
+
+      return matchesFilters && matchesZone && matchesSearch && matchesNearMe && matchesPast
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [events, selectedFilters, search, nearMe, userLat, userLng, hidePast])
+  }, [events, selectedFilters, selectedZones, search, nearMe, userLat, userLng, hidePast])
 
   const sortedEvents = useMemo(() => {
     const arr = [...filteredEvents]
@@ -166,6 +172,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   const activeFilters: { label: string; onRemove: () => void }[] = filters
     .filter((f) => selectedFilters.has(f.key))
     .map((f) => ({ label: f.label, onRemove: () => setSelectedFilters((s) => toggleInSet(s, f.key)) }))
+  selectedZones.forEach((z) => activeFilters.push({ label: z, onRemove: () => setSelectedZones((s) => toggleInSet(s, z)) }))
   if (nearMe)
     activeFilters.push({
       label: "Cerca de mí",
@@ -180,6 +187,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
   const clearAll = () => {
     setSelectedFilters(new Set())
+    setSelectedZones(new Set())
     setSearch("")
     setNearMe(false)
     setUserLat(null)
@@ -314,6 +322,20 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                 {f.label}
               </button>
             ))}
+            {availableZones.length > 1 &&
+              availableZones.map((z) => (
+                <button
+                  key={z}
+                  onClick={() => setSelectedZones((s) => toggleInSet(s, z))}
+                  className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition active:scale-95 ${
+                    selectedZones.has(z)
+                      ? "bg-white text-black"
+                      : "border border-white/10 bg-white/[0.04] text-zinc-300 hover:border-purple-400/30 hover:bg-white/[0.08]"
+                  }`}
+                >
+                  📍 {z}
+                </button>
+              ))}
           </div>
 
           {nearMeError && (

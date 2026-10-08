@@ -8,6 +8,7 @@ import SharePlanButton from "../plan/SharePlanButton"
 import NocSays from "../mascot/NocSays"
 import { clubOpenNow } from "../../lib/clubHours"
 import { createSlug } from "../../lib/slug"
+import { zoneOf, zonesPresent } from "../../lib/zones"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { distanceInMeters, formatDistance, walkingMinutes, walkingDirectionsUrl } from "../../lib/geo"
 
@@ -35,6 +36,7 @@ export default function SurpriseMe({ clubs }: { clubs: any[] }) {
   const [open, setOpen] = useState(false)
   const [mood, setMood] = useState<Mood>("any")
   const [near, setNear] = useState(false)
+  const [zoneSel, setZoneSel] = useState("")
   const [pos, setPos] = useState<{ lat: number; lon: number } | null>(null)
   const [geoError, setGeoError] = useState("")
   const [phase, setPhase] = useState<"form" | "spin" | "result">("form")
@@ -76,7 +78,8 @@ export default function SurpriseMe({ clubs }: { clubs: any[] }) {
   }
 
   const draw = () => {
-    const usable = clubs.filter((c) => c && c.name)
+    const zoned = zoneSel ? clubs.filter((c) => c && c.name && zoneOf(c) === zoneSel) : clubs
+    const usable = (zoned.length > 0 ? zoned : clubs).filter((c) => c && c.name)
     if (usable.length === 0) return
     const words = MOODS.find((m) => m.id === mood)?.words || []
     const matches = (c: any) => words.length === 0 || words.some((w) => `${c.music || ""} ${c.category || ""}`.toLowerCase().includes(w))
@@ -166,6 +169,19 @@ export default function SurpriseMe({ clubs }: { clubs: any[] }) {
                     </button>
                   ))}
                 </div>
+                {zonesPresent(clubs).length > 1 && (
+                  <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                    {["", ...zonesPresent(clubs)].map((z) => (
+                      <button
+                        key={z || "all"}
+                        onClick={() => setZoneSel(z)}
+                        className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${zoneSel === z ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}
+                      >
+                        {z === "" ? "🌍 Toda el área" : z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", "")}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <button
                   onClick={toggleNear}
                   className={`mt-4 w-full rounded-2xl px-4 py-3 text-sm font-bold transition ${near ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}

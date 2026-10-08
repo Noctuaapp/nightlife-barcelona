@@ -18,6 +18,7 @@ const AREAS: Record<string, { osmPattern: string; city: string }> = {
   barcelona: { osmPattern: "Barcelona", city: "Barcelona" },
   hospitalet: { osmPattern: "[Ll].[Hh]ospitalet de [Ll]lobregat", city: "L'Hospitalet de Llobregat" },
   badalona: { osmPattern: "Badalona", city: "Badalona" },
+  elprat: { osmPattern: "[Ee]l Prat de Llobregat", city: "El Prat de Llobregat" },
 }
 
 const STOP_WORDS = ["bar", "pub", "club", "discoteca", "cafe", "restaurant", "restaurante", "bcn", "barcelona", "the", "el", "la", "los", "las", "de", "del", "i", "y", "and"]
@@ -55,6 +56,32 @@ function isNightlifeBar(tags: Record<string, string>): boolean {
   return NIGHT_NAME.test(name)
 }
 
+
+// Municipio real del local (la cuadrícula de Barcelona también recoge locales de municipios vecinos).
+function cityFor(tags: Record<string, string>, fallback: string): string {
+  const raw = (tags["addr:city"] || "").trim()
+  if (raw) {
+    if (/^barcelona$/i.test(raw)) return "Barcelona"
+    if (/hospitalet/i.test(raw)) return "L'Hospitalet de Llobregat"
+    if (/prat/i.test(raw)) return "El Prat de Llobregat"
+    if (/badalona/i.test(raw)) return "Badalona"
+    if (/corn[eè]ll/i.test(raw)) return "Cornellà de Llobregat"
+    if (/adri/i.test(raw)) return "Sant Adrià de Besòs"
+    if (/esplugues/i.test(raw)) return "Esplugues de Llobregat"
+    if (/santa coloma/i.test(raw)) return "Santa Coloma de Gramenet"
+    return raw.slice(0, 60)
+  }
+  const pc = (tags["addr:postcode"] || "").trim()
+  if (/^08820/.test(pc)) return "El Prat de Llobregat"
+  if (/^0890[1-8]/.test(pc)) return "L'Hospitalet de Llobregat"
+  if (/^0891\d/.test(pc)) return "Badalona"
+  if (/^08930/.test(pc)) return "Sant Adrià de Besòs"
+  if (/^08940/.test(pc)) return "Cornellà de Llobregat"
+  if (/^08950/.test(pc)) return "Esplugues de Llobregat"
+  if (/^0892[1-4]/.test(pc)) return "Santa Coloma de Gramenet"
+  return fallback
+}
+
 function cleanUrl(v?: string): string | null {
   if (!v) return null
   const u = v.trim()
@@ -68,7 +95,7 @@ export async function GET(req: Request) {
   }
   const areaKey = (searchParams.get("area") || "").toLowerCase()
   const area = AREAS[areaKey]
-  if (!area) return NextResponse.json({ error: "area debe ser barcelona, hospitalet o badalona" }, { status: 400 })
+  if (!area) return NextResponse.json({ error: "area debe ser barcelona, hospitalet, badalona o elprat" }, { status: 400 })
   const dry = searchParams.get("dry") !== "0"
 
   // Solo se piden discotecas/salas de música y pubs o bares con señales claras de noche
@@ -143,8 +170,6 @@ export async function GET(req: Request) {
       for (const el of els) {
         const id = `${el.type}${el.id}`
         if (seenIds.has(id)) continue
-        const city = (el.tags?.["addr:city"] || "").toString()
-        if (city && !/barcelona/i.test(city)) continue // quita los de municipios vecinos
         seenIds.add(id)
         elements.push(el)
       }
@@ -200,15 +225,16 @@ export async function GET(req: Request) {
     seen.push({ norm, lat, lon })
 
     const street = tags["addr:street"]
+    const cityName = cityFor(tags, area.city)
     const address = street
-      ? [street + (tags["addr:housenumber"] ? ", " + tags["addr:housenumber"] : ""), tags["addr:postcode"], area.city].filter(Boolean).join(", ")
+      ? [street + (tags["addr:housenumber"] ? ", " + tags["addr:housenumber"] : ""), tags["addr:postcode"], cityName].filter(Boolean).join(", ")
       : null
     const venue_type = amenity === "nightclub" ? "Discoteca" : amenity === "pub" ? "Pub" : "Bar musical"
 
     rows.push({
       name: name.slice(0, 120),
-      neighborhood: tags["addr:suburb"] || tags["addr:district"] || area.city,
-      city: area.city,
+      neighborhood: tags["addr:suburb"] || tags["addr:district"] || cityName,
+      city: cityName,
       address,
       latitude: lat,
       longitude: lon,

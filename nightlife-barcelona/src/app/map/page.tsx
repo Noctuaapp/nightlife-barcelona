@@ -10,6 +10,7 @@ import BottomNav from "../../components/layout/BottomNav"
 import { createSlug } from "../../lib/slug"
 import { useLanguage } from "../../context/LanguageContext"
 import ArrowIcon from "../../components/ui/ArrowIcon"
+import { zoneOf, zonesPresent } from "../../lib/zones"
 
 type Club = {
   id: number
@@ -263,6 +264,8 @@ export default function MapPage() {
   const [showList, setShowList] = useState(true)
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
   const [search, setSearch] = useState("")
+  const [zone, setZone] = useState("")
+  useEffect(() => { setZone("") }, [filter])
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [trackingActive, setTrackingActive] = useState(false)
   const [walkingTime, setWalkingTime] = useState<string | null>(null)
@@ -377,10 +380,11 @@ export default function MapPage() {
       })
       markersRef.current.push(marker)
     }
-    if (filter === "clubs") clubs.filter((c) => c.latitude && c.longitude).forEach((c) => addMarker(c.latitude!, c.longitude!, c))
-    else if (filter === "events") events.filter((e) => e.latitude && e.longitude).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
-    else if (filter === "essentials") essentials.filter((e) => e.latitude && e.longitude).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
-  }, [filter, mapReady, clubs, events, essentials])
+    const inZone = (i: { neighborhood?: string | null; address?: string | null }) => !zone || zoneOf(i) === zone
+    if (filter === "clubs") clubs.filter((c) => c.latitude && c.longitude && inZone(c)).forEach((c) => addMarker(c.latitude!, c.longitude!, c))
+    else if (filter === "events") events.filter((e) => e.latitude && e.longitude && inZone(e)).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
+    else if (filter === "essentials") essentials.filter((e) => e.latitude && e.longitude && inZone(e)).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
+  }, [filter, mapReady, clubs, events, essentials, zone])
 
   useEffect(() => {
     if (urlHandledRef.current || !mapReady) return
@@ -479,7 +483,22 @@ export default function MapPage() {
   }
 
   const rawList = filter === "clubs" ? clubs : filter === "events" ? events : essentials
+  const zonesAvail = zonesPresent(rawList as { neighborhood?: string | null; address?: string | null }[])
+  const zoneChips = zonesAvail.length > 1 ? (
+    <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingTop: "10px", paddingBottom: "2px" }}>
+      {["", ...zonesAvail].map((z) => (
+        <button key={z || "all"} onClick={() => setZone(z)}
+          style={{ flexShrink: 0, borderRadius: "9999px", padding: "5px 11px", fontSize: "11px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
+            border: zone === z ? `1px solid ${COLORS[filter]}` : "1px solid rgba(255,255,255,0.12)",
+            background: zone === z ? `${COLORS[filter]}33` : "rgba(255,255,255,0.04)",
+            color: zone === z ? "#fff" : "rgba(255,255,255,0.55)" }}>
+          {z === "" ? "📍 Todo" : z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", "")}
+        </button>
+      ))}
+    </div>
+  ) : null
   const currentList = rawList.filter((item) => {
+    if (zone && zoneOf(item as { neighborhood?: string | null; address?: string | null }) !== zone) return false
     if (!search) return true
     const name = getName(item).toLowerCase()
     const sub = getSub(item).toLowerCase()
@@ -561,6 +580,7 @@ export default function MapPage() {
       <aside className="hidden lg:flex" style={{ width: showList === false ? "0px" : "320px", borderRight: showList === false ? "none" : "1px solid rgba(255,255,255,0.1)", background: "#050308", flexDirection: "column", overflow: "hidden", flexShrink: 0, transition: "width 0.3s ease", minWidth: 0 }}>
           <div style={{ padding: "14px 14px 0" }}>
             <SearchInput value={search} onChange={setSearch} accent={COLORS[filter]} />
+            {zoneChips}
             <p style={{ marginTop: "10px", fontSize: "11px", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.15em" }}>
               {currentList.filter((i) => i.latitude && i.longitude).length} {t("map.results")}
             </p>
@@ -610,7 +630,7 @@ export default function MapPage() {
                   <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", textTransform: "capitalize" }}>{FILTER_ICONS[filter]} {t(`nav.${filter}`)}</p>
                   <button onClick={() => setShowList(false)} style={{ color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 10px", fontSize: "13px", cursor: "pointer" }}>✕</button>
                 </div>
-                <div style={{ marginBottom: "10px" }}><SearchInput value={search} onChange={setSearch} accent={COLORS[filter]} /></div>
+                <div style={{ marginBottom: "10px" }}><SearchInput value={search} onChange={setSearch} accent={COLORS[filter]} />{zoneChips}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {(currentList as (Club | Event | Essential)[]).filter((item) => item.latitude && item.longitude).map((item) => (
                     <button key={item.id}

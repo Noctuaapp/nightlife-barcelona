@@ -1,5 +1,6 @@
 "use client"
 
+import { zoneOf, zonesPresent } from "../../../lib/zones"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
@@ -116,6 +117,7 @@ export default function EssentialCategoryPage() {
   const [essentials, setEssentials] = useState<Essential[]>([])
   const [selected, setSelected] = useState<Essential | null>(null)
   const [selectedNeighborhood, setSelectedNeighborhood] = useState("All")
+  const [selectedZone, setSelectedZone] = useState("All")
   const [loading, setLoading] = useState(true)
   const [mapReady, setMapReady] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -351,9 +353,16 @@ export default function EssentialCategoryPage() {
 
   const distanceText = (d: number): string => formatDistance(d) + (d <= 2500 ? " · " + walkingMinutes(d) + " min andando" : "")
 
-  const neighborhoods = ["All", ...Array.from(new Set(essentials.map((e) => e.neighborhood).filter(Boolean)))]
+  const availableZones = zonesPresent(essentials)
+  const neighborhoods = [
+    "All",
+    ...Array.from(
+      new Set(essentials.filter((e) => selectedZone === "All" || zoneOf(e) === selectedZone).map((e) => e.neighborhood).filter(Boolean))
+    ),
+  ]
 
   const filteredEssentials = essentials
+    .filter((e) => (selectedZone === "All" ? true : zoneOf(e) === selectedZone))
     .filter((e) => (selectedNeighborhood === "All" ? true : e.neighborhood === selectedNeighborhood))
     .filter((e) => !openOnly || getOpenStatus(e.open_hours).state === "open")
     .slice()
@@ -575,6 +584,24 @@ export default function EssentialCategoryPage() {
         {/* Filters */}
         <section className="mx-auto mt-6 max-w-7xl px-4">
           <div className="flex flex-wrap items-center gap-3">
+            {availableZones.length > 1 && (
+              <div className="flex w-full gap-2.5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {["All", ...availableZones].map((z) => (
+                  <button
+                    key={z}
+                    onClick={() => {
+                      setSelectedZone(z)
+                      setSelectedNeighborhood("All")
+                    }}
+                    className={`whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium transition ${
+                      selectedZone === z ? "bg-purple-500 text-white" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                    }`}
+                  >
+                    {z === "All" ? "📍 Toda el área" : z}
+                  </button>
+                ))}
+              </div>
+            )}
             {neighborhoods.length > 2 && (
               <div className="flex w-full gap-2.5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {neighborhoods.map((n) => {

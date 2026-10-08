@@ -9,6 +9,7 @@ import AuthGateModal from "../../components/ui/AuthGateModal"
 import { supabase } from "../../lib/supabase"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
+import { zoneOf, zonesPresent } from "../../lib/zones"
 import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
 
@@ -234,6 +235,7 @@ export default function PlanPage() {
   const [venueTypeSet, setVenueTypeSet] = useState<Set<string>>(new Set())
   const [musicSet, setMusicSet] = useState<Set<string>>(new Set())
   const [areaSet, setAreaSet] = useState<Set<string>>(new Set())
+  const [zoneSel, setZoneSel] = useState("")
   const [dresscode, setDresscode] = useState("Cualquiera")
   const [timeKey, setTimeKey] = useState<"early" | "peak" | "late" | "allnight">("peak")
   const [lgtbi, setLgtbi] = useState(false)
@@ -409,6 +411,7 @@ export default function PlanPage() {
 
     const allScoredClubs = clubs
       .filter((c) => !c.sold_out)
+      .filter((c) => !zoneSel || zoneOf(c) === zoneSel)
       .filter((c) => !c.open_days || c.open_days.length === 0 || c.open_days.includes(todayDay))
       .map((c) => ({ ...c, ...scoreClub(c, prefs, t) }))
       .map((c) => ({ ...c, sortScore: c.score + jitter() }))
@@ -711,6 +714,21 @@ export default function PlanPage() {
 
               {step === 5 && (
                 <div>
+                  {zonesPresent(clubs).length > 1 && (
+                    <div className="mb-5 flex flex-wrap gap-2">
+                      {["", ...zonesPresent(clubs)].map((z) => (
+                        <button
+                          key={z || "all"}
+                          onClick={() => setZoneSel(z)}
+                          className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                            zoneSel === z ? "bg-purple-500 text-white" : "border border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"
+                          }`}
+                        >
+                          {z === "" ? "🌍 Toda el área" : z}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <p className="mb-4 text-sm text-zinc-400">{t("planPage.areaInstruction")}</p>
                   <div className="flex flex-wrap gap-3">
                     {AREA_OPTIONS.map((a) => (
