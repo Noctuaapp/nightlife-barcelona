@@ -242,23 +242,23 @@
   },
   "terms": {
     "title": "Terms of Service",
-    "last_updated": "Last updated: September 2026",
+    "last_updated": "Last updated: October 2026",
     "s1_title": "Acceptance of terms",
     "s1_body": "By accessing or using Noctua (\"the Platform\"), you agree to be bound by these Terms of Service. If you don't agree to these terms, please don't use the Platform. We reserve the right to update these terms at any time; continued use constitutes acceptance of any changes.",
     "s2_title": "Description of service",
-    "s2_body": "Noctua is a nightlife discovery platform offering information about clubs, events and nightlife, currently focused on Barcelona and progressively expanding to other areas of the Catalan coast. We are an informational platform — we do not operate venues, organize events or sell tickets directly. We may introduce additional features in the future, including paid features aimed at venues and organizers (for example, featured placement or listing statistics); if that happens, their specific terms will be communicated and accepted separately.",
+    "s2_body": "Noctua is a nightlife discovery platform offering information about clubs, events and nightlife, currently focused on Barcelona and progressively expanding to other areas of the Catalan coast. We are an informational platform — we do not operate venues, organize events or sell tickets directly. We may introduce additional features in the future, including paid features aimed at venues and organizers (for example, featured placement or listing statistics); if that happens, their specific terms will be communicated and accepted separately. We may offer venues, organizers and other third parties aggregated, anonymous statistics about use of the Platform and attendance at venues and events, without identifying specific individuals.",
     "s3_title": "User accounts",
     "s3_intro": "By creating an account, you agree to:",
     "s3_items": "Provide accurate and complete information.\nKeep your password secure and confidential.\nNotify us immediately of any unauthorized use of your account.\nBe responsible for all activity that occurs under your account.",
-    "s3_closing": "You must be at least 18 years old to create an account on Noctua, given the nature of the nightlife content.",
+    "s3_closing": "You must be at least 18 years old to create an account on Noctua, in line with the nature of nightlife content. When you sign up we ask for your date of birth to check this; registration by anyone under 18 is not permitted, and we may suspend or delete any account that does not meet this requirement.",
     "s4_title": "Acceptable use",
     "s4_intro": "You agree not to:",
-    "s4_items": "Use the Platform for unlawful purposes.\nExtract, copy or reproduce content without permission.\nAttempt unauthorized access to any part of the Platform.\nSubmit false, misleading or defamatory information.\nInterfere with or disrupt the operation of the Platform.\nUse the Platform to send unsolicited commercial communications.",
+    "s4_items": "Use the Platform for unlawful purposes.\nExtract, copy or reproduce content without permission.\nAttempt unauthorized access to any part of the Platform.\nSubmit false, misleading or defamatory information.\nInterfere with or disrupt the operation of the Platform.\nUse the Platform to send unsolicited commercial communications.\nPost notes, reports or other content that is offensive, illegal or infringes third-party rights; Noctua may remove it at any time.",
     "s5_title": "Verified venue and festival accounts",
     "s5_intro": "If you're responsible for a club or festival, after contacting us and verifying your identity we may link your account to the corresponding listing, giving you access to edit it directly. By using this access, you agree that:",
     "s5_items": "The information you publish (hours, prices, photos, nights or sessions) is accurate and up to date.\nYou only publish content you hold the necessary rights to.\nNoctua may review, correct or remove content that breaches these Terms at any time.\nNoctua reserves the right to revoke your management access to a listing at any time, for example if your relationship with the venue can no longer be verified.",
     "s6_title": "Accuracy of content",
-    "s6_body": "We strive to keep all venue and event information accurate and up to date. However, we cannot guarantee the accuracy, completeness or currency of information on the Platform — including content published directly by verified venue or festival managers. Always verify details directly with the venue before attending. Each venue's entry policies (dress code, capacity, minimum age or other entry conditions) are the venue's sole responsibility; Noctua does not guarantee entry to any club, event or festival.",
+    "s6_body": "We strive to keep all venue and event information accurate and up to date. However, we cannot guarantee the accuracy, completeness or currency of information on the Platform — including content published directly by verified venue or festival managers. Always verify details directly with the venue before attending. Each venue's entry policies (dress code, capacity, minimum age or other entry conditions) are the venue's sole responsibility; Noctua does not guarantee entry to any club, event or festival. A venue's live status (for example, \"Lively\" or \"Packed\") comes from the venue itself, from user check-ins or from estimates, and is indicative only.",
     "s7_title": "Intellectual property",
     "s7_body": "All content on the Platform, including text, graphics, logos and design, is owned by Noctua or its content providers and is protected by applicable intellectual property laws. You may not reproduce, distribute or create derivative works without our express written permission.",
     "s8_title": "Third-party links",
@@ -285,13 +285,13 @@
     "cat1_name": "General",
     "cat1_items": "What is Noctua?||Noctua is a nightlife discovery platform. It helps you find the best clubs, festivals and club nights, with verified information all in one place.\nIs Noctua free to use?||Yes, Noctua is completely free for users. You can explore clubs, discover events and save your favorites at no cost.\nWhich cities does Noctua cover?||Right now we focus on Barcelona. We plan to progressively expand to other areas of the Catalan coast, starting with Sitges.\nWhat languages is Noctua available in?||You can use the app in several languages from the language selector. Some dynamic content, such as Google reviews, is shown in Spanish.",
     "cat2_name": "Account",
-    "cat2_items": "Do I need an account to use Noctua?||You can explore clubs and events without creating an account. However, creating a free account lets you save favorites, earn experience points (XP), and access personalized features.\nHow do I create an account?||Tap the profile icon or go to /signup. You just need an email and password, or you can sign up with your Google account.\nHow do I change my password?||Go to your Profile and tap Change password. You'll receive a link by email to reset it securely.\nHow do I delete my account?||You can request account deletion from your Profile page. All your data, including saved favorites, will be permanently deleted.\nDo I need to be 18 to use Noctua?||Yes. Given the nature of the nightlife content, you must be at least 18 years old to create an account and use the app.",
+    "cat2_items": "Do I need an account to use Noctua?||You can explore clubs and events without creating an account. However, creating a free account lets you save favorites, earn experience points (XP), and access personalized features.\nHow do I create an account?||Tap the profile icon or go to /signup. You need an email address, a password, a username, your gender and your date of birth (to check you are over 18), or you can sign up with your Google account.\nHow do I change my password?||Go to your Profile and tap Change password. You'll receive a link by email to reset it securely.\nHow do I delete my account?||You can request account deletion from your Profile page. All your data, including saved favorites, will be permanently deleted.\nDo I need to be 18 to use Noctua?||Yes. Given the nature of the nightlife content, you must be at least 18 years old to create an account and use the app.\nWhy do you ask for my year of birth?||To check that you are over 18 and to improve your searches (for example, suggesting venues with an atmosphere suited to your age). From your date of birth we only store the year.",
     "cat3_name": "Clubs, nights and festivals",
-    "cat3_items": "How do I save a club or event?||Tap the heart icon on any club, night or festival listing. You'll find everything saved under Favorites, in the bottom navigation bar.\nWhat does \"Trending\" mean?||Trending clubs are the ones generating the most interest in Barcelona's nightlife right now.\nWhat does \"Sold Out\" mean?||It means tickets or capacity for that event or club night are no longer available.\nCan I buy tickets through Noctua?||Noctua doesn't sell tickets directly. When a club or festival has tickets available, we link you to their official website or ticketing platform.\nWhat is check-in and experience points (XP)?||You can check in when you're at a club to earn experience points and level up within the app. It's an optional system with no monetary value.",
+    "cat3_items": "How do I save a club or event?||Tap the heart icon on any club, night or festival listing. You'll find everything saved under Favorites, in the bottom navigation bar.\nWhat does \"Trending\" mean?||Trending clubs are the ones generating the most interest in Barcelona's nightlife right now.\nWhat does \"Sold Out\" mean?||It means tickets or capacity for that event or club night are no longer available.\nCan I buy tickets through Noctua?||Noctua doesn't sell tickets directly. When a club or festival has tickets available, we link you to their official website or ticketing platform.\nWhat are check-ins and experience points (XP)?||You can check in when you are at the door of a club (we use your location once to verify it) to earn experience points and level up. It is an optional system with no monetary value.\nWhat do «Lively», «Packed» and «Estimated» mean?||«Lively» and «Packed» show how a venue is right now, based on what the venue itself marks or on real check-ins from the last few hours. If there is not enough data, we show an estimate labelled «Estimated».",
     "cat4_name": "For venues and organizers",
     "cat4_items": "How do I get my club, bar or festival featured on Noctua?||Use our Contact page and choose \"Suggest a venue\" (for clubs and bars) or the corresponding partnership category for festivals. We review all submissions and will get back to you.\nI'm responsible for a club or festival — can I manage my own listing?||Yes. Message us from Contact choosing \"Manage my club or event\". Once we verify you're responsible for it, we'll link your account and you'll be able to edit your listing, photos, prices and nights or sessions directly.\nI've found incorrect information about a venue. How do I report it?||Use the Contact page and choose \"Report incorrect information\". Tell us the venue's name and what's wrong — we'll update it as soon as possible.",
     "cat5_name": "Privacy and security",
-    "cat5_items": "How does Noctua protect my data?||Your data is stored securely and never sold to third parties. You can find all the details in our Privacy Policy.\nWho can I talk to if I have a problem?||Message us from the Contact page choosing \"User support\" and we'll get back to you as soon as possible."
+    "cat5_items": "How does Noctua protect my data?||Your data is stored securely and we do not sell your personal data to third parties. We may share aggregated, anonymous statistics (for example, age ranges of a venue's visitors), which never identify individuals. You can find all the details in our Privacy Policy.\nWho can I talk to if I have a problem?||Message us from the Contact page choosing \"User support\" and we'll get back to you as soon as possible."
   },
   "contact": {
     "eyebrow": "Contact",
@@ -546,5 +546,21 @@
   },
   "weather": {
     "tonightTitle": "Barcelona tonight"
+  },
+  "blocked": {
+    "title": "Account suspended",
+    "body": "Your Noctua account has been suspended. If you think this is a mistake, contact us and we will review it.",
+    "reason_label": "Reason",
+    "contact": "Contact support",
+    "logout": "Log out",
+    "loading": "Loading...",
+    "r_spam": "Spam or unauthorized advertising",
+    "r_offensive": "Offensive content or harassment of other users",
+    "r_false_reports": "Repeated false reports or information",
+    "r_impersonation": "Impersonation",
+    "r_fake_checkins": "Fake check-ins or attendances",
+    "r_xp_abuse": "Abuse of the points (XP) system",
+    "r_illegal": "Illegal activity or content",
+    "r_other": "Breach of the terms of service"
   }
 }

@@ -19,7 +19,21 @@ type User = {
   created_at: string
   last_sign_in_at: string | null
   is_blocked: boolean
+  block_reason?: string | null
+  block_note?: string | null
 }
+
+// Motivos predefinidos de bloqueo; el usuario los ve traducidos en su pantalla de cuenta suspendida.
+const BLOCK_REASONS: { code: string; label: string }[] = [
+  { code: "spam", label: "Spam o publicidad no autorizada" },
+  { code: "offensive", label: "Contenido ofensivo o acoso a otros usuarios" },
+  { code: "false_reports", label: "Reportes o información falsa reiterada" },
+  { code: "impersonation", label: "Suplantación de identidad" },
+  { code: "fake_checkins", label: "Check-ins o asistencias falsas" },
+  { code: "xp_abuse", label: "Abuso del sistema de puntos (XP)" },
+  { code: "illegal", label: "Actividad o contenido ilegal" },
+  { code: "other", label: "Incumplimiento de los términos de servicio" },
+]
 
 type OwnableClub = { id: number; name: string; owner_user_id: string | null }
 // Festivales (tabla "events", distinta de las noches de club "club_events"). Una noche de club
@@ -45,6 +59,9 @@ export default function AdminUsersPage() {
   const [messageSentId, setMessageSentId] = useState<string | null>(null)
 
   const [blockingId, setBlockingId] = useState<string | null>(null)
+  const [blockTarget, setBlockTarget] = useState<User | null>(null)
+  const [blockReason, setBlockReason] = useState("spam")
+  const [blockNote, setBlockNote] = useState("")
 
   // Vincular un usuario a "su" club y/o "sus" festivales (owner_user_id en clubs / events), para
   // que luego pueda gestionarlos él mismo desde /mi-club y /mi-festival sin tocar SQL a mano. Las
@@ -152,10 +169,11 @@ export default function AdminUsersPage() {
 
     // country se pide aparte de users_view (igual que is_blocked) porque la vista de Supabase
     // no incluía esta columna hasta ahora: así no hace falta tocar la vista para que aparezca.
-    const { data: profiles, error: profilesError } = await supabase.from("profiles").select("id, is_blocked, country")
+    const { data: profiles, error: profilesError } = await supabase.from("profiles").select("id, is_blocked, country, block_reason, block_note")
     if (profilesError) console.log("PROFILES ERROR:", profilesError)
 
     const blockedMap = new Map((profiles || []).map((p) => [p.id, !!p.is_blocked]))
+    const reasonMap = new Map((profiles || []).map((p) => [p.id, { r: p.block_reason as string | null, n: p.block_note as string | null }]))
     const countryMap = new Map((profiles || []).map((p) => [p.id, p.country as string | null]))
 
     if (data) {
@@ -163,6 +181,8 @@ export default function AdminUsersPage() {
         data.map((u) => ({
           ...u,
           is_blocked: blockedMap.get(u.id) ?? false,
+          block_reason: reasonMap.get(u.id)?.r ?? null,
+          block_note: reasonMap.get(u.id)?.n ?? null,
           country: u.country ?? countryMap.get(u.id) ?? null,
         }))
       )
@@ -218,16 +238,26 @@ export default function AdminUsersPage() {
     cancelEditing()
   }
 
-  const toggleBlocked = async (user: User) => {
-    const nextBlocked = !user.is_blocked
-    if (nextBlocked && !window.confirm(`¿Bloquear a ${user.email}? No podrá usar la app hasta que lo desbloquees.`)) {
+  // Bloquear abre un cuadro para elegir el motivo; desbloquear es directo.
+  const toggleBlocked = (user: User) => {
+    if (user.is_blocked) {
+      applyBlock(user, false)
       return
     }
+    setBlockReason("spam")
+    setBlockNote("")
+    setBlockTarget(user)
+  }
 
+  const applyBlock = async (user: User, nextBlocked: boolean) => {
     setBlockingId(user.id)
-    const { error } = await supabase
-      .from("profiles")
-      .upsert({ id: user.id, is_blocked: nextBlocked })
+    const { error } = await supabase.from("profiles").upsert({
+      id: user.id,
+      is_blocked: nextBlocked,
+      block_reason: nextBlocked ? blockReason : null,
+      block_note: nextBlocked ? blockNote.trim().slice(0, 300) || null : null,
+      blocked_at: nextBlocked ? new Date().toISOString() : null,
+    })
     setBlockingId(null)
 
     if (error) {
@@ -236,7 +266,14 @@ export default function AdminUsersPage() {
       return
     }
 
-    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, is_blocked: nextBlocked } : u)))
+    setBlockTarget(null)
+    setUsers((prev) =>
+      prev.map((x) =>
+        x.id === user.id
+          ? { ...x, is_blocked: nextBlocked, block_reason: nextBlocked ? blockReason : null, block_note: nextBlocked ? blockNote.trim() || null : null }
+          : x
+      )
+    )
   }
 
   const startMessaging = (userId: string) => {
@@ -314,7 +351,7 @@ export default function AdminUsersPage() {
                         </div>
                         {user.is_blocked && (
                           <span className="rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-[10px] font-bold uppercase text-red-300">
-                            Bloqueado
+                            Bloqueado{user.block_reason ? ` · ${BLOCK_REASONS.find((x) => x.code === user.block_reason)?.label || user.block_reason}` : ""}
                           </span>
                         )}
                       </div>
@@ -515,6 +552,43 @@ export default function AdminUsersPage() {
           )}
         </section>
       </>
+    {blockTarget && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center" onClick={() => setBlockTarget(null)}>
+          <div className="w-full max-w-md rounded-3xl border border-red-500/30 bg-[#0d0a14] p-6" onClick={(e) => e.stopPropagation()}>
+            <p className="text-lg font-black">Bloquear a {blockTarget.email}</p>
+            <p className="mt-1 text-xs text-zinc-400">No podrá usar la app hasta que lo desbloquees. Verá el motivo en su idioma.</p>
+            <label className="mt-4 block text-xs font-bold uppercase tracking-widest text-zinc-500">Motivo</label>
+            <select
+              value={blockReason}
+              onChange={(e) => setBlockReason(e.target.value)}
+              style={{ colorScheme: "dark" }}
+              className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white"
+            >
+              {BLOCK_REASONS.map((r) => (
+                <option key={r.code} value={r.code}>{r.label}</option>
+              ))}
+            </select>
+            <label className="mt-4 block text-xs font-bold uppercase tracking-widest text-zinc-500">Mensaje adicional (opcional, lo verá el usuario)</label>
+            <textarea
+              value={blockNote}
+              onChange={(e) => setBlockNote(e.target.value)}
+              rows={3}
+              maxLength={300}
+              className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white"
+            />
+            <div className="mt-5 flex gap-3">
+              <button onClick={() => setBlockTarget(null)} className="flex-1 rounded-2xl border border-white/10 py-3 text-sm font-bold text-zinc-300">Cancelar</button>
+              <button
+                onClick={() => applyBlock(blockTarget, true)}
+                disabled={blockingId === blockTarget.id}
+                className="flex-1 rounded-2xl bg-red-500 py-3 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {blockingId === blockTarget.id ? "..." : "Bloquear"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminShell>
   )
 }

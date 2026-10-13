@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation"
 // pantallas comparten esta misma lista, siempre completa.
 const ADMIN_NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "📊" },
+  { href: "/admin/datos", label: "Datos", icon: "💎" },
   { href: "/admin", label: "Clubs", icon: "🏛️" },
   { href: "/admin/events", label: "Events", icon: "🎉" },
   { href: "/admin/club-events", label: "Club nights", icon: "🎧" },
@@ -17,7 +18,6 @@ const ADMIN_NAV = [
   { href: "/admin/messages", label: "Messages", icon: "💬" },
   { href: "/admin/entry-denials", label: "No dejan entrar", icon: "🚫" },
   { href: "/admin/analytics", label: "Analytics", icon: "📈" },
-  { href: "/admin/datos", label: "Datos", icon: "💎" },
 ]
 
 export default function AdminShell({

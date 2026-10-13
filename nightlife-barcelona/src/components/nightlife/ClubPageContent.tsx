@@ -165,6 +165,8 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
   const [now, setNow] = useState(() => Date.now())
   const [mounted, setMounted] = useState(false)
   const [reviews, setReviews] = useState<any[]>([])
+  // Check-ins reales (GPS) de las últimas 3 h en este club; ver función club_live_checkins.
+  const [liveCheckins, setLiveCheckins] = useState(0)
   const [liveNotes, setLiveNotes] = useState<any[]>([])
   const [nearestTaxi, setNearestTaxi] = useState<{ name: string; address: string | null; latitude: number; longitude: number; distanceMeters: number } | null>(null)
   const heroRef = useRef<HTMLDivElement>(null)
@@ -273,6 +275,12 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
   const trackClick = (eventType: string) =>
     track(eventType, { itemType: "club", itemId: club.id, itemName: club.name })
 
+  useEffect(() => {
+    supabase.rpc("club_live_checkins", { p_club_id: club.id }).then(({ data }) => {
+      if (typeof data === "number") setLiveCheckins(data)
+    })
+  }, [club.id])
+
   // Registra la visita a esta ficha (solo si el usuario ha iniciado sesión) para poder mostrar
   // "últimos clubes visitados" en su perfil.
   useEffect(() => {
@@ -378,8 +386,20 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
     : Infinity
   const isLiveStatus = !!(club.live_status && LIVE_STATUS_STYLES[club.live_status] && liveStatusAgeMs < LIVE_STATUS_MAX_AGE_MS)
 
+  // Prioridad: 1) lo que marca el propio local (mi-club), 2) check-ins reales de las últimas 3 h
+  // (a partir de CHECKINS_MIN_FOR_LIVE personas, para no dar como "dato" lo que es una sola
+  // persona), 3) estimación, que se muestra etiquetada como "Estimado".
+  const CHECKINS_MIN_FOR_LIVE = 3
+  const CHECKINS_FOR_FULL = 10
+  const fromCheckins = !isLiveStatus && liveCheckins >= CHECKINS_MIN_FOR_LIVE
+  const isEstimate = !isLiveStatus && !fromCheckins
+
   const energyLevel = isLiveStatus
     ? LIVE_STATUS_STYLES[club.live_status]
+    : fromCheckins
+    ? liveCheckins >= CHECKINS_FOR_FULL
+      ? LIVE_STATUS_STYLES.lleno
+      : LIVE_STATUS_STYLES.animado
     : club.sold_out
     ? { label: "Lleno", bars: 5, color: "bg-red-400" }
     : club.queue && !/no queue|sin cola/i.test(club.queue)
@@ -588,6 +608,17 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                 </span>
                 <span className="text-xs font-semibold text-zinc-300">
                   {energyLevel.label} ahora
+                  {isEstimate && (
+                    <span className="ml-1.5 rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-semibold text-zinc-400">
+                      Estimado
+                    </span>
+                  )}
+                  {fromCheckins && (
+                    <span className="ml-1.5 inline-flex items-center gap-1 text-emerald-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
+                      en directo · {liveCheckins} check-ins en las últimas 3 h
+                    </span>
+                  )}
                   {isLiveStatus && (
                     <span className="ml-1.5 inline-flex items-center gap-1 text-emerald-400">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
