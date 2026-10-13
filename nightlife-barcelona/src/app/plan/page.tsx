@@ -47,6 +47,7 @@ type Prefs = {
   venueTypeSet: Set<string>
   dresscode: string
   lgtbi: boolean
+  mature: boolean
 }
 
 const VIBE_MUSIC_HINT: Record<string, string> = {
@@ -97,6 +98,16 @@ function scoreClub(club: any, prefs: Prefs, t: (key: string) => string): { score
     reasons.push(t("planPage.reasonBudget"))
   } else {
     score -= 15
+  }
+
+  // Público +30: sube mucho los locales pensados para gente mayor y penaliza los de público joven.
+  if (prefs.mature) {
+    if (club.audience === "+30" || club.audience === "+40") {
+      score += 25
+      reasons.push("Ambiente para público +30")
+    } else if (club.audience === "joven") {
+      score -= 15
+    }
   }
 
   if (prefs.lgtbi && club.lgtbi_friendly) {
@@ -261,6 +272,7 @@ export default function PlanPage() {
   const [timeKey, setTimeKey] = useState<"early" | "peak" | "late" | "allnight">("peak")
   const [dayOffset, setDayOffset] = useState(0)
   const [lgtbi, setLgtbi] = useState(false)
+  const [mature, setMature] = useState(false)
 
   const [stops, setStops] = useState<Stop[]>([])
   const [alternatives, setAlternatives] = useState<any[]>([])
@@ -417,7 +429,7 @@ export default function PlanPage() {
   }
 
   const computePlan = () => {
-    const prefs: Prefs = { groupKey, budgetMax, vibeKey, musicSet, areaSet, venueTypeSet, dresscode, lgtbi }
+    const prefs: Prefs = { groupKey, budgetMax, vibeKey, musicSet, areaSet, venueTypeSet, dresscode, lgtbi, mature }
 
     // Pequeño factor aleatorio sobre el score: sin esto, "Rehacer plan" con las mismas
     // preferencias siempre calculaba exactamente los mismos clubs (el orden era 100%
@@ -548,6 +560,7 @@ export default function PlanPage() {
     setDresscode("Cualquiera")
     setTimeKey("peak")
     setLgtbi(false)
+    setMature(false)
     setDayOffset(0)
     setPhase("form")
     setStep(0)
@@ -846,6 +859,15 @@ export default function PlanPage() {
                     }`}
                   >
                     🏳️‍🌈 {t("planPage.lgtbiPriority")}
+                  </button>
+
+                  <button
+                    onClick={() => setMature(!mature)}
+                    className={`flex w-full items-center gap-3 rounded-2xl border px-5 py-4 text-sm font-semibold transition ${
+                      mature ? "border-amber-500/40 bg-amber-500/10 text-amber-300" : "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                    }`}
+                  >
+                    🥂 Prefiero ambiente para +30
                   </button>
                 </div>
               )}

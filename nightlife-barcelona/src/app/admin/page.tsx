@@ -16,6 +16,7 @@ type Club = {
   rating?: number
   people?: string
   dresscode?: string
+  audience?: string | null
   terrace?: boolean
   smoking_area?: boolean
   table_booking?: boolean
@@ -55,6 +56,7 @@ type ClubFormData = {
   rating: string
   people: string
   dresscode: string
+  audience: string
   terrace: boolean
   smoking_area: boolean
   table_booking: boolean
@@ -85,6 +87,7 @@ const emptyForm: ClubFormData = {
   rating: "",
   people: "",
   dresscode: "",
+  audience: "",
   terrace: false,
   smoking_area: false,
   table_booking: false,
@@ -115,6 +118,7 @@ const clubToForm = (club: Club): ClubFormData => ({
   rating: club.rating != null ? String(club.rating) : "",
   people: club.people || "",
   dresscode: club.dresscode || "",
+  audience: club.audience || "",
   terrace: !!club.terrace,
   smoking_area: !!club.smoking_area,
   table_booking: !!club.table_booking,
@@ -204,6 +208,7 @@ export default function AdminPage() {
     rating: form.rating.trim() ? Number(form.rating.trim()) : null,
     people: form.people.trim(),
     dress_code: form.dresscode.trim(),
+    audience: form.audience || null,
     terrace: form.terrace,
     smoking_area: form.smoking_area,
     table_booking: form.table_booking,
@@ -461,6 +466,15 @@ export default function AdminPage() {
       <div>
         <label className={labelClass}>Aforo / gente</label>
         <input value={form.people} onChange={(e) => setForm({ ...form, people: e.target.value })} placeholder="Ej. 500 personas" className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Público (edad del ambiente)</label>
+        <select value={form.audience} onChange={(e) => setForm({ ...form, audience: e.target.value })} className={inputClass} style={{ colorScheme: "dark" }}>
+          <option value="">Mixto / sin especificar</option>
+          <option value="joven">Joven (18-25)</option>
+          <option value="+30">+30</option>
+          <option value="+40">+40</option>
+        </select>
       </div>
       <div>
         <label className={labelClass}>Dress code</label>
