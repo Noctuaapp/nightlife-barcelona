@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import { createSlug } from "../../lib/slug"
+import { useGeolocation } from "../../lib/useGeolocation"
+import { distanceInMeters, formatDistance } from "../../lib/geo"
 
 type Event = {
   id: number
@@ -44,11 +46,14 @@ export default function EventsSection() {
   const [selectedCategory, setSelectedCategory] = useState("All")
   const { t } = useLanguage()
   const router = useRouter()
+  const geo = useGeolocation()
 
   const categories = [
     { key: "All", label: t("filters.all") },
     { key: "Tonight", label: t("events.tonight") },
     { key: "Featured", label: t("events.featured") },
+    { key: "Free", label: "Gratis" },
+    { key: "Near", label: "📍 Cerca de mí" },
     { key: "Sold out", label: t("events.sold_out") },
   ]
 
@@ -66,13 +71,36 @@ export default function EventsSection() {
   // Ahora solo aparece cuando de verdad hay un evento con fecha de hoy.
   const hasLiveTonight = events.some((event) => event.date === today)
 
-  const filteredEvents = events.filter((event) => {
-    if (selectedCategory === "All") return event.featured === true
-    if (selectedCategory === "Tonight") return event.date === today
-    if (selectedCategory === "Featured") return event.featured === true
-    if (selectedCategory === "Sold out") return event.sold_out === true
-    return true
-  }).slice(0, 3)
+  const distTo = (e: Event): number | null =>
+    geo.pos && e.latitude && e.longitude ? distanceInMeters(geo.pos.lat, geo.pos.lng, Number(e.latitude), Number(e.longitude)) : null
+
+  const selectCategory = (key: string) => {
+    setSelectedCategory(key)
+    if (key === "Near" && !geo.pos && !geo.locating) geo.request()
+  }
+
+  const filteredEvents = (() => {
+    const upcoming = (e: Event) => !e.date || e.date >= today
+    if (selectedCategory === "Near") {
+      // Los próximos eventos, del más cercano al más lejano. Sin ubicación aún, por fecha.
+      const list = events.filter(upcoming)
+      if (!geo.pos) return list.slice(0, 3)
+      return list
+        .filter((e) => distTo(e) !== null)
+        .sort((a, b) => (distTo(a) as number) - (distTo(b) as number))
+        .slice(0, 3)
+    }
+    return events
+      .filter((event) => {
+        if (selectedCategory === "All") return event.featured === true
+        if (selectedCategory === "Tonight") return event.date === today
+        if (selectedCategory === "Featured") return event.featured === true
+        if (selectedCategory === "Free") return upcoming(event) && (event.price || "").toLowerCase().includes("gratis")
+        if (selectedCategory === "Sold out") return event.sold_out === true
+        return true
+      })
+      .slice(0, 3)
+  })()
 
   return (
     <section className="mx-auto mt-28 max-w-7xl px-4">
@@ -94,7 +122,7 @@ export default function EventsSection() {
         {categories.map((category) => (
           <button
             key={category.key}
-            onClick={() => setSelectedCategory(category.key)}
+            onClick={() => selectCategory(category.key)}
             className={`rounded-full px-5 py-3 text-sm font-medium whitespace-nowrap transition ${
               selectedCategory === category.key
                 ? "bg-white text-black"
@@ -105,6 +133,12 @@ export default function EventsSection() {
           </button>
         ))}
       </div>
+
+      {selectedCategory === "Near" && (geo.locating || geo.error || geo.pos) && (
+        <p className={`mt-4 text-sm ${geo.error ? "text-amber-300" : "text-zinc-400"}`}>
+          {geo.locating ? "Localizando…" : geo.error ? geo.error : "📍 Los más cercanos a tu ubicación"}
+        </p>
+      )}
 
       <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {filteredEvents.length === 0 ? (
@@ -169,6 +203,7 @@ export default function EventsSection() {
 
                 <div className="absolute right-5 top-5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300 backdrop-blur-xl">
                   {event.date === today ? t("events.tonight") : event.date}
+                  {selectedCategory === "Near" && distTo(event) !== null ? ` · ${formatDistance(distTo(event) as number)}` : ""}
                 </div>
 
                 <div className="absolute bottom-0 left-0 w-full p-6">

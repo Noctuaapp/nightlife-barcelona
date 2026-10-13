@@ -13,6 +13,8 @@ import { useLanguage } from "../../context/LanguageContext"
 import { createSlug } from "../../lib/slug"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import ArrowIcon from "../ui/ArrowIcon"
+import { useGeolocation } from "../../lib/useGeolocation"
+import { distanceInMeters, formatDistance } from "../../lib/geo"
 
 function isOpenNow(hours?: string): boolean | null {
   if (!hours) return null
@@ -112,6 +114,8 @@ function useCountUp(target: number, active: boolean, duration = 1000) {
 // marca, el mismo que el CTA de "Crear cuenta") sea lo único que llame la atención.
 const TABS = [
   { key: "all", label: "Para ti" },
+  { key: "near", label: "📍 Cerca de mí" },
+  { key: "open", label: "Abierto ahora" },
   { key: "trending", label: "Trending" },
   { key: "top", label: "Mejor valorados" },
   { key: "lgtbi", label: "LGTBI+" },
@@ -133,6 +137,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
   // que llegó de la base de datos; justo después de montar se baraja una vez.
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState("all")
+  const geo = useGeolocation()
   const [search, setSearch] = useState("")
   const [spot, setSpot] = useState({ x: 50, y: 25 })
 
@@ -155,9 +160,30 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
     // vacía por mucho que hubiera locales marcados como tal.
     else if (activeTab === "lgtbi") base = clubs.filter((c) => c.lgtbi_friendly)
     else if (activeTab === "free") base = clubs.filter((c) => c.price?.toLowerCase().includes("gratis"))
+    else if (activeTab === "open") base = clubs.filter((c) => isOpenNow(c.hours) === true)
+    else if (activeTab === "near") {
+      // Sin ubicación todavía no hay nada que ordenar: se muestran los de siempre hasta que llegue.
+      base = geo.pos
+        ? clubs
+            .filter((c) => c.latitude && c.longitude)
+            .map((c) => ({ c, d: distanceInMeters(geo.pos!.lat, geo.pos!.lng, Number(c.latitude), Number(c.longitude)) }))
+            .sort((a, b) => a.d - b.d)
+            .map((x) => x.c)
+        : shuffled
+    }
     else base = shuffled
     return base.slice(0, 6)
-  }, [activeTab, clubs, shuffled])
+  }, [activeTab, clubs, shuffled, geo.pos])
+
+  const selectTab = (key: string) => {
+    setActiveTab(key)
+    if (key === "near" && !geo.pos && !geo.locating) geo.request()
+  }
+
+  const distTo = (c: any): string | null =>
+    geo.pos && c.latitude && c.longitude
+      ? formatDistance(distanceInMeters(geo.pos.lat, geo.pos.lng, Number(c.latitude), Number(c.longitude)))
+      : null
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -347,7 +373,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
                 {TABS.map((tab) => (
                   <button
                     key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
+                    onClick={() => selectTab(tab.key)}
                     className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-400 ${
                       activeTab === tab.key
                         ? "text-white"
@@ -367,6 +393,12 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
                 ))}
               </div>
             </Reveal>
+
+            {activeTab === "near" && (geo.locating || geo.error || geo.pos) && (
+              <p className={`mt-4 text-sm ${geo.error ? "text-amber-300" : "text-zinc-400"}`}>
+                {geo.locating ? "Localizando…" : geo.error ? geo.error : "📍 Ordenado por distancia desde tu ubicación"}
+              </p>
+            )}
 
             <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {displayedClubs.length === 0 ? (
@@ -417,6 +449,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
                           <div className="flex items-center justify-between">
                             <p className="text-xs uppercase tracking-[0.2em] text-zinc-300">
                               {club.neighborhood || "Barcelona"}
+                              {activeTab === "near" && distTo(club) ? ` · ${distTo(club)}` : ""}
                             </p>
                             {club.rating && (
                               <span className="flex items-center gap-1 text-xs font-bold text-amber-300">

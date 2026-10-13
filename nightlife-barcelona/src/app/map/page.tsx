@@ -11,6 +11,7 @@ import { createSlug } from "../../lib/slug"
 import { useLanguage } from "../../context/LanguageContext"
 import ArrowIcon from "../../components/ui/ArrowIcon"
 import { zoneOf, zonesPresent } from "../../lib/zones"
+import { distanceInMeters, formatDistance } from "../../lib/geo"
 
 type Club = {
   id: number
@@ -119,6 +120,10 @@ const SearchInput = ({ value, onChange, accent }: { value: string; onChange: (v:
   </div>
   )
 }
+
+// Búsqueda sin tildes ni mayúsculas para el buscador flotante del mapa.
+const normQ = (v: string) =>
+  (v || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim()
 
 const getName = (item: Club | Event | Essential) => ("name" in item ? item.name : item.title)
 const getSub = (item: Club | Event | Essential) => {
@@ -265,6 +270,8 @@ export default function MapPage() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
   const [search, setSearch] = useState("")
   const [zone, setZone] = useState("")
+  const [mapQuery, setMapQuery] = useState("")
+  const [mapSearchOpen, setMapSearchOpen] = useState(false)
   useEffect(() => { setZone("") }, [filter])
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [trackingActive, setTrackingActive] = useState(false)
@@ -505,6 +512,50 @@ export default function MapPage() {
     return name.includes(search.toLowerCase()) || sub.includes(search.toLowerCase())
   })
 
+  // Resultados del buscador flotante: por relevancia con lo escrito, y si tienes la ubicación
+  // activada, los más cercanos primero (sin texto: los 5 más cercanos a ti).
+  const mapQ = normQ(mapQuery)
+  const mapDist = (item: Club | Event | Essential): number | null =>
+    userLocation && item.latitude && item.longitude
+      ? distanceInMeters(userLocation[1], userLocation[0], Number(item.latitude), Number(item.longitude))
+      : null
+  const mapResults = (() => {
+    const base = (rawList as (Club | Event | Essential)[]).filter(
+      (i) => i.latitude && i.longitude && (!zone || zoneOf(i as { neighborhood?: string | null; address?: string | null }) === zone)
+    )
+    if (!mapQ) {
+      if (!userLocation) return []
+      return base
+        .map((i) => ({ i, d: mapDist(i) as number }))
+        .sort((a, b) => a.d - b.d)
+        .slice(0, 5)
+    }
+    return base
+      .map((i) => {
+        const name = normQ(getName(i))
+        const sub = normQ(getSub(i))
+        let score = 0
+        if (name === mapQ) score = 100
+        else if (name.startsWith(mapQ)) score = 80
+        else if (name.split(" ").some((w) => w.startsWith(mapQ))) score = 60
+        else if (mapQ.length >= 3 && name.includes(mapQ)) score = 40
+        else if (sub.split(" ").some((w) => w.startsWith(mapQ))) score = 20
+        else if (mapQ.length >= 3 && sub.includes(mapQ)) score = 10
+        return { i, score, d: mapDist(i) }
+      })
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score || (a.d ?? Infinity) - (b.d ?? Infinity))
+      .slice(0, 6)
+  })()
+
+  const pickFromMapSearch = (item: Club | Event | Essential) => {
+    setSelected(item)
+    setMapQuery("")
+    setMapSearchOpen(false)
+    setShowList(false)
+    map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 })
+  }
+
   if (isLoggedIn === null) {
     return (
       <main style={{ display: "flex", minHeight: "100dvh", flexDirection: "column", gap: "14px", alignItems: "center", justifyContent: "center", background: "#050308", color: "#fff" }}>
@@ -622,6 +673,54 @@ export default function MapPage() {
             style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, borderRadius: "999px", background: trackingActive ? "rgba(59,130,246,0.9)" : "rgba(0,0,0,0.75)", border: trackingActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.2)", padding: "9px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)" }}>
             {trackingActive ? `📍 ${t("map.following")}` : `📍 ${t("map.myLocation")}`}
           </button>
+
+          {/* Buscador flotante: escribe un nombre y salta directo a ese sitio; con tu ubicación
+              activada ordena por cercanía y la ruta a pie se dibuja al seleccionarlo. */}
+          <div style={{ position: "absolute", top: "58px", left: "12px", right: "12px", maxWidth: "420px", zIndex: 15 }}>
+            <div style={{ position: "relative" }}>
+              <input
+                value={mapQuery}
+                onChange={(e) => { setMapQuery(e.target.value); setMapSearchOpen(true) }}
+                onFocus={() => setMapSearchOpen(true)}
+                placeholder={`Buscar ${t(`nav.${filter}`).toLowerCase()} en el mapa…`}
+                style={{ width: "100%", boxSizing: "border-box", borderRadius: "9999px", border: `1px solid ${COLORS[filter]}66`, background: "rgba(22,16,41,0.92)", color: "#fff", padding: "12px 44px 12px 18px", fontSize: "16px", outline: "none", backdropFilter: "blur(14px)", boxShadow: `0 10px 30px -12px ${COLORS[filter]}99` }}
+              />
+              {mapQuery ? (
+                <button onClick={() => { setMapQuery(""); setMapSearchOpen(false) }} aria-label="Limpiar" style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "rgba(255,255,255,0.6)", fontSize: "16px", cursor: "pointer" }}>✕</button>
+              ) : (
+                <span style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.5)", pointerEvents: "none" }}>🔍</span>
+              )}
+            </div>
+            {mapSearchOpen && (
+              <div style={{ marginTop: "8px", borderRadius: "18px", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(13,10,28,0.97)", backdropFilter: "blur(16px)", overflow: "hidden", boxShadow: "0 20px 50px -20px rgba(0,0,0,0.8)" }}>
+                {!mapQ && !userLocation && (
+                  <button onClick={startTracking} style={{ display: "block", width: "100%", textAlign: "left", padding: "13px 16px", background: "none", border: "none", color: "#fff", fontSize: "14px", cursor: "pointer" }}>
+                    📍 Usar mi ubicación para ver lo más cercano
+                  </button>
+                )}
+                {!mapQ && userLocation && mapResults.length > 0 && (
+                  <p style={{ padding: "10px 16px 4px", fontSize: "11px", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Cerca de ti</p>
+                )}
+                {mapQ && mapResults.length === 0 && (
+                  <p style={{ padding: "14px 16px", fontSize: "13px", color: "rgba(255,255,255,0.45)" }}>Sin resultados para “{mapQuery}”.</p>
+                )}
+                {(mapResults as { i: Club | Event | Essential; d?: number | null }[]).map(({ i, d }) => {
+                  const dist = typeof d === "number" ? d : mapDist(i)
+                  return (
+                    <button key={i.id} onClick={() => pickFromMapSearch(i)}
+                      style={{ display: "flex", alignItems: "center", gap: "11px", width: "100%", textAlign: "left", padding: "10px 16px", background: "none", border: "none", borderTop: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
+                      {renderAvatar(i, 34)}
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getName(i)}</p>
+                        <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getSub(i)}</p>
+                      </div>
+                      {dist !== null && <span style={{ fontSize: "12px", fontWeight: 700, color: COLORS[filter], flexShrink: 0 }}>{formatDistance(dist)}</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
 
           {showList && (
             <div className="lg:hidden" style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "85%", maxWidth: "320px", background: "#050308", zIndex: 20, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.1)" }}>

@@ -137,11 +137,32 @@ function scoreClub(club: any, prefs: Prefs, t: (key: string) => string): { score
   return { score, reasons }
 }
 
+// El evento ocurre en esa fecha (un día suelto, o dentro de su rango si dura varios días).
+function eventOnDate(event: any, dateStr: string): boolean {
+  if (!event.date) return false
+  if (event.date === dateStr) return true
+  return !!event.date_end && event.date <= dateStr && dateStr <= event.date_end
+}
+
+// "Esta noche" cuenta hasta las 6:00 (a las 2 de la madrugada sigues en la noche de ayer), en hora
+// de Madrid. Antes se usaba la fecha UTC, que de 0:00 a 2:00 en Madrid todavía era el día anterior.
+function planDateFor(offset: number): Date {
+  const madrid = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Madrid" }))
+  if (madrid.getHours() < 6) madrid.setDate(madrid.getDate() - 1)
+  madrid.setHours(12, 0, 0, 0)
+  madrid.setDate(madrid.getDate() + offset)
+  return madrid
+}
+
+function dateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
 function scoreEvent(event: any, prefs: Prefs, todayStr: string, t: (key: string) => string): { score: number; reasons: string[] } {
   let score = 0
   const reasons: string[] = []
 
-  if (event.date === todayStr) {
+  if (eventOnDate(event, todayStr)) {
     score += 40
     reasons.push(t("planPage.reasonTonight"))
   }
@@ -238,6 +259,7 @@ export default function PlanPage() {
   const [zoneSel, setZoneSel] = useState("")
   const [dresscode, setDresscode] = useState("Cualquiera")
   const [timeKey, setTimeKey] = useState<"early" | "peak" | "late" | "allnight">("peak")
+  const [dayOffset, setDayOffset] = useState(0)
   const [lgtbi, setLgtbi] = useState(false)
 
   const [stops, setStops] = useState<Stop[]>([])
@@ -333,8 +355,9 @@ export default function PlanPage() {
   const vibeEmoji = VIBE_PRESETS.find((v) => v.key === vibeKey)?.emoji || "🎲"
   const timeLabel = TIME_WINDOWS[timeKey].label
 
-  const todayStr = new Date().toISOString().split("T")[0]
-  const todayFormatted = new Date().toLocaleDateString(toDateLocale(locale), { weekday: "long", day: "numeric", month: "long" })
+  const planDate = planDateFor(dayOffset)
+  const todayStr = dateKey(planDate)
+  const todayFormatted = planDate.toLocaleDateString(toDateLocale(locale), { weekday: "long", day: "numeric", month: "long" })
 
   const STEP_TITLES_T = [
     t("planPage.stepGroup"), t("planPage.stepBudget"), t("planPage.stepVibe"),
@@ -407,7 +430,7 @@ export default function PlanPage() {
     // solo filtramos los que SÍ tienen el dato y hoy no abren, para no proponer un plan a un
     // club cerrado.
     const DAY_ABBR = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
-    const todayDay = DAY_ABBR[new Date().getDay()]
+    const todayDay = DAY_ABBR[planDate.getDay()]
 
     const allScoredClubs = clubs
       .filter((c) => !c.sold_out)
@@ -425,14 +448,19 @@ export default function PlanPage() {
 
     const scoredEvents = events
       .filter((e) => !e.sold_out)
+      .filter((e) => !zoneSel || zoneOf(e) === zoneSel)
       .map((e) => ({ ...e, ...scoreEvent(e, prefs, todayStr, t) }))
       .sort((a, b) => b.score - a.score)
 
-    const tonightEvent = scoredEvents.find((e) => e.date === todayStr)
-    const upcoming = scoredEvents
+    // Los eventos de la fecha elegida son opciones reales del plan: el mejor entra en la
+    // línea de tiempo y los demás de esa misma noche se ofrecen como alternativas.
+    const onThatNight = scoredEvents.filter((e) => eventOnDate(e, todayStr))
+    const tonightEvent = onThatNight[0]
+    const sameNightOthers = onThatNight.slice(1, 4)
+    const later = scoredEvents
       .filter((e) => e.date && e.date > todayStr)
       .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
-      .slice(0, 6)
+    const upcoming = [...sameNightOthers, ...later].slice(0, 6)
 
     const top = scoredClubs[0]
     const second = scoredClubs[1]
@@ -520,6 +548,7 @@ export default function PlanPage() {
     setDresscode("Cualquiera")
     setTimeKey("peak")
     setLgtbi(false)
+    setDayOffset(0)
     setPhase("form")
     setStep(0)
     setSeenClubIds(new Set())
@@ -748,6 +777,32 @@ export default function PlanPage() {
 
               {step === 6 && (
                 <div className="space-y-8">
+                  <div>
+                    <p className="mb-4 text-xs uppercase tracking-widest text-zinc-500">¿Qué noche?</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[0, 1, 2, 3, 4, 5, 6].map((off) => {
+                        const d = planDateFor(off)
+                        const label =
+                          off === 0
+                            ? "Esta noche"
+                            : off === 1
+                            ? "Mañana"
+                            : d.toLocaleDateString(toDateLocale(locale), { weekday: "short", day: "numeric" })
+                        return (
+                          <button
+                            key={off}
+                            onClick={() => setDayOffset(off)}
+                            className={`rounded-full px-4 py-2 text-xs font-semibold capitalize transition ${
+                              dayOffset === off ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
                   <div>
                     <p className="mb-4 text-xs uppercase tracking-widest text-zinc-500">{t("planPage.departureTimeQuestion")}</p>
                     <div className="grid grid-cols-2 gap-3">

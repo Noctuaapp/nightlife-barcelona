@@ -496,66 +496,6 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
         </Reveal>
       )}
 
-      {/* GALERIA */}
-      {allImages.length > 1 && (
-        <Reveal className="mt-16">
-          <p className="mx-auto max-w-6xl px-4 text-xs uppercase tracking-[0.3em] text-zinc-500 mb-5 sm:px-6">{t("event.gallery")}</p>
-          <div className="mx-auto hidden max-w-6xl grid-cols-4 grid-rows-2 gap-3 px-6 sm:grid" style={{ height: 420 }}>
-            {allImages.slice(0, 5).map((src: string, i: number) => (
-              <button
-                key={i}
-                onClick={() => setLightboxIndex(i)}
-                className={`group relative overflow-hidden rounded-3xl ${i === 0 ? "col-span-2 row-span-2" : "col-span-1 row-span-1"}`}
-              >
-                {/* La primera foto del mosaico (col-span-2 row-span-2) es probablemente el LCP de la
-                    página, por eso lleva priority; el resto se cargan de forma perezosa. */}
-                <Image
-                  src={src}
-                  alt={`${event.title} ${i + 1}`}
-                  fill
-                  sizes={i === 0 ? "(max-width: 640px) 0px, 50vw" : "(max-width: 640px) 0px, 25vw"}
-                  priority={i === 0}
-                  className="object-cover transition duration-700 group-hover:scale-110"
-                />
-                {i === 4 && allImages.length > 5 && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-lg font-black text-white">
-                    +{allImages.length - 5}
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:hidden">
-            {allImages.map((src: string, i: number) => (
-              <button key={i} onClick={() => setLightboxIndex(i)} className="group relative h-[60vw] w-[78vw] shrink-0 snap-center overflow-hidden rounded-[28px]">
-                <Image src={src} alt={`${event.title} ${i + 1}`} fill sizes="78vw" className="object-cover" />
-              </button>
-            ))}
-          </div>
-        </Reveal>
-      )}
-
-      {lightboxIndex !== null && (
-        <div onClick={() => setLightboxIndex(null)} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-6 backdrop-blur-xl">
-          <button onClick={() => setLightboxIndex(null)} className="absolute right-6 top-6 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white">
-            <Icon name="close" className="h-5 w-5" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + allImages.length) % allImages.length) }}
-            className="absolute left-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white sm:left-8"
-          >
-            <Icon name="arrow" className="h-5 w-5 rotate-180" />
-          </button>
-          <img src={allImages[lightboxIndex]} alt={event.title} onClick={(e) => e.stopPropagation()} className="max-h-[85vh] max-w-full rounded-2xl object-contain" />
-          <button
-            onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % allImages.length) }}
-            className="absolute right-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white sm:right-8"
-          >
-            <Icon name="arrow" className="h-5 w-5" />
-          </button>
-        </div>
-      )}
-
       <section className="mx-auto max-w-6xl px-4 pt-16 pb-24 sm:px-6">
         <div className="grid gap-10 lg:grid-cols-3">
           {/* LEFT */}
@@ -779,6 +719,66 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
           </div>
         </div>
       </section>
+
+      {/* GALERIA */}
+      {allImages.length > 1 && (
+        <Reveal className="mb-20">
+          <p className="mx-auto max-w-6xl px-4 text-xs uppercase tracking-[0.3em] text-zinc-500 mb-5 sm:px-6">{t("event.gallery")}</p>
+          <div className="mx-auto hidden max-w-6xl grid-cols-4 grid-rows-2 gap-3 px-6 sm:grid" style={{ height: 420 }}>
+            {allImages.slice(0, 5).map((src: string, i: number) => (
+              <button
+                key={i}
+                onClick={() => setLightboxIndex(i)}
+                className={`group relative overflow-hidden rounded-3xl ${i === 0 ? "col-span-2 row-span-2" : "col-span-1 row-span-1"}`}
+              >
+                {/* La primera foto del mosaico (col-span-2 row-span-2) es probablemente el LCP de la
+                    página, por eso lleva priority; el resto se cargan de forma perezosa. */}
+                <Image
+                  src={src}
+                  alt={`${event.title} ${i + 1}`}
+                  fill
+                  sizes={i === 0 ? "(max-width: 640px) 0px, 50vw" : "(max-width: 640px) 0px, 25vw"}
+                  priority={i === 0}
+                  className="object-cover transition duration-700 group-hover:scale-110"
+                />
+                {i === 4 && allImages.length > 5 && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-lg font-black text-white">
+                    +{allImages.length - 5}
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:hidden">
+            {allImages.map((src: string, i: number) => (
+              <button key={i} onClick={() => setLightboxIndex(i)} className="group relative h-[60vw] w-[78vw] shrink-0 snap-center overflow-hidden rounded-[28px]">
+                <Image src={src} alt={`${event.title} ${i + 1}`} fill sizes="78vw" className="object-cover" />
+              </button>
+            ))}
+          </div>
+        </Reveal>
+      )}
+
+      {lightboxIndex !== null && (
+        <div onClick={() => setLightboxIndex(null)} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-6 backdrop-blur-xl">
+          <button onClick={() => setLightboxIndex(null)} className="absolute right-6 top-6 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white">
+            <Icon name="close" className="h-5 w-5" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + allImages.length) % allImages.length) }}
+            className="absolute left-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white sm:left-8"
+          >
+            <Icon name="arrow" className="h-5 w-5 rotate-180" />
+          </button>
+          <img src={allImages[lightboxIndex]} alt={event.title} onClick={(e) => e.stopPropagation()} className="max-h-[85vh] max-w-full rounded-2xl object-contain" />
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % allImages.length) }}
+            className="absolute right-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white sm:right-8"
+          >
+            <Icon name="arrow" className="h-5 w-5" />
+          </button>
+        </div>
+      )}
 
       {/* CTA FULL-BLEED */}
       {ticketUrl && (
