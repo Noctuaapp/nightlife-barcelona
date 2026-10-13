@@ -18,6 +18,7 @@ import { createSlug } from "../../lib/slug"
 import { getNightBusLine, splitNightBusCodes, nightBusStopsUrl } from "../../lib/nightBuses"
 import { nearestMetroStations } from "../../lib/metroStations"
 import { distanceInMeters, formatDistance, walkingMinutes, walkingDirectionsUrl } from "../../lib/geo"
+import { useIdleVisible } from "../../lib/useIdleVisible"
 
 const ACCENT_PALETTE = [
   { from: "#8b5cf6", to: "#ec4899", glow: "139,92,246" },
@@ -149,6 +150,7 @@ function Stars({ rating, size = "h-3.5 w-3.5", color }: { rating: number; size?:
 }
 
 export default function ClubPageContent({ club, clubEvents, clubSessions = [] }: { club: any; clubEvents: any[]; clubSessions?: any[] }) {
+  const actionBarVisible = useIdleVisible(3000)
   const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState<"about" | "nights" | "sessions" | "location">("about")
   const [related, setRelated] = useState<any[]>([])
@@ -1318,7 +1320,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
       )}
 
       {/* FLOATING MOBILE ACTION BAR — la compra de entradas siempre visible, como en Dice/Fever/Ticketmaster */}
-      <div className="fixed inset-x-4 bottom-24 z-40 flex items-center gap-2 rounded-2xl border border-white/10 bg-black/85 p-2 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] backdrop-blur-2xl lg:hidden">
+      <div className={`fixed inset-x-4 bottom-24 z-40 flex items-center gap-2 rounded-2xl border border-white/10 bg-black/85 p-2 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] backdrop-blur-2xl transition-all duration-300 lg:hidden ${actionBarVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-32 opacity-0"}`}>
         {ticketUrl ? (
           <>
             <a

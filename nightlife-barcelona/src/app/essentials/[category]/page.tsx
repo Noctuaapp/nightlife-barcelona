@@ -13,6 +13,7 @@ import { useLanguage } from "../../../context/LanguageContext"
 import ArrowIcon from "../../../components/ui/ArrowIcon"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../../lib/geo"
 import { getOpenStatus } from "../../../lib/openStatus"
+import { useIdleVisible } from "../../../lib/useIdleVisible"
 import EssentialPhoto from "../../../components/essentials/EssentialPhoto"
 
 const categoryConfig: Record<string, { icon: string; color: string; key: string }> = {
@@ -103,6 +104,7 @@ function Reveal(props: { children: React.ReactNode; className?: string; style?: 
 }
 
 export default function EssentialCategoryPage() {
+  const floatingVisible = useIdleVisible(3000)
   const params = useParams()
   const category = (params.category as string).toLowerCase()
   const knownConfig = categoryConfig[category]
@@ -780,7 +782,7 @@ export default function EssentialCategoryPage() {
       {mobileView === "list" && !loading && essentials.length > 0 && (
         <button
           onClick={() => setMobileView("map")}
-          className="fixed bottom-24 right-4 z-30 rounded-full bg-white px-4 py-2.5 text-xs font-black text-black shadow-[0_10px_30px_rgba(0,0,0,0.5)] md:hidden"
+          className={`fixed bottom-24 right-4 z-30 rounded-full bg-white px-4 py-2.5 text-xs font-black text-black shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all duration-300 md:hidden ${floatingVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-24 opacity-0"}`}
         >
           🗺️ Ver mapa
         </button>

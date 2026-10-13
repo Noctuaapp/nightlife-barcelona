@@ -6,11 +6,11 @@ import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
+import { useIdleVisible } from "../../lib/useIdleVisible"
 
 export default function BottomNav() {
   const pathname = usePathname()
   const [isAdmin, setIsAdmin] = useState(false)
-  const [visible, setVisible] = useState(true)
   const { t } = useLanguage()
 
   useEffect(() => {
@@ -23,25 +23,9 @@ export default function BottomNav() {
     checkAdmin()
   }, [])
 
-  // En el móvil la barra tapaba el final de las páginas. Se esconde tras unos segundos sin
-  // tocar la pantalla y reaparece al tocar, hacer scroll o pulsar una tecla. En escritorio
-  // (puntero fino) no se esconde nunca.
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia("(pointer: coarse)").matches) return
-    let timer: ReturnType<typeof setTimeout>
-    const arm = () => {
-      setVisible(true)
-      clearTimeout(timer)
-      timer = setTimeout(() => setVisible(false), 3000)
-    }
-    arm()
-    const events = ["touchstart", "touchmove", "scroll", "keydown"] as const
-    events.forEach((e) => window.addEventListener(e, arm, { passive: true }))
-    return () => {
-      clearTimeout(timer)
-      events.forEach((e) => window.removeEventListener(e, arm))
-    }
-  }, [pathname])
+  // Se esconde tras unos segundos sin interactuar y reaparece al tocar, mover el ratón,
+  // hacer scroll o pulsar una tecla.
+  const visible = useIdleVisible(3000, pathname)
 
   const navItems = [
     { label: t("nav.home"), href: "/", icon: Home },
