@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import BirthYearSelect from "../../components/ui/BirthYearSelect"
 import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
@@ -16,7 +15,7 @@ export default function SignupPage() {
   const [username, setUsername] = useState("")
   const [country, setCountry] = useState("")
   const [gender, setGender] = useState("")
-  const [birthYear, setBirthYear] = useState("")
+  const [birthDate, setBirthDate] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
@@ -28,6 +27,20 @@ export default function SignupPage() {
 
     if (!email || !password || !username || !gender) {
       setError(t("signup.error_fill_all"))
+      return
+    }
+    if (!birthDate) {
+      setError("Indica tu fecha de nacimiento.")
+      return
+    }
+    // Edad exacta a partir de la fecha completa (con solo el año no se puede saber si alguien de
+    // 17 ya cumplió 18). Los menores de 18 no pueden registrarse.
+    const bd = new Date(birthDate + "T00:00:00")
+    const today = new Date()
+    let age = today.getFullYear() - bd.getFullYear()
+    if (today.getMonth() < bd.getMonth() || (today.getMonth() === bd.getMonth() && today.getDate() < bd.getDate())) age--
+    if (isNaN(age) || age < 18) {
+      setError("Noctua es solo para mayores de 18 años. No puedes registrarte.")
       return
     }
     if (!acceptedTerms) {
@@ -64,8 +77,8 @@ export default function SignupPage() {
         // no puede consultar cómodamente. Ahora también se guarda en profiles, para que la ficha
         // de usuario en /admin/users pueda mostrarlo.
         country: country || null,
-        // Solo el año (opcional): se usa para afinar búsquedas, p. ej. discotecas de público +30.
-        birth_year: birthYear ? Number(birthYear) : null,
+        // Se pide la fecha completa para comprobar la mayoría de edad, pero solo se guarda el año.
+        birth_year: bd.getFullYear(),
         terms_accepted_at: new Date().toISOString(),
       })
     }
@@ -164,7 +177,22 @@ export default function SignupPage() {
                 </option>
               </select>
 
-              <BirthYearSelect value={birthYear} onChange={setBirthYear} />
+              <div>
+                <label className="mb-2 block px-1 text-xs text-zinc-400">Fecha de nacimiento</label>
+                <input
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  min="1900-01-01"
+                  max={new Date().toISOString().slice(0, 10)}
+                  required
+                  style={{ colorScheme: "dark" }}
+                  className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition text-zinc-300"
+                />
+                <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-500">
+                  Los datos del año de nacimiento se usarán para mejorar tus búsquedas.
+                </p>
+              </div>
 
               <label className="flex items-start gap-3 cursor-pointer pt-2">
                 <input

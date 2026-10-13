@@ -11,6 +11,7 @@ export default function ConfirmAgePage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [confirmedAge, setConfirmedAge] = useState(false)
+  const [birthDate, setBirthDate] = useState("")
   const [error, setError] = useState("")
   const [saving, setSaving] = useState(false)
 
@@ -42,11 +43,24 @@ export default function ConfirmAgePage() {
       setError("Debes marcar ambas casillas para continuar.")
       return
     }
+    if (!birthDate) {
+      setError("Indica tu fecha de nacimiento.")
+      return
+    }
+    const bd = new Date(birthDate + "T00:00:00")
+    const today = new Date()
+    let age = today.getFullYear() - bd.getFullYear()
+    if (today.getMonth() < bd.getMonth() || (today.getMonth() === bd.getMonth() && today.getDate() < bd.getDate())) age--
+    if (isNaN(age) || age < 18) {
+      setError("Noctua es solo para mayores de 18 años. No puedes usar la cuenta.")
+      return
+    }
     if (!userId) return
     setSaving(true)
     const { error: upsertError } = await supabase.from("profiles").upsert({
       id: userId,
       terms_accepted_at: new Date().toISOString(),
+      birth_year: bd.getFullYear(),
     })
     setSaving(false)
     if (upsertError) {
@@ -103,6 +117,22 @@ export default function ConfirmAgePage() {
             />
             <span className="text-sm leading-relaxed text-zinc-400">Confirmo que soy mayor de 18 años.</span>
           </label>
+        </div>
+
+        <div className="mt-5">
+          <label className="mb-2 block px-1 text-xs text-zinc-400">Fecha de nacimiento</label>
+          <input
+            type="date"
+            value={birthDate}
+            onChange={(e) => setBirthDate(e.target.value)}
+            min="1900-01-01"
+            max={new Date().toISOString().slice(0, 10)}
+            style={{ colorScheme: "dark" }}
+            className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-zinc-300 outline-none transition focus:border-purple-500/50"
+          />
+          <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-500">
+            Los datos del año de nacimiento se usarán para mejorar tus búsquedas.
+          </p>
         </div>
 
         {error && <p className="mt-4 text-sm font-bold text-red-400">{error}</p>}

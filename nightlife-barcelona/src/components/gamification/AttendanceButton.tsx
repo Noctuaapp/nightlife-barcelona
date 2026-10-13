@@ -30,6 +30,13 @@ function currentNightStartMs(): number {
   return Date.now() - sinceSix * 1000
 }
 
+// Fecha (YYYY-MM-DD) de la "noche" actual en Madrid: hasta las 06:00 sigue contando como la
+// noche del día anterior. Cada marca guarda su noche, así el historial se conserva entero.
+function currentNightDate(): string {
+  return new Date(currentNightStartMs() + 12 * 3600 * 1000)
+    .toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" })
+}
+
 // Botón "Asistiré esta noche" — marca intención de asistencia (independiente de favoritos).
 // Ya no da XP: el XP se gana con el check-in real en el local.
 export default function AttendanceButton({ itemType, itemId }: AttendanceButtonProps) {
@@ -38,23 +45,27 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
   const [attending, setAttending] = useState(false)
   const [loading, setLoading] = useState(true)
   const [newBadges, setNewBadges] = useState<string[]>([])
+  const [count, setCount] = useState(0)
 
   useEffect(() => {
     const load = async () => {
+      const { data: cnt } = await supabase.rpc("attendance_count", { p_type: itemType, p_id: itemId })
+      if (typeof cnt === "number") setCount(cnt)
       const { data } = await supabase.auth.getUser()
       if (!data.user) { setLoading(false); return }
       setUserId(data.user.id)
 
       const { data: existing } = await supabase
         .from("attendances")
-        .select("id, created_at")
+        .select("id, night")
         .eq("user_id", data.user.id)
         .eq("item_type", itemType)
         .eq("item_id", itemId)
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle()
 
-      const stillValid =
-        !!existing && (itemType !== "club" || new Date(existing.created_at).getTime() >= currentNightStartMs())
+      const stillValid = !!existing && (itemType !== "club" || existing.night === currentNightDate())
       setAttending(stillValid)
       setLoading(false)
     }
@@ -74,18 +85,19 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
         .eq("user_id", userId)
         .eq("item_type", itemType)
         .eq("item_id", itemId)
-      if (!error) setAttending(false)
+        .eq("night", currentNightDate())
+      if (!error) {
+        setAttending(false)
+        setCount((c) => Math.max(0, c - 1))
+      }
       return
     }
-
-    // Si quedaba una marca de una noche anterior (la tabla no permite dos filas iguales),
-    // se borra antes de crear la de esta noche.
-    await supabase.from("attendances").delete().eq("user_id", userId).eq("item_type", itemType).eq("item_id", itemId)
 
     const { error } = await supabase.from("attendances").insert({
       user_id: userId,
       item_type: itemType,
       item_id: itemId,
+      night: currentNightDate(),
     })
 
     if (error) {
@@ -94,6 +106,7 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
     }
 
     setAttending(true)
+    setCount((c) => c + 1)
 
     const nb = await evaluateBadges(supabase)
     if (nb.length) setNewBadges(nb)
@@ -114,6 +127,11 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
       >
         {attending ? `✅ ${t("attendance.going")}` : `🙋 ${t("attendance.willGo")}`}
       </button>
+      {count >= 10 && (
+        <p className="mt-2 text-center text-xs font-semibold text-zinc-400">
+          🌙 +{Math.floor(count / 10) * 10} Noctámbulos asistirán{itemType === "club" ? " esta noche" : ""}
+        </p>
+      )}
     </div>
   )
 }
