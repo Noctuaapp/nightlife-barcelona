@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
-import { awardXp, XP_AMOUNTS } from "../../lib/xp"
-import XpBurst from "../mascot/XpBurst"
 import BadgeToast from "../mascot/BadgeToast"
 import { evaluateBadges } from "../../lib/badges"
 import { useLanguage } from "../../context/LanguageContext"
@@ -32,15 +30,13 @@ function currentNightStartMs(): number {
   return Date.now() - sinceSix * 1000
 }
 
-// Botón "Asistiré esta noche" — marca intención de asistencia (independiente de favoritos) y
-// da XP la primera vez que se marca. Quitarlo no resta XP (para no penalizar un cambio de
-// planes ni animar a "farmear" marcando/desmarcando).
+// Botón "Asistiré esta noche" — marca intención de asistencia (independiente de favoritos).
+// Ya no da XP: el XP se gana con el check-in real en el local.
 export default function AttendanceButton({ itemType, itemId }: AttendanceButtonProps) {
   const { t } = useLanguage()
   const [userId, setUserId] = useState<string | null>(null)
   const [attending, setAttending] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [justEarned, setJustEarned] = useState(false)
   const [newBadges, setNewBadges] = useState<string[]>([])
 
   useEffect(() => {
@@ -99,18 +95,6 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
 
     setAttending(true)
 
-    const { awarded } = await awardXp(supabase, {
-      userId,
-      actionType: "attendance",
-      itemType,
-      itemId,
-      amount: XP_AMOUNTS.attendance,
-    })
-
-    if (awarded) {
-      setJustEarned(true)
-      setTimeout(() => setJustEarned(false), 2500)
-    }
     const nb = await evaluateBadges(supabase)
     if (nb.length) setNewBadges(nb)
   }
@@ -130,16 +114,6 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
       >
         {attending ? `✅ ${t("attendance.going")}` : `🙋 ${t("attendance.willGo")}`}
       </button>
-      <XpBurst show={justEarned} amount={XP_AMOUNTS.attendance} />
-      {!attending && (
-        <p className="mt-2 text-center text-[11px] leading-snug text-zinc-500">
-          {t("attendance.hint").replace("{xp}", String(XP_AMOUNTS.attendance))}
-          {" · "}
-          <a href="/club-noctua" className="font-semibold text-zinc-400 underline underline-offset-2 hover:text-zinc-300">
-            {t("levels.viewMine")}
-          </a>
-        </p>
-      )}
     </div>
   )
 }

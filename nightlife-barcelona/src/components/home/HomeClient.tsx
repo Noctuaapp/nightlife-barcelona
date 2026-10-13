@@ -182,10 +182,11 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
 
       <main className="relative min-h-screen text-white">
         {/* Ambient background — fixed behind everything, whole page, not just hero */}
-        <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#050308]">
-          <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-purple-600/25 blur-[120px] animate-[float_18s_ease-in-out_infinite]" />
-          <div className="absolute -right-40 top-1/3 h-[450px] w-[450px] rounded-full bg-amber-500/10 blur-[130px] animate-[float_22s_ease-in-out_infinite_reverse]" />
-          <div className="absolute bottom-0 left-1/3 h-[420px] w-[420px] rounded-full bg-purple-500/15 blur-[140px] animate-[float_20s_ease-in-out_infinite]" />
+        <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#0d0a1c]">
+          <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-purple-600/40 blur-[120px] animate-[float_18s_ease-in-out_infinite]" />
+          <div className="absolute -right-40 top-1/3 h-[450px] w-[450px] rounded-full bg-amber-500/20 blur-[130px] animate-[float_22s_ease-in-out_infinite_reverse]" />
+          <div className="absolute bottom-0 left-1/3 h-[420px] w-[420px] rounded-full bg-fuchsia-500/25 blur-[140px] animate-[float_20s_ease-in-out_infinite]" />
+          <div className="absolute right-1/4 top-2/3 h-[380px] w-[380px] rounded-full bg-teal-400/10 blur-[130px] animate-[float_24s_ease-in-out_infinite_reverse]" />
           <div
             className="absolute inset-0 opacity-30"
             style={{
@@ -207,7 +208,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
           {/* HERO */}
           <section
             onMouseMove={handleHeroMove}
-            className="relative flex min-h-[92vh] flex-col overflow-hidden"
+            className="relative flex min-h-[68vh] flex-col overflow-hidden"
           >
             <div className="absolute inset-0">
               <div
@@ -257,35 +258,13 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
                     "Descubre los mejores clubs, eventos y planes nocturnos de Barcelona, actualizados cada noche."}
                 </p>
 
-                <form
-                  onSubmit={handleSearch}
-                  className="fade-up mt-10 flex max-w-xl gap-3"
-                  style={{ animationDelay: "0.24s" }}
-                >
-                  <div className="group flex flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-4 backdrop-blur-xl transition focus-within:border-purple-400/50 focus-within:bg-white/[0.08]">
-                    <span className="text-zinc-500 transition group-focus-within:text-purple-300">🔍</span>
-                    <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Busca un club, barrio o estilo…"
-                      className="w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="group flex items-center gap-2 rounded-2xl bg-white px-6 py-4 text-sm font-bold text-black transition hover:scale-[1.03] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-400"
-                  >
-                    Buscar
-                    <span className="transition group-hover:translate-x-0.5"><ArrowIcon className="h-4 w-4" /></span>
-                  </button>
-                </form>
 
                 {/* Antes había aquí una segunda fila de chips de género (Techno/Commercial/...)
                     que duplicaba casi exactamente las pestañas de "Destacados" un poco más
                     abajo (incluido LGTBI+ en las dos) — dos mecanismos de filtro distintos para
                     lo mismo, en la misma pantalla. Se ha quitado: el filtrado real vive en las
                     pestañas de Destacados, justo encima de los resultados a los que afecta. */}
-                <div className="fade-up mt-5" style={{ animationDelay: "0.3s" }}>
+                <div className="fade-up mt-9" style={{ animationDelay: "0.3s" }}>
                   <Link
                     href="/map"
                     className="group inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-semibold text-zinc-300 transition hover:border-purple-400/40 hover:bg-purple-400/10 hover:text-white"
@@ -334,8 +313,33 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
             <p>{t("home.about_text")}</p>
           </section>
 
+          {/* BUSCADOR — justo encima de Destacados */}
+          <section className="mx-auto max-w-7xl px-6 pt-16">
+          <form
+            onSubmit={handleSearch}
+            className="flex max-w-2xl gap-3"
+          >
+            <div className="group flex flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-4 backdrop-blur-xl transition focus-within:border-purple-400/50 focus-within:bg-white/[0.08]">
+              <span className="text-zinc-500 transition group-focus-within:text-purple-300">🔍</span>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Busca un club, barrio o estilo…"
+                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
+              />
+            </div>
+            <button
+              type="submit"
+              className="group flex items-center gap-2 rounded-2xl bg-white px-6 py-4 text-sm font-bold text-black transition hover:scale-[1.03] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-400"
+            >
+              Buscar
+              <span className="transition group-hover:translate-x-0.5"><ArrowIcon className="h-4 w-4" /></span>
+            </button>
+          </form>
+          </section>
+
           {/* DESTACADOS */}
-          <section className="mx-auto max-w-7xl px-6 py-24">
+          <section className="mx-auto max-w-7xl px-6 pb-24 pt-12">
             <Reveal className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Esta noche</p>
@@ -378,7 +382,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
                     <Reveal key={club.id} style={{ transitionDelay: `${index * 70}ms` }}>
                       <Link
                         href={`/clubs/${club.slug || createSlug(club.name)}`}
-                        className="group relative flex h-80 flex-col justify-end overflow-hidden rounded-[28px] border border-white/10 transition duration-500 hover:-translate-y-1.5 hover:border-purple-400/30 hover:shadow-[0_20px_60px_-15px_rgba(168,85,247,0.35)]"
+                        className="group relative flex h-80 flex-col justify-end overflow-hidden rounded-[28px] border border-purple-400/20 transition duration-500 hover:-translate-y-1.5 hover:border-purple-400/50 hover:shadow-[0_20px_60px_-15px_rgba(168,85,247,0.35)]"
                       >
                         <img
                           src={club.image || FALLBACK_IMAGE}

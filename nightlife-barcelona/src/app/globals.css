@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #050505;
+  --background: #0d0a1c;
   --foreground: #ffffff;
 }
 
@@ -12,13 +12,13 @@ html {
 body {
   background: radial-gradient(
       circle at top left,
-      rgba(168, 85, 247, 0.12),
-      transparent 35%
+      rgba(168, 85, 247, 0.22),
+      transparent 40%
     ),
     radial-gradient(
       circle at bottom right,
-      rgba(236, 72, 153, 0.12),
-      transparent 35%
+      rgba(236, 72, 153, 0.18),
+      transparent 40%
     ),
     var(--background);
 
@@ -47,7 +47,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #050505;
+  background: #0d0a1c;
 }
 
 ::-webkit-scrollbar-thumb {

@@ -10,6 +10,7 @@ import { useLanguage } from "../../context/LanguageContext"
 export default function BottomNav() {
   const pathname = usePathname()
   const [isAdmin, setIsAdmin] = useState(false)
+  const [visible, setVisible] = useState(true)
   const { t } = useLanguage()
 
   useEffect(() => {
@@ -22,6 +23,26 @@ export default function BottomNav() {
     checkAdmin()
   }, [])
 
+  // En el móvil la barra tapaba el final de las páginas. Se esconde tras unos segundos sin
+  // tocar la pantalla y reaparece al tocar, hacer scroll o pulsar una tecla. En escritorio
+  // (puntero fino) no se esconde nunca.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia("(pointer: coarse)").matches) return
+    let timer: ReturnType<typeof setTimeout>
+    const arm = () => {
+      setVisible(true)
+      clearTimeout(timer)
+      timer = setTimeout(() => setVisible(false), 3000)
+    }
+    arm()
+    const events = ["touchstart", "touchmove", "scroll", "keydown"] as const
+    events.forEach((e) => window.addEventListener(e, arm, { passive: true }))
+    return () => {
+      clearTimeout(timer)
+      events.forEach((e) => window.removeEventListener(e, arm))
+    }
+  }, [pathname])
+
   const navItems = [
     { label: t("nav.home"), href: "/", icon: Home },
     { label: t("nav.clubs"), href: "/clubs", icon: Music },
@@ -31,7 +52,7 @@ export default function BottomNav() {
   ]
 
   return (
-    <div className="fixed bottom-4 left-1/2 z-50 flex w-[92%] max-w-md -translate-x-1/2 items-center justify-around rounded-2xl border border-white/10 bg-black/70 px-3 py-2 backdrop-blur-2xl">
+    <div className={`fixed bottom-4 left-1/2 z-50 flex w-[92%] max-w-md -translate-x-1/2 items-center justify-around rounded-2xl border border-white/10 bg-black/70 px-3 py-2 backdrop-blur-2xl transition-all duration-300 ${visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-24 opacity-0"}`}>
       {navItems.map((item) => {
         const Icon = item.icon
         const active = pathname === item.href

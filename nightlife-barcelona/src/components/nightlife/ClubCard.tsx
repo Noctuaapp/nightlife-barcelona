@@ -59,7 +59,7 @@ export default function ClubCard({
   const liveStatusInfo = isLiveStatusFresh ? LIVE_STATUS_BADGE[liveStatus as string] : null
 
   return (
-    <Link href={`/clubs/${slug}`} className="group block overflow-hidden rounded-[30px] border border-white/10 bg-black transition duration-500 hover:-translate-y-2 hover:border-white/20">
+    <Link href={`/clubs/${slug}`} className="group block overflow-hidden rounded-[30px] border border-purple-400/20 bg-[#120d24] shadow-[0_0_0_1px_rgba(236,72,153,0.04)] transition duration-500 hover:-translate-y-2 hover:border-fuchsia-400/50 hover:shadow-[0_24px_60px_-20px_rgba(168,85,247,0.5)]">
       <div className="relative h-[420px] overflow-hidden">
         {image ? (
           <Image
