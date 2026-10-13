@@ -3,6 +3,7 @@
 import { zoneOf, zonesPresent } from "../../lib/zones"
 import { useEffect, useMemo, useRef, useState } from "react"
 import ClubCard from "./ClubCard"
+import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import { SearchIcon, CloseIcon, LocationIcon, FlameIcon, SlidersIcon, ChevronDownIcon } from "../ui/FilterIcons"
 
@@ -100,6 +101,19 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   const [userLng, setUserLng] = useState<number | null>(null)
   const [nearMeLoading, setNearMeLoading] = useState(false)
   const [nearMeError, setNearMeError] = useState("")
+  // Edad aproximada del usuario (si ha indicado año de nacimiento): en el orden "recomendado",
+  // a partir de 30 años suben primero las discotecas de público +30/+40.
+  const [userAge, setUserAge] = useState<number | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const { data: auth } = await supabase.auth.getUser()
+      if (!auth.user) return
+      const { data: prof } = await supabase.from("profiles").select("birth_year").eq("id", auth.user.id).maybeSingle()
+      if (!cancelled && prof?.birth_year) setUserAge(new Date().getFullYear() - Number(prof.birth_year))
+    })()
+    return () => { cancelled = true }
+  }, [])
   const [sortBy, setSortBy] = useState<"recommended" | "rating" | "name" | "distance">("recommended")
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
@@ -252,6 +266,11 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
       arr.sort((a, b) => searchScore(b, search) - searchScore(a, search))
       return arr
     }
+    if (sortBy === "recommended" && userAge !== null && userAge >= 30) {
+      const boost = (c: any) => (c.audience === "+30" || c.audience === "+40" ? 1 : 0)
+      arr.sort((a, b) => boost(b) - boost(a))
+      return arr
+    }
     if (sortBy === "rating") arr.sort((a, b) => (b.rating || 0) - (a.rating || 0))
     else if (sortBy === "name") arr.sort((a, b) => (a.name || "").localeCompare(b.name || ""))
     else if (sortBy === "distance" && userLat && userLng) {
@@ -262,7 +281,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
       })
     }
     return arr
-  }, [filteredClubs, sortBy, userLat, userLng, search])
+  }, [filteredClubs, sortBy, userLat, userLng, search, userAge])
 
   const visibleClubs = sortedClubs.slice(0, visibleCount)
 

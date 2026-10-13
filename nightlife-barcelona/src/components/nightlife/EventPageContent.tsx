@@ -528,37 +528,6 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
               </Reveal>
             )}
 
-            {reviews.length > 0 && (
-              <Reveal>
-                <Card innerClassName="p-8">
-                  <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
-                    <div className="flex items-center gap-4">
-                      <p className="text-4xl font-black text-white">{Number(displayRating).toFixed(1)}</p>
-                      <div>
-                        <Stars rating={displayRating || 0} size="h-4 w-4" color={accent.from} />
-                        <p className="mt-1 text-xs text-zinc-500">{reviewCount ? `${reviewCount} ${t("event.reviews")}` : `${reviews.length} ${t("event.reviews")}`}</p>
-                      </div>
-                    </div>
-                    <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                      <Icon name="google" className="h-3.5 w-3.5" /> {t("event.googleReviewsLabel")}
-                    </span>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {reviews.slice(0, 4).map((r) => (
-                      <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-bold text-white">{r.author_name}</p>
-                          {r.rating && <Stars rating={r.rating} color={accent.from} />}
-                        </div>
-                        {r.relative_time && <p className="mt-0.5 text-[11px] text-zinc-500">{r.relative_time}</p>}
-                        <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-zinc-400">{r.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </Reveal>
-            )}
-
             {event.latitude && event.longitude && (
               <Reveal>
                 <Card innerClassName="p-8">
@@ -779,6 +748,40 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
           </button>
         </div>
       )}
+
+      {/* RESEÑAS — lo último de la ficha, tras la galería */}
+      <div className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+            {reviews.length > 0 && (
+              <Reveal>
+                <Card innerClassName="p-8">
+                  <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
+                    <div className="flex items-center gap-4">
+                      <p className="text-4xl font-black text-white">{Number(displayRating).toFixed(1)}</p>
+                      <div>
+                        <Stars rating={displayRating || 0} size="h-4 w-4" color={accent.from} />
+                        <p className="mt-1 text-xs text-zinc-500">{reviewCount ? `${reviewCount} ${t("event.reviews")}` : `${reviews.length} ${t("event.reviews")}`}</p>
+                      </div>
+                    </div>
+                    <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                      <Icon name="google" className="h-3.5 w-3.5" /> {t("event.googleReviewsLabel")}
+                    </span>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {reviews.slice(0, 4).map((r) => (
+                      <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-bold text-white">{r.author_name}</p>
+                          {r.rating && <Stars rating={r.rating} color={accent.from} />}
+                        </div>
+                        {r.relative_time && <p className="mt-0.5 text-[11px] text-zinc-500">{r.relative_time}</p>}
+                        <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-zinc-400">{r.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              </Reveal>
+            )}
+      </div>
 
       {/* CTA FULL-BLEED */}
       {ticketUrl && (

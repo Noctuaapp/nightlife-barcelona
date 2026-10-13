@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import BirthYearSelect from "../../components/ui/BirthYearSelect"
 import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
@@ -15,6 +16,7 @@ export default function SignupPage() {
   const [username, setUsername] = useState("")
   const [country, setCountry] = useState("")
   const [gender, setGender] = useState("")
+  const [birthYear, setBirthYear] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
@@ -62,6 +64,8 @@ export default function SignupPage() {
         // no puede consultar cómodamente. Ahora también se guarda en profiles, para que la ficha
         // de usuario en /admin/users pueda mostrarlo.
         country: country || null,
+        // Solo el año (opcional): se usa para afinar búsquedas, p. ej. discotecas de público +30.
+        birth_year: birthYear ? Number(birthYear) : null,
         terms_accepted_at: new Date().toISOString(),
       })
     }
@@ -159,6 +163,8 @@ export default function SignupPage() {
                   {t("signup.gender_unspecified")}
                 </option>
               </select>
+
+              <BirthYearSelect value={birthYear} onChange={setBirthYear} />
 
               <label className="flex items-start gap-3 cursor-pointer pt-2">
                 <input

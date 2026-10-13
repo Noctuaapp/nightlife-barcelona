@@ -10,13 +10,11 @@ const ALWAYS_ALLOWED_PREFIXES = ["/login", "/admin"]
 
 export default function MaintenanceGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || ""
-  const [checking, setChecking] = useState(true)
   const [blocked, setBlocked] = useState(false)
 
   useEffect(() => {
     const alwaysAllowed = ALWAYS_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))
     if (alwaysAllowed) {
-      setChecking(false)
       setBlocked(false)
       return
     }
@@ -30,7 +28,6 @@ export default function MaintenanceGate({ children }: { children: React.ReactNod
       if (cancelled) return
       const isAdmin = sessionData.session?.user.email === "info@noctuaapp.com"
       setBlocked(!!settings?.maintenance_mode && !isAdmin)
-      setChecking(false)
     }
     check()
     return () => {
@@ -38,10 +35,11 @@ export default function MaintenanceGate({ children }: { children: React.ReactNod
     }
   }, [pathname])
 
-  // Mientras comprobamos, no mostramos nada para evitar un parpadeo del contenido normal antes
-  // de saber si hay que bloquear. La comprobación es rápida (una consulta local + una a Supabase).
-  if (checking) return null
-
+  // Antes, mientras `checking` era true se devolvía null. Como `checking` empieza en true y el
+  // useEffect solo corre en el navegador, el HTML que generaba el servidor para TODAS las páginas
+  // salía vacío y Google no veía ningún contenido (clubs, eventos, textos...) al indexar.
+  // Ahora se pinta el contenido normal mientras se comprueba; solo si hay mantenimiento activo
+  // se sustituye por el aviso (mantenimiento es algo puntual, un parpadeo ahí es aceptable).
   if (blocked) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-black px-4 text-white">

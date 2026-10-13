@@ -25,6 +25,7 @@ export default function AdminMessagesPage() {
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [messages, setMessages] = useState<ContactMessage[]>([])
   const [filter, setFilter] = useState("all")
+  const [subjectFilter, setSubjectFilter] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [replyText, setReplyText] = useState("")
   const [sending, setSending] = useState(false)
@@ -227,12 +228,34 @@ export default function AdminMessagesPage() {
   }
 
   const realMessages = messages.filter((message) => !message.is_spam)
-  const filteredMessages =
+  const baseFiltered =
     filter === "spam"
       ? messages.filter((message) => message.is_spam)
       : filter === "all"
       ? realMessages
       : realMessages.filter((message) => message.status === filter)
+  const filteredMessages = subjectFilter
+    ? baseFiltered.filter((m) => (m.subject || "").trim().toLowerCase() === subjectFilter)
+    : baseFiltered
+
+  // Alerta: 5 o más reportes de "información incorrecta" sobre lo mismo (mismo asunto, que es
+  // "Reporte: <nombre>") que sigan sin cerrar. Indica un dato probablemente mal en esa ficha.
+  const REPORT_ALERT_THRESHOLD = 5
+  const hotReports = (() => {
+    const map = new Map<string, { subject: string; count: number }>()
+    for (const m of realMessages) {
+      if (m.type !== "report_issue" || m.status === "closed") continue
+      const key = (m.subject || "").trim().toLowerCase()
+      if (!key) continue
+      const cur = map.get(key)
+      if (cur) cur.count += 1
+      else map.set(key, { subject: (m.subject || "").trim(), count: 1 })
+    }
+    return Array.from(map.entries())
+      .filter(([, v]) => v.count >= REPORT_ALERT_THRESHOLD)
+      .map(([key, v]) => ({ key, ...v }))
+      .sort((a, b) => b.count - a.count)
+  })()
 
   const stats = {
     all: realMessages.length,
@@ -272,6 +295,42 @@ export default function AdminMessagesPage() {
             <FilterCard label="Spam" value={stats.spam} active={filter === "spam"} onClick={() => setFilter("spam")} />
           </div>
         </section>
+
+        {hotReports.length > 0 && (
+          <section className="mx-auto mt-6 max-w-7xl px-4">
+            <div className="rounded-[28px] border border-red-500/40 bg-red-500/10 p-5">
+              <p className="text-sm font-bold text-red-300">
+                🚨 Alerta: {hotReports.length === 1 ? "1 ficha acumula" : `${hotReports.length} fichas acumulan`} {REPORT_ALERT_THRESHOLD} o más reportes sin cerrar
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {hotReports.map((r) => (
+                  <button
+                    key={r.key}
+                    onClick={() => {
+                      setFilter("all")
+                      setSubjectFilter(subjectFilter === r.key ? null : r.key)
+                    }}
+                    className={`rounded-full border px-4 py-2 text-xs font-bold transition ${
+                      subjectFilter === r.key
+                        ? "border-white bg-white text-black"
+                        : "border-red-400/40 bg-black/40 text-red-200 hover:border-red-300"
+                    }`}
+                  >
+                    {r.subject} · {r.count}
+                  </button>
+                ))}
+                {subjectFilter && (
+                  <button
+                    onClick={() => setSubjectFilter(null)}
+                    className="rounded-full border border-white/20 px-4 py-2 text-xs font-bold text-zinc-300"
+                  >
+                    Quitar filtro
+                  </button>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className="mx-auto mt-10 max-w-7xl px-4">
           <div className="rounded-[32px] border border-purple-500/20 bg-purple-500/5 p-6">

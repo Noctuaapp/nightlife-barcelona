@@ -9,6 +9,7 @@ import { useFavorites } from "../../context/FavoritesContext"
 import { useLanguage } from "../../context/LanguageContext"
 import { getLevelInfo } from "../../lib/xp"
 import ArrowIcon from "../../components/ui/ArrowIcon"
+import BirthYearSelect from "../../components/ui/BirthYearSelect"
 
 const ACCENT_PATTERN = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g")
 
@@ -87,6 +88,8 @@ export default function ProfilePage() {
 
   const [username, setUsername] = useState("")
   const [newUsername, setNewUsername] = useState("")
+  const [birthYear, setBirthYear] = useState("")
+  const [birthYearMsg, setBirthYearMsg] = useState("")
   const [usernameUpdatedAt, setUsernameUpdatedAt] = useState<string | null>(null)
   const [usernameError, setUsernameError] = useState("")
   const [usernameSuccess, setUsernameSuccess] = useState("")
@@ -123,13 +126,14 @@ export default function ProfilePage() {
       setUserId(data.user.id)
       setEmail(data.user.email || "")
 
-      const { data: profile } = await supabase.from("profiles").select("username, username_updated_at, avatar_url, xp").eq("id", data.user.id).single()
+      const { data: profile } = await supabase.from("profiles").select("username, username_updated_at, avatar_url, xp, birth_year").eq("id", data.user.id).single()
       if (profile) {
         setUsername(profile.username || "")
         setNewUsername(profile.username || "")
         setUsernameUpdatedAt(profile.username_updated_at || null)
         setAvatarUrl(profile.avatar_url || null)
         setXp(profile.xp || 0)
+        setBirthYear(profile.birth_year ? String(profile.birth_year) : "")
       }
 
       const [{ data: ownedClub }, { data: ownedFestival }] = await Promise.all([
@@ -250,6 +254,14 @@ export default function ProfilePage() {
     const now = new Date()
     const daysDiff = (now.getTime() - lastChange.getTime()) / (1000 * 60 * 60 * 24)
     return Math.ceil(30 - daysDiff)
+  }
+
+  const saveBirthYear = async (v: string) => {
+    setBirthYear(v)
+    setBirthYearMsg("")
+    if (!userId) return
+    const { error } = await supabase.from("profiles").update({ birth_year: v ? Number(v) : null }).eq("id", userId)
+    setBirthYearMsg(error ? "No se pudo guardar" : "Guardado ✓")
   }
 
   const saveUsername = async () => {
@@ -763,6 +775,13 @@ export default function ProfilePage() {
               </p>
             )}
             {usernameSuccess && <p className="mt-3 text-sm text-emerald-400">{usernameSuccess}</p>}
+          </div>
+
+          {/* Año de nacimiento */}
+          <div className="mb-6 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
+            <p className="text-xs uppercase tracking-widest text-zinc-500 mb-4">Año de nacimiento</p>
+            <BirthYearSelect value={birthYear} onChange={saveBirthYear} />
+            {birthYearMsg && <p className="mt-2 text-sm text-emerald-400">{birthYearMsg}</p>}
           </div>
 
           {/* Account */}
