@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, type ChangeEvent } from "react"
+import { useEffect, useRef, useState, type ChangeEvent } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 
@@ -150,6 +150,30 @@ export default function AdminClubEventsPage() {
     })
   }
 
+  // Llegando desde el botón "Editar" de la ficha pública (?edit=ID).
+  const autoEditDone = useRef(false)
+  useEffect(() => {
+    if (autoEditDone.current || clubEvents.length === 0) return
+    const wanted = new URLSearchParams(window.location.search).get("edit")
+    autoEditDone.current = true
+    if (!wanted) return
+    const found = clubEvents.find((x) => String(x.id) === wanted)
+    if (!found) return
+    startEditing(found)
+    let tries = 0
+    const timer = setInterval(() => {
+      tries++
+      const el = document.getElementById(`clubevent-${found.id}`)
+      if (el) {
+        clearInterval(timer)
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 110, behavior: "smooth" })
+      } else if (tries > 40) {
+        clearInterval(timer)
+      }
+    }, 150)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clubEvents])
+
   const cancelEditing = () => { setEditingId(null); setEditClubEvent(emptyClubEvent) }
 
   const saveEditing = async (id: number) => {
@@ -251,7 +275,7 @@ export default function AdminClubEventsPage() {
         <section className="mx-auto mt-10 max-w-7xl px-4">
           <div className="grid gap-6">
             {clubEvents.map((clubEvent) => (
-              <div key={clubEvent.id} className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
+              <div key={clubEvent.id} id={`clubevent-${clubEvent.id}`} className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
                 {editingId === clubEvent.id ? (
                   <div className="grid gap-4 lg:grid-cols-3">
                     <select value={editClubEvent.club_id} onChange={(e) => handleEditClubChange(e.target.value)} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none">

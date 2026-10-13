@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, type ChangeEvent } from "react"
+import { useEffect, useRef, useState, type ChangeEvent } from "react"
 import { useRouter } from "next/navigation"
 
 import AdminShell from "../../../components/admin/AdminShell"
@@ -261,6 +261,30 @@ export default function AdminEventsPage() {
     setEditPriceTiersRaw("")
   }
 
+  // Llegando desde el botón "Editar" de la ficha pública (/admin/events?edit=ID).
+  const autoEditDone = useRef(false)
+  useEffect(() => {
+    if (autoEditDone.current || events.length === 0) return
+    const wanted = new URLSearchParams(window.location.search).get("edit")
+    if (!wanted) { autoEditDone.current = true; return }
+    const ev = events.find((e) => String(e.id) === wanted)
+    autoEditDone.current = true
+    if (!ev) return
+    startEditing(ev)
+    let tries = 0
+    const timer = setInterval(() => {
+      tries++
+      const el = document.getElementById(`event-${ev.id}`)
+      if (el) {
+        clearInterval(timer)
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 110, behavior: "smooth" })
+      } else if (tries > 40) {
+        clearInterval(timer)
+      }
+    }, 150)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events])
+
   const saveEditing = async (id: number) => {
     if (!editEvent.title) return
 
@@ -464,7 +488,7 @@ export default function AdminEventsPage() {
                 return event.title?.toLowerCase().includes(q) || event.club_name?.toLowerCase().includes(q) || event.artist?.toLowerCase().includes(q)
               })
               .map((event) => (
-                <div key={event.id} className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
+                <div key={event.id} id={`event-${event.id}`} className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
                   {editingId === event.id ? (
                     <div className="grid gap-4 lg:grid-cols-3">
                       {Object.keys(emptyEvent).map((key) => (

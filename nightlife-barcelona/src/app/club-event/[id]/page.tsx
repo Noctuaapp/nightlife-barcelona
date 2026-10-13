@@ -1,6 +1,7 @@
 import Link from "next/link"
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
+import AdminEditButton from "../../../components/admin/AdminEditButton"
 import ClubEventPageContent from "../../../components/nightlife/ClubEventPageContent"
 import { supabase } from "../../../lib/supabase"
 
@@ -49,6 +50,7 @@ export default async function ClubEventPage({ params }: ClubEventPageProps) {
     <>
       <Header />
       <ClubEventPageContent clubEvent={clubEvent} tickets={tickets || []} clubSlug={clubSlug} />
+      <AdminEditButton kind="clubEvent" id={clubEvent.id} />
       <BottomNav />
     </>
   )

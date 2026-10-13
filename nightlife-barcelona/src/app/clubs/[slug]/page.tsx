@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { cache } from "react"
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
+import AdminEditButton from "../../../components/admin/AdminEditButton"
 import ClubPageContent from "../../../components/nightlife/ClubPageContent"
 import { notFound } from "next/navigation"
 import { supabase } from "../../../lib/supabase"
@@ -113,6 +114,7 @@ export default async function ClubPage({ params }: ClubPageProps) {
     <>
       <Header />
       <ClubPageContent club={club} clubEvents={clubEvents || []} clubSessions={clubSessions || []} />
+      <AdminEditButton kind="club" id={club.id} />
       <BottomNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     </>

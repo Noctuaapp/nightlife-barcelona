@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { supabase } from "../../lib/supabase"
 import AdminShell from "../../components/admin/AdminShell"
 
@@ -306,6 +306,31 @@ export default function AdminPage() {
     setEditForm(clubToForm(club))
   }
 
+  // Llegando desde el botón "Editar" de la ficha pública (/admin?edit=ID): abre ese club en
+  // modo edición y baja hasta él.
+  const autoEditDone = useRef(false)
+  useEffect(() => {
+    if (autoEditDone.current || clubs.length === 0) return
+    const wanted = new URLSearchParams(window.location.search).get("edit")
+    if (!wanted) { autoEditDone.current = true; return }
+    const club = clubs.find((c) => String(c.id) === wanted)
+    autoEditDone.current = true
+    if (!club) return
+    startEdit(club)
+    let tries = 0
+    const timer = setInterval(() => {
+      tries++
+      const el = document.getElementById(`club-${club.id}`)
+      if (el) {
+        clearInterval(timer)
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 110, behavior: "smooth" })
+      } else if (tries > 40) {
+        clearInterval(timer)
+      }
+    }, 150)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clubs])
+
   const cancelEdit = () => {
     setEditingId(null)
     setEditForm(emptyForm)
@@ -590,7 +615,7 @@ export default function AdminPage() {
           ) : (
             <div className="grid gap-4">
               {filteredClubs.map((club) => (
-                <div key={club.id}
+                <div key={club.id} id={`club-${club.id}`}
                   className={`rounded-[24px] border p-5 transition ${club.hidden ? "border-white/5 bg-white/[0.01] opacity-50" : "border-white/10 bg-white/[0.03]"} ${editingId === club.id ? "!border-purple-500/40 !bg-purple-500/[0.04] !opacity-100" : ""}`}>
 
                   {editingId === club.id ? (

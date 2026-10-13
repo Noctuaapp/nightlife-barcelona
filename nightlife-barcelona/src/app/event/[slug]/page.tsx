@@ -3,6 +3,7 @@ import { cache } from "react"
 import { notFound } from "next/navigation"
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
+import AdminEditButton from "../../../components/admin/AdminEditButton"
 import EventPageContent from "../../../components/nightlife/EventPageContent"
 import { supabase } from "../../../lib/supabase"
 import { createSlug } from "../../../lib/slug"
@@ -113,6 +114,7 @@ export default async function EventPage({ params }: EventPageProps) {
     <>
       <Header />
       <EventPageContent event={event} tickets={tickets || []} sessions={sessions || []} />
+      <AdminEditButton kind="event" id={event.id} />
       <BottomNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     </>

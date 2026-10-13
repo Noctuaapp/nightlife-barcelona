@@ -14,6 +14,7 @@ import ArrowIcon from "../../../components/ui/ArrowIcon"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../../lib/geo"
 import { getOpenStatus } from "../../../lib/openStatus"
 import { useIdleVisible } from "../../../lib/useIdleVisible"
+import AdminEditButton from "../../../components/admin/AdminEditButton"
 import EssentialPhoto from "../../../components/essentials/EssentialPhoto"
 
 const categoryConfig: Record<string, { icon: string; color: string; key: string }> = {
@@ -759,6 +760,7 @@ export default function EssentialCategoryPage() {
                             🧭 Cómo llegar
                           </a>
                         )}
+                        <AdminEditButton kind="essential" id={selected.id} inline />
                         {selected.maps_link && (
                           <a
                             href={selected.maps_link}

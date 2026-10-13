@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, type ChangeEvent } from "react"
+import { useEffect, useRef, useState, type ChangeEvent } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 
@@ -109,6 +109,30 @@ export default function AdminEssentialsPage() {
       latitude: item.latitude?.toString() || "", longitude: item.longitude?.toString() || "",
     })
   }
+
+  // Llegando desde el botón "Editar" de la ficha pública (?edit=ID).
+  const autoEditDone = useRef(false)
+  useEffect(() => {
+    if (autoEditDone.current || essentials.length === 0) return
+    const wanted = new URLSearchParams(window.location.search).get("edit")
+    autoEditDone.current = true
+    if (!wanted) return
+    const found = essentials.find((x) => String(x.id) === wanted)
+    if (!found) return
+    startEditing(found)
+    let tries = 0
+    const timer = setInterval(() => {
+      tries++
+      const el = document.getElementById(`essential-${found.id}`)
+      if (el) {
+        clearInterval(timer)
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 110, behavior: "smooth" })
+      } else if (tries > 40) {
+        clearInterval(timer)
+      }
+    }, 150)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [essentials])
 
   const cancelEditing = () => { setEditingId(null); setEditEssential(emptyForm) }
 
@@ -225,7 +249,7 @@ export default function AdminEssentialsPage() {
           </div>
           <div className="grid gap-6">
             {filteredEssentials.map((item) => (
-              <div key={item.id} className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
+              <div key={item.id} id={`essential-${item.id}`} className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
                 {editingId === item.id ? (
                   <div>
                     <FormFields data={editEssential} setData={setEditEssential} />
