@@ -5,6 +5,7 @@ import { NightlifeProvider } from "../context/NightlifeContext"
 import { FavoritesProvider } from "../context/FavoritesContext"
 import { LanguageProvider } from "../context/LanguageContext"
 import MaintenanceGate from "../components/system/MaintenanceGate"
+import TrafficSource from "../components/system/TrafficSource"
 import "./globals.css"
 
 // Antes toda la app caía en Arial/Helvetica (la fuente por defecto del sistema, sin declarar
@@ -87,6 +88,7 @@ export default function RootLayout({
             </NightlifeProvider>
           </FavoritesProvider>
         </LanguageProvider>
+        <TrafficSource />
         <Analytics />
       </body>
     </html>

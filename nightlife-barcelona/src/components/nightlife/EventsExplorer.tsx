@@ -2,6 +2,7 @@
 
 import { zoneOf, zonesPresent } from "../../lib/zones"
 import { useEffect, useMemo, useRef, useState } from "react"
+import { track } from "../../lib/track"
 import Image from "next/image"
 import Link from "next/link"
 import { useLanguage } from "../../context/LanguageContext"
@@ -192,6 +193,17 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   }, [filteredEvents, sortBy, search])
 
   const visibleEvents = sortedEvents.slice(0, visibleCount)
+
+  // Analítica de búsquedas del listado: qué se busca y cuántos resultados da (0 = demanda sin cubrir).
+  useEffect(() => {
+    const q = search.trim()
+    if (q.length < 2) return
+    const timeout = setTimeout(() => {
+      track("search", { itemType: "event", itemName: q.toLowerCase().slice(0, 80), resultsCount: sortedEvents.length })
+    }, 1500)
+    return () => clearTimeout(timeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search])
 
   const activeFilters: { label: string; onRemove: () => void }[] = filters
     .filter((f) => selectedFilters.has(f.key))

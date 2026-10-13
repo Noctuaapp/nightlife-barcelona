@@ -1,5 +1,6 @@
 "use client"
 
+import { track } from "../../lib/track"
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
@@ -196,16 +197,8 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
     loadReviews()
   }, [event.id])
 
-  const trackClick = async (eventType: string) => {
-    const { data: userData } = await supabase.auth.getUser()
-    await supabase.from("analytics").insert({
-      event_type: eventType,
-      item_type: "event",
-      item_id: event.id,
-      item_name: event.title,
-      user_id: userData.user?.id || null,
-    })
-  }
+  const trackClick = (eventType: string) =>
+    track(eventType, { itemType: "event", itemId: event.id, itemName: event.title })
 
   // Registra la visita a esta ficha (solo si el usuario ha iniciado sesión) para poder mostrar
   // "últimos eventos visitados" en su perfil.
@@ -215,6 +208,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
   }, [event.id])
 
   const shareEvent = async () => {
+    trackClick("share_click")
     const url = typeof window !== "undefined" ? window.location.href : ""
     if (typeof navigator !== "undefined" && (navigator as any).share) {
       try {

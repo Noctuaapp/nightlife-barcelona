@@ -18,7 +18,20 @@ type CheckInButtonProps = {
 // dentro de un edificio en una zona urbana densa (mucha discoteca está en sótanos/locales sin
 // buena señal) pueden dar 80-120m de error fácilmente, así que 200m es un compromiso entre
 // exigencia real y no bloquear a gente que sí está allí.
-const MAX_DISTANCE_METERS = 200
+const MAX_DISTANCE_METERS = 80
+// Si el móvil dice que su posición tiene más de este margen de error, no se acepta el check-in
+// (mejor pedir que lo intente de nuevo que validar a alguien que puede estar en la calle de al lado).
+const MAX_ACCURACY_METERS = 50
+// Margen mínimo con el siguiente local más cercano: si hay otro club casi igual de cerca, el GPS
+// no puede distinguir en cuál está la persona y no se valida.
+const MIN_GAP_TO_NEXT_VENUE = 25
+
+// Noche actual en Madrid (YYYY-MM-DD): hasta las 06:00 cuenta como la noche anterior. Antes se
+// usaba la fecha UTC, que cambia a las 01:00-02:00 hora de Madrid y partía una misma noche en dos.
+function nightDate(): string {
+  const d = new Date(Date.now() - 6 * 3600 * 1000)
+  return d.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" })
+}
 
 function distanceInMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371000
@@ -55,7 +68,7 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
       if (!data.user) { setLoading(false); return }
       setUserId(data.user.id)
 
-      const today = new Date().toISOString().slice(0, 10)
+      const today = nightDate()
       const { data: existing } = await supabase
         .from("club_checkins")
         .select("id, note")
@@ -74,7 +87,7 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
   const handleSaveNote = async () => {
     if (!userId || !note.trim()) return
     setSavingNote(true)
-    const today = new Date().toISOString().slice(0, 10)
+    const today = nightDate()
     const { error: noteError } = await supabase
       .from("club_checkins")
       .update({ note: note.trim().slice(0, 140), note_created_at: new Date().toISOString() })
@@ -108,6 +121,11 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
+        if (position.coords.accuracy > MAX_ACCURACY_METERS) {
+          setError("No podemos localizarte con suficiente precisión. Sal a un sitio con mejor señal e inténtalo de nuevo.")
+          setWorking(false)
+          return
+        }
         const dist = distanceInMeters(
           position.coords.latitude,
           position.coords.longitude,
@@ -121,7 +139,25 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
           return
         }
 
-        const today = new Date().toISOString().slice(0, 10)
+        // ¿Es este el local más cercano? Se compara con el resto de clubs visibles.
+        const { data: others } = await supabase
+          .from("clubs")
+          .select("id, latitude, longitude")
+          .eq("hidden", false)
+          .neq("id", clubId)
+          .not("latitude", "is", null)
+        let nearestOther = Infinity
+        for (const o of others || []) {
+          const d = distanceInMeters(position.coords.latitude, position.coords.longitude, Number(o.latitude), Number(o.longitude))
+          if (d < nearestOther) nearestOther = d
+        }
+        if (nearestOther - dist < MIN_GAP_TO_NEXT_VENUE) {
+          setError("Hay otros locales muy cerca y no podemos saber en cuál estás. Acércate a la puerta e inténtalo otra vez.")
+          setWorking(false)
+          return
+        }
+
+        const today = nightDate()
         const { error: insertError } = await supabase.from("club_checkins").insert({
           user_id: userId,
           club_id: clubId,

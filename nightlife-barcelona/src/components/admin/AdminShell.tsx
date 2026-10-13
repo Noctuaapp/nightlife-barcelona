@@ -17,6 +17,7 @@ const ADMIN_NAV = [
   { href: "/admin/messages", label: "Messages", icon: "💬" },
   { href: "/admin/entry-denials", label: "No dejan entrar", icon: "🚫" },
   { href: "/admin/analytics", label: "Analytics", icon: "📈" },
+  { href: "/admin/datos", label: "Datos", icon: "💎" },
 ]
 
 export default function AdminShell({

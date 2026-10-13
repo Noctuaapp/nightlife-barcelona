@@ -4,6 +4,7 @@ import { zoneOf, zonesPresent } from "../../lib/zones"
 import { useEffect, useMemo, useRef, useState } from "react"
 import ClubCard from "./ClubCard"
 import { supabase } from "../../lib/supabase"
+import { track } from "../../lib/track"
 import { useLanguage } from "../../context/LanguageContext"
 import { SearchIcon, CloseIcon, LocationIcon, FlameIcon, SlidersIcon, ChevronDownIcon } from "../ui/FilterIcons"
 
@@ -284,6 +285,17 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   }, [filteredClubs, sortBy, userLat, userLng, search, userAge])
 
   const visibleClubs = sortedClubs.slice(0, visibleCount)
+
+  // Analítica de búsquedas del listado: qué se busca y cuántos resultados da (0 = demanda sin cubrir).
+  useEffect(() => {
+    const q = search.trim()
+    if (q.length < 2) return
+    const timeout = setTimeout(() => {
+      track("search", { itemType: "club", itemName: q.toLowerCase().slice(0, 80), resultsCount: sortedClubs.length })
+    }, 1500)
+    return () => clearTimeout(timeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search])
 
   const activeFilters: { label: string; onRemove: () => void }[] = [
     ...Array.from(selectedGenres).map((g) => ({ label: g, onRemove: () => setSelectedGenres((s) => toggleInSet(s, g)) })),

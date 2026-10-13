@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useLanguage } from "../../context/LanguageContext"
+import { track } from "../../lib/track"
 import FavoriteButton from "../favorites/FavoriteButton"
 import CheckInButton from "../gamification/CheckInButton"
 import AttendanceButton from "../gamification/AttendanceButton"
@@ -269,16 +270,8 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
     loadNearestTaxi()
   }, [club.id])
 
-  const trackClick = async (eventType: string) => {
-    const { data: userData } = await supabase.auth.getUser()
-    await supabase.from("analytics").insert({
-      event_type: eventType,
-      item_type: "club",
-      item_id: club.id,
-      item_name: club.name,
-      user_id: userData.user?.id || null,
-    })
-  }
+  const trackClick = (eventType: string) =>
+    track(eventType, { itemType: "club", itemId: club.id, itemName: club.name })
 
   // Registra la visita a esta ficha (solo si el usuario ha iniciado sesión) para poder mostrar
   // "últimos clubes visitados" en su perfil.
@@ -288,6 +281,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
   }, [club.id])
 
   const shareClub = async () => {
+    trackClick("share_click")
     const url = typeof window !== "undefined" ? window.location.href : ""
     if (typeof navigator !== "undefined" && (navigator as any).share) {
       try {
