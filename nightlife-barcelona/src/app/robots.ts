@@ -24,6 +24,9 @@ export default function robots(): MetadataRoute.Robots {
         "/confirm-age",
         "/blocked",
         "/club-event/",
+        // Enlaces "Reportar" de cada ficha: /contact?type=report_issue&subject=... generaba cientos de
+        // URLs duplicadas que Google rastreaba sin valor. Solo se bloquean las que llevan parámetros.
+        "/contact?",
       ],
     },
     sitemap: `${BASE_URL}/sitemap.xml`,
