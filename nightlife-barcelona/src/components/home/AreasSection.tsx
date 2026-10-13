@@ -36,23 +36,25 @@ export default function AreasSection() {
           <Link
             key={cat.slug}
             href={`/essentials/${cat.slug}`}
-            className="group fade-up overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] transition duration-500 hover:-translate-y-1 hover:border-white/20"
-            style={{ animationDelay: `${index * 0.08}s` }}
+            className="group fade-up overflow-hidden rounded-[28px] border bg-white/[0.03] transition duration-500 hover:-translate-y-1.5"
+            style={{ animationDelay: `${index * 0.08}s`, borderColor: `${cat.color}40`, boxShadow: `0 18px 50px -28px ${cat.color}80` }}
           >
             <div
               className="relative h-[220px] overflow-hidden"
-              style={{ background: `linear-gradient(135deg, ${cat.color}35 0%, rgba(5,3,8,0.95) 100%)` }}
+              style={{
+                background: `radial-gradient(70% 90% at 80% 15%, ${cat.color}90 0%, transparent 60%), radial-gradient(60% 70% at 10% 100%, ${cat.color}50 0%, transparent 65%), linear-gradient(135deg, ${cat.color}40 0%, #120d24 100%)`,
+              }}
             >
-              <span
+              <div
                 aria-hidden="true"
-                className="absolute inset-0 flex items-center justify-center text-[7rem] opacity-20 transition duration-700 group-hover:scale-110"
+                className="absolute right-6 top-6 flex h-24 w-24 items-center justify-center rounded-3xl border border-white/20 bg-white/10 text-5xl backdrop-blur-md transition duration-500 group-hover:-rotate-6 group-hover:scale-110"
+                style={{ boxShadow: `0 12px 40px -10px ${cat.color}` }}
               >
                 {cat.icon}
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
               <div className="absolute bottom-0 left-0 w-full p-5">
-                <p className="text-sm uppercase tracking-wide text-zinc-400">{cat.icon}</p>
-                <h3 className="mt-2 text-3xl font-black tracking-tight text-white">
+                <h3 className="text-3xl font-black tracking-tight text-white">
                   {t(`essentials.category_names.${cat.key}`)}
                 </h3>
               </div>

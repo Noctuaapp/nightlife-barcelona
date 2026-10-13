@@ -315,26 +315,24 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
 
           {/* BUSCADOR — justo encima de Destacados */}
           <section className="mx-auto max-w-7xl px-6 pt-16">
-          <form
-            onSubmit={handleSearch}
-            className="flex max-w-2xl gap-3"
-          >
-            <div className="group flex flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-4 backdrop-blur-xl transition focus-within:border-purple-400/50 focus-within:bg-white/[0.08]">
-              <span className="text-zinc-500 transition group-focus-within:text-purple-300">🔍</span>
+          <form onSubmit={handleSearch} className="max-w-3xl">
+            <div className="group flex items-center gap-3 rounded-full border border-purple-400/30 bg-[#161029]/90 p-2 pl-6 shadow-[0_12px_40px_-14px_rgba(168,85,247,0.6)] backdrop-blur-xl transition focus-within:border-fuchsia-400/70 focus-within:shadow-[0_12px_44px_-8px_rgba(217,70,239,0.55)]">
+              <span className="text-lg text-purple-300 transition group-focus-within:text-fuchsia-300">🔍</span>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Busca un club, barrio o estilo…"
-                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
+                className="min-w-0 flex-1 bg-transparent py-2 text-base text-white outline-none placeholder:text-zinc-400"
               />
+              <button
+                type="submit"
+                className="group/btn flex shrink-0 items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white transition hover:scale-[1.03] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-300"
+                style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)", boxShadow: "0 8px 24px -8px rgba(168,85,247,0.6)" }}
+              >
+                Buscar
+                <span className="transition group-hover/btn:translate-x-0.5"><ArrowIcon className="h-4 w-4" /></span>
+              </button>
             </div>
-            <button
-              type="submit"
-              className="group flex items-center gap-2 rounded-2xl bg-white px-6 py-4 text-sm font-bold text-black transition hover:scale-[1.03] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-400"
-            >
-              Buscar
-              <span className="transition group-hover:translate-x-0.5"><ArrowIcon className="h-4 w-4" /></span>
-            </button>
           </form>
           </section>
 

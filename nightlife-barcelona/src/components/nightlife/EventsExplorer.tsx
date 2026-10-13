@@ -83,6 +83,29 @@ function toggleInSet(set: Set<string>, value: string): Set<string> {
 
 const PAGE_SIZE = 9
 
+// Búsqueda sin tildes ni mayúsculas y con puntuación de relevancia (ver ClubsExplorer): el
+// título exacto primero, luego los que empiezan por la búsqueda, luego una palabra que empieza
+// así, luego contiene en el título, y por último dirección y descripción.
+const norm = (s: string) =>
+  (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim()
+
+function searchScore(event: any, rawQuery: string): number {
+  const q = norm(rawQuery)
+  if (!q) return 1
+  const title = norm(event.title)
+  const address = norm(event.address)
+  const desc = norm(event.description)
+  const short = q.length < 3
+  if (title === q) return 100
+  if (title.startsWith(q)) return 80
+  if (title.split(" ").some((w) => w.startsWith(q))) return 60
+  if (!short && title.includes(q)) return 40
+  if (address.split(" ").some((w) => w.startsWith(q))) return 20
+  if (!short && address.includes(q)) return 15
+  if (!short && desc.includes(q)) return 5
+  return 0
+}
+
 export default function EventsExplorer({ initialEvents }: { initialEvents: any[] }) {
   const [events] = useState<any[]>(initialEvents)
   const [selectedFilters, setSelectedFilters] = useState<Set<string>>(new Set())
@@ -136,11 +159,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
     return events.filter((event) => {
       const matchesFilters = selectedFilters.size === 0 || Array.from(selectedFilters).every((key) => filterMatch(event, key))
 
-      const matchesSearch =
-        search === "" ||
-        event.title?.toLowerCase().includes(search.toLowerCase()) ||
-        event.address?.toLowerCase().includes(search.toLowerCase()) ||
-        event.description?.toLowerCase().includes(search.toLowerCase())
+      const matchesSearch = searchScore(event, search) > 0
 
       const matchesNearMe =
         !nearMe ||
@@ -159,13 +178,18 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
   const sortedEvents = useMemo(() => {
     const arr = [...filteredEvents]
+    if (search.trim() && sortBy === "date") {
+      // Con búsqueda activa y orden por defecto: primero lo más relevante, y a igual relevancia, por fecha.
+      arr.sort((a, b) => searchScore(b, search) - searchScore(a, search) || new Date(a.date).getTime() - new Date(b.date).getTime())
+      return arr
+    }
     if (sortBy === "featured") {
       arr.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || new Date(a.date).getTime() - new Date(b.date).getTime())
     } else if (sortBy === "date_desc") {
       arr.reverse()
     }
     return arr
-  }, [filteredEvents, sortBy])
+  }, [filteredEvents, sortBy, search])
 
   const visibleEvents = sortedEvents.slice(0, visibleCount)
 
@@ -252,16 +276,16 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
         </section>
 
         {/* STICKY SEARCH + QUICK ACTIONS */}
-        <div className="sticky top-0 z-30 mt-8 border-y border-white/10 bg-black/70 py-4 backdrop-blur-xl">
+        <div className="sticky top-20 z-30 mt-8 border-y border-white/10 bg-[#0d0a1c]/85 py-3.5 backdrop-blur-xl">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4">
-            <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3.5 backdrop-blur-xl transition focus-within:border-purple-400/50 focus-within:bg-white/[0.08]">
-              <SearchIcon className="h-4 w-4 shrink-0 text-zinc-500 transition group-focus-within:text-purple-300" />
+            <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-full border border-purple-400/25 bg-[#161029]/90 px-6 py-3.5 shadow-[0_8px_30px_-14px_rgba(168,85,247,0.5)] backdrop-blur-xl transition focus-within:border-fuchsia-400/70 focus-within:shadow-[0_8px_36px_-8px_rgba(217,70,239,0.55)]">
+              <SearchIcon className="h-5 w-5 shrink-0 text-purple-300 transition group-focus-within:text-fuchsia-300" />
               <input
                 type="text"
                 placeholder={t("events.search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
+                className="w-full bg-transparent text-base text-white outline-none placeholder:text-zinc-400"
               />
               {search && (
                 <button onClick={() => setSearch("")} className="text-zinc-500 transition hover:text-white" aria-label="Limpiar búsqueda">

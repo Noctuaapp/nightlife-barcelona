@@ -437,10 +437,10 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
   ]
 
   return (
-    <main className="min-h-screen bg-[#050308] text-white">
+    <main className="relative min-h-screen bg-[#050308] text-white">
       {/* HEADER — persistente, cambia de estado al hacer scroll */}
       <header
-        className={`fixed inset-x-0 top-0 z-50 flex items-center justify-between px-4 py-3.5 transition-all duration-300 sm:px-6 ${
+        className={`absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 py-3.5 transition-all duration-300 sm:px-6 ${
           scrolled ? "border-b border-white/10 bg-[#050308]/90 backdrop-blur-2xl" : "bg-gradient-to-b from-black/60 to-transparent"
         }`}
       >
@@ -778,7 +778,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
               </Card>
             </Reveal>
 
-            <div className="sticky top-[68px] z-30 mt-8 mb-8 flex gap-2 overflow-x-auto bg-[#050308]/90 py-3 backdrop-blur-xl">
+            <div className="sticky top-20 z-30 mt-8 mb-8 flex gap-2 overflow-x-auto bg-[#050308]/90 py-3 backdrop-blur-xl">
               {[
                 { key: "about", label: "Sobre el club" },
                 ...(hasSessions ? [{ key: "sessions", label: "Sesiones semanales" }] : []),

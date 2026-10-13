@@ -62,6 +62,30 @@ const ATTRIBUTE_FILTERS = ["Trending", "LGTBI+", "Sin cola", "Futbolín/Billar",
 const AGE_FILTERS = ["+18", "+21", "+25"]
 const PAGE_SIZE = 9
 
+// Búsqueda sin tildes ni mayúsculas, con puntuación de relevancia: antes "ku" devolvía cualquier
+// club que contuviera "ku" en cualquier parte (Marku, Sakura...) en el orden por defecto, así
+// que el club buscado salía el segundo o el décimo. Ahora el nombre exacto va primero, luego
+// los que empiezan por la búsqueda, luego los que tienen una palabra que empieza así, etc.
+const norm = (s: string) =>
+  (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim()
+
+function searchScore(club: any, rawQuery: string): number {
+  const q = norm(rawQuery)
+  if (!q) return 1
+  const name = norm(club.name)
+  const hood = norm(club.neighborhood)
+  const music = norm(club.music)
+  const short = q.length < 3
+  if (name === q) return 100
+  if (name.startsWith(q)) return 80
+  if (name.split(" ").some((w) => w.startsWith(q))) return 60
+  if (!short && name.includes(q)) return 40
+  if (hood === q || hood.startsWith(q)) return 25
+  if (!short && hood.includes(q)) return 20
+  if (music.split(/[\s,]+/).some((w) => w.startsWith(q))) return 10
+  return 0
+}
+
 export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] }) {
   const [clubs] = useState<any[]>(initialClubs)
   const [selectedGenres, setSelectedGenres] = useState<Set<string>>(new Set())
@@ -80,6 +104,14 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const { t } = useLanguage()
+
+  // La búsqueda de la home navega a /clubs?search=...; antes ese parámetro se ignoraba.
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search).get("search")
+      if (q) setSearch(q)
+    } catch {}
+  }, [])
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
@@ -199,11 +231,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
       const matchesNeighborhood = selectedNeighborhoods.size === 0 || selectedNeighborhoods.has(club.neighborhood)
       const matchesZone = selectedZones.size === 0 || selectedZones.has(zoneOf(club))
 
-      const matchesSearch =
-        search === "" ||
-        club.name?.toLowerCase().includes(search.toLowerCase()) ||
-        club.neighborhood?.toLowerCase().includes(search.toLowerCase()) ||
-        club.music?.toLowerCase().includes(search.toLowerCase())
+      const matchesSearch = searchScore(club, search) > 0
 
       const matchesOpenNow = !openNow || isOpenNow(club.hours)
 
@@ -220,6 +248,10 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
 
   const sortedClubs = useMemo(() => {
     const arr = [...filteredClubs]
+    if (search.trim() && sortBy === "recommended") {
+      arr.sort((a, b) => searchScore(b, search) - searchScore(a, search))
+      return arr
+    }
     if (sortBy === "rating") arr.sort((a, b) => (b.rating || 0) - (a.rating || 0))
     else if (sortBy === "name") arr.sort((a, b) => (a.name || "").localeCompare(b.name || ""))
     else if (sortBy === "distance" && userLat && userLng) {
@@ -230,7 +262,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
       })
     }
     return arr
-  }, [filteredClubs, sortBy, userLat, userLng])
+  }, [filteredClubs, sortBy, userLat, userLng, search])
 
   const visibleClubs = sortedClubs.slice(0, visibleCount)
 
@@ -360,16 +392,16 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         </section>
 
         {/* STICKY SEARCH + QUICK ACTIONS */}
-        <div className="sticky top-0 z-30 mt-8 border-y border-white/10 bg-black/70 py-4 backdrop-blur-xl">
+        <div className="sticky top-20 z-30 mt-8 border-y border-white/10 bg-[#0d0a1c]/85 py-3.5 backdrop-blur-xl">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4">
-            <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3.5 backdrop-blur-xl transition focus-within:border-purple-400/50 focus-within:bg-white/[0.08]">
-              <SearchIcon className="h-4 w-4 shrink-0 text-zinc-500 transition group-focus-within:text-purple-300" />
+            <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-full border border-purple-400/25 bg-[#161029]/90 px-6 py-3.5 shadow-[0_8px_30px_-14px_rgba(168,85,247,0.5)] backdrop-blur-xl transition focus-within:border-fuchsia-400/70 focus-within:shadow-[0_8px_36px_-8px_rgba(217,70,239,0.55)]">
+              <SearchIcon className="h-5 w-5 shrink-0 text-purple-300 transition group-focus-within:text-fuchsia-300" />
               <input
                 type="text"
                 placeholder={t("clubs.search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
+                className="w-full bg-transparent text-base text-white outline-none placeholder:text-zinc-400"
               />
               {search && (
                 <button onClick={() => setSearch("")} className="text-zinc-500 transition hover:text-white" aria-label="Limpiar búsqueda">

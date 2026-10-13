@@ -287,10 +287,10 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
   const accentGradient = { background: `linear-gradient(135deg, ${accent.from} 0%, ${accent.to} 100%)` }
 
   return (
-    <main className="min-h-screen bg-[#050308] text-white">
+    <main className="relative min-h-screen bg-[#050308] text-white">
       {/* HEADER */}
       <header
-        className={`fixed inset-x-0 top-0 z-50 flex items-center justify-between px-4 py-3.5 transition-all duration-300 sm:px-6 ${
+        className={`absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 py-3.5 transition-all duration-300 sm:px-6 ${
           scrolled ? "border-b border-white/10 bg-[#050308]/90 backdrop-blur-2xl" : "bg-gradient-to-b from-black/60 to-transparent"
         }`}
       >

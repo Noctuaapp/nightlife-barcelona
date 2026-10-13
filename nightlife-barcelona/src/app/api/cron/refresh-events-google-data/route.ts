@@ -54,6 +54,14 @@ const GEOGRAPHIC_TYPES = new Set([
   "administrative_area_level_4", "administrative_area_level_5", "continent", "postal_code", "natural_feature",
 ])
 
+// Si el "lugar" de Google es un parque, playa o plaza, sus fotos son del espacio (césped, arena)
+// y no de la fiesta: no las importamos y el evento se queda con degradado o la imagen que subas.
+const SPACE_ONLY_TYPES = new Set(["park", "national_park", "state_park", "playground", "plaza", "beach", "campground", "marina", "hiking_area", "garden"])
+
+function isSpaceOnly(types: string[] | undefined): boolean {
+  return !!types && types.some((t) => SPACE_ONLY_TYPES.has(t))
+}
+
 function isGeographicMismatch(types: string[] | undefined): boolean {
   if (!types || types.length === 0) return false
   return types.some((t) => GEOGRAPHIC_TYPES.has(t))
@@ -171,7 +179,7 @@ export async function GET(req: Request) {
         // castellano — sin esto, Google devuelve las reseñas en inglés por defecto.
         // reviews/photos solo se piden si GOOGLE_PLACES_FETCH_RICH_DATA está activado: ese
         // fieldmask cae en el tier "Enterprise + Atmosphere" (mucho más caro) en vez del básico.
-        const fields = fetchRichData() ? "displayName,types,rating,userRatingCount,reviews,photos" : "displayName,types,rating,userRatingCount"
+        const fields = fetchRichData() ? "displayName,types,rating,userRatingCount,photos" : "displayName,types,rating,userRatingCount"
         const detailsRes = await googleFetch(counter, `https://places.googleapis.com/v1/places/${ev.google_place_id}?languageCode=es`, {
           headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": fields },
         })
@@ -198,7 +206,7 @@ export async function GET(req: Request) {
         }
 
         const photoResults = await Promise.all(
-          (data.photos || []).slice(0, PHOTOS_PER_EVENT).map(async (p: any) => {
+          (isSpaceOnly(data?.types) ? [] : data.photos || []).slice(0, PHOTOS_PER_EVENT).map(async (p: any) => {
             try {
               const photoRes = await googleFetch(counter, `https://places.googleapis.com/v1/${p.name}/media?maxWidthPx=1000&key=${apiKey}`)
               const buffer = await photoRes.arrayBuffer()
