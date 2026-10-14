@@ -7,6 +7,7 @@ import XpBurst from "../mascot/XpBurst"
 import BadgeToast from "../mascot/BadgeToast"
 import { evaluateBadges } from "../../lib/badges"
 import { useLanguage } from "../../context/LanguageContext"
+import Icon from "../ui/Icon"
 
 type CheckInButtonProps = {
   clubId: number
@@ -221,18 +222,17 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
       <button
         onClick={handleCheckIn}
         disabled={working || checkedInToday}
-        className={`flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 font-bold transition hover:scale-[1.02] disabled:hover:scale-100 ${
-          checkedInToday
-            ? "bg-purple-500 text-white opacity-90"
-            : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+        className={`flex w-full items-center justify-center gap-2 rounded-ctl px-6 py-3.5 text-sm font-semibold transition ${
+          checkedInToday ? "bg-brand/20 text-brand-soft" : "border border-white/10 bg-white/5 text-ink hover:bg-white/10"
         }`}
       >
-        {checkedInToday ? `📍 ${t("checkin.done")}` : working ? `${t("checkin.locating")}` : `📍 ${t("checkin.cta")}`}
+        <Icon name={checkedInToday ? "check" : "map"} className="h-4 w-4" />
+        {checkedInToday ? t("checkin.done") : working ? t("checkin.locating") : t("checkin.cta")}
       </button>
       <XpBurst show={justEarned} amount={XP_AMOUNTS.checkin} />
       {checkedInToday && !noteSaved && (
-        <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-          <p className="text-xs font-semibold text-zinc-400">{t("checkin.notePrompt")}</p>
+        <div className="mt-3 rounded-ctl border border-white/10 bg-white/[0.03] p-3">
+          <p className="text-xs font-semibold text-zinc-300">{t("checkin.notePrompt")}</p>
           <div className="mt-2 flex gap-2">
             <input
               value={note}
@@ -244,7 +244,7 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
             <button
               onClick={handleSaveNote}
               disabled={savingNote || !note.trim()}
-              className="rounded-xl bg-purple-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-purple-400 disabled:opacity-50"
+              className="rounded-ctl bg-brand px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-strong disabled:opacity-50"
             >
               {savingNote ? "..." : t("checkin.notePublish")}
             </button>
@@ -252,13 +252,13 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
         </div>
       )}
       {checkedInToday && noteSaved && (
-        <p className="mt-2 text-center text-[11px] text-emerald-400">{t("checkin.noteDone")}</p>
+        <p className="mt-2 text-center text-xs text-open">{t("checkin.noteDone")}</p>
       )}
       {!checkedInToday && (
-        <p className="mt-2 text-center text-[11px] leading-snug text-zinc-500">
+        <p className="mt-2 text-center text-xs leading-snug text-zinc-400">
           {t("checkin.hint").replace("{xp}", String(XP_AMOUNTS.checkin))}
           {" · "}
-          <a href="/club-noctua" className="font-semibold text-zinc-400 underline underline-offset-2 hover:text-zinc-300">
+          <a href="/club-noctua" className="font-semibold text-zinc-300 underline underline-offset-2 hover:text-ink">
             {t("levels.viewMine")}
           </a>
         </p>

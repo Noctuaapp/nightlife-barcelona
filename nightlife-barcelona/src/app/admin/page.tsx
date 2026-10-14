@@ -385,12 +385,12 @@ export default function AdminPage() {
 
   if (checkingAdmin) return (
     <main className="flex min-h-screen items-center justify-center bg-black text-white">
-      <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Verificando acceso...</p>
+      <p className="text-sm text-zinc-400">Verificando acceso...</p>
     </main>
   )
 
-  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-purple-500/50 transition placeholder:text-zinc-600"
-  const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1.5"
+  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-purple-500/50 transition placeholder:text-zinc-400"
+  const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1.5"
 
   const renderClubForm = (form: ClubFormData, setForm: (f: ClubFormData) => void) => (
     <div className="grid gap-4 md:grid-cols-2">
@@ -426,7 +426,7 @@ export default function AdminPage() {
           )}
           <div className="flex-1 space-y-2">
             <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://... (o sube una desde tu ordenador)" className={inputClass} />
-            <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploadingImage ? "border-white/10 text-zinc-600" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
+            <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploadingImage ? "border-white/10 text-zinc-400" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
               {uploadingImage ? "Subiendo..." : "📁 Subir imagen desde tu ordenador"}
               <input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={(e) => handleImageUpload(e, form, setForm)} />
             </label>
@@ -436,9 +436,9 @@ export default function AdminPage() {
       <div className="md:col-span-2">
         <label className={labelClass}>
           Galería ({form.gallery.length} foto{form.gallery.length === 1 ? "" : "s"})
-          {form.gallery.length > 0 && <span className="ml-2 normal-case font-normal text-zinc-600">— quita las que no encajen con la ✕</span>}
+          {form.gallery.length > 0 && <span className="ml-2 normal-case font-normal text-zinc-400">— quita las que no encajen con la ✕</span>}
         </label>
-        <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploadingGallery ? "border-white/10 text-zinc-600" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
+        <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploadingGallery ? "border-white/10 text-zinc-400" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
           {uploadingGallery ? "Subiendo..." : "📁 Añadir fotos a la galería"}
           <input type="file" accept="image/*" multiple className="hidden" disabled={uploadingGallery} onChange={(e) => handleGalleryUpload(e, form, setForm)} />
         </label>
@@ -560,9 +560,9 @@ export default function AdminPage() {
               { label: "Verificados", value: stats.verified, color: "text-purple-400" },
               { label: "Trending", value: stats.trending, color: "text-orange-400" },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-[20px] border border-white/10 bg-white/[0.03] p-5 text-center">
+              <div key={stat.label} className="rounded-card border border-white/10 bg-white/[0.03] p-5 text-center">
                 <p className={`text-3xl font-black ${stat.color}`}>{stat.value}</p>
-                <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">{stat.label}</p>
+                <p className="mt-1 text-xs text-zinc-400">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -574,7 +574,7 @@ export default function AdminPage() {
               {showAddForm ? "✕ Cerrar formulario" : "+ Añadir club"}
             </button>
             {showAddForm && (
-              <div className="mt-4 rounded-[24px] border border-purple-500/30 bg-purple-500/[0.04] p-6">
+              <div className="mt-4 rounded-card border border-purple-500/30 bg-purple-500/[0.04] p-6">
                 <h3 className="mb-4 text-lg font-black">Nuevo club</h3>
                 {renderClubForm(newClub, setNewClub)}
                 <div className="mt-5 flex gap-3">
@@ -620,17 +620,17 @@ export default function AdminPage() {
           <div className="flex gap-3 mb-6">
             <button onClick={showAll} className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-500 hover:text-white transition">✓ Mostrar todos</button>
             <button onClick={hideAll} className="rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-300 hover:bg-red-500 hover:text-white transition">✕ Ocultar todos</button>
-            <p className="ml-auto text-xs text-zinc-500 self-center">{filteredClubs.length} clubs</p>
+            <p className="ml-auto text-xs text-zinc-400 self-center">{filteredClubs.length} clubs</p>
           </div>
 
           {/* Clubs list */}
           {loading ? (
-            <p className="text-zinc-500 text-sm text-center py-20">Cargando clubs...</p>
+            <p className="text-zinc-400 text-sm text-center py-20">Cargando clubs...</p>
           ) : (
             <div className="grid gap-4">
               {filteredClubs.map((club) => (
                 <div key={club.id} id={`club-${club.id}`}
-                  className={`rounded-[24px] border p-5 transition ${club.hidden ? "border-white/5 bg-white/[0.01] opacity-50" : "border-white/10 bg-white/[0.03]"} ${editingId === club.id ? "!border-purple-500/40 !bg-purple-500/[0.04] !opacity-100" : ""}`}>
+                  className={`rounded-card border p-5 transition ${club.hidden ? "border-white/5 bg-white/[0.01] opacity-50" : "border-white/10 bg-white/[0.03]"} ${editingId === club.id ? "!border-purple-500/40 !bg-purple-500/[0.04] !opacity-100" : ""}`}>
 
                   {editingId === club.id ? (
                     <div>
@@ -661,7 +661,7 @@ export default function AdminPage() {
                             {club.vip_tables && <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 text-xs font-bold text-amber-300">🛋️ Mesa VIP</span>}
                             {club.hidden && <span className="rounded-full bg-zinc-500/20 border border-zinc-500/30 px-2 py-0.5 text-xs font-bold text-zinc-400">Oculto</span>}
                           </div>
-                          <p className="text-xs text-zinc-500 mt-0.5">
+                          <p className="text-xs text-zinc-400 mt-0.5">
                             {club.neighborhood} · {club.music} {club.rating ? `· ⭐ ${club.rating}` : ""}
                           </p>
                         </div>
@@ -706,7 +706,7 @@ export default function AdminPage() {
                 </div>
               ))}
               {filteredClubs.length === 0 && (
-                <p className="text-zinc-500 text-sm text-center py-20">No se encontraron clubs.</p>
+                <p className="text-zinc-400 text-sm text-center py-20">No se encontraron clubs.</p>
               )}
             </div>
           )}

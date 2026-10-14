@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { supabase } from "../../lib/supabase"
+import { safeNextPath } from "../../lib/nextPath"
 import { useLanguage } from "../../context/LanguageContext"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
@@ -83,13 +84,13 @@ export default function SignupPage() {
       })
     }
 
-    window.location.href = "/"
+    window.location.href = safeNextPath()
   }
 
   const handleGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/` },
+      options: { redirectTo: `${window.location.origin}${safeNextPath()}` },
     })
   }
 
@@ -106,7 +107,7 @@ export default function SignupPage() {
         </section>
 
         <section className="mx-auto max-w-md px-4">
-          <div className="rounded-[36px] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
+          <div className="rounded-card border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
 
             {/* Google */}
             <button
@@ -124,7 +125,7 @@ export default function SignupPage() {
 
             <div className="my-6 flex items-center gap-4">
               <div className="h-px flex-1 bg-white/10" />
-              <span className="text-xs text-zinc-500">{t("signup.or")}</span>
+              <span className="text-xs text-zinc-400">{t("signup.or")}</span>
               <div className="h-px flex-1 bg-white/10" />
             </div>
 
@@ -189,7 +190,7 @@ export default function SignupPage() {
                   style={{ colorScheme: "dark" }}
                   className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition text-zinc-300"
                 />
-                <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-500">
+                <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-400">
                   Los datos del año de nacimiento se usarán para mejorar tus búsquedas.
                 </p>
               </div>
@@ -233,7 +234,7 @@ export default function SignupPage() {
               </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-zinc-500">
+            <p className="mt-6 text-center text-sm text-zinc-400">
               <Link href="/login" className="text-white hover:text-zinc-300 transition">
                 {t("signup.existing")}
               </Link>

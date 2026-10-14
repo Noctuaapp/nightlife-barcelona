@@ -1,160 +1,127 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
+import Icon from "../ui/Icon"
 import { createSlug } from "../../lib/slug"
+import { clubOpenNow } from "../../lib/clubHours"
+import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { useLanguage } from "../../context/LanguageContext"
 
+// Tarjeta de club del listado. Rehecha tras la auditoría de octubre 2026:
+// - Antes medía 420 px y llevaba hasta 9 etiquetas con emojis, algunas falsas: "🔥 {people}+ esta
+//   noche" mostraba un número fijo de la base de datos como si fuera gente de esta noche, y las
+//   etiquetas se podían pulsar para cambiar entre "En directo" y "Trending" sin ningún dato detrás.
+// - Ahora: foto, si está abierto (con la hora de Madrid), estado en directo solo si el local lo
+//   ha marcado en las últimas 4 h, valoración, precio y como mucho dos etiquetas útiles.
 interface ClubCardProps {
   id: number
   name: string
-  music: string
-  area: string
-  price: string
-  hours: string
-  image: string
-  rating: number
-  people: number
-  badges?: string[]
-  terrace?: boolean
-  vip?: boolean
-  smokingArea?: boolean
-  tableBooking?: boolean
-  dresscode?: string
+  slug?: string | null
+  music?: string | null
+  area?: string | null
+  price?: string | null
+  hours?: string | null
+  openDays?: string[] | null
+  image?: string | null
+  rating?: number | null
   lgtbi_friendly?: boolean
   verified?: boolean
-  hasFoosball?: boolean
-  discountInfo?: string
-  freeEntryInfo?: string
-  // Estado en directo marcado por el propio local desde /mi-club (ver ClubPageContent.tsx para
-  // la misma lógica de "reciente" — 4h). Si no hay dato o está caducado, no se muestra nada: es
-  // mejor no decir nada que enseñar un estado de hace dos días como si fuera de ahora mismo.
+  discountInfo?: string | null
+  freeEntryInfo?: string | null
   liveStatus?: string | null
   liveStatusUpdatedAt?: string | null
 }
 
 const LIVE_STATUS_MAX_AGE_MS = 4 * 60 * 60 * 1000
-const LIVE_STATUS_BADGE: Record<string, { label: string; dot: string }> = {
-  tranquilo: { label: "Tranquilo", dot: "bg-emerald-400" },
-  animado: { label: "Animado", dot: "bg-amber-400" },
-  lleno: { label: "Lleno", dot: "bg-red-400" },
-}
 
 export default function ClubCard({
-  id, name, music, area, price, hours, image, rating, people, badges = [], vip, lgtbi_friendly, verified,
-  hasFoosball, discountInfo, freeEntryInfo, liveStatus, liveStatusUpdatedAt,
+  name,
+  slug,
+  music,
+  area,
+  price,
+  hours,
+  openDays,
+  image,
+  rating,
+  lgtbi_friendly,
+  verified,
+  discountInfo,
+  freeEntryInfo,
+  liveStatus,
+  liveStatusUpdatedAt,
 }: ClubCardProps) {
-  const [liveBadges, setLiveBadges] = useState(badges)
-  const router = useRouter()
-  const slug = createSlug(name)
   const { t } = useLanguage()
+  const [openNow, setOpenNow] = useState<boolean | null>(null)
+  useEffect(() => setOpenNow(clubOpenNow(hours, openDays)), [hours, openDays])
 
-  const isLiveStatusFresh =
-    !!liveStatus &&
-    !!liveStatusUpdatedAt &&
-    LIVE_STATUS_BADGE[liveStatus] &&
-    Date.now() - new Date(liveStatusUpdatedAt).getTime() < LIVE_STATUS_MAX_AGE_MS
-  const liveStatusInfo = isLiveStatusFresh ? LIVE_STATUS_BADGE[liveStatus as string] : null
+  const LIVE: Record<string, string> = {
+    tranquilo: t("clubPage.vibeQuiet"),
+    animado: t("clubPage.vibeBusy"),
+    lleno: t("clubPage.vibeFull"),
+  }
+  const live =
+    liveStatus && liveStatusUpdatedAt && LIVE[liveStatus] && Date.now() - new Date(liveStatusUpdatedAt).getTime() < LIVE_STATUS_MAX_AGE_MS
+      ? LIVE[liveStatus]
+      : null
+
+  const tags = [
+    freeEntryInfo && t("clubCard.freeEntry"),
+    discountInfo && t("clubCard.promoToday"),
+    lgtbi_friendly && "LGTBI+",
+  ].filter(Boolean).slice(0, 2) as string[]
 
   return (
-    <Link href={`/clubs/${slug}`} className="group block overflow-hidden rounded-[30px] border border-purple-400/20 bg-[#120d24] shadow-[0_0_0_1px_rgba(236,72,153,0.04)] transition duration-500 hover:-translate-y-2 hover:border-fuchsia-400/50 hover:shadow-[0_24px_60px_-20px_rgba(168,85,247,0.5)]">
-      <div className="relative h-[420px] overflow-hidden">
-        {image ? (
-          <Image
-            src={image}
-            alt={name}
-            fill
-            sizes="(max-width: 768px) 100vw, 33vw"
-            className="object-cover transition duration-700 group-hover:scale-110"
-          />
-        ) : (
-          // Antes esto caía en un fallback fijo "/clubs/razz.jpg" (un archivo que ni siquiera
-          // existe en el repo, así que daba 404) y hacía que cualquier club sin foto propia
-          // mostrase la misma imagen de otro club. Ahora, sin foto, mostramos un degradado con
-          // el emoji de música en vez de una imagen fija de otro local.
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-900/60 via-black to-black">
-            <span className="text-6xl opacity-30">🎵</span>
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
-
-        <div className="absolute left-5 top-5 flex flex-wrap gap-2">
-          {liveStatusInfo && (
-            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/60 px-3 py-2 text-xs font-semibold text-white backdrop-blur-xl">
-              <span className={`h-1.5 w-1.5 rounded-full ${liveStatusInfo.dot} motion-safe:animate-pulse`} />
-              {liveStatusInfo.label} ahora
-            </div>
+    <Link
+      href={`/clubs/${slug || createSlug(name)}`}
+      className="group block overflow-hidden rounded-card border border-white/10 bg-surface transition hover:border-white/25"
+    >
+      <div className="relative h-52 overflow-hidden">
+        <Image
+          src={image || FALLBACK_IMAGE}
+          alt={name}
+          fill
+          sizes="(max-width: 768px) 100vw, 33vw"
+          unoptimized={!image}
+          className="object-cover transition duration-500 group-hover:scale-[1.03]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
+        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+          {openNow !== null && (
+            <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${openNow ? "bg-night/80 text-open" : "bg-night/70 text-zinc-300"}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${openNow ? "live-dot bg-open" : "bg-off"}`} />
+              {openNow ? t("clubPage.openNow") : t("home.closed")}
+            </span>
           )}
-          {liveBadges?.slice(0, 2).map((badge, index) => (
-            <button key={badge} onClick={(e) => {
-              e.preventDefault()
-              const updated = [...liveBadges]
-              // Se compara solo por el emoji (no por el texto completo) para que el toggle
-              // funcione igual aunque el texto mostrado esté traducido a otro idioma.
-              const isTrending = badge.includes("🔥")
-              updated[index] = isTrending ? `🟢 ${t("clubCard.liveNow")}` : `🔥 ${t("clubCard.trending")}`
-              setLiveBadges(updated)
-            }} className="rounded-full border border-white/10 bg-black/50 px-3 py-2 text-xs font-semibold text-white backdrop-blur-xl transition hover:scale-105 hover:bg-white/20">
-              {badge}
-            </button>
-          ))}
-          {lgtbi_friendly && (
-            <div className="rounded-full border border-pink-500/30 bg-pink-500/20 px-3 py-2 text-xs font-semibold text-pink-300 backdrop-blur-xl">
-              🏳️‍🌈 LGTBI+
-            </div>
+          {live && (
+            <span className="flex items-center gap-1.5 rounded-full bg-night/80 px-2.5 py-1 text-xs font-semibold text-ink">
+              <span className="live-dot h-1.5 w-1.5 rounded-full bg-open" /> {live}
+            </span>
           )}
-          {vip && (
-            <div className="rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-2 text-xs font-semibold text-amber-300 backdrop-blur-xl">
-              🛋️ {t("clubCard.vipTable")}
-            </div>
-          )}
-          {verified && (
-            <div className="flex items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/20 px-3 py-2 text-xs font-semibold text-purple-300 backdrop-blur-xl">
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-purple-500 text-white font-black text-[10px]">N</span>
-              {t("clubCard.verified")}
-            </div>
-          )}
-          {freeEntryInfo && (
-            <div className="rounded-full border border-emerald-500/30 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-300 backdrop-blur-xl">
-              🎫 {t("clubCard.freeEntry")}
-            </div>
-          )}
-          {discountInfo && (
-            <div className="rounded-full border border-orange-500/30 bg-orange-500/20 px-3 py-2 text-xs font-semibold text-orange-300 backdrop-blur-xl">
-              💸 {t("clubCard.promoToday")}
-            </div>
-          )}
-          {hasFoosball && (
-            <div className="rounded-full border border-sky-500/30 bg-sky-500/20 px-3 py-2 text-xs font-semibold text-sky-300 backdrop-blur-xl">
-              🎱 {t("clubCard.foosballBilliards")}
-            </div>
-          )}
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              router.push(`/map?type=clubs&id=${id}`)
-            }}
-            className="rounded-full border border-white/10 bg-black/50 px-3 py-2 text-xs font-semibold text-white backdrop-blur-xl transition hover:scale-105 hover:bg-white/20"
-          >
-            🗺️ {t("clubCard.viewOnMap")}
-          </button>
         </div>
-
-        <div className="absolute bottom-0 left-0 w-full p-6">
-          <p className="text-sm uppercase tracking-wide text-zinc-400">{music}</p>
-          <h3 className="mt-2 text-4xl font-black tracking-tight text-white">{name}</h3>
-          <div className="mt-5 flex items-center justify-between text-sm text-zinc-300">
-            <span>📍 {area}</span>
-            <span>⭐ {rating}</span>
-          </div>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">🔥 {people}+ {t("clubCard.tonight")}</div>
-            <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">🎟 {price}</div>
-            <div className="max-w-full whitespace-normal break-words leading-snug rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur-xl">🕒 {hours}</div>
-          </div>
+      </div>
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="min-w-0 truncate text-lg font-semibold text-ink">
+            {name}
+            {verified && <Icon name="check" className="ml-1.5 inline h-4 w-4 align-[-2px] text-brand-soft" />}
+          </h3>
+          {rating ? (
+            <span className="flex shrink-0 items-center gap-1 text-sm font-semibold text-ink">
+              <Icon name="star" className="h-3.5 w-3.5 text-warn" /> {Number(rating).toFixed(1)}
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-0.5 truncate text-sm text-zinc-400">{[area || "Barcelona", music].filter(Boolean).join(" · ")}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+          {price && <span className="rounded-full border border-white/10 px-2.5 py-1 font-semibold text-zinc-200">{price}</span>}
+          {tags.map((tag) => (
+            <span key={tag} className="rounded-full bg-brand/15 px-2.5 py-1 font-semibold text-brand-soft">
+              {tag}
+            </span>
+          ))}
         </div>
       </div>
     </Link>

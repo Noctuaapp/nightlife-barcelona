@@ -39,7 +39,7 @@ export default function Error({
             Ir al inicio
           </Link>
         </div>
-        {error.digest && <p className="mt-6 text-[11px] text-zinc-600">Código: {error.digest}</p>}
+        {error.digest && <p className="mt-6 text-xs text-zinc-400">Código: {error.digest}</p>}
       </div>
     </main>
   )

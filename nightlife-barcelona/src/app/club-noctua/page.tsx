@@ -51,7 +51,7 @@ const PERKS: Record<string, { active: string[]; soon: string[] }> = {
 type NeighborhoodBadge = { neighborhood: string; count: number }
 
 function badgeTier(count: number): { label: string; icon: string; color: string } {
-  if (count >= 6) return { label: "Leyenda", icon: "👑", color: "#a855f7" }
+  if (count >= 6) return { label: "Leyenda", icon: "👑", color: "#7c5cff" }
   if (count >= 3) return { label: "Habitual", icon: "🔥", color: "#f59e0b" }
   return { label: "Explorador", icon: "🧭", color: "#34d399" }
 }
@@ -95,11 +95,11 @@ export default function ClubNoctuaPage() {
   const currentKey = xp !== null ? getLevelInfo(xp).key : null
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#050308]">
+    <div className="min-h-screen flex flex-col bg-night">
       <Header />
       <main className="flex-1 px-4 py-16 max-w-3xl mx-auto w-full">
         <div className="mb-10">
-          <p className="text-xs font-semibold uppercase tracking-widest text-purple-400 mb-3">Club Noctua</p>
+          <p className="text-xs font-semibold text-purple-400 mb-3">Club Noctua</p>
           <h1 className="text-3xl font-black text-white mb-3">Niveles y ventajas</h1>
           <p className="text-white/60 text-sm leading-relaxed max-w-xl">
             Gana XP saliendo de fiesta — asistiendo a noches, haciendo check-in en el local y usando Noctua con
@@ -117,7 +117,7 @@ export default function ClubNoctuaPage() {
 
         {neighborhoodBadges.length > 0 && (
           <div className="mb-10">
-            <p className="text-xs font-semibold uppercase tracking-widest text-purple-400 mb-3">Barrios conquistados</p>
+            <p className="text-xs font-semibold text-purple-400 mb-3">Barrios conquistados</p>
             <p className="text-white/60 text-sm leading-relaxed max-w-xl mb-4">
               Cada check-in cuenta como una noche en ese barrio. Tres check-ins y eres Habitual, seis y eres Leyenda.
             </p>
@@ -138,7 +138,7 @@ export default function ClubNoctuaPage() {
                     </span>
                     <div>
                       <p className="text-sm font-bold text-white">{b.neighborhood}</p>
-                      <p className="text-[11px] text-zinc-500">
+                      <p className="text-xs text-zinc-400">
                         {tier.label} · {b.count} {b.count === 1 ? "noche" : "noches"}
                       </p>
                     </div>
@@ -157,13 +157,13 @@ export default function ClubNoctuaPage() {
             return (
               <div
                 key={level.key}
-                className={`rounded-[28px] p-[1px] ${
+                className={`rounded-card p-[1px] ${
                   isCurrent
                     ? "bg-gradient-to-br from-white/50 via-white/15 to-white/0"
                     : "bg-gradient-to-br from-white/15 via-white/[0.04] to-white/0"
                 }`}
               >
-                <div className="rounded-[27px] bg-[#0b0912]/95 p-6">
+                <div className="rounded-card bg-night/95 p-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <span
@@ -174,14 +174,14 @@ export default function ClubNoctuaPage() {
                       </span>
                       <div>
                         <p className="text-lg font-black text-white">{t(`levels.${level.key}`)}</p>
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-zinc-400">
                           {level.min === 0 ? "Desde el primer XP" : `A partir de ${level.min} XP`}
                           {nextLevel ? ` · hasta ${nextLevel.min - 1} XP` : ""}
                         </p>
                       </div>
                     </div>
                     {isCurrent && (
-                      <span className="rounded-full bg-white px-3 py-1 text-[11px] font-black uppercase tracking-wider text-black">
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-black">
                         Tu nivel actual
                       </span>
                     )}
@@ -197,10 +197,10 @@ export default function ClubNoctuaPage() {
                       {perks.soon.map((p) => (
                         <span
                           key={p}
-                          className="flex items-center gap-1.5 rounded-full border border-dashed border-white/15 bg-transparent px-3 py-1.5 text-xs text-zinc-500"
+                          className="flex items-center gap-1.5 rounded-full border border-dashed border-white/15 bg-transparent px-3 py-1.5 text-xs text-zinc-400"
                         >
                           {p}
-                          <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                          <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-xs font-bold text-zinc-400">
                             Próximamente
                           </span>
                         </span>

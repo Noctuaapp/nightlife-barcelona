@@ -47,7 +47,7 @@ export default function FAQPage() {
         <div className="space-y-10">
           {categories.map((section) => (
             <div key={section.key}>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-purple-400 mb-4">
+              <h2 className="text-xs font-semibold text-purple-400 mb-4">
                 {section.name}
               </h2>
               <div className="space-y-2">
@@ -92,7 +92,7 @@ export default function FAQPage() {
 
         <div
           className="mt-14 rounded-2xl border border-white/8 p-8 text-center"
-          style={{ background: "rgba(168,85,247,0.06)" }}
+          style={{ background: "rgba(124,92,255,0.06)" }}
         >
           <p className="text-white/80 font-medium mb-1">{t("faq.stillQuestions")}</p>
           <p className="text-white/40 text-sm mb-5">{t("faq.teamHelp")}</p>

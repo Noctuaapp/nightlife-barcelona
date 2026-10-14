@@ -10,6 +10,7 @@ import { toDateLocale } from "../../lib/dateLocale"
 import { createSlug } from "../../lib/slug"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
+import Icon from "../ui/Icon"
 
 type Event = {
   id: number
@@ -31,17 +32,6 @@ type Event = {
   longitude: number | null
 }
 
-// "Pr\u00f3ximamente": el evento cae dentro de los pr\u00f3ximos 7 d\u00edas (incluyendo hoy).
-const isUpcomingSoon = (date: string | null): boolean => {
-  if (!date) return false
-  const eventDate = new Date(date)
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  const inOneWeek = new Date(now)
-  inOneWeek.setDate(inOneWeek.getDate() + 7)
-  return eventDate >= now && eventDate <= inOneWeek
-}
-
 export default function EventsSection() {
   const [events, setEvents] = useState<Event[]>([])
   const [selectedCategory, setSelectedCategory] = useState("All")
@@ -49,13 +39,13 @@ export default function EventsSection() {
   const router = useRouter()
   const geo = useGeolocation()
 
+  // Sin el filtro "Agotado": no ayuda a decidir a qué ir.
   const categories = [
     { key: "All", label: t("filters.all") },
     { key: "Tonight", label: t("events.tonight") },
     { key: "Featured", label: t("events.featured") },
-    { key: "Free", label: "Gratis" },
-    { key: "Near", label: "📍 Cerca de mí" },
-    { key: "Sold out", label: t("events.sold_out") },
+    { key: "Free", label: t("events.free") },
+    { key: "Near", label: t("home.tabNear") },
   ]
 
   useEffect(() => {
@@ -111,37 +101,33 @@ export default function EventsSection() {
         if (selectedCategory === "Tonight") return event.date === today
         if (selectedCategory === "Featured") return event.featured === true && upcoming(event)
         if (selectedCategory === "Free") return upcoming(event) && (event.price || "").toLowerCase().includes("gratis")
-        if (selectedCategory === "Sold out") return event.sold_out === true && upcoming(event)
         return true
       })
       .slice(0, 3)
   })()
 
   return (
-    <section className="mx-auto mt-28 max-w-7xl px-4">
-      <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
-        <div className="max-w-3xl">
-          <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("events.live")}</p>
-          <h2 className="mt-4 text-5xl font-black tracking-tight text-white">
-            {t("events.happening")}
-          </h2>
-        </div>
+    <section className="mx-auto mt-16 max-w-7xl px-4 sm:px-6" aria-labelledby="events-title">
+      <div className="flex items-end justify-between gap-4">
+        <h2 id="events-title" className="font-display text-3xl sm:text-4xl">
+          {t("events.happening")}
+        </h2>
         {hasLiveTonight && (
-          <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-300">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" /> {t("events.tonight")}
-          </div>
+          <span className="flex shrink-0 items-center gap-2 text-sm font-semibold text-open">
+            <span className="live-dot h-2 w-2 rounded-full bg-open" /> {t("events.tonight")}
+          </span>
         )}
       </div>
 
-      <div className="mt-12 flex gap-3 overflow-x-auto pb-2">
+      <div role="tablist" className="scrollbar-none -mx-4 mt-5 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         {categories.map((category) => (
           <button
             key={category.key}
+            role="tab"
+            aria-selected={selectedCategory === category.key}
             onClick={() => selectCategory(category.key)}
-            className={`rounded-full px-5 py-3 text-sm font-medium whitespace-nowrap transition ${
-              selectedCategory === category.key
-                ? "bg-white text-black"
-                : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+              selectedCategory === category.key ? "bg-ink text-night" : "border border-white/10 text-zinc-300 hover:bg-white/5"
             }`}
           >
             {category.label}
@@ -149,97 +135,55 @@ export default function EventsSection() {
         ))}
       </div>
 
-      {selectedCategory === "Near" && (geo.locating || geo.error || geo.pos) && (
-        <p className={`mt-4 text-sm ${geo.error ? "text-amber-300" : "text-zinc-400"}`}>
-          {geo.locating ? "Localizando…" : geo.error ? geo.error : "📍 Los más cercanos a tu ubicación"}
-        </p>
+      {selectedCategory === "Near" && (geo.locating || geo.error) && (
+        <p className={`mt-4 text-sm ${geo.error ? "text-warn" : "text-zinc-400"}`}>{geo.locating ? t("home.locating") : geo.error}</p>
       )}
 
-      <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filteredEvents.length === 0 ? (
-          <p className="col-span-3 text-center text-zinc-500 py-10">No hay eventos próximos con este filtro.</p>
+          <p className="col-span-full py-10 text-center text-zinc-400">{t("homeEvents.empty")}</p>
         ) : (
-          filteredEvents.map((event, index) => (
-            // Misma forma de entrada que en /events (ver EventsExplorer.tsx): póster arriba,
-            // talón perforado abajo con los datos prácticos — para que un evento se reconozca
-            // como evento desde el primer vistazo, lo veas donde lo veas en la app.
+          filteredEvents.map((event) => (
             <Link
-              href={`/event/${createSlug(event.title)}`}
+              href={`/event/${(event as Event & { slug?: string }).slug || createSlug(event.title)}`}
               key={event.id}
-              className="group block overflow-hidden rounded-[26px] border border-white/10 bg-black transition duration-500 hover:-translate-y-2 hover:border-white/20 fade-up"
-              style={{ animationDelay: `${index * 0.08}s` }}
+              className="group block overflow-hidden rounded-card border border-white/10 bg-surface transition hover:border-white/25"
             >
-              <div className="relative h-[340px] overflow-hidden">
+              <div className="relative h-52 overflow-hidden">
                 {event.image ? (
-                  <Image
-                    src={event.image}
-                    alt={event.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-cover transition duration-700 group-hover:scale-110"
-                  />
+                  <Image src={event.image} alt={event.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
                 ) : (
-                  // Antes caía en el fallback fijo "/clubs/razz.jpg" (archivo inexistente, 404,
-                  // compartido con otros clubs/eventos). Ahora, sin foto propia, un degradado
-                  // neutro en vez de la imagen de otro local.
-                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-900/60 via-black to-black">
-                    <span className="text-6xl opacity-30">🎉</span>
-                  </div>
+                  <div className="flex h-full w-full items-center justify-center bg-surface-2" />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
-
-                <div className="absolute left-5 top-5 flex flex-wrap gap-2">
-                  {event.featured && (
-                    <div className="rounded-full border border-white/10 bg-black/50 px-3 py-2 text-xs font-semibold text-white backdrop-blur-xl">
-                      🔥 {t("events.featured")}
-                    </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
+                <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+                  {event.date && (
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${event.date === today ? "bg-open text-night" : "bg-night/80 text-ink"}`}>
+                      {event.date === today ? t("events.tonight") : formatEventDate(event.date)}
+                    </span>
                   )}
-                  {event.sold_out && (
-                    <div className="rounded-full border border-red-500/20 bg-red-500/20 px-3 py-2 text-xs font-semibold text-red-200 backdrop-blur-xl">
-                      🚫 {t("events.sold_out")}
-                    </div>
-                  )}
-                  {isUpcomingSoon(event.date) && (
-                    <div className="rounded-full border border-purple-400/30 bg-purple-500/20 px-3 py-2 text-xs font-semibold text-purple-200 backdrop-blur-xl">
-                      🔜 Próximamente
-                    </div>
-                  )}
+                  {event.sold_out && <span className="rounded-full bg-red-400/90 px-3 py-1 text-xs font-semibold text-night">{t("events.sold_out")}</span>}
+                </div>
+              </div>
+              <div className="p-4">
+                <h3 className="line-clamp-2 text-lg font-semibold leading-snug text-ink">{event.title}</h3>
+                <p className="mt-1 truncate text-sm text-zinc-400">
+                  {[event.club_name, event.start_time, selectedCategory === "Near" && distTo(event) !== null ? formatDistance(distTo(event) as number) : null]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-ink">{event.price || ""}</span>
                   <button
                     onClick={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
                       router.push(`/map?type=events&id=${event.id}`)
                     }}
-                    className="rounded-full border border-white/10 bg-black/50 px-3 py-2 text-xs font-semibold text-white backdrop-blur-xl transition hover:scale-105 hover:bg-white/20"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 hover:text-ink"
                   >
-                    🗺️ Ver en mapa
+                    <Icon name="map" className="h-3.5 w-3.5" /> {t("homeEvents.onMap")}
                   </button>
-                </div>
-
-                <div className="absolute right-5 top-5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300 backdrop-blur-xl">
-                  {event.date === today ? t("events.tonight") : formatEventDate(event.date)}
-                  {selectedCategory === "Near" && distTo(event) !== null ? ` · ${formatDistance(distTo(event) as number)}` : ""}
-                </div>
-
-                <div className="absolute bottom-0 left-0 w-full p-6">
-                  <h3 className="mt-2 text-3xl font-black tracking-tight text-white">
-                    {event.title}
-                  </h3>
-                  {event.description && (
-                    <p className="mt-3 text-sm text-zinc-400 line-clamp-2">{event.description}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Talón de la entrada */}
-              <div className="relative border-t border-dashed border-white/20 bg-black/40 px-6 py-5">
-                <span aria-hidden="true" className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-[#050505]" />
-                <span aria-hidden="true" className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-[#050505]" />
-                <div className="flex items-center justify-between gap-3 text-sm text-zinc-300">
-                  {event.start_time && <span>🕒 {event.start_time}</span>}
-                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-black">
-                    {event.price || "TBA"}
-                  </span>
                 </div>
               </div>
             </Link>
@@ -247,12 +191,9 @@ export default function EventsSection() {
         )}
       </div>
 
-      <div className="mt-10 flex justify-center">
-        <Link
-          href="/events"
-          className="rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-bold text-white transition hover:bg-white/10"
-        >
-          {t("events.see_all")}
+      <div className="mt-8 text-center">
+        <Link href="/events" className="inline-flex items-center gap-2 rounded-ctl border border-white/15 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/5">
+          {t("homeEvents.seeAll")} <Icon name="arrow" className="h-4 w-4" />
         </Link>
       </div>
     </section>

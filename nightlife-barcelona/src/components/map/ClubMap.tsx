@@ -41,7 +41,7 @@ export default function ClubMap({ latitude, longitude, name }: ClubMapProps) {
         map.current?.resize()
       })
 
-      new mapboxgl.Marker({ color: "#a855f7" })
+      new mapboxgl.Marker({ color: "#7c5cff" })
         .setLngLat([longitude, latitude])
         .setPopup(new mapboxgl.Popup().setText(name))
         .addTo(map.current!)
@@ -76,7 +76,7 @@ export default function ClubMap({ latitude, longitude, name }: ClubMapProps) {
 
   if (!mounted) return (
     <div
-      className="w-full rounded-3xl overflow-hidden bg-zinc-900"
+      className="w-full rounded-card overflow-hidden bg-zinc-900"
       style={{ height: "220px" }}
     />
   )
@@ -84,7 +84,7 @@ export default function ClubMap({ latitude, longitude, name }: ClubMapProps) {
   return (
     <div
       ref={mapContainer}
-      className="w-full rounded-3xl overflow-hidden"
+      className="w-full rounded-card overflow-hidden"
       style={{ height: "220px", minHeight: "220px" }}
     />
   )

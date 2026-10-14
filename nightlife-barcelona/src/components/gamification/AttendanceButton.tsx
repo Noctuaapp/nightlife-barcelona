@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabase"
 import BadgeToast from "../mascot/BadgeToast"
 import { evaluateBadges } from "../../lib/badges"
 import { useLanguage } from "../../context/LanguageContext"
+import Icon from "../ui/Icon"
 
 type AttendanceButtonProps = {
   itemType: "event" | "club_event" | "club"
@@ -119,17 +120,17 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
       <BadgeToast keys={newBadges} onDone={() => setNewBadges([])} />
       <button
         onClick={toggleAttendance}
-        className={`mt-3 flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 font-bold transition hover:scale-[1.02] ${
-          attending
-            ? "bg-emerald-500 text-white"
-            : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+        aria-pressed={attending}
+        className={`mt-3 flex w-full items-center justify-center gap-2 rounded-ctl px-6 py-3.5 text-sm font-semibold transition ${
+          attending ? "bg-open text-night" : "border border-white/10 bg-white/5 text-ink hover:bg-white/10"
         }`}
       >
-        {attending ? `✅ ${t("attendance.going")}` : `🙋 ${t("attendance.willGo")}`}
+        <Icon name={attending ? "check" : "calendar"} className="h-4 w-4" />
+        {attending ? t("attendance.going") : t("attendance.willGo")}
       </button>
       {count >= 10 && (
-        <p className="mt-2 text-center text-xs font-semibold text-zinc-400">
-          🌙 +{Math.floor(count / 10) * 10} Noctámbulos asistirán{itemType === "club" ? " esta noche" : ""}
+        <p className="mt-2 text-center text-xs font-semibold text-zinc-300">
+          {(itemType === "club" ? t("attendance.countTonight") : t("attendance.count")).replace("{n}", String(Math.floor(count / 10) * 10))}
         </p>
       )}
     </div>

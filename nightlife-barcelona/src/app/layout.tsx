@@ -5,6 +5,7 @@ import { FavoritesProvider } from "../context/FavoritesContext"
 import { LanguageProvider } from "../context/LanguageContext"
 import MaintenanceGate from "../components/system/MaintenanceGate"
 import TrafficSource from "../components/system/TrafficSource"
+import ToastHost from "../components/ui/Toast"
 import "./globals.css"
 
 // Antes toda la app caía en Arial/Helvetica (la fuente por defecto del sistema, sin declarar
@@ -15,14 +16,14 @@ import "./globals.css"
 // párrafos): limpia y muy legible en tamaños pequeños, sin competir con la display.
 const unbounded = Unbounded({
   subsets: ["latin"],
-  weight: ["700", "800", "900"],
+  weight: ["800"],
   variable: "--font-display",
   display: "swap",
 })
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "600", "800"],
   variable: "--font-sans",
   display: "swap",
 })
@@ -86,6 +87,7 @@ export default function RootLayout({
           </FavoritesProvider>
         </LanguageProvider>
         <TrafficSource />
+        <ToastHost />
         <Analytics />
       </body>
     </html>

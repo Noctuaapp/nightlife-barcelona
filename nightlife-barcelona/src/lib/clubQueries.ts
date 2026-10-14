@@ -10,10 +10,10 @@ export type DbRow = Record<string, any>
 // cada visita. Si alguna columna de la lista no existiera en la base de datos, la consulta fallaría:
 // en ese caso se repite con "*" para que la página nunca salga vacía.
 export const HOME_CLUB_FIELDS =
-  "id, name, slug, image, neighborhood, city, address, music, category, price, rating, trending, verified, hours, open_days, latitude, longitude, lgtbi_friendly"
+  "id, name, slug, image, neighborhood, city, address, music, category, price, rating, google_rating, trending, verified, hours, open_days, latitude, longitude, lgtbi_friendly"
 
 export const LIST_CLUB_FIELDS =
-  "id, name, slug, image, neighborhood, city, address, music, price, hours, open_days, rating, people, badges, terrace, vip_tables, smoking_area, table_booking, dresscode, lgtbi_friendly, verified, has_foosball, discount_info, free_entry_info, live_status, live_status_updated_at, latitude, longitude, trending, queue, age_min, audience, venue_type"
+  "id, name, slug, image, neighborhood, city, address, music, price, hours, open_days, rating, google_rating, people, badges, terrace, vip_tables, smoking_area, table_booking, dresscode, lgtbi_friendly, verified, has_foosball, discount_info, free_entry_info, live_status, live_status_updated_at, latitude, longitude, trending, queue, age_min, audience, venue_type"
 
 export async function fetchVisibleClubs(fields: string): Promise<DbRow[]> {
   const light = await supabase.from("clubs").select(fields).eq("hidden", false)

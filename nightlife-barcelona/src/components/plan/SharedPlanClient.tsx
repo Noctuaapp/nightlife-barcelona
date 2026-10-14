@@ -60,7 +60,7 @@ export default function SharedPlanClient({ code }: { code: string }) {
     } catch {}
   }
 
-  if (state === "loading") return <p className="py-24 text-center text-zinc-500">Cargando plan…</p>
+  if (state === "loading") return <p className="py-24 text-center text-zinc-400">Cargando plan…</p>
 
   if (state === "missing" || !plan) {
     return (
@@ -100,7 +100,7 @@ export default function SharedPlanClient({ code }: { code: string }) {
               <div className="min-w-0">
                 {s.time && <p className="text-xs font-bold text-purple-300">🕒 {s.time}</p>}
                 <p className="truncate font-black text-white">{s.title}</p>
-                {s.subtitle && <p className="truncate text-xs text-zinc-500">{s.subtitle}</p>}
+                {s.subtitle && <p className="truncate text-xs text-zinc-400">{s.subtitle}</p>}
               </div>
             </div>
           )
@@ -115,7 +115,7 @@ export default function SharedPlanClient({ code }: { code: string }) {
         })}
       </div>
 
-      <div className="mt-10 rounded-3xl border border-purple-400/30 bg-gradient-to-br from-purple-600/15 to-black/60 p-5">
+      <div className="mt-10 rounded-card border border-purple-400/30 bg-gradient-to-br from-purple-600/15 to-black/60 p-5">
         {joined ? (
           <p className="text-center text-sm font-bold text-emerald-300">✓ Estás apuntado. ¡Nos vemos allí!</p>
         ) : (

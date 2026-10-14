@@ -268,7 +268,7 @@ export default function AdminMessagesPage() {
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Loading messages...</p>
+        <p className="text-sm text-zinc-400">Loading messages...</p>
       </main>
     )
   }
@@ -298,7 +298,7 @@ export default function AdminMessagesPage() {
 
         {hotReports.length > 0 && (
           <section className="mx-auto mt-6 max-w-7xl px-4">
-            <div className="rounded-[28px] border border-red-500/40 bg-red-500/10 p-5">
+            <div className="rounded-card border border-red-500/40 bg-red-500/10 p-5">
               <p className="text-sm font-bold text-red-300">
                 🚨 Alerta: {hotReports.length === 1 ? "1 ficha acumula" : `${hotReports.length} fichas acumulan`} {REPORT_ALERT_THRESHOLD} o más reportes sin cerrar
               </p>
@@ -333,8 +333,8 @@ export default function AdminMessagesPage() {
         )}
 
         <section className="mx-auto mt-10 max-w-7xl px-4">
-          <div className="rounded-[32px] border border-purple-500/20 bg-purple-500/5 p-6">
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-purple-300">Aviso general a todos los usuarios</p>
+          <div className="rounded-card border border-purple-500/20 bg-purple-500/5 p-6">
+            <p className="text-sm font-bold text-purple-300">Aviso general a todos los usuarios</p>
 
             <input
               value={broadcastTitle}
@@ -367,7 +367,7 @@ export default function AdminMessagesPage() {
 
         <section className="mx-auto mt-10 max-w-7xl px-4">
           <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-            <div className="flex max-h-[70vh] flex-col gap-3 overflow-y-auto rounded-[32px] border border-white/10 bg-white/[0.03] p-4">
+            <div className="flex max-h-[70vh] flex-col gap-3 overflow-y-auto rounded-card border border-white/10 bg-white/[0.03] p-4">
               {filter === "spam" && stats.spam > 0 && (
                 <button
                   onClick={emptySpam}
@@ -392,7 +392,7 @@ export default function AdminMessagesPage() {
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate text-sm font-bold">{message.name || message.email || "Anónimo"}</span>
                       <span
-                        className={`shrink-0 rounded-xl px-2 py-1 text-[10px] font-bold uppercase ${
+                        className={`shrink-0 rounded-xl px-2 py-1 text-xs font-bold uppercase ${
                           selectedId === message.id ? "bg-black/10 text-black" : statusClass(message.status)
                         }`}
                       >
@@ -404,12 +404,12 @@ export default function AdminMessagesPage() {
                       {message.subject || formatType(message.type)}
                     </p>
 
-                    <p className={`mt-1 line-clamp-2 text-xs ${selectedId === message.id ? "text-black/70" : "text-zinc-500"}`}>
+                    <p className={`mt-1 line-clamp-2 text-xs ${selectedId === message.id ? "text-black/70" : "text-zinc-400"}`}>
                       {message.message}
                     </p>
 
                     {message.created_at && (
-                      <p className={`mt-2 text-[11px] ${selectedId === message.id ? "text-black/60" : "text-zinc-600"}`}>
+                      <p className={`mt-2 text-xs ${selectedId === message.id ? "text-black/60" : "text-zinc-400"}`}>
                         {new Date(message.created_at).toLocaleString()}
                       </p>
                     )}
@@ -418,7 +418,7 @@ export default function AdminMessagesPage() {
               )}
             </div>
 
-            <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
               {!selectedMessage ? (
                 <div className="flex h-full min-h-[300px] flex-col items-center justify-center text-center">
                   <h2 className="text-3xl font-black">Selecciona un mensaje</h2>
@@ -446,10 +446,10 @@ export default function AdminMessagesPage() {
 
                   <div className="mt-6 grid gap-3 text-sm text-zinc-400 md:grid-cols-2">
                     <p>
-                      <span className="text-zinc-500">Nombre:</span> {selectedMessage.name || "No proporcionado"}
+                      <span className="text-zinc-400">Nombre:</span> {selectedMessage.name || "No proporcionado"}
                     </p>
                     <p>
-                      <span className="text-zinc-500">Email:</span> {selectedMessage.email || "No proporcionado"}
+                      <span className="text-zinc-400">Email:</span> {selectedMessage.email || "No proporcionado"}
                     </p>
                   </div>
 
@@ -488,16 +488,16 @@ export default function AdminMessagesPage() {
 
                   {selectedMessage.admin_reply && (
                     <div className="mt-8 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
-                      <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">Tu respuesta enviada</p>
+                      <p className="text-xs text-emerald-300">Tu respuesta enviada</p>
                       <p className="mt-2 whitespace-pre-wrap text-zinc-200">{selectedMessage.admin_reply}</p>
                       {selectedMessage.replied_at && (
-                        <p className="mt-2 text-xs text-zinc-500">{new Date(selectedMessage.replied_at).toLocaleString()}</p>
+                        <p className="mt-2 text-xs text-zinc-400">{new Date(selectedMessage.replied_at).toLocaleString()}</p>
                       )}
                     </div>
                   )}
 
                   <div className="mt-8 border-t border-white/10 pt-6">
-                    <p className="text-sm font-bold uppercase tracking-[0.2em] text-zinc-400">Responder</p>
+                    <p className="text-sm font-bold text-zinc-400">Responder</p>
 
                     {!selectedMessage.user_id && (
                       <p className="mt-2 text-sm text-amber-400">
@@ -550,11 +550,11 @@ function FilterCard({
   return (
     <button
       onClick={onClick}
-      className={`rounded-[24px] border p-5 text-left transition hover:scale-[1.02] ${
+      className={`rounded-card border p-5 text-left transition hover:scale-[1.02] ${
         active ? "border-white bg-white text-black" : "border-white/10 bg-white/[0.03] text-white"
       }`}
     >
-      <p className="text-xs uppercase tracking-[0.25em] opacity-70">{label}</p>
+      <p className="text-xs opacity-70">{label}</p>
       <h2 className="mt-2 text-4xl font-black">{value}</h2>
     </button>
   )

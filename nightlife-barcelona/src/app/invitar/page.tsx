@@ -43,10 +43,10 @@ export default function InvitarPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#050308]">
+    <div className="flex min-h-screen flex-col bg-night">
       <Header />
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-24">
-        {state === "loading" && <p className="py-24 text-center text-zinc-500">Cargando…</p>}
+        {state === "loading" && <p className="py-24 text-center text-zinc-400">Cargando…</p>}
 
         {state === "login" && (
           <div className="py-20 text-center">
@@ -69,7 +69,7 @@ export default function InvitarPage() {
               </div>
             </div>
 
-            <div className="mt-6 rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-500/15 to-black/60 p-5">
+            <div className="mt-6 rounded-card border border-amber-400/30 bg-gradient-to-br from-amber-500/15 to-black/60 p-5">
               <p className="text-sm font-bold text-white">Tu enlace</p>
               <p className="mt-2 break-all rounded-xl bg-black/40 px-3 py-3 text-xs text-zinc-300">{link}</p>
               <button onClick={share} className="mt-3 w-full rounded-2xl bg-white py-3 text-sm font-black text-black active:scale-95">
@@ -95,7 +95,7 @@ export default function InvitarPage() {
                 <li>Cuando haga su <b className="text-zinc-200">primer check-in</b> en un local, tú ganas <b className="text-zinc-200">+50 XP</b> y él <b className="text-zinc-200">+25 XP</b>.</li>
                 <li>Hasta 20 amigos premiados.</li>
               </ol>
-              <p className="mt-3 text-[11px] text-zinc-500">El premio llega con el primer check-in, no al registrarse, para que cuente solo gente que realmente sale.</p>
+              <p className="mt-3 text-xs text-zinc-400">El premio llega con el primer check-in, no al registrarse, para que cuente solo gente que realmente sale.</p>
             </div>
           </div>
         )}

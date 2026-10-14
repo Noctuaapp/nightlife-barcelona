@@ -5,6 +5,7 @@ import Link from "next/link"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
+import { cleanEssential } from "../../lib/essentials"
 import { useLanguage } from "../../context/LanguageContext"
 import ArrowIcon from "../../components/ui/ArrowIcon"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../lib/geo"
@@ -19,52 +20,17 @@ const categoryConfig: Record<string, { icon: string; color: string }> = {
   Metro:         { icon: "🚇", color: "#dc2626" },
   Nitbus:        { icon: "🌙", color: "#6366f1" },
   Taxi:          { icon: "🚕", color: "#eab308" },
-  Supermarket:   { icon: "🛒", color: "#ec4899" },
+  Supermarket:   { icon: "🛒", color: "#7c5cff" },
   Hotel:         { icon: "🏨", color: "#14b8a6" },
   Casino:        { icon: "🎰", color: "#f43f5e" },
   "Gas Station": { icon: "⛽", color: "#f59e0b" },
   Hospital:      { icon: "🏥", color: "#ef4444" },
 }
 
-function useReveal<T extends HTMLElement>() {
-  const ref = useRef<T>(null)
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.1 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-  return { ref, visible }
-}
-
-function Reveal({
-  children,
-  className = "",
-  style,
-}: {
-  children: React.ReactNode
-  className?: string
-  style?: React.CSSProperties
-}) {
-  const { ref, visible } = useReveal<HTMLDivElement>()
+// Antes cada tarjeta aparecía con una animación al hacer scroll; ahora se muestra directamente.
+function Reveal({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
-    <div
-      ref={ref}
-      style={style}
-      className={`transition-all duration-700 ease-out motion-reduce:transition-none ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-      } ${className}`}
-    >
+    <div className={className} style={style ? { ...style, transitionDelay: undefined } : undefined}>
       {children}
     </div>
   )
@@ -85,7 +51,7 @@ export default function EssentialsPage() {
   useEffect(() => {
     const fetchEssentials = async () => {
       const { data } = await supabase.from("essentials").select("*").eq("hidden", false)
-      if (data) setEssentials(data)
+      if (data) setEssentials(data.map(cleanEssential))
       setLoading(false)
     }
     fetchEssentials()
@@ -181,24 +147,11 @@ export default function EssentialsPage() {
     <>
       <Header />
       <main className="relative min-h-screen pb-40 text-white">
-        <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#050308]">
-          <div className="absolute -left-40 -top-40 h-[550px] w-[550px] rounded-full bg-purple-600/20 blur-[130px] animate-[float_18s_ease-in-out_infinite]" />
-          <div className="absolute -right-40 top-1/3 h-[480px] w-[480px] rounded-full bg-amber-500/10 blur-[140px] animate-[float_22s_ease-in-out_infinite_reverse]" />
-          <div className="absolute bottom-0 left-1/3 h-[400px] w-[400px] rounded-full bg-cyan-500/[0.06] blur-[130px]" />
-          <div
-            className="absolute inset-0 opacity-[0.22]"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)",
-              backgroundSize: "56px 56px",
-            }}
-          />
-        </div>
 
         {/* Hero */}
         <section className="px-4 pt-16">
           <div className="mx-auto max-w-7xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.35em] text-purple-300/80">{t("essentials.title")}</p>
+            <p className="text-sm font-semibold text-purple-300/80">{t("essentials.title")}</p>
             <h1 className="mt-4 max-w-3xl text-5xl font-black leading-[1.02] tracking-tight text-white md:text-7xl">
               {t("essentials.subtitle")}
             </h1>
@@ -223,17 +176,17 @@ export default function EssentialsPage() {
             )}
 
             {/* Search */}
-            <div className="group mt-8 flex max-w-xl items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 shadow-[0_20px_60px_-25px_rgba(168,85,247,0.4)] backdrop-blur-xl transition focus-within:border-purple-400/60 focus-within:bg-white/[0.09]">
+            <div className="group mt-8 flex max-w-xl items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 shadow-[0_20px_60px_-25px_rgba(124,92,255,0.4)] backdrop-blur-xl transition focus-within:border-purple-400/60 focus-within:bg-white/[0.09]">
               <span className="text-zinc-400 transition group-focus-within:text-purple-300">🔍</span>
               <input
                 type="text"
                 placeholder={t("essentials.search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
+                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-400"
               />
               {search && (
-                <button onClick={() => setSearch("")} className="text-zinc-500 transition hover:text-white" aria-label="Limpiar búsqueda">
+                <button onClick={() => setSearch("")} className="text-zinc-400 transition hover:text-white" aria-label="Limpiar búsqueda">
                   ✕
                 </button>
               )}
@@ -265,7 +218,7 @@ export default function EssentialsPage() {
                   : "Pulsa \"Cerca de mí\" y permite el acceso a tu ubicación."}
               </p>
             ) : (
-              <p className="mb-4 text-sm text-zinc-500">
+              <p className="mb-4 text-sm text-zinc-400">
                 {searchResults.length} {searchResults.length === 1 ? "resultado" : "resultados"}
                 {nearMe ? " · ordenados por distancia" : ""}
               </p>
@@ -273,7 +226,7 @@ export default function EssentialsPage() {
             {nearMe && !userLocation ? null : searchResults.length === 0 ? (
               <div className="py-20 text-center">
                 <p className="text-lg font-bold text-zinc-300">No se encontraron resultados</p>
-                <p className="mt-2 text-sm text-zinc-500">Prueba con otro nombre, categoría o barrio.</p>
+                <p className="mt-2 text-sm text-zinc-400">Prueba con otro nombre, categoría o barrio.</p>
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -283,7 +236,7 @@ export default function EssentialsPage() {
                     <Reveal key={item.id} style={{ transitionDelay: `${Math.min(index, 8) * 60}ms` }}>
                       <Link
                         href={`/essentials/${item.category.toLowerCase().replace(/\s+/g, "-")}`}
-                        className="flex items-start gap-4 rounded-[24px] border bg-white/[0.03] p-5 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-purple-400/30 hover:shadow-[0_20px_50px_-20px_rgba(168,85,247,0.35)]"
+                        className="flex items-start gap-4 rounded-card border bg-white/[0.03] p-5 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-purple-400/30 hover:shadow-[0_20px_50px_-20px_rgba(124,92,255,0.35)]"
                         style={{ borderColor: `${config.color}30` }}
                       >
                         <EssentialPhoto
@@ -296,7 +249,7 @@ export default function EssentialsPage() {
                         <div className="min-w-0">
                           <h3 className="truncate font-bold text-white">{item.name}</h3>
                           {item.address && <p className="mt-1 truncate text-xs text-zinc-400">{item.address}</p>}
-                          {item.neighborhood && <p className="mt-1 text-xs text-zinc-500">📍 {item.neighborhood}</p>}
+                          {item.neighborhood && <p className="mt-1 text-xs text-zinc-400">📍 {item.neighborhood}</p>}
                           {item._distM != null && (
                             <p className="mt-1 text-xs font-bold text-purple-300">
                               {formatDistance(item._distM)} · {walkingMinutes(item._distM)} min andando
@@ -332,7 +285,7 @@ export default function EssentialsPage() {
               <section className="mx-auto mt-12 max-w-7xl px-4">
                 <div className="mb-5 flex items-baseline justify-between">
                   <h2 className="text-xl font-black text-white">⚡ Ahora mismo</h2>
-                  <span className="text-xs font-medium text-zinc-500">lo que más se busca de madrugada</span>
+                  <span className="text-xs font-medium text-zinc-400">lo que más se busca de madrugada</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {[
@@ -349,7 +302,7 @@ export default function EssentialsPage() {
                       <Link
                         key={cat}
                         href={`/essentials/${cat.toLowerCase().replace(/\s+/g, "-")}`}
-                        className="group flex flex-col gap-2 rounded-[22px] border p-4 backdrop-blur-xl transition duration-300 hover:-translate-y-1"
+                        className="group flex flex-col gap-2 rounded-card border p-4 backdrop-blur-xl transition duration-300 hover:-translate-y-1"
                         style={{ borderColor: `${config.color}40`, background: `linear-gradient(135deg, ${config.color}22, rgba(255,255,255,0.02))` }}
                       >
                         <span className="text-3xl">{config.icon}</span>
@@ -370,7 +323,7 @@ export default function EssentialsPage() {
               <section className="mx-auto mt-12 max-w-7xl px-4">
                 <div className="mb-5 flex items-baseline justify-between">
                   <h2 className="text-xl font-black text-white">🌙 Transporte nocturno</h2>
-                  <span className="text-xs font-medium text-zinc-500">metro, Nitbus y taxi</span>
+                  <span className="text-xs font-medium text-zinc-400">metro, Nitbus y taxi</span>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-3">
                   {["Metro", "Nitbus", "Taxi"].map((cat) => {
@@ -381,7 +334,7 @@ export default function EssentialsPage() {
                       <Link
                         key={cat}
                         href={`/essentials/${cat.toLowerCase().replace(/\s+/g, "-")}`}
-                        className="group relative flex items-center gap-4 overflow-hidden rounded-[22px] border p-5 backdrop-blur-xl transition duration-300 hover:-translate-y-1"
+                        className="group relative flex items-center gap-4 overflow-hidden rounded-card border p-5 backdrop-blur-xl transition duration-300 hover:-translate-y-1"
                         style={{ borderColor: `${config.color}35`, background: `linear-gradient(135deg, ${config.color}1c, rgba(255,255,255,0.02))`, boxShadow: `0 0 0 rgba(0,0,0,0)` }}
                         onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 20px 50px -25px ${config.color}80` }}
                         onMouseLeave={(e) => { e.currentTarget.style.boxShadow = `0 0 0 rgba(0,0,0,0)` }}
@@ -393,7 +346,7 @@ export default function EssentialsPage() {
                           <p className="font-black text-white">{t(`essentials.category_names.${cat}`) || cat}</p>
                           <p className="mt-0.5 text-xs text-zinc-400">{count} {count === 1 ? t("essentials.locations") : t("essentials.locations_plural")}</p>
                         </div>
-                        <span className="ml-auto text-zinc-500 transition group-hover:translate-x-1 group-hover:text-white"><ArrowIcon className="h-4 w-4" /></span>
+                        <span className="ml-auto text-zinc-400 transition group-hover:translate-x-1 group-hover:text-white"><ArrowIcon className="h-4 w-4" /></span>
                       </Link>
                     )
                   })}
@@ -407,7 +360,7 @@ export default function EssentialsPage() {
                 <div className="mx-auto max-w-7xl px-4">
                   <div className="mb-5 flex items-baseline justify-between">
                     <h2 className="text-xl font-black text-white">📍 Cerca de ti ahora</h2>
-                    <span className="text-xs font-medium text-zinc-500">basado en tu ubicación</span>
+                    <span className="text-xs font-medium text-zinc-400">basado en tu ubicación</span>
                   </div>
                 </div>
                 <div className="flex gap-4 overflow-x-auto px-4 pb-2 mx-auto max-w-7xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -418,7 +371,7 @@ export default function EssentialsPage() {
                       <Link
                         key={item.id}
                         href={`/essentials/${item.category.toLowerCase().replace(/\s+/g, "-")}`}
-                        className="group relative h-44 w-64 shrink-0 overflow-hidden rounded-[22px] border border-white/10 transition duration-300 hover:-translate-y-1 hover:border-white/25"
+                        className="group relative h-44 w-64 shrink-0 overflow-hidden rounded-card border border-white/10 transition duration-300 hover:-translate-y-1 hover:border-white/25"
                       >
                         <EssentialPhoto
                           src={item.image}
@@ -450,7 +403,7 @@ export default function EssentialsPage() {
               {loading ? (
                 <div className="grid gap-5 md:grid-cols-4">
                   {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className={`animate-pulse rounded-[28px] bg-white/[0.03] ${i < 2 ? "md:col-span-2 h-72" : "h-56"}`} />
+                    <div key={i} className={`animate-pulse rounded-card bg-white/[0.03] ${i < 2 ? "md:col-span-2 h-72" : "h-56"}`} />
                   ))}
                 </div>
               ) : categories.length === 0 ? (
@@ -473,7 +426,7 @@ export default function EssentialsPage() {
                       >
                         <Link
                           href={`/essentials/${cat.toLowerCase().replace(/\s+/g, "-")}`}
-                          className="group relative block h-full overflow-hidden rounded-[28px] border transition duration-500 hover:-translate-y-1.5"
+                          className="group relative block h-full overflow-hidden rounded-card border transition duration-500 hover:-translate-y-1.5"
                           style={{ borderColor: `${config.color}30` }}
                         >
                           <EssentialPhoto
@@ -516,13 +469,6 @@ export default function EssentialsPage() {
         )}
       </main>
       <BottomNav />
-
-      <style jsx global>{`
-        @keyframes float {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(30px, -20px) scale(1.08); }
-        }
-      `}</style>
     </>
   )
 }

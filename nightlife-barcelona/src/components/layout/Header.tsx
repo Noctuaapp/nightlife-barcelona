@@ -7,10 +7,11 @@ import { useRouter, usePathname } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import { awardXp, XP_AMOUNTS, currentIsoWeek } from "../../lib/xp"
+import Icon from "../ui/Icon"
+import { Bell, Menu, X, User, Calendar, Compass, Sparkles, Heart, MessageCircle, Shield, Globe, ChevronDown, Check } from "lucide-react"
 
-const cities = [
-  { name: "Barcelona", slug: "barcelona", active: true, lat: 41.3851, lng: 2.1734 },
-]
+// Barcelona es la única ciudad por ahora (antes había un selector de ciudad con una sola opción).
+const CITY = { lat: 41.3851, lng: 2.1734 }
 
 const weatherCodes: Record<number, string> = {
   0: "☀️", 1: "🌤", 2: "⛅", 3: "☁️",
@@ -31,14 +32,12 @@ type NotificationRow = {
   related_message_id: number | null
 }
 
+// Solo los idiomas que están completos. Francés, alemán, italiano y neerlandés se han quitado del
+// selector hasta que estén traducidos del todo (un idioma a medias da peor imagen que no tenerlo).
 const languages = [
-  { code: "es", flag: "https://flagcdn.com/w40/es.png", name: "Español" },
-  { code: "en", flag: "https://flagcdn.com/w40/gb.png", name: "English" },
-  { code: "ca", flag: "/flags/catalunya.png", name: "Català" },
-  { code: "fr", flag: "https://flagcdn.com/w40/fr.png", name: "Français" },
-  { code: "de", flag: "https://flagcdn.com/w40/de.png", name: "Deutsch" },
-  { code: "it", flag: "https://flagcdn.com/w40/it.png", name: "Italiano" },
-  { code: "nl", flag: "https://flagcdn.com/w40/nl.png", name: "Nederlands" },
+  { code: "es", name: "Español" },
+  { code: "en", name: "English" },
+  { code: "ca", name: "Català" },
 ]
 
 // El Header se monta de nuevo en cada página, así que todo lo que hace al montarse se repetía en
@@ -61,12 +60,10 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [cityOpen, setCityOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
-  const [selectedCity, setSelectedCity] = useState(cities[0])
-  // Barra de registro en el header: solo para quien no tiene sesión, y se puede cerrar (se
-  // recuerda en localStorage, igual que las notificaciones leídas). Empieza en "true" (oculta)
-  // para no hacerla parpadear un instante antes de comprobar localStorage tras montar.
+  // Barra "Regístrate gratis": solo para quien no tiene sesión, a partir de la segunda página vista
+  // en la visita (antes aparecía fija desde la primera pantalla en todas las páginas) y se puede
+  // cerrar para siempre. Empieza oculta para no parpadear antes de leer el almacenamiento.
   const [bannerDismissed, setBannerDismissed] = useState(true)
   const [weather, setWeather] = useState<{
     temp: number
@@ -144,8 +141,8 @@ export default function Header() {
       if (awarded) {
         await supabase.from("notifications").insert({
           user_id: userId,
-          title: "🔥 Racha semanal",
-          body: `Has ganado +${XP_AMOUNTS.streak} XP por usar Noctua varios días esta semana.`,
+          title: t("header.streakTitle"),
+          body: t("header.streakBody").replace("{xp}", String(XP_AMOUNTS.streak)),
           type: "xp_streak",
         })
       }
@@ -175,12 +172,14 @@ export default function Header() {
   }, [router])
 
   useEffect(() => {
+    // El tiempo solo se muestra en el menú: se pide al abrirlo, no en cada página.
+    if (!menuOpen) return
     const fetchWeather = async () => {
       try {
         // Caché de 30 min por pestaña: antes se pedía el tiempo a open-meteo en cada página.
         try {
           const cached = JSON.parse(sessionStorage.getItem(WEATHER_CACHE_KEY) || "null")
-          if (cached && cached.city === selectedCity.slug && Date.now() - cached.at < WEATHER_TTL_MS) {
+          if (cached && Date.now() - cached.at < WEATHER_TTL_MS) {
             setWeather(cached.weather)
             return
           }
@@ -188,7 +187,7 @@ export default function Header() {
           /* caché ilegible: se vuelve a pedir */
         }
         const res = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${selectedCity.lat}&longitude=${selectedCity.lng}&current=temperature_2m,weathercode&hourly=temperature_2m,weathercode&timezone=Europe/Madrid&forecast_days=2`
+          `https://api.open-meteo.com/v1/forecast?latitude=${CITY.lat}&longitude=${CITY.lng}&current=temperature_2m,weathercode&hourly=temperature_2m,weathercode&timezone=Europe/Madrid&forecast_days=2`
         )
         const data = await res.json()
         const currentTemp = Math.round(data.current.temperature_2m)
@@ -239,19 +238,17 @@ export default function Header() {
         const fresh = { temp: currentTemp, icon: currentIcon, nightHours }
         setWeather(fresh)
         try {
-          sessionStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({ city: selectedCity.slug, at: Date.now(), weather: fresh }))
+          sessionStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({ at: Date.now(), weather: fresh }))
         } catch {
           /* sin almacenamiento: no pasa nada */
         }
-      } catch (e) {
-        console.log("Weather error:", e)
+      } catch {
+        /* sin conexión con el servicio del tiempo: no se muestra */
       }
     }
 
     fetchWeather()
-    const interval = setInterval(fetchWeather, 30 * 60 * 1000)
-    return () => clearInterval(interval)
-  }, [selectedCity])
+  }, [menuOpen])
 
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifications, setNotifications] = useState<NotificationRow[]>([])
@@ -313,12 +310,13 @@ export default function Header() {
 
         if (existing && existing.length > 0) continue
 
-        const when = daysUntil === 0 ? "es hoy" : daysUntil === 1 ? "es mañana" : `es en ${daysUntil} días`
+        const when =
+          daysUntil === 0 ? t("header.reminderToday") : daysUntil === 1 ? t("header.reminderTomorrow") : t("header.reminderInDays").replace("{n}", String(daysUntil))
 
         const { error: insertError } = await supabase.from("notifications").insert({
           user_id: userId,
-          title: "⏰ Recordatorio",
-          body: `${item.title || "Tu evento guardado"} ${when}${item.start_time ? ` a las ${item.start_time}` : ""}.`,
+          title: t("header.reminderTitle"),
+          body: `${item.title || t("header.reminderFallback")} ${when}${item.start_time ? ` · ${item.start_time}` : ""}.`,
           type: "favorite_reminder",
           related_event_id: item.id,
           related_event_type: item.kind,
@@ -375,18 +373,21 @@ export default function Header() {
 
   useEffect(() => {
     try {
-      setBannerDismissed(localStorage.getItem("noctua_auth_banner_dismissed") === "1")
-    } catch (e) {
-      console.log("LOCALSTORAGE ERROR:", e)
+      const views = Number(sessionStorage.getItem("noctua_pages_seen") || "0") + 1
+      sessionStorage.setItem("noctua_pages_seen", String(views))
+      const dismissed = localStorage.getItem("noctua_auth_banner_dismissed") === "1"
+      setBannerDismissed(dismissed || views < 2)
+    } catch {
+      /* sin almacenamiento: no se muestra */
     }
-  }, [])
+  }, [pathname])
 
   const dismissBanner = () => {
     setBannerDismissed(true)
     try {
       localStorage.setItem("noctua_auth_banner_dismissed", "1")
-    } catch (e) {
-      console.log("LOCALSTORAGE ERROR:", e)
+    } catch {
+      /* sin almacenamiento */
     }
   }
 
@@ -429,73 +430,38 @@ export default function Header() {
 
   if (hideHeader) return null
 
+  const menuLink = "flex items-center gap-3 rounded-ctl px-4 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/5"
+
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-2xl">
-        <div className="flex h-20 items-center justify-between px-6 relative">
-          <div className="flex items-center gap-2">
-            {showBack ? (
+      <header className="sticky top-0 z-50 border-b border-white/5 bg-night/90 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            {showBack && (
               <button
                 onClick={() => router.back()}
-                className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-white transition hover:scale-105"
-                style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}
+                aria-label={t("common.back")}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-ink transition hover:bg-white/10"
               >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M10 3L5 8L10 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <span>{t("common.back")}</span>
+                <Icon name="back" className="h-4 w-4" />
               </button>
-            ) : (
-              <div className="relative">
-                <button
-                  onClick={() => setCityOpen(!cityOpen)}
-                  className="flex items-center gap-1 sm:gap-2 rounded-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-white transition hover:bg-white/10"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-                >
-                  <span className="text-xs sm:text-sm">📍</span>
-                  <span>{selectedCity.name}</span>
-                  <svg width="8" height="5" viewBox="0 0 10 6" fill="none" className="sm:w-[10px] sm:h-[6px]">
-                    <path d="M1 1L5 5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-                {cityOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setCityOpen(false)} />
-                    <div className="absolute left-0 top-12 z-50 w-52 rounded-2xl border border-white/10 shadow-2xl overflow-hidden" style={{ background: "#111" }}>
-                      {cities.map((city) => (
-                        <button key={city.slug} onClick={() => { setSelectedCity(city); setCityOpen(false) }}
-                          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition">
-                          <span>{city.name}</span>
-                          <span className="text-emerald-400 text-xs">✓</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
             )}
+            <Link href="/" aria-label="Noctua" className="flex items-center">
+              <Image src="/noctua_logo.png" alt="Noctua" width={160} height={98} className="h-9 w-auto object-contain" priority />
+            </Link>
           </div>
-
-          <Link href="/" className="absolute left-1/2 -translate-x-1/2">
-            {/* Antes era un <img> normal de 324KB sin optimizar, cargado en TODAS las páginas.
-                Con next/image (y el archivo ya reducido a 600px de ancho) el navegador recibe
-                una versión comprimida y en el formato óptimo (WebP/AVIF) según soporte, y con
-                priority=true se prioriza su carga porque es el elemento visible más arriba del
-                header en cada página. */}
-            <Image src="/noctua_logo.png" alt="Noctua" width={160} height={98} className="h-12 w-auto object-contain" style={{ maxWidth: "160px" }} priority />
-          </Link>
 
           <div className="flex items-center gap-2">
             {isLoggedIn && (
               <div className="relative">
                 <button
                   onClick={toggleNotifications}
-                  className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 transition hover:bg-white/20 outline-none"
-                  style={{ WebkitTapHighlightColor: "transparent" }}
+                  aria-label={t("header.notifications")}
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-ink transition hover:bg-white/10"
                 >
-                  <span className="text-lg">🔔</span>
+                  <Bell size={18} />
                   {unreadCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand px-1 text-xs font-semibold text-white">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
@@ -504,46 +470,33 @@ export default function Header() {
                 {notifOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
-                    {/* Antes: "absolute right-0" tomaba como referencia el propio botón de la
-                        campana, que no está pegado al borde derecho de la pantalla (a su derecha
-                        sigue el botón del menú ☰), y un primer intento con
-                        w-[min(20rem,calc(100vw-3rem))] seguía saliéndose por la izquierda en
-                        móvil (min()+calc() anidados en un valor arbitrario de Tailwind no siempre
-                        compilan bien). Ahora se fija con márgenes simples (left-4/right-4, sin
-                        calc ni min): el panel siempre mide "todo el ancho menos 16px a cada
-                        lado", tope de 22rem, nunca se sale de la pantalla. En pantallas grandes
-                        (sm:) vuelve a anclarse bajo la campana con ancho fijo. */}
-                    <div className="fixed left-4 right-4 top-[84px] z-50 mx-auto max-h-[70vh] max-w-[22rem] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl sm:left-auto sm:right-6 sm:w-80 sm:max-w-none" style={{ background: "#111" }}>
+                    <div className="fixed left-4 right-4 top-[72px] z-50 mx-auto max-h-[70vh] max-w-[22rem] overflow-y-auto rounded-card border border-white/10 bg-surface shadow-2xl sm:left-auto sm:right-6 sm:w-80 sm:max-w-none">
                       <div className="border-b border-white/10 px-4 py-3">
-                        <p className="text-sm font-bold text-white">Notificaciones</p>
+                        <p className="text-sm font-semibold text-ink">{t("header.notifications")}</p>
                       </div>
                       {notifications.length === 0 ? (
-                        <p className="px-4 py-6 text-center text-sm text-zinc-500">No tienes notificaciones</p>
+                        <p className="px-4 py-6 text-center text-sm text-zinc-400">{t("header.noNotifications")}</p>
                       ) : (
                         notifications.slice(0, 8).map((n) => {
                           const content = (
                             <>
-                              <p className="text-sm font-bold text-white">{n.title}</p>
-                              <p className="mt-1 whitespace-pre-wrap text-xs text-zinc-400">{n.body}</p>
-                              {n.created_at && (
-                                <p className="mt-1 text-[10px] text-zinc-600">{new Date(n.created_at).toLocaleString()}</p>
-                              )}
+                              <p className="text-sm font-semibold text-ink">{n.title}</p>
+                              <p className="mt-1 whitespace-pre-wrap text-xs text-zinc-300">{n.body}</p>
+                              {n.created_at && <p className="mt-1 text-xs text-zinc-400">{new Date(n.created_at).toLocaleString(locale)}</p>}
                             </>
                           )
-
                           if (isAdmin && n.related_message_id) {
                             return (
                               <Link
                                 key={n.id}
                                 href="/admin/messages"
                                 onClick={() => setNotifOpen(false)}
-                                className={`block border-b border-white/5 px-4 py-3 transition hover:bg-white/[0.08] ${isUnread(n) ? "bg-white/[0.04]" : ""}`}
+                                className={`block border-b border-white/5 px-4 py-3 transition hover:bg-white/[0.06] ${isUnread(n) ? "bg-white/[0.04]" : ""}`}
                               >
                                 {content}
                               </Link>
                             )
                           }
-
                           return (
                             <div key={n.id} className={`border-b border-white/5 px-4 py-3 ${isUnread(n) ? "bg-white/[0.04]" : ""}`}>
                               {content}
@@ -551,16 +504,13 @@ export default function Header() {
                           )
                         })
                       )}
-                      {/* Antes se listaban TODAS las notificaciones sin límite — con muchas
-                          acumuladas el desplegable se hacía interminable. Ahora se corta en 8 y,
-                          si hay más, un enlace lleva al buzón completo del perfil. */}
                       {notifications.length > 8 && (
                         <Link
                           href="/profile#buzon"
                           onClick={() => setNotifOpen(false)}
-                          className="block px-4 py-3 text-center text-sm font-bold text-purple-300 transition hover:bg-white/[0.06]"
+                          className="block px-4 py-3 text-center text-sm font-semibold text-brand-soft transition hover:bg-white/[0.06]"
                         >
-                          Ver más ({notifications.length - 8})
+                          {t("header.seeMore").replace("{n}", String(notifications.length - 8))}
                         </Link>
                       )}
                     </div>
@@ -571,131 +521,120 @@ export default function Header() {
 
             <button
               onClick={() => setMenuOpen(true)}
-              className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 transition hover:bg-white/20 outline-none"
-              style={{ WebkitTapHighlightColor: "transparent" }}
+              aria-label={t("header.openMenu")}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-ink transition hover:bg-white/10"
             >
-              <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
-                <rect y="0" width="20" height="2" rx="1" fill="white" />
-                <rect y="6" width="20" height="2" rx="1" fill="white" />
-                <rect y="12" width="20" height="2" rx="1" fill="white" />
-              </svg>
+              <Menu size={18} />
             </button>
           </div>
         </div>
       </header>
 
-      {!isLoggedIn && !bannerDismissed && (
-        <div className="sticky top-20 z-40 border-b border-white/5 bg-black/70 backdrop-blur-2xl">
+      {!isLoggedIn && !bannerDismissed && pathname !== "/login" && pathname !== "/signup" && (
+        <div className="border-b border-white/5 bg-surface">
           <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2.5 sm:px-6">
-            <p className="min-w-0 flex-1 truncate text-xs text-zinc-300 sm:text-sm">
-              <span className="text-white">{t("authGate.bannerText")}</span>
-            </p>
-            <Link
-              href="/signup"
-              className="shrink-0 rounded-full px-4 py-1.5 text-xs font-bold text-white transition hover:opacity-90 sm:text-sm"
-              style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
-            >
+            <p className="min-w-0 flex-1 truncate text-sm text-ink">{t("authGate.bannerText")}</p>
+            <Link href="/signup" className="shrink-0 rounded-full bg-brand px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-brand-strong">
               {t("authGate.bannerCta")}
             </Link>
             <button
               onClick={dismissBanner}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-500 transition hover:text-white"
-              aria-label="Cerrar"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-400 transition hover:text-ink"
+              aria-label={t("clubPage.close")}
             >
-              ✕
+              <X size={16} />
             </button>
           </div>
         </div>
       )}
 
-      {menuOpen && (
-        <div className="fixed inset-0 z-[190] bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
-      )}
+      {menuOpen && <div className="fixed inset-0 z-[190] bg-black/60" onClick={() => setMenuOpen(false)} />}
 
-      <div style={{
-        position: "fixed", top: 0, right: 0, zIndex: 200, height: "100%", width: "288px",
-        background: "#000", borderLeft: "1px solid rgba(255,255,255,0.1)",
-        display: "flex", flexDirection: "column",
-        transform: menuOpen ? "translateX(0)" : "translateX(100%)",
-        transition: "transform 0.3s ease-in-out",
-        boxShadow: "-20px 0 60px rgba(0,0,0,0.8)",
-        overflowY: "auto",
-      }}>
-        <div className="flex items-center justify-between px-6 py-6 border-b border-white/10">
-          <p className="text-sm uppercase tracking-widest text-zinc-500">Menu</p>
-          <button onClick={() => setMenuOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-white hover:bg-white/10 transition text-lg outline-none">✕</button>
+      <nav
+        aria-label={t("header.menu")}
+        className={`fixed right-0 top-0 z-[200] flex h-full w-[300px] max-w-[85vw] flex-col overflow-y-auto border-l border-white/10 bg-night shadow-2xl transition-transform duration-300 ${
+          menuOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <p className="text-sm font-semibold text-zinc-300">{t("header.menu")}</p>
+          <button
+            onClick={() => setMenuOpen(false)}
+            aria-label={t("clubPage.close")}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-ink transition hover:bg-white/10"
+          >
+            <X size={16} />
+          </button>
         </div>
 
         {!isLoggedIn && (
-          <div className="mx-4 mt-4 rounded-2xl border border-purple-400/20 bg-gradient-to-br from-purple-500/15 to-pink-500/10 p-5">
-            <p className="text-lg font-black leading-tight text-white">✨ {t("authGate.title")}</p>
-            <div className="mt-3 space-y-1.5">
-              <p className="text-xs text-zinc-300">{t("authGate.benefit1")}</p>
-              <p className="text-xs text-zinc-300">{t("authGate.benefit2")}</p>
-              <p className="text-xs text-zinc-300">{t("authGate.benefit3")}</p>
-              <p className="text-xs text-zinc-300">{t("authGate.benefit4")}</p>
-            </div>
+          <div className="mx-4 mt-4 rounded-card border border-brand/30 bg-brand/10 p-5">
+            <p className="text-base font-semibold leading-tight text-ink">{t("authGate.title")}</p>
+            <ul className="mt-3 space-y-1.5 text-xs text-zinc-300">
+              <li>{t("authGate.benefit1")}</li>
+              <li>{t("authGate.benefit2")}</li>
+              <li>{t("authGate.benefit3")}</li>
+              <li>{t("authGate.benefit4")}</li>
+            </ul>
             <Link
               href="/signup"
               onClick={() => setMenuOpen(false)}
-              className="mt-4 flex items-center justify-center rounded-xl py-3 text-sm font-black text-white transition hover:opacity-90"
-              style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+              className="mt-4 flex items-center justify-center rounded-ctl bg-brand py-3 text-sm font-semibold text-white transition hover:bg-brand-strong"
             >
               {t("authGate.ctaSignup")}
             </Link>
           </div>
         )}
 
-        <div className="flex flex-col gap-1 px-4 py-4 flex-1">
+        <div className="flex flex-1 flex-col gap-1 px-3 py-4">
           {isLoggedIn && (
-            <Link href="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-              <span className="text-xl">👤</span>{t("nav.profile")}
+            <Link href="/profile" onClick={() => setMenuOpen(false)} className={menuLink}>
+              <User size={18} className="text-muted" />
+              {t("nav.profile")}
             </Link>
           )}
-          <Link href="/map" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-            <span className="text-xl">🗺️</span>{t("nav.map")}
+          <Link href="/events" onClick={() => setMenuOpen(false)} className={menuLink}>
+            <Calendar size={18} className="text-muted" />
+            {t("nav.events")}
           </Link>
-          <Link href="/plan" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-            <span className="text-xl">✨</span>{t("nav.plan")}
+          <Link href="/essentials" onClick={() => setMenuOpen(false)} className={menuLink}>
+            <Compass size={18} className="text-muted" />
+            {t("nav.essentials")}
           </Link>
-          <Link href="/favorites" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-            <span className="text-xl">❤️</span>{t("nav.favorites")}
+          <Link href="/plan" onClick={() => setMenuOpen(false)} className={menuLink}>
+            <Sparkles size={18} className="text-muted" />
+            {t("nav.plan")}
           </Link>
-          {/* Antes no había ninguna forma de contactar con soporte desde el menú — solo se
-              llegaba a /contact si alguien encontraba el enlace en el footer. */}
-          <Link href="/contact" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-            <span className="text-xl">💬</span>{t("nav.contact")}
+          <Link href="/favorites" onClick={() => setMenuOpen(false)} className={menuLink}>
+            <Heart size={18} className="text-muted" />
+            {t("nav.favorites")}
           </Link>
+          <Link href="/contact" onClick={() => setMenuOpen(false)} className={menuLink}>
+            <MessageCircle size={18} className="text-muted" />
+            {t("nav.contact")}
+          </Link>
+          {isAdmin && (
+            <Link href="/admin/dashboard" onClick={() => setMenuOpen(false)} className={menuLink}>
+              <Shield size={18} className="text-muted" />
+              Admin
+            </Link>
+          )}
         </div>
 
-        {/* Antes: título fijo en inglés ("Barcelona tonight", sin traducir), sin mostrar la
-            temperatura/condición actual (se calculaban pero nunca se pintaban en pantalla), y una
-            cuadrícula de columnas fijas que se apretujaba cuanto más horas se mostraban. Ahora:
-            título traducido, la condición actual destacada arriba a la derecha, y la fila de
-            horas en una tira con scroll horizontal propio que nunca se aprieta aunque haya 8. */}
         {weather !== null && weather.nightHours.length > 0 && (
-          <div style={{
-            margin: "0 16px 12px 16px",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "16px",
-            background: "linear-gradient(135deg, rgba(168,85,247,0.12), rgba(255,255,255,0.04))",
-            padding: "14px",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                {t("weather.tonightTitle")}
+          <div className="mx-4 mb-3 rounded-card border border-white/10 bg-surface p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-zinc-400">{t("weather.tonightTitle")}</p>
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+                <span aria-hidden="true">{weather.icon}</span> {weather.temp}°
               </p>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ fontSize: "16px" }}>{weather.icon}</span>
-                <span style={{ fontSize: "14px", fontWeight: 900, color: "#fff" }}>{weather.temp}°</span>
-              </div>
             </div>
-            <div style={{ display: "flex", gap: "14px", overflowX: "auto", marginTop: "12px", paddingBottom: "2px" }}>
+            <div className="scrollbar-none mt-3 flex gap-4 overflow-x-auto">
               {weather.nightHours.map((h) => (
-                <div key={h.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px", flexShrink: 0, minWidth: "32px" }}>
-                  <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)" }}>{h.label}</p>
-                  <span style={{ fontSize: "19px" }}>{h.icon}</span>
-                  <p style={{ fontSize: "13px", fontWeight: 900, color: "#fff" }}>{h.temp}°</p>
+                <div key={h.label} className="flex min-w-[34px] shrink-0 flex-col items-center gap-1">
+                  <p className="text-xs text-zinc-400">{h.label}</p>
+                  <span aria-hidden="true" className="text-lg">{h.icon}</span>
+                  <p className="text-sm font-semibold text-ink">{h.temp}°</p>
                 </div>
               ))}
             </div>
@@ -705,34 +644,36 @@ export default function Header() {
         <div className="px-4 pb-3">
           <button
             onClick={() => setLangOpen(!langOpen)}
-            className="w-full flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition"
+            aria-expanded={langOpen}
+            className="flex w-full items-center justify-between rounded-ctl border border-white/10 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
           >
-            <div className="flex items-center gap-2">
-              <img src={currentLang.flag} alt={currentLang.name} style={{ width: "18px", height: "13px", objectFit: "cover", borderRadius: "2px" }} />
-              <span>🌐 {currentLang.name}</span>
-            </div>
-            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ transform: langOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
-              <path d="M1 1L5 5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <span className="flex items-center gap-2">
+              <Globe size={16} className="text-muted" /> {currentLang.name}
+            </span>
+            <ChevronDown size={16} className={`text-muted transition-transform ${langOpen ? "rotate-180" : ""}`} />
           </button>
           {langOpen && (
-            <div className="mt-1 rounded-2xl border border-white/10 bg-black overflow-hidden">
+            <div className="mt-1 overflow-hidden rounded-ctl border border-white/10">
               {languages.map((lang) => (
                 <button
                   key={lang.code}
-                  onClick={() => { setLocale(lang.code as any); setLangOpen(false) }}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition hover:bg-white/10 ${locale === lang.code ? "text-white bg-white/10" : "text-zinc-400"}`}
+                  onClick={() => {
+                    setLocale(lang.code as "es" | "en" | "ca")
+                    setLangOpen(false)
+                  }}
+                  className={`flex w-full items-center justify-between px-4 py-2.5 text-sm font-semibold transition hover:bg-white/5 ${
+                    locale === lang.code ? "text-ink" : "text-zinc-400"
+                  }`}
                 >
-                  <img src={lang.flag} alt={lang.name} style={{ width: "18px", height: "13px", objectFit: "cover", borderRadius: "2px" }} />
-                  <span>{lang.name}</span>
-                  {locale === lang.code && <span className="ml-auto text-emerald-400 text-xs">✓</span>}
+                  {lang.name}
+                  {locale === lang.code && <Check size={14} className="text-open" />}
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        <div className="px-4 py-4 border-t border-white/10">
+        <div className="border-t border-white/10 px-4 py-4">
           {isLoggedIn ? (
             <button
               onClick={async () => {
@@ -740,18 +681,22 @@ export default function Header() {
                 setMenuOpen(false)
                 window.location.href = "/login"
               }}
-              className="w-full flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-white/10"
+              className="flex w-full items-center justify-center rounded-ctl border border-white/10 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
             >
               {t("nav.logout")}
             </button>
           ) : (
-            <div className="flex flex-col gap-3">
-              <Link href="/login" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">{t("nav.login")}</Link>
-              <Link href="/signup" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-black transition hover:scale-[1.02]">{t("nav.signup")}</Link>
+            <div className="flex flex-col gap-2">
+              <Link href="/login" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-ctl border border-white/10 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-white/5">
+                {t("nav.login")}
+              </Link>
+              <Link href="/signup" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-ctl bg-ink px-4 py-3 text-sm font-semibold text-night transition hover:bg-white">
+                {t("nav.signup")}
+              </Link>
             </div>
           )}
         </div>
-      </div>
+      </nav>
     </>
   )
 }

@@ -112,7 +112,7 @@ export default function ContactPage() {
         <section className="relative overflow-hidden px-4 pt-14 pb-16">
           <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-transparent" />
           <div className="relative mx-auto max-w-5xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("contact.eyebrow")}</p>
+            <p className="text-sm text-zinc-400">{t("contact.eyebrow")}</p>
             <h1 className="mt-4 text-6xl font-black tracking-tight">{t("contact.title")}</h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
               {t("contact.subtitle")}
@@ -125,7 +125,7 @@ export default function ContactPage() {
 
             {/* Type selector */}
             <div className="lg:col-span-1">
-              <p className="mb-4 text-xs uppercase tracking-widest text-zinc-500">{t("contact.typeLabel")}</p>
+              <p className="mb-4 text-xs text-zinc-400">{t("contact.typeLabel")}</p>
               <div className="flex flex-col gap-3">
                 {contactTypes.map((ct) => (
                   <button
@@ -140,7 +140,7 @@ export default function ContactPage() {
                     <p className={`text-sm font-bold ${type === ct.value ? "text-purple-300" : "text-white"}`}>
                       {ct.label}
                     </p>
-                    <p className="mt-1 text-xs text-zinc-500">{ct.desc}</p>
+                    <p className="mt-1 text-xs text-zinc-400">{ct.desc}</p>
                   </button>
                 ))}
               </div>
@@ -148,8 +148,8 @@ export default function ContactPage() {
 
             {/* Form */}
             <div className="lg:col-span-2">
-              <div className="rounded-[36px] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
-                <p className="mb-6 text-xs uppercase tracking-widest text-zinc-500">{t("contact.messageLabel")}</p>
+              <div className="rounded-card border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
+                <p className="mb-6 text-xs text-zinc-400">{t("contact.messageLabel")}</p>
                 {authChecked && !loggedIn ? (
                   <div className="py-6 text-center">
                     <p className="text-2xl font-black">Inicia sesión para escribirnos</p>

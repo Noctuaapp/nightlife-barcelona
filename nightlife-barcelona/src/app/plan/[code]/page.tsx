@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
 export default async function SharedPlanPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
   return (
-    <div className="flex min-h-screen flex-col bg-[#050308]">
+    <div className="flex min-h-screen flex-col bg-night">
       <Header />
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-24">
         <SharedPlanClient code={code} />

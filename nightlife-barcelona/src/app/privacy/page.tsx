@@ -52,7 +52,7 @@ export default function PrivacyPage() {
       <Header />
       <main className="flex-1 px-4 py-16 max-w-2xl mx-auto w-full">
         <div className="mb-12">
-          <p className="text-xs font-semibold uppercase tracking-widest text-purple-400 mb-3">Legal</p>
+          <p className="text-xs font-semibold text-purple-400 mb-3">Legal</p>
           <h1 className="text-3xl font-bold text-white mb-3">{t("privacy.title")}</h1>
           <p className="text-white/40 text-sm">{t("privacy.last_updated")}</p>
         </div>

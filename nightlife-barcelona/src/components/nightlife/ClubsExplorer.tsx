@@ -9,45 +9,10 @@ import { track } from "../../lib/track"
 import { useLanguage } from "../../context/LanguageContext"
 import { SearchIcon, CloseIcon, LocationIcon, FlameIcon, SlidersIcon, ChevronDownIcon } from "../ui/FilterIcons"
 
-function useReveal<T extends HTMLElement>() {
-  const ref = useRef<T>(null)
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.1 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-  return { ref, visible }
-}
-
-function Reveal({
-  children,
-  className = "",
-  style,
-}: {
-  children: React.ReactNode
-  className?: string
-  style?: React.CSSProperties
-}) {
-  const { ref, visible } = useReveal<HTMLDivElement>()
+// Antes cada tarjeta aparecía con una animación al hacer scroll; ahora se muestra directamente.
+function Reveal({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
-    <div
-      ref={ref}
-      style={style}
-      className={`transition-all duration-700 ease-out motion-reduce:transition-none ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-      } ${className}`}
-    >
+    <div className={className} style={style ? { ...style, transitionDelay: undefined } : undefined}>
       {children}
     </div>
   )
@@ -124,8 +89,11 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   // La búsqueda de la home navega a /clubs?search=...; antes ese parámetro se ignoraba.
   useEffect(() => {
     try {
-      const q = new URLSearchParams(window.location.search).get("search")
+      const params = new URLSearchParams(window.location.search)
+      const q = params.get("search")
       if (q) setSearch(q)
+      // "Ver todos" desde "Abierto ahora" de la portada llega con ?open=1.
+      if (params.get("open") === "1") setOpenNow(true)
     } catch {}
   }, [])
 
@@ -317,7 +285,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     onToggle: (value: string) => void
   }) => (
     <div>
-      <p className="mb-3 text-xs uppercase tracking-widest text-zinc-500">{title}</p>
+      <p className="mb-3 text-xs text-zinc-400">{title}</p>
       <div className="flex flex-wrap gap-3">
         {options.map((opt) => (
           <button
@@ -325,10 +293,10 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
             onClick={() => onToggle(opt)}
             className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium transition active:scale-95 ${
               selected.has(opt)
-                ? "text-white shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
+                ? "text-white shadow-[0_6px_20px_-4px_rgba(124,92,255,0.55)]"
                 : "border border-white/10 bg-white/[0.04] text-white hover:border-purple-400/30 hover:bg-white/[0.08]"
             }`}
-            style={selected.has(opt) ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
+            style={selected.has(opt) ? { background: "#7c5cff" } : undefined}
           >
             {opt}
           </button>
@@ -340,22 +308,10 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   return (
     <>
       <main className="relative min-h-screen pb-40 text-white">
-        <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#050308]">
-          <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-purple-600/20 blur-[120px] animate-[float_18s_ease-in-out_infinite]" />
-          <div className="absolute -right-40 top-1/3 h-[450px] w-[450px] rounded-full bg-amber-500/10 blur-[130px] animate-[float_22s_ease-in-out_infinite_reverse]" />
-          <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)",
-              backgroundSize: "56px 56px",
-            }}
-          />
-        </div>
 
         <section className="px-4 pt-14">
           <div className="mx-auto max-w-7xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("clubs.title")}</p>
+            <p className="text-sm text-zinc-400">{t("clubs.title")}</p>
             {/* text-5xl fijo se salía de un móvil de 375px con la fuente display nueva — igual
                 que el titular de la home (ver HomeClient.tsx). break-words + tamaño menor en
                 mobile. */}
@@ -364,9 +320,9 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         </section>
 
         {/* STICKY SEARCH + QUICK ACTIONS */}
-        <div className="sticky top-20 z-30 mt-8 border-y border-white/10 bg-[#0d0a1c]/85 py-3.5 backdrop-blur-xl">
+        <div className="sticky top-16 z-30 mt-8 border-y border-white/10 bg-night/85 py-3.5 backdrop-blur-xl">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4">
-            <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-full border border-purple-400/25 bg-[#161029]/90 px-6 py-3.5 shadow-[0_8px_30px_-14px_rgba(168,85,247,0.5)] backdrop-blur-xl transition focus-within:border-fuchsia-400/70 focus-within:shadow-[0_8px_36px_-8px_rgba(217,70,239,0.55)]">
+            <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-full border border-purple-400/25 bg-surface/90 px-6 py-3.5 shadow-[0_8px_30px_-14px_rgba(124,92,255,0.5)] backdrop-blur-xl transition focus-within:border-fuchsia-400/70 focus-within:shadow-[0_8px_36px_-8px_rgba(217,70,239,0.55)]">
               <SearchIcon className="h-5 w-5 shrink-0 text-purple-300 transition group-focus-within:text-fuchsia-300" />
               <input
                 type="text"
@@ -376,7 +332,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                 className="w-full bg-transparent text-base text-white outline-none placeholder:text-zinc-400"
               />
               {search && (
-                <button onClick={() => setSearch("")} className="text-zinc-500 transition hover:text-white" aria-label="Limpiar búsqueda">
+                <button onClick={() => setSearch("")} className="text-zinc-400 transition hover:text-white" aria-label="Limpiar búsqueda">
                   <CloseIcon className="h-3.5 w-3.5" />
                 </button>
               )}
@@ -400,9 +356,9 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
               onClick={nearMe ? () => { setNearMe(false); setUserLat(null); setUserLng(null) } : requestNearMe}
               disabled={nearMeLoading}
               className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 disabled:opacity-60 ${
-                nearMe ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+                nearMe ? "shadow-[0_6px_20px_-4px_rgba(124,92,255,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
-              style={nearMe ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
+              style={nearMe ? { background: "#7c5cff" } : undefined}
             >
               <LocationIcon className="h-4 w-4" />
               {nearMeLoading ? "Localizando..." : "Cerca"}
@@ -411,10 +367,10 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
               onClick={() => setSelectedAttributes((s) => toggleInSet(s, "Trending"))}
               className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
                 selectedAttributes.has("Trending")
-                  ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
+                  ? "shadow-[0_6px_20px_-4px_rgba(124,92,255,0.55)]"
                   : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
-              style={selectedAttributes.has("Trending") ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
+              style={selectedAttributes.has("Trending") ? { background: "#7c5cff" } : undefined}
             >
               <FlameIcon className="h-4 w-4" />
               Trending
@@ -437,9 +393,9 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
             <button
               onClick={() => setFiltersOpen(!filtersOpen)}
               className={`flex shrink-0 items-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
-                filtersOpen ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+                filtersOpen ? "shadow-[0_6px_20px_-4px_rgba(124,92,255,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
-              style={filtersOpen ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
+              style={filtersOpen ? { background: "#7c5cff" } : undefined}
             >
               <SlidersIcon className="h-4 w-4" />
               Filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
@@ -461,7 +417,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                   {f.label} <CloseIcon className="h-3 w-3 text-purple-300" />
                 </button>
               ))}
-              <button onClick={clearAll} className="text-xs font-semibold text-zinc-500 underline-offset-2 hover:text-white hover:underline">
+              <button onClick={clearAll} className="text-xs font-semibold text-zinc-400 underline-offset-2 hover:text-white hover:underline">
                 Limpiar todo
               </button>
             </div>
@@ -478,7 +434,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
           }`}
         >
           <div className="overflow-hidden">
-            <div className="space-y-6 rounded-[28px] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
+            <div className="space-y-6 rounded-card border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
               <ChipGroup
                 title="Estilo (elige varios)"
                 options={GENRE_FILTERS}
@@ -520,7 +476,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
 
         {/* Results count */}
         <section className="mx-auto max-w-7xl px-4 pt-8">
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-zinc-400">
             {sortedClubs.length} {sortedClubs.length === 1 ? "club encontrado" : "clubs encontrados"}
           </p>
         </section>
@@ -530,7 +486,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
           {visibleClubs.length === 0 ? (
             <div className="col-span-full py-24 text-center">
               <p className="text-lg font-bold text-zinc-300">No hay clubs con estos filtros</p>
-              <p className="mt-2 text-sm text-zinc-500">Prueba a quitar algún filtro o busca otro barrio.</p>
+              <p className="mt-2 text-sm text-zinc-400">Prueba a quitar algún filtro o busca otro barrio.</p>
               {activeFilters.length > 0 && (
                 <button
                   onClick={clearAll}
@@ -546,22 +502,16 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                 <ClubCard
                   id={club.id}
                   name={club.name}
+                  slug={club.slug}
                   music={club.music}
                   area={club.neighborhood}
                   price={club.price}
                   hours={club.hours}
+                  openDays={club.open_days}
                   image={club.image}
-                  rating={club.rating}
-                  people={club.people}
-                  badges={club.badges}
-                  terrace={club.terrace}
-                  vip={club.vip_tables}
-                  smokingArea={club.smoking_area}
-                  tableBooking={club.table_booking}
-                  dresscode={club.dresscode}
+                  rating={club.google_rating || club.rating}
                   lgtbi_friendly={club.lgtbi_friendly}
                   verified={club.verified}
-                  hasFoosball={club.has_foosball}
                   discountInfo={club.discount_info}
                   freeEntryInfo={club.free_entry_info}
                   liveStatus={club.live_status}
@@ -583,18 +533,6 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
           </div>
         )}
       </main>
-
-      <style jsx global>{`
-        @keyframes float {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          50% {
-            transform: translate(30px, -20px) scale(1.08);
-          }
-        }
-      `}</style>
     </>
   )
 }

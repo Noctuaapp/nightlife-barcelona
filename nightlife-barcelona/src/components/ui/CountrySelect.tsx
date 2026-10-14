@@ -54,7 +54,7 @@ export default function CountrySelect({ value, onChange, locale, placeholder, si
             : "flex w-full items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-left outline-none transition focus:border-purple-500/50"
         }
       >
-        <span className={`flex min-w-0 items-center gap-2.5 truncate ${selected ? "text-white" : "text-zinc-500"} ${isLg ? "text-base" : "text-sm"}`}>
+        <span className={`flex min-w-0 items-center gap-2.5 truncate ${selected ? "text-white" : "text-zinc-400"} ${isLg ? "text-base" : "text-sm"}`}>
           {selected && (
             <img
               src={flagUrl(selected.code)}
@@ -93,13 +93,13 @@ export default function CountrySelect({ value, onChange, locale, placeholder, si
               <button
                 type="button"
                 onClick={() => { onChange(""); setOpen(false) }}
-                className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-zinc-500 transition hover:bg-white/10"
+                className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-zinc-400 transition hover:bg-white/10"
               >
                 {placeholder}
               </button>
             )}
             {filtered.length === 0 && (
-              <p className="px-3 py-4 text-center text-xs text-zinc-600">Sin resultados.</p>
+              <p className="px-3 py-4 text-center text-xs text-zinc-400">Sin resultados.</p>
             )}
             {filtered.map((c) => (
               <button

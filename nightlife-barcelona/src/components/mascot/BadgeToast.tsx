@@ -23,7 +23,7 @@ export default function BadgeToast({ keys, onDone }: { keys: string[]; onDone: (
   return createPortal(
     <div className="pointer-events-none fixed inset-x-0 top-20 z-[1100] flex justify-center px-4" role="status" aria-live="polite">
       <div
-        className="pointer-events-auto flex max-w-sm items-center gap-3 rounded-2xl border border-purple-400/40 bg-zinc-950/95 p-3 pr-4 shadow-[0_10px_40px_-10px_rgba(168,85,247,0.6)] backdrop-blur"
+        className="pointer-events-auto flex max-w-sm items-center gap-3 rounded-2xl border border-purple-400/40 bg-zinc-950/95 p-3 pr-4 shadow-[0_10px_40px_-10px_rgba(124,92,255,0.6)] backdrop-blur"
         style={{ animation: "badgeIn 0.4s cubic-bezier(.2,1.3,.4,1)" }}
         onClick={onDone}
       >

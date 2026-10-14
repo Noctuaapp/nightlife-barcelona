@@ -31,45 +31,10 @@ const isUpcomingSoon = (date: string): boolean => {
   return eventDate >= now && eventDate <= inOneWeek
 }
 
-function useReveal<T extends HTMLElement>() {
-  const ref = useRef<T>(null)
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.1 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-  return { ref, visible }
-}
-
-function Reveal({
-  children,
-  className = "",
-  style,
-}: {
-  children: React.ReactNode
-  className?: string
-  style?: React.CSSProperties
-}) {
-  const { ref, visible } = useReveal<HTMLDivElement>()
+// Antes cada tarjeta aparecía con una animación al hacer scroll; ahora se muestra directamente.
+function Reveal({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
-    <div
-      ref={ref}
-      style={style}
-      className={`transition-all duration-700 ease-out motion-reduce:transition-none ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-      } ${className}`}
-    >
+    <div className={className} style={style ? { ...style, transitionDelay: undefined } : undefined}>
       {children}
     </div>
   )
@@ -264,22 +229,10 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   return (
     <>
       <main className="relative min-h-screen pb-40 text-white">
-        <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#050308]">
-          <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-purple-600/20 blur-[120px] animate-[float_18s_ease-in-out_infinite]" />
-          <div className="absolute -right-40 top-1/3 h-[450px] w-[450px] rounded-full bg-amber-500/10 blur-[130px] animate-[float_22s_ease-in-out_infinite_reverse]" />
-          <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)",
-              backgroundSize: "56px 56px",
-            }}
-          />
-        </div>
 
         <section className="px-4 pt-14">
           <div className="mx-auto max-w-7xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("events.title")}</p>
+            <p className="text-sm text-zinc-400">{t("events.title")}</p>
             {/* text-5xl fijo se salía de un móvil de 375px con la fuente display nueva — igual
                 que el titular de la home (ver HomeClient.tsx). break-words + tamaño menor en
                 mobile. */}
@@ -288,9 +241,9 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
         </section>
 
         {/* STICKY SEARCH + QUICK ACTIONS */}
-        <div className="sticky top-20 z-30 mt-8 border-y border-white/10 bg-[#0d0a1c]/85 py-3.5 backdrop-blur-xl">
+        <div className="sticky top-16 z-30 mt-8 border-y border-white/10 bg-night/85 py-3.5 backdrop-blur-xl">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4">
-            <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-full border border-purple-400/25 bg-[#161029]/90 px-6 py-3.5 shadow-[0_8px_30px_-14px_rgba(168,85,247,0.5)] backdrop-blur-xl transition focus-within:border-fuchsia-400/70 focus-within:shadow-[0_8px_36px_-8px_rgba(217,70,239,0.55)]">
+            <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-full border border-purple-400/25 bg-surface/90 px-6 py-3.5 shadow-[0_8px_30px_-14px_rgba(124,92,255,0.5)] backdrop-blur-xl transition focus-within:border-fuchsia-400/70 focus-within:shadow-[0_8px_36px_-8px_rgba(217,70,239,0.55)]">
               <SearchIcon className="h-5 w-5 shrink-0 text-purple-300 transition group-focus-within:text-fuchsia-300" />
               <input
                 type="text"
@@ -300,7 +253,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                 className="w-full bg-transparent text-base text-white outline-none placeholder:text-zinc-400"
               />
               {search && (
-                <button onClick={() => setSearch("")} className="text-zinc-500 transition hover:text-white" aria-label="Limpiar búsqueda">
+                <button onClick={() => setSearch("")} className="text-zinc-400 transition hover:text-white" aria-label="Limpiar búsqueda">
                   <CloseIcon className="h-3.5 w-3.5" />
                 </button>
               )}
@@ -310,9 +263,9 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
               onClick={nearMe ? () => { setNearMe(false); setUserLat(null); setUserLng(null) } : requestNearMe}
               disabled={nearMeLoading}
               className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 disabled:opacity-60 ${
-                nearMe ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+                nearMe ? "shadow-[0_6px_20px_-4px_rgba(124,92,255,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
-              style={nearMe ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
+              style={nearMe ? { background: "#7c5cff" } : undefined}
             >
               <LocationIcon className="h-4 w-4" />
               {nearMeLoading ? "Localizando..." : "Cerca"}
@@ -321,9 +274,9 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
             <button
               onClick={() => setHidePast(!hidePast)}
               className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
-                hidePast ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+                hidePast ? "shadow-[0_6px_20px_-4px_rgba(124,92,255,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
               }`}
-              style={hidePast ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
+              style={hidePast ? { background: "#7c5cff" } : undefined}
             >
               <CalendarIcon className="h-4 w-4" />
               Solo próximos
@@ -350,10 +303,10 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                 onClick={() => setSelectedFilters((s) => toggleInSet(s, f.key))}
                 className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition active:scale-95 ${
                   selectedFilters.has(f.key)
-                    ? "text-white shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
+                    ? "text-white shadow-[0_6px_20px_-4px_rgba(124,92,255,0.55)]"
                     : "border border-white/10 bg-white/[0.04] text-white hover:border-purple-400/30 hover:bg-white/[0.08]"
                 }`}
-                style={selectedFilters.has(f.key) ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
+                style={selectedFilters.has(f.key) ? { background: "#7c5cff" } : undefined}
               >
                 {f.label}
               </button>
@@ -389,7 +342,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                   {f.label} <CloseIcon className="h-3 w-3 text-purple-300" />
                 </button>
               ))}
-              <button onClick={clearAll} className="text-xs font-semibold text-zinc-500 underline-offset-2 hover:text-white hover:underline">
+              <button onClick={clearAll} className="text-xs font-semibold text-zinc-400 underline-offset-2 hover:text-white hover:underline">
                 Limpiar todo
               </button>
             </div>
@@ -398,7 +351,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
         {/* Results count */}
         <section className="mx-auto max-w-7xl px-4 pt-8">
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-zinc-400">
             {sortedEvents.length} {sortedEvents.length === 1 ? "evento encontrado" : "eventos encontrados"}
           </p>
         </section>
@@ -408,7 +361,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
           {visibleEvents.length === 0 ? (
             <div className="col-span-full py-24 text-center">
               <p className="text-lg font-bold text-zinc-300">No hay eventos con estos filtros</p>
-              <p className="mt-2 text-sm text-zinc-500">Prueba a quitar algún filtro.</p>
+              <p className="mt-2 text-sm text-zinc-400">Prueba a quitar algún filtro.</p>
               {activeFilters.length > 0 && (
                 <button
                   onClick={clearAll}
@@ -441,7 +394,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                       prácticos — fecha, hora, precio — viven en el talón, no sobre la foto. */}
                   <Link
                     href={`/event/${createSlug(event.title)}`}
-                    className={`group block overflow-hidden rounded-[28px] border bg-white/[0.03] transition duration-500 hover:-translate-y-2 hover:border-purple-400/30 hover:shadow-[0_20px_60px_-15px_rgba(168,85,247,0.35)] ${
+                    className={`group block overflow-hidden rounded-card border bg-white/[0.03] transition duration-500 hover:-translate-y-2 hover:border-purple-400/30 hover:shadow-[0_20px_60px_-15px_rgba(124,92,255,0.35)] ${
                       past ? "border-white/5 opacity-60" : "border-white/10"
                     }`}
                   >
@@ -502,14 +455,14 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
                     {/* Talón de la entrada */}
                     <div className="relative border-t border-dashed border-white/20 bg-black/40 px-6 py-5">
-                      <span aria-hidden="true" className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-[#050505]" />
-                      <span aria-hidden="true" className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-[#050505]" />
+                      <span aria-hidden="true" className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-night" />
+                      <span aria-hidden="true" className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-night" />
                       <div className="flex items-center justify-between gap-4">
                         <div className="min-w-0">
                           <p className="truncate text-sm font-bold text-white">
                             {past ? "Terminado" : dateEndLabel ? `${dateLabel} - ${dateEndLabel}` : dateLabel}
                           </p>
-                          <p className="mt-1 truncate text-xs text-zinc-500">
+                          <p className="mt-1 truncate text-xs text-zinc-400">
                             📍 {event.club_name || "Barcelona"}
                             {event.artist ? ` · 🎧 ${event.artist}` : ""}
                           </p>
@@ -546,18 +499,6 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
           </div>
         )}
       </main>
-
-      <style jsx global>{`
-        @keyframes float {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          50% {
-            transform: translate(30px, -20px) scale(1.08);
-          }
-        }
-      `}</style>
     </>
   )
 }

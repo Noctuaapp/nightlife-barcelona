@@ -149,7 +149,7 @@ export default function AdminAnalyticsPage() {
 
   if (checkingAdmin) return (
     <main className="flex min-h-screen items-center justify-center bg-black text-white">
-      <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Cargando...</p>
+      <p className="text-sm text-zinc-400">Cargando...</p>
     </main>
   )
 
@@ -164,9 +164,9 @@ export default function AdminAnalyticsPage() {
               { label: "Clicks en clubs", value: clubClicks, color: "text-purple-400" },
               { label: "Clicks en eventos", value: eventClicks, color: "text-amber-400" },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6 text-center">
+              <div key={stat.label} className="rounded-card border border-white/10 bg-white/[0.03] p-6 text-center">
                 <p className={`text-4xl font-black ${stat.color}`}>{stat.value}</p>
-                <p className="mt-2 text-xs uppercase tracking-widest text-zinc-500">{stat.label}</p>
+                <p className="mt-2 text-xs text-zinc-400">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -176,33 +176,33 @@ export default function AdminAnalyticsPage() {
               { label: "Favoritos", value: favoriteClicks, color: "text-pink-400" },
               { label: "Cómo llegar", value: directionsClicks, color: "text-emerald-400" },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6 text-center">
+              <div key={stat.label} className="rounded-card border border-white/10 bg-white/[0.03] p-6 text-center">
                 <p className={`text-4xl font-black ${stat.color}`}>{stat.value}</p>
-                <p className="mt-2 text-xs uppercase tracking-widest text-zinc-500">{stat.label}</p>
+                <p className="mt-2 text-xs text-zinc-400">{stat.label}</p>
               </div>
             ))}
           </div>
 
           {/* Retención */}
           <div className="grid gap-4 md:grid-cols-3 mb-10">
-            <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6 text-center">
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 text-center">
               <p className="text-4xl font-black text-white">{loggedInUserIds.length}</p>
-              <p className="mt-2 text-xs uppercase tracking-widest text-zinc-500">Usuarios activos (con sesión)</p>
+              <p className="mt-2 text-xs text-zinc-400">Usuarios activos (con sesión)</p>
             </div>
-            <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6 text-center">
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 text-center">
               <p className="text-4xl font-black text-emerald-400">{recurringUsers}</p>
-              <p className="mt-2 text-xs uppercase tracking-widest text-zinc-500">Vuelven en más de un día</p>
+              <p className="mt-2 text-xs text-zinc-400">Vuelven en más de un día</p>
             </div>
-            <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6 text-center">
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 text-center">
               <p className="text-4xl font-black text-emerald-400">{recurringRate}%</p>
-              <p className="mt-2 text-xs uppercase tracking-widest text-zinc-500">Tasa de recurrencia</p>
+              <p className="mt-2 text-xs text-zinc-400">Tasa de recurrencia</p>
             </div>
           </div>
 
           {/* Franja horaria y día de la semana */}
           <div className="grid gap-4 md:grid-cols-2 mb-10">
-            <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-              <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">Actividad por hora del día</p>
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
+              <p className="text-xs text-zinc-400 mb-6">Actividad por hora del día</p>
               <div className="flex items-end gap-1 h-32">
                 {hourCounts.map((count, h) => (
                   <div key={h} className="flex-1 flex flex-col items-center justify-end gap-1" title={`${h}:00 — ${count}`}>
@@ -210,14 +210,14 @@ export default function AdminAnalyticsPage() {
                       className="w-full rounded-t bg-purple-500/70"
                       style={{ height: `${Math.max(2, (count / maxHourCount) * 100)}%` }}
                     />
-                    {h % 3 === 0 && <span className="text-[9px] text-zinc-600">{h}</span>}
+                    {h % 3 === 0 && <span className="text-xs text-zinc-400">{h}</span>}
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-              <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">Actividad por día de la semana</p>
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
+              <p className="text-xs text-zinc-400 mb-6">Actividad por día de la semana</p>
               <div className="flex items-end gap-2 h-32">
                 {dayCounts.map((count, d) => (
                   <div key={d} className="flex-1 flex flex-col items-center justify-end gap-1">
@@ -225,7 +225,7 @@ export default function AdminAnalyticsPage() {
                       className="w-full rounded-t bg-amber-500/70"
                       style={{ height: `${Math.max(2, (count / maxDayCount) * 100)}%` }}
                     />
-                    <span className="text-[10px] text-zinc-500">{DAY_LABELS[d]}</span>
+                    <span className="text-xs text-zinc-400">{DAY_LABELS[d]}</span>
                   </div>
                 ))}
               </div>
@@ -233,13 +233,13 @@ export default function AdminAnalyticsPage() {
           </div>
 
           {/* Zonas */}
-          <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8 mb-10">
-            <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">Barrios con más tráfico (clicks en clubs)</p>
+          <div className="rounded-card border border-white/10 bg-white/[0.03] p-8 mb-10">
+            <p className="text-xs text-zinc-400 mb-6">Barrios con más tráfico (clicks en clubs)</p>
             <div className="space-y-3">
               {topZones.map(([zone, count]: any, i) => (
                 <div key={zone} className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-black text-zinc-500 w-5">{i + 1}</span>
+                    <span className="text-sm font-black text-zinc-400 w-5">{i + 1}</span>
                     <span className="text-sm font-bold text-white">{zone}</span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -250,19 +250,19 @@ export default function AdminAnalyticsPage() {
                   </div>
                 </div>
               ))}
-              {topZones.length === 0 && <p className="text-zinc-500 text-sm">No hay datos todavía.</p>}
+              {topZones.length === 0 && <p className="text-zinc-400 text-sm">No hay datos todavía.</p>}
             </div>
           </div>
 
           {/* Top clubs y top eventos, por separado */}
           <div className="grid gap-4 md:grid-cols-2 mb-10">
-            <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-              <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">Top clubs más vistos</p>
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
+              <p className="text-xs text-zinc-400 mb-6">Top clubs más vistos</p>
               <div className="space-y-3">
                 {topClubs.map(([name, count]: any, i) => (
                   <div key={name} className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-black text-zinc-500 w-5">{i + 1}</span>
+                      <span className="text-sm font-black text-zinc-400 w-5">{i + 1}</span>
                       <span className="text-sm font-bold text-white">{name}</span>
                     </div>
                     <div className="flex items-center gap-3">
@@ -273,17 +273,17 @@ export default function AdminAnalyticsPage() {
                     </div>
                   </div>
                 ))}
-                {topClubs.length === 0 && <p className="text-zinc-500 text-sm">No hay datos todavía.</p>}
+                {topClubs.length === 0 && <p className="text-zinc-400 text-sm">No hay datos todavía.</p>}
               </div>
             </div>
 
-            <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-              <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">Top eventos más vistos</p>
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
+              <p className="text-xs text-zinc-400 mb-6">Top eventos más vistos</p>
               <div className="space-y-3">
                 {topEvents.map(([name, count]: any, i) => (
                   <div key={name} className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-black text-zinc-500 w-5">{i + 1}</span>
+                      <span className="text-sm font-black text-zinc-400 w-5">{i + 1}</span>
                       <span className="text-sm font-bold text-white">{name}</span>
                     </div>
                     <div className="flex items-center gap-3">
@@ -294,55 +294,55 @@ export default function AdminAnalyticsPage() {
                     </div>
                   </div>
                 ))}
-                {topEvents.length === 0 && <p className="text-zinc-500 text-sm">No hay datos todavía.</p>}
+                {topEvents.length === 0 && <p className="text-zinc-400 text-sm">No hay datos todavía.</p>}
               </div>
             </div>
           </div>
 
           {/* Búsquedas y filtros */}
           <div className="grid gap-4 md:grid-cols-2 mb-10">
-            <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-              <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">Búsquedas más frecuentes (mapa)</p>
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
+              <p className="text-xs text-zinc-400 mb-6">Búsquedas más frecuentes (mapa)</p>
               <div className="space-y-3">
                 {topSearches.map(([term, count]: any, i) => (
                   <div key={term} className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-black text-zinc-500 w-5">{i + 1}</span>
+                      <span className="text-sm font-black text-zinc-400 w-5">{i + 1}</span>
                       <span className="text-sm font-bold text-white">{term}</span>
                     </div>
                     <span className="text-sm font-bold text-zinc-400">{count}</span>
                   </div>
                 ))}
                 {topSearches.length === 0 && (
-                  <p className="text-zinc-500 text-sm">Todavía sin datos — esto se empieza a registrar a partir de ahora.</p>
+                  <p className="text-zinc-400 text-sm">Todavía sin datos — esto se empieza a registrar a partir de ahora.</p>
                 )}
               </div>
             </div>
 
-            <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-              <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">Filtros usados en "Planifica tu noche"</p>
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
+              <p className="text-xs text-zinc-400 mb-6">Filtros usados en "Planifica tu noche"</p>
               <div className="space-y-3">
                 {topFilters.map(([combo, count]: any, i) => (
                   <div key={combo} className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-black text-zinc-500 w-5">{i + 1}</span>
+                      <span className="text-sm font-black text-zinc-400 w-5">{i + 1}</span>
                       <span className="text-sm font-bold text-white">{combo}</span>
                     </div>
                     <span className="text-sm font-bold text-zinc-400">{count}</span>
                   </div>
                 ))}
                 {topFilters.length === 0 && (
-                  <p className="text-zinc-500 text-sm">Todavía sin datos — esto se empieza a registrar a partir de ahora.</p>
+                  <p className="text-zinc-400 text-sm">Todavía sin datos — esto se empieza a registrar a partir de ahora.</p>
                 )}
               </div>
             </div>
           </div>
 
           {/* Recent clicks */}
-          <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-            <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">Últimos clicks</p>
+          <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
+            <p className="text-xs text-zinc-400 mb-6">Últimos clicks</p>
             {loading ? (
-              <p className="text-zinc-500 text-sm">Cargando...</p>
+              <p className="text-zinc-400 text-sm">Cargando...</p>
             ) : (
               <div className="space-y-3">
                 {analytics.slice(0, 20).map((a) => (
@@ -355,13 +355,13 @@ export default function AdminAnalyticsPage() {
                         <p className="text-sm font-bold text-white">
                           {a.item_type === "club" ? "🪩" : a.item_type === "event" ? "🎫" : ""} {a.item_name}
                         </p>
-                        <p className="text-xs text-zinc-500">{a.event_type}</p>
+                        <p className="text-xs text-zinc-400">{a.event_type}</p>
                       </div>
                     </div>
-                    <p className="text-xs text-zinc-500">{new Date(a.created_at).toLocaleDateString("es-ES")}</p>
+                    <p className="text-xs text-zinc-400">{new Date(a.created_at).toLocaleDateString("es-ES")}</p>
                   </div>
                 ))}
-                {analytics.length === 0 && <p className="text-zinc-500 text-sm">No hay clicks registrados todavía.</p>}
+                {analytics.length === 0 && <p className="text-zinc-400 text-sm">No hay clicks registrados todavía.</p>}
               </div>
             )}
           </div>

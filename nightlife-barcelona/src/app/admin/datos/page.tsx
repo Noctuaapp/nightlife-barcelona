@@ -40,14 +40,14 @@ function downloadCsv(filename: string, headers: string[], rows: (string | number
   URL.revokeObjectURL(url)
 }
 
-function Bars({ data, color = "#a855f7" }: { data: { label: string; value: number }[]; color?: string }) {
+function Bars({ data, color = "#7c5cff" }: { data: { label: string; value: number }[]; color?: string }) {
   const max = Math.max(1, ...data.map((d) => d.value))
   return (
     <div className="flex h-32 items-end gap-1">
       {data.map((d) => (
         <div key={d.label} className="group relative flex min-w-0 flex-1 flex-col items-center justify-end" title={`${d.label}: ${d.value}`}>
           <div className="w-full rounded-t" style={{ height: `${Math.max(2, (d.value / max) * 100)}%`, background: color }} />
-          <span className="mt-1 w-full truncate text-center text-[9px] text-zinc-500">{d.label}</span>
+          <span className="mt-1 w-full truncate text-center text-xs text-zinc-400">{d.label}</span>
         </div>
       ))}
     </div>
@@ -58,7 +58,7 @@ function Stat({ label, value, sub }: { label: string; value: string | number; su
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
       <p className="text-3xl font-black text-white">{value}</p>
-      <p className="mt-1 text-[11px] uppercase tracking-widest text-zinc-500">{label}</p>
+      <p className="mt-1 text-xs text-zinc-400">{label}</p>
       {sub && <p className="mt-1 text-xs text-zinc-400">{sub}</p>}
     </div>
   )
@@ -66,14 +66,14 @@ function Stat({ label, value, sub }: { label: string; value: string | number; su
 
 function ListBars({ rows, suffix = "" }: { rows: { label: string; n: number | null }[]; suffix?: string }) {
   const max = Math.max(1, ...rows.map((r) => r.n || 0))
-  if (rows.length === 0) return <p className="text-sm text-zinc-500">Sin datos todavía.</p>
+  if (rows.length === 0) return <p className="text-sm text-zinc-400">Sin datos todavía.</p>
   return (
     <div className="space-y-2">
       {rows.map((r) => (
         <div key={r.label}>
           <div className="flex justify-between text-xs">
             <span className="text-zinc-300">{r.label}</span>
-            <span className="text-zinc-500">{r.n === null ? "<5" : `${r.n}${suffix}`}</span>
+            <span className="text-zinc-400">{r.n === null ? "<5" : `${r.n}${suffix}`}</span>
           </div>
           <div className="mt-1 h-2 rounded-full bg-white/5">
             <div className="h-2 rounded-full bg-purple-500" style={{ width: `${((r.n || 0) / max) * 100}%` }} />
@@ -233,7 +233,7 @@ export default function AdminDatosPage() {
   if (checkingAdmin)
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Cargando...</p>
+        <p className="text-sm text-zinc-400">Cargando...</p>
       </main>
     )
 
@@ -254,7 +254,7 @@ export default function AdminDatosPage() {
   const th = (key: string, label: string) => (
     <th
       onClick={() => setSortKey(key)}
-      className={`cursor-pointer whitespace-nowrap px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-wider ${sortKey === key ? "text-purple-300" : "text-zinc-500"}`}
+      className={`cursor-pointer whitespace-nowrap px-3 py-2 text-right text-xs font-semibold ${sortKey === key ? "text-purple-300" : "text-zinc-400"}`}
     >
       {label}
     </th>
@@ -278,7 +278,7 @@ export default function AdminDatosPage() {
             </button>
           ))}
           <input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} style={{ colorScheme: "dark" }} className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-300" />
-          <span className="text-xs text-zinc-500">→</span>
+          <span className="text-xs text-zinc-400">→</span>
           <input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} style={{ colorScheme: "dark" }} className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-300" />
         </div>
 
@@ -295,7 +295,7 @@ export default function AdminDatosPage() {
         </div>
 
         {error && <p className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}
-        {loading && <p className="text-sm text-zinc-500">Cargando datos...</p>}
+        {loading && <p className="text-sm text-zinc-400">Cargando datos...</p>}
 
         {!loading && overview && tab === "resumen" && (
           <div className="space-y-6">
@@ -309,7 +309,7 @@ export default function AdminDatosPage() {
               <Stat label="Asistiré" value={overview.attendances} />
               <Stat label="Check-ins reales" value={overview.checkins} sub={`Cumplimiento ${pct(overview.checkins, overview.attendances)}%`} />
             </div>
-            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
               <div className="mb-4 flex items-center justify-between">
                 <p className="text-sm font-bold">Visitas por día</p>
                 <button onClick={exportOverviewCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
@@ -317,19 +317,19 @@ export default function AdminDatosPage() {
               <Bars data={(overview.daily || []).map((d: any) => ({ label: d.d.slice(5), value: d.views }))} />
             </div>
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+              <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                 <p className="mb-4 text-sm font-bold">Origen del tráfico (sesiones)</p>
                 <ListBars rows={(overview.sources || []).map((s: any) => ({ label: SOURCE_LABELS[s.source] || s.source, n: s.sessions }))} />
               </div>
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+              <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                 <p className="mb-4 text-sm font-bold">Dispositivo</p>
                 <ListBars rows={(overview.devices || []).map((s: any) => ({ label: s.device === "mobile" ? "Móvil" : s.device === "desktop" ? "Ordenador" : s.device, n: s.sessions }))} />
               </div>
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+              <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                 <p className="mb-4 text-sm font-bold">Visitas por hora del día</p>
-                <Bars color="#ec4899" data={Array.from({ length: 24 }, (_, h) => ({ label: String(h), value: (overview.hours || []).find((x: any) => x.h === h)?.n || 0 }))} />
+                <Bars color="#7c5cff" data={Array.from({ length: 24 }, (_, h) => ({ label: String(h), value: (overview.hours || []).find((x: any) => x.h === h)?.n || 0 }))} />
               </div>
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+              <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                 <p className="mb-4 text-sm font-bold">Visitas por día de la semana</p>
                 <Bars color="#f59e0b" data={[1, 2, 3, 4, 5, 6, 7].map((d) => ({ label: WEEKDAYS[d], value: (overview.weekdays || []).find((x: any) => x.d === d)?.n || 0 }))} />
               </div>
@@ -338,17 +338,17 @@ export default function AdminDatosPage() {
         )}
 
         {!loading && (tab === "clubs" || tab === "eventos") && !selected && (
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="rounded-card border border-white/10 bg-white/[0.03] p-4">
             <div className="mb-3 flex items-center justify-between px-2">
-              <p className="text-xs text-zinc-500">Pulsa un encabezado para ordenar y una fila para ver el detalle.</p>
+              <p className="text-xs text-zinc-400">Pulsa un encabezado para ordenar y una fila para ver el detalle.</p>
               <button onClick={tab === "clubs" ? exportClubsCsv : exportEventsCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/10">
-                    <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-zinc-500">{tab === "clubs" ? "Club" : "Evento"}</th>
-                    {tab === "clubs" && <th className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Zona</th>}
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-zinc-400">{tab === "clubs" ? "Club" : "Evento"}</th>
+                    {tab === "clubs" && <th className="px-3 py-2 text-left text-xs font-semibold text-zinc-400">Zona</th>}
                     {th("views", "Visitas")}
                     {th("visitors", "Visitantes")}
                     {th("tickets", "Entradas")}
@@ -377,7 +377,7 @@ export default function AdminDatosPage() {
                     </tr>
                   ))}
                   {(tab === "clubs" ? clubRows : eventRows).length === 0 && (
-                    <tr><td colSpan={11} className="px-3 py-8 text-center text-zinc-500">Todavía no hay datos en este periodo.</td></tr>
+                    <tr><td colSpan={11} className="px-3 py-8 text-center text-zinc-400">Todavía no hay datos en este periodo.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -391,7 +391,7 @@ export default function AdminDatosPage() {
               <div>
                 <button onClick={() => setSelected(null)} className="text-xs font-bold text-zinc-400 hover:text-white">← Volver al listado</button>
                 <h2 className="mt-1 text-2xl font-black">{selected.name}</h2>
-                <p className="text-xs text-zinc-500">{from} → {to}</p>
+                <p className="text-xs text-zinc-400">{from} → {to}</p>
               </div>
               <button onClick={exportDetailCsv} className="rounded-full bg-purple-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-purple-400">Descargar informe (CSV)</button>
             </div>
@@ -406,11 +406,11 @@ export default function AdminDatosPage() {
             )}
 
             {sel && bench && (bench.zone || bench.type) && (
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+              <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                 <p className="mb-3 text-sm font-bold">Comparativa</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="text-[11px] uppercase tracking-wider text-zinc-500"><th className="py-1 text-left"></th><th className="py-1 text-right">Visitas</th><th className="py-1 text-right">Entradas</th><th className="py-1 text-right">Conv. %</th></tr></thead>
+                    <thead><tr className="text-xs text-zinc-400"><th className="py-1 text-left"></th><th className="py-1 text-right">Visitas</th><th className="py-1 text-right">Entradas</th><th className="py-1 text-right">Conv. %</th></tr></thead>
                     <tbody>
                       <tr><td className="py-1 font-semibold">Este club</td><td className="text-right">{sel.views}</td><td className="text-right">{sel.tickets}</td><td className="text-right text-purple-300">{sel.conv}</td></tr>
                       {bench.zone && <tr><td className="py-1 text-zinc-400">Media {sel.zone} ({bench.zone.n} clubs)</td><td className="text-right">{bench.zone.views}</td><td className="text-right">{bench.zone.tickets}</td><td className="text-right">{bench.zone.conv}</td></tr>}
@@ -423,23 +423,23 @@ export default function AdminDatosPage() {
 
             {detail && (
               <div className="grid gap-6 md:grid-cols-2">
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:col-span-2">
+                <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 md:col-span-2">
                   <p className="mb-4 text-sm font-bold">Visitas por día</p>
                   <Bars data={detail.daily.map((d: any) => ({ label: d.d.slice(5), value: d.views }))} />
                 </div>
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+                <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                   <p className="mb-4 text-sm font-bold">Visitas por hora</p>
-                  <Bars color="#ec4899" data={Array.from({ length: 24 }, (_, h) => ({ label: String(h), value: detail.hours.find((x: any) => x.h === h)?.n || 0 }))} />
+                  <Bars color="#7c5cff" data={Array.from({ length: 24 }, (_, h) => ({ label: String(h), value: detail.hours.find((x: any) => x.h === h)?.n || 0 }))} />
                 </div>
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+                <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                   <p className="mb-4 text-sm font-bold">De dónde llegan</p>
                   <ListBars rows={detail.sources.map((s: any) => ({ label: SOURCE_LABELS[s.source] || s.source, n: s.n }))} />
                 </div>
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:col-span-2">
+                <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 md:col-span-2">
                   <p className="mb-3 text-sm font-bold">Asistencia por noche: dicen que van vs. van de verdad</p>
-                  {detail.nights.length === 0 ? <p className="text-sm text-zinc-500">Sin datos todavía.</p> : (
+                  {detail.nights.length === 0 ? <p className="text-sm text-zinc-400">Sin datos todavía.</p> : (
                     <table className="w-full text-sm">
-                      <thead><tr className="text-[11px] uppercase tracking-wider text-zinc-500"><th className="py-1 text-left">Noche</th><th className="py-1 text-right">Asistiré</th><th className="py-1 text-right">Check-ins</th></tr></thead>
+                      <thead><tr className="text-xs text-zinc-400"><th className="py-1 text-left">Noche</th><th className="py-1 text-right">Asistiré</th><th className="py-1 text-right">Check-ins</th></tr></thead>
                       <tbody>{detail.nights.map((n: any) => <tr key={n.night} className="border-t border-white/5"><td className="py-1">{n.night}</td><td className="text-right">{n.asistire}</td><td className="text-right">{n.checkins}</td></tr>)}</tbody>
                     </table>
                   )}
@@ -448,9 +448,9 @@ export default function AdminDatosPage() {
             )}
 
             {detailAud && (
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+              <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                 <p className="mb-1 text-sm font-bold">Audiencia con cuenta ({detailAud.users} usuarios)</p>
-                <p className="mb-4 text-xs text-zinc-500">Solo usuarios registrados; los grupos de menos de 5 personas se ocultan.</p>
+                <p className="mb-4 text-xs text-zinc-400">Solo usuarios registrados; los grupos de menos de 5 personas se ocultan.</p>
                 <div className="grid gap-6 md:grid-cols-3">
                   <div><p className="mb-2 text-xs text-zinc-400">Edad</p><ListBars rows={detailAud.ages} /></div>
                   <div><p className="mb-2 text-xs text-zinc-400">Género</p><ListBars rows={detailAud.genders} /></div>
@@ -462,7 +462,7 @@ export default function AdminDatosPage() {
         )}
 
         {!loading && tab === "busquedas" && (
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="rounded-card border border-white/10 bg-white/[0.03] p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-2">
               <label className="flex items-center gap-2 text-xs text-zinc-300">
                 <input type="checkbox" checked={onlyZeroSearches} onChange={(e) => setOnlyZeroSearches(e.target.checked)} className="accent-purple-500" />
@@ -471,7 +471,7 @@ export default function AdminDatosPage() {
               <button onClick={exportSearchesCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
             </div>
             <table className="w-full text-sm">
-              <thead><tr className="border-b border-white/10 text-[11px] uppercase tracking-wider text-zinc-500"><th className="px-3 py-2 text-left">Búsqueda</th><th className="px-3 py-2 text-right">Veces</th><th className="px-3 py-2 text-right">Resultados medios</th><th className="px-3 py-2 text-right">Sin resultados</th></tr></thead>
+              <thead><tr className="border-b border-white/10 text-xs text-zinc-400"><th className="px-3 py-2 text-left">Búsqueda</th><th className="px-3 py-2 text-right">Veces</th><th className="px-3 py-2 text-right">Resultados medios</th><th className="px-3 py-2 text-right">Sin resultados</th></tr></thead>
               <tbody>
                 {searches.filter((s) => !onlyZeroSearches || s.zero > 0).map((s) => (
                   <tr key={s.term} className="border-b border-white/5">
@@ -481,16 +481,16 @@ export default function AdminDatosPage() {
                     <td className={`px-3 py-2 text-right ${s.zero > 0 ? "text-amber-300" : ""}`}>{s.zero}</td>
                   </tr>
                 ))}
-                {searches.length === 0 && <tr><td colSpan={4} className="px-3 py-8 text-center text-zinc-500">Todavía no hay búsquedas registradas.</td></tr>}
+                {searches.length === 0 && <tr><td colSpan={4} className="px-3 py-8 text-center text-zinc-400">Todavía no hay búsquedas registradas.</td></tr>}
               </tbody>
             </table>
           </div>
         )}
 
         {!loading && tab === "audiencia" && audience && (
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+          <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
             <p className="mb-1 text-sm font-bold">Usuarios con cuenta activos en el periodo: {audience.users}</p>
-            <p className="mb-5 text-xs text-zinc-500">Datos agregados y anónimos. Los grupos de menos de 5 personas se ocultan.</p>
+            <p className="mb-5 text-xs text-zinc-400">Datos agregados y anónimos. Los grupos de menos de 5 personas se ocultan.</p>
             <div className="grid gap-6 md:grid-cols-3">
               <div><p className="mb-2 text-xs text-zinc-400">Edad</p><ListBars rows={audience.ages} /></div>
               <div><p className="mb-2 text-xs text-zinc-400">Género</p><ListBars rows={audience.genders} /></div>

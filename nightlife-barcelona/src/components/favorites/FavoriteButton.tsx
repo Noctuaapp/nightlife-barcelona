@@ -5,6 +5,7 @@ import { useState } from "react"
 import { useFavorites } from "../../context/FavoritesContext"
 import { useLanguage } from "../../context/LanguageContext"
 import AuthGateModal from "../ui/AuthGateModal"
+import Icon from "../ui/Icon"
 
 type FavoriteButtonProps = {
   itemType: "club" | "event" | "club_event"
@@ -39,18 +40,18 @@ export default function FavoriteButton({
     <>
       <button
         onClick={handleToggle}
-        className={`mt-6 flex w-full items-center justify-center rounded-2xl px-6 py-4 font-bold transition hover:scale-[1.02] ${
-          active
-            ? "bg-pink-500 text-white"
-            : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+        aria-pressed={active}
+        className={`flex w-full items-center justify-center gap-2 rounded-ctl px-6 py-3.5 text-sm font-semibold transition ${
+          active ? "bg-brand text-white hover:bg-brand-strong" : "border border-white/10 bg-white/5 text-ink hover:bg-white/10"
         }`}
       >
-        {active ? `❤️ ${t("favorites.saved")}` : `🤍 ${t("favorites.save")}`}
+        <Icon name="heart" className={`h-4 w-4 ${active ? "fill-current" : ""}`} />
+        {active ? t("favorites.saved") : t("favorites.save")}
       </button>
 
       {showReminder && (
-        <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs uppercase tracking-widest text-zinc-500 mb-3">{t("favorites.remindMe")}</p>
+        <div className="mt-3 rounded-ctl border border-white/10 bg-white/5 p-4">
+          <p className="mb-3 text-xs font-semibold text-zinc-400">{t("favorites.remindMe")}</p>
           <div className="flex flex-wrap gap-2">
             {REMINDER_OPTIONS.map((opt) => (
               <button

@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 }
 
 export default function MapLayout({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<div className="min-h-screen bg-[#0d0a1c]" />}>{children}</Suspense>
+  return <Suspense fallback={<div className="min-h-screen bg-night" />}>{children}</Suspense>
 }

@@ -112,8 +112,8 @@ export default function BadgesAndChallenges() {
         <div className="mb-3 flex items-center gap-3">
           <NocOwl size={40} mood="wink" />
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-purple-400">Retos de la semana</p>
-            <p className="text-xs text-zinc-500">Se renuevan cada lunes. Son de descubrir, no de beber más.</p>
+            <p className="text-xs font-semibold text-purple-400">Retos de la semana</p>
+            <p className="text-xs text-zinc-400">Se renuevan cada lunes. Son de descubrir, no de beber más.</p>
           </div>
         </div>
         <div className="space-y-3">
@@ -138,7 +138,7 @@ export default function BadgesAndChallenges() {
                     Reclamar +{c.xp} XP
                   </button>
                 ) : (
-                  <span className="shrink-0 text-xs font-bold text-zinc-500">{p}/{target[i]}</span>
+                  <span className="shrink-0 text-xs font-bold text-zinc-400">{p}/{target[i]}</span>
                 )}
               </div>
             )
@@ -147,15 +147,15 @@ export default function BadgesAndChallenges() {
       </div>
 
       <div className="mb-10">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-purple-400">Insignias de exploración</p>
+        <p className="mb-3 text-xs font-semibold text-purple-400">Insignias de exploración</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {Object.entries(BADGES).map(([key, b]) => {
             const has = earned.has(key)
             return (
               <div key={key} className={`rounded-2xl border p-3 text-center ${has ? "border-purple-400/40 bg-purple-500/10" : "border-white/10 bg-white/[0.02]"}`}>
                 <div className={`text-3xl ${has ? "" : "opacity-30 grayscale"}`}>{b.emoji}</div>
-                <p className={`mt-1 text-sm font-bold ${has ? "text-white" : "text-zinc-500"}`}>{b.name}</p>
-                <p className="mt-0.5 text-[11px] leading-snug text-zinc-500">{b.hint}</p>
+                <p className={`mt-1 text-sm font-bold ${has ? "text-white" : "text-zinc-400"}`}>{b.name}</p>
+                <p className="mt-0.5 text-xs leading-snug text-zinc-400">{b.hint}</p>
               </div>
             )
           })}

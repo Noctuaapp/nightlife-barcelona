@@ -433,8 +433,8 @@ export default function MiClubPage() {
     setForm({ ...form, gallery: form.gallery.filter((u) => u !== url) })
   }
 
-  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-purple-500/50 transition placeholder:text-zinc-600"
-  const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1.5"
+  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-purple-500/50 transition placeholder:text-zinc-400"
+  const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1.5"
 
   const renderEventForm = (
     eventForm: EventFormData,
@@ -494,7 +494,7 @@ export default function MiClubPage() {
       <div className="md:col-span-2">
         <label className={labelClass}>Imagen de la noche</label>
         <input value={eventForm.image} onChange={(e) => setEventForm({ ...eventForm, image: e.target.value })} placeholder="https://... (o sube una abajo)" className={inputClass} />
-        <label className={`mt-2 block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploadingEventImage ? "border-white/10 text-zinc-600" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
+        <label className={`mt-2 block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploadingEventImage ? "border-white/10 text-zinc-400" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
           {uploadingEventImage ? "Subiendo..." : "📁 Subir imagen desde tu ordenador"}
           <input type="file" accept="image/*" className="hidden" disabled={uploadingEventImage} onChange={handleImageUpload} />
         </label>
@@ -510,7 +510,7 @@ export default function MiClubPage() {
   if (checkingAccess) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Verificando acceso...</p>
+        <p className="text-sm text-zinc-400">Verificando acceso...</p>
       </main>
     )
   }
@@ -544,7 +544,7 @@ export default function MiClubPage() {
           >
             Contactar con Noctua
           </Link>
-          <Link href="/" className="text-sm text-zinc-500 underline transition hover:text-zinc-300">
+          <Link href="/" className="text-sm text-zinc-400 underline transition hover:text-zinc-300">
             Volver a Noctua
           </Link>
         </main>
@@ -558,7 +558,7 @@ export default function MiClubPage() {
       <Header />
       <main className="min-h-screen bg-black pb-40 pt-14 text-white">
         <section className="mx-auto max-w-3xl px-4">
-          <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Portal de club</p>
+          <p className="text-sm text-zinc-400">Portal de club</p>
           <h1 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">{club.name}</h1>
           <p className="mt-3 max-w-xl text-sm text-zinc-400">
             Gestiona la información de tu ficha en Noctua. Los cambios se publican en cuanto los guardas.
@@ -567,10 +567,10 @@ export default function MiClubPage() {
           {/* Estado en directo: lo único de esta página que se publica al instante, sin botón de
               "Guardar". Es la señal más valiosa que puede dar un local — cómo está la cola AHORA
               mismo — y solo la tiene el propio local, así que la aislamos del resto del formulario. */}
-          <div className="mt-8 rounded-[28px] border border-emerald-500/20 bg-emerald-500/[0.04] p-6">
+          <div className="mt-8 rounded-card border border-emerald-500/20 bg-emerald-500/[0.04] p-6">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
-              <h2 className="text-sm font-black uppercase tracking-widest text-emerald-300">Estado en directo</h2>
+              <h2 className="text-sm font-black text-emerald-300">Estado en directo</h2>
             </div>
             <p className="mt-2 text-sm text-zinc-400">
               Dile a la gente cómo está la cola ahora mismo. Se muestra en tu ficha durante 4 horas, luego desaparece solo.
@@ -593,7 +593,7 @@ export default function MiClubPage() {
               ))}
             </div>
             {club.live_status && club.live_status_updated_at && (
-              <p className="mt-3 text-xs text-zinc-500">
+              <p className="mt-3 text-xs text-zinc-400">
                 Marcado como <strong className="text-zinc-300">{LIVE_STATUS_OPTIONS.find((o) => o.key === club.live_status)?.label}</strong>
                 {" "}· {timeAgoEs(club.live_status_updated_at)}
               </p>
@@ -634,7 +634,7 @@ export default function MiClubPage() {
                 )}
                 <div className="flex-1 space-y-2">
                   <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://... (o sube una desde tu ordenador)" className={inputClass} />
-                  <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploadingImage ? "border-white/10 text-zinc-600" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
+                  <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploadingImage ? "border-white/10 text-zinc-400" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
                     {uploadingImage ? "Subiendo..." : "📁 Subir imagen desde tu ordenador"}
                     <input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={handleImageUpload} />
                   </label>
@@ -645,9 +645,9 @@ export default function MiClubPage() {
             <div className="md:col-span-2">
               <label className={labelClass}>
                 Galería ({form.gallery.length} foto{form.gallery.length === 1 ? "" : "s"})
-                {form.gallery.length > 0 && <span className="ml-2 normal-case font-normal text-zinc-600">— quita las que no encajen con la ✕</span>}
+                {form.gallery.length > 0 && <span className="ml-2 normal-case font-normal text-zinc-400">— quita las que no encajen con la ✕</span>}
               </label>
-              <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploadingGallery ? "border-white/10 text-zinc-600" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
+              <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploadingGallery ? "border-white/10 text-zinc-400" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
                 {uploadingGallery ? "Subiendo..." : "📁 Añadir fotos a la galería"}
                 <input type="file" accept="image/*" multiple className="hidden" disabled={uploadingGallery} onChange={handleGalleryUpload} />
               </label>
@@ -778,7 +778,7 @@ export default function MiClubPage() {
                 {showAddEventForm ? "✕ Cerrar formulario" : "+ Nueva noche"}
               </button>
               {showAddEventForm && (
-                <div className="mt-4 rounded-[24px] border border-purple-500/30 bg-purple-500/[0.04] p-6">
+                <div className="mt-4 rounded-card border border-purple-500/30 bg-purple-500/[0.04] p-6">
                   <h3 className="mb-4 text-lg font-black">Nueva noche</h3>
                   {renderEventForm(newEventForm, setNewEventForm, handleNewEventImageUpload)}
                   <div className="mt-5 flex gap-3">
@@ -794,11 +794,11 @@ export default function MiClubPage() {
             </div>
 
             {events.length === 0 ? (
-              <p className="mt-6 text-sm text-zinc-500">Todavía no tienes ninguna noche creada.</p>
+              <p className="mt-6 text-sm text-zinc-400">Todavía no tienes ninguna noche creada.</p>
             ) : (
               <div className="mt-8 grid gap-6">
                 {events.map((event) => (
-                  <div key={event.id} className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
+                  <div key={event.id} className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                     {editingEventId === event.id ? (
                       <div>
                         <h3 className="mb-4 text-lg font-black">Editando: {event.title}</h3>

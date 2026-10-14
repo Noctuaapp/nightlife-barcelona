@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Icon from "../ui/Icon"
+import { useLanguage } from "../../context/LanguageContext"
 import { supabase } from "../../lib/supabase"
 
 const KEY = "noctua_ref"
@@ -9,6 +11,7 @@ const KEY = "noctua_ref"
 // Recoge el código de invitación (?ref=xxxx), lo guarda hasta que la persona tenga cuenta y
 // lo canjea al primer inicio de sesión. Mientras no tenga cuenta, enseña un aviso de bienvenida.
 export default function ReferralBanner() {
+  const { t } = useLanguage()
   const [pending, setPending] = useState(false)
 
   useEffect(() => {
@@ -32,13 +35,15 @@ export default function ReferralBanner() {
 
   if (!pending) return null
   return (
-    <div className="mb-4 flex items-center gap-3 rounded-3xl border border-amber-400/30 bg-amber-500/10 p-4">
-      <span className="text-3xl">🎟️</span>
+    <div className="mb-4 flex items-center gap-3 rounded-card border border-warn/30 bg-warn/10 p-4">
+      <Icon name="ticket" className="h-6 w-6 shrink-0 text-warn" />
       <div className="flex-1">
-        <p className="text-sm font-black text-white">Un amigo te ha invitado a Noctua</p>
-        <p className="text-xs text-zinc-300">Crea tu cuenta y haz tu primer check-in: +25 XP de bienvenida para ti y +50 para él.</p>
+        <p className="text-sm font-semibold text-ink">{t("referral.bannerTitle")}</p>
+        <p className="text-xs text-zinc-300">{t("referral.bannerBody")}</p>
       </div>
-      <Link href="/signup" className="shrink-0 rounded-xl bg-white px-4 py-2 text-xs font-black text-black">Crear cuenta</Link>
+      <Link href="/signup" className="shrink-0 rounded-ctl bg-ink px-4 py-2 text-xs font-semibold text-night">
+        {t("referral.bannerCta")}
+      </Link>
     </div>
   )
 }

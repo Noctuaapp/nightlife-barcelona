@@ -5,6 +5,7 @@ import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 import { distanceInMeters, formatDistance, walkingMinutes, walkingDirectionsUrl } from "../../lib/geo"
 import { getOpenStatus } from "../../lib/openStatus"
+import { cleanEssential } from "../../lib/essentials"
 
 // Tres chips con lo más cercano al local (comida, súper, cajero), sacados de la tabla essentials
 // (la misma que alimenta /essentials), y un enlace a todos los esenciales. Cada chip abre la ruta
@@ -36,8 +37,10 @@ export default function NearbyEssentials({ latitude, longitude }: { latitude: nu
           .select("name, open_hours, latitude, longitude")
           .ilike("category", cat.key)
           .eq("hidden", false)
+        // Los cajeros con comisión alta (Euronet) no se sugieren como "el más cercano".
         const nearest = ((data || []) as any[])
-          .filter((e) => e.latitude && e.longitude)
+          .map((e) => cleanEssential({ ...e, category: cat.key }))
+          .filter((e) => e.latitude && e.longitude && !e.highFee)
           .map((e) => ({
             key: cat.key,
             name: e.name as string,
@@ -62,7 +65,7 @@ export default function NearbyEssentials({ latitude, longitude }: { latitude: nu
 
   return (
     <div>
-      <p className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-500">Cerca de este local</p>
+      <p className="mb-3 text-xs text-zinc-400">Cerca de este local</p>
 
       <div className="flex flex-wrap gap-2.5">
         {items === null &&
@@ -93,7 +96,7 @@ export default function NearbyEssentials({ latitude, longitude }: { latitude: nu
         })}
 
         {items !== null && found.length === 0 && (
-          <p className="text-sm text-zinc-500">Aún no tenemos sitios registrados cerca de este local.</p>
+          <p className="text-sm text-zinc-400">Aún no tenemos sitios registrados cerca de este local.</p>
         )}
       </div>
 

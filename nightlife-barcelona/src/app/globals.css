@@ -1,8 +1,75 @@
 @import "tailwindcss";
 
+/* =====================================================================
+   SISTEMA VISUAL DE NOCTUA
+   La marca sale del logo: el violeta eléctrico del búho. Todo lo demás se calma para que
+   destaquen las fotos de los locales y su estado (abierto / cerrado).
+   Antes había 8 negros de fondo distintos, 49 colores sueltos y un degradado morado→rosa en
+   cada botón. Ahora:
+   - Un fondo (night) y una superficie (surface).
+   - Un color de marca (brand), sin degradados. Las escalas purple/pink/fuchsia de Tailwind se
+     redirigen a la misma escala violeta, así todo lo que ya usaba esas clases queda unificado.
+   - Colores de estado reservados: open (abierto / en directo), warn (cierra pronto, avisos),
+     off (cerrado).
+   - Dos radios propios: rounded-card (tarjetas) y rounded-ctl (botones y campos), además de
+     rounded-full para filtros y píldoras.
+   ===================================================================== */
+@theme {
+  --color-night: #0a0910;
+  --color-surface: #16141f;
+  --color-surface-2: #1e1b29;
+  --color-ink: #f4f3f7;
+  --color-muted: #a19fad;
+  --color-brand: #7c5cff;
+  --color-brand-strong: #6a46f5;
+  --color-brand-soft: #a08bff;
+  --color-open: #34d399;
+  --color-warn: #fbbf24;
+  --color-off: #6b6878;
+
+  --radius-card: 20px;
+  --radius-ctl: 12px;
+
+  --color-purple-50: #f3f0ff;
+  --color-purple-100: #e9e3ff;
+  --color-purple-200: #d4c9ff;
+  --color-purple-300: #b8a6ff;
+  --color-purple-400: #9d85ff;
+  --color-purple-500: #7c5cff;
+  --color-purple-600: #6a46f5;
+  --color-purple-700: #5935d6;
+  --color-purple-800: #4529a8;
+  --color-purple-900: #352180;
+  --color-purple-950: #1f1252;
+
+  --color-pink-50: #f3f0ff;
+  --color-pink-100: #e9e3ff;
+  --color-pink-200: #d4c9ff;
+  --color-pink-300: #b8a6ff;
+  --color-pink-400: #9d85ff;
+  --color-pink-500: #7c5cff;
+  --color-pink-600: #6a46f5;
+  --color-pink-700: #5935d6;
+  --color-pink-800: #4529a8;
+  --color-pink-900: #352180;
+  --color-pink-950: #1f1252;
+
+  --color-fuchsia-50: #f3f0ff;
+  --color-fuchsia-100: #e9e3ff;
+  --color-fuchsia-200: #d4c9ff;
+  --color-fuchsia-300: #b8a6ff;
+  --color-fuchsia-400: #9d85ff;
+  --color-fuchsia-500: #7c5cff;
+  --color-fuchsia-600: #6a46f5;
+  --color-fuchsia-700: #5935d6;
+  --color-fuchsia-800: #4529a8;
+  --color-fuchsia-900: #352180;
+  --color-fuchsia-950: #1f1252;
+}
+
 :root {
-  --background: #0d0a1c;
-  --foreground: #ffffff;
+  --background: #0a0910;
+  --foreground: #f4f3f7;
 }
 
 html {
@@ -10,82 +77,75 @@ html {
 }
 
 body {
-  background: radial-gradient(
-      circle at top left,
-      rgba(168, 85, 247, 0.22),
-      transparent 40%
-    ),
-    radial-gradient(
-      circle at bottom right,
-      rgba(236, 72, 153, 0.18),
-      transparent 40%
-    ),
-    var(--background);
-
+  background: var(--background);
   color: var(--foreground);
-
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
-
   margin: 0;
   padding: 0;
-
   overflow-x: hidden;
 }
 
-/* DISPLAY — reservada para titulares grandes (nombre del club/evento, portada, CTAs a toda
-   pantalla). No se usa en botones ni texto funcional: si está en todas partes, deja de ser
-   especial. Ver layout.tsx para la fuente (Unbounded). */
+/* DISPLAY — solo para el nombre del local / evento y el título de cada página. */
 .font-display {
   font-family: var(--font-display), Arial, Helvetica, sans-serif;
   letter-spacing: -0.02em;
 }
 
-/* PREMIUM SCROLLBAR */
+/* Foco visible en toda la web (antes solo lo tenían algunos botones). */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand-soft);
+  outline-offset: 2px;
+}
 
 ::-webkit-scrollbar {
   width: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0d0a1c;
+  background: var(--background);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
 }
 
-/* PREMIUM ANIMATIONS */
-
-@keyframes fadeUp {
-
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
+/* Antes había animaciones de entrada (aparecer subiendo) en casi cada bloque. Se quedan sin
+   efecto: el contenido aparece directamente. La clase se mantiene para no romper el marcado. */
 .fade-up {
-  animation: fadeUp 0.7s ease forwards;
+  animation: none;
 }
 
-/* Pantalla de carga (src/app/loading.tsx): el logo "respira" despacio en vez de un spinner
-   genérico. Definida aquí (no con styled-jsx en el propio archivo) porque loading.tsx es un
-   Server Component y styled-jsx exige un Client Component. */
-@keyframes breathe {
-  0%, 100% { opacity: 0.55; transform: scale(0.96); }
-  50% { opacity: 1; transform: scale(1.04); }
+/* Único movimiento con significado: el punto que late en "abierto ahora" / "en directo". */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.live-dot {
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 button, a {
   cursor: pointer;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }

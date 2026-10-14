@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { supabase } from "../../lib/supabase"
+import { useLanguage } from "../../context/LanguageContext"
 
 export type ShareStop = {
   kind: "club" | "event"
@@ -18,13 +19,14 @@ export default function SharePlanButton({
   title,
   stops,
   className = "",
-  label = "🔗 Compartir con mis amigos",
+  label,
 }: {
   title: string
   stops: ShareStop[]
   className?: string
   label?: string
 }) {
+  const { t } = useLanguage()
   const [state, setState] = useState<"idle" | "working" | "copied" | "error">("idle")
 
   const share = async () => {
@@ -32,9 +34,9 @@ export default function SharePlanButton({
     setState("working")
     try {
       // Crear un plan exige cuenta (ver el plan y apuntarse, no).
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) {
-        window.location.href = "/login"
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session) {
+        window.location.href = "/signup?next=/plan"
         return
       }
       const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date())
@@ -53,14 +55,14 @@ export default function SharePlanButton({
       })
       if (error || !data) throw error || new Error("sin código")
       const url = `${window.location.origin}/plan/${data}`
-      const text = "Mira el plan que he montado para esta noche 🦉 ¿Te apuntas?"
+      const text = t("sharePlan.message")
       if (navigator.share) {
         try {
           await navigator.share({ title, text, url })
           setState("idle")
           return
-        } catch (e: any) {
-          if (e?.name === "AbortError") { setState("idle"); return }
+        } catch (e) {
+          if (e instanceof Error && e.name === "AbortError") { setState("idle"); return }
         }
       }
       await navigator.clipboard.writeText(`${text} ${url}`)
@@ -74,8 +76,18 @@ export default function SharePlanButton({
   }
 
   return (
-    <button onClick={share} disabled={state === "working"} className={className || "w-full rounded-2xl border border-purple-400/40 bg-purple-500/10 py-4 font-bold text-white transition hover:bg-purple-500/20 disabled:opacity-60"}>
-      {state === "working" ? "Creando enlace…" : state === "copied" ? "✓ Enlace copiado" : state === "error" ? "No se pudo crear el enlace" : label}
+    <button
+      onClick={share}
+      disabled={state === "working"}
+      className={className || "w-full rounded-ctl border border-brand/40 bg-brand/10 py-3.5 text-sm font-semibold text-ink transition hover:bg-brand/20 disabled:opacity-60"}
+    >
+      {state === "working"
+        ? t("sharePlan.working")
+        : state === "copied"
+        ? t("sharePlan.copied")
+        : state === "error"
+        ? t("sharePlan.error")
+        : label || t("sharePlan.label")}
     </button>
   )
 }

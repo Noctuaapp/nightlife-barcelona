@@ -47,8 +47,8 @@ export default function ClubNightsCalendar({ clubEvents, clubName }: Props) {
   const selectedEvents = eventsByDay[selectedDay] || []
 
   return (
-    <div className="rounded-[36px] border border-white/10 bg-white/[0.03] p-10 backdrop-blur-2xl">
-      <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Sessions</p>
+    <div className="rounded-card border border-white/10 bg-white/[0.03] p-10 backdrop-blur-2xl">
+      <p className="text-sm text-zinc-400">Sessions</p>
       <h2 className="mt-4 text-5xl font-black">Nights at {clubName}</h2>
 
       {/* Day tabs */}
@@ -64,12 +64,12 @@ export default function ClubNightsCalendar({ clubEvents, clubName }: Props) {
               className="flex flex-col items-center rounded-2xl px-4 py-3 min-w-[60px] transition"
               style={{
                 background: isSelected
-                  ? "rgba(168,85,247,0.2)"
+                  ? "rgba(124,92,255,0.2)"
                   : hasEvents
                   ? "rgba(255,255,255,0.05)"
                   : "transparent",
                 border: isSelected
-                  ? "1px solid rgba(168,85,247,0.4)"
+                  ? "1px solid rgba(124,92,255,0.4)"
                   : hasEvents
                   ? "1px solid rgba(255,255,255,0.1)"
                   : "1px solid rgba(255,255,255,0.03)",
@@ -83,7 +83,7 @@ export default function ClubNightsCalendar({ clubEvents, clubName }: Props) {
               {hasEvents && (
                 <span
                   className="mt-1.5 h-1.5 w-1.5 rounded-full"
-                  style={{ background: isSelected ? "#a855f7" : "rgba(255,255,255,0.3)" }}
+                  style={{ background: isSelected ? "#7c5cff" : "rgba(255,255,255,0.3)" }}
                 />
               )}
             </button>
@@ -94,17 +94,17 @@ export default function ClubNightsCalendar({ clubEvents, clubName }: Props) {
       {/* Selected day events */}
       <div className="mt-8 space-y-5">
         {selectedEvents.length === 0 ? (
-          <p className="text-zinc-500 text-sm">No sessions on {DAY_FULL[selectedDay]}.</p>
+          <p className="text-zinc-400 text-sm">No sessions on {DAY_FULL[selectedDay]}.</p>
         ) : (
           selectedEvents.map((event) => (
             <div
               key={event.id}
-              className="rounded-3xl border border-white/10 bg-black/30 p-6"
+              className="rounded-card border border-white/10 bg-black/30 p-6"
             >
               <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                 <div>
                   <div className="flex items-center gap-3 flex-wrap">
-                    <p className="text-sm uppercase tracking-wide text-zinc-500">
+                    <p className="text-sm uppercase tracking-wide text-zinc-400">
                       {DAY_FULL[selectedDay]}
                       {event.date && ` · ${new Date(event.date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
                       {event.start_time && ` · ${event.start_time}`}

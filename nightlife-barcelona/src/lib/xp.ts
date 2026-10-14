@@ -13,7 +13,7 @@ export const LEVELS = [
   { key: "platino", name: "Platino", min: 1000, icon: "🔷", color: "#7dd3fc", perkKey: "platino" },
   { key: "zafiro", name: "Zafiro", min: 1800, icon: "🔵", color: "#3b82f6", perkKey: "zafiro" },
   { key: "diamante", name: "Diamante", min: 3000, icon: "💎", color: "#67e8f9", perkKey: "diamante" },
-  { key: "elite", name: "Élite", min: 5000, icon: "👑", color: "#a855f7", perkKey: "elite" },
+  { key: "elite", name: "Élite", min: 5000, icon: "👑", color: "#7c5cff", perkKey: "elite" },
 ] as const
 
 export type LevelInfo = {

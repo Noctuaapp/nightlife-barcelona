@@ -136,7 +136,7 @@ export default function MiMesPage() {
     g.addColorStop(0, "#2a0a4a"); g.addColorStop(0.55, "#0b0414"); g.addColorStop(1, "#3a0d3f")
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H)
     const glow = ctx.createRadialGradient(W * 0.8, H * 0.12, 10, W * 0.8, H * 0.12, 700)
-    glow.addColorStop(0, "rgba(168,85,247,0.45)"); glow.addColorStop(1, "rgba(168,85,247,0)")
+    glow.addColorStop(0, "rgba(124,92,255,0.45)"); glow.addColorStop(1, "rgba(124,92,255,0)")
     ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H)
 
     // Búho: se toma del SVG ya pintado en la página
@@ -221,12 +221,12 @@ export default function MiMesPage() {
   const empty = recap && recap.nights === 0
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#050308]">
+    <div className="flex min-h-screen flex-col bg-night">
       <Header />
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-24">
         <div ref={owlRef} className="sr-only" aria-hidden="true"><NocOwl size={220} mood="party" /></div>
 
-        {state === "loading" && <p className="py-24 text-center text-zinc-500">Preparando tu mes…</p>}
+        {state === "loading" && <p className="py-24 text-center text-zinc-400">Preparando tu mes…</p>}
 
         {state === "login" && (
           <div className="py-20 text-center">
@@ -248,7 +248,7 @@ export default function MiMesPage() {
             </div>
 
             {empty ? (
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] py-16 text-center">
+              <div className="rounded-card border border-white/10 bg-white/[0.03] py-16 text-center">
                 <div className="mx-auto w-fit"><NocOwl size={90} mood="sleepy" /></div>
                 <p className="mt-4 text-lg font-black text-white">Aún no hay nada que contar de {recap.monthLabel}</p>
                 <p className="mt-1 px-6 text-sm text-zinc-400">Haz check-in en un local y tu resumen empezará a llenarse.</p>
@@ -256,7 +256,7 @@ export default function MiMesPage() {
               </div>
             ) : (
               <>
-                <div className="overflow-hidden rounded-3xl border border-purple-400/30 bg-gradient-to-br from-purple-900/60 via-[#0b0414] to-fuchsia-950/50 p-6">
+                <div className="overflow-hidden rounded-card border border-purple-400/30 bg-gradient-to-br from-purple-900/60 via-night to-fuchsia-950/50 p-6">
                   <div className="flex items-center gap-3">
                     <NocOwl size={56} mood="party" />
                     <div>

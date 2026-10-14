@@ -409,7 +409,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("common.loading")}</p>
+        <p className="text-sm text-zinc-400">{t("common.loading")}</p>
       </main>
     )
   }
@@ -460,7 +460,7 @@ export default function ProfilePage() {
               {(() => {
                 const level = getLevelInfo(xp)
                 return (
-                  <div className="mt-6 w-full max-w-xs rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+                  <div className="mt-6 w-full max-w-xs rounded-card border border-white/10 bg-white/[0.03] p-5">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-2 text-lg font-black text-white">
                         <span>{level.icon}</span>
@@ -474,7 +474,7 @@ export default function ProfilePage() {
                         style={{ width: `${level.progressPct}%`, background: level.color }}
                       />
                     </div>
-                    <p className="mt-2 text-xs text-zinc-500">
+                    <p className="mt-2 text-xs text-zinc-400">
                       {level.next
                         ? `${t("levels.nextIn")} ${level.xpToNext} ${t("levels.toNextLevel")}`
                         : t("levels.maxLevel")}
@@ -496,33 +496,33 @@ export default function ProfilePage() {
 
           {/* Stats row */}
           <div className="grid grid-cols-2 gap-4 mb-8 md:grid-cols-4">
-            <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6 text-center">
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 text-center">
               <p className="text-3xl font-black text-white">{favorites.length}</p>
-              <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">{t("profile.favorites")}</p>
+              <p className="mt-1 text-xs text-zinc-400">{t("profile.favorites")}</p>
             </div>
-            <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6 text-center">
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 text-center">
               <p className="text-3xl font-black text-white">BCN</p>
-              <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">Ciudad</p>
+              <p className="mt-1 text-xs text-zinc-400">Ciudad</p>
             </div>
-            <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6 text-center">
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 text-center">
               <p className="text-3xl font-black text-white">🌙</p>
-              <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">Night owl</p>
+              <p className="mt-1 text-xs text-zinc-400">Night owl</p>
             </div>
-            <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6 text-center">
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 text-center">
               <Link href="/favorites" className="block">
                 <ArrowIcon className="mx-auto h-8 w-8 text-purple-400" />
-                <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">{t("profile.view_favorites")}</p>
+                <p className="mt-1 text-xs text-zinc-400">{t("profile.view_favorites")}</p>
               </Link>
             </div>
           </div>
 
           {/* Calendario de favoritos */}
-          <div className="mb-6 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-            <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">Tu calendario</p>
+          <div className="mb-6 rounded-card border border-white/10 bg-white/[0.03] p-8">
+            <p className="text-xs text-zinc-400 mb-6">Tu calendario</p>
             {loadingCalendar ? (
-              <p className="text-sm text-zinc-500">{t("common.loading")}</p>
+              <p className="text-sm text-zinc-400">{t("common.loading")}</p>
             ) : calendarItems.length === 0 ? (
-              <p className="text-sm text-zinc-500">Guarda eventos o noches de club en favoritos para verlos aquí.</p>
+              <p className="text-sm text-zinc-400">Guarda eventos o noches de club en favoritos para verlos aquí.</p>
             ) : (
               <div className="space-y-3">
                 {calendarItems.map((item) => {
@@ -539,11 +539,11 @@ export default function ProfilePage() {
                     >
                       <div>
                         <p className="font-bold text-white">{item.title}</p>
-                        <p className="mt-1 text-xs text-zinc-500">
+                        <p className="mt-1 text-xs text-zinc-400">
                           {isToday ? "🟢 Hoy" : dateLabel}{item.time ? ` · ${item.time}` : ""}
                         </p>
                       </div>
-                      <ArrowIcon className="h-4 w-4 shrink-0 text-zinc-500" />
+                      <ArrowIcon className="h-4 w-4 shrink-0 text-zinc-400" />
                     </div>
                   )
                   return item.kind === "event" ? (
@@ -557,12 +557,12 @@ export default function ProfilePage() {
           </div>
 
           {/* Últimos visitados */}
-          <div className="mb-6 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-            <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">Últimos visitados</p>
+          <div className="mb-6 rounded-card border border-white/10 bg-white/[0.03] p-8">
+            <p className="text-xs text-zinc-400 mb-6">Últimos visitados</p>
             {loadingVisits ? (
-              <p className="text-sm text-zinc-500">{t("common.loading")}</p>
+              <p className="text-sm text-zinc-400">{t("common.loading")}</p>
             ) : recentVisits.length === 0 ? (
-              <p className="text-sm text-zinc-500">Todavía no has visitado ningún club o evento.</p>
+              <p className="text-sm text-zinc-400">Todavía no has visitado ningún club o evento.</p>
             ) : (
               <div className="space-y-3">
                 {recentVisits.map((visit) => (
@@ -573,11 +573,11 @@ export default function ProfilePage() {
                   >
                     <div>
                       <p className="font-bold text-white">{visit.item_name}</p>
-                      <p className="mt-1 text-xs text-zinc-500">
+                      <p className="mt-1 text-xs text-zinc-400">
                         {visit.item_type === "event" ? "🎉 Evento" : "🏠 Club"} · {timeAgo(visit.created_at)}
                       </p>
                     </div>
-                    <ArrowIcon className="h-4 w-4 shrink-0 text-zinc-500" />
+                    <ArrowIcon className="h-4 w-4 shrink-0 text-zinc-400" />
                   </Link>
                 ))}
               </div>
@@ -585,9 +585,9 @@ export default function ProfilePage() {
           </div>
 
           {/* BUZON */}
-          <div id="buzon" className="mb-6 scroll-mt-24 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
+          <div id="buzon" className="mb-6 scroll-mt-24 rounded-card border border-white/10 bg-white/[0.03] p-8">
             <div className="flex items-center justify-between mb-6">
-              <p className="text-xs uppercase tracking-widest text-zinc-500">📥 Buzón</p>
+              <p className="text-xs text-zinc-400">📥 Buzón</p>
               {unreadCount > 0 && (
                 <span className="rounded-full bg-purple-500/20 border border-purple-500/30 px-3 py-1 text-xs font-bold text-purple-300">
                   {unreadCount} sin leer
@@ -615,10 +615,10 @@ export default function ProfilePage() {
             </div>
 
             {loadingInbox ? (
-              <p className="text-sm text-zinc-500">{t("common.loading")}</p>
+              <p className="text-sm text-zinc-400">{t("common.loading")}</p>
             ) : inboxTab === "notifications" ? (
               notifHistory.length === 0 ? (
-                <p className="text-sm text-zinc-500">Todavía no tienes notificaciones.</p>
+                <p className="text-sm text-zinc-400">Todavía no tienes notificaciones.</p>
               ) : (
                 <div className="space-y-3">
                   {notifHistory.map((n) => (
@@ -644,26 +644,26 @@ export default function ProfilePage() {
                           </div>
                         </button>
                         <div className="flex shrink-0 flex-col items-end gap-2">
-                          <span className="text-xs text-zinc-500">{timeAgo(n.created_at)}</span>
+                          <span className="text-xs text-zinc-400">{timeAgo(n.created_at)}</span>
                           <div className="flex items-center gap-3">
                             <button
                               onClick={() => toggleNotifPinned(n.id, !!n.pinned)}
                               title={n.pinned ? "Quitar prioridad" : "Marcar como prioritario"}
-                              className={n.pinned ? "text-amber-400" : "text-zinc-600 hover:text-amber-300"}
+                              className={n.pinned ? "text-amber-400" : "text-zinc-400 hover:text-amber-300"}
                             >
                               📌
                             </button>
                             <button
                               onClick={() => toggleNotifRead(n.id, n.read)}
                               title={n.read ? "Marcar como no leído" : "Marcar como leído"}
-                              className={n.read ? "text-zinc-600 hover:text-white" : "text-purple-400"}
+                              className={n.read ? "text-zinc-400 hover:text-white" : "text-purple-400"}
                             >
                               {n.read ? "○" : "●"}
                             </button>
                             <button
                               onClick={() => deleteNotif(n.id)}
                               title="Eliminar"
-                              className="text-zinc-600 hover:text-red-400"
+                              className="text-zinc-400 hover:text-red-400"
                             >
                               🗑️
                             </button>
@@ -675,7 +675,7 @@ export default function ProfilePage() {
                 </div>
               )
             ) : sentMessages.length === 0 ? (
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-zinc-400">
                 Todavía no has enviado ningún mensaje. Puedes escribirnos desde{" "}
                 <Link href="/contact" className="text-purple-300 underline">contacto</Link>.
               </p>
@@ -701,20 +701,20 @@ export default function ProfilePage() {
                         <button
                           onClick={() => toggleMessagePinned(m.id, !!m.pinned)}
                           title={m.pinned ? "Quitar prioridad" : "Marcar como prioritario"}
-                          className={m.pinned ? "text-amber-400" : "text-zinc-600 hover:text-amber-300"}
+                          className={m.pinned ? "text-amber-400" : "text-zinc-400 hover:text-amber-300"}
                         >
                           📌
                         </button>
-                        <button onClick={() => deleteMessage(m.id)} title="Eliminar" className="text-zinc-600 hover:text-red-400">
+                        <button onClick={() => deleteMessage(m.id)} title="Eliminar" className="text-zinc-400 hover:text-red-400">
                           🗑️
                         </button>
                       </div>
                     </div>
                     <p className="mt-2 text-sm text-zinc-400">{m.message}</p>
-                    <p className="mt-2 text-xs text-zinc-600">{timeAgo(m.created_at)}</p>
+                    <p className="mt-2 text-xs text-zinc-400">{timeAgo(m.created_at)}</p>
                     {m.reply && (
                       <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
-                        <p className="text-xs uppercase tracking-widest text-emerald-400 mb-1">Respuesta de Noctua</p>
+                        <p className="text-xs text-emerald-400 mb-1">Respuesta de Noctua</p>
                         <p className="text-sm text-zinc-300">{m.reply}</p>
                       </div>
                     )}
@@ -725,10 +725,10 @@ export default function ProfilePage() {
           </div>
 
           {/* Username */}
-          <div className="mb-6 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
+          <div className="mb-6 rounded-card border border-white/10 bg-white/[0.03] p-8">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-widest text-zinc-500">{t("profile.username")}</p>
+                <p className="text-xs text-zinc-400">{t("profile.username")}</p>
                 <h2 className="mt-2 text-2xl font-black">@{username || "—"}</h2>
               </div>
               {!editingUsername && canChangeUsername() && (
@@ -749,7 +749,7 @@ export default function ProfilePage() {
                   placeholder={t("profile.username")}
                   className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50"
                 />
-                <p className="mt-2 text-xs text-zinc-500">{t("profile.username_hint")}</p>
+                <p className="mt-2 text-xs text-zinc-400">{t("profile.username_hint")}</p>
                 {usernameError && <p className="mt-2 text-sm text-red-400">{usernameError}</p>}
                 <div className="mt-4 flex gap-3">
                   <button
@@ -770,7 +770,7 @@ export default function ProfilePage() {
             )}
 
             {!editingUsername && !canChangeUsername() && (
-              <p className="mt-3 text-sm text-zinc-500">
+              <p className="mt-3 text-sm text-zinc-400">
                 {t("profile.days_until_change").replace("{days}", String(daysUntilChange()))}
               </p>
             )}
@@ -778,15 +778,15 @@ export default function ProfilePage() {
           </div>
 
           {/* Año de nacimiento */}
-          <div className="mb-6 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-            <p className="text-xs uppercase tracking-widest text-zinc-500 mb-4">Año de nacimiento</p>
+          <div className="mb-6 rounded-card border border-white/10 bg-white/[0.03] p-8">
+            <p className="text-xs text-zinc-400 mb-4">Año de nacimiento</p>
             <BirthYearSelect value={birthYear} onChange={saveBirthYear} />
             {birthYearMsg && <p className="mt-2 text-sm text-emerald-400">{birthYearMsg}</p>}
           </div>
 
           {/* Account */}
-          <div className="mb-6 rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-            <p className="text-xs uppercase tracking-widest text-zinc-500 mb-6">{t("profile.session")}</p>
+          <div className="mb-6 rounded-card border border-white/10 bg-white/[0.03] p-8">
+            <p className="text-xs text-zinc-400 mb-6">{t("profile.session")}</p>
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={logout}
@@ -820,7 +820,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Delete */}
-          <div className="rounded-[32px] border border-red-500/20 bg-red-500/5 p-6 flex items-center justify-between gap-4">
+          <div className="rounded-card border border-red-500/20 bg-red-500/5 p-6 flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-bold text-red-400">{t("profile.danger")}</p>
               <p className="mt-1 text-xs text-red-300/70">{t("profile.delete_subtitle")}</p>
@@ -839,7 +839,7 @@ export default function ProfilePage() {
 
         {showDeleteModal && (
           <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
-            <div className="w-full max-w-md rounded-[32px] border border-red-500/30 bg-[#111] p-8">
+            <div className="w-full max-w-md rounded-card border border-red-500/30 bg-[#111] p-8">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-3xl">⚠️</div>
               <h2 className="mt-5 text-2xl font-black text-white">{t("profile.delete_confirm_title")}</h2>
               <p className="mt-3 text-sm leading-relaxed text-zinc-400">

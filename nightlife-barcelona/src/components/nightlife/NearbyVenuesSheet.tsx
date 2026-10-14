@@ -204,7 +204,7 @@ export default function NearbyVenuesSheet({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-[32px] border border-white/10 bg-[#0b0912] sm:max-w-lg sm:rounded-[32px]"
+            className="flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-card border border-white/10 bg-night sm:max-w-lg sm:rounded-card"
           >
             <div className="flex items-start justify-between gap-4 border-b border-white/5 p-6 pb-5">
               <div>
@@ -295,15 +295,15 @@ export default function NearbyVenuesSheet({
                             <p className="truncate text-sm font-black text-white">{v.name}</p>
                             {v.trending && <span className="shrink-0 text-xs">🔥</span>}
                           </div>
-                          <p className="truncate text-xs text-zinc-500">
+                          <p className="truncate text-xs text-zinc-400">
                             {[v.music, v.neighborhood].filter(Boolean).join(" · ") || "Barcelona"}
                           </p>
                           <div className="mt-1.5 flex items-center gap-2">
-                            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-bold text-zinc-200">
+                            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-bold text-zinc-200">
                               📍 {formatDistance(v.distanceMeters)}
                             </span>
                             {v.noQueue && (
-                              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
+                              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
                                 {t("club.no_queue")}
                               </span>
                             )}

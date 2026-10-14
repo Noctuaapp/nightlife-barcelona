@@ -378,7 +378,7 @@ export default function AdminEventsPage() {
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Loading admin...</p>
+        <p className="text-sm text-zinc-400">Loading admin...</p>
       </main>
     )
   }
@@ -389,7 +389,7 @@ export default function AdminEventsPage() {
     onRemove: (url: string) => void
   ) => (
     <div className="lg:col-span-3">
-      <p className="mb-2 text-xs font-bold uppercase tracking-widest text-zinc-500">
+      <p className="mb-2 text-xs font-bold text-zinc-400">
         Galería manual ({gallery.length} foto{gallery.length === 1 ? "" : "s"})
       </p>
       <label className="block cursor-pointer rounded-2xl border border-dashed border-white/20 bg-white/[0.02] px-5 py-4 text-center text-sm font-bold text-zinc-400 transition hover:border-purple-500/50 hover:text-white">
@@ -419,7 +419,7 @@ export default function AdminEventsPage() {
     <AdminShell title="Event control" subtitle="Create, edit and manage nightlife events across Barcelona.">
       <>
         <section className="mx-auto max-w-7xl">
-          <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
+          <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
             <div className="grid gap-4 lg:grid-cols-3">
               {Object.keys(emptyEvent).map((key) => (
                 <input
@@ -432,7 +432,7 @@ export default function AdminEventsPage() {
               ))}
 
               <div className="lg:col-span-3">
-                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-zinc-500">Foto de portada</p>
+                <p className="mb-2 text-xs font-bold text-zinc-400">Foto de portada</p>
                 <input
                   type="file"
                   accept="image/*"
@@ -447,7 +447,7 @@ export default function AdminEventsPage() {
               {galleryUploadBox(newGallery, handleNewGalleryUpload, removeNewGalleryPhoto)}
 
               <div className="lg:col-span-3">
-                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-zinc-500">
+                <p className="mb-2 text-xs font-bold text-zinc-400">
                   Tarifas adicionales (opcional) — formato "Etiqueta:precio" separadas por ;
                 </p>
                 <input
@@ -488,7 +488,7 @@ export default function AdminEventsPage() {
                 return event.title?.toLowerCase().includes(q) || event.club_name?.toLowerCase().includes(q) || event.artist?.toLowerCase().includes(q)
               })
               .map((event) => (
-                <div key={event.id} id={`event-${event.id}`} className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
+                <div key={event.id} id={`event-${event.id}`} className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                   {editingId === event.id ? (
                     <div className="grid gap-4 lg:grid-cols-3">
                       {Object.keys(emptyEvent).map((key) => (
@@ -502,7 +502,7 @@ export default function AdminEventsPage() {
                       ))}
 
                       <div className="lg:col-span-3">
-                        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-zinc-500">Foto de portada</p>
+                        <p className="mb-2 text-xs font-bold text-zinc-400">Foto de portada</p>
                         <input
                           type="file"
                           accept="image/*"
@@ -517,7 +517,7 @@ export default function AdminEventsPage() {
                       {galleryUploadBox(editGallery, handleEditGalleryUpload, removeEditGalleryPhoto)}
 
                       <div className="lg:col-span-3">
-                        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-zinc-500">
+                        <p className="mb-2 text-xs font-bold text-zinc-400">
                           Tarifas adicionales (opcional) — formato "Etiqueta:precio" separadas por ;
                         </p>
                         <input
@@ -535,7 +535,7 @@ export default function AdminEventsPage() {
                     <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                       <div>
                         {event.image && (
-                          <img src={event.image} alt={event.title} className="mb-3 h-48 w-full rounded-3xl object-cover lg:w-[420px]" />
+                          <img src={event.image} alt={event.title} className="mb-3 h-48 w-full rounded-card object-cover lg:w-[420px]" />
                         )}
 
                         {Array.isArray(event.gallery) && event.gallery.length > 0 && (
@@ -551,7 +551,7 @@ export default function AdminEventsPage() {
                           </div>
                         )}
 
-                        <p className="text-sm uppercase tracking-wide text-zinc-500">{event.club_name} · {event.music}</p>
+                        <p className="text-sm uppercase tracking-wide text-zinc-400">{event.club_name} · {event.music}</p>
 
                         <h2 className="mt-2 text-3xl font-black">{event.title}</h2>
 

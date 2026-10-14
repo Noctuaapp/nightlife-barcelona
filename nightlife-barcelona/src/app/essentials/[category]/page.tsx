@@ -1,7 +1,8 @@
 "use client"
 
 import { zoneOf, zonesPresent } from "../../../lib/zones"
-import { madridClock } from "../../../lib/clubHours"
+import { getMetroTonight } from "../../../lib/transitHours"
+import { cleanEssential } from "../../../lib/essentials"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
@@ -14,7 +15,6 @@ import { useLanguage } from "../../../context/LanguageContext"
 import ArrowIcon from "../../../components/ui/ArrowIcon"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../../lib/geo"
 import { getOpenStatus } from "../../../lib/openStatus"
-import { useIdleVisible } from "../../../lib/useIdleVisible"
 import AdminEditButton from "../../../components/admin/AdminEditButton"
 import EssentialPhoto from "../../../components/essentials/EssentialPhoto"
 
@@ -26,30 +26,11 @@ const categoryConfig: Record<string, { icon: string; color: string; key: string 
   metro: { icon: "🚇", color: "#dc2626", key: "Metro" },
   nitbus: { icon: "🌙", color: "#6366f1", key: "Nitbus" },
   taxi: { icon: "🚕", color: "#eab308", key: "Taxi" },
-  supermarket: { icon: "🛒", color: "#ec4899", key: "Supermarket" },
+  supermarket: { icon: "🛒", color: "#7c5cff", key: "Supermarket" },
   hotel: { icon: "🏨", color: "#14b8a6", key: "Hotel" },
   casino: { icon: "🎰", color: "#f43f5e", key: "Casino" },
   "gas-station": { icon: "⛽", color: "#f59e0b", key: "GasStation" },
   hospital: { icon: "🏥", color: "#ef4444", key: "Hospital" },
-}
-
-// Horario del Metro de Barcelona (TMB), siempre con la hora de Madrid:
-//   lunes a jueves y domingo: 05:00–00:00 · viernes y vísperas de festivo: 05:00–02:00 ·
-//   sábado: servicio continuo toda la noche hasta el domingo a las 00:00.
-// Antes decía que el sábado cerraba a las 02:00 y que el domingo era 24 h (al revés), y usaba la
-// hora del móvil, así que a las 01:00 de un viernes ya marcaba el horario del sábado. Las vísperas
-// de festivo todavía no se detectan (no hay calendario de festivos).
-function getMetroSchedule(): { label: string; isLate: boolean } {
-  const { dow, minutes } = madridClock() // dow: 0 = domingo
-  if (minutes < 5 * 60) {
-    const yesterday = (dow + 6) % 7
-    if (yesterday === 6) return { label: "🟢 Abierto toda la noche (noche del sábado)", isLate: true }
-    if (yesterday === 5 && minutes < 2 * 60) return { label: "🟡 Abierto hasta las 02:00", isLate: true }
-    return { label: "🔴 Cerrado ahora · abre a las 05:00", isLate: false }
-  }
-  if (dow === 5) return { label: "🟡 Hoy abre hasta las 02:00", isLate: true }
-  if (dow === 6) return { label: "🟢 Hoy sin cierre: toda la noche", isLate: true }
-  return { label: "Abierto hasta las 00:00 · abre a las 05:00", isLate: false }
 }
 
 const TAXI_APPS = [
@@ -75,50 +56,36 @@ type Essential = {
   maps_link: string | null
   latitude: number | null
   longitude: number | null
+  highFee?: boolean
 }
 
-function useReveal<T extends HTMLElement>() {
-  const ref = useRef<T>(null)
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisible(true)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.1 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-  return { ref, visible }
-}
-
-function Reveal(props: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
-  const revealRef = useReveal<HTMLDivElement>()
-  const wrapperClass =
-    "transition-all duration-700 ease-out motion-reduce:transition-none " +
-    (revealRef.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6") +
-    " " +
-    (props.className || "")
-
+// Antes cada tarjeta aparecía con una animación al hacer scroll; ahora se muestra directamente.
+function Reveal({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
-    <div ref={revealRef.ref} style={props.style} className={wrapperClass}>
-      {props.children}
+    <div className={className} style={style ? { ...style, transitionDelay: undefined } : undefined}>
+      {children}
     </div>
   )
 }
 
 export default function EssentialCategoryPage() {
-  const floatingVisible = useIdleVisible(3000)
+  // Horario del metro de esta noche (con vísperas de festivo). Se calcula tras montar: depende de la hora.
+  const [metroLabel, setMetroLabel] = useState("")
+  useEffect(() => {
+    const m = getMetroTonight()
+    setMetroLabel(
+      m.state === "closed"
+        ? t("clubPage.metroClosed")
+        : m.closes === "all-night"
+        ? t("clubPage.metroAllNight")
+        : t("clubPage.metroUntil").replace("{time}", m.closes)
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const params = useParams()
   const category = (params.category as string).toLowerCase()
   const knownConfig = categoryConfig[category]
-  const config = knownConfig || { icon: "📍", color: "#a855f7", key: "Other" }
+  const config = knownConfig || { icon: "📍", color: "#7c5cff", key: "Other" }
   const { t } = useLanguage()
   const label = knownConfig ? t("essentials.category_names." + config.key) : category
 
@@ -192,7 +159,7 @@ export default function EssentialCategoryPage() {
       // .eq("hidden", false) igual que en el listado — si no, un esencial oculto desde el admin
       // seguía siendo visitable por enlace directo.
       const { data } = await supabase.from("essentials").select("*").ilike("category", category).eq("hidden", false).order("name")
-      if (data) setEssentials(data)
+      if (data) setEssentials(data.map(cleanEssential))
       setLoading(false)
     }
     fetchEssentials()
@@ -298,7 +265,7 @@ export default function EssentialCategoryPage() {
   useEffect(() => {
     if (!mapReady || !map.current || !userLocation) return
     userMarkerRef.current?.remove()
-    userMarkerRef.current = new mapboxgl.Marker({ color: "#a855f7" }).setLngLat([userLocation.lng, userLocation.lat]).addTo(map.current)
+    userMarkerRef.current = new mapboxgl.Marker({ color: "#7c5cff" }).setLngLat([userLocation.lng, userLocation.lat]).addTo(map.current)
 
     const nearest = essentials
       .filter((e) => e.latitude && e.longitude)
@@ -413,7 +380,7 @@ export default function EssentialCategoryPage() {
       <Reveal key={item.id} style={{ transitionDelay: Math.min(index, 8) * 50 + "ms" }}>
         <div
           onClick={handleCardClick}
-          className="group cursor-pointer overflow-hidden rounded-[22px] border backdrop-blur-xl transition duration-300 hover:-translate-y-0.5"
+          className="group cursor-pointer overflow-hidden rounded-card border backdrop-blur-xl transition duration-300 hover:-translate-y-0.5"
           style={{
             borderColor: isSelected ? config.color + "70" : "rgba(255,255,255,0.08)",
             background: isSelected ? config.color + "12" : "rgba(255,255,255,0.03)",
@@ -432,7 +399,7 @@ export default function EssentialCategoryPage() {
             <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
               {status.state !== "unknown" && (
                 <span
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold backdrop-blur-md ${
+                  className={`rounded-full px-2.5 py-1 text-xs font-bold backdrop-blur-md ${
                     status.state === "open"
                       ? status.soon
                         ? "bg-amber-500/80 text-black"
@@ -444,15 +411,18 @@ export default function EssentialCategoryPage() {
                 </span>
               )}
               {distanceLabel && (
-                <span className="rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-md">📍 {distanceLabel}</span>
+                <span className="rounded-full bg-black/60 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-md">📍 {distanceLabel}</span>
               )}
             </div>
           </div>
 
           <div className="p-4">
             <h3 className="font-bold text-white">{item.name}</h3>
+            {item.highFee && (
+              <span className="mt-1 inline-block rounded-full bg-warn/15 px-2.5 py-0.5 text-xs font-semibold text-warn">{t("essentialsPage.highFee")}</span>
+            )}
             {item.address && <p className="mt-0.5 text-xs text-zinc-400">{item.address}</p>}
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-400">
               {item.neighborhood && <span>📍 {item.neighborhood}</span>}
               {status.state === "unknown" && status.label && <span>🕒 {status.label}</span>}
             </div>
@@ -481,7 +451,7 @@ export default function EssentialCategoryPage() {
                   Maps <ArrowIcon className="h-3 w-3" />
                 </a>
               )}
-              <a href={reportHref} onClick={stopPropagation} className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-500 transition hover:text-white" title="Reportar un problema">
+              <a href={reportHref} onClick={stopPropagation} className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-400 transition hover:text-white" title="Reportar un problema">
                 ⚑
               </a>
             </div>
@@ -526,12 +496,14 @@ export default function EssentialCategoryPage() {
                 {config.icon}
               </span>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-zinc-300">{t("essentials.title")}</p>
+                <p className="text-xs font-semibold text-zinc-300">{t("essentials.title")}</p>
                 <h1 className="text-4xl font-black tracking-tight text-white md:text-5xl">{label}</h1>
               </div>
             </div>
             <p className="mt-3 text-sm text-zinc-300">
-              {filteredEssentials.length} {filteredEssentials.length !== 1 ? t("essentials.locations_plural") : t("essentials.locations")}
+              {loading
+                ? t("common.loading")
+                : `${filteredEssentials.length} ${filteredEssentials.length !== 1 ? t("essentials.locations_plural") : t("essentials.locations")}`}
             </p>
           </div>
         </div>
@@ -539,8 +511,8 @@ export default function EssentialCategoryPage() {
         {/* Panel de contexto: pedir taxi ya / horario del metro */}
         {category === "taxi" && (
           <section className="mx-auto mt-6 max-w-7xl px-4">
-            <div className="rounded-[24px] border border-yellow-500/25 bg-yellow-500/[0.06] p-5">
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest text-yellow-300">🚕 Pedir un taxi ahora</p>
+            <div className="rounded-card border border-yellow-500/25 bg-yellow-500/[0.06] p-5">
+              <p className="mb-3 text-xs font-bold text-yellow-300">🚕 Pedir un taxi ahora</p>
               <div className="flex flex-wrap gap-2.5">
                 {TAXI_APPS.map((app) => (
                   <a
@@ -563,29 +535,27 @@ export default function EssentialCategoryPage() {
                   </a>
                 ))}
               </div>
-              <p className="mt-3 text-xs text-zinc-500">O usa las paradas de taxi reales de abajo si prefieres ir a coger uno directamente.</p>
+              <p className="mt-3 text-xs text-zinc-400">O usa las paradas de taxi reales de abajo si prefieres ir a coger uno directamente.</p>
             </div>
           </section>
         )}
 
         {category === "metro" && (
           <section className="mx-auto mt-6 max-w-7xl px-4">
-            <div className="rounded-[24px] border border-red-500/25 bg-red-500/[0.06] p-5">
-              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-red-300">🚇 Horario del Metro de Barcelona</p>
-              <p className="text-lg font-black text-white">{getMetroSchedule().label}</p>
-              <p className="mt-1 text-xs text-zinc-500">
-                Entre semana hasta las 00:00 · sábados hasta las 02:00 · domingos y festivos 24h · abre siempre a las 05:00.
-              </p>
+            <div className="rounded-card border border-red-500/25 bg-red-500/[0.06] p-5">
+              <p className="mb-2 text-xs font-semibold text-red-200">{t("essentialsPage.metroTitle")}</p>
+              <p className="text-lg font-semibold text-ink">{metroLabel}</p>
+              <p className="mt-1 text-xs text-zinc-400">{t("essentialsPage.metroRules")}</p>
             </div>
           </section>
         )}
 
         {category === "nitbus" && (
           <section className="mx-auto mt-6 max-w-7xl px-4">
-            <div className="rounded-[24px] border border-indigo-500/25 bg-indigo-500/[0.06] p-5">
-              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-indigo-300">🌙 Nitbus · autobuses nocturnos</p>
+            <div className="rounded-card border border-indigo-500/25 bg-indigo-500/[0.06] p-5">
+              <p className="mb-2 text-xs font-bold text-indigo-300">🌙 Nitbus · autobuses nocturnos</p>
               <p className="text-lg font-black text-white">Cada noche, aprox. 23:00 – 05:00</p>
-              <p className="mt-1 text-xs text-zinc-500">
+              <p className="mt-1 text-xs text-zinc-400">
                 17 líneas nocturnas cubren Barcelona cuando el metro está cerrado. Estas son las paradas/nudos principales
                 donde confluyen varias líneas — consulta la app TMB o el panel de la parada para el horario exacto de cada línea.
               </p>
@@ -683,7 +653,7 @@ export default function EssentialCategoryPage() {
             <div className={`md:col-span-5 ${mobileView === "map" ? "hidden md:block" : ""}`}>
               {loading ? (
                 <div className="grid gap-3">
-                  {[0, 1, 2, 3].map((i) => <div key={i} className="h-32 animate-pulse rounded-[22px] bg-white/[0.03]" />)}
+                  {[0, 1, 2, 3].map((i) => <div key={i} className="h-32 animate-pulse rounded-card bg-white/[0.03]" />)}
                 </div>
               ) : filteredEssentials.length === 0 ? (
                 <div className="py-20 text-center">
@@ -699,7 +669,7 @@ export default function EssentialCategoryPage() {
             <div className={`md:col-span-7 ${mobileView === "list" ? "hidden md:block" : ""}`}>
               <div
                 ref={mapWrapperRef}
-                className="relative h-[65dvh] min-h-[380px] scroll-mt-20 overflow-hidden rounded-[28px] border md:sticky md:top-24 md:h-[640px]"
+                className="relative h-[65dvh] min-h-[380px] scroll-mt-20 overflow-hidden rounded-card border md:sticky md:top-24 md:h-[640px]"
                 style={{ borderColor: config.color + "30" }}
               >
                 <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
@@ -720,10 +690,10 @@ export default function EssentialCategoryPage() {
 
                 {/* Ficha del sitio tocado: foto grande con el nombre encima, como en el mapa de clubs */}
                 {selected && (
-                  <div className="absolute inset-x-3 bottom-3 overflow-hidden rounded-2xl border border-white/10 bg-[#0b0912]/95 backdrop-blur-xl">
+                  <div className="absolute inset-x-3 bottom-3 overflow-hidden rounded-2xl border border-white/10 bg-night/95 backdrop-blur-xl">
                     <div className="relative">
                       <EssentialPhoto src={selected.image} alt={selected.name} icon={config.icon} color={config.color} className="h-28 w-full md:h-36" />
-                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0b0912] via-black/25 to-transparent" />
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-night via-black/25 to-transparent" />
                       <button
                         onClick={() => setSelected(null)}
                         className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur-md"
@@ -733,6 +703,7 @@ export default function EssentialCategoryPage() {
                       </button>
                       <div className="absolute inset-x-0 bottom-0 px-4 pb-3">
                         <p className="truncate text-base font-black text-white">{selected.name}</p>
+                        {selected.highFee && <p className="text-xs font-semibold text-warn">{t("essentialsPage.highFee")}</p>}
                         {selected.address && <p className="truncate text-xs text-zinc-300">{selected.address}</p>}
                       </div>
                     </div>
@@ -793,9 +764,9 @@ export default function EssentialCategoryPage() {
       {mobileView === "list" && !loading && essentials.length > 0 && (
         <button
           onClick={() => setMobileView("map")}
-          className={`fixed bottom-24 right-4 z-30 rounded-full bg-white px-4 py-2.5 text-xs font-black text-black shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all duration-300 md:hidden ${floatingVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-24 opacity-0"}`}
+          className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] right-4 z-30 flex items-center gap-1.5 rounded-full bg-ink px-4 py-2.5 text-xs font-semibold text-night shadow-lg md:hidden"
         >
-          🗺️ Ver mapa
+          {t("essentialsPage.seeMap")}
         </button>
       )}
       <BottomNav />

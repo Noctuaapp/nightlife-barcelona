@@ -128,7 +128,7 @@ export default function FavoritesPage() {
   if (checkingSession || loadingFavorites) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("favoritesPage.loading")}</p>
+        <p className="text-sm text-zinc-400">{t("favoritesPage.loading")}</p>
       </main>
     )
   }
@@ -140,7 +140,7 @@ export default function FavoritesPage() {
     meta: { label: string; value: string }[],
     href: string
   ) => (
-    <div key={`${item.type}-${item.id}`} className="overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] transition hover:border-white/20">
+    <div key={`${item.type}-${item.id}`} className="overflow-hidden rounded-card border border-white/10 bg-white/[0.03] transition hover:border-white/20">
       <Link href={href} className="block">
         <img
           src={image || FALLBACK_IMAGE}
@@ -184,7 +184,7 @@ export default function FavoritesPage() {
           <div className="mx-auto max-w-7xl">
             <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("nav.favorites")}</p>
+                <p className="text-sm text-zinc-400">{t("nav.favorites")}</p>
                 <h1 className="mt-4 text-5xl font-black tracking-tight text-white md:text-7xl">
                   {t("favoritesPage.title")}
                 </h1>
@@ -193,8 +193,8 @@ export default function FavoritesPage() {
                 </p>
               </div>
 
-              <div className="rounded-[28px] border border-white/10 bg-white/[0.03] px-6 py-5 backdrop-blur-xl">
-                <p className="text-sm uppercase tracking-wide text-zinc-500">{t("favoritesPage.saved")}</p>
+              <div className="rounded-card border border-white/10 bg-white/[0.03] px-6 py-5 backdrop-blur-xl">
+                <p className="text-sm uppercase tracking-wide text-zinc-400">{t("favoritesPage.saved")}</p>
                 <p className="mt-2 text-3xl font-black text-white">{totalFavorites}</p>
               </div>
             </div>
@@ -203,7 +203,7 @@ export default function FavoritesPage() {
 
         {totalFavorites === 0 && (
           <section className="mx-auto mt-24 max-w-4xl px-4">
-            <div className="overflow-hidden rounded-[36px] border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.02] p-14 text-center backdrop-blur-2xl">
+            <div className="overflow-hidden rounded-card border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.02] p-14 text-center backdrop-blur-2xl">
               <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-6xl backdrop-blur-xl">
                 ❤️
               </div>
@@ -222,7 +222,7 @@ export default function FavoritesPage() {
 
         {clubs.length > 0 && (
           <section className="mx-auto mt-16 max-w-7xl px-4">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("favoritesPage.clubsSavedEyebrow")}</p>
+            <p className="text-sm text-zinc-400">{t("favoritesPage.clubsSavedEyebrow")}</p>
             <h2 className="mt-3 text-4xl font-black tracking-tight text-white">{t("favoritesPage.clubsSavedTitle")}</h2>
             <div className="mt-8 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
               {clubs.map((club) =>
@@ -243,7 +243,7 @@ export default function FavoritesPage() {
 
         {clubEvents.length > 0 && (
           <section className="mx-auto mt-16 max-w-7xl px-4">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("favoritesPage.nightsSavedEyebrow")}</p>
+            <p className="text-sm text-zinc-400">{t("favoritesPage.nightsSavedEyebrow")}</p>
             <h2 className="mt-3 text-4xl font-black tracking-tight text-white">{t("favoritesPage.nightsSavedTitle")}</h2>
             <div className="mt-8 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
               {clubEvents.map((ce) =>
@@ -264,7 +264,7 @@ export default function FavoritesPage() {
 
         {events.length > 0 && (
           <section className="mx-auto mt-16 max-w-7xl px-4">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("favoritesPage.eventsSavedEyebrow")}</p>
+            <p className="text-sm text-zinc-400">{t("favoritesPage.eventsSavedEyebrow")}</p>
             <h2 className="mt-3 text-4xl font-black tracking-tight text-white">{t("favoritesPage.eventsSavedTitle")}</h2>
             <div className="mt-8 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
               {events.map((event) =>

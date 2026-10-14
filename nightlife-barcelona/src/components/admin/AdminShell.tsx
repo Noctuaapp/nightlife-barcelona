@@ -11,6 +11,7 @@ const ADMIN_NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/admin/datos", label: "Datos", icon: "💎" },
   { href: "/admin", label: "Clubs", icon: "🏛️" },
+  { href: "/admin/calidad", label: "Calidad", icon: "✅" },
   { href: "/admin/events", label: "Eventos", icon: "🎉" },
   { href: "/admin/club-events", label: "Noches de club", icon: "🎧" },
   { href: "/admin/essentials", label: "Esenciales", icon: "📍" },
@@ -35,8 +36,8 @@ export default function AdminShell({
   const pathname = usePathname()
 
   return (
-    <div className="min-h-screen bg-[#08070b] text-white">
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#08070b]/90 backdrop-blur-xl">
+    <div className="min-h-screen bg-night text-white">
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-night/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-5 py-4">
           <Link href="/admin/dashboard" className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-base font-black">
@@ -44,7 +45,7 @@ export default function AdminShell({
             </span>
             <div className="leading-tight">
               <p className="text-sm font-black tracking-tight">Noctua</p>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">Admin</p>
+              <p className="text-xs text-zinc-400">Admin</p>
             </div>
           </Link>
           <Link
@@ -77,9 +78,9 @@ export default function AdminShell({
       <main className="mx-auto max-w-[1400px] px-5 pb-32 pt-8">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.3em] text-purple-400">Admin</p>
+            <p className="text-xs font-bold text-purple-400">Admin</p>
             <h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">{title}</h1>
-            {subtitle && <p className="mt-2 max-w-xl text-sm text-zinc-500">{subtitle}</p>}
+            {subtitle && <p className="mt-2 max-w-xl text-sm text-zinc-400">{subtitle}</p>}
           </div>
           {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
         </div>

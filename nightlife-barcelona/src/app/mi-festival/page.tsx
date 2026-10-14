@@ -292,7 +292,7 @@ export default function MiFestivalPage() {
   }
 
   const inputClass = "rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-white outline-none focus:border-purple-500/50 transition"
-  const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1.5"
+  const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1.5"
 
   const renderForm = (
     form: FormData, setForm: (f: FormData) => void,
@@ -349,7 +349,7 @@ export default function MiFestivalPage() {
       <div className="md:col-span-2">
         <label className={labelClass}>Imagen principal</label>
         <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://... (o sube una abajo)" className={inputClass} />
-        <label className={`mt-2 block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploading ? "border-white/10 text-zinc-600" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
+        <label className={`mt-2 block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploading ? "border-white/10 text-zinc-400" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
           {uploading ? "Subiendo..." : "📁 Subir imagen desde tu ordenador"}
           <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={handleImageUpload} />
         </label>
@@ -357,7 +357,7 @@ export default function MiFestivalPage() {
       </div>
       <div className="md:col-span-2">
         <label className={labelClass}>Galería ({gallery.length} foto{gallery.length === 1 ? "" : "s"})</label>
-        <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploading ? "border-white/10 text-zinc-600" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
+        <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploading ? "border-white/10 text-zinc-400" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
           {uploading ? "Subiendo..." : "📁 Añadir fotos a la galería"}
           <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={handleGalleryUpload} />
         </label>
@@ -383,9 +383,9 @@ export default function MiFestivalPage() {
     const festivalSessions = sessions[festival.id] || []
     return (
       <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-5">
-        <h4 className="mb-4 text-sm font-black uppercase tracking-widest text-zinc-400">Line-up / sesiones</h4>
+        <h4 className="mb-4 text-sm font-black text-zinc-400">Line-up / sesiones</h4>
 
-        {festivalSessions.length === 0 && <p className="mb-4 text-sm text-zinc-500">Todavía no has añadido ninguna sesión.</p>}
+        {festivalSessions.length === 0 && <p className="mb-4 text-sm text-zinc-400">Todavía no has añadido ninguna sesión.</p>}
 
         <div className="grid gap-2">
           {festivalSessions.map((s) => (
@@ -406,11 +406,11 @@ export default function MiFestivalPage() {
             ) : (
               <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
                 <p className="text-sm text-white">
-                  {s.date && <span className="text-zinc-500">{new Date(s.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })} · </span>}
+                  {s.date && <span className="text-zinc-400">{new Date(s.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })} · </span>}
                   <span className="font-bold">{s.title}</span>
-                  {s.artist && <span className="text-zinc-500"> · 🎧 {s.artist}</span>}
-                  {s.stage && <span className="text-zinc-500"> · {s.stage}</span>}
-                  {(s.start_time || s.end_time) && <span className="text-zinc-500"> · {s.start_time || "?"}–{s.end_time || "?"}</span>}
+                  {s.artist && <span className="text-zinc-400"> · 🎧 {s.artist}</span>}
+                  {s.stage && <span className="text-zinc-400"> · {s.stage}</span>}
+                  {(s.start_time || s.end_time) && <span className="text-zinc-400"> · {s.start_time || "?"}–{s.end_time || "?"}</span>}
                 </p>
                 <div className="flex gap-2">
                   <button onClick={() => startEditSession(s)} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white hover:text-black">✏️</button>
@@ -440,7 +440,7 @@ export default function MiFestivalPage() {
   if (checkingAccess) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Verificando acceso...</p>
+        <p className="text-sm text-zinc-400">Verificando acceso...</p>
       </main>
     )
   }
@@ -463,16 +463,16 @@ export default function MiFestivalPage() {
       <Header />
       <main className="min-h-screen bg-black pb-40 pt-14 text-white">
         <section className="mx-auto max-w-4xl px-4">
-          <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Portal de festivales</p>
+          <p className="text-sm text-zinc-400">Portal de festivales</p>
           <h1 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">Mis festivales</h1>
           <p className="mt-3 max-w-xl text-sm text-zinc-400">
             Gestiona tus festivales y su line-up en Noctua. Los cambios se publican en cuanto los guardas.
           </p>
 
           {festivals.length === 0 && !showAddForm && (
-            <div className="mt-10 rounded-[32px] border border-white/10 bg-white/[0.03] p-10 text-center">
+            <div className="mt-10 rounded-card border border-white/10 bg-white/[0.03] p-10 text-center">
               <p className="text-zinc-400">Todavía no tienes ningún festival vinculado a tu cuenta.</p>
-              <p className="mt-2 text-sm text-zinc-500">
+              <p className="mt-2 text-sm text-zinc-400">
                 Si crees que debería haber alguno, o quieres añadir el primero,{" "}
                 <Link href="/contact?type=owner_access&subject=No%20veo%20mi%20festival%20en%20mi-festival" className="text-purple-300 underline">escríbenos</Link>.
               </p>
@@ -487,7 +487,7 @@ export default function MiFestivalPage() {
               {showAddForm ? "✕ Cerrar formulario" : "+ Nuevo festival"}
             </button>
             {showAddForm && (
-              <div className="mt-4 rounded-[24px] border border-purple-500/30 bg-purple-500/[0.04] p-6">
+              <div className="mt-4 rounded-card border border-purple-500/30 bg-purple-500/[0.04] p-6">
                 <h3 className="mb-4 text-lg font-black">Nuevo festival</h3>
                 {renderForm(newForm, setNewForm, newGallery, setNewGallery, newPriceTiersRaw, setNewPriceTiersRaw, handleNewImageUpload, handleNewGalleryUpload)}
                 <div className="mt-5 flex gap-3">
@@ -505,7 +505,7 @@ export default function MiFestivalPage() {
           {festivals.length > 0 && (
             <div className="mt-8 grid gap-6">
               {festivals.map((festival) => (
-                <div key={festival.id} className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
+                <div key={festival.id} className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                   {editingId === festival.id ? (
                     <div>
                       <h3 className="mb-4 text-lg font-black">Editando: {festival.title}</h3>

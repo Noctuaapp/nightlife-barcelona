@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
-import AuthGateModal from "../../components/ui/AuthGateModal"
 import { supabase } from "../../lib/supabase"
 import { track } from "../../lib/track"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
@@ -569,60 +568,21 @@ export default function PlanPage() {
     setSeenClubIds(new Set())
   }
 
-  const Glow = () => (
-    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#050308]">
-      <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-purple-600/20 blur-[120px] animate-[float_18s_ease-in-out_infinite]" />
-      <div className="absolute -right-40 top-1/3 h-[450px] w-[450px] rounded-full bg-pink-500/10 blur-[130px] animate-[float_22s_ease-in-out_infinite_reverse]" />
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)",
-          backgroundSize: "56px 56px",
-        }}
-      />
-    </div>
-  )
+  // Antes había aquí un fondo con manchas de color animadas y una cuadrícula; ya no hace falta.
+  const Glow = () => null
 
   if (isLoggedIn === null || loading) {
     return (
       <main className="relative flex min-h-screen items-center justify-center text-white">
         <Glow />
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("common.loading")}</p>
+        <p className="text-sm text-zinc-400">{t("common.loading")}</p>
       </main>
     )
   }
 
-  if (!isLoggedIn) {
-    // En vez del cartel de "regístrate o inicia sesión" fijo, se muestra un adelanto borroso
-    // de la propia pantalla de plan con el modal reutilizable de registro encima — mismo look
-    // que el resto de la app (favoritos, locales cercanos). Como esta pantalla no tiene nada
-    // que ofrecer sin cuenta, "Ahora no" en el modal lleva a inicio en vez de quedarse aquí.
-    return (
-      <>
-        <Header />
-        <main className="relative flex min-h-screen items-center justify-center px-4 text-white">
-          <Glow />
-          <div className="max-w-md select-none text-center opacity-30 blur-sm">
-            <div className="mb-6 text-7xl">✨</div>
-            <h1 className="text-4xl font-black text-white">{t("nav.plan")}</h1>
-            <p className="mt-4 text-lg leading-relaxed text-zinc-400">
-              {t("planPage.notLoggedInSubtitle")}
-            </p>
-          </div>
-        </main>
-        <BottomNav />
-        <AuthGateModal
-          open
-          onClose={() => {
-            window.location.href = "/"
-          }}
-          subtitleKey="authGate.subtitlePlan"
-        />
-      </>
-    )
-  }
-
+  // Antes, sin cuenta solo se veía un muro de registro: la función más atractiva de la app no se
+  // podía ni probar. Ahora cualquiera genera su plan; la cuenta solo se pide para compartirlo
+  // (SharePlanButton) y para personalizarlo con favoritos e historial.
   return (
     <>
       <Header />
@@ -648,24 +608,24 @@ export default function PlanPage() {
                 </div>
               ))}
             </div>
-            <p className="mb-6 text-center text-xs uppercase tracking-[0.3em] text-zinc-500">
+            <p className="mb-6 text-center text-xs text-zinc-400">
               {t("planPage.step")} {step + 1} {t("planPage.of")} {STEP_TITLES_T.length} · {STEP_TITLES_T[step]}
             </p>
 
-            <div key={step} className="animate-[fadeSlide_.4s_ease] rounded-[32px] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-2xl">
+            <div key={step} className="animate-[fadeSlide_.4s_ease] rounded-card border border-white/10 bg-white/[0.03] p-8 backdrop-blur-2xl">
               {step === 0 && (
                 <div className="grid grid-cols-2 gap-4">
                   {GROUP_OPTIONS.map((g) => (
                     <button
                       key={g.key}
                       onClick={() => setGroupKey(g.key)}
-                      className={`rounded-3xl border p-6 text-left transition ${
+                      className={`rounded-card border p-6 text-left transition ${
                         groupKey === g.key ? "border-purple-400/50 bg-purple-500/10" : "border-white/10 bg-white/[0.02] hover:bg-white/5"
                       }`}
                     >
                       <p className="text-3xl">{g.icon}</p>
                       <p className="mt-3 font-bold text-white">{g.label}</p>
-                      <p className="mt-1 text-sm text-zinc-500">{g.desc}</p>
+                      <p className="mt-1 text-sm text-zinc-400">{g.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -677,13 +637,13 @@ export default function PlanPage() {
                     <button
                       key={b.key}
                       onClick={() => setBudgetKey(b.key)}
-                      className={`rounded-3xl border p-6 text-left transition ${
+                      className={`rounded-card border p-6 text-left transition ${
                         budgetKey === b.key ? "border-pink-400/50 bg-pink-500/10" : "border-white/10 bg-white/[0.02] hover:bg-white/5"
                       }`}
                     >
                       <p className="text-3xl">{b.icon}</p>
                       <p className="mt-3 font-bold text-white">{b.label}</p>
-                      <p className="mt-1 text-sm text-zinc-500">{b.range}</p>
+                      <p className="mt-1 text-sm text-zinc-400">{b.range}</p>
                     </button>
                   ))}
                 </div>
@@ -695,13 +655,13 @@ export default function PlanPage() {
                     <button
                       key={v.key}
                       onClick={() => selectVibe(v.key)}
-                      className={`rounded-3xl border p-5 text-left transition ${
+                      className={`rounded-card border p-5 text-left transition ${
                         vibeKey === v.key ? "border-purple-400/50 bg-purple-500/10" : "border-white/10 bg-white/[0.02] hover:bg-white/5"
                       }`}
                     >
                       <p className="text-3xl">{v.emoji}</p>
                       <p className="mt-3 font-bold text-white">{v.label}</p>
-                      <p className="mt-1 text-xs text-zinc-500">{v.desc}</p>
+                      <p className="mt-1 text-xs text-zinc-400">{v.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -787,7 +747,7 @@ export default function PlanPage() {
               {step === 6 && (
                 <div className="space-y-8">
                   <div>
-                    <p className="mb-4 text-xs uppercase tracking-widest text-zinc-500">¿Qué noche?</p>
+                    <p className="mb-4 text-xs text-zinc-400">¿Qué noche?</p>
                     <div className="flex flex-wrap gap-2">
                       {[0, 1, 2, 3, 4, 5, 6].map((off) => {
                         const d = planDateFor(off)
@@ -813,7 +773,7 @@ export default function PlanPage() {
                   </div>
 
                   <div>
-                    <p className="mb-4 text-xs uppercase tracking-widest text-zinc-500">{t("planPage.departureTimeQuestion")}</p>
+                    <p className="mb-4 text-xs text-zinc-400">{t("planPage.departureTimeQuestion")}</p>
                     <div className="grid grid-cols-2 gap-3">
                       {Object.entries(TIME_WINDOWS).map(([key, w]) => (
                         <button
@@ -825,14 +785,14 @@ export default function PlanPage() {
                         >
                           <p className="text-2xl">{w.emoji}</p>
                           <p className="mt-1 text-sm font-bold text-white">{w.label}</p>
-                          <p className="text-xs text-zinc-500">{w.sub}</p>
+                          <p className="text-xs text-zinc-400">{w.sub}</p>
                         </button>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <p className="mb-4 text-xs uppercase tracking-widest text-zinc-500">Dresscode</p>
+                    <p className="mb-4 text-xs text-zinc-400">Dresscode</p>
                     <div className="flex flex-wrap gap-3">
                       {DRESSCODE_OPTIONS.map((d) => (
                         <button
@@ -882,7 +842,7 @@ export default function PlanPage() {
                 <button
                   onClick={() => setStep((s) => s + 1)}
                   className="flex-1 rounded-2xl py-4 font-black text-white transition hover:opacity-90"
-                  style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+                  style={{ background: "#7c5cff" }}
                 >
                   {t("planPage.next")}
                 </button>
@@ -890,7 +850,7 @@ export default function PlanPage() {
                 <button
                   onClick={generatePlan}
                   className="flex-1 rounded-2xl py-4 font-black text-white transition hover:scale-[1.01] hover:opacity-90"
-                  style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+                  style={{ background: "#7c5cff" }}
                 >
                   {t("planPage.generatePlanCta")}
                 </button>
@@ -912,10 +872,10 @@ export default function PlanPage() {
         {phase === "results" && (
           <section id="results" className="mx-auto mt-4 max-w-3xl px-4">
             {noResults ? (
-              <div className="rounded-[32px] border border-white/10 bg-white/[0.03] py-20 text-center">
+              <div className="rounded-card border border-white/10 bg-white/[0.03] py-20 text-center">
                 <p className="text-5xl">🌚</p>
                 <p className="mt-4 text-lg font-bold text-white">{t("planPage.noResultsTitle")}</p>
-                <p className="mt-2 text-sm text-zinc-500">{t("planPage.noResultsSubtitle")}</p>
+                <p className="mt-2 text-sm text-zinc-400">{t("planPage.noResultsSubtitle")}</p>
                 <button
                   onClick={resetFilters}
                   className="mt-6 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
@@ -926,9 +886,9 @@ export default function PlanPage() {
             ) : (
               <div className="space-y-12">
                 {/* PASE DE LA NOCHE */}
-                <div className="overflow-hidden rounded-[32px] border border-white/10" style={{ background: "linear-gradient(135deg, rgba(168,85,247,0.18) 0%, rgba(236,72,153,0.12) 100%)" }}>
+                <div className="overflow-hidden rounded-card border border-white/10" style={{ background: "linear-gradient(135deg, rgba(124,92,255,0.18) 0%, rgba(124,92,255,0.12) 100%)" }}>
                   <div className="flex items-center justify-between px-8 pt-7">
-                    <p className="text-xs uppercase tracking-[0.3em] text-purple-200">{t("planPage.yourPassTonight")}</p>
+                    <p className="text-xs text-purple-200">{t("planPage.yourPassTonight")}</p>
                     <p className="text-xs font-semibold text-purple-200">Noctua ✦</p>
                   </div>
                   <div className="px-8 pb-6 pt-3">
@@ -963,17 +923,17 @@ export default function PlanPage() {
 
                 {/* TIMELINE */}
                 <div>
-                  <p className="mb-6 text-xs uppercase tracking-widest text-zinc-500">{t("planPage.yourItinerary")}</p>
+                  <p className="mb-6 text-xs text-zinc-400">{t("planPage.yourItinerary")}</p>
                   <div className="relative space-y-8 pl-2">
                     <div className="absolute bottom-4 left-[27px] top-4 w-px bg-gradient-to-b from-purple-500 via-pink-500 to-amber-400" />
                     {stops.map((stop) => (
                       <div key={stop.id} className="relative flex gap-5">
-                        <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/10 bg-black text-xl shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+                        <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/10 bg-black text-xl shadow-[0_0_20px_rgba(124,92,255,0.4)]">
                           {stop.kind === "event" ? "🎫" : "🪩"}
                         </div>
                         <Link
                           href={stop.href}
-                          className="group flex flex-1 gap-4 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/20 hover:bg-white/[0.06]"
+                          className="group flex flex-1 gap-4 overflow-hidden rounded-card border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/20 hover:bg-white/[0.06]"
                         >
                           {stop.image && (
                             <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl">
@@ -988,11 +948,11 @@ export default function PlanPage() {
                               )}
                             </div>
                             <p className="mt-2 truncate text-lg font-black text-white">{stop.title}</p>
-                            <p className="truncate text-sm text-zinc-500">{stop.subtitle}</p>
+                            <p className="truncate text-sm text-zinc-400">{stop.subtitle}</p>
                             {stop.reasons.length > 0 && (
                               <div className="mt-2 flex flex-wrap gap-1.5">
                                 {stop.reasons.map((r) => (
-                                  <span key={r} className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] text-zinc-300">
+                                  <span key={r} className="rounded-full bg-white/5 px-2.5 py-1 text-xs text-zinc-300">
                                     {r}
                                   </span>
                                 ))}
@@ -1013,13 +973,13 @@ export default function PlanPage() {
                 {/* ALTERNATIVAS */}
                 {alternatives.length > 0 && (
                   <div>
-                    <p className="mb-5 text-xs uppercase tracking-widest text-zinc-500">{t("planPage.otherGems")}</p>
+                    <p className="mb-5 text-xs text-zinc-400">{t("planPage.otherGems")}</p>
                     <div className="flex gap-4 overflow-x-auto pb-2">
                       {alternatives.map((club) => (
                         <Link
                           key={club.id}
                           href={`/clubs/${createSlug(club.name)}`}
-                          className="group w-52 shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] transition hover:border-white/20"
+                          className="group w-52 shrink-0 overflow-hidden rounded-card border border-white/10 bg-white/[0.03] transition hover:border-white/20"
                         >
                           <div className="relative h-32 overflow-hidden">
                             <img src={club.image || FALLBACK_IMAGE} alt={club.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
@@ -1027,7 +987,7 @@ export default function PlanPage() {
                           </div>
                           <div className="p-3">
                             <p className="truncate font-bold text-white">{club.name}</p>
-                            <p className="truncate text-xs text-zinc-500">{club.neighborhood || "Barcelona"}</p>
+                            <p className="truncate text-xs text-zinc-400">{club.neighborhood || "Barcelona"}</p>
                           </div>
                         </Link>
                       ))}
@@ -1038,7 +998,7 @@ export default function PlanPage() {
                 {/* PROXIMOS EVENTOS */}
                 {otherEvents.length > 0 && (
                   <div>
-                    <p className="mb-5 text-xs uppercase tracking-widest text-zinc-500">{t("planPage.upcomingEventsForYou")}</p>
+                    <p className="mb-5 text-xs text-zinc-400">{t("planPage.upcomingEventsForYou")}</p>
                     <div className="grid gap-4 sm:grid-cols-2">
                       {otherEvents.map((event) => (
                         <Link
@@ -1054,7 +1014,7 @@ export default function PlanPage() {
                           </div>
                           <div className="min-w-0">
                             <p className="truncate font-bold text-white">{event.title}</p>
-                            <p className="text-xs text-zinc-500">
+                            <p className="text-xs text-zinc-400">
                               {event.date ? new Date(event.date).toLocaleDateString(toDateLocale(locale), { day: "numeric", month: "short" }) : t("clubEvent.tba")}
                               {event.price ? ` · ${event.price}` : ""}
                             </p>
@@ -1075,7 +1035,7 @@ export default function PlanPage() {
                   <button
                     onClick={generatePlan}
                     className="flex-1 rounded-2xl py-4 font-black text-white transition hover:opacity-90"
-                    style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+                    style={{ background: "#7c5cff" }}
                   >
                     {t("planPage.redoPlan")}
                   </button>
@@ -1086,17 +1046,6 @@ export default function PlanPage() {
         )}
       </main>
       <BottomNav />
-
-      <style jsx global>{`
-        @keyframes float {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(30px, -20px) scale(1.08); }
-        }
-        @keyframes fadeSlide {
-          from { opacity: 0; transform: translateY(12px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </>
   )
 }

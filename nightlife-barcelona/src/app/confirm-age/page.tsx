@@ -73,15 +73,15 @@ export default function ConfirmAgePage() {
   if (checking) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-black text-white">
-        <p className="text-sm text-zinc-500">Cargando...</p>
+        <p className="text-sm text-zinc-400">Cargando...</p>
       </main>
     )
   }
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-black px-4 text-white">
-      <div className="w-full max-w-md rounded-[36px] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-purple-400">Un último paso</p>
+      <div className="w-full max-w-md rounded-card border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
+        <p className="mb-3 text-xs font-semibold text-purple-400">Un último paso</p>
         <h1 className="mb-3 text-2xl font-bold">Antes de continuar</h1>
         <p className="mb-6 text-sm leading-relaxed text-zinc-400">
           Para usar Noctua necesitamos que confirmes lo siguiente.
@@ -130,7 +130,7 @@ export default function ConfirmAgePage() {
             style={{ colorScheme: "dark" }}
             className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-zinc-300 outline-none transition focus:border-purple-500/50"
           />
-          <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-500">
+          <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-400">
             Los datos del año de nacimiento se usarán para mejorar tus búsquedas.
           </p>
         </div>

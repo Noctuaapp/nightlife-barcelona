@@ -178,7 +178,7 @@ export default function AdminEssentialsPage() {
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Loading admin...</p>
+        <p className="text-sm text-zinc-400">Loading admin...</p>
       </main>
     )
   }
@@ -207,8 +207,8 @@ export default function AdminEssentialsPage() {
       <>
         {/* ADD FORM */}
         <section className="mx-auto max-w-7xl">
-          <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500 mb-6">Add new essential</p>
+          <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
+            <p className="text-sm text-zinc-400 mb-6">Add new essential</p>
             <FormFields data={newEssential} setData={setNewEssential} />
             <div className="mt-4">
               <input type="file" accept="image/*" onChange={handleNewImageUpload} className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none" />
@@ -249,7 +249,7 @@ export default function AdminEssentialsPage() {
           </div>
           <div className="grid gap-6">
             {filteredEssentials.map((item) => (
-              <div key={item.id} id={`essential-${item.id}`} className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
+              <div key={item.id} id={`essential-${item.id}`} className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                 {editingId === item.id ? (
                   <div>
                     <FormFields data={editEssential} setData={setEditEssential} />
@@ -269,13 +269,13 @@ export default function AdminEssentialsPage() {
                       <div>
                         <div className="flex items-center gap-3">
                           <span className="rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 text-xs font-semibold text-teal-300">{item.category}</span>
-                          {item.neighborhood && <span className="text-sm text-zinc-500">📍 {item.neighborhood}</span>}
+                          {item.neighborhood && <span className="text-sm text-zinc-400">📍 {item.neighborhood}</span>}
                         </div>
                         <h2 className="mt-2 text-2xl font-black text-white">{item.name}</h2>
                         {item.address && <p className="mt-1 text-sm text-zinc-400">{item.address}</p>}
-                        {item.open_hours && <p className="mt-1 text-sm text-zinc-500">🕒 {item.open_hours}</p>}
+                        {item.open_hours && <p className="mt-1 text-sm text-zinc-400">🕒 {item.open_hours}</p>}
                         {item.latitude && item.longitude && (
-                          <p className="mt-1 text-xs text-zinc-600">{item.latitude}, {item.longitude}</p>
+                          <p className="mt-1 text-xs text-zinc-400">{item.latitude}, {item.longitude}</p>
                         )}
                       </div>
                     </div>
@@ -295,7 +295,7 @@ export default function AdminEssentialsPage() {
               </div>
             ))}
             {filteredEssentials.length === 0 && (
-              <p className="text-center text-zinc-500 py-10">No essentials in this category yet.</p>
+              <p className="text-center text-zinc-400 py-10">No essentials in this category yet.</p>
             )}
           </div>
         </section>

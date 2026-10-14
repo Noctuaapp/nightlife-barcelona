@@ -312,7 +312,7 @@ export default function AdminUsersPage() {
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Loading admin...</p>
+        <p className="text-sm text-zinc-400">Loading admin...</p>
       </main>
     )
   }
@@ -329,13 +329,13 @@ export default function AdminUsersPage() {
           />
 
           {loading ? (
-            <p className="text-zinc-500 text-sm text-center py-20">Cargando usuarios...</p>
+            <p className="text-zinc-400 text-sm text-center py-20">Cargando usuarios...</p>
           ) : (
             <div className="grid gap-4">
               {filteredUsers.map((user) => (
                 <div
                   key={user.id}
-                  className={`rounded-[24px] border p-6 flex flex-col gap-4 ${
+                  className={`rounded-card border p-6 flex flex-col gap-4 ${
                     user.is_blocked ? "border-red-500/30 bg-red-500/[0.04]" : "border-white/10 bg-white/[0.03]"
                   }`}
                 >
@@ -350,13 +350,13 @@ export default function AdminUsersPage() {
                           {user.username && <p className="text-sm text-zinc-400">@{user.username}</p>}
                         </div>
                         {user.is_blocked && (
-                          <span className="rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-[10px] font-bold uppercase text-red-300">
+                          <span className="rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-bold uppercase text-red-300">
                             Bloqueado{user.block_reason ? ` · ${BLOCK_REASONS.find((x) => x.code === user.block_reason)?.label || user.block_reason}` : ""}
                           </span>
                         )}
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
+                    <div className="flex flex-wrap gap-3 text-xs text-zinc-400">
                       {user.gender && (
                         <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
                           {user.gender === "Hombre" ? "♂️" : user.gender === "Mujer" ? "♀️" : "🧑"} {user.gender}
@@ -382,7 +382,7 @@ export default function AdminUsersPage() {
                     <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div>
-                          <label className="mb-1 block text-xs uppercase tracking-widest text-zinc-500">Username</label>
+                          <label className="mb-1 block text-xs text-zinc-400">Username</label>
                           <input
                             value={editUsername}
                             onChange={(e) => setEditUsername(e.target.value)}
@@ -390,7 +390,7 @@ export default function AdminUsersPage() {
                           />
                         </div>
                         <div>
-                          <label className="mb-1 block text-xs uppercase tracking-widest text-zinc-500">Género</label>
+                          <label className="mb-1 block text-xs text-zinc-400">Género</label>
                           <select
                             value={editGender}
                             onChange={(e) => setEditGender(e.target.value)}
@@ -404,7 +404,7 @@ export default function AdminUsersPage() {
                           </select>
                         </div>
                         <div>
-                          <label className="mb-1 block text-xs uppercase tracking-widest text-zinc-500">País</label>
+                          <label className="mb-1 block text-xs text-zinc-400">País</label>
                           <CountrySelect value={editCountry} onChange={setEditCountry} locale="es" placeholder="Sin especificar" size="sm" />
                         </div>
                       </div>
@@ -426,7 +426,7 @@ export default function AdminUsersPage() {
                     </div>
                   ) : messagingId === user.id ? (
                     <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                      <label className="mb-1 block text-xs uppercase tracking-widest text-zinc-500">
+                      <label className="mb-1 block text-xs text-zinc-400">
                         Mensaje directo para {user.email}
                       </label>
                       <textarea
@@ -457,7 +457,7 @@ export default function AdminUsersPage() {
                     </div>
                   ) : linkingId === user.id ? (
                     <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                      <label className="mb-1 block text-xs uppercase tracking-widest text-zinc-500">
+                      <label className="mb-1 block text-xs text-zinc-400">
                         Club vinculado (puede editar su propia ficha en /mi-club)
                       </label>
                       <select
@@ -475,11 +475,11 @@ export default function AdminUsersPage() {
                         ))}
                       </select>
 
-                      <label className="mb-2 mt-4 block text-xs uppercase tracking-widest text-zinc-500">
+                      <label className="mb-2 mt-4 block text-xs text-zinc-400">
                         Festivales vinculados (puede editarlos en /mi-festival)
                       </label>
                       <div className="flex max-h-56 flex-wrap gap-2 overflow-y-auto">
-                        {ownableFestivals.length === 0 && <p className="text-xs text-zinc-600">No hay festivales creados todavía.</p>}
+                        {ownableFestivals.length === 0 && <p className="text-xs text-zinc-400">No hay festivales creados todavía.</p>}
                         {ownableFestivals.map((f) => {
                           const owned = f.owner_user_id === user.id
                           return (
@@ -546,7 +546,7 @@ export default function AdminUsersPage() {
                 </div>
               ))}
               {filteredUsers.length === 0 && (
-                <p className="text-zinc-500 text-sm text-center py-20">No se encontraron usuarios.</p>
+                <p className="text-zinc-400 text-sm text-center py-20">No se encontraron usuarios.</p>
               )}
             </div>
           )}
@@ -554,10 +554,10 @@ export default function AdminUsersPage() {
       </>
     {blockTarget && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center" onClick={() => setBlockTarget(null)}>
-          <div className="w-full max-w-md rounded-3xl border border-red-500/30 bg-[#0d0a14] p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-card border border-red-500/30 bg-night p-6" onClick={(e) => e.stopPropagation()}>
             <p className="text-lg font-black">Bloquear a {blockTarget.email}</p>
             <p className="mt-1 text-xs text-zinc-400">No podrá usar la app hasta que lo desbloquees. Verá el motivo en su idioma.</p>
-            <label className="mt-4 block text-xs font-bold uppercase tracking-widest text-zinc-500">Motivo</label>
+            <label className="mt-4 block text-xs font-bold text-zinc-400">Motivo</label>
             <select
               value={blockReason}
               onChange={(e) => setBlockReason(e.target.value)}
@@ -568,7 +568,7 @@ export default function AdminUsersPage() {
                 <option key={r.code} value={r.code}>{r.label}</option>
               ))}
             </select>
-            <label className="mt-4 block text-xs font-bold uppercase tracking-widest text-zinc-500">Mensaje adicional (opcional, lo verá el usuario)</label>
+            <label className="mt-4 block text-xs font-bold text-zinc-400">Mensaje adicional (opcional, lo verá el usuario)</label>
             <textarea
               value={blockNote}
               onChange={(e) => setBlockNote(e.target.value)}

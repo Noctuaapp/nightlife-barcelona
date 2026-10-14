@@ -138,7 +138,7 @@ export default function AdminToolsPage() {
   if (checkingAdmin) {
     return (
       <AdminShell title="Herramientas">
-        <p className="text-sm text-zinc-500">Comprobando acceso…</p>
+        <p className="text-sm text-zinc-400">Comprobando acceso…</p>
       </AdminShell>
     )
   }
@@ -213,8 +213,8 @@ export default function AdminToolsPage() {
               {st?.error && <p className="mt-3 text-sm text-red-400">{st.error}</p>}
               {st?.result && (
                 <details className="mt-3">
-                  <summary className="cursor-pointer text-xs font-semibold text-zinc-500">Ver respuesta</summary>
-                  <pre className="mt-2 max-h-64 overflow-auto rounded-xl bg-black/50 p-3 text-[11px] leading-relaxed text-zinc-300">
+                  <summary className="cursor-pointer text-xs font-semibold text-zinc-400">Ver respuesta</summary>
+                  <pre className="mt-2 max-h-64 overflow-auto rounded-xl bg-black/50 p-3 text-xs leading-relaxed text-zinc-300">
                     {JSON.stringify(st.result, null, 2)}
                   </pre>
                 </details>

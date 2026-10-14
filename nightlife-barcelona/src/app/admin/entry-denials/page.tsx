@@ -97,7 +97,7 @@ export default function AdminEntryDenialsPage() {
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Cargando...</p>
+        <p className="text-sm text-zinc-400">Cargando...</p>
       </main>
     )
   }
@@ -144,10 +144,10 @@ export default function AdminEntryDenialsPage() {
       </section>
 
       {loading ? (
-        <p className="mt-10 text-center text-zinc-500">Cargando registros...</p>
+        <p className="mt-10 text-center text-zinc-400">Cargando registros...</p>
       ) : denials.length === 0 ? (
         <section className="mx-auto mt-10 max-w-7xl px-4">
-          <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-10 text-center">
+          <div className="rounded-card border border-white/10 bg-white/[0.03] p-10 text-center">
             <p className="text-3xl">🚫</p>
             <p className="mt-3 text-zinc-400">Todavía no se ha usado la función "No te dejan entrar" en ningún local.</p>
           </div>
@@ -158,10 +158,10 @@ export default function AdminEntryDenialsPage() {
             <h2 className="text-xl font-black">Locales con más incidencias</h2>
             <div className="mt-4 grid gap-3">
               {topVenues.map((v) => (
-                <div key={v.name} className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+                <div key={v.name} className="rounded-card border border-white/10 bg-white/[0.03] p-5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-bold uppercase text-zinc-400">
+                      <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-bold uppercase text-zinc-400">
                         {v.type === "club" ? "Club" : "Evento"}
                       </span>
                       <p className="font-bold text-white">{v.name}</p>
@@ -182,10 +182,10 @@ export default function AdminEntryDenialsPage() {
 
           <section className="mx-auto mt-10 max-w-7xl px-4 pb-10">
             <h2 className="text-xl font-black">Registros recientes {reasonFilter !== "all" && `— ${REASON_LABELS[reasonFilter]}`}</h2>
-            <div className="mt-4 overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.03]">
+            <div className="mt-4 overflow-hidden rounded-card border border-white/10 bg-white/[0.03]">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-white/10 text-xs uppercase tracking-wider text-zinc-500">
+                  <tr className="border-b border-white/10 text-xs text-zinc-400">
                     <th className="px-5 py-3">Local</th>
                     <th className="px-5 py-3">Tipo</th>
                     <th className="px-5 py-3">Motivo</th>
@@ -203,14 +203,14 @@ export default function AdminEntryDenialsPage() {
                         <td className="px-5 py-3 text-zinc-300">{REASON_LABELS[d.reason]}</td>
                         <td className="px-5 py-3 text-zinc-400">
                           {!d.user_id ? (
-                            <span className="text-zinc-600">Anónimo</span>
+                            <span className="text-zinc-400">Anónimo</span>
                           ) : user ? (
                             user.username ? `@${user.username}` : user.email
                           ) : (
-                            <span className="text-zinc-600">Usuario eliminado</span>
+                            <span className="text-zinc-400">Usuario eliminado</span>
                           )}
                         </td>
-                        <td className="px-5 py-3 text-zinc-500">{new Date(d.created_at).toLocaleString()}</td>
+                        <td className="px-5 py-3 text-zinc-400">{new Date(d.created_at).toLocaleString()}</td>
                       </tr>
                     )
                   })}
@@ -218,7 +218,7 @@ export default function AdminEntryDenialsPage() {
               </table>
             </div>
             {filteredDenials.length > 100 && (
-              <p className="mt-3 text-center text-xs text-zinc-600">Mostrando los 100 más recientes de {filteredDenials.length}.</p>
+              <p className="mt-3 text-center text-xs text-zinc-400">Mostrando los 100 más recientes de {filteredDenials.length}.</p>
             )}
           </section>
         </>
@@ -241,11 +241,11 @@ function StatCard({
   return (
     <button
       onClick={onClick}
-      className={`rounded-[24px] border p-5 text-left transition hover:scale-[1.02] ${
+      className={`rounded-card border p-5 text-left transition hover:scale-[1.02] ${
         active ? "border-white bg-white text-black" : "border-white/10 bg-white/[0.03] text-white"
       }`}
     >
-      <p className="text-xs uppercase tracking-[0.2em] opacity-70">{label}</p>
+      <p className="text-xs opacity-70">{label}</p>
       <h2 className="mt-2 text-4xl font-black">{value}</h2>
     </button>
   )

@@ -43,7 +43,7 @@ export default function MaintenanceGate({ children }: { children: React.ReactNod
   if (blocked) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-black px-4 text-white">
-        <div className="w-full max-w-md rounded-[36px] border border-purple-500/20 bg-purple-500/5 p-8 backdrop-blur-xl text-center">
+        <div className="w-full max-w-md rounded-card border border-purple-500/20 bg-purple-500/5 p-8 backdrop-blur-xl text-center">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-purple-500/20 bg-purple-500/10 text-3xl">
             🛠️
           </div>

@@ -43,7 +43,7 @@ export default function AdminEditButton({ kind, id, inline = false }: { kind: Ki
       className={`inline-flex items-center gap-2 rounded-full font-bold text-white transition hover:scale-105 active:scale-95 ${
         inline ? "px-3.5 py-2 text-xs" : "fixed right-4 top-40 z-40 px-4 py-2.5 text-sm"
       }`}
-      style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)", boxShadow: "0 10px 30px -10px rgba(168,85,247,0.8)" }}
+      style={{ background: "#7c5cff", boxShadow: "0 10px 30px -10px rgba(124,92,255,0.8)" }}
     >
       <PencilIcon className={inline ? "h-3.5 w-3.5" : "h-4 w-4"} />
       Editar

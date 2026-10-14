@@ -33,7 +33,7 @@ export default function BirthYearSelect({
         ))}
       </select>
       {showHelp && (
-        <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-500">
+        <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-400">
           Los datos del año de nacimiento se usarán para mejorar tus búsquedas.
         </p>
       )}

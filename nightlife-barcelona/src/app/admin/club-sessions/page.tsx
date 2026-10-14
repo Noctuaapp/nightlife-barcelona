@@ -158,13 +158,13 @@ export default function AdminClubSessionsPage() {
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Verificando acceso...</p>
+        <p className="text-sm text-zinc-400">Verificando acceso...</p>
       </main>
     )
   }
 
-  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-purple-500/50 transition placeholder:text-zinc-600"
-  const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1.5"
+  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-purple-500/50 transition placeholder:text-zinc-400"
+  const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1.5"
 
   const renderForm = (form: typeof emptyForm, setForm: (f: typeof emptyForm) => void) => (
     <div className="grid gap-4 md:grid-cols-2">
@@ -207,7 +207,7 @@ export default function AdminClubSessionsPage() {
           {form.image && <img src={form.image} alt="Vista previa" className="h-20 w-20 flex-shrink-0 rounded-xl object-cover border border-white/10" />}
           <div className="flex-1 space-y-2">
             <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://... (o sube una desde tu ordenador)" className={inputClass} />
-            <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploading ? "border-white/10 text-zinc-600" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
+            <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploading ? "border-white/10 text-zinc-400" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
               {uploading ? "Subiendo..." : "📁 Subir imagen desde tu ordenador"}
               <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={(e) => handleImageUpload(e, form, setForm)} />
             </label>
@@ -221,7 +221,7 @@ export default function AdminClubSessionsPage() {
     <AdminShell title="Sesiones" subtitle="Noches temáticas semanales de cada club (ej. viernes techno, sábado reggaetón).">
       <>
         <section className="mx-auto max-w-7xl">
-          <div className="rounded-[24px] border border-purple-500/30 bg-purple-500/[0.04] p-6">
+          <div className="rounded-card border border-purple-500/30 bg-purple-500/[0.04] p-6">
             <h3 className="mb-4 text-lg font-black">Nueva sesión</h3>
             {renderForm(newSession, setNewSession)}
             <button onClick={addSession} disabled={uploading} className="mt-5 rounded-full bg-purple-500 px-6 py-3 text-sm font-black text-white hover:bg-purple-400 transition disabled:opacity-50">
@@ -240,10 +240,10 @@ export default function AdminClubSessionsPage() {
         <section className="mx-auto mt-6 max-w-7xl">
           <div className="grid gap-4">
             {visibleSessions.length === 0 && (
-              <p className="py-12 text-center text-sm text-zinc-500">No hay sesiones {filterClub ? "para este club" : "todavía"}.</p>
+              <p className="py-12 text-center text-sm text-zinc-400">No hay sesiones {filterClub ? "para este club" : "todavía"}.</p>
             )}
             {visibleSessions.map((session) => (
-              <div key={session.id} className="rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
+              <div key={session.id} className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                 {editingId === session.id ? (
                   <div>
                     {renderForm(editSession, setEditSession)}
@@ -261,7 +261,7 @@ export default function AdminClubSessionsPage() {
                         <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-purple-500/20 text-2xl">🗓️</div>
                       )}
                       <div>
-                        <p className="text-xs uppercase tracking-wide text-zinc-500">{clubName(session.club_id)} · {session.day_of_week}</p>
+                        <p className="text-xs uppercase tracking-wide text-zinc-400">{clubName(session.club_id)} · {session.day_of_week}</p>
                         <h3 className="text-xl font-black text-white">{session.name}</h3>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {session.music && <span className="rounded-full bg-white/10 px-3 py-1 text-xs">🎧 {session.music}</span>}

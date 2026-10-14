@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import Header from "../layout/Header"
 import BottomNav from "../layout/BottomNav"
 import Footer from "../layout/Footer"
@@ -9,516 +10,290 @@ import EventsSection from "./EventsSection"
 import SurpriseMe from "./SurpriseMe"
 import ReferralBanner from "./ReferralBanner"
 import AreasSection from "./AreasSection"
+import Icon from "../ui/Icon"
 import { useLanguage } from "../../context/LanguageContext"
 import { createSlug } from "../../lib/slug"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
-import ArrowIcon from "../ui/ArrowIcon"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { clubOpenNow } from "../../lib/clubHours"
 
-function useReveal<T extends HTMLElement>() {
-  const ref = useRef<T>(null)
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.15 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-  return { ref, visible }
+// Portada. Rediseñada tras la auditoría de octubre 2026:
+// - Antes el titular, un subtítulo de 7 líneas, tres cifras y una cinta animada ocupaban la
+//   primera pantalla entera, y el primer local aparecía a 2,5 pantallas de scroll. Ahora la
+//   primera pantalla ya enseña qué está abierto esta noche (cerca de ti si das tu ubicación).
+// - Fuera las manchas de color animadas, la cuadrícula, el ruido, el foco que seguía al ratón,
+//   los contadores y la aparición escalonada de cada tarjeta: costaban batería y no ayudaban a decidir.
+// - "Para ti" era un orden aleatorio: ahora es "Todos" y prioriza locales con foto y buena nota.
+
+type Club = Record<string, any>
+
+const TABS = [
+  { key: "all", label: "home.tabAll" },
+  { key: "near", label: "home.tabNear" },
+  { key: "open", label: "home.tabOpen" },
+  { key: "top", label: "home.tabTop" },
+  { key: "lgtbi", label: "home.tabLgtbi" },
+  { key: "free", label: "home.tabFree" },
+] as const
+
+function quality(c: Club): number {
+  const rating = Number(c.google_rating || c.rating || 0)
+  return (c.image ? 2 : 0) + (rating >= 4 ? rating : rating / 2) + (c.trending ? 1 : 0)
 }
 
-function Reveal({
-  children,
-  className = "",
-  style,
-}: {
-  children: React.ReactNode
-  className?: string
-  style?: React.CSSProperties
-}) {
-  const { ref, visible } = useReveal<HTMLDivElement>()
+function ClubTile({ club, openNow, distance, compact = false }: { club: Club; openNow: boolean | null; distance?: string | null; compact?: boolean }) {
+  const { t } = useLanguage()
+  const rating = club.google_rating || club.rating
   return (
-    <div
-      ref={ref}
-      style={style}
-      className={`transition-all duration-700 ease-out motion-reduce:transition-none ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      } ${className}`}
+    <Link
+      href={`/clubs/${club.slug || createSlug(club.name)}`}
+      className={`group relative flex flex-col justify-end overflow-hidden rounded-card border border-white/10 bg-surface ${compact ? "h-56 w-[72vw] max-w-[280px] shrink-0 snap-start" : "h-64"}`}
     >
-      {children}
-    </div>
+      <Image
+        src={club.image || FALLBACK_IMAGE}
+        alt={club.name}
+        fill
+        sizes={compact ? "280px" : "(max-width: 768px) 100vw, 33vw"}
+        unoptimized={!club.image}
+        className="object-cover transition duration-500 group-hover:scale-[1.03]"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-night via-night/50 to-transparent" />
+      {openNow !== null && (
+        <span
+          className={`absolute left-3 top-3 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+            openNow ? "bg-night/80 text-open" : "bg-night/70 text-zinc-300"
+          }`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${openNow ? "live-dot bg-open" : "bg-off"}`} />
+          {openNow ? t("clubPage.openNow") : t("home.closed")}
+        </span>
+      )}
+      <div className="relative p-4">
+        <p className="truncate text-lg font-semibold text-ink">{club.name}</p>
+        <p className="mt-0.5 truncate text-sm text-zinc-300">
+          {[club.neighborhood || "Barcelona", distance, club.music].filter(Boolean).join(" · ")}
+        </p>
+        {(rating || club.price) && (
+          <p className="mt-1 flex items-center gap-2 text-xs text-zinc-300">
+            {rating && (
+              <span className="flex items-center gap-1 font-semibold text-ink">
+                <Icon name="star" className="h-3 w-3 text-warn" /> {Number(rating).toFixed(1)}
+              </span>
+            )}
+            {club.price && <span className="truncate">{club.price}</span>}
+          </p>
+        )}
+      </div>
+    </Link>
   )
 }
 
-function useCountUp(target: number, active: boolean, duration = 1000) {
-  const [value, setValue] = useState(0)
-  useEffect(() => {
-    if (!active || target <= 0) return
-    let start: number | null = null
-    let raf: number
-    const step = (ts: number) => {
-      if (start === null) start = ts
-      const progress = Math.min((ts - start) / duration, 1)
-      setValue(Math.floor(progress * target))
-      if (progress < 1) raf = requestAnimationFrame(step)
-      else setValue(target)
-    }
-    raf = requestAnimationFrame(step)
-    return () => cancelAnimationFrame(raf)
-  }, [active, target, duration])
-  return value
-}
-
-// Antes cada pestaña llevaba un emoji de color distinto (✨🔥⭐🏳️‍🌈🎟) delante del texto — cinco
-// colores distintos en una fila le daban un aire de lista de categorías de app gratuita, no de
-// algo premium. Quitamos los emojis y dejamos que el estado activo (el degradado morado-rosa de
-// marca, el mismo que el CTA de "Crear cuenta") sea lo único que llame la atención.
-const TABS = [
-  { key: "all", label: "Para ti" },
-  { key: "near", label: "📍 Cerca de mí" },
-  { key: "open", label: "Abierto ahora" },
-  { key: "trending", label: "Trending" },
-  { key: "top", label: "Mejor valorados" },
-  { key: "lgtbi", label: "LGTBI+" },
-  { key: "free", label: "Gratis" },
-]
-
-// El número de locales sale de la base de datos (antes decía "120+" fijo mientras el contador de
-// justo encima mostraba 257+).
-const tickerItems = (count: number) => ["Info actualizada cada noche", `${count}+ locales en Barcelona`, "100% gratis", "Sin registro para explorar"]
-
-export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
+export default function HomeClient({ initialClubs }: { initialClubs: Club[] }) {
   const { t } = useLanguage()
-  // Los clubs ya llegan listos desde el servidor (ver src/app/page.tsx) — antes se pedían aquí
-  // con un useEffect + fetch a Supabase después de montar, así que el HTML inicial no tenía
-  // ningún club dentro y había que esperar a ese fetch de cliente para ver algo.
   const clubs = initialClubs
-  // El orden aleatorio ("Para ti") solo puede calcularse tras el montaje: si se calculara ya en
-  // el primer render, el orden del servidor y el del cliente no coincidirían (cada uno tira su
-  // propio Math.random()) y React marcaría un error de hidratación. Mientras "mounted" es false
-  // (servidor y primer render de cliente, que deben coincidir) se muestran los clubs en el orden
-  // que llegó de la base de datos; justo después de montar se baraja una vez.
-  const [mounted, setMounted] = useState(false)
-  const [activeTab, setActiveTab] = useState("all")
   const geo = useGeolocation()
+  const [mounted, setMounted] = useState(false)
+  const [activeTab, setActiveTab] = useState<(typeof TABS)[number]["key"]>("all")
   const [search, setSearch] = useState("")
-  const [spot, setSpot] = useState({ x: 50, y: 25 })
+  // Estado "abierto" calculado tras montar: depende de la hora y así el HTML coincide con el servidor.
+  const [openMap, setOpenMap] = useState<Record<string, boolean | null>>({})
 
   useEffect(() => {
     setMounted(true)
-  }, [])
-
-  const shuffled = useMemo(() => {
-    if (!mounted) return clubs
-    return [...clubs].sort(() => Math.random() - 0.5)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted])
-
-  const displayedClubs = useMemo(() => {
-    let base = clubs
-    if (activeTab === "trending") base = clubs.filter((c) => c.trending)
-    else if (activeTab === "top") base = [...clubs].sort((a, b) => (b.rating || 0) - (a.rating || 0))
-    // El campo real en la base de datos es "lgtbi_friendly", no "lgtbi" — con el nombre
-    // equivocado, este filtro nunca encontraba ningún club y la pestaña LGTBI+ salía siempre
-    // vacía por mucho que hubiera locales marcados como tal.
-    else if (activeTab === "lgtbi") base = clubs.filter((c) => c.lgtbi_friendly)
-    else if (activeTab === "free") base = clubs.filter((c) => c.price?.toLowerCase().includes("gratis"))
-    else if (activeTab === "open") base = clubs.filter((c) => clubOpenNow(c.hours, c.open_days) === true)
-    else if (activeTab === "near") {
-      // Sin ubicación todavía no hay nada que ordenar: se muestran los de siempre hasta que llegue.
-      base = geo.pos
-        ? clubs
-            .filter((c) => c.latitude && c.longitude)
-            .map((c) => ({ c, d: distanceInMeters(geo.pos!.lat, geo.pos!.lng, Number(c.latitude), Number(c.longitude)) }))
-            .sort((a, b) => a.d - b.d)
-            .map((x) => x.c)
-        : shuffled
+    const compute = () => {
+      const m: Record<string, boolean | null> = {}
+      for (const c of clubs) m[c.id] = clubOpenNow(c.hours, c.open_days)
+      setOpenMap(m)
     }
-    else base = shuffled
-    return base.slice(0, 6)
-  }, [activeTab, clubs, shuffled, geo.pos])
+    compute()
+    const id = setInterval(compute, 60000)
+    return () => clearInterval(id)
+  }, [clubs])
 
-  const selectTab = (key: string) => {
+  const isOpen = (c: Club) => (mounted ? openMap[c.id] ?? null : null)
+  const dist = (c: Club) =>
+    geo.pos && c.latitude && c.longitude ? distanceInMeters(geo.pos.lat, geo.pos.lng, Number(c.latitude), Number(c.longitude)) : null
+
+  // Orden estable en el servidor; variedad (entre los mejores) solo tras montar.
+  const ranked = useMemo(() => {
+    const base = [...clubs].sort((a, b) => quality(b) - quality(a))
+    if (!mounted) return base
+    const top = base.slice(0, 24).sort(() => Math.random() - 0.5)
+    return [...top, ...base.slice(24)]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clubs, mounted])
+
+  // Primera pantalla: abiertos ahora (los más cercanos si hay ubicación). Si no hay ninguno
+  // abierto (de día), los mejor valorados para esta noche.
+  const tonight = useMemo(() => {
+    const open = ranked.filter((c) => isOpen(c) === true)
+    const pool = open.length >= 3 ? open : ranked
+    const list = geo.pos ? [...pool].filter((c) => dist(c) !== null).sort((a, b) => (dist(a) as number) - (dist(b) as number)) : pool
+    return { anyOpen: open.length >= 3, list: list.slice(0, 10) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ranked, openMap, geo.pos])
+
+  const displayed = useMemo(() => {
+    let list = ranked
+    if (activeTab === "top") list = [...clubs].sort((a, b) => Number(b.google_rating || b.rating || 0) - Number(a.google_rating || a.rating || 0))
+    else if (activeTab === "lgtbi") list = ranked.filter((c) => c.lgtbi_friendly)
+    else if (activeTab === "free") list = ranked.filter((c) => String(c.price || "").toLowerCase().includes("gratis"))
+    else if (activeTab === "open") list = ranked.filter((c) => isOpen(c) === true)
+    else if (activeTab === "near")
+      list = geo.pos ? ranked.filter((c) => dist(c) !== null).sort((a, b) => (dist(a) as number) - (dist(b) as number)) : ranked
+    return list.slice(0, 6)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, ranked, clubs, openMap, geo.pos])
+
+  const selectTab = (key: (typeof TABS)[number]["key"]) => {
     setActiveTab(key)
     if (key === "near" && !geo.pos && !geo.locating) geo.request()
   }
-
-  const distTo = (c: any): string | null =>
-    geo.pos && c.latitude && c.longitude
-      ? formatDistance(distanceInMeters(geo.pos.lat, geo.pos.lng, Number(c.latitude), Number(c.longitude)))
-      : null
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     window.location.href = `/clubs${search.trim() ? `?search=${encodeURIComponent(search.trim())}` : ""}`
   }
 
-  const handleHeroMove = (e: React.MouseEvent<HTMLElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    setSpot({
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top) / rect.height) * 100,
-    })
-  }
-
-  const heroCount = useCountUp(clubs.length || 120, mounted)
-  const { ref: statRef, visible: statVisible } = useReveal<HTMLDivElement>()
-  const footerCount = useCountUp(clubs.length || 120, statVisible)
+  const quickLinks = [
+    { href: "/map", icon: "map", label: t("home.quickMap") },
+    { href: "/essentials", icon: "globe", label: t("home.quickEssentials") },
+    { href: "/plan", icon: "calendar", label: t("home.quickPlan") },
+    { href: "/events", icon: "ticket", label: t("home.quickEvents") },
+  ]
 
   return (
     <>
       <Header />
 
-      <main className="relative min-h-screen text-white">
-        {/* Ambient background — fixed behind everything, whole page, not just hero */}
-        <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#0d0a1c]">
-          <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-purple-600/40 blur-[120px] animate-[float_18s_ease-in-out_infinite]" />
-          <div className="absolute -right-40 top-1/3 h-[450px] w-[450px] rounded-full bg-amber-500/20 blur-[130px] animate-[float_22s_ease-in-out_infinite_reverse]" />
-          <div className="absolute bottom-0 left-1/3 h-[420px] w-[420px] rounded-full bg-fuchsia-500/25 blur-[140px] animate-[float_20s_ease-in-out_infinite]" />
-          <div className="absolute right-1/4 top-2/3 h-[380px] w-[380px] rounded-full bg-teal-400/10 blur-[130px] animate-[float_24s_ease-in-out_infinite_reverse]" />
-          <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)",
-              backgroundSize: "56px 56px",
-            }}
-          />
-          <div
-            className="absolute inset-0 opacity-[0.05]"
-            style={{
-              backgroundImage:
-                "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-            }}
-          />
-        </div>
+      <main className="min-h-screen bg-night pb-28 text-ink md:pb-16">
+        {/* PORTADA: frase corta + buscador */}
+        <section className="mx-auto max-w-7xl px-4 pb-6 pt-8 sm:px-6 sm:pt-14">
+          <h1 className="font-display max-w-3xl text-[2.1rem] leading-[1.05] sm:text-5xl md:text-6xl">
+            {t("home.hero")} <span className="text-brand-soft">{t("home.hero_accent")}</span>
+          </h1>
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-zinc-300">{t("home.subtitle")}</p>
 
-        <div className="relative z-10">
-          {/* HERO */}
-          <section
-            onMouseMove={handleHeroMove}
-            className="relative flex min-h-[68vh] flex-col overflow-hidden"
-          >
-            <div className="absolute inset-0">
-              <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    "radial-gradient(55% 45% at 18% 12%, rgba(168,85,247,0.28) 0%, rgba(0,0,0,0) 60%), radial-gradient(45% 40% at 88% 8%, rgba(245,180,60,0.14) 0%, rgba(0,0,0,0) 60%), radial-gradient(65% 55% at 50% 105%, rgba(168,85,247,0.16) 0%, rgba(0,0,0,0) 60%)",
-                }}
-              />
-              <div
-                className="absolute inset-0 transition duration-300 motion-reduce:hidden"
-                style={{
-                  background: `radial-gradient(500px circle at ${spot.x}% ${spot.y}%, rgba(168,85,247,0.16), transparent 45%)`,
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/70" />
-            </div>
-
-            {/* content — centered in the space above the ticker, so it never collides with it */}
-            <div className="relative z-10 flex flex-1 items-center">
-              <div className="mx-auto w-full max-w-7xl px-6 py-16">
-                <div className="fade-up inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-zinc-300 backdrop-blur">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-purple-400" />
-                  Barcelona · En directo
-                </div>
-
-                {/* Antes era text-[3.2rem] fijo desde el móvil más pequeño: con la fuente display
-                    nueva (Unbounded, más ancha que la Manrope que había antes) el titular en
-                    español ("Descubre Barcelona al anochecer.") se salía de la pantalla en un
-                    375px — se veía cortado a media palabra. break-words + un tamaño menor en
-                    mobile lo arregla sin tocar nada en desktop/tablet. */}
-                <h1
-                  className="font-display fade-up mt-8 max-w-4xl break-words text-[2.3rem] leading-[1.05] text-white sm:text-[3.2rem] sm:leading-[0.98] md:text-7xl lg:text-[6.5rem]"
-                  style={{ animationDelay: "0.08s" }}
-                >
-                  {t("home.hero") || "Tu noche en Barcelona"}
-                  <span className="block bg-gradient-to-r from-purple-400 via-purple-300 to-amber-300 bg-clip-text text-transparent">
-                    {t("home.hero_accent") || "empieza aquí."}
-                  </span>
-                </h1>
-
-                <p
-                  className="fade-up mt-6 max-w-xl text-lg leading-relaxed text-zinc-400 md:text-xl"
-                  style={{ animationDelay: "0.16s" }}
-                >
-                  {t("home.subtitle") ||
-                    "Descubre los mejores clubs, eventos y planes nocturnos de Barcelona, actualizados cada noche."}
-                </p>
-
-
-                {/* Antes había aquí una segunda fila de chips de género (Techno/Commercial/...)
-                    que duplicaba casi exactamente las pestañas de "Destacados" un poco más
-                    abajo (incluido LGTBI+ en las dos) — dos mecanismos de filtro distintos para
-                    lo mismo, en la misma pantalla. Se ha quitado: el filtrado real vive en las
-                    pestañas de Destacados, justo encima de los resultados a los que afecta. */}
-                <div className="fade-up mt-9" style={{ animationDelay: "0.3s" }}>
-                  <Link
-                    href="/map"
-                    className="group inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs font-semibold text-zinc-300 transition hover:border-purple-400/40 hover:bg-purple-400/10 hover:text-white"
-                  >
-                    🗺️ Ver mapa en directo <span className="transition group-hover:translate-x-0.5"><ArrowIcon className="h-3.5 w-3.5" /></span>
-                  </Link>
-                </div>
-
-                <div className="fade-up mt-14 flex flex-wrap gap-10 border-t border-white/10 pt-8" style={{ animationDelay: "0.36s" }}>
-                  <div>
-                    <p className="text-3xl font-black tabular-nums">{heroCount}+</p>
-                    <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">Clubs y bares</p>
-                  </div>
-                  <div>
-                    <p className="text-3xl font-black">Cada noche</p>
-                    <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">Info actualizada</p>
-                  </div>
-                  <div>
-                    <p className="text-3xl font-black">100%</p>
-                    <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">Gratis para ti</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ticker — normal document flow now, never overlaps the content above */}
-            <div className="relative z-10 w-full overflow-hidden border-t border-white/5 bg-black/40 py-3 backdrop-blur">
-              <div className="ticker-track flex w-max gap-16 text-xs uppercase tracking-[0.3em] text-zinc-500">
-                {Array.from({ length: 3 }, () => tickerItems(clubs.length || 120)).flat().map((item, i) => (
-                  <span key={i} className="flex items-center gap-2 whitespace-nowrap">
-                    <span className="h-1 w-1 rounded-full bg-purple-400" /> {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section className="relative z-10 mx-auto mt-8 max-w-7xl px-6">
-            <ReferralBanner />
-            <SurpriseMe clubs={clubs} />
-          </section>
-
-          {/* Hidden but crawlable — Google OAuth verification purpose statement */}
-          <section className="sr-only">
-            <h2>{t("home.about_title")}</h2>
-            <p>{t("home.about_text")}</p>
-          </section>
-
-          {/* BUSCADOR — justo encima de Destacados */}
-          <section className="mx-auto max-w-7xl px-6 pt-16">
-          <form onSubmit={handleSearch} className="max-w-3xl">
-            <div className="group flex items-center gap-3 rounded-full border border-purple-400/30 bg-[#161029]/90 p-2 pl-6 shadow-[0_12px_40px_-14px_rgba(168,85,247,0.6)] backdrop-blur-xl transition focus-within:border-fuchsia-400/70 focus-within:shadow-[0_12px_44px_-8px_rgba(217,70,239,0.55)]">
-              <span className="text-lg text-purple-300 transition group-focus-within:text-fuchsia-300">🔍</span>
+          <form onSubmit={handleSearch} role="search" className="mt-6 max-w-2xl">
+            <div className="flex items-center gap-2 rounded-full border border-white/15 bg-surface p-1.5 pl-5 focus-within:border-brand-soft">
+              <Icon name="search" className="h-4 w-4 shrink-0 text-muted" />
+              <label htmlFor="home-search" className="sr-only">
+                {t("home.searchLabel")}
+              </label>
               <input
+                id="home-search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Busca un club, barrio o estilo…"
-                className="min-w-0 flex-1 bg-transparent py-2 text-base text-white outline-none placeholder:text-zinc-400"
+                placeholder={t("home.searchPlaceholder")}
+                className="min-w-0 flex-1 bg-transparent py-2 text-base text-ink outline-none placeholder:text-zinc-400"
               />
-              <button
-                type="submit"
-                className="group/btn flex shrink-0 items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white transition hover:scale-[1.03] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-300"
-                style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)", boxShadow: "0 8px 24px -8px rgba(168,85,247,0.6)" }}
-              >
-                Buscar
-                <span className="transition group-hover/btn:translate-x-0.5"><ArrowIcon className="h-4 w-4" /></span>
+              <button type="submit" className="shrink-0 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong">
+                {t("home.search")}
               </button>
             </div>
           </form>
-          </section>
 
-          {/* DESTACADOS */}
-          <section className="mx-auto max-w-7xl px-6 pb-24 pt-12">
-            <Reveal className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Esta noche</p>
-                <h2 className="font-display mt-3 text-4xl md:text-5xl">Destacados</h2>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {TABS.map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => selectTab(tab.key)}
-                    className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-400 ${
-                      activeTab === tab.key
-                        ? "text-white"
-                        : "border border-white/10 bg-white/[0.03] text-zinc-400 hover:border-white/20 hover:text-white"
-                    }`}
-                    style={
-                      activeTab === tab.key
-                        ? {
-                            background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
-                            boxShadow: "0 8px 24px -8px rgba(168,85,247,0.55)",
-                          }
-                        : undefined
-                    }
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            </Reveal>
-
-            {activeTab === "near" && (geo.locating || geo.error || geo.pos) && (
-              <p className={`mt-4 text-sm ${geo.error ? "text-amber-300" : "text-zinc-400"}`}>
-                {geo.locating ? "Localizando…" : geo.error ? geo.error : "📍 Ordenado por distancia desde tu ubicación"}
-              </p>
-            )}
-
-            <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {displayedClubs.length === 0 ? (
-                <p className="col-span-full py-16 text-center text-zinc-500">
-                  No hay resultados para este filtro ahora mismo.
-                </p>
-              ) : (
-                displayedClubs.map((club, index) => {
-                  const open = clubOpenNow(club.hours, club.open_days)
-                  return (
-                    <Reveal key={club.id} style={{ transitionDelay: `${index * 70}ms` }}>
-                      <Link
-                        href={`/clubs/${club.slug || createSlug(club.name)}`}
-                        className="group relative flex h-80 flex-col justify-end overflow-hidden rounded-[28px] border border-purple-400/20 transition duration-500 hover:-translate-y-1.5 hover:border-purple-400/50 hover:shadow-[0_20px_60px_-15px_rgba(168,85,247,0.35)]"
-                      >
-                        <img
-                          src={club.image || FALLBACK_IMAGE}
-                          alt={club.name}
-                          loading="lazy"
-                          className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-110"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-black/10" />
-
-                        <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-                          {club.trending && (
-                            <span className="rounded-full bg-emerald-500/90 px-3 py-1 text-[11px] font-bold text-black">
-                              🔥 Trending
-                            </span>
-                          )}
-                          {club.verified && (
-                            <span className="flex items-center gap-1 rounded-full bg-purple-500/90 px-3 py-1 text-[11px] font-bold text-white">
-                              ● Verificado
-                            </span>
-                          )}
-                        </div>
-
-                        {open !== null && (
-                          <span
-                            className={`absolute right-4 top-4 rounded-full px-3 py-1 text-[11px] font-bold backdrop-blur ${
-                              open ? "bg-emerald-400/90 text-black" : "bg-white/10 text-zinc-300"
-                            }`}
-                          >
-                            {open ? "Abierto ahora" : "Cerrado"}
-                          </span>
-                        )}
-
-                        <div className="relative z-10 p-6">
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs uppercase tracking-[0.2em] text-zinc-300">
-                              {club.neighborhood || "Barcelona"}
-                              {activeTab === "near" && distTo(club) ? ` · ${distTo(club)}` : ""}
-                            </p>
-                            {club.rating && (
-                              <span className="flex items-center gap-1 text-xs font-bold text-amber-300">
-                                ★ {Number(club.rating).toFixed(1)}
-                              </span>
-                            )}
-                          </div>
-                          <h3 className="mt-2 text-2xl font-black text-white">{club.name}</h3>
-                          <div className="mt-2 flex items-center gap-3 text-sm text-zinc-300">
-                            <span>{club.music || "Nightlife"}</span>
-                            {club.price && (
-                              <>
-                                <span className="text-zinc-600">•</span>
-                                <span>{club.price}</span>
-                              </>
-                            )}
-                          </div>
-                          <div className="mt-4 flex items-center justify-between">
-                            <span className="text-sm font-semibold text-zinc-300">Ver ficha</span>
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-black transition duration-300 group-hover:scale-110 group-hover:bg-gradient-to-br group-hover:from-purple-400 group-hover:to-pink-400 group-hover:text-white">
-                              <ArrowIcon className="h-4 w-4" />
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-                    </Reveal>
-                  )
-                })
-              )}
-            </div>
-
-            <Reveal className="mt-12 text-center">
+          <nav aria-label={t("home.quickTitle")} className="scrollbar-none -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            {quickLinks.map((q) => (
               <Link
-                href="/clubs"
-                className="group inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/[0.03] px-8 py-4 font-bold text-white transition hover:bg-white hover:text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-400"
+                key={q.href}
+                href={q.href}
+                className="flex shrink-0 items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white/5"
               >
-                Explorar todos los clubs
-                <span className="transition group-hover:translate-x-1"><ArrowIcon className="h-4 w-4" /></span>
+                <Icon name={q.icon} className="h-4 w-4 text-brand-soft" /> {q.label}
               </Link>
-            </Reveal>
-          </section>
+            ))}
+          </nav>
+        </section>
 
-          <Reveal>
-            <EventsSection />
-          </Reveal>
-          <Reveal>
-            <AreasSection />
-          </Reveal>
-        </div>
+        {/* ESTA NOCHE: carrusel en la primera pantalla */}
+        <section className="mx-auto max-w-7xl px-4 sm:px-6" aria-labelledby="tonight-title">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 id="tonight-title" className="text-xl font-semibold">
+                {tonight.anyOpen ? (geo.pos ? t("home.openNearYou") : t("home.openNow")) : t("home.forTonight")}
+              </h2>
+              {!geo.pos && (
+                <button onClick={() => geo.request()} className="mt-1 text-sm font-semibold text-brand-soft underline-offset-2 hover:underline">
+                  {geo.locating ? t("home.locating") : t("home.useLocation")}
+                </button>
+              )}
+              {geo.error && <p className="mt-1 text-sm text-warn">{geo.error}</p>}
+            </div>
+            <Link href={tonight.anyOpen ? "/clubs?open=1" : "/clubs"} className="shrink-0 text-sm font-semibold text-zinc-300 hover:text-ink">
+              {t("home.seeAll")}
+            </Link>
+          </div>
+          <div className="scrollbar-none -mx-4 mt-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
+            {tonight.list.map((club) => {
+              const d = dist(club)
+              return <ClubTile key={club.id} club={club} openNow={isOpen(club)} distance={d !== null ? formatDistance(d) : null} compact />
+            })}
+          </div>
+        </section>
+
+        <section className="mx-auto mt-10 max-w-7xl px-4 sm:px-6">
+          <ReferralBanner />
+          <SurpriseMe clubs={clubs} />
+        </section>
+
+        {/* DESTACADOS con filtros */}
+        <section className="mx-auto mt-14 max-w-7xl px-4 sm:px-6" aria-labelledby="featured-title">
+          <h2 id="featured-title" className="font-display text-3xl sm:text-4xl">
+            {t("home.featured")}
+          </h2>
+          <div role="tablist" className="scrollbar-none -mx-4 mt-5 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                role="tab"
+                aria-selected={activeTab === tab.key}
+                onClick={() => selectTab(tab.key)}
+                className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  activeTab === tab.key ? "bg-ink text-night" : "border border-white/10 text-zinc-300 hover:bg-white/5"
+                }`}
+              >
+                {t(tab.label)}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === "near" && geo.error && <p className="mt-4 text-sm text-warn">{geo.error}</p>}
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {displayed.length === 0 ? (
+              <p className="col-span-full py-12 text-center text-zinc-400">{t("home.noResults")}</p>
+            ) : (
+              displayed.map((club) => {
+                const d = dist(club)
+                return <ClubTile key={club.id} club={club} openNow={isOpen(club)} distance={activeTab === "near" && d !== null ? formatDistance(d) : null} />
+              })
+            )}
+          </div>
+
+          <div className="mt-8 text-center">
+            <Link
+              href="/clubs"
+              className="inline-flex items-center gap-2 rounded-ctl border border-white/15 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
+            >
+              {t("home.exploreAll").replace("{n}", String(clubs.length))} <Icon name="arrow" className="h-4 w-4" />
+            </Link>
+          </div>
+        </section>
+
+        <EventsSection />
+        <AreasSection />
+
+        {/* Qué es Noctua — visible (antes estaba oculto solo para la verificación de Google) */}
+        <section className="mx-auto mt-20 max-w-3xl px-4 sm:px-6">
+          <h2 className="text-lg font-semibold">{t("home.about_title")}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-300">{t("home.about_text")}</p>
+        </section>
       </main>
 
       <Footer />
       <BottomNav />
-
-      <style jsx global>{`
-        @keyframes fadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(16px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .fade-up {
-          animation: fadeUp 0.6s ease-out both;
-        }
-        @keyframes tickerScroll {
-          from {
-            transform: translateX(0);
-          }
-          to {
-            transform: translateX(-33.333%);
-          }
-        }
-        .ticker-track {
-          animation: tickerScroll 22s linear infinite;
-        }
-        @keyframes float {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          50% {
-            transform: translate(30px, -20px) scale(1.08);
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .fade-up,
-          .ticker-track {
-            animation: none !important;
-          }
-        }
-      `}</style>
     </>
   )
 }

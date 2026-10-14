@@ -12,7 +12,7 @@ const ES = {
   afternoon: ["Se acerca la noche. ¿Te busco plan para hoy?", "Hoy hay noche. ¿Quedamos con un sitio que te sorprenda?"],
   evening: ["¡Esto se anima! ¿Bailar, charlar o algo tranquilo?", "Es la hora. Dime qué te apetece y te busco sitio."],
   weekendEvening: ["¡Hoy se sale! ¿Te sorprendo con un plan?", "Noche de las buenas. ¿Probamos un sitio nuevo?"],
-  late: ["Los búhos no dormimos 🦉 ¿Te busco el siguiente sitio?", "Aún hay noche por delante. ¿Probamos otro sitio?"],
+  late: ["Los búhos no dormimos. ¿Te busco el siguiente sitio?", "Aún hay noche por delante. ¿Probamos otro sitio?"],
   dawn: ["Ya casi amanece. Piensa en la vuelta a casa: te ayudo con el transporte.", "Último tramo de la noche. Cuida la vuelta, que yo te echo una mano."],
 }
 const EN = {
@@ -20,8 +20,17 @@ const EN = {
   afternoon: ["Night is getting closer. Want me to find you a plan?", "Tonight's on. Shall I surprise you with a spot?"],
   evening: ["Things are heating up! Dance, chat or something chill?", "It's time. Tell me your mood and I'll find a place."],
   weekendEvening: ["It's going down tonight! Want a surprise plan?", "A proper night out. Try somewhere new?"],
-  late: ["Owls never sleep 🦉 Want me to find your next spot?", "Plenty of night left. Another place?"],
+  late: ["Owls never sleep. Want me to find your next spot?", "Plenty of night left. Another place?"],
   dawn: ["Almost sunrise. Think about the way home — I can help with transport.", "Last stretch of the night. Get home safe, I've got your back."],
+}
+
+const CA = {
+  morning: ["Bon dia! La nit dorm, però jo ja penso en un pla per avui.", "Cafè a la mà, buscant plans per aquesta nit. T'ajudo?"],
+  afternoon: ["S'acosta la nit. Et busco pla per avui?", "Avui hi ha nit. Quedem amb un lloc que et sorprengui?"],
+  evening: ["Això s'anima! Ballar, xerrar o alguna cosa tranquil·la?", "És l'hora. Digues-me què et ve de gust i et busco lloc."],
+  weekendEvening: ["Avui se surt! Et sorprenc amb un pla?", "Nit de les bones. Provem un lloc nou?"],
+  late: ["Els mussols no dormim. Et busco el següent lloc?", "Encara queda nit. Provem un altre lloc?"],
+  dawn: ["Ja gairebé surt el sol. Pensa en la tornada a casa: t'ajudo amb el transport.", "Últim tram de la nit. Cuida la tornada, que jo et dono un cop de mà."],
 }
 
 type Slot = keyof typeof ES
@@ -53,7 +62,7 @@ export function useNocLine(): { line: string; mood: OwlMood } {
   const [state, setState] = useState<{ line: string; mood: OwlMood }>({ line: "", mood: "happy" })
   useEffect(() => {
     const { slot, seed } = pickSlot()
-    const pool = (locale === "es" || locale === "ca" ? ES : EN)[slot]
+    const pool = (locale === "ca" ? CA : locale === "es" ? ES : EN)[slot]
     setState({ line: pool[seed % pool.length], mood: MOOD_BY_SLOT[slot] })
   }, [locale])
   return state
@@ -66,7 +75,7 @@ export default function NocSays({ owlSize = 56, className = "" }: { owlSize?: nu
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       <NocOwl size={owlSize} mood={mood} className="shrink-0" />
-      <p className="rounded-2xl rounded-bl-sm border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm leading-snug text-zinc-200">{line}</p>
+      <p className="rounded-card rounded-bl-sm border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm leading-snug text-zinc-200">{line}</p>
     </div>
   )
 }

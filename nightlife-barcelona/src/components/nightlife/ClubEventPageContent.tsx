@@ -60,7 +60,7 @@ export default function ClubEventPageContent({ clubEvent, tickets, clubSlug }: C
 
         <div className="relative z-10 flex h-full items-end">
           <div className="mx-auto w-full max-w-7xl px-6 pb-16">
-            <p className="text-sm uppercase tracking-[0.4em] text-zinc-300">
+            <p className="text-sm text-zinc-300">
               {clubEvent.club_name || t("clubEvent.defaultClubName")}
             </p>
             <h1 className="mt-5 max-w-5xl text-6xl font-black tracking-tight text-white md:text-8xl">
@@ -95,32 +95,32 @@ export default function ClubEventPageContent({ clubEvent, tickets, clubSlug }: C
         <div className="grid gap-10 lg:grid-cols-3">
 
           <div className="lg:col-span-2">
-            <div className="rounded-[36px] border border-white/10 bg-white/[0.03] p-10 backdrop-blur-2xl">
-              <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("club.experience")}</p>
+            <div className="rounded-card border border-white/10 bg-white/[0.03] p-10 backdrop-blur-2xl">
+              <p className="text-sm text-zinc-400">{t("club.experience")}</p>
               <h2 className="mt-4 text-5xl font-black">{t("clubEvent.aboutThisNight")}</h2>
               <p className="mt-8 text-lg leading-relaxed text-zinc-300">
                 {clubEvent.description || t("clubEvent.defaultDescription")}
               </p>
               <div className="mt-10 grid gap-4 md:grid-cols-2">
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-                  <p className="text-sm text-zinc-500">{t("clubEvent.artist")}</p>
+                <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
+                  <p className="text-sm text-zinc-400">{t("clubEvent.artist")}</p>
                   <p className="mt-3 text-2xl font-black">{clubEvent.artist || t("clubEvent.tba")}</p>
                 </div>
-                <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
-                  <p className="text-sm text-zinc-500">{t("clubEvent.club")}</p>
+                <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
+                  <p className="text-sm text-zinc-400">{t("clubEvent.club")}</p>
                   <p className="mt-3 text-2xl font-black">{clubEvent.club_name || t("clubEvent.defaultClubName")}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="rounded-[36px] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-2xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("club.night_info")}</p>
+          <div className="rounded-card border border-white/10 bg-white/[0.03] p-8 backdrop-blur-2xl">
+            <p className="text-sm text-zinc-400">{t("club.night_info")}</p>
             <h3 className="mt-4 text-4xl font-black">{t("club.details")}</h3>
 
             <div className="mt-10 space-y-6 text-zinc-300">
               <div>
-                <p className="text-sm text-zinc-500">{t("clubEvent.date")}</p>
+                <p className="text-sm text-zinc-400">{t("clubEvent.date")}</p>
                 <p className="mt-2 text-lg">
                   📅 {clubEvent.date
                     ? new Date(clubEvent.date).toLocaleDateString(toDateLocale(locale), {
@@ -133,24 +133,24 @@ export default function ClubEventPageContent({ clubEvent, tickets, clubSlug }: C
                 </p>
               </div>
               <div>
-                <p className="text-sm text-zinc-500">{t("clubEvent.time")}</p>
+                <p className="text-sm text-zinc-400">{t("clubEvent.time")}</p>
                 <p className="mt-2 text-lg">
                   🕒 {clubEvent.start_time || t("clubEvent.tba")} - {clubEvent.end_time || t("clubEvent.tba")}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-zinc-500">{t("club.music")}</p>
+                <p className="text-sm text-zinc-400">{t("club.music")}</p>
                 <p className="mt-2 text-lg">🎵 {clubEvent.music || t("clubEvent.tba")}</p>
               </div>
               <div>
-                <p className="text-sm text-zinc-500">{t("club.price")}</p>
+                <p className="text-sm text-zinc-400">{t("club.price")}</p>
                 <p className="mt-2 text-lg">🎟 {clubEvent.price || t("clubEvent.tba")}</p>
               </div>
             </div>
 
             {tickets && tickets.length > 0 && (
               <div className="mt-10">
-                <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">{t("clubEvent.tickets")}</p>
+                <p className="mb-4 text-sm text-zinc-400">{t("clubEvent.tickets")}</p>
                 <div className="space-y-4">
                   {tickets.map((ticket) => (
                     <div key={ticket.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -200,7 +200,7 @@ export default function ClubEventPageContent({ clubEvent, tickets, clubSlug }: C
 
             {clubEvent.latitude && clubEvent.longitude && (
               <div className="mt-8">
-                <p className="text-sm text-zinc-500 mb-3">{t("club.location")}</p>
+                <p className="text-sm text-zinc-400 mb-3">{t("club.location")}</p>
                 <ClubMap
                   latitude={clubEvent.latitude}
                   longitude={clubEvent.longitude}

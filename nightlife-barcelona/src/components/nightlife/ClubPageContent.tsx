@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useLanguage } from "../../context/LanguageContext"
@@ -12,198 +12,82 @@ import NearbyVenuesSheet from "../nightlife/NearbyVenuesSheet"
 import ClubMap from "../map/ClubMap"
 import ClubNightsCalendar from "../nightlife/ClubNightsCalendar"
 import NearbyEssentials from "../nightlife/NearbyEssentials"
-import TransportButtons from "../ui/TransportButtons"
+import ClubTransport from "./club/ClubTransport"
+import ClubGallery from "./club/ClubGallery"
+import ClubReviews from "./club/ClubReviews"
+import Stars from "./club/Stars"
+import Icon from "../ui/Icon"
+import { toast } from "../ui/Toast"
 import { supabase } from "../../lib/supabase"
 import { FALLBACK_IMAGE as FALLBACK_CLUB_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
-import { getNightBusLine, splitNightBusCodes, nightBusStopsUrl } from "../../lib/nightBuses"
-import { nearestMetroStations } from "../../lib/metroStations"
-import { distanceInMeters, formatDistance, walkingMinutes, walkingDirectionsUrl } from "../../lib/geo"
-import { useIdleVisible } from "../../lib/useIdleVisible"
+import { clubOpenNow } from "../../lib/clubHours"
+import { toDateLocale } from "../../lib/dateLocale"
 
-const ACCENT_PALETTE = [
-  { from: "#8b5cf6", to: "#ec4899", glow: "139,92,246" },
-  { from: "#f43f5e", to: "#fb923c", glow: "244,63,94" },
-  { from: "#06b6d4", to: "#6366f1", glow: "6,182,212" },
-  { from: "#10b981", to: "#a3e635", glow: "16,185,129" },
-  { from: "#f59e0b", to: "#ef4444", glow: "245,158,11" },
-  { from: "#d946ef", to: "#6366f1", glow: "217,70,239" },
-]
+// Ficha de club. Reordenada tras la auditoría de octubre 2026:
+//   1. Arriba lo que decide la noche: nombre, si está abierto, valoración y dos botones.
+//   2. Datos prácticos (música, precio, horario, edad) sin "TBA" ni valores inventados.
+//   3. Lo que pasa hoy de verdad: notas y check-ins recientes (nada de "estimados").
+//   4. Detalle: servicios, cómo llegar y volver, preguntas frecuentes, mapa.
+//   5. Fotos, reseñas de Google y locales parecidos.
+// Antes: "Comprar entradas" salía 4 veces (y enlazaba a la web aunque no vendiera entradas),
+// "Cómo llegar" 3, la valoración 3, había dos botones de volver, una cola fija que parecía en
+// directo, un nivel de ambiente inventado y efectos (paralaje, foco que sigue al ratón,
+// contadores animados) que no ayudaban a decidir nada.
 
-const hashAccent = (seed: string) => {
-  let h = 0
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0
-  return ACCENT_PALETTE[h % ACCENT_PALETTE.length]
+type Tab = "about" | "nights" | "sessions" | "location"
+
+const LIVE_STATUS_MAX_AGE_MS = 4 * 60 * 60 * 1000
+const CHECKINS_MIN_FOR_LIVE = 3
+const CHECKINS_FOR_FULL = 10
+
+function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <div className={`rounded-card border border-white/10 bg-surface p-6 sm:p-7 ${className}`}>{children}</div>
 }
 
-function Icon({ name, className = "h-5 w-5", style }: { name: string; className?: string; style?: React.CSSProperties }) {
-  const p = { className, style, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const }
-  switch (name) {
-    case "leaf": return <svg {...p}><path d="M5 20c8 0 14-6 14-14 0 0-13-2-14 9-.3 3 0 5 0 5z" /><path d="M5 20c1-4 4-8 9-11" /></svg>
-    case "sofa": return <svg {...p}><path d="M4 12v5a1 1 0 001 1h1v2M18 18h1a1 1 0 001-1v-5M4 12a2 2 0 012-2h12a2 2 0 012 2M4 12v3h16v-3M17 18v2" /></svg>
-    case "cigarette": return <svg {...p}><rect x="2" y="10" width="16" height="4" rx="1" /><path d="M8 10v4M18 8c1 1 1 2 0 3M20 7c1.5 1.5 1.5 3.5 0 5" /></svg>
-    case "clipboard": return <svg {...p}><rect x="6" y="4" width="12" height="17" rx="2" /><rect x="9" y="2" width="6" height="4" rx="1" /><path d="M9 11h6M9 15h4" /></svg>
-    case "shirt": return <svg {...p}><path d="M8 4l4 2 4-2 4 4-3 3v9H7v-9L4 8z" /></svg>
-    case "pride": return <svg {...p} strokeWidth={2}><path d="M4 6h16M4 10.5h16M4 15h16M4 19.5h16" /></svg>
-    case "music": return <svg {...p}><path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></svg>
-    case "ticket": return <svg {...p}><path d="M3 8a2 2 0 012-2h14a2 2 0 012 2v2a2 2 0 000 4v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 000-4z" /></svg>
-    case "clock": return <svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
-    case "hourglass": return <svg {...p}><path d="M6 3h12M6 21h12M7 3c0 5 5 6 5 9s-5 4-5 9M17 3c0 5-5 6-5 9s5 4 5 9" /></svg>
-    case "thermometer": return <svg {...p}><path d="M12 15V4a2 2 0 10-4 0v11a4 4 0 104 0z" /></svg>
-    case "map": return <svg {...p}><path d="M9 20l-6-2V6l6 2 6-2 6 2v12l-6-2-6 2z" /><path d="M9 4v14M15 6v14" /></svg>
-    case "share": return <svg {...p}><circle cx="6" cy="12" r="2.3" /><circle cx="18" cy="6" r="2.3" /><circle cx="18" cy="18" r="2.3" /><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4" /></svg>
-    case "flag": return <svg {...p}><path d="M5 3v18M5 4h13l-3 4 3 4H5" /></svg>
-    case "arrow": return <svg {...p}><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-    case "flame": return <svg {...p}><path d="M12 3c1 3-2 4-2 7a4 4 0 108 0c0-1-1-2-1-2 1 4-1 5-1 5 2-1 3-4 3-6 0-5-4-6-4-9-1 2-3 3-3 5z" /></svg>
-    case "ban": return <svg {...p}><circle cx="12" cy="12" r="9" /><path d="M6 6l12 12" /></svg>
-    case "check": return <svg {...p}><circle cx="12" cy="12" r="9" /><path d="M8 12l3 3 5-6" /></svg>
-    case "heart": return <svg {...p}><path d="M12 20s-7-4.6-9.5-9.2C1 7.3 3 4 6.5 4 9 4 11 6 12 7c1-1 3-3 5.5-3C21 4 23 7.3 21.5 10.8 19 15.4 12 20 12 20z" /></svg>
-    case "back": return <svg {...p}><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
-    case "close": return <svg {...p}><path d="M6 6l12 12M18 6L6 18" /></svg>
-    case "instagram": return <svg {...p}><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.2" cy="6.8" r="0.6" fill="currentColor" stroke="none" /></svg>
-    case "users": return <svg {...p}><circle cx="9" cy="8" r="3" /><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6" /><circle cx="17" cy="9" r="2.4" /><path d="M20.5 20c-.2-2.4-1.5-4.2-3.5-5" /></svg>
-    case "id": return <svg {...p}><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="12" r="2" /><path d="M6 16c.5-1.5 1.5-2 2.5-2s2 .5 2.5 2M14 9h4M14 12h4M14 15h2" /></svg>
-    case "star": return <svg {...p} fill="currentColor" stroke="none"><path d="M12 2.5l2.9 6.4 6.9.7-5.2 4.7 1.5 6.9L12 17.8l-6.1 3.4 1.5-6.9-5.2-4.7 6.9-.7z" /></svg>
-    case "google": return <svg {...p} fill="currentColor" stroke="none" viewBox="0 0 24 24"><path d="M21.6 12.23c0-.68-.06-1.36-.18-2H12v3.8h5.4a4.62 4.62 0 01-2 3.03v2.5h3.24c1.9-1.75 3-4.33 3-7.33z" /><path d="M12 22c2.7 0 4.97-.9 6.63-2.44l-3.24-2.5c-.9.6-2.06.96-3.4.96-2.6 0-4.8-1.76-5.6-4.13H3.05v2.6A10 10 0 0012 22z" /><path d="M6.4 13.9a6 6 0 010-3.8v-2.6H3.05a10 10 0 000 9l3.35-2.6z" /><path d="M12 5.98c1.47 0 2.8.5 3.83 1.5l2.87-2.87A9.7 9.7 0 0012 2a10 10 0 00-8.95 5.5l3.35 2.6c.8-2.37 3-4.12 5.6-4.12z" /></svg>
-    default: return null
-  }
-}
-
-function CountUp({ value, duration = 1400, decimals = 0 }: { value: number; duration?: number; decimals?: number }) {
-  const [display, setDisplay] = useState(0)
-  useEffect(() => {
-    let startTs: number | null = null
-    let raf = 0
-    const step = (ts: number) => {
-      if (startTs === null) startTs = ts
-      const progress = Math.min((ts - startTs) / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setDisplay(eased * value)
-      if (progress < 1) raf = requestAnimationFrame(step)
-    }
-    raf = requestAnimationFrame(step)
-    return () => cancelAnimationFrame(raf)
-  }, [value, duration])
-  return <>{decimals > 0 ? display.toFixed(decimals) : Math.floor(display)}</>
-}
-
-function Reveal({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true)
-          obs.disconnect()
-        }
-      },
-      { threshold: 0.15 }
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
-  return (
-    <div
-      ref={ref}
-      style={{ transitionDelay: visible ? `${delay}ms` : "0ms" }}
-      className={`transition-all duration-700 ease-out ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"} ${className}`}
-    >
-      {children}
-    </div>
-  )
-}
-
-function Card({
-  className = "",
-  innerClassName = "p-7",
-  children,
-  as: As = "div",
-  onClick,
-}: {
-  className?: string
-  innerClassName?: string
-  children?: React.ReactNode
-  as?: "div" | "button"
-  onClick?: () => void
-}) {
-  return (
-    <As
-      onClick={onClick}
-      className={`rounded-[28px] bg-gradient-to-br from-white/20 via-white/[0.06] to-white/0 p-[1px] transition duration-300 hover:from-white/35 ${className}`}
-    >
-      <div className={`h-full w-full rounded-[27px] bg-[#0b0912]/95 backdrop-blur-2xl ${innerClassName}`}>{children}</div>
-    </As>
-  )
-}
-
-function Stars({ rating, size = "h-3.5 w-3.5", color }: { rating: number; size?: string; color: string }) {
-  const rounded = Math.round(rating)
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Icon key={n} name="star" className={`${size} ${n <= rounded ? "" : "opacity-20"}`} style={{ color }} />
-      ))}
-    </div>
-  )
+function PanelTitle({ children }: { children: React.ReactNode }) {
+  return <h2 className="mb-5 text-lg font-semibold text-ink">{children}</h2>
 }
 
 export default function ClubPageContent({ club, clubEvents, clubSessions = [] }: { club: any; clubEvents: any[]; clubSessions?: any[] }) {
-  const actionBarVisible = useIdleVisible(3000)
-  const { t } = useLanguage()
-  const [activeTab, setActiveTab] = useState<"about" | "nights" | "sessions" | "location">("about")
+  const { t, locale } = useLanguage()
+  const [activeTab, setActiveTab] = useState<Tab>("about")
   const [related, setRelated] = useState<any[]>([])
-  const [favCount, setFavCount] = useState<number | null>(null)
-  const [scrolled, setScrolled] = useState(false)
-  const [pastHero, setPastHero] = useState(false)
-  const [scrollY, setScrollY] = useState(0)
-  const [spot, setSpot] = useState({ x: 50, y: 30 })
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  const [now, setNow] = useState(() => Date.now())
-  const [mounted, setMounted] = useState(false)
-  const [reviews, setReviews] = useState<any[]>([])
-  // Check-ins reales (GPS) de las últimas 3 h en este club; ver función club_live_checkins.
   const [liveCheckins, setLiveCheckins] = useState(0)
-  const [liveNotes, setLiveNotes] = useState<any[]>([])
-  const [nearestTaxi, setNearestTaxi] = useState<{ name: string; address: string | null; latitude: number; longitude: number; distanceMeters: number } | null>(null)
-  const heroRef = useRef<HTMLDivElement>(null)
+  const [liveNotes, setLiveNotes] = useState<{ note: string; note_created_at: string }[]>([])
+  // La hora depende del momento en que se mira: se calcula tras montar para que el HTML del
+  // servidor y el del navegador coincidan.
+  const [openNow, setOpenNow] = useState<boolean | null>(null)
+  const [now, setNow] = useState<number | null>(null)
 
-  const accent = hashAccent(club.music || club.name || "noctua")
-  const ticketUrl = club.tickets_url || club.ticket_url || club.entradas_url || club.website
-  const displayRating = club.google_rating || club.rating || null
-  const reviewCount = club.google_review_count || club.review_count || club.reviews_count || null
+  // Solo enlaces de venta de entradas. Antes caía a la web oficial y "Comprar entradas" salía en
+  // locales que no venden nada.
+  const ticketUrl: string | null = club.tickets_url || club.ticket_url || club.entradas_url || null
+  const website: string | null = club.website || null
+  const instagram: string | null = club.instagram || club.instagram_url || null
+  const displayRating: number | null = club.google_rating || club.rating || null
+  const reviewCount: number | null = club.google_review_count || club.review_count || club.reviews_count || null
   const capacity = club.capacity || club.aforo || null
-  const minAge = club.min_age || club.edad_minima || null
-  const instagram = club.instagram || club.instagram_url || null
+  const minAge = club.min_age || club.edad_minima || club.age_min || null
+  const hasCoords = !!club.latitude && !!club.longitude
+
+  const trackClick = (eventType: string) => track(eventType, { itemType: "club", itemId: club.id, itemName: club.name })
 
   useEffect(() => {
-    const idm = setTimeout(() => setMounted(true), 60)
-    return () => clearTimeout(idm)
-  }, [])
-
-  useEffect(() => {
-    const onScroll = () => {
-      setScrolled(window.scrollY > 40)
-      setPastHero(window.scrollY > (heroRef.current?.offsetHeight || 640) - 120)
-      setScrollY(window.scrollY)
-    }
-    onScroll()
-    window.addEventListener("scroll", onScroll, { passive: true })
-    return () => window.removeEventListener("scroll", onScroll)
-  }, [])
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 60000)
+    setOpenNow(clubOpenNow(club.hours, club.open_days))
+    setNow(Date.now())
+    const id = setInterval(() => {
+      setOpenNow(clubOpenNow(club.hours, club.open_days))
+      setNow(Date.now())
+    }, 60000)
     return () => clearInterval(id)
-  }, [])
+  }, [club.hours, club.open_days])
 
   useEffect(() => {
-    // "También te puede interesar": antes eran 3 clubs al azar de los 8 primeros de la tabla, así
-    // que se recomendaban sitios sin relación y con notas de 2/5. Ahora se priorizan locales del
-    // mismo barrio y del mismo estilo de música, con buena nota, y se varía entre los mejores.
+    trackClick("page_view")
+
+    // Parecidos: mismo barrio y mismo estilo, con buena nota (antes, 3 al azar de la tabla).
     const loadRelated = async () => {
       const fields = "id, name, slug, image, neighborhood, music, rating, google_rating"
       let { data, error } = await supabase.from("clubs").select(fields).eq("hidden", false).neq("id", club.id)
@@ -222,30 +106,12 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
       const best = [...data].sort((a, b) => score(b) - score(a)).slice(0, 6)
       setRelated(best.sort(() => Math.random() - 0.5).slice(0, 3))
     }
-    const loadFavCount = async () => {
-      const { count } = await supabase
-        .from("favorites")
-        .select("*", { count: "exact", head: true })
-        .eq("item_type", "club")
-        .eq("item_id", club.id)
-      setFavCount(count ?? 0)
-    }
-    const loadReviews = async () => {
-      const { data } = await supabase
-        .from("club_reviews")
-        .select("*")
-        .eq("club_id", club.id)
-        .order("rating", { ascending: false })
-      if (data) setReviews(data)
-    }
-    // Notas de check-in: a diferencia de las reseñas de Google (que pueden ser de hace meses),
-    // esto solo lo puede dejar alguien a quien el GPS acaba de confirmar en la puerta — así que
-    // se lee de una vista pública (club_live_notes) que no expone qué usuario la escribió, solo
-    // el texto y cuándo. Se filtran las de más de 6h aquí también, por si la vista no lo hiciera.
+
+    // Notas de check-in de las últimas 6 h: lo único realmente "en directo" de la ficha.
     const loadLiveNotes = async () => {
       const { data } = await supabase
         .from("club_live_notes")
-        .select("*")
+        .select("note, note_created_at")
         .eq("club_id", club.id)
         .order("note_created_at", { ascending: false })
         .limit(5)
@@ -254,277 +120,134 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
         setLiveNotes(data.filter((n) => n.note_created_at && new Date(n.note_created_at).getTime() > sixHoursAgo))
       }
     }
-    // Parada de taxis más cercana: se reutiliza la tabla "essentials" (categoría Taxi) que ya
-    // alimenta /essentials, en vez de pedirle al admin que rellene un campo de taxi club a club
-    // que, como pasaba con metro y bus nocturno, en la práctica se quedaría vacío casi siempre.
-    const loadNearestTaxi = async () => {
-      if (!club.latitude || !club.longitude) return
-      const { data } = await supabase
-        .from("essentials")
-        .select("name, address, latitude, longitude")
-        .eq("category", "Taxi")
-        .eq("hidden", false)
-      if (!data || data.length === 0) return
-      const withDistance = data
-        .filter((e: any) => e.latitude && e.longitude)
-        .map((e: any) => ({
-          name: e.name,
-          address: e.address,
-          latitude: e.latitude,
-          longitude: e.longitude,
-          distanceMeters: distanceInMeters(club.latitude, club.longitude, e.latitude, e.longitude),
-        }))
-        .sort((a: any, b: any) => a.distanceMeters - b.distanceMeters)
-      if (withDistance.length > 0 && withDistance[0].distanceMeters <= 1500) {
-        setNearestTaxi(withDistance[0])
-      }
-    }
-    loadRelated()
-    loadFavCount()
-    loadReviews()
-    loadLiveNotes()
-    loadNearestTaxi()
-  }, [club.id])
 
-  const trackClick = (eventType: string) =>
-    track(eventType, { itemType: "club", itemId: club.id, itemName: club.name })
-
-  useEffect(() => {
     supabase.rpc("club_live_checkins", { p_club_id: club.id }).then(({ data }) => {
       if (typeof data === "number") setLiveCheckins(data)
     })
-  }, [club.id])
-
-  // Registra la visita a esta ficha (solo si el usuario ha iniciado sesión) para poder mostrar
-  // "últimos clubes visitados" en su perfil.
-  useEffect(() => {
-    trackClick("page_view")
+    loadRelated()
+    loadLiveNotes()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club.id])
 
   const shareClub = async () => {
     trackClick("share_click")
-    const url = typeof window !== "undefined" ? window.location.href : ""
-    if (typeof navigator !== "undefined" && (navigator as any).share) {
+    const url = window.location.href
+    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> }
+    if (nav.share) {
       try {
-        await (navigator as any).share({ title: club.name, text: `Mira ${club.name} en Noctua`, url })
-      } catch {}
-    } else if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await nav.share({ title: club.name, text: t("clubPage.shareText").replace("{name}", club.name), url })
+      } catch {
+        /* el usuario canceló */
+      }
+    } else if (navigator.clipboard) {
       await navigator.clipboard.writeText(url)
-      window.alert("Enlace copiado")
+      toast(t("clubPage.linkCopied"))
     }
   }
 
-  const goToLocation = () => {
-    setActiveTab("location")
-    document.getElementById("club-content")?.scrollIntoView({ behavior: "smooth", block: "start" })
-  }
+  const directionsUrl = hasCoords
+    ? `https://www.google.com/maps/dir/?api=1&destination=${club.latitude},${club.longitude}`
+    : club.address
+    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${club.address} ${club.name}`)}`
+    : null
 
-  const openDirections = () => {
-    trackClick("directions_click")
-    if (club.latitude && club.longitude) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${club.latitude},${club.longitude}`, "_blank")
-    } else if (club.address) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(club.address + " " + (club.name || ""))}`, "_blank")
-    } else {
-      goToLocation()
-    }
+  // ---- Estado de esta noche: solo datos reales ----
+  const liveStatusAgeMs = club.live_status_updated_at ? Date.now() - new Date(club.live_status_updated_at).getTime() : Infinity
+  const LIVE_LABELS: Record<string, string> = {
+    tranquilo: t("clubPage.vibeQuiet"),
+    animado: t("clubPage.vibeBusy"),
+    lleno: t("clubPage.vibeFull"),
   }
+  const isLiveStatus = !!(club.live_status && LIVE_LABELS[club.live_status] && liveStatusAgeMs < LIVE_STATUS_MAX_AGE_MS)
+  const fromCheckins = !isLiveStatus && liveCheckins >= CHECKINS_MIN_FOR_LIVE
+  const vibe = isLiveStatus
+    ? LIVE_LABELS[club.live_status]
+    : fromCheckins
+    ? liveCheckins >= CHECKINS_FOR_FULL
+      ? LIVE_LABELS.lleno
+      : LIVE_LABELS.animado
+    : null
+  const liveDetail = isLiveStatus
+    ? t("clubPage.liveFromVenue").replace("{min}", String(Math.max(1, Math.round(liveStatusAgeMs / 60000))))
+    : fromCheckins
+    ? t("clubPage.liveFromCheckins").replace("{n}", String(liveCheckins))
+    : null
 
-  const goToNights = () => {
-    setActiveTab("nights")
-    document.getElementById("club-content")?.scrollIntoView({ behavior: "smooth", block: "start" })
-  }
-
-  const onHeroMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    setSpot({
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top) / rect.height) * 100,
-    })
-  }
+  // ---- Próxima noche del club ----
+  const nextEvent =
+    now && clubEvents?.length
+      ? [...clubEvents]
+          .filter((ev) => {
+            const d = ev?.date || ev?.event_date
+            return d && new Date(d).getTime() + 12 * 3600 * 1000 > now
+          })
+          .sort((a, b) => new Date(a.date || a.event_date).getTime() - new Date(b.date || b.event_date).getTime())[0]
+      : null
+  const nextEventDate = nextEvent
+    ? new Date(nextEvent.date || nextEvent.event_date).toLocaleDateString(toDateLocale(locale), { weekday: "long", day: "numeric", month: "long" })
+    : null
 
   const hasNights = clubEvents && clubEvents.length > 0
   const hasSessions = clubSessions && clubSessions.length > 0
 
-  const nextEvent = hasNights
-    ? [...clubEvents]
-        .filter((ev) => {
-          const d = ev?.date || ev?.event_date
-          return d && new Date(d).getTime() > now
-        })
-        .sort((a, b) => {
-          const da = new Date(a?.date || a?.event_date).getTime()
-          const db = new Date(b?.date || b?.event_date).getTime()
-          return da - db
-        })[0]
-    : null
-
-  const countdown = (() => {
-    if (!nextEvent) return null
-    const target = new Date(nextEvent.date || nextEvent.event_date).getTime()
-    const diff = target - now
-    if (diff <= 0) return null
-    const days = Math.floor(diff / 86400000)
-    const hours = Math.floor((diff % 86400000) / 3600000)
-    const mins = Math.floor((diff % 3600000) / 60000)
-    return { days, hours, mins }
-  })()
-
   const features = [
-    { key: "terrace", label: "Terraza", icon: "leaf", active: !!club.terrace },
-    { key: "vip", label: "Mesas VIP", icon: "sofa", active: !!club.vip_tables },
-    { key: "smoking", label: "Zona fumadores", icon: "cigarette", active: !!club.smoking_area },
-    { key: "booking", label: "Reserva de mesa", icon: "clipboard", active: !!club.table_booking },
-    { key: "lgtbi", label: "LGTBI+ friendly", icon: "pride", active: !!club.lgtbi_friendly },
-    { key: "dresscode", label: club.dresscode || "Dresscode", icon: "shirt", active: !!club.dresscode },
-    { key: "capacity", label: capacity ? `Aforo: ${capacity} personas` : "", icon: "users", active: !!capacity },
-    { key: "minage", label: minAge ? `Edad mínima: ${minAge} años` : "", icon: "id", active: !!minAge },
+    { key: "terrace", label: t("clubPage.fTerrace"), icon: "leaf", active: !!club.terrace },
+    { key: "vip", label: t("clubPage.fVip"), icon: "sofa", active: !!club.vip_tables },
+    { key: "smoking", label: t("clubPage.fSmoking"), icon: "cigarette", active: !!club.smoking_area },
+    { key: "booking", label: t("clubPage.fBooking"), icon: "clipboard", active: !!club.table_booking },
+    { key: "lgtbi", label: t("clubPage.fLgtbi"), icon: "pride", active: !!club.lgtbi_friendly },
+    { key: "dresscode", label: `${t("clubPage.fDresscode")}: ${club.dresscode}`, icon: "shirt", active: !!club.dresscode },
+    { key: "capacity", label: t("clubPage.fCapacity").replace("{n}", String(capacity)), icon: "users", active: !!capacity },
   ].filter((f) => f.active)
 
-  const ratingRounded = displayRating ? Math.round(displayRating) : 0
-
-  // Antes "energyLevel" era pura apariencia: se inventaba a partir de sold_out/queue/trending,
-  // estuviera el local abierto o cerrado, actualizado hoy o hace un mes. Ahora, si el propio
-  // local ha marcado su estado desde el portal mi-club en las últimas horas, usamos ese dato
-  // real (LIVE_STATUS_MAX_AGE_MS de margen); si no hay dato reciente, caemos al cálculo anterior
-  // como estimación — pero ya no lo mostramos como si fuera en directo (ver isLiveStatus abajo).
-  const LIVE_STATUS_MAX_AGE_MS = 4 * 60 * 60 * 1000 // 4h
-  const LIVE_STATUS_STYLES: Record<string, { label: string; bars: number; color: string }> = {
-    tranquilo: { label: "Tranquilo", bars: 1, color: "bg-emerald-400" },
-    animado: { label: "Animado", bars: 3, color: "bg-amber-400" },
-    lleno: { label: "Lleno", bars: 5, color: "bg-red-400" },
-  }
-  const liveStatusAgeMs = club.live_status_updated_at
-    ? Date.now() - new Date(club.live_status_updated_at).getTime()
-    : Infinity
-  const isLiveStatus = !!(club.live_status && LIVE_STATUS_STYLES[club.live_status] && liveStatusAgeMs < LIVE_STATUS_MAX_AGE_MS)
-
-  // Prioridad: 1) lo que marca el propio local (mi-club), 2) check-ins reales de las últimas 3 h
-  // (a partir de CHECKINS_MIN_FOR_LIVE personas, para no dar como "dato" lo que es una sola
-  // persona), 3) estimación, que se muestra etiquetada como "Estimado".
-  const CHECKINS_MIN_FOR_LIVE = 3
-  const CHECKINS_FOR_FULL = 10
-  const fromCheckins = !isLiveStatus && liveCheckins >= CHECKINS_MIN_FOR_LIVE
-  const isEstimate = !isLiveStatus && !fromCheckins
-
-  const energyLevel = isLiveStatus
-    ? LIVE_STATUS_STYLES[club.live_status]
-    : fromCheckins
-    ? liveCheckins >= CHECKINS_FOR_FULL
-      ? LIVE_STATUS_STYLES.lleno
-      : LIVE_STATUS_STYLES.animado
-    : club.sold_out
-    ? { label: "Lleno", bars: 5, color: "bg-red-400" }
-    : club.queue && !/no queue|sin cola/i.test(club.queue)
-    ? { label: "Animado", bars: 3, color: "bg-amber-400" }
-    : club.trending
-    ? { label: "Animado", bars: 3, color: "bg-amber-400" }
-    : { label: "Tranquilo", bars: 1, color: "bg-emerald-400" }
-
-  const liveStatusMinsAgo = Number.isFinite(liveStatusAgeMs) ? Math.max(0, Math.round(liveStatusAgeMs / 60000)) : null
-
-  // Metro y "distancia a Plaça Catalunya" calculados por geolocalización, no por un campo que
-  // haya que rellenar a mano local a local (ver src/lib/metroStations.ts). PLAÇA_CATALUNYA son
-  // las coordenadas fijas de la plaza, que es donde para casi toda la red Nitbus.
-  const PLACA_CATALUNYA = { lat: 41.3869, lon: 2.1701 }
-  const nearbyMetro = club.latitude && club.longitude ? nearestMetroStations(club.latitude, club.longitude) : []
-  const distToCatalunyaMeters = club.latitude && club.longitude ? distanceInMeters(club.latitude, club.longitude, PLACA_CATALUNYA.lat, PLACA_CATALUNYA.lon) : null
-
-  const galleryImages: string[] = (Array.isArray(club.gallery)
-    ? club.gallery
-    : Array.isArray(club.images)
-    ? club.images
-    : [club.image_2, club.image_3, club.image_4].filter(Boolean)
-  ).filter((src: any) => typeof src === "string" && src.length > 0)
-
-  const allImages = [club.image, ...galleryImages].filter(Boolean)
-
   const faqs = [
-    club.price && { q: "¿Cuánto cuesta la entrada?", a: `El precio orientativo es ${club.price}.` },
-    club.hours && { q: "¿Hasta qué hora abren?", a: `El horario habitual es ${club.hours}.` },
-    club.dresscode && { q: "¿Hay dresscode?", a: `Sí, el dresscode es: ${club.dresscode}.` },
-    club.table_booking && { q: "¿Se puede reservar mesa?", a: "Sí, este local permite reservar mesa con antelación." },
-    club.vip_tables && { q: "¿Tienen zona VIP?", a: "Sí, cuentan con servicio de mesas VIP." },
-    club.smoking_area && { q: "¿Hay zona de fumadores?", a: "Sí, dispone de una zona habilitada para fumadores." },
-    club.queue && { q: "¿Suele haber cola?", a: `Estado actual de la cola: ${club.queue}.` },
-    minAge && { q: "¿Cuál es la edad mínima?", a: `La edad mínima para entrar es de ${minAge} años.` },
-    capacity && { q: "¿Cuál es el aforo del local?", a: `Este local tiene un aforo de ${capacity} personas.` },
-    club.has_foosball && { q: "¿Tienen futbolín o billar?", a: "Sí, este local cuenta con futbolín o mesa de billar." },
-    club.discount_info && { q: "¿Hay algún descuento o promo?", a: club.discount_info },
-    club.free_entry_info && { q: "¿Hay entrada gratis?", a: club.free_entry_info },
+    club.price && { q: t("clubPage.faqPriceQ"), a: t("clubPage.faqPriceA").replace("{v}", club.price) },
+    club.hours && { q: t("clubPage.faqHoursQ"), a: t("clubPage.faqHoursA").replace("{v}", club.hours) },
+    club.dresscode && { q: t("clubPage.faqDressQ"), a: t("clubPage.faqDressA").replace("{v}", club.dresscode) },
+    club.table_booking && { q: t("clubPage.faqBookingQ"), a: t("clubPage.faqBookingA") },
+    club.vip_tables && { q: t("clubPage.faqVipQ"), a: t("clubPage.faqVipA") },
+    club.smoking_area && { q: t("clubPage.faqSmokingQ"), a: t("clubPage.faqSmokingA") },
+    minAge && { q: t("clubPage.faqAgeQ"), a: t("clubPage.faqAgeA").replace("{v}", String(minAge)) },
+    capacity && { q: t("clubPage.faqCapacityQ"), a: t("clubPage.faqCapacityA").replace("{v}", String(capacity)) },
+    club.has_foosball && { q: t("clubPage.faqGamesQ"), a: t("clubPage.faqGamesA") },
+    club.discount_info && { q: t("clubPage.faqPromoQ"), a: club.discount_info },
+    club.free_entry_info && { q: t("clubPage.faqFreeQ"), a: club.free_entry_info },
   ].filter(Boolean) as { q: string; a: string }[]
 
-  const accentGradient = { background: `linear-gradient(135deg, ${accent.from} 0%, ${accent.to} 100%)` }
-
   const quickFacts = [
-    { key: "music", icon: "music", value: club.music || "TBA", label: t("club.music") },
-    { key: "price", icon: "ticket", value: club.price || "TBA", label: t("club.price") },
-    { key: "hours", icon: "clock", value: club.hours || "TBA", label: t("club.hours") },
-    { key: "queue", icon: "hourglass", value: club.queue || t("club.no_queue"), label: t("club.queue") },
+    club.music && { key: "music", icon: "music", label: t("club.music"), value: club.music },
+    club.price && { key: "price", icon: "ticket", label: t("club.price"), value: club.price },
+    club.hours && { key: "hours", icon: "clock", label: t("club.hours"), value: club.hours },
+    minAge && { key: "age", icon: "id", label: t("clubPage.minAge"), value: `+${minAge}` },
+  ].filter(Boolean) as { key: string; icon: string; label: string; value: string }[]
+
+  const galleryImages: string[] = (
+    Array.isArray(club.gallery) ? club.gallery : Array.isArray(club.images) ? club.images : [club.image_2, club.image_3, club.image_4]
+  ).filter((src: unknown): src is string => typeof src === "string" && src.length > 0)
+  const allImages = [club.image, ...galleryImages].filter(Boolean) as string[]
+
+  const tabs: { key: Tab; label: string }[] = [
+    { key: "about", label: t("clubPage.tabAbout") },
+    ...(hasSessions ? [{ key: "sessions" as Tab, label: t("clubPage.tabSessions") }] : []),
+    ...(hasNights ? [{ key: "nights" as Tab, label: t("clubPage.tabNights") }] : []),
+    { key: "location", label: t("clubPage.tabLocation") },
   ]
 
+  const goToTab = (tab: Tab) => {
+    setActiveTab(tab)
+    document.getElementById("club-content")?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
+  const secondaryBtn =
+    "flex items-center justify-center gap-2 rounded-ctl border border-white/15 bg-white/5 px-5 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/10"
+  const primaryBtn =
+    "flex items-center justify-center gap-2 rounded-ctl bg-brand px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-strong"
+
   return (
-    <main className="relative min-h-screen bg-[#050308] text-white">
-      {/* HEADER — persistente, cambia de estado al hacer scroll */}
-      <header
-        className={`absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 py-3.5 transition-all duration-300 sm:px-6 ${
-          scrolled ? "border-b border-white/10 bg-[#050308]/90 backdrop-blur-2xl" : "bg-gradient-to-b from-black/60 to-transparent"
-        }`}
-      >
-        <div className="flex min-w-0 items-center gap-3">
-          <Link
-            href="/"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-black/30 text-white backdrop-blur-xl transition hover:bg-white/10"
-          >
-            <Icon name="back" className="h-4.5 w-4.5" />
-          </Link>
-          <div
-            className={`min-w-0 items-center gap-2 transition-all duration-300 ${
-              pastHero ? "flex opacity-100 translate-x-0" : "hidden opacity-0 -translate-x-2 sm:flex sm:pointer-events-none"
-            }`}
-            style={{ opacity: pastHero ? 1 : 0 }}
-          >
-            <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg">
-              <img src={club.image || FALLBACK_CLUB_IMAGE} alt={club.name} className="h-full w-full object-cover" />
-            </div>
-            <p className="truncate text-sm font-black text-white">{club.name}</p>
-            {displayRating && (
-              <span className="hidden shrink-0 items-center gap-1 text-xs font-bold text-zinc-300 sm:flex">
-                <Icon name="star" className="h-3 w-3" style={{ color: accent.from }} /> {Number(displayRating).toFixed(1)}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            onClick={shareClub}
-            className="hidden h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/30 text-white backdrop-blur-xl transition hover:bg-white/10 sm:flex"
-          >
-            <Icon name="share" className="h-4 w-4" />
-          </button>
-          <button
-            onClick={openDirections}
-            className="rounded-full bg-white px-4 py-2.5 text-xs font-black text-black transition hover:scale-105 sm:px-5 sm:text-sm"
-          >
-            Cómo llegar
-          </button>
-        </div>
-      </header>
-
-      {/* HERO */}
-      <section
-        ref={heroRef}
-        onMouseMove={onHeroMouseMove}
-        className="relative flex h-[88vh] min-h-[620px] items-end overflow-hidden"
-      >
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Antes era un <img> normal: sin conversión a WebP/AVIF, sin tamaños responsive y sin
-              indicarle al navegador que es el elemento más importante de la página (LCP). Con
-              next/image y priority, el navegador la prioriza sobre cualquier otra imagen/script
-              y recibe una versión ya optimizada para su pantalla. unoptimized solo se activa para
-              el SVG de respaldo en línea (data:), que no tiene sentido pasar por el optimizador. */}
+    <main className="relative min-h-screen bg-night pb-40 text-ink lg:pb-16">
+      {/* PORTADA */}
+      <section className="relative">
+        <div className="relative h-[46vh] max-h-[560px] min-h-[320px] w-full overflow-hidden">
           <Image
             src={club.image || FALLBACK_CLUB_IMAGE}
             alt={club.name}
@@ -532,238 +255,169 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
             priority
             sizes="100vw"
             unoptimized={!club.image}
-            style={{ transform: `translateY(${scrollY * 0.3}px) scale(1.12)` }}
-            className="object-cover motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out will-change-transform"
+            className="object-cover"
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-night via-night/40 to-transparent" />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050308] via-black/45 to-black/10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-transparent to-black/30" />
-        <div className="pointer-events-none absolute inset-0" style={{ boxShadow: "inset 0 0 220px 60px rgba(0,0,0,0.6)" }} />
-        <div
-          className="pointer-events-none absolute inset-0 opacity-70 mix-blend-soft-light transition-[background] duration-300"
-          style={{
-            background: `radial-gradient(650px circle at ${spot.x}% ${spot.y}%, rgba(${accent.glow},0.35), transparent 60%)`,
-          }}
-        />
 
-        <div className="relative z-10 w-full px-5 pb-10 sm:px-8 md:pb-14">
+        <div className="relative -mt-28 px-4 sm:-mt-36 sm:px-6">
           <div className="mx-auto max-w-6xl">
-            <div
-              className={`flex flex-wrap items-center gap-2 transition-all duration-700 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
-            >
-              {club.trending && (
-                <span className="flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3.5 py-1.5 text-[11px] font-bold text-emerald-300 backdrop-blur-xl">
-                  <Icon name="flame" className="h-3 w-3" /> {t("club.trending")}
-                </span>
-              )}
-              {club.sold_out && (
-                <span className="flex items-center gap-1.5 rounded-full border border-red-400/30 bg-red-400/10 px-3.5 py-1.5 text-[11px] font-bold text-red-300 backdrop-blur-xl">
-                  <Icon name="ban" className="h-3 w-3" /> {t("club.sold_out")}
-                </span>
-              )}
-              {club.verified && (
-                <span className="flex items-center gap-1.5 rounded-full border border-blue-400/30 bg-blue-400/10 px-3.5 py-1.5 text-[11px] font-bold text-blue-300 backdrop-blur-xl">
-                  <Icon name="check" className="h-3 w-3" /> Verificado
-                </span>
-              )}
-            </div>
+            {(club.trending || club.sold_out || club.verified) && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {club.verified && (
+                  <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-night/70 px-3 py-1.5 text-xs font-semibold text-ink">
+                    <Icon name="check" className="h-3.5 w-3.5 text-brand-soft" /> {t("clubPage.verified")}
+                  </span>
+                )}
+                {club.trending && (
+                  <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-night/70 px-3 py-1.5 text-xs font-semibold text-ink">
+                    <Icon name="flame" className="h-3.5 w-3.5 text-warn" /> {t("club.trending")}
+                  </span>
+                )}
+                {club.sold_out && (
+                  <span className="flex items-center gap-1.5 rounded-full border border-red-400/30 bg-red-400/15 px-3 py-1.5 text-xs font-semibold text-red-200">
+                    <Icon name="ban" className="h-3.5 w-3.5" /> {t("club.sold_out")}
+                  </span>
+                )}
+              </div>
+            )}
 
-            <div
-              style={{ transitionDelay: "100ms" }}
-              className={`transition-all duration-700 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
-            >
-              <p className="mt-5 text-xs font-bold uppercase tracking-[0.4em]" style={{ color: accent.from }}>
-                {club.music || "Barcelona nightlife"}
-              </p>
-              <h1 className="font-display mt-3 text-[13vw] font-black leading-[0.9] text-white sm:text-6xl md:text-7xl lg:text-[5.5rem]">
-                {club.name}
-              </h1>
-            </div>
+            {club.music && <p className="text-sm font-semibold text-brand-soft">{club.music}</p>}
+            <h1 className="font-display mt-1 break-words text-[2.4rem] leading-[1.02] text-ink sm:text-6xl md:text-7xl">{club.name}</h1>
 
-            <div
-              style={{ transitionDelay: "180ms" }}
-              className={`mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 transition-all duration-700 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
-            >
-              <span className="flex items-center gap-1.5 text-sm text-zinc-300">
-                <Icon name="map" className="h-3.5 w-3.5 text-zinc-500" /> {club.neighborhood || "Barcelona"}
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <span className="flex items-center gap-1.5 text-zinc-300">
+                <Icon name="map" className="h-4 w-4 text-muted" /> {club.neighborhood || "Barcelona"}
               </span>
               {displayRating && (
-                <>
-                  <span className="h-1 w-1 rounded-full bg-zinc-600" />
-                  <span className="flex items-center gap-2">
-                    <Stars rating={displayRating} color={accent.from} />
-                    <span className="text-sm font-bold text-white">
-                      <CountUp value={displayRating} decimals={1} />
-                    </span>
-                    {reviewCount ? (
-                      <span className="text-sm text-zinc-500">
-                        (<CountUp value={reviewCount} /> reseñas de Google)
-                      </span>
-                    ) : (
-                      club.people && (
-                        <span className="text-sm text-zinc-500">
-                          · <CountUp value={club.people} /> han estado aquí
-                        </span>
-                      )
-                    )}
-                  </span>
-                </>
+                <span className="flex items-center gap-1.5 text-zinc-300">
+                  <Stars rating={displayRating} />
+                  <span className="font-semibold text-ink">{Number(displayRating).toFixed(1)}</span>
+                  {reviewCount ? <span className="text-zinc-400">({reviewCount.toLocaleString("es-ES")})</span> : null}
+                </span>
               )}
-              <span className="h-1 w-1 rounded-full bg-zinc-600" />
-              <span className="flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 backdrop-blur-xl">
-                <span className="flex h-3 items-end gap-[2px]">
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <span
-                      key={i}
-                      className={`w-[3px] rounded-full ${i < energyLevel.bars ? energyLevel.color : "bg-white/15"} motion-safe:animate-[pulseBar_1.2s_ease-in-out_infinite]`}
-                      style={{ height: `${30 + i * 14}%`, animationDelay: `${i * 0.12}s` }}
-                    />
-                  ))}
+              {openNow !== null && (
+                <span className={`flex items-center gap-1.5 font-semibold ${openNow ? "text-open" : "text-zinc-400"}`}>
+                  <span className={`h-2 w-2 rounded-full ${openNow ? "live-dot bg-open" : "bg-off"}`} />
+                  {openNow ? t("clubPage.openNow") : t("clubPage.closedNow")}
                 </span>
-                <span className="text-xs font-semibold text-zinc-300">
-                  {energyLevel.label} ahora
-                  {isEstimate && (
-                    <span className="ml-1.5 rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-semibold text-zinc-400">
-                      Estimado
-                    </span>
-                  )}
-                  {fromCheckins && (
-                    <span className="ml-1.5 inline-flex items-center gap-1 text-emerald-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
-                      en directo · {liveCheckins} check-ins en las últimas 3 h
-                    </span>
-                  )}
-                  {isLiveStatus && (
-                    <span className="ml-1.5 inline-flex items-center gap-1 text-emerald-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
-                      en directo{liveStatusMinsAgo != null && liveStatusMinsAgo > 0 ? ` · hace ${liveStatusMinsAgo} min` : ""}
-                    </span>
-                  )}
-                </span>
-              </span>
+              )}
             </div>
 
-            <div
-              style={{ transitionDelay: "260ms" }}
-              className={`mt-8 flex flex-wrap items-center gap-3 transition-all duration-700 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
-            >
-              {club.website && (
-                <a
-                  href={club.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => trackClick("website_click")}
-                  style={accentGradient}
-                  className="rounded-2xl px-7 py-4 font-black text-white transition hover:scale-[1.02] hover:opacity-90"
-                >
-                  Web oficial
+            <div className="mt-6 flex flex-wrap gap-3">
+              {ticketUrl ? (
+                <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={primaryBtn}>
+                  <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
+                </a>
+              ) : directionsUrl ? (
+                <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={primaryBtn}>
+                  <Icon name="map" className="h-4 w-4" /> {t("clubPage.directions")}
+                </a>
+              ) : null}
+              {ticketUrl && directionsUrl && (
+                <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={secondaryBtn}>
+                  <Icon name="map" className="h-4 w-4" /> {t("clubPage.directions")}
                 </a>
               )}
-              <button
-                onClick={openDirections}
-                className="flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-6 py-4 font-bold text-white backdrop-blur-xl transition hover:bg-white/10"
-              >
-                <Icon name="map" className="h-4 w-4" /> Cómo llegar
+              {website && (
+                <a href={website} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("website_click")} className={secondaryBtn}>
+                  <Icon name="globe" className="h-4 w-4" /> {t("clubPage.website")}
+                </a>
+              )}
+              <button onClick={shareClub} className={`${secondaryBtn} px-4`} aria-label={t("clubPage.share")}>
+                <Icon name="share" className="h-4 w-4" />
               </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* QUICK FACTS STRIP */}
-      <Reveal className="relative z-10 mx-auto -mt-8 max-w-6xl px-4 sm:px-6">
-        <Card innerClassName="grid grid-cols-2 divide-x divide-y divide-white/10 sm:grid-cols-4 sm:divide-y-0 lg:grid-cols-5">
-          {quickFacts.map((f, i) => (
-            <div key={f.key} className={`flex items-center gap-3 p-5 ${i === 0 ? "" : ""}`}>
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10" style={{ color: accent.from }}>
-                <Icon name={f.icon} className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <p
-                  className={`text-sm font-bold text-white ${
-                    f.key === "hours" ? "whitespace-normal break-words leading-snug" : "truncate"
-                  }`}
-                  title={f.key === "hours" ? String(f.value) : undefined}
-                >
-                  {f.value}
-                </p>
-                <p className="text-[10px] uppercase tracking-widest text-zinc-500">{f.label}</p>
-              </div>
-            </div>
-          ))}
-        </Card>
-      </Reveal>
-
-      {/* COUNTDOWN */}
-      {nextEvent && countdown && (
-        <Reveal className="relative z-10 mx-auto mt-6 max-w-6xl px-4 sm:px-6">
-          <button
-            onClick={goToNights}
-            style={{ background: `linear-gradient(110deg, rgba(${accent.glow},0.28), rgba(${accent.glow},0.06))` }}
-            className="group flex w-full flex-col items-stretch gap-5 overflow-hidden rounded-[28px] border border-white/10 p-6 text-left backdrop-blur-2xl transition hover:border-white/25 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-[0.3em]" style={{ color: accent.from }}>Próxima noche</p>
-              <p className="mt-2 truncate text-xl font-black text-white md:text-2xl">
-                {nextEvent.name || nextEvent.title || club.name}
-              </p>
-            </div>
-            <div className="flex items-center gap-3 sm:gap-5">
-              {[
-                { v: countdown.days, l: "días" },
-                { v: countdown.hours, l: "horas" },
-                { v: countdown.mins, l: "min" },
-              ].map((u) => (
-                <div key={u.l} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-center">
-                  <p className="text-2xl font-black text-white tabular-nums">{u.v}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-zinc-400">{u.l}</p>
+      {/* DATOS PRÁCTICOS */}
+      {quickFacts.length > 0 && (
+        <section className="mx-auto mt-8 max-w-6xl px-4 sm:px-6">
+          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-white/10 bg-white/10 sm:grid-cols-4">
+            {quickFacts.map((f) => (
+              <div key={f.key} className="flex items-start gap-3 bg-surface p-4">
+                <Icon name={f.icon} className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" />
+                <div className="min-w-0">
+                  <dt className="text-xs text-zinc-400">{f.label}</dt>
+                  <dd className="mt-0.5 break-words text-sm font-semibold leading-snug text-ink">{f.value}</dd>
                 </div>
-              ))}
-              <span className="hidden shrink-0 items-center gap-1.5 rounded-full bg-white px-5 py-3 text-sm font-bold text-black transition group-hover:scale-105 sm:flex">
-                Ver noches <Icon name="arrow" className="h-4 w-4" />
-              </span>
-            </div>
-          </button>
-        </Reveal>
+              </div>
+            ))}
+          </dl>
+        </section>
       )}
 
-      <section id="club-content" className="mx-auto max-w-6xl scroll-mt-24 px-4 pt-16 pb-24 sm:px-6">
-        <div className="grid gap-10 lg:grid-cols-3">
-          {/* LEFT — en móvil va DESPUÉS del sidebar (ver order-last de abajo): antes, comprar
-              entradas/guardar en favoritos quedaba al final del todo del scroll, detrás de la
-              descripción, pestañas y reseñas. En desktop no cambia nada (el grid ya los coloca
-              en columnas separadas). */}
-          <div className="order-last lg:order-none lg:col-span-2">
-            <Reveal>
-              <Card innerClassName="p-8">
-                <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">{t("club.experience")}</p>
-                <p className="mt-4 text-lg leading-relaxed text-zinc-200 first-letter:float-left first-letter:mr-2 first-letter:text-6xl first-letter:font-black first-letter:leading-[0.8] first-letter:text-white">
-                  {club.description ||
-                    `${club.name} es uno de los locales de referencia de la noche de Barcelona, conocido por su ${
-                      club.music ? `${club.music.toLowerCase()} ` : ""
-                    }${t("club.atmosphere")} y su energía en directo.`}
-                </p>
-              </Card>
-            </Reveal>
+      {/* ESTA NOCHE: solo con datos reales (el local o check-ins de las últimas 3 h) */}
+      {(vibe || liveNotes.length > 0) && (
+        <section className="mx-auto mt-6 max-w-6xl px-4 sm:px-6">
+          <div className="rounded-card border border-open/25 bg-open/[0.06] p-5 sm:p-6">
+            {vibe && (
+              <p className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="live-dot h-2 w-2 rounded-full bg-open" />
+                <span className="font-semibold text-ink">{vibe}</span>
+                {liveDetail && <span className="text-zinc-300">· {liveDetail}</span>}
+              </p>
+            )}
+            {liveNotes.length > 0 && (
+              <div className={`grid gap-3 sm:grid-cols-2 ${vibe ? "mt-4" : ""}`}>
+                {liveNotes.map((n, i) => {
+                  const mins = Math.max(0, Math.round((Date.now() - new Date(n.note_created_at).getTime()) / 60000))
+                  const ago = mins < 1 ? t("clubPage.justNow") : mins < 60 ? t("clubPage.minAgo").replace("{n}", String(mins)) : t("clubPage.hoursAgo").replace("{n}", String(Math.round(mins / 60)))
+                  return (
+                    <blockquote key={i} className="rounded-ctl border border-white/10 bg-night/40 p-4">
+                      <p className="text-sm leading-relaxed text-ink">“{n.note}”</p>
+                      <footer className="mt-2 text-xs text-zinc-400">
+                        {t("clubPage.noteFromDoor")} · {ago}
+                      </footer>
+                    </blockquote>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
-            <div className="sticky top-20 z-30 mt-8 mb-8 flex gap-2 overflow-x-auto bg-[#050308]/90 py-3 backdrop-blur-xl">
-              {[
-                { key: "about", label: "Sobre el club" },
-                ...(hasSessions ? [{ key: "sessions", label: "Sesiones semanales" }] : []),
-                ...(hasNights ? [{ key: "nights", label: "Próximas noches" }] : []),
-                { key: "location", label: "Ubicación" },
-              ].map((tab) => (
+      {/* PRÓXIMA NOCHE */}
+      {nextEvent && (
+        <section className="mx-auto mt-6 max-w-6xl px-4 sm:px-6">
+          <button
+            onClick={() => goToTab("nights")}
+            className="flex w-full items-center justify-between gap-4 rounded-card border border-white/10 bg-surface p-5 text-left transition hover:border-white/20"
+          >
+            <span className="min-w-0">
+              <span className="block text-xs text-zinc-400">{t("clubPage.nextNight")}</span>
+              <span className="mt-1 block truncate text-base font-semibold text-ink">{nextEvent.name || nextEvent.title || club.name}</span>
+              {nextEventDate && <span className="mt-0.5 block text-sm capitalize text-zinc-300">{nextEventDate}</span>}
+            </span>
+            <Icon name="arrow" className="h-5 w-5 shrink-0 text-muted" />
+          </button>
+        </section>
+      )}
+
+      <section id="club-content" className="mx-auto max-w-6xl scroll-mt-24 px-4 pt-10 sm:px-6">
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* COLUMNA PRINCIPAL — en móvil va después de las acciones */}
+          <div className="order-last space-y-6 lg:order-none lg:col-span-2">
+            {club.description && (
+              <Panel>
+                <PanelTitle>{t("clubPage.about").replace("{name}", club.name)}</PanelTitle>
+                <p className="text-base leading-relaxed text-zinc-200">{club.description}</p>
+              </Panel>
+            )}
+
+            <div role="tablist" className="scrollbar-none sticky top-16 z-20 -mx-4 flex gap-2 overflow-x-auto bg-night/95 px-4 py-3 backdrop-blur sm:mx-0 sm:px-0">
+              {tabs.map((tab) => (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key as any)}
-                  className={`shrink-0 rounded-full px-6 py-3 text-sm font-bold transition ${
-                    activeTab === tab.key ? "text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  role="tab"
+                  aria-selected={activeTab === tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                    activeTab === tab.key ? "bg-ink text-night" : "border border-white/10 text-zinc-300 hover:bg-white/5"
                   }`}
-                  style={
-                    activeTab === tab.key
-                      ? { background: `linear-gradient(135deg, ${accent.from}, ${accent.to})`, boxShadow: `0 0 20px -4px rgba(${accent.glow},0.6)` }
-                      : undefined
-                  }
                 >
                   {tab.label}
                 </button>
@@ -771,231 +425,53 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
             </div>
 
             {activeTab === "about" && (
-              <div className="space-y-8">
+              <div className="space-y-6">
                 {features.length > 0 && (
-                  <Reveal>
-                    <Card innerClassName="p-8">
-                      <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 mb-5">Lo que ofrece</p>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {features.map((f) => (
-                          <div key={f.key} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3.5">
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10" style={{ color: accent.from }}>
-                              <Icon name={f.icon} className="h-4 w-4" />
-                            </span>
-                            <span className="text-sm font-semibold text-white">{f.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-                  </Reveal>
+                  <Panel>
+                    <PanelTitle>{t("clubPage.features")}</PanelTitle>
+                    <ul className="grid gap-3 sm:grid-cols-2">
+                      {features.map((f) => (
+                        <li key={f.key} className="flex items-center gap-3 rounded-ctl border border-white/10 px-4 py-3">
+                          <Icon name={f.icon} className="h-4 w-4 shrink-0 text-brand-soft" />
+                          <span className="text-sm font-semibold text-ink">{f.label}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </Panel>
                 )}
 
-                {(club.metro_lines || club.night_buses || nearbyMetro.length > 0 || distToCatalunyaMeters != null || nearestTaxi) && (
-                  <Reveal>
-                    <Card innerClassName="p-8">
-                      <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 mb-6">{t("club.night_info")}</p>
-                      <div className="flex flex-col gap-7">
-                        {/* Metro: si el admin puso líneas a mano se muestran como venían (más
-                            preciso, confiamos en el dato humano); si no, calculamos la estación
-                            real más cercana por coordenadas, que es lo que había cero veces de
-                            las 300+ fichas de club — antes este bloque entero no aparecía casi
-                            nunca porque nadie rellenaba el campo a mano. */}
-                        {(club.metro_lines || nearbyMetro.length > 0) && (
-                          <div>
-                            <p className="text-xs text-zinc-500">{t("club.metro")}</p>
-                            {club.metro_lines ? (
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                {club.metro_lines.split(",").map((line: string) => (
-                                  <span key={line.trim()} className="rounded-full border border-red-500/30 bg-red-500/20 px-3 py-1 text-sm font-bold text-red-300">
-                                    {line.trim()}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="mt-2 flex flex-col gap-2">
-                                {nearbyMetro.map((s) => (
-                                  <div key={s.name} className="flex items-center gap-2.5 rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-2.5">
-                                    <span className="shrink-0 rounded-full border border-red-500/30 bg-red-500/20 px-2.5 py-1 text-xs font-bold text-red-300">
-                                      🚇 {formatDistance(s.distanceMeters)} · {walkingMinutes(s.distanceMeters)} min
-                                    </span>
-                                    <span className="min-w-0 flex-1 text-xs font-semibold leading-snug text-zinc-300">{s.name}</span>
-                                    <a
-                                      href={walkingDirectionsUrl(club.latitude, club.longitude, s.lat, s.lon)}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="shrink-0 text-xs font-semibold text-red-300 underline underline-offset-2 hover:text-red-200"
-                                    >
-                                      Ir andando
-                                    </a>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {(club.night_buses || distToCatalunyaMeters != null) && (
-                          <div>
-                            <p className="text-xs text-zinc-500">{t("club.night_buses")}</p>
-                            {club.night_buses ? (
-                              <div className="mt-2 flex flex-col gap-2">
-                                {splitNightBusCodes(club.night_buses).map((raw: string) => {
-                                  const line = getNightBusLine(raw)
-                                  // Si el código no lo reconocemos (línea nueva, typo, etc.), en vez de
-                                  // dejar un texto muerto mandamos a buscar paradas de bus nocturno
-                                  // cerca del local directamente en Google Maps — siempre clicable y
-                                  // útil, aunque no tengamos el dato verificado nosotros.
-                                  const mapsSearchUrl =
-                                    club.latitude && club.longitude
-                                      ? `https://www.google.com/maps/search/parada+bus+nocturno/@${club.latitude},${club.longitude},17z`
-                                      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`parada bus nocturno ${club.name} Barcelona`)}`
-                                  return (
-                                    <div key={raw} className="flex items-start gap-2.5 rounded-2xl border border-blue-500/20 bg-blue-500/10 px-3 py-2.5">
-                                      <span className="shrink-0 rounded-full border border-blue-500/30 bg-blue-500/20 px-2.5 py-1 text-xs font-bold text-blue-300">
-                                        {line ? line.code : raw}
-                                      </span>
-                                      {line ? (
-                                        <span className="text-xs leading-snug text-zinc-300">
-                                          {line.route}
-                                          {line.catalunya && <span className="text-zinc-500"> · para en Pl. Catalunya</span>}
-                                          {" · "}
-                                          <a
-                                            href={nightBusStopsUrl(line.code)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="font-semibold text-blue-300 underline underline-offset-2 hover:text-blue-200"
-                                          >
-                                            Ver todas las paradas
-                                          </a>
-                                        </span>
-                                      ) : (
-                                        <a
-                                          href={mapsSearchUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-xs font-semibold leading-snug text-blue-300 underline underline-offset-2 hover:text-blue-200"
-                                        >
-                                          Ver paradas cercanas en Google Maps
-                                        </a>
-                                      )}
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            ) : (
-                              distToCatalunyaMeters != null && (
-                                <div className="mt-2 flex items-start gap-2.5 rounded-2xl border border-blue-500/20 bg-blue-500/10 px-3 py-2.5">
-                                  <span className="shrink-0 rounded-full border border-blue-500/30 bg-blue-500/20 px-2.5 py-1 text-xs font-bold text-blue-300">
-                                    🌙 {formatDistance(distToCatalunyaMeters)} · {walkingMinutes(distToCatalunyaMeters)} min
-                                  </span>
-                                  <span className="text-xs leading-snug text-zinc-300">
-                                    Plaça Catalunya, donde para casi toda la red de autobuses nocturnos.{" "}
-                                    <a
-                                      href={walkingDirectionsUrl(club.latitude, club.longitude, PLACA_CATALUNYA.lat, PLACA_CATALUNYA.lon)}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="font-semibold text-blue-300 underline underline-offset-2 hover:text-blue-200"
-                                    >
-                                      Ir andando
-                                    </a>
-                                  </span>
-                                </div>
-                              )
-                            )}
-                            {club.night_buses && (
-                              <p className="mt-2 text-[11px] text-zinc-600">
-                                La mayoría de líneas nocturnas hacen parada en Plaça Catalunya, el punto central de transbordo de la red nocturna.
-                              </p>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Taxi: parada real más cercana (tabla essentials, categoría Taxi) en vez
-                            de solo los botones de Uber/Cabify/FreeNow de más abajo — esos piden un
-                            coche, esto es la opción de ir caminando a parar un taxi en la calle. */}
-                        {nearestTaxi && (
-                          <div>
-                            <p className="text-xs text-zinc-500">Taxi</p>
-                            <div className="mt-2 flex items-center gap-2.5 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5">
-                              <span className="shrink-0 rounded-full border border-amber-500/30 bg-amber-500/20 px-2.5 py-1 text-xs font-bold text-amber-300">
-                                🚕 {formatDistance(nearestTaxi.distanceMeters)} · {walkingMinutes(nearestTaxi.distanceMeters)} min
-                              </span>
-                              <span className="min-w-0 flex-1 text-xs leading-snug text-zinc-300">
-                                {nearestTaxi.name}
-                                {nearestTaxi.address && <span className="text-zinc-500"> · {nearestTaxi.address}</span>}
-                              </span>
-                              <a
-                                href={walkingDirectionsUrl(club.latitude, club.longitude, nearestTaxi.latitude, nearestTaxi.longitude)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="shrink-0 text-xs font-semibold text-amber-300 underline underline-offset-2 hover:text-amber-200"
-                              >
-                                Ir andando
-                              </a>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  </Reveal>
-                )}
-
-                {/* Notas en directo: van ANTES de las reseñas de Google a propósito — son el
-                    contenido más fresco de la página (minutos, no meses) y el único que viene
-                    de alguien confirmado por GPS en la puerta ahora mismo. */}
-                {liveNotes.length > 0 && (
-                  <Reveal>
-                    <Card innerClassName="p-8">
-                      <div className="mb-5 flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
-                        <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Notas en directo</p>
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {liveNotes.map((n, i) => {
-                          const mins = Math.max(0, Math.round((Date.now() - new Date(n.note_created_at).getTime()) / 60000))
-                          const ago = mins < 1 ? "justo ahora" : mins < 60 ? `hace ${mins} min` : `hace ${Math.round(mins / 60)} h`
-                          return (
-                            <div key={i} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-                              <p className="text-sm leading-relaxed text-zinc-300">"{n.note}"</p>
-                              <p className="mt-2 text-[11px] text-zinc-500">Alguien en la puerta · {ago}</p>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </Card>
-                  </Reveal>
-                )}
+                <Panel>
+                  <PanelTitle>{t("clubPage.getThereBack")}</PanelTitle>
+                  <ClubTransport club={club} />
+                </Panel>
 
                 {faqs.length > 0 && (
-                  <Reveal>
-                    <Card innerClassName="p-8">
-                      <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 mb-2">Preguntas frecuentes</p>
-                      <div className="divide-y divide-white/10">
-                        {faqs.map((f, i) => (
-                          <div key={i} className="py-4">
-                            <button onClick={() => setOpenFaq(openFaq === i ? null : i)} className="flex w-full items-center justify-between gap-4 text-left">
-                              <span className="text-sm font-bold text-white">{f.q}</span>
-                              <span className={`shrink-0 text-xl text-zinc-500 transition-transform duration-300 ${openFaq === i ? "rotate-45" : ""}`}>+</span>
-                            </button>
-                            <div className={`grid transition-all duration-300 ${openFaq === i ? "mt-3 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
-                              <div className="overflow-hidden">
-                                <p className="text-sm leading-relaxed text-zinc-400">{f.a}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-                  </Reveal>
+                  <Panel>
+                    <PanelTitle>{t("clubPage.faq")}</PanelTitle>
+                    <div className="divide-y divide-white/10">
+                      {faqs.map((f, i) => (
+                        <div key={i} className="py-3.5">
+                          <button
+                            onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                            aria-expanded={openFaq === i}
+                            className="flex w-full items-center justify-between gap-4 text-left"
+                          >
+                            <span className="text-sm font-semibold text-ink">{f.q}</span>
+                            <span className={`shrink-0 text-xl text-zinc-400 transition-transform ${openFaq === i ? "rotate-45" : ""}`}>+</span>
+                          </button>
+                          <p hidden={openFaq !== i} className="mt-2 text-sm leading-relaxed text-zinc-300">
+                            {f.a}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </Panel>
                 )}
 
-                {/* Sugerencias cercanas (comer, súper, cajero siempre visibles) — al final de la ficha */}
-                {club.latitude && club.longitude && (
-                  <Reveal>
-                    <Card innerClassName="p-6">
-                      <NearbyEssentials latitude={Number(club.latitude)} longitude={Number(club.longitude)} />
-                    </Card>
-                  </Reveal>
+                {hasCoords && (
+                  <Panel>
+                    <NearbyEssentials latitude={Number(club.latitude)} longitude={Number(club.longitude)} />
+                  </Panel>
                 )}
               </div>
             )}
@@ -1003,409 +479,187 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
             {activeTab === "sessions" && hasSessions && (
               <div className="space-y-4">
                 {clubSessions.map((session: any) => (
-                  <Reveal key={session.id}>
-                    <Card innerClassName="p-6">
-                      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                        {session.image ? (
-                          <img src={session.image} alt={session.name} className="h-24 w-24 shrink-0 rounded-2xl object-cover" style={{ border: `1px solid ${accent.from}40` }} />
-                        ) : (
-                          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl text-3xl" style={{ background: `linear-gradient(135deg, ${accent.from}33, ${accent.to}15)`, border: `1px solid ${accent.from}40` }}>
-                            🗓️
-                          </div>
+                  <Panel key={session.id}>
+                    <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                      {session.image ? (
+                        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-ctl">
+                          <Image src={session.image} alt={session.name} fill sizes="96px" className="object-cover" />
+                        </div>
+                      ) : (
+                        <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-ctl border border-white/10 bg-white/5">
+                          <Icon name="calendar" className="h-8 w-8 text-muted" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        {session.day_of_week && (
+                          <span className="inline-block rounded-full bg-brand/15 px-3 py-1 text-xs font-semibold text-brand-soft">{session.day_of_week}</span>
                         )}
-                        <div className="min-w-0 flex-1">
-                          {session.day_of_week && (
-                            <span className="inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider" style={{ background: `${accent.from}25`, color: accent.from }}>
-                              {session.day_of_week}
-                            </span>
-                          )}
-                          <h3 className="mt-2 text-xl font-black text-white">{session.name}</h3>
-                          <div className="mt-2 flex flex-wrap gap-2 text-sm text-zinc-400">
-                            {session.music && <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">🎧 {session.music}</span>}
-                            {session.price && <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">🎟 {session.price}</span>}
-                            {session.dresscode && <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1">👔 {session.dresscode}</span>}
-                          </div>
+                        <h3 className="mt-2 text-lg font-semibold text-ink">{session.name}</h3>
+                        <div className="mt-2 flex flex-wrap gap-2 text-sm text-zinc-300">
+                          {session.music && <span className="rounded-full border border-white/10 px-3 py-1">{session.music}</span>}
+                          {session.price && <span className="rounded-full border border-white/10 px-3 py-1">{session.price}</span>}
+                          {session.dresscode && <span className="rounded-full border border-white/10 px-3 py-1">{session.dresscode}</span>}
                         </div>
                       </div>
-                    </Card>
-                  </Reveal>
+                    </div>
+                  </Panel>
                 ))}
               </div>
             )}
 
             {activeTab === "nights" && hasNights && (
-              <Card innerClassName="p-8">
+              <Panel>
                 <ClubNightsCalendar clubEvents={clubEvents} clubName={club.name} />
-              </Card>
+              </Panel>
             )}
 
             {activeTab === "location" && (
-              <Card innerClassName="p-8">
-                <p className="text-xs uppercase tracking-[0.3em] text-zinc-500 mb-4">{t("club.location")}</p>
-                {club.latitude && club.longitude ? (
-                  <>
-                    <div className="overflow-hidden rounded-2xl">
-                      <ClubMap latitude={club.latitude} longitude={club.longitude} name={club.name} />
-                    </div>
-                    {club.address && <p className="mt-4 text-sm text-zinc-400">{club.address}</p>}
-                    <button
-                      onClick={openDirections}
-                      style={accentGradient}
-                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 font-bold text-white transition hover:scale-[1.01]"
-                    >
-                      <Icon name="map" className="h-4 w-4" /> Abrir ruta en Google Maps
-                    </button>
-                  </>
-                ) : club.address ? (
-                  // Antes, sin latitude/longitude en la ficha del club (aunque hubiera dirección),
-                  // esto mostraba directamente "Ubicación no disponible" — pasó con Costa Breve.
-                  // Ahora, si hay dirección aunque falten coordenadas, la mostramos igualmente y
-                  // el botón abre la búsqueda en Google Maps por dirección (openDirections ya
-                  // sabe hacer ese fallback).
-                  <>
-                    <p className="text-sm text-zinc-400">{club.address}</p>
-                    <button
-                      onClick={openDirections}
-                      style={accentGradient}
-                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 font-bold text-white transition hover:scale-[1.01]"
-                    >
-                      <Icon name="map" className="h-4 w-4" /> Buscar en Google Maps
-                    </button>
-                  </>
-                ) : (
-                  <p className="text-sm text-zinc-500">Ubicación no disponible.</p>
+              <Panel>
+                <PanelTitle>{t("club.location")}</PanelTitle>
+                {hasCoords && (
+                  <div className="overflow-hidden rounded-ctl">
+                    <ClubMap latitude={club.latitude} longitude={club.longitude} name={club.name} />
+                  </div>
                 )}
-                <div className="mt-6">
-                  <TransportButtons name={club.name} address={club.address} lat={club.latitude} lng={club.longitude} />
-                </div>
-              </Card>
-            )}
-          </div>
-
-          {/* RIGHT — SIDEBAR */}
-          <div className="lg:sticky lg:top-24 lg:self-start space-y-4">
-            <Card innerClassName="">
-              <div className="flex items-center gap-4 border-b border-white/10 p-6">
-                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl">
-                  <img src={club.image || FALLBACK_CLUB_IMAGE} alt={club.name} className="h-full w-full object-cover" />
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-lg font-black text-white">{club.name}</p>
-                  <p className="truncate text-sm text-zinc-500">{club.neighborhood || "Barcelona"}</p>
-                  {displayRating && (
-                    <div className="mt-1 flex items-center gap-1.5">
-                      <Stars rating={displayRating} color={accent.from} />
-                      <span className="text-xs font-bold text-zinc-300">{Number(displayRating).toFixed(1)}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {(club.price || club.hours || club.dresscode || minAge) && (
-                <div className="space-y-2.5 border-b border-white/10 p-6 text-sm">
-                  {club.price && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-zinc-500">Precio</span>
-                      <span className="font-semibold text-white">{club.price}</span>
-                    </div>
-                  )}
-                  {club.hours && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-zinc-500">Horario</span>
-                      <span className="font-semibold text-white">{club.hours}</span>
-                    </div>
-                  )}
-                  {club.dresscode && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-zinc-500">Dresscode</span>
-                      <span className="font-semibold text-white">{club.dresscode}</span>
-                    </div>
-                  )}
-                  {minAge && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-zinc-500">Edad mínima</span>
-                      <span className="font-semibold text-white">{minAge} años</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="space-y-3 p-6">
-                {ticketUrl && (
+                {club.address && <p className="mt-4 text-sm text-zinc-300">{club.address}</p>}
+                {directionsUrl ? (
                   <a
-                    href={ticketUrl}
+                    href={directionsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => trackClick("tickets_click")}
-                    style={accentGradient}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 font-black text-white transition hover:scale-[1.02]"
+                    onClick={() => trackClick("directions_click")}
+                    className={`${primaryBtn} mt-4 w-full`}
                   >
-                    <Icon name="ticket" className="h-4 w-4" /> Comprar entradas
+                    <Icon name="map" className="h-4 w-4" /> {t("clubPage.openRoute")}
                   </a>
+                ) : (
+                  <p className="text-sm text-zinc-400">{t("clubPage.noLocation")}</p>
                 )}
-
-                <FavoriteButton itemType="club" itemId={club.id} />
-                {/* "Voy esta noche" + compartir: antes de llegar. El check-in de abajo es para
-                    cuando ya estás en la puerta — esta es la señal previa, la que de verdad
-                    puede avisar a alguien de fuera de la app de que vas a salir. */}
-                <AttendanceButton itemType="club" itemId={club.id} title={club.name} />
-                <CheckInButton clubId={club.id} latitude={club.latitude} longitude={club.longitude} />
-                <NearbyVenuesSheet excludeClubId={club.id} venueType="club" venueId={club.id} name={club.name} latitude={club.latitude} longitude={club.longitude} />
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={shareClub}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10"
-                  >
-                    <Icon name="share" className="h-4 w-4" /> Compartir
-                  </button>
-                  {instagram && (
-                    <a
-                      href={instagram}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => trackClick("instagram_click")}
-                      className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
-                    >
-                      <Icon name="instagram" className="h-4 w-4" />
-                    </a>
-                  )}
-                </div>
-
-                <button
-                  onClick={openDirections}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02]"
-                >
-                  <Icon name="map" className="h-4 w-4" /> Cómo llegar
-                </button>
-
-                <a
-                  href={"/contact?type=report_issue&subject=" + encodeURIComponent("Reporte: " + club.name)}
-                  className="flex items-center justify-center gap-2 rounded-2xl border border-white/5 bg-transparent px-6 py-3 text-xs font-semibold text-zinc-500 transition hover:text-zinc-300"
-                >
-                  <Icon name="flag" className="h-3.5 w-3.5" /> Reportar información incorrecta
-                </a>
-              </div>
-            </Card>
-
-            {club.latitude && club.longitude && (
-              <Card as="button" onClick={goToLocation} className="group block w-full text-left" innerClassName="">
-                <div className="pointer-events-none h-40 overflow-hidden rounded-t-[27px] opacity-90 transition group-hover:opacity-100">
-                  <ClubMap latitude={club.latitude} longitude={club.longitude} name={club.name} />
-                </div>
-                <div className="flex items-center justify-between px-5 py-4">
-                  <span className="text-sm font-bold text-white">Ver mapa y transporte</span>
-                  <Icon name="arrow" className="h-4 w-4 text-zinc-500" />
-                </div>
-              </Card>
+              </Panel>
             )}
           </div>
+
+          {/* ACCIONES */}
+          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+            <div className="rounded-card border border-white/10 bg-surface p-5">
+              {ticketUrl && (
+                <a
+                  href={ticketUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => trackClick("tickets_click")}
+                  className={`${primaryBtn} mb-3 hidden w-full lg:flex`}
+                >
+                  <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
+                </a>
+              )}
+              <FavoriteButton itemType="club" itemId={club.id} />
+              <AttendanceButton itemType="club" itemId={club.id} title={club.name} />
+              <CheckInButton clubId={club.id} latitude={club.latitude} longitude={club.longitude} />
+              <NearbyVenuesSheet
+                excludeClubId={club.id}
+                venueType="club"
+                venueId={club.id}
+                name={club.name}
+                latitude={club.latitude}
+                longitude={club.longitude}
+              />
+              {instagram && (
+                <a
+                  href={instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => trackClick("instagram_click")}
+                  className={`${secondaryBtn} mt-3 w-full`}
+                >
+                  <Icon name="instagram" className="h-4 w-4" /> Instagram
+                </a>
+              )}
+              <a
+                href={"/contact?type=report_issue&subject=" + encodeURIComponent("Reporte: " + club.name)}
+                className="mt-4 flex items-center justify-center gap-2 text-xs font-semibold text-zinc-400 transition hover:text-ink"
+              >
+                <Icon name="flag" className="h-3.5 w-3.5" /> {t("clubPage.report")}
+              </a>
+            </div>
+
+            {hasCoords && (
+              <button
+                onClick={() => goToTab("location")}
+                className="group hidden w-full overflow-hidden rounded-card border border-white/10 bg-surface text-left lg:block"
+              >
+                <div className="pointer-events-none h-40">
+                  <ClubMap latitude={club.latitude} longitude={club.longitude} name={club.name} />
+                </div>
+                <span className="flex items-center justify-between px-5 py-4 text-sm font-semibold text-ink">
+                  {t("clubPage.mapAndTransport")} <Icon name="arrow" className="h-4 w-4 text-muted" />
+                </span>
+              </button>
+            )}
+          </aside>
         </div>
       </section>
 
-      {/* GALERIA */}
-      {allImages.length > 1 && (
-        <Reveal className="mb-20">
-          <p className="mx-auto max-w-6xl px-4 text-xs uppercase tracking-[0.3em] text-zinc-500 mb-5 sm:px-6">Galería</p>
-
-          {/* Mosaico en desktop */}
-          <div className="mx-auto hidden max-w-6xl grid-cols-4 grid-rows-2 gap-3 px-6 sm:grid" style={{ height: 420 }}>
-            {allImages.slice(0, 5).map((src: string, i: number) => (
-              <button
-                key={i}
-                onClick={() => setLightboxIndex(i)}
-                className={`group relative overflow-hidden rounded-3xl ${i === 0 ? "col-span-2 row-span-2" : "col-span-1 row-span-1"}`}
-              >
-                {/* Antes era <img> normal — la primera foto del mosaico (col-span-2 row-span-2) es
-                    el elemento más grande y probablemente el LCP de la página, así que lleva
-                    priority para que el navegador la cargue cuanto antes; el resto se cargan de
-                    forma perezosa (comportamiento por defecto de next/image). */}
-                <Image
-                  src={src}
-                  alt={`${club.name} ${i + 1}`}
-                  fill
-                  sizes={i === 0 ? "(max-width: 640px) 0px, 50vw" : "(max-width: 640px) 0px, 25vw"}
-                  priority={i === 0}
-                  className="object-cover transition duration-700 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/20" />
-                {i === 4 && allImages.length > 5 && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-lg font-black text-white">
-                    +{allImages.length - 5}
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Scroll horizontal en mobile */}
-          <div className="flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:hidden">
-            {allImages.map((src: string, i: number) => (
-              <button
-                key={i}
-                onClick={() => setLightboxIndex(i)}
-                className="group relative h-[60vw] w-[78vw] shrink-0 snap-center overflow-hidden rounded-[28px]"
-              >
-                <Image src={src} alt={`${club.name} ${i + 1}`} fill sizes="78vw" className="object-cover transition duration-700 group-hover:scale-110" />
-              </button>
-            ))}
-          </div>
-        </Reveal>
-      )}
-
-      {lightboxIndex !== null && (
-        <div onClick={() => setLightboxIndex(null)} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-6 backdrop-blur-xl">
-          <button onClick={() => setLightboxIndex(null)} className="absolute right-6 top-6 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white">
-            <Icon name="close" className="h-5 w-5" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + allImages.length) % allImages.length) }}
-            className="absolute left-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white sm:left-8"
-          >
-            <Icon name="arrow" className="h-5 w-5 rotate-180" />
-          </button>
-          <img src={allImages[lightboxIndex]} alt={club.name} onClick={(e) => e.stopPropagation()} className="max-h-[85vh] max-w-full rounded-2xl object-contain" />
-          <button
-            onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % allImages.length) }}
-            className="absolute right-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white sm:right-8"
-          >
-            <Icon name="arrow" className="h-5 w-5" />
-          </button>
-        </div>
-      )}
-
-      {/* RESEÑAS — lo último de la ficha, tras la galería */}
-      <div className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
-                {/* Reseñas al final de la pestaña: es contenido de validación social que alguien
-                    lee cuando ya está convencido, no lo primero que necesita para decidir. */}
-                {reviews.length > 0 && (
-                  <Reveal>
-                    <Card innerClassName="p-8">
-                      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
-                        <div className="flex items-center gap-4">
-                          <p className="font-display text-4xl text-white">{Number(displayRating).toFixed(1)}</p>
-                          <div>
-                            <Stars rating={displayRating || 0} size="h-4 w-4" color={accent.from} />
-                            <p className="mt-1 text-xs text-zinc-500">{reviewCount ? `${reviewCount} reseñas` : `${reviews.length} reseñas`}</p>
-                          </div>
-                        </div>
-                        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                          <Icon name="google" className="h-3.5 w-3.5" /> Reseñas de Google
-                        </span>
-                      </div>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        {reviews.slice(0, 4).map((r) => (
-                          <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-bold text-white">{r.author_name}</p>
-                              {r.rating && <Stars rating={r.rating} color={accent.from} />}
-                            </div>
-                            {r.relative_time && <p className="mt-0.5 text-[11px] text-zinc-500">{r.relative_time}</p>}
-                            <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-zinc-400">{r.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-                  </Reveal>
-                )}
+      <div className="mt-16">
+        <ClubGallery images={allImages} name={club.name} />
+        <ClubReviews clubId={club.id} rating={displayRating} count={reviewCount} />
       </div>
 
-      {/* CTA FULL-BLEED */}
-      {ticketUrl && (
-        <Reveal className="w-full px-4 sm:px-6">
-          <div style={accentGradient} className="mx-auto max-w-6xl rounded-[36px] px-8 py-14 text-center sm:py-20">
-            <p className="text-xs font-bold uppercase tracking-[0.4em] text-white/80">¿Te vienes esta noche?</p>
-            <h2 className="font-display mt-4 text-4xl font-black leading-tight text-white sm:text-6xl">Asegura tu entrada</h2>
-            <p className="mx-auto mt-4 max-w-xl text-white/85">
-              Las mejores noches en {club.name} se llenan rápido. Compra ahora y evita la cola.
-            </p>
-            <a
-              href={ticketUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackClick("tickets_click")}
-              className="mt-8 inline-flex items-center gap-2 rounded-full bg-black px-8 py-4 font-bold text-white transition hover:scale-105"
-            >
-              Comprar entradas <Icon name="arrow" className="h-4 w-4" />
-            </a>
-          </div>
-        </Reveal>
-      )}
-
-      {/* RELACIONADOS */}
       {related.length > 0 && (
-        <Reveal className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-          <p className="mb-6 text-xs uppercase tracking-[0.3em] text-zinc-500">También te puede interesar</p>
-          <div className="grid gap-5 sm:grid-cols-3">
+        <section className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">
+          <h2 className="mb-5 text-lg font-semibold text-ink">{t("clubPage.related")}</h2>
+          <div className="grid gap-4 sm:grid-cols-3">
             {related.map((r) => {
               const rRating = r.google_rating || r.rating || null
               return (
-                <Link key={r.id} href={`/clubs/${r.slug || createSlug(r.name)}`} className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] transition hover:border-white/20">
-                  <div className="relative h-44 overflow-hidden">
-                    <img src={r.image || FALLBACK_CLUB_IMAGE} alt={r.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+                <Link
+                  key={r.id}
+                  href={`/clubs/${r.slug || createSlug(r.name)}`}
+                  className="group overflow-hidden rounded-card border border-white/10 bg-surface transition hover:border-white/25"
+                >
+                  <div className="relative h-40">
+                    <Image src={r.image || FALLBACK_CLUB_IMAGE} alt={r.name} fill sizes="(max-width: 640px) 100vw, 33vw" unoptimized={!r.image} className="object-cover" />
+                  </div>
+                  <div className="flex items-center justify-between gap-3 p-4">
+                    <div className="min-w-0">
+                      <p className="truncate text-base font-semibold text-ink">{r.name}</p>
+                      <p className="truncate text-xs text-zinc-400">{r.neighborhood || "Barcelona"}</p>
+                    </div>
                     {rRating && (
-                      <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-xl">
-                        <Icon name="star" className="h-3 w-3 text-amber-400" /> {Number(rRating).toFixed(1)}
+                      <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-ink">
+                        <Icon name="star" className="h-3.5 w-3.5 text-warn" /> {Number(rRating).toFixed(1)}
                       </span>
                     )}
-                    <div className="absolute bottom-0 left-0 p-4">
-                      <p className="text-lg font-black text-white">{r.name}</p>
-                      <p className="text-xs text-zinc-300">{r.neighborhood || "Barcelona"}</p>
-                    </div>
                   </div>
                 </Link>
               )
             })}
           </div>
-        </Reveal>
+        </section>
       )}
 
-      {/* FLOATING MOBILE ACTION BAR — la compra de entradas siempre visible, como en Dice/Fever/Ticketmaster */}
-      <div className={`fixed inset-x-4 bottom-24 z-40 flex items-center gap-2 rounded-2xl border border-white/10 bg-black/85 p-2 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] backdrop-blur-2xl transition-all duration-300 lg:hidden ${actionBarVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-32 opacity-0"}`}>
-        {ticketUrl ? (
-          <>
-            <a
-              href={ticketUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackClick("tickets_click")}
-              style={accentGradient}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-black text-white shadow-[0_6px_20px_-4px_rgba(0,0,0,0.5)]"
-            >
-              <Icon name="ticket" className="h-4 w-4" /> Comprar entradas
+      {/* BARRA FIJA EN MÓVIL — siempre visible, justo encima de la navegación inferior */}
+      <div className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-40 border-t border-white/10 bg-night/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-md items-center gap-2">
+          {ticketUrl ? (
+            <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} flex-1 py-3`}>
+              <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
             </a>
-            <button onClick={openDirections} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5">
+          ) : directionsUrl ? (
+            <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${primaryBtn} flex-1 py-3`}>
+              <Icon name="map" className="h-4 w-4" /> {t("clubPage.directions")}
+            </a>
+          ) : null}
+          {ticketUrl && directionsUrl && (
+            <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className={`${secondaryBtn} h-11 w-11 px-0`} aria-label={t("clubPage.directions")}>
               <Icon name="map" className="h-4 w-4" />
-            </button>
-            <button onClick={shareClub} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5">
-              <Icon name="share" className="h-4 w-4" />
-            </button>
-          </>
-        ) : (
-          <>
-            <button onClick={openDirections} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-xs font-bold text-black">
-              <Icon name="map" className="h-4 w-4" /> Cómo llegar
-            </button>
-            <button onClick={shareClub} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5">
-              <Icon name="share" className="h-4 w-4" />
-            </button>
-          </>
-        )}
+            </a>
+          )}
+          <button onClick={shareClub} className={`${secondaryBtn} h-11 w-11 px-0`} aria-label={t("clubPage.share")}>
+            <Icon name="share" className="h-4 w-4" />
+          </button>
+        </div>
       </div>
-
-      <style jsx global>{`
-        @keyframes pulseBar {
-          0%, 100% {
-            opacity: 0.5;
-            transform: scaleY(0.7);
-          }
-          50% {
-            opacity: 1;
-            transform: scaleY(1);
-          }
-        }
-      `}</style>
     </main>
   )
 }

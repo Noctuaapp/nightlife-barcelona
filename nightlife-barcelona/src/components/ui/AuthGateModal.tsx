@@ -41,7 +41,7 @@ export default function AuthGateModal({ open, onClose, subtitleKey }: AuthGateMo
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-t-[32px] border border-white/10 bg-[#0b0912] p-7 sm:rounded-[32px]"
+        className="w-full max-w-md rounded-t-card border border-white/10 bg-night p-7 sm:rounded-card"
       >
         <div className="flex items-start justify-between gap-4">
           <p className="text-4xl">✨</p>
@@ -68,7 +68,7 @@ export default function AuthGateModal({ open, onClose, subtitleKey }: AuthGateMo
           <Link
             href="/signup"
             className="rounded-2xl py-4 text-center font-black text-white transition hover:scale-[1.01] hover:opacity-90"
-            style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+            style={{ background: "#7c5cff" }}
           >
             {t("authGate.ctaSignup")}
           </Link>
@@ -78,7 +78,7 @@ export default function AuthGateModal({ open, onClose, subtitleKey }: AuthGateMo
           >
             {t("authGate.ctaLogin")}
           </Link>
-          <button onClick={onClose} className="py-1 text-center text-xs font-semibold text-zinc-500 transition hover:text-zinc-300">
+          <button onClick={onClose} className="py-1 text-center text-xs font-semibold text-zinc-400 transition hover:text-zinc-300">
             {t("authGate.maybeLater")}
           </button>
         </div>

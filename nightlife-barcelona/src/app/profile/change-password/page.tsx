@@ -60,7 +60,7 @@ export default function ChangePasswordPage() {
 
       <main className="min-h-screen bg-black pb-40 text-white">
         <section className="mx-auto max-w-3xl px-4 pt-14">
-          <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
+          <p className="text-sm text-zinc-400">
             {t("changePassword.eyebrow")}
           </p>
 
@@ -72,7 +72,7 @@ export default function ChangePasswordPage() {
             {t("changePassword.subtitle")}
           </p>
 
-          <div className="mt-10 rounded-[36px] border border-white/10 bg-white/[0.03] p-8">
+          <div className="mt-10 rounded-card border border-white/10 bg-white/[0.03] p-8">
             <input
               value={password}
               onChange={(e) => setPassword(e.target.value)}

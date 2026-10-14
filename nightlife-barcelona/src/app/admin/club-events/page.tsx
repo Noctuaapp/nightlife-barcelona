@@ -227,7 +227,7 @@ export default function AdminClubEventsPage() {
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Loading admin...</p>
+        <p className="text-sm text-zinc-400">Loading admin...</p>
       </main>
     )
   }
@@ -236,7 +236,7 @@ export default function AdminClubEventsPage() {
     <AdminShell title="Club nights control" subtitle="Create, edit and manage nights inside each club.">
       <>
         <section className="mx-auto max-w-7xl">
-          <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8">
+          <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
             <div className="grid gap-4 lg:grid-cols-3">
               <select value={newClubEvent.club_id} onChange={(e) => handleNewClubChange(e.target.value)} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none">
                 <option value="">Select club</option>
@@ -251,7 +251,7 @@ export default function AdminClubEventsPage() {
               <input value={newClubEvent.price} onChange={(e) => setNewClubEvent({ ...newClubEvent, price: e.target.value })} placeholder="Price" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
               <input value={newClubEvent.ticket_url} onChange={(e) => setNewClubEvent({ ...newClubEvent, ticket_url: e.target.value })} placeholder="Ticket URL" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
               <div>
-                <p className="text-xs text-zinc-500 mb-2 uppercase tracking-wide">Minimum age</p>
+                <p className="text-xs text-zinc-400 mb-2 uppercase tracking-wide">Minimum age</p>
                 <div className="flex gap-2">
                   {ageLevels.map((age) => (
                     <button key={age} onClick={() => setNewClubEvent({ ...newClubEvent, age_min: age })}
@@ -275,7 +275,7 @@ export default function AdminClubEventsPage() {
         <section className="mx-auto mt-10 max-w-7xl px-4">
           <div className="grid gap-6">
             {clubEvents.map((clubEvent) => (
-              <div key={clubEvent.id} id={`clubevent-${clubEvent.id}`} className="rounded-[32px] border border-white/10 bg-white/[0.03] p-6">
+              <div key={clubEvent.id} id={`clubevent-${clubEvent.id}`} className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                 {editingId === clubEvent.id ? (
                   <div className="grid gap-4 lg:grid-cols-3">
                     <select value={editClubEvent.club_id} onChange={(e) => handleEditClubChange(e.target.value)} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none">
@@ -291,7 +291,7 @@ export default function AdminClubEventsPage() {
                     <input value={editClubEvent.price} onChange={(e) => setEditClubEvent({ ...editClubEvent, price: e.target.value })} placeholder="Price" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
                     <input value={editClubEvent.ticket_url} onChange={(e) => setEditClubEvent({ ...editClubEvent, ticket_url: e.target.value })} placeholder="Ticket URL" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
                     <div>
-                      <p className="text-xs text-zinc-500 mb-2 uppercase tracking-wide">Minimum age</p>
+                      <p className="text-xs text-zinc-400 mb-2 uppercase tracking-wide">Minimum age</p>
                       <div className="flex gap-2">
                         {ageLevels.map((age) => (
                           <button key={age} onClick={() => setEditClubEvent({ ...editClubEvent, age_min: age })}
@@ -311,8 +311,8 @@ export default function AdminClubEventsPage() {
                 ) : (
                   <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      {clubEvent.image && <img src={clubEvent.image} alt={clubEvent.title} className="mb-6 h-48 w-full rounded-3xl object-cover lg:w-[420px]" />}
-                      <p className="text-sm uppercase tracking-wide text-zinc-500">{clubEvent.club_name} · {clubEvent.music}</p>
+                      {clubEvent.image && <img src={clubEvent.image} alt={clubEvent.title} className="mb-6 h-48 w-full rounded-card object-cover lg:w-[420px]" />}
+                      <p className="text-sm uppercase tracking-wide text-zinc-400">{clubEvent.club_name} · {clubEvent.music}</p>
                       <h2 className="mt-2 text-3xl font-black">{clubEvent.title}</h2>
                       <div className="mt-5 flex flex-wrap gap-3">
                         <span className="rounded-full bg-white/10 px-4 py-2 text-sm">🎧 {clubEvent.artist || "TBA"}</span>
@@ -323,7 +323,7 @@ export default function AdminClubEventsPage() {
                       </div>
                       <p className="mt-5 max-w-2xl text-zinc-400">{clubEvent.description}</p>
                       <div className="mt-4">
-                        <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">Minimum age</p>
+                        <p className="mb-3 text-sm uppercase tracking-wide text-zinc-400">Minimum age</p>
                         <div className="flex gap-2">
                           {ageLevels.map((age) => (
                             <button key={age} onClick={() => updateAgeMin(clubEvent, age)}

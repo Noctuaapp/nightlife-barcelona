@@ -52,8 +52,8 @@ type Essential = {
 type Filter = "clubs" | "events" | "essentials"
 
 const COLORS: Record<Filter, string> = {
-  clubs: "#a855f7",
-  events: "#ec4899",
+  clubs: "#7c5cff",
+  events: "#7c5cff",
   essentials: "#10b981",
 }
 
@@ -70,10 +70,10 @@ const FILTER_ICONS: Record<Filter, string> = {
 // clubs y esenciales de la home, para que todo el sitio se sienta como un único producto.
 const viewButtonStyle: CSSProperties = {
   marginTop: "14px", display: "flex", alignItems: "center", justifyContent: "space-between",
-  borderRadius: "999px", background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
+  borderRadius: "999px", background: "#7c5cff",
   padding: "6px 6px 6px 22px", fontSize: "13.5px", fontWeight: 800, color: "#fff",
   textDecoration: "none", letterSpacing: "0.01em",
-  boxShadow: "0 14px 30px -12px rgba(168,85,247,0.6)",
+  boxShadow: "0 14px 30px -12px rgba(124,92,255,0.6)",
 }
 
 const arrowCircleStyle: CSSProperties = {
@@ -553,8 +553,8 @@ export default function MapPage() {
 
   if (isLoggedIn === null) {
     return (
-      <main style={{ display: "flex", minHeight: "100dvh", flexDirection: "column", gap: "14px", alignItems: "center", justifyContent: "center", background: "#050308", color: "#fff" }}>
-        <div style={{ width: "44px", height: "44px", borderRadius: "50%", border: "3px solid rgba(168,85,247,0.2)", borderTopColor: "#a855f7", animation: "spin 0.8s linear infinite" }} />
+      <main style={{ display: "flex", minHeight: "100dvh", flexDirection: "column", gap: "14px", alignItems: "center", justifyContent: "center", background: "#0a0910", color: "#fff" }}>
+        <div style={{ width: "44px", height: "44px", borderRadius: "50%", border: "3px solid rgba(124,92,255,0.2)", borderTopColor: "#7c5cff", animation: "spin 0.8s linear infinite" }} />
         <p style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(255,255,255,0.4)" }}>{t("common.loading")}</p>
         <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
       </main>
@@ -565,13 +565,13 @@ export default function MapPage() {
     return (
       <>
         <BottomNav />
-        <main style={{ position: "relative", display: "flex", minHeight: "100dvh", alignItems: "center", justifyContent: "center", background: "#050308", color: "#fff", padding: "0 16px", overflow: "hidden" }}>
+        <main style={{ position: "relative", display: "flex", minHeight: "100dvh", alignItems: "center", justifyContent: "center", background: "#0a0910", color: "#fff", padding: "0 16px", overflow: "hidden" }}>
           <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-            <div style={{ position: "absolute", left: "-160px", top: "-160px", width: "500px", height: "500px", borderRadius: "9999px", background: "rgba(168,85,247,0.2)", filter: "blur(120px)" }} />
+            <div style={{ position: "absolute", left: "-160px", top: "-160px", width: "500px", height: "500px", borderRadius: "9999px", background: "rgba(124,92,255,0.2)", filter: "blur(120px)" }} />
             <div style={{ position: "absolute", right: "-160px", top: "30%", width: "450px", height: "450px", borderRadius: "9999px", background: "rgba(245,180,60,0.1)", filter: "blur(130px)" }} />
           </div>
           <div style={{ position: "relative", maxWidth: "420px", textAlign: "center" }}>
-            <div style={{ width: "96px", height: "96px", margin: "0 auto 24px", borderRadius: "50%", background: "linear-gradient(135deg, rgba(168,85,247,0.35), rgba(236,72,153,0.15))", border: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "44px", boxShadow: "0 0 40px -10px rgba(168,85,247,0.5)" }}>
+            <div style={{ width: "96px", height: "96px", margin: "0 auto 24px", borderRadius: "50%", background: "linear-gradient(135deg, rgba(124,92,255,0.35), rgba(124,92,255,0.15))", border: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "44px", boxShadow: "0 0 40px -10px rgba(124,92,255,0.5)" }}>
               🗺️
             </div>
             <h1 style={{ fontSize: "38px", fontWeight: 900, color: "#fff" }}>{t("map.title")}</h1>
@@ -589,7 +589,7 @@ export default function MapPage() {
   }
 
   return (
-    <div style={{ height: "100dvh", background: "#050308", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div style={{ height: "100dvh", background: "#0a0910", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ borderBottom: `1px solid ${COLORS[filter]}33`, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10, background: "linear-gradient(180deg, rgba(10,6,16,0.92), rgba(0,0,0,0.75))", backdropFilter: "blur(16px)", gap: "8px", flexShrink: 0, minWidth: 0, transition: "border-color 0.3s ease" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "6px", borderRadius: "999px", padding: "7px 14px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", fontSize: "13px", fontWeight: 700, color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
@@ -623,7 +623,7 @@ export default function MapPage() {
       </div>
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0, minWidth: 0 }}>
-      <aside className="hidden lg:flex" style={{ width: showList === false ? "0px" : "320px", borderRight: showList === false ? "none" : "1px solid rgba(255,255,255,0.1)", background: "#050308", flexDirection: "column", overflow: "hidden", flexShrink: 0, transition: "width 0.3s ease", minWidth: 0 }}>
+      <aside className="hidden lg:flex" style={{ width: showList === false ? "0px" : "320px", borderRight: showList === false ? "none" : "1px solid rgba(255,255,255,0.1)", background: "#0a0910", flexDirection: "column", overflow: "hidden", flexShrink: 0, transition: "width 0.3s ease", minWidth: 0 }}>
           <div style={{ padding: "14px 14px 0" }}>
             <SearchInput value={search} onChange={setSearch} accent={COLORS[filter]} />
             {zoneChips}
@@ -718,7 +718,7 @@ export default function MapPage() {
           </div>
 
           {showList && (
-            <div className="lg:hidden" style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "85%", maxWidth: "320px", background: "#050308", zIndex: 20, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.1)" }}>
+            <div className="lg:hidden" style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "85%", maxWidth: "320px", background: "#0a0910", zIndex: 20, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.1)" }}>
               <div style={{ padding: "14px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                   <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", textTransform: "capitalize" }}>{FILTER_ICONS[filter]} {t(`nav.${filter}`)}</p>

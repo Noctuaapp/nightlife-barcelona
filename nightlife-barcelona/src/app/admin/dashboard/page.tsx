@@ -131,7 +131,7 @@ export default function AdminDashboardPage() {
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Loading dashboard...</p>
+        <p className="text-sm text-zinc-400">Loading dashboard...</p>
       </main>
     )
   }
@@ -141,7 +141,7 @@ export default function AdminDashboardPage() {
       <div className="grid gap-8">
 
         <div
-          className={`rounded-[36px] border p-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between ${
+          className={`rounded-card border p-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between ${
             maintenanceMode ? "border-red-500/30 bg-red-500/[0.06]" : "border-white/10 bg-white/[0.03]"
           }`}
         >
@@ -173,19 +173,19 @@ export default function AdminDashboardPage() {
           <StatCard title="Mensajes nuevos" value={alerts.newMessages} subtitle="Sin responder" href="/admin/messages" icon="💬" color="#f59e0b" />
           <StatCard title="Altas (7 días)" value={alerts.recentSignups} subtitle="Usuarios nuevos" href="/admin/users" icon="🆕" color="#3b82f6" />
           <StatCard title="Usuarios bloqueados" value={alerts.blockedUsers} subtitle="Cuentas suspendidas" href="/admin/users" icon="🚫" color="#ef4444" />
-          <StatCard title="Clubs sin dueño" value={alerts.clubsWithoutOwner} subtitle="Sin acceso vinculado" href="/admin/users" icon="🏛️" color="#a855f7" />
-          <StatCard title="Festivales sin dueño" value={alerts.festivalsWithoutOwner} subtitle="Sin acceso vinculado" href="/admin/users" icon="🎉" color="#ec4899" />
+          <StatCard title="Clubs sin dueño" value={alerts.clubsWithoutOwner} subtitle="Sin acceso vinculado" href="/admin/users" icon="🏛️" color="#7c5cff" />
+          <StatCard title="Festivales sin dueño" value={alerts.festivalsWithoutOwner} subtitle="Sin acceso vinculado" href="/admin/users" icon="🎉" color="#7c5cff" />
         </StatsGroup>
 
-        <StatsGroup title="Clubs" icon="🎵" color="#a855f7">
-          <StatCard title="Total clubs" value={stats.clubs} subtitle="Active venues" href="/admin" icon="🏛️" color="#a855f7" />
+        <StatsGroup title="Clubs" icon="🎵" color="#7c5cff">
+          <StatCard title="Total clubs" value={stats.clubs} subtitle="Active venues" href="/admin" icon="🏛️" color="#7c5cff" />
           <StatCard title="Trending" value={stats.trendingClubs} subtitle="Live demand" href="/admin" icon="🔥" color="#10b981" />
           <StatCard title="Sold out" value={stats.soldOutClubs} subtitle="Capacity alerts" href="/admin" icon="🚫" color="#ef4444" />
           <StatCard title="Club nights" value={stats.clubEvents} subtitle="Scheduled nights" href="/admin/club-events" icon="🎧" color="#06b6d4" />
         </StatsGroup>
 
-        <StatsGroup title="Events" icon="🎉" color="#ec4899">
-          <StatCard title="Total events" value={stats.events} subtitle="Listed events" href="/admin/events" icon="📅" color="#ec4899" />
+        <StatsGroup title="Events" icon="🎉" color="#7c5cff">
+          <StatCard title="Total events" value={stats.events} subtitle="Listed events" href="/admin/events" icon="📅" color="#7c5cff" />
           <StatCard title="Featured" value={stats.featuredEvents} subtitle="Promoted events" href="/admin/events" icon="⭐" color="#f97316" />
           <StatCard title="Sold out" value={stats.soldOutEvents} subtitle="Ticket pressure" href="/admin/events" icon="🎟️" color="#ef4444" />
         </StatsGroup>
@@ -194,8 +194,8 @@ export default function AdminDashboardPage() {
           <StatCard title="Total essentials" value={stats.essentials} subtitle="Listed services" href="/admin/essentials" icon="📍" color="#10b981" />
         </StatsGroup>
 
-        <div className="rounded-[36px] border border-white/10 bg-white/[0.03] p-8">
-          <p className="text-sm font-bold uppercase tracking-[0.3em] text-zinc-500">Essentials por categoría</p>
+        <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
+          <p className="text-sm font-bold text-zinc-400">Essentials por categoría</p>
           <div className="mt-6 flex flex-wrap gap-3">
             {ESSENTIAL_CATEGORIES.map((cat) => (
               <Link
@@ -216,7 +216,7 @@ export default function AdminDashboardPage() {
 
         <StatsGroup title="Favorites" icon="❤️" color="#f43f5e">
           <StatCard title="Total favorites" value={stats.favorites} subtitle="Saved items" href="/admin/dashboard" icon="❤️" color="#f43f5e" />
-          <StatCard title="Fav clubs" value={stats.favoriteClubs} subtitle="Saved venues" href="/admin" icon="🏛️" color="#d946ef" />
+          <StatCard title="Fav clubs" value={stats.favoriteClubs} subtitle="Saved venues" href="/admin" icon="🏛️" color="#7c5cff" />
           <StatCard title="Fav events" value={stats.favoriteEvents} subtitle="Saved events" href="/admin/events" icon="📅" color="#8b5cf6" />
           <StatCard title="Fav club nights" value={stats.favoriteClubEvents} subtitle="Saved nights" href="/admin/club-events" icon="🎧" color="#6366f1" />
         </StatsGroup>
@@ -234,7 +234,7 @@ function StatsGroup({ title, icon, color, children }: {
 }) {
   return (
     <div
-      className="rounded-[36px] border p-8"
+      className="rounded-card border p-8"
       style={{
         borderColor: `${color}30`,
         background: `linear-gradient(135deg, ${color}10 0%, rgba(255,255,255,0.01) 100%)`,
@@ -242,7 +242,7 @@ function StatsGroup({ title, icon, color, children }: {
     >
       <div className="flex items-center gap-3">
         <span className="text-2xl">{icon}</span>
-        <p className="text-sm font-bold uppercase tracking-[0.3em]" style={{ color }}>{title}</p>
+        <p className="text-sm font-bold" style={{ color }}>{title}</p>
       </div>
       <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4">{children}</div>
     </div>
@@ -260,7 +260,7 @@ function StatCard({ title, value, subtitle, href, icon, color }: {
   return (
     <Link
       href={href}
-      className="rounded-[24px] border p-6 transition hover:scale-[1.02]"
+      className="rounded-card border p-6 transition hover:scale-[1.02]"
       style={{
         borderColor: `${color}25`,
         background: `${color}12`,
@@ -271,7 +271,7 @@ function StatCard({ title, value, subtitle, href, icon, color }: {
         <span className="text-xl">{icon}</span>
       </div>
       <h2 className="mt-4 text-5xl font-black text-white">{value}</h2>
-      <p className="mt-2 text-xs text-zinc-500">{subtitle}</p>
+      <p className="mt-2 text-xs text-zinc-400">{subtitle}</p>
     </Link>
   )
 }
