@@ -150,18 +150,23 @@ button, a {
   display: none;
 }
 
-/* Barra de secciones del admin: se desliza en horizontal con una barra fina siempre visible. */
-.admin-nav-scroll {
+/* Tiras que se deslizan en horizontal (secciones del admin, horas del tiempo en el menú) con una
+   barra fina siempre visible, para que se vea que hay más contenido a la derecha. */
+.admin-nav-scroll,
+.scroll-x-thin {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
 }
-.admin-nav-scroll::-webkit-scrollbar {
+.admin-nav-scroll::-webkit-scrollbar,
+.scroll-x-thin::-webkit-scrollbar {
   height: 6px;
 }
-.admin-nav-scroll::-webkit-scrollbar-track {
+.admin-nav-scroll::-webkit-scrollbar-track,
+.scroll-x-thin::-webkit-scrollbar-track {
   background: transparent;
 }
-.admin-nav-scroll::-webkit-scrollbar-thumb {
+.admin-nav-scroll::-webkit-scrollbar-thumb,
+.scroll-x-thin::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.22);
   border-radius: 999px;
 }

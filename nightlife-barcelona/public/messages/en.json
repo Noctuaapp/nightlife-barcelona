@@ -234,7 +234,10 @@
     "link_privacy": "Privacy",
     "link_terms": "Terms",
     "link_contact": "Contact",
-    "link_faq": "FAQ"
+    "link_faq": "FAQ",
+    "venueTitle": "Do you run a club, an event or a nightlife business?",
+    "venueText": "Get listed on Noctua, manage your page and reach more people every night.",
+    "venueButton": "Contact us"
   },
   "privacy": {
     "title": "Privacy Policy",
@@ -320,7 +323,7 @@
     "cat2_name": "Account",
     "cat2_items": "Do I need an account to use Noctua?||You can explore clubs and events without creating an account. A free account also unlocks the map and Plan your night, and lets you save favorites, earn experience points (XP) and access personalized features.\nHow do I create an account?||Tap the profile icon or go to /signup. You need an email address, a password, a username, your gender and your date of birth (to check you are over 18), or you can sign up with your Google account.\nHow do I change my password?||Go to your Profile and tap Change password. You'll receive a link by email to reset it securely.\nHow do I delete my account?||You can request account deletion from your Profile page. All your data, including saved favorites, will be permanently deleted.\nDo I need to be 18 to use Noctua?||Yes. Given the nature of the nightlife content, you must be at least 18 years old to create an account and use the app.\nWhy do you ask for my year of birth?||To check that you are over 18 and to improve your searches (for example, suggesting venues with an atmosphere suited to your age). From your date of birth we only store the year.",
     "cat3_name": "Clubs, nights and festivals",
-    "cat3_items": "How do I save a club or event?||Tap the heart icon on any club, night or festival listing. You'll find everything saved under “You” › Favourites, in the bottom bar.\nWhat does \"Trending\" mean?||Trending clubs are the ones generating the most interest in Barcelona's nightlife right now.\nWhat does \"Sold out\" mean?||It means tickets or capacity for that event or club night are no longer available.\nCan I buy tickets through Noctua?||Noctua doesn't sell tickets directly. When a club or festival has tickets available, we link you to their official website or ticketing platform.\nWhat are check-ins and experience points (XP)?||You can check in when you are at the door of a club (we use your location once to verify it) to earn experience points and level up. It is an optional system with no monetary value.\nWhat do «Lively», «Packed» and «Estimated» mean?||«Lively» and «Packed» show how a venue is right now, based on what the venue itself marks or on real check-ins from the last few hours. If there is not enough data, we show an estimate labelled «Estimated».",
+    "cat3_items": "How do I save a club or event?||Tap the heart icon on any club, night or festival listing. You'll find everything saved in the menu (☰) › Favourites.\nWhat does \"Trending\" mean?||Trending clubs are the ones generating the most interest in Barcelona's nightlife right now.\nWhat does \"Sold out\" mean?||It means tickets or capacity for that event or club night are no longer available.\nCan I buy tickets through Noctua?||Noctua doesn't sell tickets directly. When a club or festival has tickets available, we link you to their official website or ticketing platform.\nWhat are check-ins and experience points (XP)?||You can check in when you are at the door of a club (we use your location once to verify it) to earn experience points and level up. It is an optional system with no monetary value.\nWhat do «Lively», «Packed» and «Estimated» mean?||«Lively» and «Packed» show how a venue is right now, based on what the venue itself marks or on real check-ins from the last few hours. If there is not enough data, we show an estimate labelled «Estimated».",
     "cat4_name": "For venues and organizers",
     "cat4_items": "How do I get my club, bar or festival featured on Noctua?||Use our Contact page and choose \"Suggest a venue\" (for clubs and bars) or the corresponding partnership category for festivals. We review all submissions and will get back to you.\nI'm responsible for a club or festival — can I manage my own listing?||Yes. Message us from Contact choosing \"Manage my club or event\". Once we verify you're responsible for it, we'll link your account and you'll be able to edit your listing, photos, prices and nights or sessions directly.\nI've found incorrect information about a venue. How do I report it?||Use the Contact page and choose \"Report incorrect information\". Tell us the venue's name and what's wrong — we'll update it as soon as possible.",
     "cat5_name": "Privacy and security",
@@ -961,7 +964,8 @@
     "countMany": "{n} events",
     "emptyTitle": "No events match these filters",
     "emptyBody": "Remove a filter or include past events.",
-    "thisWeek": "This week"
+    "thisWeek": "This week",
+    "onlyUpcoming": "Upcoming only"
   },
   "openStatus": {
     "h24": "Open 24 h",

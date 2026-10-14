@@ -11,6 +11,23 @@ export default function Footer() {
     <footer className="mt-20 border-t border-white/10 bg-night px-4 pb-28 pt-14 text-ink md:pb-14">
       <div className="mx-auto max-w-7xl">
 
+        {/* ¿Tienes un club? — destacado arriba del todo del footer */}
+        <div className="mb-12 overflow-hidden rounded-2xl p-[1px]" style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}>
+          <div className="flex flex-col gap-5 rounded-2xl bg-night/90 px-6 py-7 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+            <div className="min-w-0">
+              <p className="text-xl font-black leading-tight text-white sm:text-2xl">🪩 {t("footer.venueTitle")}</p>
+              <p className="mt-2 text-sm text-zinc-300">{t("footer.venueText")}</p>
+            </div>
+            <Link
+              href="/contact?type=club_partnership"
+              className="shrink-0 rounded-full px-7 py-3.5 text-center text-sm font-black text-white shadow-[0_8px_24px_-6px_rgba(236,72,153,0.6)] transition hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+            >
+              {t("footer.venueButton")}
+            </Link>
+          </div>
+        </div>
+
         {/* Top row */}
         <div className="grid gap-12 md:grid-cols-3">
 
@@ -20,12 +37,6 @@ export default function Footer() {
             <p className="mt-3 text-sm leading-relaxed text-zinc-400">
               {t("footer.tagline")}
             </p>
-            <a
-              href="/para-locales"
-              className="mt-5 inline-block rounded-ctl border border-white/15 px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-white/5"
-            >
-              {t("footer.venue_cta")}
-            </a>
           </div>
 
           {/* Links */}

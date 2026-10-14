@@ -7,10 +7,9 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 // sin textos. Ahora la primera pintura ya trae el español y los demás idiomas se cargan encima.
 import esMessages from "../../public/messages/es.json"
 
-// Idiomas activos. Los archivos de francés, alemán, italiano y neerlandés siguen en
-// public/messages, pero no se ofrecen hasta que estén completos.
-type Locale = "es" | "en" | "ca"
-const ACTIVE_LOCALES: Locale[] = ["es", "en", "ca"]
+// Idiomas de la web (los 7 del selector del menú, con su bandera).
+type Locale = "es" | "en" | "ca" | "fr" | "de" | "it" | "nl"
+const ACTIVE_LOCALES: Locale[] = ["es", "en", "ca", "fr", "de", "it", "nl"]
 
 type LanguageContextType = {
   locale: Locale
@@ -48,8 +47,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     try {
       const stored = localStorage.getItem("noctua_locale")
       if (stored && (ACTIVE_LOCALES as string[]).includes(stored)) saved = stored as Locale
-      // Quien tenía elegido francés, alemán, italiano o neerlandés pasa a inglés.
-      else if (stored) saved = "en"
     } catch {
       /* modo privado: se queda en español */
     }

@@ -81,7 +81,8 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   const [nearMeLoading, setNearMeLoading] = useState(false)
   const [nearMeError, setNearMeError] = useState("")
   // Los eventos pasados se ocultan por defecto (antes salían mezclados, solo atenuados).
-  const [hidePast, setHidePast] = useState(true)
+  // Como antes: se ven todos los eventos (los pasados, atenuados) y "Solo próximos" los filtra.
+  const [hidePast, setHidePast] = useState(false)
   const [sortBy, setSortBy] = useState<"date" | "date_desc" | "featured">("date")
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const { t, locale } = useLanguage()
@@ -182,7 +183,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
         setUserLng(null)
       },
     })
-  if (!hidePast) activeFilters.push({ label: t("eventsExplorer.showPast"), onRemove: () => setHidePast(true) })
+  if (hidePast) activeFilters.push({ label: t("eventsExplorer.onlyUpcoming"), onRemove: () => setHidePast(false) })
   if (search) activeFilters.push({ label: `"${search}"`, onRemove: () => setSearch("") })
 
   const clearAll = () => {
@@ -192,7 +193,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
     setNearMe(false)
     setUserLat(null)
     setUserLng(null)
-    setHidePast(true)
+    setHidePast(false)
   }
 
   // Mismo arreglo que en ClubsExplorer: sin callback de error ni loading, el botón "Cerca"
@@ -271,9 +272,9 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                   {f.label}
                 </button>
               ))}
-              <button onClick={() => setHidePast(!hidePast)} aria-pressed={!hidePast} className={quick(!hidePast)}>
+              <button onClick={() => setHidePast(!hidePast)} aria-pressed={hidePast} className={quick(hidePast)}>
                 <CalendarIcon className="h-4 w-4" />
-                {t("eventsExplorer.showPast")}
+                {t("eventsExplorer.onlyUpcoming")}
               </button>
               <div className="relative shrink-0">
                 <select

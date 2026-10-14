@@ -234,7 +234,10 @@
     "link_privacy": "Privacidad",
     "link_terms": "Términos",
     "link_contact": "Contacto",
-    "link_faq": "Preguntas frecuentes"
+    "link_faq": "Preguntas frecuentes",
+    "venueTitle": "¿Tienes un club, un evento o un negocio nocturno?",
+    "venueText": "Aparece en Noctua, gestiona tu ficha y llega a más gente cada noche.",
+    "venueButton": "Contáctanos"
   },
   "privacy": {
     "title": "Política de Privacidad",
@@ -320,7 +323,7 @@
     "cat2_name": "Cuenta",
     "cat2_items": "¿Necesito una cuenta para usar Noctua?||Puedes explorar clubs y eventos sin crear una cuenta. Con una cuenta gratuita, además, usas el mapa y Planifica tu noche, guardas favoritos, acumulas puntos de experiencia (XP) y accedes a funciones personalizadas.\n¿Cómo creo una cuenta?||Toca el icono de perfil o entra en /signup. Necesitas un correo electrónico, una contraseña, un nombre de usuario, tu género y tu fecha de nacimiento (para comprobar que eres mayor de 18 años), o puedes registrarte con tu cuenta de Google.\n¿Cómo cambio mi contraseña?||Ve a tu Perfil y pulsa en Cambiar contraseña. Recibirás un enlace para restablecerla de forma segura por correo.\n¿Cómo elimino mi cuenta?||Puedes solicitar la eliminación de tu cuenta desde tu página de Perfil. Todos tus datos, incluidos los favoritos guardados, se eliminarán de forma permanente.\nDebo tener 18 años para usar Noctua||Sí. Por la naturaleza del contenido de ocio nocturno, es necesario tener al menos 18 años para crear una cuenta y usar la app.\n¿Por qué me piden el año de nacimiento?||Para comprobar que eres mayor de 18 años y mejorar tus búsquedas (por ejemplo, sugerirte locales con ambiente acorde a tu edad). De tu fecha de nacimiento solo guardamos el año.",
     "cat3_name": "Clubs, noches y festivales",
-    "cat3_items": "¿Cómo guardo un club o evento?||Toca el icono de corazón en cualquier ficha de club, noche o festival. Encontrarás todo lo guardado en «Tú» › Favoritos, en la barra inferior.\n¿Qué significa «Tendencia»?||Los clubs marcados en tendencia son los que más interés están generando ahora en la noche de Barcelona.\n¿Qué significa «Agotado»?||Indica que la entrada o el aforo para ese evento o noche de club ya no está disponible.\n¿Puedo comprar entradas a través de Noctua?||Noctua no vende entradas directamente. Cuando un club o festival tiene entradas disponibles, te enlazamos a su web o plataforma de venta oficial.\n¿Qué es el check-in y los puntos de experiencia (XP)?||Puedes hacer check-in cuando estás en la puerta de un club (usamos tu ubicación una sola vez para comprobarlo) para ganar puntos de experiencia y subir de nivel. Es un sistema opcional sin valor monetario.\n¿Qué significan «Animado», «Lleno» y «Estimado»?||«Animado» y «Lleno» indican cómo está un local ahora, según lo que marca el propio local o los check-ins reales de las últimas horas. Si no hay datos suficientes, mostramos una estimación etiquetada como «Estimado».",
+    "cat3_items": "¿Cómo guardo un club o evento?||Toca el icono de corazón en cualquier ficha de club, noche o festival. Encontrarás todo lo guardado en el menú (☰) › Favoritos.\n¿Qué significa «Tendencia»?||Los clubs marcados en tendencia son los que más interés están generando ahora en la noche de Barcelona.\n¿Qué significa «Agotado»?||Indica que la entrada o el aforo para ese evento o noche de club ya no está disponible.\n¿Puedo comprar entradas a través de Noctua?||Noctua no vende entradas directamente. Cuando un club o festival tiene entradas disponibles, te enlazamos a su web o plataforma de venta oficial.\n¿Qué es el check-in y los puntos de experiencia (XP)?||Puedes hacer check-in cuando estás en la puerta de un club (usamos tu ubicación una sola vez para comprobarlo) para ganar puntos de experiencia y subir de nivel. Es un sistema opcional sin valor monetario.\n¿Qué significan «Animado», «Lleno» y «Estimado»?||«Animado» y «Lleno» indican cómo está un local ahora, según lo que marca el propio local o los check-ins reales de las últimas horas. Si no hay datos suficientes, mostramos una estimación etiquetada como «Estimado».",
     "cat4_name": "Para locales y organizadores",
     "cat4_items": "¿Cómo consigo que mi club, bar o festival aparezca en Noctua?||Usa nuestra página de Contacto y elige \"Sugerir un local\" (para clubs y bares) o la categoría de partnership correspondiente para festivales. Revisamos todas las propuestas y te responderemos.\nSoy el responsable de un club o festival, ¿puedo gestionar yo mismo mi ficha?||Sí. Escríbenos desde Contacto eligiendo \"Gestionar mi club o evento\". Una vez verifiquemos que eres el responsable, vinculamos tu cuenta y podrás editar tu ficha, fotos, precios y noches o sesiones directamente.\nHe encontrado información incorrecta sobre un local. ¿Cómo lo reporto?||Usa la página de Contacto y elige \"Reportar información incorrecta\". Indica el nombre del local y el dato erróneo — lo actualizaremos cuanto antes.",
     "cat5_name": "Privacidad y seguridad",
@@ -961,7 +964,8 @@
     "countMany": "{n} eventos",
     "emptyTitle": "No hay eventos con estos filtros",
     "emptyBody": "Quita algún filtro o mira también los pasados.",
-    "thisWeek": "Esta semana"
+    "thisWeek": "Esta semana",
+    "onlyUpcoming": "Solo próximos"
   },
   "openStatus": {
     "h24": "Abierto 24 h",

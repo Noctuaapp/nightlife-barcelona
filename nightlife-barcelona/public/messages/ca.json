@@ -234,7 +234,10 @@
     "link_privacy": "Privacitat",
     "link_terms": "Termes",
     "link_contact": "Contacte",
-    "link_faq": "Preguntes freqüents"
+    "link_faq": "Preguntes freqüents",
+    "venueTitle": "Tens un club, un esdeveniment o un negoci nocturn?",
+    "venueText": "Apareix a Noctua, gestiona la teva fitxa i arriba a més gent cada nit.",
+    "venueButton": "Contacta'ns"
   },
   "privacy": {
     "title": "Política de Privacitat",
@@ -320,7 +323,7 @@
     "cat2_name": "Compte",
     "cat2_items": "Necessito un compte per utilitzar Noctua?||Pots explorar clubs i esdeveniments sense crear un compte. Amb un compte gratuït, a més, fas servir el mapa i Planifica la teva nit, deses preferits, acumules punts d'experiència (XP) i accedeixes a funcions personalitzades.\nCom creo un compte?||Toca la icona de perfil o entra a /signup. Necessites un correu electrònic, una contrasenya, un nom d'usuari, el teu gènere i la teva data de naixement (per comprovar que ets major de 18 anys), o pots registrar-te amb el teu compte de Google.\nCom canvio la meva contrasenya?||Ves al teu Perfil i prem Canviar contrasenya. Rebràs un enllaç per restablir-la de forma segura per correu.\nCom elimino el meu compte?||Pots sol·licitar l'eliminació del teu compte des de la teva pàgina de Perfil. Totes les teves dades, incloses les preferides desades, s'eliminaran de forma permanent.\nHe de tenir 18 anys per utilitzar Noctua?||Sí. Per la naturalesa del contingut d'oci nocturn, cal tenir almenys 18 anys per crear un compte i utilitzar l'app.\nPer què em demanen l'any de naixement?||Per comprovar que ets major de 18 anys i millorar les teves cerques (per exemple, suggerir-te locals amb un ambient d'acord amb la teva edat). De la teva data de naixement només desem l'any.",
     "cat3_name": "Clubs, nits i festivals",
-    "cat3_items": "Com desar un club o esdeveniment?||Toca la icona de cor a qualsevol fitxa de club, nit o festival. Trobaràs tot el desat a «Tu» › Preferits, a la barra inferior.\nQuè significa «Tendència»?||Els clubs marcats en tendència són els que generen més interès ara a la nit de Barcelona.\nQuè significa «Esgotat»?||Indica que l'entrada o l'aforament per a aquell esdeveniment o nit de club ja no està disponible.\nPuc comprar entrades a través de Noctua?||Noctua no ven entrades directament. Quan un club o festival té entrades disponibles, t'enllacem a la seva web o plataforma de venda oficial.\nQuè és el check-in i els punts d'experiència (XP)?||Pots fer check-in quan ets a la porta d'un club (fem servir la teva ubicació una sola vegada per comprovar-ho) per guanyar punts d'experiència i pujar de nivell. És un sistema opcional sense valor monetari.\nQuè signifiquen «Animat», «Ple» i «Estimat»?||«Animat» i «Ple» indiquen com està un local ara, segons el que marca el mateix local o els check-ins reals de les últimes hores. Si no hi ha dades suficients, mostrem una estimació etiquetada com «Estimat».",
+    "cat3_items": "Com desar un club o esdeveniment?||Toca la icona de cor a qualsevol fitxa de club, nit o festival. Trobaràs tot el desat al menú (☰) › Preferits.\nQuè significa «Tendència»?||Els clubs marcats en tendència són els que generen més interès ara a la nit de Barcelona.\nQuè significa «Esgotat»?||Indica que l'entrada o l'aforament per a aquell esdeveniment o nit de club ja no està disponible.\nPuc comprar entrades a través de Noctua?||Noctua no ven entrades directament. Quan un club o festival té entrades disponibles, t'enllacem a la seva web o plataforma de venda oficial.\nQuè és el check-in i els punts d'experiència (XP)?||Pots fer check-in quan ets a la porta d'un club (fem servir la teva ubicació una sola vegada per comprovar-ho) per guanyar punts d'experiència i pujar de nivell. És un sistema opcional sense valor monetari.\nQuè signifiquen «Animat», «Ple» i «Estimat»?||«Animat» i «Ple» indiquen com està un local ara, segons el que marca el mateix local o els check-ins reals de les últimes hores. Si no hi ha dades suficients, mostrem una estimació etiquetada com «Estimat».",
     "cat4_name": "Per a locals i organitzadors",
     "cat4_items": "Com aconsegueixo que el meu club, bar o festival aparegui a Noctua?||Utilitza la nostra pàgina de Contacte i tria \"Suggerir un local\" (per a clubs i bars) o la categoria de partnership corresponent per a festivals. Revisem totes les propostes i et respondrem.\nSóc el responsable d'un club o festival, puc gestionar jo mateix la meva fitxa?||Sí. Escriu-nos des de Contacte triant \"Gestionar el meu club o esdeveniment\". Un cop verifiquem que ets el responsable, vinculem el teu compte i podràs editar la teva fitxa, fotos, preus i nits o sessions directament.\nHe trobat informació incorrecta sobre un local. Com ho reporto?||Utilitza la pàgina de Contacte i tria \"Reportar informació incorrecta\". Indica el nom del local i la dada errònia — l'actualitzarem com més aviat millor.",
     "cat5_name": "Privacitat i seguretat",
@@ -961,7 +964,8 @@
     "countMany": "{n} esdeveniments",
     "emptyTitle": "No hi ha esdeveniments amb aquests filtres",
     "emptyBody": "Treu algun filtre o mira també els passats.",
-    "thisWeek": "Aquesta setmana"
+    "thisWeek": "Aquesta setmana",
+    "onlyUpcoming": "Només propers"
   },
   "openStatus": {
     "h24": "Obert 24 h",
