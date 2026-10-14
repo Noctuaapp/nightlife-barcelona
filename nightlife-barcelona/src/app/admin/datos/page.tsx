@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { zoneOf } from "../../../lib/zones"
+import { ADMIN_EMAIL } from "../../../lib/admin"
 
 // Panel "Datos": métricas agregadas de Noctua pensadas para enseñar a clubs y managers (y para
 // venderlas). Todo se calcula en Supabase con funciones que solo el admin puede ejecutar y que
@@ -107,7 +108,7 @@ export default function AdminDatosPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user.email !== "info@noctuaapp.com") {
+      if (data.session?.user.email !== ADMIN_EMAIL) {
         window.location.href = "/login"
         return
       }

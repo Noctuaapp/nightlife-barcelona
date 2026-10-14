@@ -1,12 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 import { awardXp, currentIsoWeek } from "../../lib/xp"
 import { BADGES, CHALLENGES, evaluateBadges } from "../../lib/badges"
 import NocOwl from "../mascot/NocOwl"
 import BadgeToast from "../mascot/BadgeToast"
+import { badgeIcon, CHALLENGE_ICONS } from "./badgeIcons"
+import { useLanguage } from "../../context/LanguageContext"
 
 // Lunes (fecha Madrid) de la semana actual, como "YYYY-MM-DD".
 function mondayISO(): string {
@@ -24,6 +25,7 @@ export default function BadgesAndChallenges() {
   const [claimed, setClaimed] = useState<Set<number>>(new Set())
   const [toast, setToast] = useState<string[]>([])
   const [ready, setReady] = useState(false)
+  const { t } = useLanguage()
 
   const weekNum = Number(currentIsoWeek().replace("-W", "")) // 202641
   const itemId = (n: number) => weekNum * 10 + n
@@ -90,77 +92,63 @@ export default function BadgesAndChallenges() {
     <>
       <BadgeToast keys={toast} onDone={() => setToast([])} />
 
-      <Link href="/mi-mes" className="mb-8 flex items-center gap-3 rounded-2xl border border-purple-400/30 bg-gradient-to-r from-purple-600/20 to-transparent p-4 transition hover:border-purple-400/60">
-        <NocOwl size={44} mood="party" />
-        <div className="flex-1">
-          <p className="text-sm font-black text-white">Tu mes en Noctua</p>
-          <p className="text-xs text-zinc-400">Mira tu resumen y compártelo</p>
-        </div>
-        <span className="text-zinc-400">→</span>
-      </Link>
-
-      <Link href="/invitar" className="mb-8 flex items-center gap-3 rounded-2xl border border-amber-400/30 bg-gradient-to-r from-amber-500/15 to-transparent p-4 transition hover:border-amber-400/60">
-        <span className="text-3xl">🎟️</span>
-        <div className="flex-1">
-          <p className="text-sm font-black text-white">Invita a un amigo</p>
-          <p className="text-xs text-zinc-400">+50 XP para ti y +25 para tu amigo</p>
-        </div>
-        <span className="text-zinc-400">→</span>
-      </Link>
-
-      <div className="mb-10">
-        <div className="mb-3 flex items-center gap-3">
+      <section className="mb-10">
+        <div className="mb-4 flex items-center gap-3">
           <NocOwl size={40} mood="wink" />
           <div>
-            <p className="text-xs font-semibold text-purple-400">Retos de la semana</p>
-            <p className="text-xs text-zinc-400">Se renuevan cada lunes. Son de descubrir, no de beber más.</p>
+            <h2 className="text-lg font-semibold text-ink">{t("challenges.title")}</h2>
+            <p className="text-sm text-zinc-400">{t("challenges.subtitle")}</p>
           </div>
         </div>
-        <div className="space-y-3">
+        <ul className="space-y-2">
           {CHALLENGES.map((c, i) => {
             const p = progress[i]
             const done = p >= target[i]
             const isClaimed = claimed.has(c.n)
+            const CIcon = CHALLENGE_ICONS[c.n]
             return (
-              <div key={c.n} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <span className="text-2xl">{c.emoji}</span>
+              <li key={c.n} className="flex items-center gap-3 rounded-card border border-white/10 bg-surface p-4">
+                <CIcon size={22} className="shrink-0 text-brand-soft" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-white">{c.title}</p>
-                  <p className="text-xs text-zinc-400">{c.desc}</p>
+                  <p className="text-sm font-semibold text-ink">{t(`challenges.c${c.n}_title`)}</p>
+                  <p className="text-xs text-zinc-400">{t(`challenges.c${c.n}_desc`)}</p>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-purple-500 transition-all" style={{ width: `${(p / target[i]) * 100}%` }} />
+                    <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${(p / target[i]) * 100}%` }} />
                   </div>
                 </div>
                 {isClaimed ? (
-                  <span className="shrink-0 rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-300">✓ +{c.xp} XP</span>
+                  <span className="shrink-0 rounded-full bg-open/15 px-3 py-1.5 text-xs font-semibold text-open">+{c.xp} XP</span>
                 ) : done ? (
-                  <button onClick={() => claim(c.n, c.xp)} className="shrink-0 rounded-full bg-purple-500 px-3 py-1.5 text-xs font-black text-white transition hover:bg-purple-400 active:scale-95">
-                    Reclamar +{c.xp} XP
+                  <button onClick={() => claim(c.n, c.xp)} className="shrink-0 rounded-full bg-brand px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-strong active:scale-95">
+                    {t("challenges.claim").replace("{n}", String(c.xp))}
                   </button>
                 ) : (
-                  <span className="shrink-0 text-xs font-bold text-zinc-400">{p}/{target[i]}</span>
+                  <span className="shrink-0 text-xs font-semibold text-zinc-400">
+                    {p}/{target[i]}
+                  </span>
                 )}
-              </div>
+              </li>
             )
           })}
-        </div>
-      </div>
+        </ul>
+      </section>
 
-      <div className="mb-10">
-        <p className="mb-3 text-xs font-semibold text-purple-400">Insignias de exploración</p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {Object.entries(BADGES).map(([key, b]) => {
+      <section className="mb-10">
+        <h2 className="mb-4 text-lg font-semibold text-ink">{t("badges.title")}</h2>
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {Object.keys(BADGES).map((key) => {
             const has = earned.has(key)
+            const BIcon = badgeIcon(key)
             return (
-              <div key={key} className={`rounded-2xl border p-3 text-center ${has ? "border-purple-400/40 bg-purple-500/10" : "border-white/10 bg-white/[0.02]"}`}>
-                <div className={`text-3xl ${has ? "" : "opacity-30 grayscale"}`}>{b.emoji}</div>
-                <p className={`mt-1 text-sm font-bold ${has ? "text-white" : "text-zinc-400"}`}>{b.name}</p>
-                <p className="mt-0.5 text-xs leading-snug text-zinc-400">{b.hint}</p>
-              </div>
+              <li key={key} className={`rounded-card border p-4 text-center ${has ? "border-brand/50 bg-brand/10" : "border-white/10 bg-surface"}`}>
+                <BIcon size={28} className={`mx-auto ${has ? "text-brand-soft" : "text-zinc-600"}`} />
+                <p className={`mt-2 text-sm font-semibold ${has ? "text-ink" : "text-zinc-300"}`}>{t(`badges.${key}_name`)}</p>
+                <p className="mt-0.5 text-xs leading-snug text-zinc-400">{t(`badges.${key}_hint`)}</p>
+              </li>
             )
           })}
-        </div>
-      </div>
+        </ul>
+      </section>
     </>
   )
 }

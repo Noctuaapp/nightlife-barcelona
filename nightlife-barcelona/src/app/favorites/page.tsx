@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { Heart } from "lucide-react"
 
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
@@ -27,6 +28,7 @@ type BaseItem = {
 
 type Club = BaseItem & {
   name: string
+  slug?: string | null
   music: string | null
   neighborhood: string | null
   image: string | null
@@ -35,6 +37,7 @@ type Club = BaseItem & {
 
 type EventItem = BaseItem & {
   title: string
+  slug?: string | null
   club_name: string | null
   image: string | null
   music: string | null
@@ -90,7 +93,7 @@ export default function FavoritesPage() {
       if (clubFavs.length > 0) {
         const { data } = await supabase
           .from("clubs")
-          .select("id, name, music, neighborhood, image, price")
+          .select("id, name, slug, music, neighborhood, image, price")
           .in("id", clubFavs.map((f) => f.item_id))
         setClubs(attach(data || [], clubFavs))
       } else {
@@ -100,7 +103,7 @@ export default function FavoritesPage() {
       if (eventFavs.length > 0) {
         const { data } = await supabase
           .from("events")
-          .select("id, title, club_name, image, music, date, price")
+          .select("id, title, slug, club_name, image, music, date, price")
           .in("id", eventFavs.map((f) => f.item_id))
         setEvents(attach(data || [], eventFavs))
       } else {
@@ -127,163 +130,104 @@ export default function FavoritesPage() {
 
   if (checkingSession || loadingFavorites) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm text-zinc-400">{t("favoritesPage.loading")}</p>
-      </main>
+      <>
+        <Header />
+        <main className="flex min-h-screen items-center justify-center bg-night text-ink">
+          <p className="text-sm text-zinc-400">{t("favoritesPage.loading")}</p>
+        </main>
+      </>
     )
   }
 
-  const renderCard = (
-    item: (Club | EventItem | ClubEvent) & { type: FavType },
-    title: string,
-    image: string | null,
-    meta: { label: string; value: string }[],
-    href: string
-  ) => (
-    <div key={`${item.type}-${item.id}`} className="overflow-hidden rounded-card border border-white/10 bg-white/[0.03] transition hover:border-white/20">
-      <Link href={href} className="block">
+  const fmtDate = (d: string | null) =>
+    d ? new Date(`${d}T12:00:00`).toLocaleDateString(toDateLocale(locale), { weekday: "short", day: "numeric", month: "short" }) : t("eventPage.dateTbc")
+
+  // Filas compactas (antes tarjetas con foto de 224 px y emojis delante de cada dato).
+  const renderRow = (type: FavType, id: number, title: string, image: string | null, meta: string, href: string) => (
+    <li key={`${type}-${id}`} className="flex items-center gap-4 rounded-card border border-white/10 bg-surface p-3 transition hover:border-white/25">
+      <Link href={href} className="flex min-w-0 flex-1 items-center gap-4">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={image || FALLBACK_IMAGE}
-          alt={title}
-          className="h-56 w-full object-cover"
+          alt=""
+          className="h-16 w-16 shrink-0 rounded-ctl object-cover"
           onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }}
         />
+        <span className="min-w-0">
+          <span className="block truncate font-semibold text-ink">{title}</span>
+          <span className="mt-0.5 block truncate text-sm text-zinc-400">{meta}</span>
+        </span>
       </Link>
-
-      <div className="p-6">
-        <div className="flex items-start justify-between gap-3">
-          <Link href={href} className="min-w-0">
-            <h3 className="truncate text-2xl font-black text-white">{title}</h3>
-          </Link>
-          <button
-            onClick={() => toggleFavorite(item.type, item.id)}
-            title={t("favoritesPage.removeFromFavorites")}
-            className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-zinc-400 transition hover:border-red-500/40 hover:text-red-400"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-3">
-          {meta.map((m, i) => (
-            <span key={i} className="rounded-full bg-white/10 px-4 py-2 text-sm text-zinc-300">
-              {m.label} {m.value}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
+      <button
+        onClick={() => toggleFavorite(type, id)}
+        aria-label={t("favoritesPage.removeFromFavorites")}
+        title={t("favoritesPage.removeFromFavorites")}
+        className="shrink-0 rounded-ctl p-2 text-brand-soft transition hover:text-red-300"
+      >
+        <Heart size={20} fill="currentColor" />
+      </button>
+    </li>
   )
+
+  const section = "mx-auto mt-10 max-w-3xl px-4"
+  const h2 = "mb-4 text-lg font-semibold text-ink"
 
   return (
     <>
       <Header />
-
-      <main className="min-h-screen bg-black pb-40 text-white">
-        <section className="px-4 pt-14">
-          <div className="mx-auto max-w-7xl">
-            <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-sm text-zinc-400">{t("nav.favorites")}</p>
-                <h1 className="mt-4 text-5xl font-black tracking-tight text-white md:text-7xl">
-                  {t("favoritesPage.title")}
-                </h1>
-                <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
-                  {t("favoritesPage.subtitle")}
-                </p>
-              </div>
-
-              <div className="rounded-card border border-white/10 bg-white/[0.03] px-6 py-5 backdrop-blur-xl">
-                <p className="text-sm uppercase tracking-wide text-zinc-400">{t("favoritesPage.saved")}</p>
-                <p className="mt-2 text-3xl font-black text-white">{totalFavorites}</p>
-              </div>
-            </div>
-          </div>
+      <main className="min-h-screen bg-night pb-40 text-ink">
+        <section className="mx-auto max-w-3xl px-4 pt-8 sm:pt-12">
+          <h1 className="font-display text-[2.1rem] leading-[1.06] sm:text-5xl">{t("favoritesPage.title")}</h1>
+          <p className="mt-3 max-w-xl text-base text-zinc-300">{t("favoritesPage.subtitle")}</p>
+          {totalFavorites > 0 && (
+            <p className="mt-2 text-sm text-zinc-400">{t("profilePage.favCount").replace("{n}", String(totalFavorites))}</p>
+          )}
         </section>
 
         {totalFavorites === 0 && (
-          <section className="mx-auto mt-24 max-w-4xl px-4">
-            <div className="overflow-hidden rounded-card border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.02] p-14 text-center backdrop-blur-2xl">
-              <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-6xl backdrop-blur-xl">
-                ❤️
-              </div>
-              <h2 className="mt-8 text-4xl font-black tracking-tight text-white">{t("favoritesPage.emptyTitle")}</h2>
-              <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-zinc-400">
-                {t("favoritesPage.emptySubtitle")}
-              </p>
-              <div className="mt-10 flex justify-center">
-                <Link href="/clubs" className="rounded-full bg-white px-8 py-4 text-sm font-bold text-black transition hover:scale-105">
-                  {t("favoritesPage.discoverClubs")}
-                </Link>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {clubs.length > 0 && (
-          <section className="mx-auto mt-16 max-w-7xl px-4">
-            <p className="text-sm text-zinc-400">{t("favoritesPage.clubsSavedEyebrow")}</p>
-            <h2 className="mt-3 text-4xl font-black tracking-tight text-white">{t("favoritesPage.clubsSavedTitle")}</h2>
-            <div className="mt-8 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-              {clubs.map((club) =>
-                renderCard(
-                  { ...club, type: "club" },
-                  club.name,
-                  club.image,
-                  [
-                    { label: "📍", value: club.neighborhood || "Barcelona" },
-                    { label: "🎟", value: club.price || t("clubEvent.tba") },
-                  ],
-                  `/clubs/${createSlug(club.name)}`
-                )
-              )}
+          <section className={section}>
+            <div className="rounded-card border border-white/10 bg-surface px-6 py-14 text-center">
+              <Heart size={36} className="mx-auto text-brand-soft" />
+              <h2 className="mt-5 text-xl font-semibold text-ink">{t("favoritesPage.emptyTitle")}</h2>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-400">{t("favoritesPage.emptySubtitle")}</p>
+              <Link href="/clubs" className="mt-6 inline-flex rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong">
+                {t("favoritesPage.discoverClubs")}
+              </Link>
             </div>
           </section>
         )}
 
         {clubEvents.length > 0 && (
-          <section className="mx-auto mt-16 max-w-7xl px-4">
-            <p className="text-sm text-zinc-400">{t("favoritesPage.nightsSavedEyebrow")}</p>
-            <h2 className="mt-3 text-4xl font-black tracking-tight text-white">{t("favoritesPage.nightsSavedTitle")}</h2>
-            <div className="mt-8 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-              {clubEvents.map((ce) =>
-                renderCard(
-                  { ...ce, type: "club_event" },
-                  ce.title,
-                  ce.image,
-                  [
-                    { label: "📅", value: ce.date ? new Date(ce.date).toLocaleDateString(toDateLocale(locale), { day: "numeric", month: "short" }) : t("clubEvent.tba") },
-                    { label: "🎵", value: ce.music || t("club.music") },
-                  ],
-                  `/club-event/${ce.id}`
-                )
-              )}
-            </div>
+          <section className={section}>
+            <h2 className={h2}>{t("favoritesPage.nightsSavedTitle")}</h2>
+            <ul className="space-y-2">
+              {clubEvents.map((ce) => renderRow("club_event", ce.id, ce.title, ce.image, [fmtDate(ce.date), ce.club_name].filter(Boolean).join(" · "), `/club-event/${ce.id}`))}
+            </ul>
           </section>
         )}
 
         {events.length > 0 && (
-          <section className="mx-auto mt-16 max-w-7xl px-4">
-            <p className="text-sm text-zinc-400">{t("favoritesPage.eventsSavedEyebrow")}</p>
-            <h2 className="mt-3 text-4xl font-black tracking-tight text-white">{t("favoritesPage.eventsSavedTitle")}</h2>
-            <div className="mt-8 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+          <section className={section}>
+            <h2 className={h2}>{t("favoritesPage.eventsSavedTitle")}</h2>
+            <ul className="space-y-2">
               {events.map((event) =>
-                renderCard(
-                  { ...event, type: "event" },
-                  event.title,
-                  event.image,
-                  [
-                    { label: "📅", value: event.date ? new Date(event.date).toLocaleDateString(toDateLocale(locale), { day: "numeric", month: "short" }) : t("clubEvent.tba") },
-                    { label: "🎟", value: event.price || t("clubEvent.tba") },
-                  ],
-                  `/event/${createSlug(event.title)}`
-                )
+                renderRow("event", event.id, event.title, event.image, [fmtDate(event.date), event.club_name, event.price].filter(Boolean).join(" · "), `/event/${event.slug || createSlug(event.title)}`)
               )}
-            </div>
+            </ul>
+          </section>
+        )}
+
+        {clubs.length > 0 && (
+          <section className={section}>
+            <h2 className={h2}>{t("favoritesPage.clubsSavedTitle")}</h2>
+            <ul className="space-y-2">
+              {clubs.map((club) =>
+                renderRow("club", club.id, club.name, club.image, [club.neighborhood || "Barcelona", club.music, club.price].filter(Boolean).join(" · "), `/clubs/${club.slug || createSlug(club.name)}`)
+              )}
+            </ul>
           </section>
         )}
       </main>
-
       <BottomNav />
     </>
   )

@@ -24,6 +24,8 @@ import { createSlug } from "../../lib/slug"
 import { clubOpenNow } from "../../lib/clubHours"
 import { toDateLocale } from "../../lib/dateLocale"
 
+const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
+
 // Ficha de club. Reordenada tras la auditoría de octubre 2026:
 //   1. Arriba lo que decide la noche: nombre, si está abierto, valoración y dos botones.
 //   2. Datos prácticos (música, precio, horario, edad) sin "TBA" ni valores inventados.
@@ -184,7 +186,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
           .sort((a, b) => new Date(a.date || a.event_date).getTime() - new Date(b.date || b.event_date).getTime())[0]
       : null
   const nextEventDate = nextEvent
-    ? new Date(nextEvent.date || nextEvent.event_date).toLocaleDateString(toDateLocale(locale), { weekday: "long", day: "numeric", month: "long" })
+    ? cap(new Date(`${String(nextEvent.date || nextEvent.event_date).slice(0, 10)}T12:00:00`).toLocaleDateString(toDateLocale(locale), { weekday: "long", day: "numeric", month: "long" }))
     : null
 
   const hasNights = clubEvents && clubEvents.length > 0
@@ -287,7 +289,14 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
 
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
               <span className="flex items-center gap-1.5 text-zinc-300">
-                <Icon name="map" className="h-4 w-4 text-muted" /> {club.neighborhood || "Barcelona"}
+                <Icon name="map" className="h-4 w-4 text-muted" />
+                {club.neighborhood ? (
+                  <Link href={`/barrio/${createSlug(club.neighborhood)}`} className="underline decoration-white/25 underline-offset-4 transition hover:text-ink hover:decoration-white">
+                    {club.neighborhood}
+                  </Link>
+                ) : (
+                  "Barcelona"
+                )}
               </span>
               {displayRating && (
                 <span className="flex items-center gap-1.5 text-zinc-300">
@@ -390,7 +399,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
             <span className="min-w-0">
               <span className="block text-xs text-zinc-400">{t("clubPage.nextNight")}</span>
               <span className="mt-1 block truncate text-base font-semibold text-ink">{nextEvent.name || nextEvent.title || club.name}</span>
-              {nextEventDate && <span className="mt-0.5 block text-sm capitalize text-zinc-300">{nextEventDate}</span>}
+              {nextEventDate && <span className="mt-0.5 block text-sm text-zinc-300">{nextEventDate}</span>}
             </span>
             <Icon name="arrow" className="h-5 w-5 shrink-0 text-muted" />
           </button>
@@ -400,7 +409,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
       <section id="club-content" className="mx-auto max-w-6xl scroll-mt-24 px-4 pt-10 sm:px-6">
         <div className="grid gap-8 lg:grid-cols-3">
           {/* COLUMNA PRINCIPAL — en móvil va después de las acciones */}
-          <div className="order-last space-y-6 lg:order-none lg:col-span-2">
+          <div className="order-last min-w-0 space-y-6 lg:order-none lg:col-span-2">
             {club.description && (
               <Panel>
                 <PanelTitle>{t("clubPage.about").replace("{name}", club.name)}</PanelTitle>
@@ -540,7 +549,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
           </div>
 
           {/* ACCIONES */}
-          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
             <div className="rounded-card border border-white/10 bg-surface p-5">
               {ticketUrl && (
                 <a

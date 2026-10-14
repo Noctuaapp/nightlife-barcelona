@@ -2,7 +2,9 @@ import type { Metadata } from "next"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import ClubsExplorer from "../../components/nightlife/ClubsExplorer"
+import ExploreLinks from "../../components/nightlife/ExploreLinks"
 import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../../lib/clubQueries"
+import { MIN_INDEXABLE, neighborhoodsOf, stylesOf } from "../../lib/areas"
 
 export const revalidate = 3600
 
@@ -49,6 +51,10 @@ export default async function ClubsPage() {
     <>
       <Header />
       <ClubsExplorer initialClubs={clubs} />
+      <ExploreLinks
+        neighborhoods={neighborhoodsOf(clubs).filter((n) => n.count >= MIN_INDEXABLE)}
+        styles={stylesOf(clubs).filter((n) => n.count >= MIN_INDEXABLE)}
+      />
       <BottomNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     </>

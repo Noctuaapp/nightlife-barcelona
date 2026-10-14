@@ -18,6 +18,8 @@ import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 
+const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
+
 // Ficha de evento, con la misma estructura que la de club (ver ClubPageContent): arriba fecha,
 // lugar y dos botones; después los datos prácticos, entradas, ubicación, fotos y reseñas.
 // Se han quitado la cuenta atrás gigante, el paralaje, el foco que seguía al ratón, el color
@@ -84,7 +86,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
     : null
 
   const fmt = (d: string, long = true) =>
-    dateOnly(d).toLocaleDateString(toDateLocale(locale), long ? { weekday: "long", day: "numeric", month: "long", year: "numeric" } : { weekday: "short", day: "numeric", month: "short" })
+    cap(dateOnly(d).toLocaleDateString(toDateLocale(locale), long ? { weekday: "long", day: "numeric", month: "long", year: "numeric" } : { weekday: "short", day: "numeric", month: "short" }))
   const dateLabel = event.date ? fmt(event.date) : t("eventPage.dateTbc")
   const dateEndLabel = event.date_end && event.date_end !== event.date ? fmt(event.date_end) : null
   const fullDateLabel = dateEndLabel ? `${dateLabel} – ${dateEndLabel}` : dateLabel
@@ -145,7 +147,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
             <h1 className="font-display mt-1 break-words text-[2.2rem] leading-[1.04] text-ink sm:text-6xl md:text-7xl">{event.title}</h1>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-300">
-              <span className="flex items-center gap-1.5 capitalize">
+              <span className="flex items-center gap-1.5">
                 <Icon name="calendar" className="h-4 w-4 text-muted" /> {fullDateLabel}
               </span>
               <span className="flex items-center gap-1.5">
@@ -191,7 +193,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                 <Icon name={f.icon} className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" />
                 <div className="min-w-0">
                   <dt className="text-xs text-zinc-400">{f.label}</dt>
-                  <dd className="mt-0.5 break-words text-sm font-semibold capitalize leading-snug text-ink">{f.value}</dd>
+                  <dd className="mt-0.5 break-words text-sm font-semibold leading-snug text-ink">{f.value}</dd>
                 </div>
               </div>
             ))}
@@ -201,7 +203,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
 
       <section className="mx-auto max-w-6xl px-4 pt-10 sm:px-6">
         <div className="grid gap-8 lg:grid-cols-3">
-          <div className="order-last space-y-6 lg:order-none lg:col-span-2">
+          <div className="order-last min-w-0 space-y-6 lg:order-none lg:col-span-2">
             {(event.description || event.artist) && (
               <Panel>
                 <h2 className="mb-4 text-lg font-semibold text-ink">{t("event.about")}</h2>
@@ -246,12 +248,12 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
             )}
           </div>
 
-          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
             <div className="rounded-card border border-white/10 bg-surface p-5">
               <dl className="space-y-2.5 border-b border-white/10 pb-4 text-sm">
                 <div className="flex items-start justify-between gap-4">
                   <dt className="text-zinc-400">{t("event.date")}</dt>
-                  <dd className="text-right font-semibold capitalize text-ink">{fullDateLabel}</dd>
+                  <dd className="text-right font-semibold text-ink">{fullDateLabel}</dd>
                 </div>
                 {event.start_time && (
                   <div className="flex items-center justify-between gap-4">

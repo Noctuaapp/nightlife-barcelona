@@ -6,14 +6,16 @@ import { supabase } from "../../lib/supabase"
 import { distanceInMeters, formatDistance, walkingMinutes, walkingDirectionsUrl } from "../../lib/geo"
 import { getOpenStatus } from "../../lib/openStatus"
 import { cleanEssential } from "../../lib/essentials"
+import { categoryInfo, categoryNameKey } from "../../lib/essentialCategories"
+import { useLanguage } from "../../context/LanguageContext"
 
 // Tres chips con lo más cercano al local (comida, súper, cajero), sacados de la tabla essentials
 // (la misma que alimenta /essentials), y un enlace a todos los esenciales. Cada chip abre la ruta
 // andando desde el local.
 const CATS = [
-  { key: "food", icon: "🍔", label: "Comida", maxMeters: 1500 },
-  { key: "supermarket", icon: "🛒", label: "Súper", maxMeters: 1500 },
-  { key: "atm", icon: "🏧", label: "Cajero", maxMeters: 1200 },
+  { key: "food", cat: "Food", maxMeters: 1500 },
+  { key: "supermarket", cat: "Supermarket", maxMeters: 1500 },
+  { key: "atm", cat: "ATM", maxMeters: 1200 },
 ]
 
 type Nearest = {
@@ -27,6 +29,7 @@ type Nearest = {
 
 export default function NearbyEssentials({ latitude, longitude }: { latitude: number; longitude: number }) {
   const [items, setItems] = useState<Record<string, Nearest | null> | null>(null)
+  const { t } = useLanguage()
 
   useEffect(() => {
     let cancelled = false
@@ -65,43 +68,46 @@ export default function NearbyEssentials({ latitude, longitude }: { latitude: nu
 
   return (
     <div>
-      <p className="mb-3 text-xs text-zinc-400">Cerca de este local</p>
+      <p className="mb-3 text-sm font-semibold text-ink">{t("nearbyEssentials.title")}</p>
 
       <div className="flex flex-wrap gap-2.5">
         {items === null &&
-          CATS.map((c) => <div key={c.key} className="h-11 w-44 animate-pulse rounded-full bg-white/[0.04]" />)}
+          CATS.map((c) => <div key={c.key} className="h-11 w-44 animate-pulse rounded-full bg-white/5" />)}
 
         {found.map((cat) => {
           const r = items![cat.key]!
-          const st = getOpenStatus(r.open_hours)
+          const st = getOpenStatus(r.open_hours, t)
+          const CatIcon = categoryInfo(cat.cat).icon
+          const catName = t(categoryNameKey(cat.cat))
           return (
             <a
               key={cat.key}
               href={walkingDirectionsUrl(latitude, longitude, r.latitude, r.longitude)}
               target="_blank"
               rel="noopener noreferrer"
-              title={`${cat.label}: ${r.name} — ir andando`}
-              className="flex max-w-full items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white transition hover:bg-white/[0.1]"
+              title={`${catName}: ${r.name}`}
+              aria-label={`${catName}: ${r.name}, ${formatDistance(r.distanceMeters)}`}
+              className="flex max-w-full items-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm text-ink transition hover:bg-white/5"
             >
-              <span>{cat.icon}</span>
+              <CatIcon size={16} className="shrink-0 text-brand-soft" />
               <span className="min-w-0 truncate font-semibold">{r.name}</span>
               <span className="shrink-0 text-xs text-zinc-400">
                 {formatDistance(r.distanceMeters)} · {walkingMinutes(r.distanceMeters)} min
               </span>
               {st.state !== "unknown" && (
-                <span className={`h-2 w-2 shrink-0 rounded-full ${st.state === "open" ? "bg-emerald-400" : "bg-red-400"}`} aria-label={st.label} />
+                <span className={`h-2 w-2 shrink-0 rounded-full ${st.state === "open" ? "bg-open" : "bg-off"}`} title={st.label} />
               )}
             </a>
           )
         })}
 
         {items !== null && found.length === 0 && (
-          <p className="text-sm text-zinc-400">Aún no tenemos sitios registrados cerca de este local.</p>
+          <p className="text-sm text-zinc-400">{t("nearbyEssentials.none")}</p>
         )}
       </div>
 
-      <Link href="/essentials" className="mt-3 inline-block text-xs font-semibold text-zinc-400 underline underline-offset-2 hover:text-white">
-        Ver más esenciales →
+      <Link href="/essentials" className="mt-3 inline-block text-sm font-semibold text-zinc-300 underline underline-offset-4 hover:text-ink">
+        {t("nearbyEssentials.more")}
       </Link>
     </div>
   )

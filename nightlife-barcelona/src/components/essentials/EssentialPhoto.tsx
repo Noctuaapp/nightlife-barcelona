@@ -15,7 +15,7 @@ export default function EssentialPhoto({
 }: {
   src: string | null | undefined
   alt: string
-  icon: string
+  icon: React.ReactNode
   color: string
   className?: string
   imgClassName?: string
@@ -29,7 +29,7 @@ export default function EssentialPhoto({
         className={`flex items-center justify-center ${className}`}
         style={{ background: `linear-gradient(135deg, ${color}40, ${color}12)` }}
       >
-        <span className="text-3xl">{icon}</span>
+        <span className="text-3xl text-white/70">{icon}</span>
       </div>
     )
   }

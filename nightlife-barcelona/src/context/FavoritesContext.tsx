@@ -9,6 +9,7 @@ import {
 } from "react"
 
 import { supabase } from "../lib/supabase"
+import { logError } from "../lib/log"
 
 type FavoriteType = "club" | "event" | "club_event"
 
@@ -73,7 +74,7 @@ export function FavoritesProvider({
       .eq("user_id", user.id)
       .order("sort_order", { ascending: true })
     if (error) {
-      console.log("FAVORITE COLLECTIONS ERROR:", error)
+      logError("FAVORITE COLLECTIONS ERROR:", error)
       return
     }
     setCollections(data || [])
@@ -97,7 +98,7 @@ export function FavoritesProvider({
       .eq("user_id", user.id)
 
     if (error) {
-      console.log("FAVORITES ERROR:", error)
+      logError("FAVORITES ERROR:", error)
       setLoadingFavorites(false)
       return
     }
@@ -152,7 +153,7 @@ export function FavoritesProvider({
       .eq("id", fav.id)
 
     if (error) {
-      console.log("SET REMINDER ERROR:", error)
+      logError("SET REMINDER ERROR:", error)
       return
     }
 
@@ -172,7 +173,7 @@ export function FavoritesProvider({
       .eq("id", fav.id)
 
     if (error) {
-      console.log("SET NOTE ERROR:", error)
+      logError("SET NOTE ERROR:", error)
       return
     }
 
@@ -189,7 +190,7 @@ export function FavoritesProvider({
       .eq("id", fav.id)
 
     if (error) {
-      console.log("SET FAVORITE COLLECTION ERROR:", error)
+      logError("SET FAVORITE COLLECTION ERROR:", error)
       return
     }
 
@@ -211,7 +212,7 @@ export function FavoritesProvider({
       .single()
 
     if (error) {
-      console.log("CREATE COLLECTION ERROR:", error)
+      logError("CREATE COLLECTION ERROR:", error)
       return null
     }
 
@@ -225,7 +226,7 @@ export function FavoritesProvider({
 
     const { error } = await supabase.from("favorite_collections").update({ name: trimmed }).eq("id", id)
     if (error) {
-      console.log("RENAME COLLECTION ERROR:", error)
+      logError("RENAME COLLECTION ERROR:", error)
       return
     }
 
@@ -235,7 +236,7 @@ export function FavoritesProvider({
   const deleteCollection = async (id: number) => {
     const { error } = await supabase.from("favorite_collections").delete().eq("id", id)
     if (error) {
-      console.log("DELETE COLLECTION ERROR:", error)
+      logError("DELETE COLLECTION ERROR:", error)
       return
     }
 
@@ -269,7 +270,7 @@ export function FavoritesProvider({
         .eq("id", existingFavorite.id)
 
       if (error) {
-        console.log("REMOVE FAVORITE ERROR:", error)
+        logError("REMOVE FAVORITE ERROR:", error)
         return true
       }
 
@@ -292,7 +293,7 @@ export function FavoritesProvider({
       .single()
 
     if (error) {
-      console.log("ADD FAVORITE ERROR:", error)
+      logError("ADD FAVORITE ERROR:", error)
       return true
     }
 

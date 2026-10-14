@@ -7,6 +7,7 @@ import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { safeNextPath } from "../../lib/nextPath"
 import { useLanguage } from "../../context/LanguageContext"
+import { ADMIN_EMAIL } from "../../lib/admin"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -21,7 +22,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
     if (error) { setError(error.message); return }
-    if (email === "info@noctuaapp.com") {
+    if (email === ADMIN_EMAIL) {
       window.location.href = "/admin"
     } else {
       window.location.href = safeNextPath()
@@ -38,22 +39,21 @@ export default function LoginPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-black pb-40 text-white">
+      <main className="min-h-screen bg-night pb-40 text-ink">
         <section className="relative overflow-hidden px-4 pt-14 pb-10">
-          <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-transparent to-transparent" />
           <div className="relative mx-auto max-w-md text-center">
-            <h1 className="text-5xl font-black tracking-tight">{t("login.title")}</h1>
+            <h1 className="font-display text-4xl sm:text-5xl">{t("login.title")}</h1>
             <p className="mt-4 text-zinc-400">{t("login.subtitle")}</p>
           </div>
         </section>
 
         <section className="mx-auto max-w-md px-4">
-          <div className="rounded-card border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
+          <div className="rounded-card border border-white/10 bg-surface p-6 sm:p-8">
 
             {/* Google */}
             <button
               onClick={loginWithGoogle}
-              className="w-full flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white hover:text-black"
+              className="flex w-full items-center justify-center gap-3 rounded-ctl border border-white/15 px-6 py-4 font-semibold text-ink transition hover:bg-white/5"
             >
               <svg width="18" height="18" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -74,7 +74,7 @@ export default function LoginPage() {
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
+                className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand transition"
                 placeholder={t("login.email")}
                 type="email"
               />
@@ -82,23 +82,23 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 type="password"
-                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
+                className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand transition"
                 placeholder={t("login.password")}
               />
             </div>
 
-            {error && <p className="mt-4 text-sm font-bold text-red-400">{error}</p>}
+            {error && <p className="mt-4 text-sm font-semibold text-red-300">{error}</p>}
 
             <button
               onClick={login}
               disabled={loading}
-              className="mt-6 w-full rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02] disabled:opacity-50"
+              className="mt-6 w-full rounded-ctl bg-brand px-6 py-4 font-semibold text-white transition hover:bg-brand-strong disabled:opacity-50"
             >
               {loading ? t("login.signing_in") : t("login.signin")}
             </button>
 
             <p className="mt-6 text-center text-sm text-zinc-400">
-              <Link href="/signup" className="text-white hover:text-zinc-300 transition">
+              <Link href="/signup" className="font-semibold text-ink underline-offset-4 hover:underline">
                 {t("login.new")}
               </Link>
             </p>

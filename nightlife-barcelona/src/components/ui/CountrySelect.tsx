@@ -1,5 +1,7 @@
 "use client"
 
+import { useLanguage } from "../../context/LanguageContext"
+
 import { useEffect, useRef, useState } from "react"
 import { COUNTRIES, getSortedCountries, type CountryLocale } from "../../lib/countries"
 
@@ -21,6 +23,7 @@ type Props = {
 const flagUrl = (code: string) => `https://flagcdn.com/24x18/${code.toLowerCase()}.png`
 
 export default function CountrySelect({ value, onChange, locale, placeholder, size = "lg" }: Props) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const rootRef = useRef<HTMLDivElement>(null)
@@ -84,7 +87,7 @@ export default function CountrySelect({ value, onChange, locale, placeholder, si
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar país..."
+              placeholder={t("countrySelect.search")}
               className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder-zinc-600 focus:border-purple-500/50"
             />
           </div>

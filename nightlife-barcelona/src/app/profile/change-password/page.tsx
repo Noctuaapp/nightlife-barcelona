@@ -58,13 +58,13 @@ export default function ChangePasswordPage() {
     <>
       <Header />
 
-      <main className="min-h-screen bg-black pb-40 text-white">
+      <main className="min-h-screen bg-night pb-40 text-ink">
         <section className="mx-auto max-w-3xl px-4 pt-14">
           <p className="text-sm text-zinc-400">
             {t("changePassword.eyebrow")}
           </p>
 
-          <h1 className="mt-4 text-5xl font-black tracking-tight">
+          <h1 className="font-display mt-4 text-4xl sm:text-5xl">
             {t("changePassword.title")}
           </h1>
 
@@ -78,7 +78,7 @@ export default function ChangePasswordPage() {
               onChange={(e) => setPassword(e.target.value)}
               type="password"
               placeholder={t("changePassword.newPassword")}
-              className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+              className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand"
             />
 
             <input
@@ -86,11 +86,11 @@ export default function ChangePasswordPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               type="password"
               placeholder={t("changePassword.confirmPassword")}
-              className="mt-4 w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+              className="mt-4 w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand"
             />
 
             {error && (
-              <p className="mt-4 text-sm font-bold text-red-400">
+              <p className="mt-4 text-sm font-semibold text-red-300">
                 {error}
               </p>
             )}
@@ -104,7 +104,7 @@ export default function ChangePasswordPage() {
             <button
               onClick={changePassword}
               disabled={saving}
-              className="mt-6 w-full rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02] disabled:opacity-60"
+              className="mt-6 w-full rounded-ctl bg-brand px-6 py-4 font-semibold text-white transition hover:bg-brand-strong disabled:opacity-60"
             >
               {saving ? t("changePassword.updating") : t("changePassword.update")}
             </button>

@@ -1,63 +1,49 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import { Search, X, LocateFixed } from "lucide-react"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
+import ExploreSwitch from "../../components/nightlife/ExploreSwitch"
+import EssentialPhoto from "../../components/essentials/EssentialPhoto"
 import { supabase } from "../../lib/supabase"
 import { cleanEssential } from "../../lib/essentials"
 import { useLanguage } from "../../context/LanguageContext"
-import ArrowIcon from "../../components/ui/ArrowIcon"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../lib/geo"
 import { getOpenStatus } from "../../lib/openStatus"
-import EssentialPhoto from "../../components/essentials/EssentialPhoto"
+import { getMetroTonight } from "../../lib/transitHours"
+import { categoryInfo, categoryRank, categoryNameKey, categoryDescKey } from "../../lib/essentialCategories"
 
-const categoryConfig: Record<string, { icon: string; color: string }> = {
-  Pharmacy:      { icon: "💊", color: "#10b981" },
-  ATM:           { icon: "🏧", color: "#3b82f6" },
-  Food:          { icon: "🍔", color: "#f97316" },
-  Transport:     { icon: "🚌", color: "#8b5cf6" },
-  Metro:         { icon: "🚇", color: "#dc2626" },
-  Nitbus:        { icon: "🌙", color: "#6366f1" },
-  Taxi:          { icon: "🚕", color: "#eab308" },
-  Supermarket:   { icon: "🛒", color: "#7c5cff" },
-  Hotel:         { icon: "🏨", color: "#14b8a6" },
-  Casino:        { icon: "🎰", color: "#f43f5e" },
-  "Gas Station": { icon: "⛽", color: "#f59e0b" },
-  Hospital:      { icon: "🏥", color: "#ef4444" },
-}
-
-// Antes cada tarjeta aparecía con una animación al hacer scroll; ahora se muestra directamente.
-function Reveal({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
-  return (
-    <div className={className} style={style ? { ...style, transitionDelay: undefined } : undefined}>
-      {children}
-    </div>
-  )
-}
+// Portada de Esenciales. Rehecha tras la auditoría de octubre 2026: antes eran cuatro bloques con
+// doce colores (uno por categoría), emojis como iconos, contadores de relleno ("12 categorías",
+// "9 barrios") y un mosaico de fotos de Google de farmacias y cajeros. Ahora: buscador, lo más
+// útil de madrugada con cuántos sitios hay abiertos, el transporte de esta noche y la lista de
+// categorías.
 
 export default function EssentialsPage() {
   const [essentials, setEssentials] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
-  // "Cerca de mí" en el buscador: ordena TODO (o lo que coincida con el texto) por distancia real
-  // a la ubicación del usuario. Se pide el permiso al pulsar el botón, no antes.
   const [nearMe, setNearMe] = useState(false)
   const [locating, setLocating] = useState(false)
   const [locationDenied, setLocationDenied] = useState(false)
-  const { t } = useLanguage()
+  // Depende de la hora: se calcula tras montar para que el HTML del servidor y el del navegador coincidan.
+  const [metroLabel, setMetroLabel] = useState("")
+  const { t, locale } = useLanguage()
 
   useEffect(() => {
-    const fetchEssentials = async () => {
-      const { data } = await supabase.from("essentials").select("*").eq("hidden", false)
-      if (data) setEssentials(data.map(cleanEssential))
-      setLoading(false)
-    }
-    fetchEssentials()
+    supabase
+      .from("essentials")
+      .select("*")
+      .eq("hidden", false)
+      .then(({ data }) => {
+        if (data) setEssentials(data.map(cleanEssential))
+        setLoading(false)
+      })
 
-    // Solo se usa la ubicación sin preguntar si el usuario ya dio el permiso antes; si no, no se
-    // lanza el aviso del navegador nada más entrar (se pide al pulsar "Cerca de mí").
+    // Solo se usa la ubicación sin preguntar si el usuario ya la había permitido antes.
     if (navigator.geolocation && navigator.permissions) {
       navigator.permissions
         .query({ name: "geolocation" as PermissionName })
@@ -74,16 +60,17 @@ export default function EssentialsPage() {
     }
   }, [])
 
-  const categories = Array.from(new Set(essentials.map((e) => e.category))).sort()
+  useEffect(() => {
+    const m = getMetroTonight()
+    setMetroLabel(
+      m.state === "closed" ? t("clubPage.metroClosed") : m.closes === "all-night" ? t("clubPage.metroAllNight") : t("clubPage.metroUntil").replace("{time}", m.closes)
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale])
+
+  const categories = Array.from(new Set(essentials.map((e) => e.category))).sort((a, b) => categoryRank(a) - categoryRank(b))
   const itemsByCategory = (cat: string) => essentials.filter((e) => e.category === cat)
-  const countByCategory = (cat: string) => itemsByCategory(cat).length
-
-  const coverImageByCategory = (cat: string) => {
-    const withImage = itemsByCategory(cat).find((e) => e.image)
-    return withImage?.image || null
-  }
-
-  const neighborhoodCount = new Set(essentials.map((e) => e.neighborhood).filter(Boolean)).size
+  const openCount = (cat: string) => itemsByCategory(cat).filter((e) => getOpenStatus(e.open_hours).state === "open").length
 
   const nearby = userLocation
     ? essentials
@@ -120,14 +107,10 @@ export default function EssentialsPage() {
   }
 
   const showResults = !!search.trim() || nearMe
-
-  const textMatches = search.trim()
-    ? essentials.filter(
-        (e) =>
-          e.name?.toLowerCase().includes(search.toLowerCase()) ||
-          e.category?.toLowerCase().includes(search.toLowerCase()) ||
-          e.neighborhood?.toLowerCase().includes(search.toLowerCase()) ||
-          e.address?.toLowerCase().includes(search.toLowerCase())
+  const q = search.trim().toLowerCase()
+  const textMatches = q
+    ? essentials.filter((e) =>
+        [e.name, e.category, t(categoryNameKey(e.category || "")), e.neighborhood, e.address].some((v) => typeof v === "string" && v.toLowerCase().includes(q))
       )
     : essentials
 
@@ -135,180 +118,130 @@ export default function EssentialsPage() {
     ? userLocation
       ? textMatches
           .filter((e) => e.latitude && e.longitude)
-          .map((e) => ({ ...e, _distM: distanceInMeters(userLocation.lat, userLocation.lng, e.latitude, e.longitude) }))
-          .sort((a, b) => a._distM - b._distM)
+          .map((e) => ({ ...e, _dist: distanceInMeters(userLocation.lat, userLocation.lng, Number(e.latitude), Number(e.longitude)) }))
+          .sort((a, b) => a._dist - b._dist)
           .slice(0, 30)
       : []
-    : search.trim()
-    ? textMatches
+    : q
+    ? textMatches.slice(0, 60)
     : []
+
+  const statusClass = (state: string, soon: boolean) => (state === "open" ? (soon ? "text-warn" : "text-open") : "text-zinc-400")
+
+  const sectionTitle = "mb-4 text-lg font-semibold text-ink"
+  const tile = "flex flex-col gap-3 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25"
 
   return (
     <>
       <Header />
-      <main className="relative min-h-screen pb-40 text-white">
-
-        {/* Hero */}
-        <section className="px-4 pt-16">
+      <main className="min-h-screen bg-night pb-40 text-ink">
+        <section className="px-4 pt-8 sm:pt-12">
           <div className="mx-auto max-w-7xl">
-            <p className="text-sm font-semibold text-purple-300/80">{t("essentials.title")}</p>
-            <h1 className="mt-4 max-w-3xl text-5xl font-black leading-[1.02] tracking-tight text-white md:text-7xl">
-              {t("essentials.subtitle")}
-            </h1>
-            <p className="mt-5 max-w-xl text-base text-zinc-400 md:text-lg">
-              Farmacias 24h, cajeros, comida, transporte y todo lo que necesitas mientras estás de fiesta en Barcelona.
-            </p>
+            <ExploreSwitch active="essentials" />
+            <h1 className="font-display mt-6 max-w-3xl text-[2rem] leading-[1.06] sm:text-5xl">{t("essentials.subtitle")}</h1>
+            <p className="mt-3 max-w-xl text-base text-zinc-300">{t("essentialsPage.intro")}</p>
 
-            {!loading && essentials.length > 0 && (
-              <div className="mt-7 flex flex-wrap gap-2.5">
-                <span className="rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold text-zinc-300 backdrop-blur-xl">
-                  📍 {essentials.length} sitios
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold text-zinc-300 backdrop-blur-xl">
-                  🗂️ {categories.length} categorías
-                </span>
-                {neighborhoodCount > 0 && (
-                  <span className="rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold text-zinc-300 backdrop-blur-xl">
-                    🧭 {neighborhoodCount} barrios
-                  </span>
+            <div className="mt-6 flex max-w-2xl flex-col gap-3 sm:flex-row">
+              <div className="group flex flex-1 items-center gap-3 rounded-full border border-white/15 bg-surface px-5 py-3 transition focus-within:border-brand">
+                <Search size={18} className="shrink-0 text-zinc-400 group-focus-within:text-brand-soft" />
+                <input
+                  type="search"
+                  placeholder={t("essentialsPage.searchPlaceholder")}
+                  aria-label={t("essentialsPage.searchPlaceholder")}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full bg-transparent text-base text-ink outline-none placeholder:text-zinc-400"
+                />
+                {search && (
+                  <button onClick={() => setSearch("")} className="text-zinc-400 hover:text-ink" aria-label={t("explorer.clearSearch")}>
+                    <X size={16} />
+                  </button>
                 )}
               </div>
-            )}
-
-            {/* Search */}
-            <div className="group mt-8 flex max-w-xl items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 shadow-[0_20px_60px_-25px_rgba(124,92,255,0.4)] backdrop-blur-xl transition focus-within:border-purple-400/60 focus-within:bg-white/[0.09]">
-              <span className="text-zinc-400 transition group-focus-within:text-purple-300">🔍</span>
-              <input
-                type="text"
-                placeholder={t("essentials.search")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-400"
-              />
-              {search && (
-                <button onClick={() => setSearch("")} className="text-zinc-400 transition hover:text-white" aria-label="Limpiar búsqueda">
-                  ✕
-                </button>
-              )}
+              <button
+                onClick={toggleNearMe}
+                aria-pressed={nearMe}
+                className={`flex shrink-0 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition ${
+                  nearMe ? "bg-brand text-white" : "border border-white/15 text-zinc-200 hover:bg-white/5"
+                }`}
+              >
+                <LocateFixed size={16} /> {t("explorer.near")}
+              </button>
             </div>
-
-            <button
-              onClick={toggleNearMe}
-              aria-pressed={nearMe}
-              className={`mt-3 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                nearMe
-                  ? "border-purple-400/60 bg-purple-500/20 text-purple-200"
-                  : "border-white/10 bg-white/[0.05] text-zinc-300 hover:bg-white/10"
-              }`}
-            >
-              📍 Cerca de mí
-            </button>
           </div>
         </section>
 
-        {/* Search results */}
-        {showResults && (
-          <section className="mx-auto mt-10 max-w-7xl px-4">
-            {nearMe && !userLocation ? (
-              <p className="mb-4 text-sm text-zinc-400">
-                {locating
-                  ? "Buscando tu ubicación..."
+        {showResults ? (
+          <section className="mx-auto mt-8 max-w-7xl px-4">
+            <p className="mb-4 text-sm text-zinc-400" aria-live="polite">
+              {nearMe && !userLocation
+                ? locating
+                  ? t("explorer.locating")
                   : locationDenied
-                  ? "No podemos ver tu ubicación. Actívala en los permisos del navegador y vuelve a pulsar \"Cerca de mí\"."
-                  : "Pulsa \"Cerca de mí\" y permite el acceso a tu ubicación."}
-              </p>
-            ) : (
-              <p className="mb-4 text-sm text-zinc-400">
-                {searchResults.length} {searchResults.length === 1 ? "resultado" : "resultados"}
-                {nearMe ? " · ordenados por distancia" : ""}
-              </p>
-            )}
+                  ? t("geo.denied")
+                  : t("essentialsPage.allowLocation")
+                : (searchResults.length === 1 ? t("essentialsPage.resultOne") : t("essentialsPage.resultMany")).replace("{n}", String(searchResults.length)) +
+                  (nearMe ? ` · ${t("essentialsPage.byDistance")}` : "")}
+            </p>
             {nearMe && !userLocation ? null : searchResults.length === 0 ? (
-              <div className="py-20 text-center">
-                <p className="text-lg font-bold text-zinc-300">No se encontraron resultados</p>
-                <p className="mt-2 text-sm text-zinc-400">Prueba con otro nombre, categoría o barrio.</p>
+              <div className="py-16 text-center">
+                <p className="text-lg font-semibold text-zinc-200">{t("essentialsPage.noResults")}</p>
+                <p className="mt-2 text-sm text-zinc-400">{t("essentialsPage.noResultsHint")}</p>
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {searchResults.map((item, index) => {
-                  const config = categoryConfig[item.category] || { icon: "📍", color: "#6b7280" }
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {searchResults.map((item) => {
+                  const info = categoryInfo(item.category)
+                  const CatIcon = info.icon
+                  const st = getOpenStatus(item.open_hours, t)
                   return (
-                    <Reveal key={item.id} style={{ transitionDelay: `${Math.min(index, 8) * 60}ms` }}>
-                      <Link
-                        href={`/essentials/${item.category.toLowerCase().replace(/\s+/g, "-")}`}
-                        className="flex items-start gap-4 rounded-card border bg-white/[0.03] p-5 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-purple-400/30 hover:shadow-[0_20px_50px_-20px_rgba(124,92,255,0.35)]"
-                        style={{ borderColor: `${config.color}30` }}
-                      >
-                        <EssentialPhoto
-                          src={item.image}
-                          alt={item.name}
-                          icon={config.icon}
-                          color={config.color}
-                          className="h-20 w-20 shrink-0 rounded-2xl"
-                        />
-                        <div className="min-w-0">
-                          <h3 className="truncate font-bold text-white">{item.name}</h3>
-                          {item.address && <p className="mt-1 truncate text-xs text-zinc-400">{item.address}</p>}
-                          {item.neighborhood && <p className="mt-1 text-xs text-zinc-400">📍 {item.neighborhood}</p>}
-                          {item._distM != null && (
-                            <p className="mt-1 text-xs font-bold text-purple-300">
-                              {formatDistance(item._distM)} · {walkingMinutes(item._distM)} min andando
-                            </p>
-                          )}
-                          {(() => {
-                            const st = getOpenStatus(item.open_hours)
-                            if (!st.label) return null
-                            const cls =
-                              st.state === "open"
-                                ? st.soon
-                                  ? "bg-amber-500/20 text-amber-300"
-                                  : "bg-emerald-500/20 text-emerald-300"
-                                : st.state === "closed"
-                                ? "bg-red-500/20 text-red-300"
-                                : "bg-white/10 text-zinc-300"
-                            return <span className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-semibold ${cls}`}>{st.label}</span>
-                          })()}
-                        </div>
-                      </Link>
-                    </Reveal>
+                    <Link
+                      key={item.id}
+                      href={`/essentials/${info.slug}`}
+                      className="flex items-start gap-4 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25"
+                    >
+                      <EssentialPhoto src={item.image} alt={item.name} icon={<CatIcon size={26} />} color="#7c5cff" className="h-16 w-16 shrink-0 rounded-ctl" />
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-ink">{item.name}</p>
+                        <p className="mt-0.5 truncate text-sm text-zinc-400">
+                          {[t(categoryNameKey(item.category)), item.neighborhood].filter(Boolean).join(" · ")}
+                        </p>
+                        {item._dist != null && (
+                          <p className="mt-1 text-sm font-semibold text-brand-soft">
+                            {formatDistance(item._dist)} · {t("essentialsPage.walkMin").replace("{n}", String(walkingMinutes(item._dist)))}
+                          </p>
+                        )}
+                        {st.label && <p className={`mt-1 text-xs font-semibold ${statusClass(st.state, st.soon)}`}>{st.label}</p>}
+                        {item.highFee && <p className="mt-1 text-xs font-semibold text-warn">{t("essentialsPage.highFee")}</p>}
+                      </div>
+                    </Link>
                   )
                 })}
               </div>
             )}
           </section>
-        )}
-
-        {!showResults && (
+        ) : (
           <>
-            {/* Lo que más se necesita de noche, con cuántos sitios hay abiertos ahora mismo */}
             {!loading && essentials.length > 0 && (
-              <section className="mx-auto mt-12 max-w-7xl px-4">
-                <div className="mb-5 flex items-baseline justify-between">
-                  <h2 className="text-xl font-black text-white">⚡ Ahora mismo</h2>
-                  <span className="text-xs font-medium text-zinc-400">lo que más se busca de madrugada</span>
-                </div>
+              <section className="mx-auto mt-10 max-w-7xl px-4">
+                <h2 className={sectionTitle}>{t("essentialsPage.nowTitle")}</h2>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {[
-                    { cat: "Taxi", label: "Taxi" },
-                    { cat: "Pharmacy", label: "Farmacia" },
-                    { cat: "ATM", label: "Cajero" },
-                    { cat: "Food", label: "Comer" },
-                  ].map(({ cat, label }) => {
-                    const config = categoryConfig[cat]
+                  {["Taxi", "Pharmacy", "ATM", "Food"].map((cat) => {
                     const items = itemsByCategory(cat)
                     if (items.length === 0) return null
-                    const openNow = items.filter((e) => getOpenStatus(e.open_hours).state === "open").length
+                    const info = categoryInfo(cat)
+                    const CatIcon = info.icon
+                    const open = openCount(cat)
                     return (
-                      <Link
-                        key={cat}
-                        href={`/essentials/${cat.toLowerCase().replace(/\s+/g, "-")}`}
-                        className="group flex flex-col gap-2 rounded-card border p-4 backdrop-blur-xl transition duration-300 hover:-translate-y-1"
-                        style={{ borderColor: `${config.color}40`, background: `linear-gradient(135deg, ${config.color}22, rgba(255,255,255,0.02))` }}
-                      >
-                        <span className="text-3xl">{config.icon}</span>
-                        <span className="font-black text-white">{label}</span>
-                        <span className="text-xs font-semibold" style={{ color: openNow > 0 ? "#6ee7b7" : "#a1a1aa" }}>
-                          {openNow > 0 ? `🟢 ${openNow} abiertos ahora` : `${items.length} sitios`}
+                      <Link key={cat} href={`/essentials/${info.slug}`} className={tile}>
+                        <CatIcon size={22} className="text-brand-soft" />
+                        <span>
+                          <span className="block text-sm font-semibold text-ink">{t(categoryNameKey(cat))}</span>
+                          <span className={`mt-0.5 block text-xs font-semibold ${open > 0 ? "text-open" : "text-zinc-400"}`}>
+                            {open > 0
+                              ? (open === 1 ? t("essentialsPage.openNowOne") : t("essentialsPage.openNowCount")).replace("{n}", String(open))
+                              : (items.length === 1 ? t("essentialsPage.placesOne") : t("essentialsPage.placesCount")).replace("{n}", String(items.length))}
+                          </span>
                         </span>
                       </Link>
                     )
@@ -317,78 +250,46 @@ export default function EssentialsPage() {
               </section>
             )}
 
-            {/* Transporte nocturno — lo primero que se busca de madrugada, así que tiene su
-                propia franja destacada en vez de quedar mezclado en el grid genérico de abajo. */}
-            {!loading && ["Metro", "Nitbus", "Taxi"].some((c) => countByCategory(c) > 0) && (
-              <section className="mx-auto mt-12 max-w-7xl px-4">
-                <div className="mb-5 flex items-baseline justify-between">
-                  <h2 className="text-xl font-black text-white">🌙 Transporte nocturno</h2>
-                  <span className="text-xs font-medium text-zinc-400">metro, Nitbus y taxi</span>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  {["Metro", "Nitbus", "Taxi"].map((cat) => {
-                    const config = categoryConfig[cat] || { icon: "📍", color: "#6b7280" }
-                    const count = countByCategory(cat)
-                    if (count === 0) return null
-                    return (
-                      <Link
-                        key={cat}
-                        href={`/essentials/${cat.toLowerCase().replace(/\s+/g, "-")}`}
-                        className="group relative flex items-center gap-4 overflow-hidden rounded-card border p-5 backdrop-blur-xl transition duration-300 hover:-translate-y-1"
-                        style={{ borderColor: `${config.color}35`, background: `linear-gradient(135deg, ${config.color}1c, rgba(255,255,255,0.02))`, boxShadow: `0 0 0 rgba(0,0,0,0)` }}
-                        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 20px 50px -25px ${config.color}80` }}
-                        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = `0 0 0 rgba(0,0,0,0)` }}
-                      >
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-3xl" style={{ background: `${config.color}30`, border: `1px solid ${config.color}55` }}>
-                          {config.icon}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-black text-white">{t(`essentials.category_names.${cat}`) || cat}</p>
-                          <p className="mt-0.5 text-xs text-zinc-400">{count} {count === 1 ? t("essentials.locations") : t("essentials.locations_plural")}</p>
-                        </div>
-                        <span className="ml-auto text-zinc-400 transition group-hover:translate-x-1 group-hover:text-white"><ArrowIcon className="h-4 w-4" /></span>
-                      </Link>
-                    )
-                  })}
-                </div>
-              </section>
-            )}
+            <section className="mx-auto mt-10 max-w-7xl px-4">
+              <h2 className={sectionTitle}>{t("essentialsPage.transportTitle")}</h2>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  { cat: "Metro", line: metroLabel },
+                  { cat: "Nitbus", line: t("essentialsPage.nitbusLine") },
+                  { cat: "Taxi", line: t("essentialsPage.taxiLine") },
+                ].map(({ cat, line }) => {
+                  const info = categoryInfo(cat)
+                  const CatIcon = info.icon
+                  return (
+                    <Link key={cat} href={`/essentials/${info.slug}`} className="flex items-center gap-4 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl bg-brand/15 text-brand-soft">
+                        <CatIcon size={22} />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-ink">{t(categoryNameKey(cat))}</span>
+                        <span className="mt-0.5 block text-xs text-zinc-300">{line}</span>
+                      </span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </section>
 
-            {/* Cerca de ti ahora */}
             {nearby.length > 0 && (
-              <section className="mt-14">
-                <div className="mx-auto max-w-7xl px-4">
-                  <div className="mb-5 flex items-baseline justify-between">
-                    <h2 className="text-xl font-black text-white">📍 Cerca de ti ahora</h2>
-                    <span className="text-xs font-medium text-zinc-400">basado en tu ubicación</span>
-                  </div>
-                </div>
-                <div className="flex gap-4 overflow-x-auto px-4 pb-2 mx-auto max-w-7xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <section className="mt-10">
+                <h2 className={`${sectionTitle} mx-auto max-w-7xl px-4`}>{t("essentialsPage.nearTitle")}</h2>
+                <div className="mx-auto flex max-w-7xl gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none]">
                   {nearby.map((item) => {
-                    const config = categoryConfig[item.category] || { icon: "📍", color: "#6b7280" }
-                    const distLabel = formatDistance(item._dist) + (item._dist <= 2500 ? ` · ${walkingMinutes(item._dist)} min` : "")
+                    const info = categoryInfo(item.category)
+                    const CatIcon = info.icon
                     return (
-                      <Link
-                        key={item.id}
-                        href={`/essentials/${item.category.toLowerCase().replace(/\s+/g, "-")}`}
-                        className="group relative h-44 w-64 shrink-0 overflow-hidden rounded-card border border-white/10 transition duration-300 hover:-translate-y-1 hover:border-white/25"
-                      >
-                        <EssentialPhoto
-                          src={item.image}
-                          alt={item.name}
-                          icon={config.icon}
-                          color={config.color}
-                          className="absolute inset-0"
-                          imgClassName="transition duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(5,3,8,0.05) 30%, rgba(5,3,8,0.9) 100%)" }} />
-                        <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1 text-xs font-bold text-white backdrop-blur-md">
-                          {config.icon} {distLabel}
-                        </div>
-                        <div className="absolute inset-x-0 bottom-0 p-4">
-                          <p className="truncate text-sm font-bold text-white">{item.name}</p>
-                          {item.neighborhood && <p className="truncate text-xs text-zinc-300">{item.neighborhood}</p>}
-                        </div>
+                      <Link key={item.id} href={`/essentials/${info.slug}`} className="w-56 shrink-0 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25">
+                        <span className="flex items-center gap-2 text-xs font-semibold text-brand-soft">
+                          <CatIcon size={14} /> {formatDistance(item._dist)}
+                          {item._dist <= 2500 ? ` · ${t("essentialsPage.walkMin").replace("{n}", String(walkingMinutes(item._dist)))}` : ""}
+                        </span>
+                        <span className="mt-2 block truncate text-sm font-semibold text-ink">{item.name}</span>
+                        {item.neighborhood && <span className="block truncate text-xs text-zinc-400">{item.neighborhood}</span>}
                       </Link>
                     )
                   })}
@@ -396,70 +297,33 @@ export default function EssentialsPage() {
               </section>
             )}
 
-            {/* Categories bento grid */}
-            <section className="mx-auto mt-14 max-w-7xl px-4">
-              <h2 className="mb-5 text-xl font-black text-white">Explora por categoría</h2>
-
+            <section className="mx-auto mt-10 max-w-7xl px-4">
+              <h2 className={sectionTitle}>{t("essentialsPage.allTitle")}</h2>
               {loading ? (
-                <div className="grid gap-5 md:grid-cols-4">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className={`animate-pulse rounded-card bg-white/[0.03] ${i < 2 ? "md:col-span-2 h-72" : "h-56"}`} />
+                    <div key={i} className="h-20 animate-pulse rounded-card bg-surface" />
                   ))}
                 </div>
               ) : categories.length === 0 ? (
-                <div className="py-20 text-center">
-                  <p className="text-lg font-bold text-zinc-300">Aún no hay esenciales añadidos</p>
-                </div>
+                <p className="py-12 text-center text-zinc-400">{t("essentialsPage.empty")}</p>
               ) : (
-                <div className="grid auto-rows-[220px] gap-5 md:grid-cols-4">
-                  {categories.map((cat, index) => {
-                    const config = categoryConfig[cat] || { icon: "📍", color: "#6b7280" }
-                    const count = countByCategory(cat)
-                    const cover = coverImageByCategory(cat)
-                    const locationsLabel = count === 1 ? t("essentials.locations") : t("essentials.locations_plural")
-                    const isFeatured = index < 2
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {categories.map((cat) => {
+                    const info = categoryInfo(cat)
+                    const CatIcon = info.icon
+                    const count = itemsByCategory(cat).length
                     return (
-                      <Reveal
-                        key={cat}
-                        className={isFeatured ? "md:col-span-2 md:row-span-1" : "row-span-1"}
-                        style={{ transitionDelay: `${Math.min(index, 8) * 60}ms` }}
-                      >
-                        <Link
-                          href={`/essentials/${cat.toLowerCase().replace(/\s+/g, "-")}`}
-                          className="group relative block h-full overflow-hidden rounded-card border transition duration-500 hover:-translate-y-1.5"
-                          style={{ borderColor: `${config.color}30` }}
-                        >
-                          <EssentialPhoto
-                            src={cover}
-                            alt={cat}
-                            icon=""
-                            color={config.color}
-                            className="absolute inset-0"
-                            imgClassName="transition duration-700 group-hover:scale-110"
-                          />
-                          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(5,3,8,0.1) 0%, rgba(5,3,8,0.55) 55%, rgba(5,3,8,0.95) 100%)" }} />
-
-                          <div className={`relative flex h-full flex-col justify-end ${isFeatured ? "p-8" : "p-6"}`}>
-                            <div
-                              className={`mb-3 flex items-center justify-center rounded-2xl backdrop-blur-xl ${isFeatured ? "h-12 w-12 text-2xl" : "h-10 w-10 text-xl"}`}
-                              style={{ background: `${config.color}30`, border: `1px solid ${config.color}55` }}
-                            >
-                              {config.icon}
-                            </div>
-                            <h3 className={`font-black text-white ${isFeatured ? "text-3xl" : "text-xl"}`}>
-                              {t(`essentials.category_names.${cat.replace(/\s+/g, "")}`) || cat}
-                            </h3>
-                            <div className="mt-3 flex items-center justify-between">
-                              <span className="rounded-full px-3 py-1 text-xs font-semibold backdrop-blur-xl" style={{ background: `${config.color}30`, color: "#fff" }}>
-                                {count} {locationsLabel}
-                              </span>
-                              <span className="flex items-center gap-1 text-xs text-zinc-300 opacity-0 transition group-hover:opacity-100">
-                                {t("essentials.view_all")} <ArrowIcon className="h-3.5 w-3.5" />
-                              </span>
-                            </div>
-                          </div>
-                        </Link>
-                      </Reveal>
+                      <Link key={cat} href={`/essentials/${info.slug}`} className="flex items-center gap-4 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl bg-white/5 text-brand-soft">
+                          <CatIcon size={22} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold text-ink">{t(categoryNameKey(cat))}</span>
+                          <span className="mt-0.5 block truncate text-xs text-zinc-400">{t(categoryDescKey(cat))}</span>
+                        </span>
+                        <span className="shrink-0 text-xs font-semibold text-zinc-400">{count}</span>
+                      </Link>
                     )
                   })}
                 </div>

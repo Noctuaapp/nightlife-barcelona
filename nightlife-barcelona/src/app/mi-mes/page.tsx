@@ -8,9 +8,14 @@ import BottomNav from "@/components/layout/BottomNav"
 import NocOwl from "@/components/mascot/NocOwl"
 import { supabase } from "../../lib/supabase"
 import { BADGES } from "../../lib/badges"
+import { badgeIcon } from "@/components/gamification/badgeIcons"
+import { useLanguage } from "../../context/LanguageContext"
+import { toDateLocale } from "../../lib/dateLocale"
+import { MapPin, Headphones, CalendarCheck, NotebookPen, Eye, Share2 } from "lucide-react"
 
 type Recap = {
-  monthLabel: string
+  year: number
+  month: number
   nights: number
   clubs: number
   hoods: number
@@ -20,19 +25,18 @@ type Recap = {
   plans: number
   xp: number
   badges: string[]
-  archetype: { emoji: string; title: string; line: string }
+  archetype: string
 }
 
-const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
-
 // Etiqueta según CÓMO sales (variedad, barrios, estilos), nunca según cuánto.
-function pickArchetype(r: { clubs: number; hoods: number; styles: number; notes: number; nights: number; topClubShare: number }) {
-  if (r.hoods >= 3) return { emoji: "🧭", title: "Trotabarrios", line: "Este mes has salido de tu zona de confort." }
-  if (r.styles >= 3) return { emoji: "🎧", title: "Oído abierto", line: "Cada noche sonaba distinto." }
-  if (r.notes >= 2) return { emoji: "📣", title: "Voz de la noche", line: "Tus notas ayudan a quien viene detrás." }
-  if (r.nights >= 2 && r.topClubShare >= 0.6) return { emoji: "🏠", title: "Fiel a su sitio", line: "Sabes dónde te sientes en casa." }
-  if (r.clubs >= 2) return { emoji: "✨", title: "Curioso nocturno", line: "Ya vas descubriendo Barcelona." }
-  return { emoji: "🌙", title: "Primeros pasos", line: "El mes que viene, más." }
+// Textos en miMes.arch_<clave>_title / _line.
+function pickArchetype(r: { clubs: number; hoods: number; styles: number; notes: number; nights: number; topClubShare: number }): string {
+  if (r.hoods >= 3) return "hoods"
+  if (r.styles >= 3) return "styles"
+  if (r.notes >= 2) return "notes"
+  if (r.nights >= 2 && r.topClubShare >= 0.6) return "loyal"
+  if (r.clubs >= 2) return "curious"
+  return "first"
 }
 
 function wrap(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lineH: number) {
@@ -58,6 +62,12 @@ export default function MiMesPage() {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState("")
   const owlRef = useRef<HTMLDivElement>(null)
+  const { t, locale } = useLanguage()
+  const monthLabel = (r: Recap) => {
+    const l = new Date(r.year, r.month - 1, 15).toLocaleDateString(toDateLocale(locale), { month: "long", year: "numeric" })
+    return l.charAt(0).toUpperCase() + l.slice(1)
+  }
+  const plural = (n: number, one: string, many: string) => (n === 1 ? t(one) : t(many)).replace("{n}", String(n))
 
   useEffect(() => {
     const load = async () => {
@@ -108,7 +118,8 @@ export default function MiMesPage() {
       const notes = checkins.filter((c: any) => c.note_created_at).length
 
       const r: Recap = {
-        monthLabel: `${MONTHS[m - 1]} ${y}`,
+        year: y,
+        month: m,
         nights: checkins.length,
         clubs: ids.length,
         hoods,
@@ -153,22 +164,20 @@ export default function MiMesPage() {
 
     ctx.textBaseline = "alphabetic"
     ctx.fillStyle = "#c4b5fd"; ctx.font = "600 44px system-ui, sans-serif"
-    ctx.fillText("Tu mes en Noctua", 330, 210)
+    ctx.fillText(t("miMes.title"), 330, 210)
     ctx.fillStyle = "#ffffff"; ctx.font = "800 68px system-ui, sans-serif"
-    ctx.fillText(r.monthLabel.charAt(0).toUpperCase() + r.monthLabel.slice(1), 330, 290)
+    ctx.fillText(monthLabel(r), 330, 290)
 
-    ctx.font = "160px system-ui, sans-serif"
-    ctx.fillText(r.archetype.emoji, 80, 560)
     ctx.fillStyle = "#ffffff"; ctx.font = "900 100px system-ui, sans-serif"
-    const endY = wrap(ctx, r.archetype.title, 80, 700, W - 160, 110)
+    const endY = wrap(ctx, t(`miMes.arch_${r.archetype}_title`), 80, 620, W - 160, 110)
     ctx.fillStyle = "#d4d4d8"; ctx.font = "500 44px system-ui, sans-serif"
-    wrap(ctx, r.archetype.line, 80, endY + 80, W - 160, 58)
+    wrap(ctx, t(`miMes.arch_${r.archetype}_line`), 80, endY + 80, W - 160, 58)
 
     const cells: [string, string][] = [
-      [String(r.nights), r.nights === 1 ? "noche de check-in" : "noches de check-in"],
-      [String(r.clubs), r.clubs === 1 ? "local distinto" : "locales distintos"],
-      [String(r.hoods), r.hoods === 1 ? "barrio" : "barrios"],
-      [`+${r.xp}`, "XP ganado"],
+      [String(r.nights), r.nights === 1 ? t("miMes.nightsOne") : t("miMes.nightsMany")],
+      [String(r.clubs), r.clubs === 1 ? t("miMes.clubsOne") : t("miMes.clubsMany")],
+      [String(r.hoods), r.hoods === 1 ? t("miMes.hoodsOne") : t("miMes.hoodsMany")],
+      [`+${r.xp}`, t("miMes.xpEarned")],
     ]
     cells.forEach(([big, small], i) => {
       const x = 80 + (i % 2) * 460, y = 1010 + Math.floor(i / 2) * 250
@@ -180,9 +189,9 @@ export default function MiMesPage() {
 
     ctx.fillStyle = "#e4e4e7"; ctx.font = "600 42px system-ui, sans-serif"
     let ty = 1560
-    if (r.topHood) { ctx.fillText(`📍 Tu barrio: ${r.topHood}`, 80, ty); ty += 70 }
-    if (r.topStyle) { ctx.fillText(`🎧 Tu sonido: ${r.topStyle}`.slice(0, 40), 80, ty); ty += 70 }
-    if (r.badges.length) ctx.fillText(`🏅 ${r.badges.length} ${r.badges.length === 1 ? "insignia nueva" : "insignias nuevas"}`, 80, ty)
+    if (r.topHood) { ctx.fillText(`${t("miMes.yourHood")}: ${r.topHood}`, 80, ty); ty += 70 }
+    if (r.topStyle) { ctx.fillText(`${t("miMes.yourSound")}: ${r.topStyle}`.slice(0, 44), 80, ty); ty += 70 }
+    if (r.badges.length) ctx.fillText(plural(r.badges.length, "miMes.badgesOne", "miMes.badgesMany"), 80, ty)
 
     ctx.fillStyle = "#a78bfa"; ctx.font = "700 40px system-ui, sans-serif"
     ctx.fillText("noctuaapp.com", 80, 1850)
@@ -195,7 +204,7 @@ export default function MiMesPage() {
     try {
       const c = await buildImage(recap)
       setImg(c.toDataURL("image/png"))
-    } catch { setMsg("No se pudo crear la imagen.") }
+    } catch { setMsg(t("miMes.imageError")) }
     setBusy(false)
   }
 
@@ -208,94 +217,102 @@ export default function MiMesPage() {
       if (!blob) throw new Error("blob")
       const file = new File([blob], "mi-mes-en-noctua.png", { type: "image/png" })
       if (navigator.canShare?.({ files: [file] })) {
-        try { await navigator.share({ files: [file], text: "Mi mes en Noctua 🦉 noctuaapp.com" }); setBusy(false); return } catch (e: any) { if (e?.name === "AbortError") { setBusy(false); return } }
+        try { await navigator.share({ files: [file], text: `${t("miMes.title")} · noctuaapp.com` }); setBusy(false); return } catch (e: any) { if (e?.name === "AbortError") { setBusy(false); return } }
       }
       const a = document.createElement("a")
       a.href = URL.createObjectURL(blob); a.download = "mi-mes-en-noctua.png"
       document.body.appendChild(a); a.click(); a.remove()
-      setMsg("Imagen guardada en tus descargas.")
-    } catch { setMsg("No se pudo compartir la imagen.") }
+      setMsg(t("miMes.saved"))
+    } catch { setMsg(t("miMes.shareError")) }
     setBusy(false)
   }
 
   const empty = recap && recap.nights === 0
 
+  const stat = "rounded-ctl bg-white/[0.06] p-4"
+
   return (
-    <div className="flex min-h-screen flex-col bg-night">
+    <div className="flex min-h-screen flex-col bg-night text-ink">
       <Header />
-      <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-24">
+      <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-8 sm:pt-12">
         <div ref={owlRef} className="sr-only" aria-hidden="true"><NocOwl size={220} mood="party" /></div>
 
-        {state === "loading" && <p className="py-24 text-center text-zinc-400">Preparando tu mes…</p>}
+        {state === "loading" && <p className="py-24 text-center text-zinc-400">{t("miMes.loading")}</p>}
 
         {state === "login" && (
           <div className="py-20 text-center">
             <div className="mx-auto w-fit"><NocOwl size={80} mood="wink" /></div>
-            <h1 className="mt-4 text-2xl font-black text-white">Tu mes en Noctua</h1>
-            <p className="mt-2 text-sm text-zinc-400">Inicia sesión para ver tu resumen.</p>
-            <Link href="/login" className="mt-6 inline-block rounded-2xl bg-white px-6 py-3 text-sm font-black text-black">Entrar</Link>
+            <h1 className="font-display mt-4 text-2xl">{t("miMes.title")}</h1>
+            <p className="mt-2 text-sm text-zinc-400">{t("miMes.loginHint")}</p>
+            <Link href="/login?next=/mi-mes" className="mt-6 inline-block rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white">{t("nav.login")}</Link>
           </div>
         )}
 
         {state === "ready" && recap && (
           <div>
-            <div className="mb-5 flex gap-2">
+            <h1 className="font-display mb-5 text-[2rem] leading-tight">{t("miMes.title")}</h1>
+            <div className="mb-5 flex gap-2" role="tablist">
               {([0, 1] as const).map((o) => (
-                <button key={o} onClick={() => setOffset(o)} className={`rounded-full px-4 py-2 text-sm font-bold ${offset === o ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white"}`}>
-                  {o === 0 ? "Este mes" : "Mes pasado"}
+                <button key={o} role="tab" aria-selected={offset === o} onClick={() => setOffset(o)} className={`rounded-full px-4 py-2 text-sm font-semibold ${offset === o ? "bg-white text-night" : "border border-white/10 text-zinc-200"}`}>
+                  {o === 0 ? t("miMes.thisMonth") : t("miMes.lastMonth")}
                 </button>
               ))}
             </div>
 
             {empty ? (
-              <div className="rounded-card border border-white/10 bg-white/[0.03] py-16 text-center">
+              <div className="rounded-card border border-white/10 bg-surface px-6 py-14 text-center">
                 <div className="mx-auto w-fit"><NocOwl size={90} mood="sleepy" /></div>
-                <p className="mt-4 text-lg font-black text-white">Aún no hay nada que contar de {recap.monthLabel}</p>
-                <p className="mt-1 px-6 text-sm text-zinc-400">Haz check-in en un local y tu resumen empezará a llenarse.</p>
-                <Link href="/clubs" className="mt-6 inline-block rounded-2xl bg-white px-6 py-3 text-sm font-black text-black">Explorar clubs</Link>
+                <p className="mt-4 text-lg font-semibold text-ink">{t("miMes.emptyTitle").replace("{month}", monthLabel(recap))}</p>
+                <p className="mt-1 text-sm text-zinc-400">{t("miMes.emptyBody")}</p>
+                <Link href="/clubs" className="mt-6 inline-block rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white">{t("miMes.explore")}</Link>
               </div>
             ) : (
               <>
-                <div className="overflow-hidden rounded-card border border-purple-400/30 bg-gradient-to-br from-purple-900/60 via-night to-fuchsia-950/50 p-6">
+                <div className="rounded-card border border-brand/30 bg-brand/10 p-6">
                   <div className="flex items-center gap-3">
-                    <NocOwl size={56} mood="party" />
-                    <div>
-                      <p className="text-xs font-semibold text-purple-300">Tu mes en Noctua</p>
-                      <p className="text-xl font-black capitalize text-white">{recap.monthLabel}</p>
-                    </div>
+                    <NocOwl size={52} mood="party" />
+                    <p className="text-lg font-semibold text-ink">{monthLabel(recap)}</p>
                   </div>
-                  <p className="mt-6 text-5xl">{recap.archetype.emoji}</p>
-                  <h1 className="mt-2 text-3xl font-black text-white">{recap.archetype.title}</h1>
-                  <p className="mt-1 text-sm text-zinc-300">{recap.archetype.line}</p>
-                  <div className="mt-6 grid grid-cols-2 gap-3">
-                    {[
-                      [recap.nights, recap.nights === 1 ? "noche de check-in" : "noches de check-in"],
-                      [recap.clubs, recap.clubs === 1 ? "local distinto" : "locales distintos"],
-                      [recap.hoods, recap.hoods === 1 ? "barrio" : "barrios"],
-                      [`+${recap.xp}`, "XP ganado"],
-                    ].map(([big, small]) => (
-                      <div key={String(small)} className="rounded-2xl bg-white/[0.07] p-4">
-                        <p className="text-3xl font-black text-white">{big}</p>
-                        <p className="text-xs text-zinc-400">{small}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-5 space-y-1.5 text-sm text-zinc-200">
-                    {recap.topHood && <p>📍 Tu barrio: <b>{recap.topHood}</b></p>}
-                    {recap.topStyle && <p>🎧 Tu sonido: <b>{recap.topStyle}</b></p>}
-                    {recap.plans > 0 && <p>📅 {recap.plans} {recap.plans === 1 ? "plan marcado" : "planes marcados"}</p>}
-                    {recap.notes > 0 && <p>📝 {recap.notes} {recap.notes === 1 ? "nota dejada" : "notas dejadas"}</p>}
-                    {recap.badges.length > 0 && <p>🏅 {recap.badges.map((k) => BADGES[k].emoji + " " + BADGES[k].name).join(" · ")}</p>}
-                  </div>
+                  <h2 className="font-display mt-6 text-3xl text-ink">{t(`miMes.arch_${recap.archetype}_title`)}</h2>
+                  <p className="mt-1 text-sm text-zinc-300">{t(`miMes.arch_${recap.archetype}_line`)}</p>
+                  <dl className="mt-6 grid grid-cols-2 gap-3">
+                    <div className={stat}><dd className="text-3xl font-semibold text-ink">{recap.nights}</dd><dt className="text-xs text-zinc-400">{recap.nights === 1 ? t("miMes.nightsOne") : t("miMes.nightsMany")}</dt></div>
+                    <div className={stat}><dd className="text-3xl font-semibold text-ink">{recap.clubs}</dd><dt className="text-xs text-zinc-400">{recap.clubs === 1 ? t("miMes.clubsOne") : t("miMes.clubsMany")}</dt></div>
+                    <div className={stat}><dd className="text-3xl font-semibold text-ink">{recap.hoods}</dd><dt className="text-xs text-zinc-400">{recap.hoods === 1 ? t("miMes.hoodsOne") : t("miMes.hoodsMany")}</dt></div>
+                    <div className={stat}><dd className="text-3xl font-semibold text-ink">+{recap.xp}</dd><dt className="text-xs text-zinc-400">{t("miMes.xpEarned")}</dt></div>
+                  </dl>
+                  <ul className="mt-5 space-y-2 text-sm text-zinc-200">
+                    {recap.topHood && <li className="flex items-center gap-2"><MapPin size={16} className="text-brand-soft" /> {t("miMes.yourHood")}: <b>{recap.topHood}</b></li>}
+                    {recap.topStyle && <li className="flex items-center gap-2"><Headphones size={16} className="text-brand-soft" /> {t("miMes.yourSound")}: <b>{recap.topStyle}</b></li>}
+                    {recap.plans > 0 && <li className="flex items-center gap-2"><CalendarCheck size={16} className="text-brand-soft" /> {plural(recap.plans, "miMes.plansOne", "miMes.plansMany")}</li>}
+                    {recap.notes > 0 && <li className="flex items-center gap-2"><NotebookPen size={16} className="text-brand-soft" /> {plural(recap.notes, "miMes.notesOne", "miMes.notesMany")}</li>}
+                    {recap.badges.length > 0 && (
+                      <li className="flex flex-wrap items-center gap-2">
+                        {recap.badges.map((k) => {
+                          const BIcon = badgeIcon(k)
+                          return (
+                            <span key={k} className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold">
+                              <BIcon size={14} className="text-brand-soft" /> {t(`badges.${k}_name`)}
+                            </span>
+                          )
+                        })}
+                      </li>
+                    )}
+                  </ul>
                 </div>
 
-                {img && <img src={img} alt="Tu resumen del mes" className="mx-auto mt-5 w-full max-w-xs rounded-2xl border border-white/10" />}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {img && <img src={img} alt={t("miMes.imageAlt")} className="mx-auto mt-5 w-full max-w-xs rounded-card border border-white/10" />}
 
                 <div className="mt-5 grid grid-cols-2 gap-2">
-                  <button onClick={preview} disabled={busy} className="rounded-2xl border border-white/10 bg-white/5 py-3 text-sm font-bold text-white disabled:opacity-60">👁️ Ver imagen</button>
-                  <button onClick={share} disabled={busy} className="rounded-2xl bg-purple-500 py-3 text-sm font-black text-white active:scale-95 disabled:opacity-60">{busy ? "…" : "📤 Compartir"}</button>
+                  <button onClick={preview} disabled={busy} className="flex items-center justify-center gap-2 rounded-ctl border border-white/15 py-3 text-sm font-semibold text-ink disabled:opacity-60">
+                    <Eye size={16} /> {t("miMes.preview")}
+                  </button>
+                  <button onClick={share} disabled={busy} className="flex items-center justify-center gap-2 rounded-ctl bg-brand py-3 text-sm font-semibold text-white active:scale-95 disabled:opacity-60">
+                    <Share2 size={16} /> {busy ? "…" : t("miMes.share")}
+                  </button>
                 </div>
-                {msg && <p className="mt-2 text-center text-xs text-zinc-400">{msg}</p>}
+                {msg && <p className="mt-2 text-center text-sm text-zinc-400" aria-live="polite">{msg}</p>}
               </>
             )}
           </div>

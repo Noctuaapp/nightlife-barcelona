@@ -1,8 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
+import { Clock, Headphones, MapPin } from "lucide-react"
+import { useLanguage } from "../../context/LanguageContext"
+import { toDateLocale } from "../../lib/dateLocale"
 
+// Programa de un evento de varios días: pestañas por fecha y sesiones de ese día.
 type Session = {
   id: number
   event_id: number
@@ -15,104 +18,68 @@ type Session = {
   description: string | null
 }
 
-type Props = {
-  sessions: Session[]
-  eventName: string
-}
-
-const DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
-
-const getDayIndex = (dateStr: string) => {
-  const date = new Date(dateStr)
-  const day = date.getDay()
-  return day === 0 ? 6 : day - 1
-}
-
-const formatDate = (dateStr: string) =>
-  new Date(dateStr).toLocaleDateString("es-ES", { day: "numeric", month: "short" })
-
-export default function EventSessionsCalendar({ sessions, eventName }: Props) {
-  const sessionsByDay: Record<string, Session[]> = {}
+export default function EventSessionsCalendar({ sessions }: { sessions: Session[]; eventName?: string }) {
+  const { t, locale } = useLanguage()
+  const byDay: Record<string, Session[]> = {}
   sessions.forEach((s) => {
-    if (s.date) {
-      if (!sessionsByDay[s.date]) sessionsByDay[s.date] = []
-      sessionsByDay[s.date].push(s)
-    }
+    if (s.date) (byDay[s.date] ||= []).push(s)
   })
-
-  const activeDates = Object.keys(sessionsByDay).sort()
-  const [selectedDate, setSelectedDate] = useState<string>(activeDates[0] || "")
-
-  const selectedSessions = sessionsByDay[selectedDate] || []
+  const dates = Object.keys(byDay).sort()
+  const [selected, setSelected] = useState<string>(dates[0] || "")
+  const list = (byDay[selected] || []).slice().sort((a, b) => (a.start_time || "").localeCompare(b.start_time || ""))
+  const fmt = (d: string, o: Intl.DateTimeFormatOptions) => new Date(`${d}T12:00:00`).toLocaleDateString(toDateLocale(locale), o)
 
   return (
-    <div className="rounded-card border border-white/10 bg-white/[0.03] p-10 backdrop-blur-2xl">
-      <p className="text-sm text-zinc-400">Programa</p>
-      <h2 className="mt-4 text-5xl font-black">Sessions</h2>
-
-      {/* Date tabs */}
-      <div className="mt-8 flex gap-2 overflow-x-auto pb-2">
-        {activeDates.map((date) => {
-          const isSelected = selectedDate === date
-          const dayIdx = getDayIndex(date)
+    <div>
+      <h2 className="mb-4 text-lg font-semibold text-ink">{t("eventSessions.title")}</h2>
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2 [scrollbar-width:none]" role="tablist">
+        {dates.map((date) => {
+          const active = selected === date
           return (
             <button
               key={date}
-              onClick={() => setSelectedDate(date)}
-              className="flex flex-col items-center rounded-2xl px-4 py-3 min-w-[72px] transition"
-              style={{
-                background: isSelected ? "rgba(124,92,255,0.2)" : "rgba(255,255,255,0.05)",
-                border: isSelected ? "1px solid rgba(124,92,255,0.4)" : "1px solid rgba(255,255,255,0.1)",
-              }}
+              role="tab"
+              aria-selected={active}
+              onClick={() => setSelected(date)}
+              className={`flex min-w-[72px] flex-col items-center rounded-ctl px-3 py-2 text-center transition ${active ? "bg-brand text-white" : "border border-white/10 text-zinc-300 hover:bg-white/5"}`}
             >
-              <span className={`text-xs font-bold ${isSelected ? "text-pink-300" : "text-zinc-400"}`}>
-                {DAYS[dayIdx]}
-              </span>
-              <span className={`text-xs mt-1 ${isSelected ? "text-pink-200" : "text-zinc-400"}`}>
-                {formatDate(date)}
-              </span>
-              {isSelected && (
-                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-pink-400" />
-              )}
+              <span className="text-xs font-semibold capitalize">{fmt(date, { weekday: "short" }).replace(".", "")}</span>
+              <span className="text-xs">{fmt(date, { day: "numeric", month: "short" })}</span>
             </button>
           )
         })}
       </div>
 
-      {/* Sessions */}
-      <div className="mt-8 space-y-5">
-        {selectedSessions.length === 0 ? (
-          <p className="text-zinc-400 text-sm">No hay sesiones para este día.</p>
+      <ul className="mt-4 space-y-2">
+        {list.length === 0 ? (
+          <li className="text-sm text-zinc-400">{t("eventSessions.none")}</li>
         ) : (
-          selectedSessions.map((session) => (
-            <div key={session.id} className="rounded-card border border-white/10 bg-black/30 p-6">
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div className="flex-1">
-                  <div className="flex flex-wrap gap-2 items-center mb-2">
-                    {session.start_time && (
-                      <span className="text-xs text-zinc-400 uppercase tracking-wide">
-                        🕒 {session.start_time}{session.end_time ? ` - ${session.end_time}` : ""}
-                      </span>
-                    )}
-                    {session.stage && (
-                      <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-zinc-300">
-                        🎪 {session.stage}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="text-2xl font-black">{session.title}</h3>
-                  {session.artist && (
-                    <p className="mt-2 text-zinc-300">🎧 {session.artist}</p>
-                  )}
-                  {session.description && (
-                    <p className="mt-2 text-sm text-zinc-400 line-clamp-2">{session.description}</p>
-                  )}
-                </div>
+          list.map((s) => (
+            <li key={s.id} className="rounded-ctl border border-white/10 p-4">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-400">
+                {s.start_time && (
+                  <span className="flex items-center gap-1">
+                    <Clock size={12} /> {s.start_time}
+                    {s.end_time ? `–${s.end_time}` : ""}
+                  </span>
+                )}
+                {s.stage && (
+                  <span className="flex items-center gap-1">
+                    <MapPin size={12} /> {s.stage}
+                  </span>
+                )}
               </div>
-            </div>
+              {s.title && <h3 className="mt-1 text-base font-semibold text-ink">{s.title}</h3>}
+              {s.artist && (
+                <p className="mt-1 flex items-center gap-1.5 text-sm text-zinc-300">
+                  <Headphones size={14} className="text-brand-soft" /> {s.artist}
+                </p>
+              )}
+              {s.description && <p className="mt-1.5 line-clamp-2 text-sm text-zinc-400">{s.description}</p>}
+            </li>
           ))
         )}
-      </div>
+      </ul>
     </div>
   )
 }

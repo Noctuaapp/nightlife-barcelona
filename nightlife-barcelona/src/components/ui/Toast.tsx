@@ -7,9 +7,10 @@ import { useEffect, useState } from "react"
 // <ToastHost /> vive una sola vez en el layout y los pinta.
 const EVENT = "noctua:toast"
 
-export function toast(message: string) {
+// `ms`: cuánto tiempo se ve (los errores, más tiempo para poder leerlos).
+export function toast(message: string, ms = 2200) {
   if (typeof window === "undefined") return
-  window.dispatchEvent(new CustomEvent<string>(EVENT, { detail: message }))
+  window.dispatchEvent(new CustomEvent<{ message: string; ms: number }>(EVENT, { detail: { message, ms } }))
 }
 
 export default function ToastHost() {
@@ -18,9 +19,12 @@ export default function ToastHost() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>
     const onToast = (e: Event) => {
-      setMessage((e as CustomEvent<string>).detail)
+      const detail = (e as CustomEvent<{ message: string; ms: number } | string>).detail
+      const msg = typeof detail === "string" ? detail : detail.message
+      const ms = typeof detail === "string" ? 2200 : detail.ms
+      setMessage(msg)
       clearTimeout(timer)
-      timer = setTimeout(() => setMessage(null), 2200)
+      timer = setTimeout(() => setMessage(null), ms)
     }
     window.addEventListener(EVENT, onToast)
     return () => {
@@ -36,7 +40,7 @@ export default function ToastHost() {
       aria-live="polite"
       className="pointer-events-none fixed inset-x-0 top-20 z-[200] flex justify-center px-4"
     >
-      <p className="rounded-full border border-white/10 bg-surface-2 px-5 py-3 text-sm font-semibold text-ink shadow-lg">
+      <p className="max-w-md rounded-card border border-white/10 bg-surface-2 px-5 py-3 text-center text-sm font-semibold text-ink shadow-lg">
         {message}
       </p>
     </div>

@@ -17,24 +17,15 @@ import { distanceInMeters, formatDistance, walkingMinutes } from "../../../lib/g
 import { getOpenStatus } from "../../../lib/openStatus"
 import AdminEditButton from "../../../components/admin/AdminEditButton"
 import EssentialPhoto from "../../../components/essentials/EssentialPhoto"
+import Icon from "../../../components/ui/Icon"
+import { ESSENTIAL_CATEGORIES, categoryNameKey } from "../../../lib/essentialCategories"
+import { MapPin } from "lucide-react"
 
-const categoryConfig: Record<string, { icon: string; color: string; key: string }> = {
-  pharmacy: { icon: "💊", color: "#10b981", key: "Pharmacy" },
-  atm: { icon: "🏧", color: "#3b82f6", key: "ATM" },
-  food: { icon: "🍔", color: "#f97316", key: "Food" },
-  transport: { icon: "🚌", color: "#8b5cf6", key: "Transport" },
-  metro: { icon: "🚇", color: "#dc2626", key: "Metro" },
-  nitbus: { icon: "🌙", color: "#6366f1", key: "Nitbus" },
-  taxi: { icon: "🚕", color: "#eab308", key: "Taxi" },
-  supermarket: { icon: "🛒", color: "#7c5cff", key: "Supermarket" },
-  hotel: { icon: "🏨", color: "#14b8a6", key: "Hotel" },
-  casino: { icon: "🎰", color: "#f43f5e", key: "Casino" },
-  "gas-station": { icon: "⛽", color: "#f59e0b", key: "GasStation" },
-  hospital: { icon: "🏥", color: "#ef4444", key: "Hospital" },
-}
+// Un solo color (el de la marca) para todas las categorías; antes eran doce colores y emojis.
+const BRAND = "#7c5cff"
 
 const TAXI_APPS = [
-  { name: "FreeNow", url: "https://www.free-now.com/es/" },
+  { name: "FREE NOW", url: "https://www.free-now.com/es/" },
   { name: "Cabify", url: "https://cabify.com/es" },
   { name: "Uber", url: "https://www.uber.com/es/es/" },
 ]
@@ -59,16 +50,9 @@ type Essential = {
   highFee?: boolean
 }
 
-// Antes cada tarjeta aparecía con una animación al hacer scroll; ahora se muestra directamente.
-function Reveal({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
-  return (
-    <div className={className} style={style ? { ...style, transitionDelay: undefined } : undefined}>
-      {children}
-    </div>
-  )
-}
 
 export default function EssentialCategoryPage() {
+  const { t } = useLanguage()
   // Horario del metro de esta noche (con vísperas de festivo). Se calcula tras montar: depende de la hora.
   const [metroLabel, setMetroLabel] = useState("")
   useEffect(() => {
@@ -84,10 +68,10 @@ export default function EssentialCategoryPage() {
   }, [])
   const params = useParams()
   const category = (params.category as string).toLowerCase()
-  const knownConfig = categoryConfig[category]
-  const config = knownConfig || { icon: "📍", color: "#7c5cff", key: "Other" }
-  const { t } = useLanguage()
-  const label = knownConfig ? t("essentials.category_names." + config.key) : category
+  const info = ESSENTIAL_CATEGORIES.find((c) => c.slug === category)
+  const CatIcon = info?.icon || MapPin
+  const config = { color: BRAND }
+  const label = info ? t(categoryNameKey(info.key)) : category
 
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
@@ -295,7 +279,8 @@ export default function EssentialCategoryPage() {
         // Marcador redondo con la foto del sitio (como en el mapa de clubs); si no hay foto o falla,
         // el icono de la categoría. No se le pone transform propio: Mapbox lo usa para posicionarlo.
         const el = document.createElement("div")
-        el.style.cssText = `width:42px;height:42px;border-radius:9999px;border:2px solid ${config.color};background:${config.color}40;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.55)`
+        el.style.cssText = `width:40px;height:40px;border-radius:9999px;border:2px solid ${config.color};background:#16141f;color:#f4f3f7;overflow:hidden;display:flex;align-items:center;justify-content:center;font:600 15px/1 system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.55)`
+        const initial = (item.name || "?").trim().charAt(0).toUpperCase()
         if (item.image) {
           const img = document.createElement("img")
           img.src = item.image
@@ -303,11 +288,11 @@ export default function EssentialCategoryPage() {
           img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"
           img.onerror = () => {
             img.remove()
-            el.textContent = config.icon
+            el.textContent = initial
           }
           el.appendChild(img)
         } else {
-          el.textContent = config.icon
+          el.textContent = initial
         }
         const marker = new mapboxgl.Marker({ element: el }).setLngLat([Number(item.longitude), Number(item.latitude)]).addTo(map.current!)
 
@@ -330,7 +315,8 @@ export default function EssentialCategoryPage() {
       ? `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${item.latitude},${item.longitude}`
       : `https://www.google.com/maps/dir/?api=1&destination=${item.latitude},${item.longitude}`
 
-  const distanceText = (d: number): string => formatDistance(d) + (d <= 2500 ? " · " + walkingMinutes(d) + " min andando" : "")
+  const distanceText = (d: number): string =>
+    formatDistance(d) + (d <= 2500 ? " · " + t("essentialsPage.walkMin").replace("{n}", String(walkingMinutes(d))) : "")
 
   const availableZones = zonesPresent(essentials)
   const neighborhoods = [
@@ -352,16 +338,14 @@ export default function EssentialCategoryPage() {
       return da - db
     })
 
-  const heroImage = essentials.find((e) => e.image)?.image || null
-
-  const renderCard = (item: Essential, index: number) => {
+  const renderCard = (item: Essential) => {
     const hasCoords = Boolean(item.latitude && item.longitude)
 
     const dMeters = distMeters(item)
     const distanceLabel = dMeters != null ? distanceText(dMeters) : ""
     const directionsHref = hasCoords ? directionsFor(item) : ""
 
-    const reportHref = "/contact?type=report_issue&subject=" + encodeURIComponent("Reporte: " + item.name)
+    const reportHref = "/contact?type=report_issue&subject=" + encodeURIComponent(`${t("essentialsPage.reportPrefix")} ${item.name}`)
     const isSelected = selected != null && selected.id === item.id
 
     const handleCardClick = () => {
@@ -374,145 +358,74 @@ export default function EssentialCategoryPage() {
 
     const stopPropagation = (e: React.MouseEvent) => e.stopPropagation()
 
-    const status = getOpenStatus(item.open_hours)
+    const status = getOpenStatus(item.open_hours, t)
 
+    // Fila compacta (antes una tarjeta con foto de 160 px por sitio: con 40 farmacias, metros de
+    // scroll para encontrar la más cercana).
     return (
-      <Reveal key={item.id} style={{ transitionDelay: Math.min(index, 8) * 50 + "ms" }}>
-        <div
-          onClick={handleCardClick}
-          className="group cursor-pointer overflow-hidden rounded-card border backdrop-blur-xl transition duration-300 hover:-translate-y-0.5"
-          style={{
-            borderColor: isSelected ? config.color + "70" : "rgba(255,255,255,0.08)",
-            background: isSelected ? config.color + "12" : "rgba(255,255,255,0.03)",
-          }}
-        >
-          <div className="relative">
-            <EssentialPhoto
-              src={item.image}
-              alt={item.name}
-              icon={config.icon}
-              color={config.color}
-              className="h-40 w-full"
-              imgClassName="transition duration-500 group-hover:scale-105"
-            />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent" />
-            <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
-              {status.state !== "unknown" && (
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-bold backdrop-blur-md ${
-                    status.state === "open"
-                      ? status.soon
-                        ? "bg-amber-500/80 text-black"
-                        : "bg-emerald-500/80 text-black"
-                      : "bg-red-500/80 text-white"
-                  }`}
-                >
-                  {status.label}
-                </span>
-              )}
-              {distanceLabel && (
-                <span className="rounded-full bg-black/60 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-md">📍 {distanceLabel}</span>
-              )}
-            </div>
+      <div
+        key={item.id}
+        onClick={handleCardClick}
+        className={`flex cursor-pointer gap-4 rounded-card border p-4 transition ${isSelected ? "border-brand/60 bg-brand/10" : "border-white/10 bg-surface hover:border-white/25"}`}
+      >
+        <EssentialPhoto src={item.image} alt={item.name} icon={<CatIcon size={24} />} color={config.color} className="h-16 w-16 shrink-0 rounded-ctl" />
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold leading-snug text-ink">{item.name}</h3>
+          {item.highFee && <span className="mt-1 inline-block rounded-full bg-warn/15 px-2.5 py-0.5 text-xs font-semibold text-warn">{t("essentialsPage.highFee")}</span>}
+          <p className="mt-0.5 truncate text-sm text-zinc-400">{[item.neighborhood, item.address].filter(Boolean).join(" · ")}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold">
+            {status.label && <span className={status.state === "open" ? (status.soon ? "text-warn" : "text-open") : "text-zinc-400"}>{status.label}</span>}
+            {distanceLabel && <span className="text-brand-soft">{distanceLabel}</span>}
           </div>
-
-          <div className="p-4">
-            <h3 className="font-bold text-white">{item.name}</h3>
-            {item.highFee && (
-              <span className="mt-1 inline-block rounded-full bg-warn/15 px-2.5 py-0.5 text-xs font-semibold text-warn">{t("essentialsPage.highFee")}</span>
-            )}
-            {item.address && <p className="mt-0.5 text-xs text-zinc-400">{item.address}</p>}
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-400">
-              {item.neighborhood && <span>📍 {item.neighborhood}</span>}
-              {status.state === "unknown" && status.label && <span>🕒 {status.label}</span>}
-            </div>
-            {item.description && <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-zinc-400">{item.description}</p>}
-
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {hasCoords && (
-                <a
-                  href={directionsHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={stopPropagation}
-                  className="rounded-full bg-purple-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-purple-400"
-                >
-                  🧭 Cómo llegar
-                </a>
-              )}
-              {item.maps_link && (
-                <a
-                  href={item.maps_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={stopPropagation}
-                  className="flex items-center gap-1 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white hover:text-black"
-                >
-                  Maps <ArrowIcon className="h-3 w-3" />
-                </a>
-              )}
-              <a href={reportHref} onClick={stopPropagation} className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-400 transition hover:text-white" title="Reportar un problema">
-                ⚑
+          {item.description && <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-zinc-400">{item.description}</p>}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {hasCoords && (
+              <a href={directionsHref} target="_blank" rel="noopener noreferrer" onClick={stopPropagation} className="flex items-center gap-1.5 rounded-ctl bg-brand px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-brand-strong">
+                <Icon name="map" className="h-3.5 w-3.5" /> {t("clubPage.directions")}
               </a>
-            </div>
+            )}
+            {item.maps_link && (
+              <a href={item.maps_link} target="_blank" rel="noopener noreferrer" onClick={stopPropagation} className="flex items-center gap-1 rounded-ctl border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:bg-white/5">
+                Google Maps <ArrowIcon className="h-3 w-3" />
+              </a>
+            )}
+            <a href={reportHref} onClick={stopPropagation} className="ml-auto rounded-ctl p-2 text-zinc-400 transition hover:text-ink" aria-label={t("clubPage.report")} title={t("clubPage.report")}>
+              <Icon name="flag" className="h-3.5 w-3.5" />
+            </a>
           </div>
         </div>
-      </Reveal>
+      </div>
     )
   }
 
   return (
     <>
       <Header />
-      <main className="relative min-h-screen pb-40 text-white">
-        {/* Hero */}
-        <div className="relative h-[200px] w-full overflow-hidden md:h-[320px]">
-          {heroImage ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={heroImage} alt="" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover" />
-              <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(5,3,8,0.55) 0%, rgba(5,3,8,0.75) 60%, #050308 100%)" }} />
-            </>
-          ) : (
-            <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 30% 20%, ${config.color}30, #050308 70%)` }} />
-          )}
-          <div
-            className="absolute inset-0 opacity-[0.15]"
-            style={{
-              backgroundImage: "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)",
-              backgroundSize: "50px 50px",
-            }}
-          />
-
-          <div className="relative mx-auto flex h-full max-w-7xl flex-col justify-end px-4 pb-8">
-            <Link href="/essentials" className="mb-4 w-fit text-sm text-zinc-300 transition hover:text-white">
-              ← {t("essentials.title")}
-            </Link>
-            <div className="flex items-center gap-4">
-              <span
-                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-4xl backdrop-blur-xl"
-                style={{ background: config.color + "30", border: "1px solid " + config.color + "55" }}
-              >
-                {config.icon}
-              </span>
-              <div>
-                <p className="text-xs font-semibold text-zinc-300">{t("essentials.title")}</p>
-                <h1 className="text-4xl font-black tracking-tight text-white md:text-5xl">{label}</h1>
-              </div>
+      <main className="relative min-h-screen bg-night pb-40 text-ink">
+        <section className="mx-auto max-w-7xl px-4 pt-6 sm:pt-10">
+          <Link href="/essentials" className="inline-flex items-center gap-1.5 text-sm text-zinc-400 transition hover:text-ink">
+            <Icon name="back" className="h-4 w-4" /> {t("essentials.title")}
+          </Link>
+          <div className="mt-4 flex items-center gap-4">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-ctl bg-brand/15 text-brand-soft">
+              <CatIcon size={28} />
+            </span>
+            <div className="min-w-0">
+              <h1 className="font-display text-[1.9rem] leading-tight sm:text-5xl">{label}</h1>
+              <p className="mt-1 text-sm text-zinc-400">
+                {loading
+                  ? t("essentialsPage.loading")
+                  : `${filteredEssentials.length} ${filteredEssentials.length !== 1 ? t("essentials.locations_plural") : t("essentials.locations")}`}
+              </p>
             </div>
-            <p className="mt-3 text-sm text-zinc-300">
-              {loading
-                ? t("common.loading")
-                : `${filteredEssentials.length} ${filteredEssentials.length !== 1 ? t("essentials.locations_plural") : t("essentials.locations")}`}
-            </p>
           </div>
-        </div>
+        </section>
 
         {/* Panel de contexto: pedir taxi ya / horario del metro */}
         {category === "taxi" && (
           <section className="mx-auto mt-6 max-w-7xl px-4">
-            <div className="rounded-card border border-yellow-500/25 bg-yellow-500/[0.06] p-5">
-              <p className="mb-3 text-xs font-bold text-yellow-300">🚕 Pedir un taxi ahora</p>
+            <div className="rounded-card border border-white/10 bg-surface p-5">
+              <p className="mb-3 text-sm font-semibold text-ink">{t("essentialsPage.taxiNow")}</p>
               <div className="flex flex-wrap gap-2.5">
                 {TAXI_APPS.map((app) => (
                   <a
@@ -520,7 +433,7 @@ export default function EssentialCategoryPage() {
                     href={app.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white hover:text-black"
+                    className="flex items-center gap-1.5 rounded-ctl border border-white/15 px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-white/5"
                   >
                     {app.name} <ArrowIcon className="h-3.5 w-3.5" />
                   </a>
@@ -529,21 +442,21 @@ export default function EssentialCategoryPage() {
                   <a
                     key={p.name}
                     href={`tel:${p.phone}`}
-                    className="rounded-full border border-yellow-500/40 bg-yellow-500/10 px-4 py-2.5 text-sm font-bold text-yellow-300 transition hover:bg-yellow-500 hover:text-black"
+                    className="flex items-center gap-1.5 rounded-ctl bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong"
                   >
-                    📞 {p.name}
+                    <Icon name="phone" className="h-4 w-4" /> {p.name}
                   </a>
                 ))}
               </div>
-              <p className="mt-3 text-xs text-zinc-400">O usa las paradas de taxi reales de abajo si prefieres ir a coger uno directamente.</p>
+              <p className="mt-3 text-xs text-zinc-400">{t("essentialsPage.taxiRanksHint")}</p>
             </div>
           </section>
         )}
 
         {category === "metro" && (
           <section className="mx-auto mt-6 max-w-7xl px-4">
-            <div className="rounded-card border border-red-500/25 bg-red-500/[0.06] p-5">
-              <p className="mb-2 text-xs font-semibold text-red-200">{t("essentialsPage.metroTitle")}</p>
+            <div className="rounded-card border border-white/10 bg-surface p-5">
+              <p className="mb-2 text-sm font-semibold text-zinc-300">{t("essentialsPage.metroTitle")}</p>
               <p className="text-lg font-semibold text-ink">{metroLabel}</p>
               <p className="mt-1 text-xs text-zinc-400">{t("essentialsPage.metroRules")}</p>
             </div>
@@ -552,13 +465,10 @@ export default function EssentialCategoryPage() {
 
         {category === "nitbus" && (
           <section className="mx-auto mt-6 max-w-7xl px-4">
-            <div className="rounded-card border border-indigo-500/25 bg-indigo-500/[0.06] p-5">
-              <p className="mb-2 text-xs font-bold text-indigo-300">🌙 Nitbus · autobuses nocturnos</p>
-              <p className="text-lg font-black text-white">Cada noche, aprox. 23:00 – 05:00</p>
-              <p className="mt-1 text-xs text-zinc-400">
-                17 líneas nocturnas cubren Barcelona cuando el metro está cerrado. Estas son las paradas/nudos principales
-                donde confluyen varias líneas — consulta la app TMB o el panel de la parada para el horario exacto de cada línea.
-              </p>
+            <div className="rounded-card border border-white/10 bg-surface p-5">
+              <p className="mb-2 text-sm font-semibold text-zinc-300">{t("essentialsPage.nitbusTitle")}</p>
+              <p className="text-lg font-semibold text-ink">{t("essentialsPage.nitbusLine")}</p>
+              <p className="mt-1 text-xs text-zinc-400">{t("essentialsPage.nitbusBody")}</p>
             </div>
           </section>
         )}
@@ -575,11 +485,11 @@ export default function EssentialCategoryPage() {
                       setSelectedZone(z)
                       setSelectedNeighborhood("All")
                     }}
-                    className={`whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium transition ${
-                      selectedZone === z ? "bg-purple-500 text-white" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                    className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
+                      selectedZone === z ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
                     }`}
                   >
-                    {z === "All" ? "📍 Toda el área" : z}
+                    {z === "All" ? t("essentialsPage.allArea") : z}
                   </button>
                 ))}
               </div>
@@ -592,11 +502,11 @@ export default function EssentialCategoryPage() {
                     <button
                       key={n || "all"}
                       onClick={() => setSelectedNeighborhood(n || "All")}
-                      className={`whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium transition ${
-                        isActive ? "bg-white text-black" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                      className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
+                        isActive ? "bg-white text-night" : "border border-white/10 text-zinc-200 hover:bg-white/5"
                       }`}
                     >
-                      {n}
+                      {n === "All" ? t("essentialsPage.allBarrios") : n}
                     </button>
                   )
                 })}
@@ -605,43 +515,40 @@ export default function EssentialCategoryPage() {
             <button
               onClick={() => (userLocation ? setSortByDistance(!sortByDistance) : locateMe())}
               disabled={locating}
-              className={`flex-1 shrink-0 rounded-full px-4 py-2.5 text-center text-sm font-bold transition sm:flex-none ${
-                userLocation && sortByDistance ? "bg-purple-500 text-white" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+              className={`flex-1 shrink-0 rounded-full px-4 py-2.5 text-center text-sm font-semibold transition sm:flex-none ${
+                userLocation && sortByDistance ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
               }`}
             >
-              {locating ? "Localizando..." : userLocation ? "📍 Más cercano" : "📍 Cerca de mí"}
+              {locating ? t("explorer.locating") : userLocation ? t("explorer.sortDistance") : t("explorer.near")}
             </button>
             <button
               onClick={() => setOpenOnly(!openOnly)}
               aria-pressed={openOnly}
-              className={`flex-1 shrink-0 rounded-full px-4 py-2.5 text-center text-sm font-bold transition sm:flex-none ${
-                openOnly ? "bg-emerald-500 text-black" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+              className={`flex-1 shrink-0 rounded-full px-4 py-2.5 text-center text-sm font-semibold transition sm:flex-none ${
+                openOnly ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
               }`}
             >
-              🟢 Abierto ahora
+              {t("explorer.now")}
             </button>
           </div>
 
           {locationDenied && (
-            <p className="mt-3 text-xs text-amber-300">
-              No hemos podido acceder a tu ubicación. Activa el permiso de ubicación del navegador y vuelve a pulsar "Cerca de mí".
-            </p>
+            <p className="mt-3 text-sm text-warn">{t("geo.denied")}</p>
           )}
           {farAway && (
-            <p className="mt-3 text-xs text-zinc-400">Parece que estás lejos de Barcelona, así que mostramos la categoría completa.</p>
+            <p className="mt-3 text-sm text-zinc-400">{t("essentialsPage.farAway")}</p>
           )}
 
           {/* Toggle lista/mapa — solo móvil */}
-          <div className="mt-3 flex gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-1.5 md:hidden">
+          <div className="mt-3 flex gap-1 rounded-full border border-white/10 bg-surface p-1 md:hidden">
             {(["list", "map"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setMobileView(v)}
-                className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition ${
-                  mobileView === v ? "bg-white text-black" : "text-zinc-400"
-                }`}
+                aria-pressed={mobileView === v}
+                className={`flex-1 rounded-full py-2 text-sm font-semibold transition ${mobileView === v ? "bg-white text-night" : "text-zinc-300"}`}
               >
-                {v === "list" ? "☰ Lista" : "🗺️ Mapa"}
+                {v === "list" ? t("essentialsPage.list") : t("nav.map")}
               </button>
             ))}
           </div>
@@ -653,15 +560,15 @@ export default function EssentialCategoryPage() {
             <div className={`md:col-span-5 ${mobileView === "map" ? "hidden md:block" : ""}`}>
               {loading ? (
                 <div className="grid gap-3">
-                  {[0, 1, 2, 3].map((i) => <div key={i} className="h-32 animate-pulse rounded-card bg-white/[0.03]" />)}
+                  {[0, 1, 2, 3].map((i) => <div key={i} className="h-28 animate-pulse rounded-card bg-surface" />)}
                 </div>
               ) : filteredEssentials.length === 0 ? (
                 <div className="py-20 text-center">
-                  <p className="text-lg font-bold text-zinc-300">No hay resultados con estos filtros</p>
+                  <p className="text-lg font-semibold text-zinc-200">{t("essentialsPage.noFilterResults")}</p>
                 </div>
               ) : (
                 <div className="grid gap-3 md:max-h-[640px] md:overflow-y-auto md:pr-1 [scrollbar-width:thin]">
-                  {filteredEssentials.map((item, index) => renderCard(item, index))}
+                  {filteredEssentials.map((item) => renderCard(item))}
                 </div>
               )}
             </div>
@@ -669,37 +576,36 @@ export default function EssentialCategoryPage() {
             <div className={`md:col-span-7 ${mobileView === "list" ? "hidden md:block" : ""}`}>
               <div
                 ref={mapWrapperRef}
-                className="relative h-[65dvh] min-h-[380px] scroll-mt-20 overflow-hidden rounded-card border md:sticky md:top-24 md:h-[640px]"
-                style={{ borderColor: config.color + "30" }}
+                className="relative h-[65dvh] min-h-[380px] scroll-mt-20 overflow-hidden rounded-card border border-white/10 md:sticky md:top-24 md:h-[640px]"
               >
                 <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
 
                 {mapHint && (
                   <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-black/50 md:hidden">
-                    <p className="rounded-full bg-black/80 px-5 py-2.5 text-sm font-semibold text-white">Usa dos dedos para mover el mapa</p>
+                    <p className="rounded-full bg-night/90 px-5 py-2.5 text-sm font-semibold text-ink">{t("essentialsPage.twoFingers")}</p>
                   </div>
                 )}
 
                 {/* Salida clara del mapa en el móvil: antes solo se podía volver con el selector de arriba */}
                 <button
                   onClick={() => setMobileView("list")}
-                  className="absolute left-3 top-3 z-10 rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-bold text-white backdrop-blur-md md:hidden"
+                  className="absolute left-3 top-3 z-10 rounded-full border border-white/20 bg-night/85 px-4 py-2 text-xs font-semibold text-ink backdrop-blur-md md:hidden"
                 >
-                  ☰ Lista
+                  {t("essentialsPage.list")}
                 </button>
 
                 {/* Ficha del sitio tocado: foto grande con el nombre encima, como en el mapa de clubs */}
                 {selected && (
                   <div className="absolute inset-x-3 bottom-3 overflow-hidden rounded-2xl border border-white/10 bg-night/95 backdrop-blur-xl">
                     <div className="relative">
-                      <EssentialPhoto src={selected.image} alt={selected.name} icon={config.icon} color={config.color} className="h-28 w-full md:h-36" />
+                      <EssentialPhoto src={selected.image} alt={selected.name} icon={<CatIcon size={32} />} color={config.color} className="h-28 w-full md:h-36" />
                       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-night via-black/25 to-transparent" />
                       <button
                         onClick={() => setSelected(null)}
                         className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur-md"
-                        aria-label="Cerrar"
+                        aria-label={t("clubPage.close")}
                       >
-                        ✕
+                        <Icon name="close" className="h-4 w-4" />
                       </button>
                       <div className="absolute inset-x-0 bottom-0 px-4 pb-3">
                         <p className="truncate text-base font-black text-white">{selected.name}</p>
@@ -710,22 +616,15 @@ export default function EssentialCategoryPage() {
                     <div className="px-4 pb-4 pt-2">
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         {(() => {
-                          const st = getOpenStatus(selected.open_hours)
+                          const st = getOpenStatus(selected.open_hours, t)
                           if (!st.label) return null
-                          const cls =
-                            st.state === "open"
-                              ? st.soon
-                                ? "bg-amber-500/20 text-amber-300"
-                                : "bg-emerald-500/20 text-emerald-300"
-                              : st.state === "closed"
-                              ? "bg-red-500/20 text-red-300"
-                              : "bg-white/10 text-zinc-300"
+                          const cls = st.state === "open" ? (st.soon ? "bg-warn/15 text-warn" : "bg-open/15 text-open") : "bg-white/10 text-zinc-300"
                           return <span className={`rounded-full px-2.5 py-1 font-semibold ${cls}`}>{st.label}</span>
                         })()}
                         {(() => {
                           const d = distMeters(selected)
                           return d != null ? (
-                            <span className="rounded-full bg-purple-400/10 px-2.5 py-1 font-semibold text-purple-300">{distanceText(d)}</span>
+                            <span className="rounded-full bg-brand/15 px-2.5 py-1 font-semibold text-brand-soft">{distanceText(d)}</span>
                           ) : null
                         })()}
                       </div>
@@ -735,9 +634,9 @@ export default function EssentialCategoryPage() {
                             href={directionsFor(selected)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="rounded-full bg-purple-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-purple-400"
+                            className="flex items-center gap-1.5 rounded-ctl bg-brand px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-brand-strong"
                           >
-                            🧭 Cómo llegar
+                            <Icon name="map" className="h-3.5 w-3.5" /> {t("clubPage.directions")}
                           </a>
                         )}
                         <AdminEditButton kind="essential" id={selected.id} inline />
@@ -746,9 +645,9 @@ export default function EssentialCategoryPage() {
                             href={selected.maps_link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white hover:text-black"
+                            className="rounded-ctl border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:bg-white/5"
                           >
-                            Maps
+                            Google Maps
                           </a>
                         )}
                       </div>

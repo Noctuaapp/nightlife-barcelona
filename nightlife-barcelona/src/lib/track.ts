@@ -1,35 +1,33 @@
 import { supabase } from "./supabase"
 
 // Analítica propia de Noctua. Todo se guarda en la tabla `analytics`. No se guarda nada personal
-// aparte de user_id (si hay sesión): el session_id es un valor aleatorio que vive solo mientras
-// la pestaña está abierta (sessionStorage), sin cookies ni identificadores permanentes.
+// aparte de user_id (si hay sesión). El session_id es un valor aleatorio que vive solo en memoria
+// mientras la página está abierta: antes se guardaba en sessionStorage, y guardar un identificador
+// de analítica en el navegador exige consentimiento previo (LSSI, art. 22.2). En memoria no se
+// almacena nada en el dispositivo. Dura mientras se navega por la web; una recarga empieza otra.
 
-const SESSION_KEY = "noctua_session"
-const SOURCE_KEY = "noctua_source"
-
-function safeGet(store: Storage | undefined, key: string): string | null {
-  try { return store ? store.getItem(key) : null } catch { return null }
-}
-function safeSet(store: Storage | undefined, key: string, value: string) {
-  try { store?.setItem(key, value) } catch { /* modo privado: se ignora */ }
-}
+let sessionId: string | null = null
+let trafficSource: string | null = null
+let sessionStarted = false
 
 export function getSessionId(): string | null {
   if (typeof window === "undefined") return null
-  let id = safeGet(window.sessionStorage, SESSION_KEY)
-  if (!id) {
-    id = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now())
-    safeSet(window.sessionStorage, SESSION_KEY, id)
-  }
-  return id
+  if (!sessionId) sessionId = crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()
+  return sessionId
+}
+
+// true solo la primera vez por carga de página (para registrar un único "session_start").
+export function markSessionStart(): boolean {
+  if (sessionStarted) return false
+  sessionStarted = true
+  return true
 }
 
 // Clasifica de dónde llega la visita: enlace de invitación (?ref=), campaña (utm_source),
-// buscador, red social o directo. Se calcula una vez por sesión y se guarda.
+// buscador, red social o directo. Se calcula una vez por carga de página (en memoria).
 export function getTrafficSource(): string {
   if (typeof window === "undefined") return "direct"
-  const saved = safeGet(window.sessionStorage, SOURCE_KEY)
-  if (saved) return saved
+  if (trafficSource) return trafficSource
 
   const params = new URLSearchParams(window.location.search)
   let source = "direct"
@@ -48,7 +46,7 @@ export function getTrafficSource(): string {
       else source = "other:" + host.slice(0, 40)
     } catch { /* referrer inválido */ }
   }
-  safeSet(window.sessionStorage, SOURCE_KEY, source)
+  trafficSource = source
   return source
 }
 

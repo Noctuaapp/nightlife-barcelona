@@ -4,9 +4,12 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import ArrowIcon from "../../components/ui/ArrowIcon"
+import TermsText from "../../components/ui/TermsText"
+import { useLanguage } from "../../context/LanguageContext"
 
 export default function ConfirmAgePage() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [checking, setChecking] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
@@ -40,11 +43,11 @@ export default function ConfirmAgePage() {
   const handleConfirm = async () => {
     setError("")
     if (!acceptedTerms || !confirmedAge) {
-      setError("Debes marcar ambas casillas para continuar.")
+      setError(t("consent.checkBoth"))
       return
     }
     if (!birthDate) {
-      setError("Indica tu fecha de nacimiento.")
+      setError(t("consent.birthDateRequired"))
       return
     }
     const bd = new Date(birthDate + "T00:00:00")
@@ -52,7 +55,7 @@ export default function ConfirmAgePage() {
     let age = today.getFullYear() - bd.getFullYear()
     if (today.getMonth() < bd.getMonth() || (today.getMonth() === bd.getMonth() && today.getDate() < bd.getDate())) age--
     if (isNaN(age) || age < 18) {
-      setError("Noctua es solo para mayores de 18 años. No puedes usar la cuenta.")
+      setError(t("consent.under18"))
       return
     }
     if (!userId) return
@@ -72,20 +75,17 @@ export default function ConfirmAgePage() {
 
   if (checking) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-black text-white">
-        <p className="text-sm text-zinc-400">Cargando...</p>
+      <main className="min-h-screen flex items-center justify-center bg-night text-white">
+        <p className="text-sm text-zinc-400">{t("common.loading")}</p>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-black px-4 text-white">
-      <div className="w-full max-w-md rounded-card border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
-        <p className="mb-3 text-xs font-semibold text-purple-400">Un último paso</p>
-        <h1 className="mb-3 text-2xl font-bold">Antes de continuar</h1>
-        <p className="mb-6 text-sm leading-relaxed text-zinc-400">
-          Para usar Noctua necesitamos que confirmes lo siguiente.
-        </p>
+    <main className="min-h-screen flex items-center justify-center bg-night px-4 text-white">
+      <div className="w-full max-w-md rounded-card border border-white/10 bg-surface p-8">
+        <h1 className="mb-3 text-2xl font-semibold">{t("consent.title")}</h1>
+        <p className="mb-6 text-sm leading-relaxed text-zinc-300">{t("consent.body")}</p>
 
         <div className="space-y-4">
           <label className="flex cursor-pointer items-start gap-3">
@@ -93,18 +93,10 @@ export default function ConfirmAgePage() {
               type="checkbox"
               checked={acceptedTerms}
               onChange={(e) => setAcceptedTerms(e.target.checked)}
-              className="mt-1 h-4 w-4 flex-shrink-0 rounded accent-purple-500"
+              className="mt-1 h-4 w-4 flex-shrink-0 rounded accent-[#7c5cff]"
             />
             <span className="text-sm leading-relaxed text-zinc-400">
-              Acepto los{" "}
-              <a href="/terms" target="_blank" className="text-purple-400 transition hover:text-purple-300">
-                términos y condiciones
-              </a>{" "}
-              y la{" "}
-              <a href="/privacy" target="_blank" className="text-purple-400 transition hover:text-purple-300">
-                política de privacidad
-              </a>{" "}
-              de Noctua, incluyendo el uso de mi ubicación para mostrar contenido relevante.
+              <TermsText newTab />
             </span>
           </label>
 
@@ -113,14 +105,14 @@ export default function ConfirmAgePage() {
               type="checkbox"
               checked={confirmedAge}
               onChange={(e) => setConfirmedAge(e.target.checked)}
-              className="mt-1 h-4 w-4 flex-shrink-0 rounded accent-purple-500"
+              className="mt-1 h-4 w-4 flex-shrink-0 rounded accent-[#7c5cff]"
             />
-            <span className="text-sm leading-relaxed text-zinc-400">Confirmo que soy mayor de 18 años.</span>
+            <span className="text-sm leading-relaxed text-zinc-400">{t("consent.ageConfirm")}</span>
           </label>
         </div>
 
         <div className="mt-5">
-          <label className="mb-2 block px-1 text-xs text-zinc-400">Fecha de nacimiento</label>
+          <label className="mb-2 block px-1 text-sm text-zinc-300">{t("consent.birthDate")}</label>
           <input
             type="date"
             value={birthDate}
@@ -128,21 +120,21 @@ export default function ConfirmAgePage() {
             min="1900-01-01"
             max={new Date().toISOString().slice(0, 10)}
             style={{ colorScheme: "dark" }}
-            className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-zinc-300 outline-none transition focus:border-purple-500/50"
+            className="w-full rounded-ctl border border-white/15 bg-night px-5 py-4 text-zinc-300 outline-none transition focus:border-brand"
           />
           <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-400">
-            Los datos del año de nacimiento se usarán para mejorar tus búsquedas.
+            {t("birthYear.help")}
           </p>
         </div>
 
-        {error && <p className="mt-4 text-sm font-bold text-red-400">{error}</p>}
+        {error && <p className="mt-4 text-sm font-semibold text-red-300">{error}</p>}
 
         <button
           onClick={handleConfirm}
           disabled={saving}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-4 font-bold text-black transition hover:scale-[1.02] disabled:opacity-50"
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-ctl bg-brand py-4 font-semibold text-white transition hover:bg-brand-strong disabled:opacity-50"
         >
-          {saving ? "Guardando..." : (<>Continuar <ArrowIcon className="h-4 w-4" /></>)}
+          {saving ? t("profile.saving") : (<>{t("consent.continue")} <ArrowIcon className="h-4 w-4" /></>)}
         </button>
       </div>
     </main>

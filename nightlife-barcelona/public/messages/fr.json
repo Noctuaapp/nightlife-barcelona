@@ -308,11 +308,11 @@
     "emailPlaceholder": "Votre e-mail",
     "subjectPlaceholder": "Sujet",
     "messagePlaceholder": "Écrivez votre message...",
-    "sendButton": "Envoyer le message →",
+    "sendButton": "Envoyer le message",
     "sending": "Envoi en cours...",
-    "successMessage": "✅ Message envoyé. Noctua l'examinera bientôt.",
+    "successMessage": "Message envoyé. Noctua l'examinera bientôt.",
     "errorEmptyMessage": "Veuillez écrire un message.",
-    "types": "user_support||🙋 Support utilisateur||Aide avec votre compte ou l'application\nreport_issue||⚑ Signaler des informations incorrectes||Horaires, prix ou données erronés\nsuggest_venue||📍 Suggérer un établissement||Vous connaissez un club ou un bar manquant ?\nsuggest_essential||🧭 Suggérer un essentiel||Distributeur, pharmacie, transport... manquant\nclub_partnership||🤝 Partenariat établissement||Collaboration pour clubs et bars\nfestival_partnership||🎪 Partenariat festival||Collaboration pour événements et festivals\nowner_access||🔑 Gérer mon club ou événement||Vous en êtes responsable et voulez modifier votre fiche vous-même"
+    "types": "user_support||Support utilisateur||Aide avec votre compte ou l'application\nreport_issue||Signaler des informations incorrectes||Horaires, prix ou données erronés\nsuggest_venue||Suggérer un établissement||Vous connaissez un club ou un bar manquant ?\nsuggest_essential||Suggérer un essentiel||Distributeur, pharmacie, transport... manquant\nclub_partnership||Partenariat établissement||Collaboration pour clubs et bars\nfestival_partnership||Partenariat festival||Collaboration pour événements et festivals\nowner_access||Gérer mon club ou événement||Vous en êtes responsable et voulez modifier votre fiche vous-même"
   },
   "nearby": {
     "triggerButton": "On ne vous laisse pas entrer ?",

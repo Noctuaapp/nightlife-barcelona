@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
+import { ADMIN_EMAIL } from "../../../lib/admin"
+import { logError } from "../../../lib/log"
+import { toast } from "../../../components/ui/Toast"
+import CoordsField from "../../../components/admin/CoordsField"
+import { coordsPayload, coordToInput, parseCoords } from "../../../lib/coords"
 
 type Essential = {
   id: number
@@ -46,7 +51,7 @@ export default function AdminEssentialsPage() {
   useEffect(() => {
     const checkAdmin = async () => {
       const { data, error } = await supabase.auth.getSession()
-      if (error || data.session?.user.email !== "info@noctuaapp.com") {
+      if (error || data.session?.user.email !== ADMIN_EMAIL) {
         window.location.href = "/login"
         return
       }
@@ -69,7 +74,7 @@ export default function AdminEssentialsPage() {
     const filePath = `essentials/${fileName}`
     const { error } = await supabase.storage.from("essential-images").upload(filePath, file)
     setUploading(false)
-    if (error) { console.log("UPLOAD ERROR:", error); return null }
+    if (error) { logError("UPLOAD ERROR:", error); return null }
     const { data } = supabase.storage.from("essential-images").getPublicUrl(filePath)
     return data.publicUrl
   }
@@ -92,11 +97,11 @@ export default function AdminEssentialsPage() {
     if (!newEssential.name || !newEssential.category) return
     const { data, error } = await supabase.from("essentials").insert({
       ...newEssential,
-      latitude: newEssential.latitude ? parseFloat(newEssential.latitude) : null,
-      longitude: newEssential.longitude ? parseFloat(newEssential.longitude) : null,
+      ...coordsPayload(newEssential.latitude, newEssential.longitude),
     }).select().single()
-    if (error) { console.log("ADD ERROR:", error); return }
+    if (error) { logError("ADD ERROR:", error); toast(`No se ha podido crear: ${error.message}`, 5000); return }
     if (data) setEssentials((prev) => [data, ...prev])
+    toast("Esencial creado")
     setNewEssential(emptyForm)
   }
 
@@ -106,7 +111,7 @@ export default function AdminEssentialsPage() {
       name: item.name || "", category: item.category || "", address: item.address || "",
       neighborhood: item.neighborhood || "", description: item.description || "",
       image: item.image || "", open_hours: item.open_hours || "", maps_link: item.maps_link || "",
-      latitude: item.latitude?.toString() || "", longitude: item.longitude?.toString() || "",
+      latitude: coordToInput(item.latitude), longitude: coordToInput(item.longitude),
     })
   }
 
@@ -140,10 +145,10 @@ export default function AdminEssentialsPage() {
     if (!editEssential.name) return
     const { data, error } = await supabase.from("essentials").update({
       ...editEssential,
-      latitude: editEssential.latitude ? parseFloat(editEssential.latitude) : null,
-      longitude: editEssential.longitude ? parseFloat(editEssential.longitude) : null,
+      ...coordsPayload(editEssential.latitude, editEssential.longitude),
     }).eq("id", id).select().single()
-    if (error) { console.log("EDIT ERROR:", error); return }
+    if (error) { logError("EDIT ERROR:", error); toast(`No se ha podido guardar: ${error.message}`, 5000); return }
+    toast("Cambios guardados")
     if (data) setEssentials((prev) => prev.map((e) => e.id === id ? data : e))
     cancelEditing()
   }
@@ -183,33 +188,51 @@ export default function AdminEssentialsPage() {
     )
   }
 
-  const FormFields = ({ data, setData }: { data: typeof emptyForm; setData: (d: typeof emptyForm) => void }) => (
+  // Función (no componente): definida como componente dentro de la página se volvía a montar en
+  // cada tecla y el campo perdía el foco al escribir.
+  const renderFormFields = (data: typeof emptyForm, setData: (d: typeof emptyForm) => void) => (
     <div className="grid gap-4 lg:grid-cols-3">
-      <input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} placeholder="Name *" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
+      <input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} placeholder="Nombre *" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
 
       <select value={data.category} onChange={(e) => setData({ ...data, category: e.target.value })} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none text-white">
-        <option value="">Category *</option>
+        <option value="">Categoría *</option>
         {categories.map((c) => <option key={c} value={c}>{c}</option>)}
       </select>
 
-      <input value={data.neighborhood} onChange={(e) => setData({ ...data, neighborhood: e.target.value })} placeholder="Neighborhood" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-      <input value={data.address} onChange={(e) => setData({ ...data, address: e.target.value })} placeholder="Address" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-      <input value={data.open_hours} onChange={(e) => setData({ ...data, open_hours: e.target.value })} placeholder="Hours (e.g. 24h)" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-      <input value={data.maps_link} onChange={(e) => setData({ ...data, maps_link: e.target.value })} placeholder="Google Maps URL" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-      <input value={data.latitude} onChange={(e) => setData({ ...data, latitude: e.target.value })} placeholder="Latitude (e.g. 41.3851)" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-      <input value={data.longitude} onChange={(e) => setData({ ...data, longitude: e.target.value })} placeholder="Longitude (e.g. 2.1734)" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-      <input value={data.description} onChange={(e) => setData({ ...data, description: e.target.value })} placeholder="Description" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
+      <input value={data.neighborhood} onChange={(e) => setData({ ...data, neighborhood: e.target.value })} placeholder="Barrio" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
+      <input value={data.address} onChange={(e) => setData({ ...data, address: e.target.value })} placeholder="Dirección" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
+      <input value={data.open_hours} onChange={(e) => setData({ ...data, open_hours: e.target.value })} placeholder="Horario (p. ej. 24h)" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
+      <input
+        value={data.maps_link}
+        onChange={(e) => {
+          // Si el enlace de Google Maps lleva coordenadas y aún no hay, se rellenan solas.
+          const p = parseCoords(e.target.value)
+          const fill = p && !data.latitude && !data.longitude ? { latitude: String(p.lat), longitude: String(p.lng) } : {}
+          setData({ ...data, maps_link: e.target.value, ...fill })
+        }}
+        placeholder="Enlace de Google Maps"
+        className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+      />
+      <input value={data.description} onChange={(e) => setData({ ...data, description: e.target.value })} placeholder="Descripción" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
+      <div className="lg:col-span-3">
+        <CoordsField
+          latitude={data.latitude}
+          longitude={data.longitude}
+          address={data.address}
+          onChange={(latitude, longitude) => setData({ ...data, latitude, longitude })}
+        />
+      </div>
     </div>
   )
 
   return (
-    <AdminShell title="Essentials" subtitle="Manage pharmacies, ATMs, food, transport, metro and other essential services.">
+    <AdminShell title="Esenciales" subtitle="Farmacias, cajeros, comida, transporte, metro y demás servicios para la noche.">
       <>
         {/* ADD FORM */}
         <section className="mx-auto max-w-7xl">
           <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
-            <p className="text-sm text-zinc-400 mb-6">Add new essential</p>
-            <FormFields data={newEssential} setData={setNewEssential} />
+            <p className="text-sm text-zinc-400 mb-6">Añadir esencial</p>
+            {renderFormFields(newEssential, setNewEssential)}
             <div className="mt-4">
               <input type="file" accept="image/*" onChange={handleNewImageUpload} className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none" />
               {newEssential.image && <img src={newEssential.image} alt="Preview" className="mt-4 h-40 w-full rounded-2xl object-cover" />}
@@ -252,7 +275,7 @@ export default function AdminEssentialsPage() {
               <div key={item.id} id={`essential-${item.id}`} className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                 {editingId === item.id ? (
                   <div>
-                    <FormFields data={editEssential} setData={setEditEssential} />
+                    {renderFormFields(editEssential, setEditEssential)}
                     <div className="mt-4">
                       <input type="file" accept="image/*" onChange={handleEditImageUpload} className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none" />
                       {editEssential.image && <img src={editEssential.image} alt="Preview" className="mt-4 h-40 w-full rounded-2xl object-cover" />}

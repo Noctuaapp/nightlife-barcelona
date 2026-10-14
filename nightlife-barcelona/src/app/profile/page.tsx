@@ -8,31 +8,32 @@ import { supabase } from "../../lib/supabase"
 import { useFavorites } from "../../context/FavoritesContext"
 import { useLanguage } from "../../context/LanguageContext"
 import { getLevelInfo } from "../../lib/xp"
-import ArrowIcon from "../../components/ui/ArrowIcon"
+import { Heart, Trophy, CalendarDays, Gift, Building2, Music2, Camera, Pin, Trash2, MessageSquare, Megaphone, AlarmClock, Bell, ChevronRight } from "lucide-react"
 import BirthYearSelect from "../../components/ui/BirthYearSelect"
+import { createSlug } from "../../lib/slug"
+import { toDateLocale } from "../../lib/dateLocale"
+import { ADMIN_EMAIL } from "../../lib/admin"
 
-const ACCENT_PATTERN = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g")
+// Perfil. Rehecho tras la auditoría de octubre 2026: fuera las cifras de relleno ("BCN · Ciudad",
+// "🌙 Night owl", "Noctua Member") y los emojis como iconos; arriba, el acceso a todo lo de "tu
+// noche" (favoritos, Club Noctua, tu mes, invitar), que antes estaba repartido por la app.
 
-const createSlug = (text: string) =>
-  text.toLowerCase().normalize("NFD").replace(ACCENT_PATTERN, "").replace(/\s+/g, "-")
-
-const timeAgo = (iso: string | null) => {
+const timeAgo = (iso: string | null, t: (k: string) => string, locale: string) => {
   if (!iso) return ""
-  const diffMs = Date.now() - new Date(iso).getTime()
-  const mins = Math.floor(diffMs / 60000)
-  if (mins < 1) return "ahora"
-  if (mins < 60) return `hace ${mins} min`
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
+  if (mins < 1) return t("time.now")
+  if (mins < 60) return t("time.minutes").replace("{n}", String(mins))
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `hace ${hours}h`
+  if (hours < 24) return t("time.hours").replace("{n}", String(hours))
   const days = Math.floor(hours / 24)
-  if (days < 7) return `hace ${days}d`
-  return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short" })
+  if (days < 7) return t("time.days").replace("{n}", String(days))
+  return new Date(iso).toLocaleDateString(toDateLocale(locale), { day: "numeric", month: "short" })
 }
 
-const NOTIF_ICON: Record<string, string> = {
-  reply: "💬",
-  broadcast: "📢",
-  favorite_reminder: "⏰",
+const NOTIF_ICON: Record<string, typeof Bell> = {
+  reply: MessageSquare,
+  broadcast: Megaphone,
+  favorite_reminder: AlarmClock,
 }
 
 // Los avisos "broadcast" son UNA fila compartida por todos los usuarios (user_id = null), así
@@ -77,7 +78,9 @@ const sortByPinned = <T extends { pinned?: boolean | null; created_at?: string |
 
 export default function ProfilePage() {
   const { favorites } = useFavorites()
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
+  const ago = (iso: string | null) => timeAgo(iso, t, locale)
+  const [pendingDelete, setPendingDelete] = useState<number | null>(null)
 
   const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState("")
@@ -167,12 +170,12 @@ export default function ProfilePage() {
           title: e.title,
           date: e.date,
           time: e.start_time,
-          slug: createSlug(e.title || ""),
+          slug: e.slug || createSlug(e.title || ""),
         })),
         ...(clubEventsRes.data || []).map((e: any) => ({
           id: e.id,
           kind: "club_event" as const,
-          title: e.title || e.name || "Noche de club",
+          title: e.title || e.name || t("clubEvent.defaultClubName"),
           date: e.date,
           time: e.start_time || e.time,
           slug: null,
@@ -261,7 +264,7 @@ export default function ProfilePage() {
     setBirthYearMsg("")
     if (!userId) return
     const { error } = await supabase.from("profiles").update({ birth_year: v ? Number(v) : null }).eq("id", userId)
-    setBirthYearMsg(error ? "No se pudo guardar" : "Guardado ✓")
+    setBirthYearMsg(error ? t("profilePage.saveError") : t("profilePage.saved"))
   }
 
   const saveUsername = async () => {
@@ -340,7 +343,7 @@ export default function ProfilePage() {
 
   const askDeleteAccount = () => {
     setDeleteError("")
-    if (email === "info@noctuaapp.com") { setDeleteError("Admin account cannot be deleted."); return }
+    if (email === ADMIN_EMAIL) { setDeleteError(t("profilePage.adminNoDelete")); return }
     setShowDeleteModal(true)
   }
 
@@ -399,218 +402,192 @@ export default function ProfilePage() {
     await supabase.from("contact_messages").update({ pinned: next }).eq("id", id)
   }
 
+  // Borrar un mensaje pide una segunda pulsación (antes salía un confirm() del navegador).
   const deleteMessage = async (id: number) => {
-    const confirmed = window.confirm("¿Eliminar este mensaje? No se puede deshacer.")
-    if (!confirmed) return
+    if (pendingDelete !== id) {
+      setPendingDelete(id)
+      return
+    }
+    setPendingDelete(null)
     setSentMessages((prev) => prev.filter((m) => m.id !== id))
     await supabase.from("contact_messages").delete().eq("id", id)
   }
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm text-zinc-400">{t("common.loading")}</p>
-      </main>
+      <>
+        <Header />
+        <main className="flex min-h-screen items-center justify-center bg-night text-ink">
+          <p className="text-sm text-zinc-400">{t("common.loading")}</p>
+        </main>
+      </>
     )
   }
 
   const initials = username ? username.slice(0, 2).toUpperCase() : email.slice(0, 2).toUpperCase()
   const today = new Date().toISOString().split("T")[0]
   const unreadCount = notifHistory.filter((n) => !n.read).length
+  const level = getLevelInfo(xp)
+
+  const card = "rounded-card border border-white/10 bg-surface p-5 sm:p-6"
+  const h2 = "text-lg font-semibold text-ink"
+  const pill = (active: boolean) =>
+    `rounded-full px-4 py-2 text-sm font-semibold transition ${active ? "bg-white text-night" : "border border-white/10 text-zinc-200 hover:bg-white/5"}`
+  const ghostBtn = "rounded-ctl border border-white/15 px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-white/5"
+  const iconBtn = "rounded-ctl p-1.5 transition"
+
+  const hub = [
+    { href: "/favorites", icon: Heart, title: t("profile.favorites"), sub: t("profilePage.favCount").replace("{n}", String(favorites.length)) },
+    { href: "/club-noctua", icon: Trophy, title: "Club Noctua", sub: t("profilePage.clubSub") },
+    { href: "/mi-mes", icon: CalendarDays, title: t("profilePage.monthTitle"), sub: t("profilePage.monthSub") },
+    { href: "/invitar", icon: Gift, title: t("profilePage.inviteTitle"), sub: t("profilePage.inviteSub") },
+    ...(hasLinkedClub ? [{ href: "/mi-club", icon: Building2, title: t("profilePage.myClub"), sub: t("profilePage.myClubSub") }] : []),
+    ...(hasLinkedFestival ? [{ href: "/mi-festival", icon: Music2, title: t("profilePage.myFestivals"), sub: t("profilePage.myFestivalsSub") }] : []),
+  ]
 
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-black pb-40 text-white">
-
-        {/* HERO */}
-        <section className="relative overflow-hidden pt-14 pb-20 px-4">
-          <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-transparent to-transparent" />
-          <div className="relative mx-auto max-w-5xl">
-            <div className="flex flex-col items-center text-center">
-              {/* Avatar */}
-              <label className="group relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-full shadow-lg">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt={username || "Avatar"} className="h-24 w-24 rounded-full object-cover" />
-                ) : (
-                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-3xl font-black text-white">
-                    {initials}
-                  </div>
-                )}
-                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/60 opacity-0 transition group-hover:opacity-100">
-                  {uploadingAvatar ? (
-                    <span className="text-xs font-bold text-white">...</span>
-                  ) : (
-                    <span className="text-xl">📷</span>
-                  )}
-                </div>
-                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} disabled={uploadingAvatar} />
-              </label>
-              {avatarError && <p className="mt-2 text-xs text-red-400">{avatarError}</p>}
-              <h1 className="mt-5 text-4xl font-black tracking-tight">
-                {username ? `@${username}` : t("profile.title")}
-              </h1>
-              <p className="mt-2 text-zinc-400">{email}</p>
-              <div className="mt-4 flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/10 px-4 py-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
-                <span className="text-sm text-purple-300">Noctua Member</span>
-              </div>
-
-              {/* Nivel / XP */}
-              {(() => {
-                const level = getLevelInfo(xp)
-                return (
-                  <div className="mt-6 w-full max-w-xs rounded-card border border-white/10 bg-white/[0.03] p-5">
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-2 text-lg font-black text-white">
-                        <span>{level.icon}</span>
-                        <span>{t(`levels.${level.key}`)}</span>
-                      </span>
-                      <span className="text-sm font-bold text-zinc-400">{xp} {t("levels.xpLabel")}</span>
-                    </div>
-                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/10">
-                      <div
-                        className="h-full rounded-full"
-                        style={{ width: `${level.progressPct}%`, background: level.color }}
-                      />
-                    </div>
-                    <p className="mt-2 text-xs text-zinc-400">
-                      {level.next
-                        ? `${t("levels.nextIn")} ${level.xpToNext} ${t("levels.toNextLevel")}`
-                        : t("levels.maxLevel")}
-                    </p>
-                    <Link
-                      href="/club-noctua"
-                      className="mt-4 flex items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/5 py-2 text-xs font-bold text-zinc-300 transition hover:bg-white/10"
-                    >
-                      ✨ {t("levels.viewAll")}
-                    </Link>
-                  </div>
-                )
-              })()}
+      <main className="min-h-screen bg-night pb-40 text-ink">
+        <section className="mx-auto max-w-3xl px-4 pt-8 sm:pt-12">
+          <div className="flex items-center gap-4">
+            <label className="group relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center rounded-full" aria-label={t("profilePage.changePhoto")}>
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarUrl} alt="" className="h-20 w-20 rounded-full object-cover" />
+              ) : (
+                <span className="flex h-20 w-20 items-center justify-center rounded-full bg-brand text-2xl font-semibold text-white">{initials}</span>
+              )}
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full border-2 border-night bg-white text-night">
+                {uploadingAvatar ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-night/30 border-t-night" /> : <Camera size={14} />}
+              </span>
+              <input type="file" accept="image/*" className="sr-only" onChange={handleAvatarChange} disabled={uploadingAvatar} />
+            </label>
+            <div className="min-w-0">
+              <h1 className="font-display truncate text-2xl sm:text-3xl">{username ? `@${username}` : t("profile.title")}</h1>
+              <p className="mt-1 truncate text-sm text-zinc-400">{email}</p>
             </div>
+          </div>
+          {avatarError && <p className="mt-3 text-sm text-red-300">{avatarError}</p>}
+
+          <Link href="/club-noctua" className="mt-6 block rounded-card border border-white/10 bg-surface p-5 transition hover:border-white/25">
+            <div className="flex items-center justify-between gap-3">
+              <span className="flex items-center gap-2 text-base font-semibold text-ink">
+                <span className="h-3 w-3 rounded-full" style={{ background: level.color }} aria-hidden="true" />
+                {t(`levels.${level.key}`)}
+              </span>
+              <span className="text-sm font-semibold text-zinc-300">
+                {xp} {t("levels.xpLabel")}
+              </span>
+            </div>
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+              <div className="h-full rounded-full bg-brand" style={{ width: `${level.progressPct}%` }} />
+            </div>
+            <p className="mt-2 text-xs text-zinc-400">
+              {level.next ? `${t("levels.nextIn")} ${level.xpToNext} ${t("levels.toNextLevel")}` : t("levels.maxLevel")}
+            </p>
+          </Link>
+        </section>
+
+        <section className="mx-auto mt-8 max-w-3xl px-4">
+          <h2 className={`${h2} mb-4`}>{t("profilePage.yourNight")}</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {hub.map((item) => {
+              const I = item.icon
+              return (
+                <Link key={item.href} href={item.href} className="flex flex-col gap-3 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25">
+                  <I size={22} className="text-brand-soft" />
+                  <span>
+                    <span className="block text-sm font-semibold text-ink">{item.title}</span>
+                    <span className="mt-0.5 block text-xs leading-snug text-zinc-400">{item.sub}</span>
+                  </span>
+                </Link>
+              )
+            })}
           </div>
         </section>
 
-        <section className="mx-auto max-w-5xl px-4">
-
-          {/* Stats row */}
-          <div className="grid grid-cols-2 gap-4 mb-8 md:grid-cols-4">
-            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 text-center">
-              <p className="text-3xl font-black text-white">{favorites.length}</p>
-              <p className="mt-1 text-xs text-zinc-400">{t("profile.favorites")}</p>
-            </div>
-            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 text-center">
-              <p className="text-3xl font-black text-white">BCN</p>
-              <p className="mt-1 text-xs text-zinc-400">Ciudad</p>
-            </div>
-            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 text-center">
-              <p className="text-3xl font-black text-white">🌙</p>
-              <p className="mt-1 text-xs text-zinc-400">Night owl</p>
-            </div>
-            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 text-center">
-              <Link href="/favorites" className="block">
-                <ArrowIcon className="mx-auto h-8 w-8 text-purple-400" />
-                <p className="mt-1 text-xs text-zinc-400">{t("profile.view_favorites")}</p>
-              </Link>
-            </div>
-          </div>
-
-          {/* Calendario de favoritos */}
-          <div className="mb-6 rounded-card border border-white/10 bg-white/[0.03] p-8">
-            <p className="text-xs text-zinc-400 mb-6">Tu calendario</p>
+        <section className="mx-auto mt-8 max-w-3xl space-y-5 px-4">
+          <div className={card}>
+            <h2 className={`${h2} mb-4`}>{t("profilePage.calendar")}</h2>
             {loadingCalendar ? (
               <p className="text-sm text-zinc-400">{t("common.loading")}</p>
             ) : calendarItems.length === 0 ? (
-              <p className="text-sm text-zinc-400">Guarda eventos o noches de club en favoritos para verlos aquí.</p>
+              <p className="text-sm text-zinc-400">{t("profilePage.calendarEmpty")}</p>
             ) : (
-              <div className="space-y-3">
+              <ul className="divide-y divide-white/5">
                 {calendarItems.map((item) => {
                   const isPast = item.date ? item.date < today : false
                   const isToday = item.date === today
                   const dateLabel = item.date
-                    ? new Date(item.date).toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })
-                    : "Fecha por confirmar"
-                  const card = (
-                    <div
-                      className={`flex items-center justify-between gap-4 rounded-2xl border p-4 transition ${
-                        isPast ? "border-white/5 opacity-50" : isToday ? "border-emerald-500/30 bg-emerald-500/5" : "border-white/10 hover:border-white/30"
-                      }`}
-                    >
-                      <div>
-                        <p className="font-bold text-white">{item.title}</p>
-                        <p className="mt-1 text-xs text-zinc-400">
-                          {isToday ? "🟢 Hoy" : dateLabel}{item.time ? ` · ${item.time}` : ""}
-                        </p>
-                      </div>
-                      <ArrowIcon className="h-4 w-4 shrink-0 text-zinc-400" />
-                    </div>
-                  )
-                  return item.kind === "event" ? (
-                    <Link key={`event-${item.id}`} href={`/event/${item.slug}`}>{card}</Link>
-                  ) : (
-                    <Link key={`club_event-${item.id}`} href={`/club-event/${item.id}`}>{card}</Link>
+                    ? new Date(`${item.date}T12:00:00`).toLocaleDateString(toDateLocale(locale), { weekday: "short", day: "numeric", month: "short" })
+                    : t("eventPage.dateTbc")
+                  return (
+                    <li key={`${item.kind}-${item.id}`}>
+                      <Link
+                        href={item.kind === "event" ? `/event/${item.slug}` : `/club-event/${item.id}`}
+                        className={`flex items-center justify-between gap-4 py-3 ${isPast ? "opacity-50" : ""}`}
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold text-ink">{item.title}</span>
+                          <span className={`mt-0.5 block text-xs ${isToday ? "font-semibold text-open" : "text-zinc-400"}`}>
+                            {isToday ? t("profilePage.today") : dateLabel}
+                            {item.time ? ` · ${item.time}` : ""}
+                          </span>
+                        </span>
+                        <ChevronRight size={16} className="shrink-0 text-zinc-500" />
+                      </Link>
+                    </li>
                   )
                 })}
-              </div>
+              </ul>
             )}
           </div>
 
-          {/* Últimos visitados */}
-          <div className="mb-6 rounded-card border border-white/10 bg-white/[0.03] p-8">
-            <p className="text-xs text-zinc-400 mb-6">Últimos visitados</p>
+          <div className={card}>
+            <h2 className={`${h2} mb-4`}>{t("profilePage.recent")}</h2>
             {loadingVisits ? (
               <p className="text-sm text-zinc-400">{t("common.loading")}</p>
             ) : recentVisits.length === 0 ? (
-              <p className="text-sm text-zinc-400">Todavía no has visitado ningún club o evento.</p>
+              <p className="text-sm text-zinc-400">{t("profilePage.recentEmpty")}</p>
             ) : (
-              <div className="space-y-3">
+              <ul className="divide-y divide-white/5">
                 {recentVisits.map((visit) => (
-                  <Link
-                    key={`${visit.item_type}-${visit.item_id}`}
-                    href={visit.item_type === "event" ? `/event/${createSlug(visit.item_name || "")}` : `/clubs/${createSlug(visit.item_name || "")}`}
-                    className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 p-4 transition hover:border-white/30"
-                  >
-                    <div>
-                      <p className="font-bold text-white">{visit.item_name}</p>
-                      <p className="mt-1 text-xs text-zinc-400">
-                        {visit.item_type === "event" ? "🎉 Evento" : "🏠 Club"} · {timeAgo(visit.created_at)}
-                      </p>
-                    </div>
-                    <ArrowIcon className="h-4 w-4 shrink-0 text-zinc-400" />
-                  </Link>
+                  <li key={`${visit.item_type}-${visit.item_id}`}>
+                    <Link
+                      href={visit.item_type === "event" ? `/event/${createSlug(visit.item_name || "")}` : `/clubs/${createSlug(visit.item_name || "")}`}
+                      className="flex items-center justify-between gap-4 py-3"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold text-ink">{visit.item_name}</span>
+                        <span className="mt-0.5 block text-xs text-zinc-400">
+                          {visit.item_type === "event" ? t("profilePage.kindEvent") : t("profilePage.kindClub")} · {ago(visit.created_at)}
+                        </span>
+                      </span>
+                      <ChevronRight size={16} className="shrink-0 text-zinc-500" />
+                    </Link>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
 
-          {/* BUZON */}
-          <div id="buzon" className="mb-6 scroll-mt-24 rounded-card border border-white/10 bg-white/[0.03] p-8">
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-xs text-zinc-400">📥 Buzón</p>
+          <div id="buzon" className={`${card} scroll-mt-24`}>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className={h2}>{t("profilePage.inbox")}</h2>
               {unreadCount > 0 && (
-                <span className="rounded-full bg-purple-500/20 border border-purple-500/30 px-3 py-1 text-xs font-bold text-purple-300">
-                  {unreadCount} sin leer
+                <span className="rounded-full bg-brand/15 px-3 py-1 text-xs font-semibold text-brand-soft">
+                  {t("profilePage.unread").replace("{n}", String(unreadCount))}
                 </span>
               )}
             </div>
 
-            <div className="mb-6 flex gap-2">
-              <button
-                onClick={() => setInboxTab("notifications")}
-                className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${
-                  inboxTab === "notifications" ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                }`}
-              >
-                Notificaciones
+            <div className="mb-4 flex gap-2" role="tablist">
+              <button role="tab" aria-selected={inboxTab === "notifications"} onClick={() => setInboxTab("notifications")} className={pill(inboxTab === "notifications")}>
+                {t("header.notifications")}
               </button>
-              <button
-                onClick={() => setInboxTab("messages")}
-                className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${
-                  inboxTab === "messages" ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                }`}
-              >
-                Tus mensajes
+              <button role="tab" aria-selected={inboxTab === "messages"} onClick={() => setInboxTab("messages")} className={pill(inboxTab === "messages")}>
+                {t("profilePage.yourMessages")}
               </button>
             </div>
 
@@ -618,246 +595,190 @@ export default function ProfilePage() {
               <p className="text-sm text-zinc-400">{t("common.loading")}</p>
             ) : inboxTab === "notifications" ? (
               notifHistory.length === 0 ? (
-                <p className="text-sm text-zinc-400">Todavía no tienes notificaciones.</p>
+                <p className="text-sm text-zinc-400">{t("header.noNotifications")}</p>
               ) : (
-                <div className="space-y-3">
-                  {notifHistory.map((n) => (
-                    <div
-                      key={n.id}
-                      className={`rounded-2xl border p-4 transition ${
-                        n.pinned
-                          ? "border-amber-400/40 bg-amber-400/[0.06]"
-                          : n.read
-                          ? "border-white/5 bg-white/[0.01]"
-                          : "border-purple-500/20 bg-purple-500/[0.06]"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <button
-                          onClick={() => !n.read && toggleNotifRead(n.id, n.read)}
-                          className="flex flex-1 items-start gap-3 text-left"
-                        >
-                          <span className="text-xl">{NOTIF_ICON[n.type] || "🔔"}</span>
-                          <div>
-                            <p className="font-bold text-white">{n.title}</p>
-                            {n.body && <p className="mt-1 text-sm text-zinc-400">{n.body}</p>}
-                          </div>
-                        </button>
-                        <div className="flex shrink-0 flex-col items-end gap-2">
-                          <span className="text-xs text-zinc-400">{timeAgo(n.created_at)}</span>
-                          <div className="flex items-center gap-3">
+                <ul className="space-y-2">
+                  {notifHistory.map((n) => {
+                    const NIcon = NOTIF_ICON[n.type] || Bell
+                    return (
+                      <li
+                        key={n.id}
+                        className={`rounded-ctl border p-4 ${n.pinned ? "border-warn/40 bg-warn/5" : n.read ? "border-white/5" : "border-brand/30 bg-brand/5"}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <button onClick={() => !n.read && toggleNotifRead(n.id, n.read)} className="flex flex-1 items-start gap-3 text-left">
+                            <NIcon size={18} className={`mt-0.5 shrink-0 ${n.read ? "text-zinc-500" : "text-brand-soft"}`} />
+                            <span>
+                              <span className="block font-semibold text-ink">{n.title}</span>
+                              {n.body && <span className="mt-1 block text-sm text-zinc-300">{n.body}</span>}
+                              <span className="mt-1 block text-xs text-zinc-400">{ago(n.created_at)}</span>
+                            </span>
+                          </button>
+                          <div className="flex shrink-0 items-center gap-1">
                             <button
                               onClick={() => toggleNotifPinned(n.id, !!n.pinned)}
-                              title={n.pinned ? "Quitar prioridad" : "Marcar como prioritario"}
-                              className={n.pinned ? "text-amber-400" : "text-zinc-400 hover:text-amber-300"}
+                              aria-label={n.pinned ? t("profilePage.unpin") : t("profilePage.pin")}
+                              title={n.pinned ? t("profilePage.unpin") : t("profilePage.pin")}
+                              className={`${iconBtn} ${n.pinned ? "text-warn" : "text-zinc-400 hover:text-ink"}`}
                             >
-                              📌
+                              <Pin size={16} />
                             </button>
                             <button
                               onClick={() => toggleNotifRead(n.id, n.read)}
-                              title={n.read ? "Marcar como no leído" : "Marcar como leído"}
-                              className={n.read ? "text-zinc-400 hover:text-white" : "text-purple-400"}
+                              aria-label={n.read ? t("profilePage.markUnread") : t("profilePage.markRead")}
+                              title={n.read ? t("profilePage.markUnread") : t("profilePage.markRead")}
+                              className={`${iconBtn} text-zinc-400 hover:text-ink`}
                             >
-                              {n.read ? "○" : "●"}
+                              <span className={`block h-2.5 w-2.5 rounded-full ${n.read ? "border border-zinc-500" : "bg-brand"}`} />
                             </button>
-                            <button
-                              onClick={() => deleteNotif(n.id)}
-                              title="Eliminar"
-                              className="text-zinc-400 hover:text-red-400"
-                            >
-                              🗑️
+                            <button onClick={() => deleteNotif(n.id)} aria-label={t("profilePage.delete")} title={t("profilePage.delete")} className={`${iconBtn} text-zinc-400 hover:text-red-300`}>
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      </li>
+                    )
+                  })}
+                </ul>
               )
             ) : sentMessages.length === 0 ? (
               <p className="text-sm text-zinc-400">
-                Todavía no has enviado ningún mensaje. Puedes escribirnos desde{" "}
-                <Link href="/contact" className="text-purple-300 underline">contacto</Link>.
+                {t("profilePage.noMessages")}{" "}
+                <Link href="/contact" className="font-semibold text-brand-soft underline underline-offset-4">
+                  {t("footer.link_contact")}
+                </Link>
               </p>
             ) : (
-              <div className="space-y-3">
+              <ul className="space-y-2">
                 {sentMessages.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`rounded-2xl border p-4 ${
-                      m.pinned ? "border-amber-400/40 bg-amber-400/[0.06]" : "border-white/10 bg-white/[0.02]"
-                    }`}
-                  >
+                  <li key={m.id} className={`rounded-ctl border p-4 ${m.pinned ? "border-warn/40 bg-warn/5" : "border-white/10"}`}>
                     <div className="flex items-start justify-between gap-3">
-                      <p className="font-bold text-white">{m.subject || "Mensaje enviado"}</p>
-                      <div className="flex shrink-0 items-center gap-3">
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-bold ${
-                            m.reply ? "bg-emerald-500/15 text-emerald-300" : "bg-white/10 text-zinc-400"
-                          }`}
-                        >
-                          {m.reply ? "Respondido" : "Pendiente"}
+                      <p className="font-semibold text-ink">{m.subject || t("profilePage.messageSent")}</p>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <span className={`mr-1 rounded-full px-2.5 py-1 text-xs font-semibold ${m.reply ? "bg-open/15 text-open" : "bg-white/10 text-zinc-300"}`}>
+                          {m.reply ? t("profilePage.answered") : t("profilePage.pending")}
                         </span>
                         <button
                           onClick={() => toggleMessagePinned(m.id, !!m.pinned)}
-                          title={m.pinned ? "Quitar prioridad" : "Marcar como prioritario"}
-                          className={m.pinned ? "text-amber-400" : "text-zinc-400 hover:text-amber-300"}
+                          aria-label={m.pinned ? t("profilePage.unpin") : t("profilePage.pin")}
+                          className={`${iconBtn} ${m.pinned ? "text-warn" : "text-zinc-400 hover:text-ink"}`}
                         >
-                          📌
+                          <Pin size={16} />
                         </button>
-                        <button onClick={() => deleteMessage(m.id)} title="Eliminar" className="text-zinc-400 hover:text-red-400">
-                          🗑️
+                        <button onClick={() => deleteMessage(m.id)} aria-label={t("profilePage.delete")} className={`${iconBtn} text-zinc-400 hover:text-red-300`}>
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </div>
-                    <p className="mt-2 text-sm text-zinc-400">{m.message}</p>
-                    <p className="mt-2 text-xs text-zinc-400">{timeAgo(m.created_at)}</p>
-                    {m.reply && (
-                      <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
-                        <p className="text-xs text-emerald-400 mb-1">Respuesta de Noctua</p>
-                        <p className="text-sm text-zinc-300">{m.reply}</p>
+                    {pendingDelete === m.id && (
+                      <div className="mt-3 flex items-center gap-2 text-sm">
+                        <span className="text-zinc-300">{t("profilePage.confirmDelete")}</span>
+                        <button onClick={() => deleteMessage(m.id)} className="rounded-ctl bg-red-500 px-3 py-1.5 text-xs font-semibold text-white">
+                          {t("profilePage.delete")}
+                        </button>
+                        <button onClick={() => setPendingDelete(null)} className="rounded-ctl border border-white/15 px-3 py-1.5 text-xs font-semibold text-ink">
+                          {t("common.cancel")}
+                        </button>
                       </div>
                     )}
-                  </div>
+                    <p className="mt-2 text-sm text-zinc-300">{m.message}</p>
+                    <p className="mt-2 text-xs text-zinc-400">{ago(m.created_at)}</p>
+                    {m.reply && (
+                      <div className="mt-3 rounded-ctl border border-open/20 bg-open/5 p-3">
+                        <p className="mb-1 text-xs font-semibold text-open">{t("profilePage.replyFromNoctua")}</p>
+                        <p className="text-sm text-zinc-200">{m.reply}</p>
+                      </div>
+                    )}
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
 
-          {/* Username */}
-          <div className="mb-6 rounded-card border border-white/10 bg-white/[0.03] p-8">
-            <div className="flex items-center justify-between">
+          <div className={card}>
+            <h2 className={`${h2} mb-5`}>{t("profilePage.settings")}</h2>
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs text-zinc-400">{t("profile.username")}</p>
-                <h2 className="mt-2 text-2xl font-black">@{username || "—"}</h2>
+                <p className="text-sm text-zinc-400">{t("profile.username")}</p>
+                <p className="mt-0.5 font-semibold text-ink">@{username || "—"}</p>
               </div>
               {!editingUsername && canChangeUsername() && (
-                <button
-                  onClick={() => { setEditingUsername(true); setUsernameError(""); setUsernameSuccess("") }}
-                  className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-bold text-white transition hover:bg-white hover:text-black"
-                >
+                <button onClick={() => { setEditingUsername(true); setUsernameError(""); setUsernameSuccess("") }} className={ghostBtn}>
                   {t("profile.change_username")}
                 </button>
               )}
             </div>
-
             {editingUsername && (
-              <div className="mt-6">
+              <div className="mt-4">
                 <input
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
+                  aria-label={t("profile.username")}
                   placeholder={t("profile.username")}
-                  className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50"
+                  className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3 text-ink outline-none focus:border-brand"
                 />
                 <p className="mt-2 text-xs text-zinc-400">{t("profile.username_hint")}</p>
-                {usernameError && <p className="mt-2 text-sm text-red-400">{usernameError}</p>}
-                <div className="mt-4 flex gap-3">
-                  <button
-                    onClick={saveUsername}
-                    disabled={savingUsername}
-                    className="rounded-2xl bg-white px-6 py-3 font-bold text-black transition hover:scale-[1.02] disabled:opacity-50"
-                  >
+                {usernameError && <p className="mt-2 text-sm text-red-300">{usernameError}</p>}
+                <div className="mt-3 flex gap-2">
+                  <button onClick={saveUsername} disabled={savingUsername} className="rounded-ctl bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-50">
                     {savingUsername ? t("profile.saving") : t("profile.save")}
                   </button>
-                  <button
-                    onClick={() => { setEditingUsername(false); setNewUsername(username); setUsernameError("") }}
-                    className="rounded-2xl border border-white/10 bg-white/5 px-6 py-3 font-bold text-white transition hover:bg-white/10"
-                  >
+                  <button onClick={() => { setEditingUsername(false); setNewUsername(username); setUsernameError("") }} className={ghostBtn}>
                     {t("profile.cancel")}
                   </button>
                 </div>
               </div>
             )}
-
             {!editingUsername && !canChangeUsername() && (
-              <p className="mt-3 text-sm text-zinc-400">
-                {t("profile.days_until_change").replace("{days}", String(daysUntilChange()))}
-              </p>
+              <p className="mt-2 text-sm text-zinc-400">{t("profile.days_until_change").replace("{days}", String(daysUntilChange()))}</p>
             )}
-            {usernameSuccess && <p className="mt-3 text-sm text-emerald-400">{usernameSuccess}</p>}
-          </div>
+            {usernameSuccess && <p className="mt-2 text-sm text-open">{usernameSuccess}</p>}
 
-          {/* Año de nacimiento */}
-          <div className="mb-6 rounded-card border border-white/10 bg-white/[0.03] p-8">
-            <p className="text-xs text-zinc-400 mb-4">Año de nacimiento</p>
-            <BirthYearSelect value={birthYear} onChange={saveBirthYear} />
-            {birthYearMsg && <p className="mt-2 text-sm text-emerald-400">{birthYearMsg}</p>}
-          </div>
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <p className="mb-2 text-sm text-zinc-400">{t("profilePage.birthYear")}</p>
+              <BirthYearSelect value={birthYear} onChange={saveBirthYear} />
+              {birthYearMsg && <p className="mt-2 text-sm text-open">{birthYearMsg}</p>}
+            </div>
 
-          {/* Account */}
-          <div className="mb-6 rounded-card border border-white/10 bg-white/[0.03] p-8">
-            <p className="text-xs text-zinc-400 mb-6">{t("profile.session")}</p>
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={logout}
-                className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
-              >
-                {t("profile.logout")}
-              </button>
-              <Link
-                href="/profile/change-password"
-                className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
-              >
+            <div className="mt-6 flex flex-wrap gap-2 border-t border-white/10 pt-5">
+              <Link href="/profile/change-password" className={ghostBtn}>
                 {t("profile.change_password")}
               </Link>
-              {hasLinkedClub && (
-                <Link
-                  href="/mi-club"
-                  className="rounded-full border border-purple-500/30 bg-purple-500/10 px-6 py-3 text-sm font-bold text-purple-300 transition hover:bg-purple-500 hover:text-white"
-                >
-                  🏛️ Mi club
-                </Link>
-              )}
-              {hasLinkedFestival && (
-                <Link
-                  href="/mi-festival"
-                  className="rounded-full border border-purple-500/30 bg-purple-500/10 px-6 py-3 text-sm font-bold text-purple-300 transition hover:bg-purple-500 hover:text-white"
-                >
-                  🎧 Mis festivales
-                </Link>
-              )}
+              <button onClick={logout} className={ghostBtn}>
+                {t("profile.logout")}
+              </button>
             </div>
           </div>
 
-          {/* Delete */}
-          <div className="rounded-card border border-red-500/20 bg-red-500/5 p-6 flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-4 rounded-card border border-red-500/20 p-5">
             <div>
-              <p className="text-sm font-bold text-red-400">{t("profile.danger")}</p>
-              <p className="mt-1 text-xs text-red-300/70">{t("profile.delete_subtitle")}</p>
+              <p className="text-sm font-semibold text-red-300">{t("profile.danger")}</p>
+              <p className="mt-1 text-xs text-zinc-400">{t("profile.delete_subtitle")}</p>
               {deleteError && <p className="mt-2 text-xs text-red-300">{deleteError}</p>}
             </div>
             <button
               onClick={askDeleteAccount}
               disabled={deleting}
-              className="shrink-0 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-400 hover:bg-red-500 hover:text-white transition disabled:opacity-50"
+              className="shrink-0 rounded-ctl border border-red-500/30 px-4 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500 hover:text-white disabled:opacity-50"
             >
               {deleting ? t("profile.deleting") : t("profile.delete")}
             </button>
           </div>
-
         </section>
 
         {showDeleteModal && (
-          <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
-            <div className="w-full max-w-md rounded-card border border-red-500/30 bg-[#111] p-8">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-3xl">⚠️</div>
-              <h2 className="mt-5 text-2xl font-black text-white">{t("profile.delete_confirm_title")}</h2>
-              <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-                {t("profile.delete_confirm_body_1")} <span className="font-bold text-red-400">{t("profile.delete_confirm_body_2")}</span>. {t("profile.delete_confirm_body_3")}
+          <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 px-4" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+            <div className="w-full max-w-md rounded-card border border-red-500/30 bg-surface p-6 sm:p-8">
+              <h2 id="delete-title" className="text-xl font-semibold text-ink">{t("profile.delete_confirm_title")}</h2>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+                {t("profile.delete_confirm_body_1")} <span className="font-semibold text-red-300">{t("profile.delete_confirm_body_2")}</span>. {t("profile.delete_confirm_body_3")}
               </p>
-              <div className="mt-8 flex flex-col gap-3">
-                <button
-                  onClick={confirmDeleteAccount}
-                  disabled={deleting}
-                  className="rounded-2xl bg-red-500 px-6 py-4 text-sm font-bold text-white transition hover:bg-red-600 disabled:opacity-50"
-                >
+              <div className="mt-6 flex flex-col gap-2">
+                <button onClick={confirmDeleteAccount} disabled={deleting} className="rounded-ctl bg-red-500 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-red-600 disabled:opacity-50">
                   {deleting ? t("profile.deleting") : t("profile.delete_confirm_yes")}
                 </button>
-                <button
-                  onClick={() => setShowDeleteModal(false)}
-                  disabled={deleting}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10"
-                >
+                <button onClick={() => setShowDeleteModal(false)} disabled={deleting} className="rounded-ctl border border-white/15 px-6 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/5">
                   {t("common.cancel")}
                 </button>
               </div>

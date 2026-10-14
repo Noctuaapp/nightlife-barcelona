@@ -1,7 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import { ChevronRight } from "lucide-react"
+import { useLanguage } from "../../context/LanguageContext"
+import { toDateLocale } from "../../lib/dateLocale"
+
+// Próximas noches del club (las que publica el local). Antes estaba entero en inglés ("Nights at",
+// "View night") y agrupaba por día de la semana, mezclando noches de semanas distintas; ahora es
+// una lista por fecha, solo de hoy en adelante.
 
 type ClubEvent = {
   id: number
@@ -17,146 +24,50 @@ type ClubEvent = {
   featured: boolean | null
 }
 
-type Props = {
-  clubEvents: ClubEvent[]
-  clubName: string
-}
+export default function ClubNightsCalendar({ clubEvents, clubName }: { clubEvents: ClubEvent[]; clubName: string }) {
+  const { t, locale } = useLanguage()
+  // "Hoy" depende del día en que se mira: se calcula tras montar.
+  const [today, setToday] = useState<string | null>(null)
+  useEffect(() => setToday(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date())), [])
 
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-const DAY_FULL = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-
-const getDayIndex = (dateStr: string) => {
-  const date = new Date(dateStr)
-  const day = date.getDay()
-  return day === 0 ? 6 : day - 1
-}
-
-export default function ClubNightsCalendar({ clubEvents, clubName }: Props) {
-  const eventsByDay: Record<number, ClubEvent[]> = {}
-  clubEvents.forEach((event) => {
-    if (event.date) {
-      const dayIdx = getDayIndex(event.date)
-      if (!eventsByDay[dayIdx]) eventsByDay[dayIdx] = []
-      eventsByDay[dayIdx].push(event)
-    }
-  })
-
-  const activeDays = Object.keys(eventsByDay).map(Number).sort()
-  const [selectedDay, setSelectedDay] = useState<number>(activeDays[0] ?? 4)
-
-  const selectedEvents = eventsByDay[selectedDay] || []
+  const upcoming = clubEvents
+    .filter((e) => e.date && (!today || e.date >= today))
+    .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
 
   return (
-    <div className="rounded-card border border-white/10 bg-white/[0.03] p-10 backdrop-blur-2xl">
-      <p className="text-sm text-zinc-400">Sessions</p>
-      <h2 className="mt-4 text-5xl font-black">Nights at {clubName}</h2>
-
-      {/* Day tabs */}
-      <div className="mt-8 flex gap-2 overflow-x-auto pb-2">
-        {DAYS.map((day, idx) => {
-          const hasEvents = !!eventsByDay[idx]
-          const isSelected = selectedDay === idx
-          return (
-            <button
-              key={day}
-              onClick={() => hasEvents && setSelectedDay(idx)}
-              disabled={!hasEvents}
-              className="flex flex-col items-center rounded-2xl px-4 py-3 min-w-[60px] transition"
-              style={{
-                background: isSelected
-                  ? "rgba(124,92,255,0.2)"
-                  : hasEvents
-                  ? "rgba(255,255,255,0.05)"
-                  : "transparent",
-                border: isSelected
-                  ? "1px solid rgba(124,92,255,0.4)"
-                  : hasEvents
-                  ? "1px solid rgba(255,255,255,0.1)"
-                  : "1px solid rgba(255,255,255,0.03)",
-                opacity: hasEvents ? 1 : 0.3,
-                cursor: hasEvents ? "pointer" : "default",
-              }}
-            >
-              <span className={`text-xs font-bold ${isSelected ? "text-purple-300" : "text-zinc-400"}`}>
-                {day}
-              </span>
-              {hasEvents && (
-                <span
-                  className="mt-1.5 h-1.5 w-1.5 rounded-full"
-                  style={{ background: isSelected ? "#7c5cff" : "rgba(255,255,255,0.3)" }}
-                />
-              )}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Selected day events */}
-      <div className="mt-8 space-y-5">
-        {selectedEvents.length === 0 ? (
-          <p className="text-zinc-400 text-sm">No sessions on {DAY_FULL[selectedDay]}.</p>
-        ) : (
-          selectedEvents.map((event) => (
-            <div
-              key={event.id}
-              className="rounded-card border border-white/10 bg-black/30 p-6"
-            >
-              <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <p className="text-sm uppercase tracking-wide text-zinc-400">
-                      {DAY_FULL[selectedDay]}
-                      {event.date && ` · ${new Date(event.date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
-                      {event.start_time && ` · ${event.start_time}`}
-                    </p>
-                    {event.featured && (
-                      <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300">
-                        ⭐ Featured
-                      </span>
-                    )}
-                    {event.sold_out && (
-                      <span className="rounded-full bg-red-500/20 px-3 py-1 text-xs font-semibold text-red-300">
-                        🚫 Sold out
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="mt-2 text-3xl font-black">{event.title}</h3>
-
-                  {event.description && (
-                    <p className="mt-2 text-zinc-400 text-sm line-clamp-2">{event.description}</p>
-                  )}
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {event.artist && (
-                      <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                        🎧 {event.artist}
-                      </span>
-                    )}
-                    {event.music && (
-                      <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                        🎵 {event.music}
-                      </span>
-                    )}
-                    {event.price && (
-                      <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
-                        🎟 {event.price}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <Link
-                  href={`/club-event/${event.id}`}
-                  className="flex shrink-0 items-center justify-center rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02]"
-                >
-                  View night
+    <div>
+      <h2 className="mb-4 text-lg font-semibold text-ink">{t("clubNights.title").replace("{name}", clubName)}</h2>
+      {upcoming.length === 0 ? (
+        <p className="text-sm text-zinc-400">{t("clubNights.none")}</p>
+      ) : (
+        <ul className="space-y-2">
+          {upcoming.map((night) => {
+            const d = new Date(`${night.date}T12:00:00`)
+            const weekday = d.toLocaleDateString(toDateLocale(locale), { weekday: "short" })
+            const day = d.toLocaleDateString(toDateLocale(locale), { day: "numeric", month: "short" })
+            const meta = [night.start_time && `${night.start_time}${night.end_time ? `–${night.end_time}` : ""}`, night.artist, night.music, night.price].filter(Boolean).join(" · ")
+            return (
+              <li key={night.id}>
+                <Link href={`/club-event/${night.id}`} className="flex items-center gap-4 rounded-ctl border border-white/10 p-3 transition hover:border-white/25">
+                  <span className="flex w-14 shrink-0 flex-col items-center rounded-ctl bg-white/5 py-2 text-center">
+                    <span className="text-xs font-semibold capitalize text-brand-soft">{weekday.replace(".", "")}</span>
+                    <span className="mt-0.5 text-xs text-zinc-300">{day}</span>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="truncate font-semibold text-ink">{night.title}</span>
+                      {night.featured && <span className="rounded-full bg-brand/20 px-2 py-0.5 text-xs font-semibold text-brand-soft">{t("event.featured")}</span>}
+                      {night.sold_out && <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-semibold text-red-200">{t("event.soldOut")}</span>}
+                    </span>
+                    {meta && <span className="mt-0.5 block truncate text-sm text-zinc-400">{meta}</span>}
+                  </span>
+                  <ChevronRight size={16} className="shrink-0 text-zinc-500" />
                 </Link>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </div>
   )
 }

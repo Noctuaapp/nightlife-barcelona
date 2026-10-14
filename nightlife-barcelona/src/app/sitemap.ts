@@ -2,14 +2,16 @@ import type { MetadataRoute } from "next"
 import { supabase } from "../lib/supabase"
 import { createSlug } from "../lib/slug"
 import type { DbRow } from "../lib/clubQueries"
+import { MIN_INDEXABLE, neighborhoodsOf, stylesOf } from "../lib/areas"
 
 const BASE_URL = "https://www.noctuaapp.com"
 
 // Categorías fijas de /essentials/[category] — vienen de categoryConfig en esa página, no de una
-// tabla, así que se listan aquí a mano en vez de consultarlas.
+// tabla, así que se listan aquí a mano en vez de consultarlas. Hotel y casino no se incluyen: esas
+// páginas siguen existiendo pero llevan noindex (no son esenciales de la noche).
 const ESSENTIAL_CATEGORIES = [
   "pharmacy", "atm", "food", "transport", "metro", "nitbus", "taxi",
-  "supermarket", "hotel", "casino", "gas-station", "hospital",
+  "supermarket", "gas-station", "hospital",
 ]
 
 // Antes no existía sitemap.xml: Google tenía que descubrir cada club y cada evento navegando
@@ -25,6 +27,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/events`, changeFrequency: "daily", priority: 0.9 },
     { url: `${BASE_URL}/essentials`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${BASE_URL}/map`, changeFrequency: "weekly", priority: 0.5 },
+    { url: `${BASE_URL}/plan`, changeFrequency: "weekly", priority: 0.5 },
+    { url: `${BASE_URL}/para-locales`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE_URL}/club-noctua`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE_URL}/faq`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE_URL}/contact`, changeFrequency: "monthly", priority: 0.3 },
@@ -47,6 +51,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
   const [clubs, events] = await Promise.all([load("clubs", "name"), load("events", "title")])
 
+  // Barrios y estilos para las páginas /barrio y /musica (solo los que tienen contenido suficiente).
+  const { data: areaRows } = await supabase.from("clubs").select("neighborhood, music").eq("hidden", false)
+  const areaClubs = (areaRows || []) as DbRow[]
+  const areaRoutes: MetadataRoute.Sitemap = [
+    ...neighborhoodsOf(areaClubs)
+      .filter((n) => n.count >= MIN_INDEXABLE)
+      .map((n) => ({ url: `${BASE_URL}/barrio/${n.slug}`, changeFrequency: "weekly" as const, priority: 0.6 })),
+    ...stylesOf(areaClubs)
+      .filter((s) => s.count >= MIN_INDEXABLE)
+      .map((s) => ({ url: `${BASE_URL}/musica/${s.slug}`, changeFrequency: "weekly" as const, priority: 0.6 })),
+  ]
+
+  // Noches de club de hoy en adelante (las pasadas llevan noindex).
+  const today = new Date().toISOString().slice(0, 10)
+  const { data: nights } = await supabase.from("club_events").select("id, date").gte("date", today)
+  const nightRoutes: MetadataRoute.Sitemap = (nights || []).map((n) => ({
+    url: `${BASE_URL}/club-event/${n.id}`,
+    changeFrequency: "weekly" as const,
+    priority: 0.5,
+  }))
+
   const clubRoutes: MetadataRoute.Sitemap = clubs
     .filter((c) => c.slug || c.name)
     .map((c) => ({
@@ -63,5 +88,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }))
 
-  return [...staticRoutes, ...clubRoutes, ...eventRoutes]
+  return [...staticRoutes, ...areaRoutes, ...clubRoutes, ...eventRoutes, ...nightRoutes]
 }

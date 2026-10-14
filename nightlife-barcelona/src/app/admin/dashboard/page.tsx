@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
+import { ADMIN_EMAIL } from "../../../lib/admin"
+import { toast } from "../../../components/ui/Toast"
 
 // Categorías fijas de essentials — mismas que usa /admin/essentials, así el desglose siempre
 // muestra las 11 aunque alguna tenga 0 elementos.
@@ -35,7 +37,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const checkAdmin = async () => {
       const { data, error } = await supabase.auth.getSession()
-      if (error || data.session?.user.email !== "info@noctuaapp.com") {
+      if (error || data.session?.user.email !== ADMIN_EMAIL) {
         window.location.href = "/login"
         return
       }
@@ -124,7 +126,7 @@ export default function AdminDashboardPage() {
     setSavingMaintenance(true)
     const { error } = await supabase.from("app_settings").update({ maintenance_mode: next }).eq("id", true)
     setSavingMaintenance(false)
-    if (error) { window.alert("No se pudo actualizar el modo mantenimiento: " + error.message); return }
+    if (error) { toast("No se pudo actualizar el modo mantenimiento: " + error.message); return }
     setMaintenanceMode(next)
   }
 

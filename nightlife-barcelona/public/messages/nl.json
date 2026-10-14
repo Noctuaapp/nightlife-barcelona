@@ -308,11 +308,11 @@
     "emailPlaceholder": "Je e-mail",
     "subjectPlaceholder": "Onderwerp",
     "messagePlaceholder": "Schrijf je bericht...",
-    "sendButton": "Bericht verzenden →",
+    "sendButton": "Bericht verzenden",
     "sending": "Verzenden...",
-    "successMessage": "✅ Bericht verzonden. Noctua bekijkt het binnenkort.",
+    "successMessage": "Bericht verzonden. Noctua bekijkt het binnenkort.",
     "errorEmptyMessage": "Schrijf alsjeblieft een bericht.",
-    "types": "user_support||🙋 Gebruikersondersteuning||Hulp met je account of de app\nreport_issue||⚑ Onjuiste informatie melden||Verkeerde tijden, prijzen of gegevens\nsuggest_venue||📍 Een locatie voorstellen||Ken je een ontbrekende club of bar?\nsuggest_essential||🧭 Iets essentieels voorstellen||Ontbrekende pinautomaat, apotheek, vervoer...\nclub_partnership||🤝 Samenwerking met locatie||Samenwerking voor clubs en bars\nfestival_partnership||🎪 Samenwerking met festival||Samenwerking voor evenementen en festivals\nowner_access||🔑 Mijn club of evenement beheren||Je bent verantwoordelijk en wilt je vermelding zelf bewerken"
+    "types": "user_support||Gebruikersondersteuning||Hulp met je account of de app\nreport_issue||Onjuiste informatie melden||Verkeerde tijden, prijzen of gegevens\nsuggest_venue||Een locatie voorstellen||Ken je een ontbrekende club of bar?\nsuggest_essential||Iets essentieels voorstellen||Ontbrekende pinautomaat, apotheek, vervoer...\nclub_partnership||Samenwerking met locatie||Samenwerking voor clubs en bars\nfestival_partnership||Samenwerking met festival||Samenwerking voor evenementen en festivals\nowner_access||Mijn club of evenement beheren||Je bent verantwoordelijk en wilt je vermelding zelf bewerken"
   },
   "nearby": {
     "triggerButton": "Kom je er niet in?",

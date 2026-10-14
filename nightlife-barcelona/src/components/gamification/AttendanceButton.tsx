@@ -6,6 +6,7 @@ import BadgeToast from "../mascot/BadgeToast"
 import { evaluateBadges } from "../../lib/badges"
 import { useLanguage } from "../../context/LanguageContext"
 import Icon from "../ui/Icon"
+import { logError } from "../../lib/log"
 
 type AttendanceButtonProps = {
   itemType: "event" | "club_event" | "club"
@@ -102,7 +103,7 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
     })
 
     if (error) {
-      console.log("ATTENDANCE INSERT ERROR:", error)
+      logError("ATTENDANCE INSERT ERROR:", error)
       return
     }
 

@@ -11,7 +11,8 @@ import { createClient } from "@supabase/supabase-js"
 //      comprueba en el servidor que la cuenta es la de administración.
 //   3) Una herramienta externa (curl, Postman): cabecera "x-admin-secret: ADMIN_SECRET".
 
-export const ADMIN_EMAIL = "info@noctuaapp.com"
+import { ADMIN_EMAIL } from "./admin"
+export { ADMIN_EMAIL }
 
 function safeEqual(a: string, b: string): boolean {
   const ab = Buffer.from(a)

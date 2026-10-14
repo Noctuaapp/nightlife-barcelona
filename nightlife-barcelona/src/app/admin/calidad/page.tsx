@@ -5,6 +5,7 @@ import Link from "next/link"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { createSlug } from "../../../lib/slug"
+import { ADMIN_EMAIL } from "../../../lib/admin"
 
 // Calidad de las fichas de clubs. La auditoría de octubre 2026 detectó que lo que más resta
 // credibilidad (y lo que más frena la indexación en Google) son fichas con datos por defecto o
@@ -47,7 +48,7 @@ export default function AdminQualityPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user.email !== "info@noctuaapp.com") {
+      if (data.session?.user.email !== ADMIN_EMAIL) {
         window.location.href = "/login"
         return
       }

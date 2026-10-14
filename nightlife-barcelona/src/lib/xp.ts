@@ -1,4 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js"
+import { logError } from "./log"
 
 // Sistema de niveles de Noctua — v1: solo XP y niveles visibles, sin descuentos reales todavía.
 // Umbrales recalibrados (antes 0/100/300/700 subía demasiado rápido: con 25 XP por check-in
@@ -75,7 +76,7 @@ export async function awardXp(
   })
 
   if (error) {
-    console.log("AWARD XP ERROR:", error)
+    logError("AWARD XP ERROR:", error)
     return { awarded: false, error }
   }
 

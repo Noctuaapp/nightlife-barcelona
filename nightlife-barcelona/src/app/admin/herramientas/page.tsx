@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
+import { ADMIN_EMAIL } from "../../../lib/admin"
 
 // Herramientas de mantenimiento. Antes se lanzaban visitando una URL con la clave de admin
 // pegada (?secret=...), que quedaba en el historial y en los registros. Ahora cada botón llama al
@@ -89,7 +90,7 @@ export default function AdminToolsPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user.email !== "info@noctuaapp.com") {
+      if (data.session?.user.email !== ADMIN_EMAIL) {
         window.location.href = "/login"
         return
       }

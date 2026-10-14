@@ -1,12 +1,24 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import FavoriteButton from "../favorites/FavoriteButton"
 import AttendanceButton from "../gamification/AttendanceButton"
 import ClubMap from "../map/ClubMap"
+import RideButtons from "./club/RideButtons"
+import Icon from "../ui/Icon"
+import { toast } from "../ui/Toast"
+import { track } from "../../lib/track"
 import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
+
+const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
+
+// Noche concreta de un club (las que publica el local desde /mi-club). Misma estructura que las
+// fichas de club y evento. Antes: portada de 75 % de pantalla con un velo negro al 70 %, emojis en
+// cada dato y "Por confirmar" en todo lo que faltaba; ahora solo se enseña lo que hay.
 
 type Ticket = {
   id: number
@@ -24,7 +36,7 @@ type ClubEvent = {
   image: string | null
   featured: boolean | null
   sold_out: boolean | null
-  age_min: number | null
+  age_min?: number | null
   music: string | null
   price: string | null
   description: string | null
@@ -33,195 +45,320 @@ type ClubEvent = {
   start_time: string | null
   end_time: string | null
   ticket_url: string | null
-  latitude: number | null
-  longitude: number | null
 }
 
-type ClubEventPageContentProps = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Club = Record<string, any> | null
+
+function dateOnly(value: string): Date {
+  return new Date(value.length <= 10 ? `${value}T12:00:00` : value)
+}
+
+function Panel({ children }: { children: React.ReactNode }) {
+  return <div className="rounded-card border border-white/10 bg-surface p-6 sm:p-7">{children}</div>
+}
+
+export default function ClubEventPageContent({
+  clubEvent,
+  club,
+  clubName,
+  tickets,
+  clubSlug,
+}: {
   clubEvent: ClubEvent
+  club: Club
+  clubName: string | null
   tickets: Ticket[]
   clubSlug: string
-}
-
-export default function ClubEventPageContent({ clubEvent, tickets, clubSlug }: ClubEventPageContentProps) {
+}) {
   const { t, locale } = useLanguage()
+  const [past, setPast] = useState(false)
+  useEffect(() => {
+    if (!clubEvent.date) return
+    const end = dateOnly(clubEvent.date)
+    end.setHours(23, 59, 59, 0)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    setPast(end < today)
+  }, [clubEvent.date])
+
+  const trackClick = (eventType: string) => track(eventType, { itemType: "club_event", itemId: clubEvent.id, itemName: clubEvent.title })
+  useEffect(() => {
+    trackClick("page_view")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clubEvent.id])
+
+  const lat = club?.latitude ? Number(club.latitude) : null
+  const lng = club?.longitude ? Number(club.longitude) : null
+  const hasCoords = !!lat && !!lng
+  const firstTicket = tickets.find((tk) => tk.external_url)
+  const ticketUrl = !past && !clubEvent.sold_out ? firstTicket?.external_url || clubEvent.ticket_url || null : null
+  const directionsUrl = hasCoords
+    ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
+    : club?.address
+    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${club.address} ${club.name}`)}`
+    : null
+  const image = clubEvent.image || club?.image || null
+  const clubHref = clubSlug ? `/clubs/${clubSlug}` : null
+
+  const dateLabel = clubEvent.date
+    ? cap(dateOnly(clubEvent.date).toLocaleDateString(toDateLocale(locale), { weekday: "long", day: "numeric", month: "long" }))
+    : null
+  const timeLabel = clubEvent.start_time ? `${clubEvent.start_time}${clubEvent.end_time ? ` – ${clubEvent.end_time}` : ""}` : null
+
+  const share = async () => {
+    trackClick("share_click")
+    const url = window.location.href
+    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> }
+    if (nav.share) {
+      try {
+        await nav.share({ title: clubEvent.title, text: t("clubPage.shareText").replace("{name}", clubEvent.title), url })
+      } catch {
+        /* cancelado */
+      }
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(url)
+      toast(t("clubPage.linkCopied"))
+    }
+  }
+
+  const facts = [
+    dateLabel && { key: "date", icon: "calendar", label: t("event.date"), value: past ? t("event.finishedValue") : dateLabel },
+    timeLabel && { key: "time", icon: "clock", label: t("event.schedule"), value: timeLabel },
+    clubEvent.price && { key: "price", icon: "ticket", label: t("event.price"), value: clubEvent.price },
+    clubEvent.music && { key: "music", icon: "music", label: t("club.music"), value: clubEvent.music },
+  ].filter(Boolean) as { key: string; icon: string; label: string; value: string }[]
+
+  const primaryBtn = "flex items-center justify-center gap-2 rounded-ctl bg-brand px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-strong"
+  const secondaryBtn = "flex items-center justify-center gap-2 rounded-ctl border border-white/15 bg-white/5 px-5 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/10"
 
   return (
-    <main className="min-h-screen bg-black pb-40 text-white">
+    <main className="relative min-h-screen bg-night pb-40 text-ink lg:pb-16">
+      <section className="relative">
+        <div className="relative h-[40vh] max-h-[480px] min-h-[280px] w-full overflow-hidden">
+          <Image src={image || FALLBACK_IMAGE} alt={clubEvent.title} fill priority sizes="100vw" unoptimized={!image} className="object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-night via-night/40 to-transparent" />
+        </div>
 
-      <section className="relative h-[75vh] overflow-hidden">
-        <img
-          src={clubEvent.image || FALLBACK_IMAGE}
-          alt={clubEvent.title}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/70" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-black" />
+        <div className="relative -mt-24 px-4 sm:-mt-32 sm:px-6">
+          <div className="mx-auto max-w-6xl">
+            {(past || clubEvent.featured || clubEvent.sold_out || clubEvent.age_min) && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {past && <span className="rounded-full border border-white/15 bg-night/70 px-3 py-1.5 text-xs font-semibold text-zinc-300">{t("event.finished")}</span>}
+                {clubEvent.featured && !past && (
+                  <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-night/70 px-3 py-1.5 text-xs font-semibold text-ink">
+                    <Icon name="star" className="h-3.5 w-3.5 text-warn" /> {t("event.featured")}
+                  </span>
+                )}
+                {clubEvent.sold_out && (
+                  <span className="flex items-center gap-1.5 rounded-full border border-red-400/30 bg-red-400/15 px-3 py-1.5 text-xs font-semibold text-red-200">
+                    <Icon name="ban" className="h-3.5 w-3.5" /> {t("event.soldOut")}
+                  </span>
+                )}
+                {clubEvent.age_min ? (
+                  <span className="rounded-full border border-white/15 bg-night/70 px-3 py-1.5 text-xs font-semibold text-ink">+{clubEvent.age_min}</span>
+                ) : null}
+              </div>
+            )}
 
-        <div className="relative z-10 flex h-full items-end">
-          <div className="mx-auto w-full max-w-7xl px-6 pb-16">
-            <p className="text-sm text-zinc-300">
-              {clubEvent.club_name || t("clubEvent.defaultClubName")}
-            </p>
-            <h1 className="mt-5 max-w-5xl text-6xl font-black tracking-tight text-white md:text-8xl">
-              {clubEvent.title}
-            </h1>
-            <div className="mt-8 flex flex-wrap gap-3">
-              {clubEvent.featured && (
-                <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300">
-                  🔥 {t("clubEvent.featured")}
-                </div>
+            {clubEvent.music && <p className="text-sm font-semibold text-brand-soft">{clubEvent.music}</p>}
+            <h1 className="font-display mt-1 break-words text-[2.1rem] leading-[1.05] text-ink sm:text-6xl">{clubEvent.title}</h1>
+
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-300">
+              {dateLabel && (
+                <span className="flex items-center gap-1.5">
+                  <Icon name="calendar" className="h-4 w-4 text-muted" /> {dateLabel}
+                </span>
               )}
-              {clubEvent.sold_out && (
-                <div className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-300">
-                  🚫 {t("club.sold_out")}
-                </div>
+              {timeLabel && (
+                <span className="flex items-center gap-1.5">
+                  <Icon name="clock" className="h-4 w-4 text-muted" /> {timeLabel}
+                </span>
               )}
-              <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm font-bold text-white">
-                🔞 +{clubEvent.age_min || 18}
-              </div>
-              <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm">
-                🎧 {clubEvent.music || t("club.music")}
-              </div>
-              <div className="rounded-full border border-white/10 bg-white/10 px-5 py-3 text-sm">
-                🎟 {clubEvent.price || t("clubEvent.tba")}
-              </div>
+              {clubName && (
+                <span className="flex items-center gap-1.5">
+                  <Icon name="map" className="h-4 w-4 text-muted" />
+                  {clubHref ? (
+                    <Link href={clubHref} className="font-semibold text-ink underline decoration-white/30 underline-offset-4 hover:decoration-white">
+                      {clubName}
+                    </Link>
+                  ) : (
+                    clubName
+                  )}
+                  {club?.neighborhood ? <span className="text-zinc-400">· {club.neighborhood}</span> : null}
+                </span>
+              )}
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              {ticketUrl ? (
+                <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={primaryBtn}>
+                  <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
+                </a>
+              ) : directionsUrl ? (
+                <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={primaryBtn}>
+                  <Icon name="map" className="h-4 w-4" /> {t("clubPage.directions")}
+                </a>
+              ) : null}
+              {clubHref && (
+                <Link href={clubHref} className={secondaryBtn}>
+                  {t("clubEvent.seeClub")}
+                </Link>
+              )}
+              <button onClick={share} className={`${secondaryBtn} px-4`} aria-label={t("clubPage.share")}>
+                <Icon name="share" className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-20">
-        <div className="grid gap-10 lg:grid-cols-3">
-
-          <div className="lg:col-span-2">
-            <div className="rounded-card border border-white/10 bg-white/[0.03] p-10 backdrop-blur-2xl">
-              <p className="text-sm text-zinc-400">{t("club.experience")}</p>
-              <h2 className="mt-4 text-5xl font-black">{t("clubEvent.aboutThisNight")}</h2>
-              <p className="mt-8 text-lg leading-relaxed text-zinc-300">
-                {clubEvent.description || t("clubEvent.defaultDescription")}
-              </p>
-              <div className="mt-10 grid gap-4 md:grid-cols-2">
-                <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-                  <p className="text-sm text-zinc-400">{t("clubEvent.artist")}</p>
-                  <p className="mt-3 text-2xl font-black">{clubEvent.artist || t("clubEvent.tba")}</p>
-                </div>
-                <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-                  <p className="text-sm text-zinc-400">{t("clubEvent.club")}</p>
-                  <p className="mt-3 text-2xl font-black">{clubEvent.club_name || t("clubEvent.defaultClubName")}</p>
+      {facts.length > 0 && (
+        <section className="mx-auto mt-8 max-w-6xl px-4 sm:px-6">
+          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-white/10 bg-white/10 sm:grid-cols-4">
+            {facts.map((f) => (
+              <div key={f.key} className="flex items-start gap-3 bg-surface p-4">
+                <Icon name={f.icon} className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" />
+                <div className="min-w-0">
+                  <dt className="text-xs text-zinc-400">{f.label}</dt>
+                  <dd className="mt-0.5 break-words text-sm font-semibold leading-snug text-ink">{f.value}</dd>
                 </div>
               </div>
-            </div>
-          </div>
+            ))}
+          </dl>
+        </section>
+      )}
 
-          <div className="rounded-card border border-white/10 bg-white/[0.03] p-8 backdrop-blur-2xl">
-            <p className="text-sm text-zinc-400">{t("club.night_info")}</p>
-            <h3 className="mt-4 text-4xl font-black">{t("club.details")}</h3>
-
-            <div className="mt-10 space-y-6 text-zinc-300">
-              <div>
-                <p className="text-sm text-zinc-400">{t("clubEvent.date")}</p>
-                <p className="mt-2 text-lg">
-                  📅 {clubEvent.date
-                    ? new Date(clubEvent.date).toLocaleDateString(toDateLocale(locale), {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })
-                    : t("clubEvent.tba")}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-zinc-400">{t("clubEvent.time")}</p>
-                <p className="mt-2 text-lg">
-                  🕒 {clubEvent.start_time || t("clubEvent.tba")} - {clubEvent.end_time || t("clubEvent.tba")}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-zinc-400">{t("club.music")}</p>
-                <p className="mt-2 text-lg">🎵 {clubEvent.music || t("clubEvent.tba")}</p>
-              </div>
-              <div>
-                <p className="text-sm text-zinc-400">{t("club.price")}</p>
-                <p className="mt-2 text-lg">🎟 {clubEvent.price || t("clubEvent.tba")}</p>
-              </div>
-            </div>
-
-            {tickets && tickets.length > 0 && (
-              <div className="mt-10">
-                <p className="mb-4 text-sm text-zinc-400">{t("clubEvent.tickets")}</p>
-                <div className="space-y-4">
-                  {tickets.map((ticket) => (
-                    <div key={ticket.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h4 className="font-bold text-white">{ticket.name}</h4>
-                          {ticket.description && (
-                            <p className="mt-1 text-sm text-zinc-400">{ticket.description}</p>
-                          )}
-                        </div>
-                        <p className="shrink-0 font-black text-white">
-                          {ticket.price ? `${ticket.price} ${ticket.currency || "EUR"}` : t("clubEvent.tba")}
-                        </p>
-                      </div>
-                      {ticket.external_url && !clubEvent.sold_out && (
-                        <a
-                          href={ticket.external_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-4 flex items-center justify-center rounded-xl bg-white px-4 py-3 font-bold text-black transition hover:scale-[1.02]"
-                        >
-                          {t("clubEvent.buyTicket")}
-                        </a>
-                      )}
+      <section className="mx-auto max-w-6xl px-4 pt-10 sm:px-6">
+        <div className="grid gap-8 lg:grid-cols-3">
+          <div className="order-last min-w-0 space-y-6 lg:order-none lg:col-span-2">
+            {(clubEvent.description || clubEvent.artist) && (
+              <Panel>
+                <h2 className="mb-4 text-lg font-semibold text-ink">{t("clubEvent.aboutThisNight")}</h2>
+                {clubEvent.description && <p className="whitespace-pre-line text-base leading-relaxed text-zinc-200">{clubEvent.description}</p>}
+                {clubEvent.artist && (
+                  <div className="mt-5 flex items-center gap-3 rounded-ctl border border-white/10 p-4">
+                    <Icon name="headphones" className="h-5 w-5 shrink-0 text-brand-soft" />
+                    <div>
+                      <p className="text-xs text-zinc-400">{t("clubEvent.artist")}</p>
+                      <p className="text-sm font-semibold text-ink">{clubEvent.artist}</p>
                     </div>
-                  ))}
+                  </div>
+                )}
+              </Panel>
+            )}
+
+            {(hasCoords || club?.address) && (
+              <Panel>
+                <h2 className="mb-4 text-lg font-semibold text-ink">{t("clubPage.getThereBack")}</h2>
+                {hasCoords && (
+                  <div className="overflow-hidden rounded-ctl">
+                    <ClubMap latitude={lat as number} longitude={lng as number} name={clubName || clubEvent.title} />
+                  </div>
+                )}
+                {club?.address && <p className="mt-4 text-sm text-zinc-300">{club.address}</p>}
+                {directionsUrl && (
+                  <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${primaryBtn} mt-4 w-full`}>
+                    <Icon name="map" className="h-4 w-4" /> {t("clubPage.openRoute")}
+                  </a>
+                )}
+                <div className="mt-5">
+                  <p className="mb-2 text-sm font-semibold text-ink">{t("clubPage.taxi")}</p>
+                  <RideButtons name={clubName || clubEvent.title} address={club?.address} lat={lat} lng={lng} />
                 </div>
-              </div>
+              </Panel>
             )}
-
-            {(!tickets || tickets.length === 0) && clubEvent.ticket_url && !clubEvent.sold_out && (
-              <a
-                href={clubEvent.ticket_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-10 flex items-center justify-center rounded-2xl bg-white px-6 py-4 font-bold text-black transition hover:scale-[1.02]"
-              >
-                {t("clubEvent.getTickets")}
-              </a>
-            )}
-
-            {clubEvent.sold_out && (
-              <div className="mt-10 flex items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 px-6 py-4 font-bold text-red-300">
-                {t("club.sold_out")}
-              </div>
-            )}
-
-            {clubEvent.latitude && clubEvent.longitude && (
-              <div className="mt-8">
-                <p className="text-sm text-zinc-400 mb-3">{t("club.location")}</p>
-                <ClubMap
-                  latitude={clubEvent.latitude}
-                  longitude={clubEvent.longitude}
-                  name={clubEvent.title}
-                />
-              </div>
-            )}
-
-            <FavoriteButton itemType="club_event" itemId={clubEvent.id} />
-            {!clubEvent.sold_out && <AttendanceButton itemType="club_event" itemId={clubEvent.id} />}
-
-            <Link
-              href={clubSlug ? `/clubs/${clubSlug}` : "/clubs"}
-              className="mt-4 flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white/10"
-            >
-              {t("clubEvent.backToClub")}
-            </Link>
           </div>
 
+          <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
+            <div className="rounded-card border border-white/10 bg-surface p-5">
+              {(dateLabel || timeLabel || clubEvent.price) && (
+                <dl className="space-y-2.5 border-b border-white/10 pb-4 text-sm">
+                  {dateLabel && (
+                    <div className="flex items-start justify-between gap-4">
+                      <dt className="text-zinc-400">{t("event.date")}</dt>
+                      <dd className="text-right font-semibold text-ink">{dateLabel}</dd>
+                    </div>
+                  )}
+                  {timeLabel && (
+                    <div className="flex items-center justify-between gap-4">
+                      <dt className="text-zinc-400">{t("event.time")}</dt>
+                      <dd className="font-semibold text-ink">{timeLabel}</dd>
+                    </div>
+                  )}
+                  {clubEvent.price && (
+                    <div className="flex items-center justify-between gap-4">
+                      <dt className="text-zinc-400">{t("event.price")}</dt>
+                      <dd className="font-semibold text-ink">{clubEvent.price}</dd>
+                    </div>
+                  )}
+                </dl>
+              )}
+
+              <div className="mt-4 space-y-3">
+                {tickets.length > 0
+                  ? tickets.map((ticket) => (
+                      <div key={ticket.id} className="rounded-ctl border border-white/10 p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-ink">{ticket.name}</p>
+                            {ticket.description && <p className="mt-1 text-xs text-zinc-400">{ticket.description}</p>}
+                          </div>
+                          {ticket.price ? <p className="shrink-0 text-sm font-semibold text-ink">{`${ticket.price} ${ticket.currency || "EUR"}`}</p> : null}
+                        </div>
+                        {ticket.external_url && !clubEvent.sold_out && !past && (
+                          <a href={ticket.external_url} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} mt-3 w-full py-3`}>
+                            <Icon name="ticket" className="h-4 w-4" /> {t("clubEvent.buyTicket")}
+                          </a>
+                        )}
+                      </div>
+                    ))
+                  : ticketUrl && (
+                      <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} hidden w-full lg:flex`}>
+                        <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
+                      </a>
+                    )}
+                {clubEvent.sold_out && (
+                  <p className="flex items-center justify-center gap-2 rounded-ctl border border-red-400/25 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-200">
+                    <Icon name="ban" className="h-4 w-4" /> {t("event.soldOut")}
+                  </p>
+                )}
+
+                <FavoriteButton itemType="club_event" itemId={clubEvent.id} />
+                {!past && !clubEvent.sold_out && <AttendanceButton itemType="club_event" itemId={clubEvent.id} />}
+
+                <a
+                  href={"/contact?type=report_issue&subject=" + encodeURIComponent(`${t("event.reportSubjectPrefix")} ${clubEvent.title}`)}
+                  className="flex items-center justify-center gap-2 pt-1 text-xs font-semibold text-zinc-400 transition hover:text-ink"
+                >
+                  <Icon name="flag" className="h-3.5 w-3.5" /> {t("clubPage.report")}
+                </a>
+              </div>
+            </div>
+          </aside>
         </div>
       </section>
+
+      <div className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-40 border-t border-white/10 bg-night/95 px-4 py-3 backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-md items-center gap-2">
+          {ticketUrl ? (
+            <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} flex-1 py-3`}>
+              <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
+            </a>
+          ) : directionsUrl ? (
+            <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${primaryBtn} flex-1 py-3`}>
+              <Icon name="map" className="h-4 w-4" /> {t("clubPage.directions")}
+            </a>
+          ) : clubHref ? (
+            <Link href={clubHref} className={`${primaryBtn} flex-1 py-3`}>
+              {t("clubEvent.seeClub")}
+            </Link>
+          ) : null}
+          <button onClick={share} className={`${secondaryBtn} h-11 w-11 px-0`} aria-label={t("clubPage.share")}>
+            <Icon name="share" className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
     </main>
   )
 }

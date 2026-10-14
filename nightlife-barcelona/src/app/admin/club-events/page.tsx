@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
+import { ADMIN_EMAIL } from "../../../lib/admin"
+import { logError } from "../../../lib/log"
 
 type Club = {
   id: number
@@ -47,7 +49,7 @@ export default function AdminClubEventsPage() {
   useEffect(() => {
     const checkAdmin = async () => {
       const { data } = await supabase.auth.getSession()
-      if (data.session?.user.email !== "info@noctuaapp.com") {
+      if (data.session?.user.email !== ADMIN_EMAIL) {
         window.location.href = "/login"
         return
       }
@@ -78,7 +80,7 @@ export default function AdminClubEventsPage() {
     const filePath = `club-events/${fileName}`
     const { error } = await supabase.storage.from("event-images").upload(filePath, file)
     setUploading(false)
-    if (error) { console.log("UPLOAD ERROR:", error); return null }
+    if (error) { logError("UPLOAD ERROR:", error); return null }
     const { data } = supabase.storage.from("event-images").getPublicUrl(filePath)
     return data.publicUrl
   }
@@ -126,7 +128,7 @@ export default function AdminClubEventsPage() {
       sold_out: false,
       age_min: newClubEvent.age_min || 18,
     }).select().single()
-    if (error) { console.log("ADD CLUB EVENT ERROR:", error); return }
+    if (error) { logError("ADD CLUB EVENT ERROR:", error); return }
     if (data) setClubEvents((prev) => [data, ...prev])
     setNewClubEvent(emptyClubEvent)
   }
@@ -193,7 +195,7 @@ export default function AdminClubEventsPage() {
       description: editClubEvent.description,
       age_min: editClubEvent.age_min || 18,
     }).eq("id", id).select().single()
-    if (error) { console.log("EDIT CLUB EVENT ERROR:", error); return }
+    if (error) { logError("EDIT CLUB EVENT ERROR:", error); return }
     if (data) setClubEvents((prev) => prev.map((e) => e.id === id ? data : e))
     cancelEditing()
   }

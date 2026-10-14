@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
+import { ADMIN_EMAIL } from "../../lib/admin"
 
 type Kind = "club" | "event" | "clubEvent" | "essential"
 
@@ -30,7 +31,7 @@ export default function AdminEditButton({ kind, id, inline = false }: { kind: Ki
   useEffect(() => {
     let alive = true
     supabase.auth.getSession().then(({ data }) => {
-      if (alive && data.session?.user.email === "info@noctuaapp.com") setIsAdmin(true)
+      if (alive && data.session?.user.email === ADMIN_EMAIL) setIsAdmin(true)
     })
     return () => { alive = false }
   }, [])

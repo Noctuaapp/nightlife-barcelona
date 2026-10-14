@@ -5,6 +5,8 @@ import { useEffect, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 
 import { supabase } from "../../../lib/supabase"
+import { ADMIN_EMAIL } from "../../../lib/admin"
+import { logError } from "../../../lib/log"
 
 type EntryDenial = {
   id: number
@@ -38,7 +40,7 @@ export default function AdminEntryDenialsPage() {
     const checkAdmin = async () => {
       const { data, error } = await supabase.auth.getSession()
 
-      if (error || data.session?.user.email !== "info@noctuaapp.com") {
+      if (error || data.session?.user.email !== ADMIN_EMAIL) {
         window.location.href = "/login"
         return
       }
@@ -60,7 +62,7 @@ export default function AdminEntryDenialsPage() {
         .limit(500)
 
       if (error) {
-        console.log("ENTRY DENIALS FETCH ERROR:", error)
+        logError("ENTRY DENIALS FETCH ERROR:", error)
         setLoading(false)
         return
       }
@@ -79,7 +81,7 @@ export default function AdminEntryDenialsPage() {
       const { data: allUsers, error: usersError } = await supabase.rpc("admin_list_users")
 
       if (usersError) {
-        console.log("ENTRY DENIALS USERS FETCH ERROR:", usersError)
+        logError("ENTRY DENIALS USERS FETCH ERROR:", usersError)
         return
       }
 

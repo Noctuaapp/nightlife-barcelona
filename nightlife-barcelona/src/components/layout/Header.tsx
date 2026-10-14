@@ -8,16 +8,33 @@ import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import { awardXp, XP_AMOUNTS, currentIsoWeek } from "../../lib/xp"
 import Icon from "../ui/Icon"
-import { Bell, Menu, X, User, Calendar, Compass, Sparkles, Heart, MessageCircle, Shield, Globe, ChevronDown, Check } from "lucide-react"
+import { Bell, Menu, X, User, Calendar, Compass, Sparkles, Heart, MessageCircle, Shield, Globe, ChevronDown, Check, Moon, Sun, CloudMoon, Cloud, CloudFog, CloudDrizzle, CloudRain, CloudSnow, CloudLightning, Thermometer } from "lucide-react"
+import { ADMIN_EMAIL } from "../../lib/admin"
+import { logError } from "../../lib/log"
 
 // Barcelona es la única ciudad por ahora (antes había un selector de ciudad con una sola opción).
 const CITY = { lat: 41.3851, lng: 2.1734 }
 
+// Código de Open-Meteo → icono (antes eran emojis de sol, que de noche no tenían sentido).
 const weatherCodes: Record<number, string> = {
-  0: "☀️", 1: "🌤", 2: "⛅", 3: "☁️",
-  45: "🌫", 48: "🌫", 51: "🌦", 53: "🌦", 55: "🌧",
-  61: "🌧", 63: "🌧", 65: "🌧", 71: "🌨", 73: "🌨",
-  75: "🌨", 80: "🌦", 81: "🌧", 82: "⛈", 95: "⛈",
+  0: "clear", 1: "partly", 2: "partly", 3: "cloud",
+  45: "fog", 48: "fog", 51: "drizzle", 53: "drizzle", 55: "rain",
+  61: "rain", 63: "rain", 65: "rain", 71: "snow", 73: "snow",
+  75: "snow", 80: "drizzle", 81: "rain", 82: "storm", 95: "storm",
+}
+
+function WeatherIcon({ name, night = true, size = 18 }: { name: string; night?: boolean; size?: number }) {
+  const I =
+    name === "clear" ? (night ? Moon : Sun)
+    : name === "partly" ? CloudMoon
+    : name === "cloud" ? Cloud
+    : name === "fog" ? CloudFog
+    : name === "drizzle" ? CloudDrizzle
+    : name === "rain" ? CloudRain
+    : name === "snow" ? CloudSnow
+    : name === "storm" ? CloudLightning
+    : Thermometer
+  return <I size={size} className="text-brand-soft" aria-hidden="true" />
 }
 
 type WeatherHour = { label: string; icon: string; temp: number }
@@ -53,7 +70,7 @@ function oncePerSession(key: string): boolean {
   }
 }
 
-const WEATHER_CACHE_KEY = "noctua_weather"
+const WEATHER_CACHE_KEY = "noctua_weather_v2"
 const WEATHER_TTL_MS = 30 * 60 * 1000
 
 export default function Header() {
@@ -151,7 +168,7 @@ export default function Header() {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession()
       setIsLoggedIn(!!data.session)
-      setIsAdmin(data.session?.user.email === "info@noctuaapp.com")
+      setIsAdmin(data.session?.user.email === ADMIN_EMAIL)
       if (data.session) {
         checkBlocked(data.session.user.id)
         checkTermsAccepted(data.session.user.id)
@@ -161,7 +178,7 @@ export default function Header() {
     checkSession()
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session)
-      setIsAdmin(session?.user.email === "info@noctuaapp.com")
+      setIsAdmin(session?.user.email === ADMIN_EMAIL)
       if (session) {
         checkBlocked(session.user.id)
         checkTermsAccepted(session.user.id)
@@ -192,7 +209,7 @@ export default function Header() {
         const data = await res.json()
         const currentTemp = Math.round(data.current.temperature_2m)
         const currentCode = data.current.weathercode
-        const currentIcon = weatherCodes[currentCode] || "🌡"
+        const currentIcon = weatherCodes[currentCode] || "unknown"
 
         const now = new Date()
         const currentHour = now.getHours()
@@ -230,7 +247,7 @@ export default function Header() {
           const idx = data.hourly.time.indexOf(iso)
           const temp = idx !== -1 ? Math.round(data.hourly.temperature_2m[idx]) : null
           const code = idx !== -1 ? data.hourly.weathercode[idx] : null
-          const icon = code !== null ? (weatherCodes[code] || "🌡") : "🌡"
+          const icon = code !== null ? weatherCodes[code] || "unknown" : "unknown"
           const label = `${pad(hour)}:00`
           return { label, icon, temp: temp ?? 0 }
         })
@@ -321,7 +338,7 @@ export default function Header() {
           related_event_id: item.id,
           related_event_type: item.kind,
         })
-        if (insertError) console.log("FAVORITE REMINDER INSERT ERROR:", insertError)
+        if (insertError) logError("FAVORITE REMINDER INSERT ERROR:", insertError)
       }
     }
 
@@ -341,7 +358,7 @@ export default function Header() {
         .limit(30)
 
       if (error) {
-        console.log("NOTIFICATIONS ERROR:", error)
+        logError("NOTIFICATIONS ERROR:", error)
         return
       }
 
@@ -350,7 +367,7 @@ export default function Header() {
         const stored = localStorage.getItem("noctua_read_broadcasts")
         if (stored) readBroadcasts = JSON.parse(stored)
       } catch (e) {
-        console.log("LOCALSTORAGE ERROR:", e)
+        logError("LOCALSTORAGE ERROR:", e)
       }
 
       setReadBroadcastIds(readBroadcasts)
@@ -413,7 +430,7 @@ export default function Header() {
       try {
         localStorage.setItem("noctua_read_broadcasts", JSON.stringify(merged))
       } catch (e) {
-        console.log("LOCALSTORAGE ERROR:", e)
+        logError("LOCALSTORAGE ERROR:", e)
       }
     }
 
@@ -626,14 +643,14 @@ export default function Header() {
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-zinc-400">{t("weather.tonightTitle")}</p>
               <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
-                <span aria-hidden="true">{weather.icon}</span> {weather.temp}°
+                <WeatherIcon name={weather.icon} night={new Date().getHours() >= 20 || new Date().getHours() < 7} /> {weather.temp}°
               </p>
             </div>
             <div className="scrollbar-none mt-3 flex gap-4 overflow-x-auto">
               {weather.nightHours.map((h) => (
                 <div key={h.label} className="flex min-w-[34px] shrink-0 flex-col items-center gap-1">
                   <p className="text-xs text-zinc-400">{h.label}</p>
-                  <span aria-hidden="true" className="text-lg">{h.icon}</span>
+                  <WeatherIcon name={h.icon} />
                   <p className="text-sm font-semibold text-ink">{h.temp}°</p>
                 </div>
               ))}

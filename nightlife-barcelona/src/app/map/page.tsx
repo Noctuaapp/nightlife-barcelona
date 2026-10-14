@@ -8,15 +8,19 @@ import { useSearchParams } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import { track } from "../../lib/track"
 import BottomNav from "../../components/layout/BottomNav"
+import LoginWall from "../../components/ui/LoginWall"
 import { createSlug } from "../../lib/slug"
 import { useLanguage } from "../../context/LanguageContext"
 import ArrowIcon from "../../components/ui/ArrowIcon"
 import { zoneOf, zonesPresent } from "../../lib/zones"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
+import { Disc3, CalendarDays, MapPin, Footprints, X, List, LocateFixed, Search, type LucideIcon } from "lucide-react"
+import { logError } from "../../lib/log"
 
 type Club = {
   id: number
   name: string
+  slug?: string | null
   neighborhood: string | null
   music: string | null
   hours: string | null
@@ -30,6 +34,7 @@ type Club = {
 type Event = {
   id: number
   title: string
+  slug?: string | null
   date: string | null
   price: string | null
   image: string | null
@@ -54,13 +59,18 @@ type Filter = "clubs" | "events" | "essentials"
 const COLORS: Record<Filter, string> = {
   clubs: "#7c5cff",
   events: "#7c5cff",
-  essentials: "#10b981",
+  essentials: "#7c5cff",
 }
 
-const FILTER_ICONS: Record<Filter, string> = {
-  clubs: "🎪",
-  events: "🎉",
-  essentials: "📍",
+// Iconos de línea por tipo (antes emojis).
+const FILTER_ICONS: Record<Filter, LucideIcon> = {
+  clubs: Disc3,
+  events: CalendarDays,
+  essentials: MapPin,
+}
+const FilterIcon = ({ f, size = 14 }: { f: Filter; size?: number }) => {
+  const I = FILTER_ICONS[f]
+  return <I size={size} aria-hidden="true" />
 }
 
 // Botón principal "Ver club/evento": antes era un rectángulo de esquinas suaves con un "→" de
@@ -139,15 +149,11 @@ const getSub = (item: Club | Event | Essential) => {
 // género musical y precio, un evento su precio, un esencial su horario — solo si el dato existe.
 const getMeta = (item: Club | Event | Essential, filter: Filter): string | null => {
   if (filter === "clubs" && "music" in item) {
-    const parts = [item.music ? `🎧 ${item.music}` : null, item.price ? `💶 ${item.price}` : null].filter(Boolean)
-    return parts.length ? parts.join("   ") : null
+    const parts = [item.music, item.price].filter(Boolean)
+    return parts.length ? parts.join(" · ") : null
   }
-  if (filter === "events" && "price" in item) {
-    return item.price ? `🎟 ${item.price}` : null
-  }
-  if (filter === "essentials" && "open_hours" in item) {
-    return item.open_hours ? `🕐 ${item.open_hours}` : null
-  }
+  if (filter === "events" && "price" in item) return item.price || null
+  if (filter === "essentials" && "open_hours" in item) return item.open_hours || null
   return null
 }
 
@@ -186,24 +192,25 @@ const DetailCard = ({
         {image ? (
           <img src={image} alt={name} style={{ width: "100%", height: "160px", objectFit: "cover", display: "block" }} />
         ) : (
-          <div style={{ width: "100%", height: "160px", background: `linear-gradient(135deg, ${color}66, ${color}18)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "42px" }}>
-            {FILTER_ICONS[filter]}
+          <div style={{ width: "100%", height: "160px", background: `linear-gradient(135deg, ${color}55, #16141f)`, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.4)" }}>
+            <FilterIcon f={filter} size={40} />
           </div>
         )}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0) 38%, rgba(0,0,0,0.55) 75%, rgba(0,0,0,0.92) 100%)" }} />
         <div style={{
           position: "absolute", left: "12px", top: "12px", borderRadius: "999px", padding: "5px 12px",
-          fontSize: "10.5px", fontWeight: 800, color: "#fff", background: "rgba(0,0,0,0.5)",
-          border: `1px solid ${color}55`, backdropFilter: "blur(8px)", letterSpacing: "0.02em", textTransform: "capitalize",
+          fontSize: "12px", fontWeight: 600, color: "#fff", background: "rgba(10,9,16,0.75)",
+          border: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", gap: "6px",
         }}>
-          {FILTER_ICONS[filter]} {t(`nav.${filter}`)}
+          <FilterIcon f={filter} size={12} /> {t(`nav.${filter}`)}
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            style={{ position: "absolute", top: "10px", right: "10px", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", color: "#fff", background: "rgba(0,0,0,0.55)", border: "1px solid rgba(255,255,255,0.15)", fontSize: "14px", cursor: "pointer", backdropFilter: "blur(6px)" }}
+            aria-label={t("clubPage.close")}
+            style={{ position: "absolute", top: "10px", right: "10px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", color: "#fff", background: "rgba(10,9,16,0.75)", border: "1px solid rgba(255,255,255,0.15)", cursor: "pointer" }}
           >
-            ✕
+            <X size={16} />
           </button>
         )}
         <div style={{ position: "absolute", left: "16px", right: "16px", bottom: "13px" }}>
@@ -213,7 +220,7 @@ const DetailCard = ({
       </div>
 
       {meta && (
-        <p style={{ marginTop: "13px", fontSize: "12.5px", fontWeight: 600, color: "rgba(255,255,255,0.65)", letterSpacing: "0.01em" }}>
+        <p style={{ marginTop: "13px", fontSize: "13px", fontWeight: 600, color: "#d4d3dc" }}>
           {meta}
         </p>
       )}
@@ -221,26 +228,26 @@ const DetailCard = ({
       {(address || walkingTime) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "8px" }}>
           {address && (
-            <span style={{ fontSize: "11.5px", color: "rgba(255,255,255,0.45)", display: "flex", alignItems: "center", gap: "4px" }}>
-              📍 {address}
+            <span style={{ fontSize: "12px", color: "#a19fad", display: "flex", alignItems: "center", gap: "4px" }}>
+              <MapPin size={12} /> {address}
             </span>
           )}
           {walkingTime && (
-            <span style={{ fontSize: "11.5px", color: "#60a5fa", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
-              🚶 {walkingTime}
+            <span style={{ fontSize: "12px", color: "#a08bff", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}>
+              <Footprints size={12} /> {walkingTime}
             </span>
           )}
         </div>
       )}
 
       {filter === "clubs" && (
-        <Link href={`/clubs/${createSlug(name)}`} style={viewButtonStyle}>
+        <Link href={`/clubs/${("slug" in item && item.slug) || createSlug(name)}`} style={viewButtonStyle}>
           {t("map.viewClub")}
           <span style={arrowCircleStyle}><ArrowIcon className="h-3.5 w-3.5" /></span>
         </Link>
       )}
       {filter === "events" && (
-        <Link href={`/event/${createSlug(name)}`} style={viewButtonStyle}>
+        <Link href={`/event/${("slug" in item && item.slug) || createSlug(name)}`} style={viewButtonStyle}>
           {t("map.viewEvent")}
           <span style={arrowCircleStyle}><ArrowIcon className="h-3.5 w-3.5" /></span>
         </Link>
@@ -301,6 +308,7 @@ export default function MapPage() {
   }, [showList])
 
   useEffect(() => {
+    // El mapa es solo para usuarios registrados: sin sesión se muestra LoginWall.
     supabase.auth.getSession().then(({ data }) => {
       const logged = !!data.session
       setLoggedIn(logged)
@@ -336,8 +344,8 @@ export default function MapPage() {
   useEffect(() => {
     const fetchData = async () => {
       const [{ data: clubsData }, { data: eventsData }, { data: essentialsData }] = await Promise.all([
-        supabase.from("clubs").select("id, name, neighborhood, music, hours, price, latitude, longitude, address, image").eq("hidden", false),
-        supabase.from("events").select("id, title, date, price, image, latitude, longitude, address").eq("hidden", false),
+        supabase.from("clubs").select("id, name, slug, neighborhood, music, hours, price, latitude, longitude, address, image").eq("hidden", false),
+        supabase.from("events").select("id, title, slug, date, price, image, latitude, longitude, address").eq("hidden", false),
         supabase.from("essentials").select("id, name, category, neighborhood, open_hours, latitude, longitude, address").eq("hidden", false),
       ])
       if (clubsData) setClubs(clubsData)
@@ -427,7 +435,7 @@ export default function MapPage() {
           map.current!.addLayer({ id: "route", type: "line", source: "route", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#3b82f6", "line-width": 4, "line-opacity": 0.8 } })
           routeLayerRef.current = true
         }
-      } catch (e) { console.log("Route error:", e) }
+      } catch (e) { logError("Route error:", e) }
     }
     fetchRoute()
   }, [selected, userLocation, mapReady])
@@ -461,7 +469,7 @@ export default function MapPage() {
           userMarkerRef.current.setLngLat([longitude, latitude])
         }
       },
-      (err) => console.log("Geolocation error:", err),
+      (err) => logError("Geolocation error:", err),
       { enableHighAccuracy: true, maximumAge: 5000 }
     )
     watchIdRef.current = id
@@ -494,7 +502,7 @@ export default function MapPage() {
             border: zone === z ? `1px solid ${COLORS[filter]}` : "1px solid rgba(255,255,255,0.12)",
             background: zone === z ? `${COLORS[filter]}33` : "rgba(255,255,255,0.04)",
             color: zone === z ? "#fff" : "rgba(255,255,255,0.55)" }}>
-          {z === "" ? "📍 Todo" : z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", "")}
+          {z === "" ? t("essentialsPage.allArea") : z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", "")}
         </button>
       ))}
     </div>
@@ -564,26 +572,8 @@ export default function MapPage() {
   if (!isLoggedIn) {
     return (
       <>
+        <LoginWall titleKey="map.title" subtitleKey="map.subtitle" />
         <BottomNav />
-        <main style={{ position: "relative", display: "flex", minHeight: "100dvh", alignItems: "center", justifyContent: "center", background: "#0a0910", color: "#fff", padding: "0 16px", overflow: "hidden" }}>
-          <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-            <div style={{ position: "absolute", left: "-160px", top: "-160px", width: "500px", height: "500px", borderRadius: "9999px", background: "rgba(124,92,255,0.2)", filter: "blur(120px)" }} />
-            <div style={{ position: "absolute", right: "-160px", top: "30%", width: "450px", height: "450px", borderRadius: "9999px", background: "rgba(245,180,60,0.1)", filter: "blur(130px)" }} />
-          </div>
-          <div style={{ position: "relative", maxWidth: "420px", textAlign: "center" }}>
-            <div style={{ width: "96px", height: "96px", margin: "0 auto 24px", borderRadius: "50%", background: "linear-gradient(135deg, rgba(124,92,255,0.35), rgba(124,92,255,0.15))", border: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "44px", boxShadow: "0 0 40px -10px rgba(124,92,255,0.5)" }}>
-              🗺️
-            </div>
-            <h1 style={{ fontSize: "38px", fontWeight: 900, color: "#fff" }}>{t("map.title")}</h1>
-            <p style={{ marginTop: "16px", color: "rgba(255,255,255,0.5)", fontSize: "17px", lineHeight: 1.6 }}>
-              {t("map.subtitle")}
-            </p>
-            <div style={{ marginTop: "32px", display: "flex", gap: "16px", justifyContent: "center" }}>
-              <Link href="/signup" style={{ borderRadius: "9999px", background: "#fff", padding: "16px 32px", fontWeight: 700, color: "#000", textDecoration: "none" }}>{t("nav.signup")}</Link>
-              <Link href="/login" style={{ borderRadius: "9999px", border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)", padding: "16px 32px", fontWeight: 700, color: "#fff", textDecoration: "none" }}>{t("nav.login")}</Link>
-            </div>
-          </div>
-        </main>
       </>
     )
   }
@@ -597,7 +587,7 @@ export default function MapPage() {
             {t("common.back")}
           </Link>
           <span className="hidden sm:inline" style={{ fontSize: "15px", fontWeight: 900, color: "#fff", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>
-            🗺️ {t("nav.map")} <span style={{ fontWeight: 500, color: "rgba(255,255,255,0.4)" }}>· Barcelona</span>
+            {t("nav.map")} <span style={{ fontWeight: 500, color: "rgba(255,255,255,0.5)" }}>· Barcelona</span>
           </span>
         </div>
         {/* Antes este grupo de botones (clubs/eventos/esenciales) no tenía forma de encoger ni
@@ -613,10 +603,10 @@ export default function MapPage() {
                 background: filter === f ? `linear-gradient(135deg, ${COLORS[f]}33, ${COLORS[f]}11)` : "rgba(255,255,255,0.03)",
                 boxShadow: filter === f ? `0 0 18px ${COLORS[f]}40` : "none",
                 color: filter === f ? "#fff" : "rgba(255,255,255,0.5)",
-                fontSize: "11px", fontWeight: 700, cursor: "pointer", textTransform: "capitalize",
+                fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px",
                 whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.2s ease",
               }}>
-              {FILTER_ICONS[f]} {t(`nav.${f}`)}
+              <FilterIcon f={f} /> {t(`nav.${f}`)}
             </button>
           ))}
         </div>
@@ -627,7 +617,7 @@ export default function MapPage() {
           <div style={{ padding: "14px 14px 0" }}>
             <SearchInput value={search} onChange={setSearch} accent={COLORS[filter]} />
             {zoneChips}
-            <p style={{ marginTop: "10px", fontSize: "11px", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.15em" }}>
+            <p style={{ marginTop: "10px", fontSize: "12px", color: "#a19fad" }}>
               {currentList.filter((i) => i.latitude && i.longitude).length} {t("map.results")}
             </p>
           </div>
@@ -658,15 +648,15 @@ export default function MapPage() {
           <div ref={mapContainer} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
           <button className="lg:hidden" onClick={() => setShowList(!showList)}
             style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", padding: "9px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)" }}>
-            {showList ? `✕ ${t("map.close")}` : `☰ ${t("map.list")}`}
+            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>{showList ? <X size={14} /> : <List size={14} />} {showList ? t("map.close") : t("map.list")}</span>
           </button>
           <button className="hidden lg:block" onClick={() => setShowList(showList === false ? true : false)}
             style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", padding: "6px 10px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {showList === false ? "☰" : "✕"}
+            {showList === false ? <List size={16} /> : <X size={16} />}
           </button>
           <button onClick={startTracking}
             style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, borderRadius: "999px", background: trackingActive ? "rgba(59,130,246,0.9)" : "rgba(0,0,0,0.75)", border: trackingActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.2)", padding: "9px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)" }}>
-            {trackingActive ? `📍 ${t("map.following")}` : `📍 ${t("map.myLocation")}`}
+            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><LocateFixed size={14} /> {trackingActive ? t("map.following") : t("map.myLocation")}</span>
           </button>
 
           {/* Buscador flotante: escribe un nombre y salta directo a ese sitio; con tu ubicación
@@ -677,27 +667,28 @@ export default function MapPage() {
                 value={mapQuery}
                 onChange={(e) => { setMapQuery(e.target.value); setMapSearchOpen(true) }}
                 onFocus={() => setMapSearchOpen(true)}
-                placeholder={`Buscar ${t(`nav.${filter}`).toLowerCase()} en el mapa…`}
+                placeholder={t("map.searchPlaceholder").replace("{type}", t(`nav.${filter}`).toLowerCase())}
+                aria-label={t("map.searchPlaceholder").replace("{type}", t(`nav.${filter}`).toLowerCase())}
                 style={{ width: "100%", boxSizing: "border-box", borderRadius: "9999px", border: `1px solid ${COLORS[filter]}66`, background: "rgba(22,16,41,0.92)", color: "#fff", padding: "12px 44px 12px 18px", fontSize: "16px", outline: "none", backdropFilter: "blur(14px)", boxShadow: `0 10px 30px -12px ${COLORS[filter]}99` }}
               />
               {mapQuery ? (
-                <button onClick={() => { setMapQuery(""); setMapSearchOpen(false) }} aria-label="Limpiar" style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "rgba(255,255,255,0.6)", fontSize: "16px", cursor: "pointer" }}>✕</button>
+                <button onClick={() => { setMapQuery(""); setMapSearchOpen(false) }} aria-label={t("explorer.clearSearch")} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", display: "flex" }}><X size={16} /></button>
               ) : (
-                <span style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.5)", pointerEvents: "none" }}>🔍</span>
+                <span style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.5)", pointerEvents: "none", display: "flex" }}><Search size={16} /></span>
               )}
             </div>
             {mapSearchOpen && (
               <div style={{ marginTop: "8px", borderRadius: "18px", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(13,10,28,0.97)", backdropFilter: "blur(16px)", overflow: "hidden", boxShadow: "0 20px 50px -20px rgba(0,0,0,0.8)" }}>
                 {!mapQ && !userLocation && (
                   <button onClick={startTracking} style={{ display: "block", width: "100%", textAlign: "left", padding: "13px 16px", background: "none", border: "none", color: "#fff", fontSize: "14px", cursor: "pointer" }}>
-                    📍 Usar mi ubicación para ver lo más cercano
+                    <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><LocateFixed size={16} /> {t("map.useLocation")}</span>
                   </button>
                 )}
                 {!mapQ && userLocation && mapResults.length > 0 && (
-                  <p style={{ padding: "10px 16px 4px", fontSize: "11px", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Cerca de ti</p>
+                  <p style={{ padding: "10px 16px 4px", fontSize: "12px", fontWeight: 600, color: "#a19fad" }}>{t("essentialsPage.nearTitle")}</p>
                 )}
                 {mapQ && mapResults.length === 0 && (
-                  <p style={{ padding: "14px 16px", fontSize: "13px", color: "rgba(255,255,255,0.45)" }}>Sin resultados para “{mapQuery}”.</p>
+                  <p style={{ padding: "14px 16px", fontSize: "13px", color: "#a19fad" }}>{t("map.noResultsFor").replace("{q}", mapQuery)}</p>
                 )}
                 {(mapResults as { i: Club | Event | Essential; d?: number | null }[]).map(({ i, d }) => {
                   const dist = typeof d === "number" ? d : mapDist(i)
@@ -721,8 +712,8 @@ export default function MapPage() {
             <div className="lg:hidden" style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "85%", maxWidth: "320px", background: "#0a0910", zIndex: 20, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.1)" }}>
               <div style={{ padding: "14px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                  <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", textTransform: "capitalize" }}>{FILTER_ICONS[filter]} {t(`nav.${filter}`)}</p>
-                  <button onClick={() => setShowList(false)} style={{ color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 10px", fontSize: "13px", cursor: "pointer" }}>✕</button>
+                  <p style={{ fontWeight: 600, color: "#fff", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}><FilterIcon f={filter} /> {t(`nav.${filter}`)}</p>
+                  <button onClick={() => setShowList(false)} aria-label={t("clubPage.close")} style={{ color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 8px", cursor: "pointer", display: "flex" }}><X size={16} /></button>
                 </div>
                 <div style={{ marginBottom: "10px" }}><SearchInput value={search} onChange={setSearch} accent={COLORS[filter]} />{zoneChips}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>

@@ -68,7 +68,7 @@ export default function ContactPage() {
     if (!userData.user) {
       setSending(false)
       setLoggedIn(false)
-      setError("Inicia sesión para enviarnos un mensaje.")
+      setError(t("contact.loginRequired"))
       return
     }
 
@@ -106,14 +106,13 @@ export default function ContactPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-black pb-40 text-white">
+      <main className="min-h-screen bg-night pb-40 text-ink">
 
         {/* Hero */}
         <section className="relative overflow-hidden px-4 pt-14 pb-16">
-          <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-transparent" />
           <div className="relative mx-auto max-w-5xl">
             <p className="text-sm text-zinc-400">{t("contact.eyebrow")}</p>
-            <h1 className="mt-4 text-6xl font-black tracking-tight">{t("contact.title")}</h1>
+            <h1 className="font-display mt-4 text-4xl sm:text-6xl">{t("contact.title")}</h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
               {t("contact.subtitle")}
             </p>
@@ -133,11 +132,11 @@ export default function ContactPage() {
                     onClick={() => setType(ct.value)}
                     className={`rounded-2xl border p-4 text-left transition ${
                       type === ct.value
-                        ? "border-purple-500/40 bg-purple-500/10"
+                        ? "border-brand bg-brand/15"
                         : "border-white/10 bg-white/[0.02] hover:bg-white/5"
                     }`}
                   >
-                    <p className={`text-sm font-bold ${type === ct.value ? "text-purple-300" : "text-white"}`}>
+                    <p className={`text-sm font-bold ${type === ct.value ? "text-brand-soft" : "text-ink"}`}>
                       {ct.label}
                     </p>
                     <p className="mt-1 text-xs text-zinc-400">{ct.desc}</p>
@@ -148,20 +147,18 @@ export default function ContactPage() {
 
             {/* Form */}
             <div className="lg:col-span-2">
-              <div className="rounded-card border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
+              <div className="rounded-card border border-white/10 bg-surface p-6 sm:p-8">
                 <p className="mb-6 text-xs text-zinc-400">{t("contact.messageLabel")}</p>
                 {authChecked && !loggedIn ? (
                   <div className="py-6 text-center">
-                    <p className="text-2xl font-black">Inicia sesión para escribirnos</p>
-                    <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-zinc-400">
-                      Así podemos responderte directamente dentro de Noctua y tú ves la respuesta en tu perfil.
-                    </p>
+                    <p className="text-xl font-semibold">{t("contact.loginTitle")}</p>
+                    <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-zinc-300">{t("contact.loginBody")}</p>
                     <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                      <a href="/login" className="rounded-2xl bg-white px-8 py-4 font-bold text-black transition hover:scale-[1.02]">
-                        Iniciar sesión
+                      <a href={`/login?next=${encodeURIComponent("/contact" + (typeof window !== "undefined" ? window.location.search : ""))}`} className="rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong">
+                        {t("nav.login")}
                       </a>
-                      <a href="/signup" className="rounded-2xl border border-white/15 bg-white/5 px-8 py-4 font-bold text-white transition hover:bg-white/10">
-                        Crear cuenta
+                      <a href={`/signup?next=${encodeURIComponent("/contact" + (typeof window !== "undefined" ? window.location.search : ""))}`} className="rounded-ctl border border-white/15 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/5">
+                        {t("nav.signup")}
                       </a>
                     </div>
                   </div>
@@ -174,37 +171,37 @@ export default function ContactPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={t("contact.namePlaceholder")}
-                    className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
+                    className="rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand transition"
                   />
                   <input
                     value={email}
                     readOnly
                     title="Es el email de tu cuenta"
                     placeholder={t("contact.emailPlaceholder")}
-                    className="cursor-not-allowed rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-zinc-400 outline-none transition"
+                    className="cursor-not-allowed rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink text-zinc-400 outline-none transition"
                   />
                   <input
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder={t("contact.subjectPlaceholder")}
-                    className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition md:col-span-2"
+                    className="rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand transition md:col-span-2"
                   />
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder={t("contact.messagePlaceholder")}
                     rows={7}
-                    className="resize-none rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition md:col-span-2"
+                    className="resize-none rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand transition md:col-span-2"
                   />
                 </div>
 
-                {error && <p className="mt-4 text-sm font-bold text-red-400">{error}</p>}
+                {error && <p className="mt-4 text-sm font-semibold text-red-300">{error}</p>}
                 {success && <p className="mt-4 text-sm font-bold text-emerald-300">{success}</p>}
 
                 <button
                   onClick={sendMessage}
                   disabled={sending}
-                  className="mt-6 rounded-2xl bg-white px-8 py-4 font-bold text-black transition hover:scale-[1.02] disabled:opacity-60"
+                  className="mt-6 rounded-ctl bg-brand px-8 py-4 font-semibold text-white transition hover:bg-brand-strong disabled:opacity-60"
                 >
                   {sending ? t("contact.sending") : t("contact.sendButton")}
                 </button>

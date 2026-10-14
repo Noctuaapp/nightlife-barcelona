@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
       { source: "/account", destination: "/profile", permanent: true },
       { source: "/ayuda", destination: "/faq", permanent: true },
       { source: "/venue-details", destination: "/clubs", permanent: true },
+      // La analítica antigua del admin se sustituyó por Dashboard y Datos.
+      { source: "/admin/analytics", destination: "/admin/datos", permanent: false },
     ]
   },
   images: {

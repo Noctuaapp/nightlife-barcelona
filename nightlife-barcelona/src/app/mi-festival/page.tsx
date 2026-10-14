@@ -3,9 +3,12 @@
 import { useState, useEffect, type ChangeEvent } from "react"
 import Link from "next/link"
 
+import { Upload, X, Pencil, Trash2, Headphones, ChevronDown } from "lucide-react"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
+import { useLanguage } from "../../context/LanguageContext"
+import { toast } from "../../components/ui/Toast"
 
 // Portal para que el organizador de un festival gestione sus propios festivales y las sesiones
 // de DJ de cada uno, sin pasar por Jordi. Un festival queda "vinculado" cuando su fila en
@@ -82,6 +85,9 @@ const emptySession = { date: "", title: "", artist: "", stage: "", start_time: "
 type SessionFormData = typeof emptySession
 
 export default function MiFestivalPage() {
+  const { t, locale } = useLanguage()
+  const fail = (key: string, detail?: string) => toast(`${t(key)}${detail ? `: ${detail}` : ""}`, 5000)
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [checkingAccess, setCheckingAccess] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [festivals, setFestivals] = useState<Festival[]>([])
@@ -111,7 +117,7 @@ export default function MiFestivalPage() {
     const load = async () => {
       const { data: sessionData } = await supabase.auth.getSession()
       const user = sessionData.session?.user
-      if (!user) { window.location.href = "/login"; return }
+      if (!user) { window.location.href = "/login?next=/mi-festival"; return }
       setUserId(user.id)
 
       const { data, error } = await supabase.from("events").select("*").eq("owner_user_id", user.id).order("date", { ascending: true })
@@ -138,7 +144,7 @@ export default function MiFestivalPage() {
     const fileName = `owner-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
     const { error } = await supabase.storage.from("event-photos").upload(fileName, file)
     setUploading(false)
-    if (error) { alert("Error al subir la imagen: " + error.message); return null }
+    if (error) { fail("ownerPortal.errUpload", error.message); return null }
     const { data } = supabase.storage.from("event-photos").getPublicUrl(fileName)
     return data.publicUrl
   }
@@ -189,7 +195,7 @@ export default function MiFestivalPage() {
 
   const addFestival = async () => {
     if (!userId) return
-    if (!newForm.title.trim()) { alert("Escribe un título para el festival"); return }
+    if (!newForm.title.trim()) { fail("festivalPortal.errTitle"); return }
     setSaving(true)
     const { data, error } = await supabase.from("events").insert({
       ...newForm,
@@ -205,7 +211,7 @@ export default function MiFestivalPage() {
       vip_tables: false,
     }).select().single()
     setSaving(false)
-    if (error) { alert("Error al crear el festival: " + error.message); return }
+    if (error) { fail("festivalPortal.errCreate", error.message); return }
     if (data) setFestivals((prev) => [...prev, data].sort((a, b) => (a.date || "").localeCompare(b.date || "")))
     setNewForm(emptyForm); setNewGallery([]); setNewPriceTiersRaw("")
     setShowAddForm(false)
@@ -220,7 +226,7 @@ export default function MiFestivalPage() {
   const cancelEdit = () => { setEditingId(null); setEditForm(emptyForm); setEditGallery([]); setEditPriceTiersRaw("") }
 
   const saveEdit = async (id: number) => {
-    if (!editForm.title.trim()) { alert("Escribe un título para el festival"); return }
+    if (!editForm.title.trim()) { fail("festivalPortal.errTitle"); return }
     setSaving(true)
     const { data, error } = await supabase.from("events").update({
       ...editForm,
@@ -232,16 +238,18 @@ export default function MiFestivalPage() {
       price_tiers: parsePriceTiers(editPriceTiersRaw).length > 0 ? parsePriceTiers(editPriceTiersRaw) : null,
     }).eq("id", id).select().single()
     setSaving(false)
-    if (error) { alert("Error al guardar los cambios: " + error.message); return }
+    if (error) { fail("ownerPortal.errSave", error.message); return }
     if (data) setFestivals((prev) => prev.map((f) => (f.id === id ? data : f)))
     cancelEdit()
   }
 
+  // Borrar pide una segunda pulsación (antes, confirm() del navegador).
   const deleteFestival = async (id: number) => {
-    if (!confirm("¿Seguro que quieres borrar este festival? También se borrarán sus sesiones.")) return
+    if (pendingDelete !== `f${id}`) { setPendingDelete(`f${id}`); return }
+    setPendingDelete(null)
     await supabase.from("event_sessions").delete().eq("event_id", id)
     const { error } = await supabase.from("events").delete().eq("id", id)
-    if (error) { alert("Error al borrar: " + error.message); return }
+    if (error) { fail("ownerPortal.errDelete", error.message); return }
     setFestivals((prev) => prev.filter((f) => f.id !== id))
   }
 
@@ -249,12 +257,12 @@ export default function MiFestivalPage() {
   // grande en la ficha pública, ej. "Techno Stage — Noche 1"), y "date" agrupa las sesiones por
   // día en el calendario de la ficha pública — ambos son necesarios para que se vea bien ahí.
   const addSession = async (eventId: number) => {
-    if (!newSessionForm.title.trim()) { alert("Escribe un título para la sesión"); return }
-    if (!newSessionForm.date) { alert("Elige el día de esta sesión"); return }
+    if (!newSessionForm.title.trim()) { fail("festivalPortal.errSessionTitle"); return }
+    if (!newSessionForm.date) { fail("festivalPortal.errSessionDay"); return }
     setSavingSession(true)
     const { data, error } = await supabase.from("event_sessions").insert({ ...newSessionForm, event_id: eventId }).select().single()
     setSavingSession(false)
-    if (error) { alert("Error al añadir la sesión: " + error.message); return }
+    if (error) { fail("festivalPortal.errSessionAdd", error.message); return }
     if (data) setSessions((prev) => ({ ...prev, [eventId]: [...(prev[eventId] || []), data].sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.start_time || "").localeCompare(b.start_time || "")) }))
     setNewSessionForm(emptySession)
   }
@@ -274,25 +282,34 @@ export default function MiFestivalPage() {
   const cancelEditSession = () => { setEditingSessionId(null); setEditSessionForm(emptySession) }
 
   const saveEditSession = async (eventId: number, id: number) => {
-    if (!editSessionForm.title.trim()) { alert("Escribe un título para la sesión"); return }
-    if (!editSessionForm.date) { alert("Elige el día de esta sesión"); return }
+    if (!editSessionForm.title.trim()) { fail("festivalPortal.errSessionTitle"); return }
+    if (!editSessionForm.date) { fail("festivalPortal.errSessionDay"); return }
     setSavingSession(true)
     const { data, error } = await supabase.from("event_sessions").update(editSessionForm).eq("id", id).select().single()
     setSavingSession(false)
-    if (error) { alert("Error al guardar la sesión: " + error.message); return }
+    if (error) { fail("ownerPortal.errSave", error.message); return }
     if (data) setSessions((prev) => ({ ...prev, [eventId]: (prev[eventId] || []).map((s) => (s.id === id ? data : s)) }))
     cancelEditSession()
   }
 
   const deleteSession = async (eventId: number, id: number) => {
-    if (!confirm("¿Borrar esta sesión?")) return
+    if (pendingDelete !== `s${id}`) { setPendingDelete(`s${id}`); return }
+    setPendingDelete(null)
     const { error } = await supabase.from("event_sessions").delete().eq("id", id)
-    if (error) { alert("Error al borrar: " + error.message); return }
+    if (error) { fail("ownerPortal.errDelete", error.message); return }
     setSessions((prev) => ({ ...prev, [eventId]: (prev[eventId] || []).filter((s) => s.id !== id) }))
   }
 
-  const inputClass = "rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-white outline-none focus:border-purple-500/50 transition"
-  const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1.5"
+  const inputClass = "w-full rounded-ctl border border-white/15 bg-night px-4 py-3 text-base text-ink outline-none transition placeholder:text-zinc-500 focus:border-brand"
+  const labelClass = "mb-1.5 block text-sm font-semibold text-zinc-300"
+  const uploadBox = (busy: boolean) =>
+    `flex cursor-pointer items-center justify-center gap-2 rounded-ctl border border-dashed px-4 py-3 text-sm font-semibold transition ${busy ? "border-white/10 text-zinc-500" : "border-white/20 text-zinc-300 hover:border-brand hover:text-ink"}`
+  const primaryBtn = "rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-50"
+  const ghostBtn = "rounded-ctl border border-white/15 px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
+  const dangerBtn = (armed: boolean) =>
+    `flex items-center gap-1.5 rounded-ctl px-4 py-2.5 text-sm font-semibold transition ${armed ? "bg-red-500 text-white" : "border border-red-500/30 text-red-300 hover:bg-red-500/10"}`
+  const dateLoc = locale === "en" ? "en-GB" : locale === "ca" ? "ca-ES" : "es-ES"
+  const fmtDate = (d: string | null) => (d ? new Date(`${d}T12:00:00`).toLocaleDateString(dateLoc, { day: "numeric", month: "short", year: "numeric" }) : t("eventPage.dateTbc"))
 
   const renderForm = (
     form: FormData, setForm: (f: FormData) => void,
@@ -303,134 +320,137 @@ export default function MiFestivalPage() {
   ) => (
     <div className="grid gap-4 md:grid-cols-2">
       <div className="md:col-span-2">
-        <label className={labelClass}>Título del festival *</label>
-        <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Nombre del festival" className={inputClass} />
+        <label className={labelClass}>{t("festivalPortal.title")}</label>
+        <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>Lugar / recinto</label>
-        <input value={form.club_name} onChange={(e) => setForm({ ...form, club_name: e.target.value })} placeholder="Recinto Fira de Barcelona..." className={inputClass} />
+        <label className={labelClass}>{t("festivalPortal.venue")}</label>
+        <input value={form.club_name} onChange={(e) => setForm({ ...form, club_name: e.target.value })} placeholder="Fira de Barcelona…" className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>Cabeza de cartel</label>
-        <input value={form.artist} onChange={(e) => setForm({ ...form, artist: e.target.value })} placeholder="Artista principal" className={inputClass} />
+        <label className={labelClass}>{t("festivalPortal.headliner")}</label>
+        <input value={form.artist} onChange={(e) => setForm({ ...form, artist: e.target.value })} className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>Música</label>
-        <input value={form.music} onChange={(e) => setForm({ ...form, music: e.target.value })} placeholder="Techno, House..." className={inputClass} />
+        <label className={labelClass}>{t("club.music")}</label>
+        <input value={form.music} onChange={(e) => setForm({ ...form, music: e.target.value })} placeholder="Techno, House…" className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>Fecha de inicio</label>
-        <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={inputClass} />
+        <label className={labelClass}>{t("festivalPortal.startDate")}</label>
+        <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>Fecha de fin (si dura varios días)</label>
-        <input type="date" value={form.date_end} onChange={(e) => setForm({ ...form, date_end: e.target.value })} className={inputClass} />
+        <label className={labelClass}>{t("festivalPortal.endDate")}</label>
+        <input type="date" value={form.date_end} onChange={(e) => setForm({ ...form, date_end: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>Hora de inicio</label>
+        <label className={labelClass}>{t("ownerPortal.startTime")}</label>
         <input value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} placeholder="12:00" className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>Hora de fin</label>
+        <label className={labelClass}>{t("ownerPortal.endTime")}</label>
         <input value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} placeholder="23:00" className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>Precio general</label>
-        <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="45€" className={inputClass} />
+        <label className={labelClass}>{t("festivalPortal.price")}</label>
+        <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="45 €" className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>Enlace de entradas</label>
-        <input value={form.ticket_url} onChange={(e) => setForm({ ...form, ticket_url: e.target.value })} placeholder="https://..." className={inputClass} />
+        <label className={labelClass}>{t("ownerPortal.ticketLink")}</label>
+        <input value={form.ticket_url} onChange={(e) => setForm({ ...form, ticket_url: e.target.value })} placeholder="https://…" className={inputClass} />
       </div>
       <div className="md:col-span-2">
-        <label className={labelClass}>Tarifas adicionales (opcional) — formato "Etiqueta:precio; Etiqueta:precio"</label>
-        <input value={priceTiersRaw} onChange={(e) => setPriceTiersRaw(e.target.value)} placeholder="VIP:90€; Abono 3 días:120€" className={inputClass} />
+        <label className={labelClass}>{t("festivalPortal.tiers")}</label>
+        <input value={priceTiersRaw} onChange={(e) => setPriceTiersRaw(e.target.value)} placeholder={t("festivalPortal.tiersPh")} className={inputClass} />
       </div>
       <div className="md:col-span-2">
-        <label className={labelClass}>Imagen principal</label>
-        <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://... (o sube una abajo)" className={inputClass} />
-        <label className={`mt-2 block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploading ? "border-white/10 text-zinc-400" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
-          {uploading ? "Subiendo..." : "📁 Subir imagen desde tu ordenador"}
+        <label className={labelClass}>{t("ownerPortal.mainImage")}</label>
+        <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder={t("ownerPortal.imageUrlPh")} className={inputClass} />
+        <label className={`mt-2 ${uploadBox(uploading)}`}>
+          <Upload size={16} /> {uploading ? t("ownerPortal.uploading") : t("ownerPortal.uploadImage")}
           <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={handleImageUpload} />
         </label>
-        {form.image && <img src={form.image} alt="Vista previa" className="mt-3 h-32 w-full rounded-xl object-cover" />}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {form.image && <img src={form.image} alt={t("ownerPortal.preview")} className="mt-3 h-32 w-full rounded-ctl object-cover" />}
       </div>
       <div className="md:col-span-2">
-        <label className={labelClass}>Galería ({gallery.length} foto{gallery.length === 1 ? "" : "s"})</label>
-        <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploading ? "border-white/10 text-zinc-400" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
-          {uploading ? "Subiendo..." : "📁 Añadir fotos a la galería"}
+        <label className={labelClass}>{t("ownerPortal.gallery").replace("{n}", String(gallery.length))}</label>
+        <label className={uploadBox(uploading)}>
+          <Upload size={16} /> {uploading ? t("ownerPortal.uploading") : t("ownerPortal.addPhotos")}
           <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={handleGalleryUpload} />
         </label>
         {gallery.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-3">
             {gallery.map((url) => (
-              <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10">
+              <div key={url} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-ctl border border-white/10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt="" className="h-full w-full object-cover" />
-                <button type="button" onClick={() => setGallery(gallery.filter((u) => u !== url))} className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white opacity-0 transition group-hover:opacity-100">✕</button>
+                <button type="button" onClick={() => setGallery(gallery.filter((u) => u !== url))} aria-label={t("ownerPortal.removePhoto")} className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-night/80 text-white">
+                  <X size={12} />
+                </button>
               </div>
             ))}
           </div>
         )}
       </div>
       <div className="md:col-span-2">
-        <label className={labelClass}>Descripción</label>
-        <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Descripción del festival" className={`min-h-[100px] ${inputClass}`} />
+        <label className={labelClass}>{t("ownerPortal.description")}</label>
+        <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`min-h-[100px] ${inputClass}`} />
       </div>
     </div>
+  )
+
+  const sessionFields = (f: SessionFormData, setF: (v: SessionFormData) => void) => (
+    <>
+      <input type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} aria-label={t("event.date")} style={{ colorScheme: "dark" }} className={inputClass} />
+      <input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder={t("festivalPortal.sessionTitle")} className={inputClass} />
+      <input value={f.artist} onChange={(e) => setF({ ...f, artist: e.target.value })} placeholder={t("ownerPortal.artistPh")} className={inputClass} />
+      <input value={f.stage} onChange={(e) => setF({ ...f, stage: e.target.value })} placeholder={t("festivalPortal.stage")} className={inputClass} />
+      <input value={f.start_time} onChange={(e) => setF({ ...f, start_time: e.target.value })} placeholder={t("ownerPortal.startTime")} className={inputClass} />
+      <input value={f.end_time} onChange={(e) => setF({ ...f, end_time: e.target.value })} placeholder={t("ownerPortal.endTime")} className={inputClass} />
+      <textarea value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} placeholder={t("festivalPortal.sessionDesc")} className={`sm:col-span-3 ${inputClass}`} />
+    </>
   )
 
   const renderLineup = (festival: Festival) => {
     const festivalSessions = sessions[festival.id] || []
     return (
-      <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-5">
-        <h4 className="mb-4 text-sm font-black text-zinc-400">Line-up / sesiones</h4>
-
-        {festivalSessions.length === 0 && <p className="mb-4 text-sm text-zinc-400">Todavía no has añadido ninguna sesión.</p>}
-
-        <div className="grid gap-2">
-          {festivalSessions.map((s) => (
+      <div className="mt-5 rounded-card border border-white/10 bg-night/40 p-4 sm:p-5">
+        <h4 className="mb-3 text-base font-semibold text-ink">{t("festivalPortal.lineup")}</h4>
+        {festivalSessions.length === 0 && <p className="mb-4 text-sm text-zinc-400">{t("festivalPortal.noSessions")}</p>}
+        <ul className="grid gap-2">
+          {festivalSessions.map((s) =>
             editingSessionId === s.id ? (
-              <div key={s.id} className="grid gap-2 rounded-xl border border-purple-500/30 bg-purple-500/[0.04] p-3 sm:grid-cols-3">
-                <input type="date" value={editSessionForm.date} onChange={(e) => setEditSessionForm({ ...editSessionForm, date: e.target.value })} className={inputClass} />
-                <input value={editSessionForm.title} onChange={(e) => setEditSessionForm({ ...editSessionForm, title: e.target.value })} placeholder="Título de la sesión" className={inputClass} />
-                <input value={editSessionForm.artist} onChange={(e) => setEditSessionForm({ ...editSessionForm, artist: e.target.value })} placeholder="DJ / artista" className={inputClass} />
-                <input value={editSessionForm.stage} onChange={(e) => setEditSessionForm({ ...editSessionForm, stage: e.target.value })} placeholder="Escenario (opcional)" className={inputClass} />
-                <input value={editSessionForm.start_time} onChange={(e) => setEditSessionForm({ ...editSessionForm, start_time: e.target.value })} placeholder="Hora inicio" className={inputClass} />
-                <input value={editSessionForm.end_time} onChange={(e) => setEditSessionForm({ ...editSessionForm, end_time: e.target.value })} placeholder="Hora fin" className={inputClass} />
-                <textarea value={editSessionForm.description} onChange={(e) => setEditSessionForm({ ...editSessionForm, description: e.target.value })} placeholder="Descripción (opcional)" className={`sm:col-span-3 ${inputClass}`} />
+              <li key={s.id} className="grid gap-2 rounded-ctl border border-brand/30 bg-brand/5 p-3 sm:grid-cols-3">
+                {sessionFields(editSessionForm, setEditSessionForm)}
                 <div className="flex gap-2 sm:col-span-3">
-                  <button onClick={() => saveEditSession(festival.id, s.id)} disabled={savingSession} className="rounded-full bg-purple-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-purple-400 disabled:opacity-50">Guardar</button>
-                  <button onClick={cancelEditSession} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/10">Cancelar</button>
+                  <button onClick={() => saveEditSession(festival.id, s.id)} disabled={savingSession} className={primaryBtn}>{t("profile.save")}</button>
+                  <button onClick={cancelEditSession} className={ghostBtn}>{t("common.cancel")}</button>
                 </div>
-              </div>
+              </li>
             ) : (
-              <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
-                <p className="text-sm text-white">
-                  {s.date && <span className="text-zinc-400">{new Date(s.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })} · </span>}
-                  <span className="font-bold">{s.title}</span>
-                  {s.artist && <span className="text-zinc-400"> · 🎧 {s.artist}</span>}
+              <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-ctl border border-white/10 px-4 py-3">
+                <p className="text-sm text-ink">
+                  {s.date && <span className="text-zinc-400">{fmtDate(s.date)} · </span>}
+                  <span className="font-semibold">{s.title}</span>
+                  {s.artist && <span className="text-zinc-400"> · {s.artist}</span>}
                   {s.stage && <span className="text-zinc-400"> · {s.stage}</span>}
                   {(s.start_time || s.end_time) && <span className="text-zinc-400"> · {s.start_time || "?"}–{s.end_time || "?"}</span>}
                 </p>
                 <div className="flex gap-2">
-                  <button onClick={() => startEditSession(s)} className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white hover:text-black">✏️</button>
-                  <button onClick={() => deleteSession(festival.id, s.id)} className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 transition hover:bg-red-500 hover:text-white">🗑️</button>
+                  <button onClick={() => startEditSession(s)} aria-label={t("ownerPortal.edit")} className="rounded-ctl border border-white/15 p-2 text-ink hover:bg-white/5"><Pencil size={14} /></button>
+                  <button onClick={() => deleteSession(festival.id, s.id)} aria-label={t("profilePage.delete")} className={dangerBtn(pendingDelete === `s${s.id}`)}>
+                    <Trash2 size={14} />{pendingDelete === `s${s.id}` ? ` ${t("ownerPortal.confirmDelete")}` : ""}
+                  </button>
                 </div>
-              </div>
+              </li>
             )
-          ))}
-        </div>
-
+          )}
+        </ul>
         <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          <input type="date" value={newSessionForm.date} onChange={(e) => setNewSessionForm({ ...newSessionForm, date: e.target.value })} className={inputClass} />
-          <input value={newSessionForm.title} onChange={(e) => setNewSessionForm({ ...newSessionForm, title: e.target.value })} placeholder="Título de la sesión" className={inputClass} />
-          <input value={newSessionForm.artist} onChange={(e) => setNewSessionForm({ ...newSessionForm, artist: e.target.value })} placeholder="DJ / artista" className={inputClass} />
-          <input value={newSessionForm.stage} onChange={(e) => setNewSessionForm({ ...newSessionForm, stage: e.target.value })} placeholder="Escenario (opcional)" className={inputClass} />
-          <input value={newSessionForm.start_time} onChange={(e) => setNewSessionForm({ ...newSessionForm, start_time: e.target.value })} placeholder="Hora inicio" className={inputClass} />
-          <input value={newSessionForm.end_time} onChange={(e) => setNewSessionForm({ ...newSessionForm, end_time: e.target.value })} placeholder="Hora fin" className={inputClass} />
-          <textarea value={newSessionForm.description} onChange={(e) => setNewSessionForm({ ...newSessionForm, description: e.target.value })} placeholder="Descripción (opcional)" className={`sm:col-span-3 ${inputClass}`} />
-          <button onClick={() => addSession(festival.id)} disabled={savingSession} className="rounded-full bg-purple-500 px-5 py-3 text-xs font-black text-white transition hover:bg-purple-400 disabled:opacity-50 sm:col-span-3">
-            {savingSession ? "Añadiendo..." : "+ Añadir sesión"}
+          {sessionFields(newSessionForm, setNewSessionForm)}
+          <button onClick={() => addSession(festival.id)} disabled={savingSession} className={`${primaryBtn} sm:col-span-3`}>
+            {savingSession ? t("festivalPortal.adding") : t("festivalPortal.addSession")}
           </button>
         </div>
       </div>
@@ -439,9 +459,12 @@ export default function MiFestivalPage() {
 
   if (checkingAccess) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm text-zinc-400">Verificando acceso...</p>
-      </main>
+      <>
+        <Header />
+        <main className="flex min-h-screen items-center justify-center bg-night text-ink">
+          <p className="text-sm text-zinc-400">{t("ownerPortal.checking")}</p>
+        </main>
+      </>
     )
   }
 
@@ -449,8 +472,8 @@ export default function MiFestivalPage() {
     return (
       <>
         <Header />
-        <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black px-6 text-center text-white">
-          <p className="text-lg font-black">No se han podido cargar tus festivales</p>
+        <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-night px-6 text-center text-ink">
+          <p className="text-lg font-semibold">{t("festivalPortal.loadError")}</p>
           <p className="max-w-md text-sm text-zinc-400">{loadErrorMsg}</p>
         </main>
         <BottomNav />
@@ -461,41 +484,36 @@ export default function MiFestivalPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-black pb-40 pt-14 text-white">
+      <main className="min-h-screen bg-night pb-40 pt-8 text-ink sm:pt-12">
         <section className="mx-auto max-w-4xl px-4">
-          <p className="text-sm text-zinc-400">Portal de festivales</p>
-          <h1 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">Mis festivales</h1>
-          <p className="mt-3 max-w-xl text-sm text-zinc-400">
-            Gestiona tus festivales y su line-up en Noctua. Los cambios se publican en cuanto los guardas.
-          </p>
+          <p className="text-sm font-semibold text-brand-soft">{t("festivalPortal.kicker")}</p>
+          <h1 className="font-display mt-2 text-[2rem] leading-tight sm:text-5xl">{t("profilePage.myFestivals")}</h1>
+          <p className="mt-3 max-w-xl text-sm text-zinc-300">{t("festivalPortal.intro")}</p>
 
           {festivals.length === 0 && !showAddForm && (
-            <div className="mt-10 rounded-card border border-white/10 bg-white/[0.03] p-10 text-center">
-              <p className="text-zinc-400">Todavía no tienes ningún festival vinculado a tu cuenta.</p>
+            <div className="mt-8 rounded-card border border-white/10 bg-surface p-8 text-center">
+              <p className="text-zinc-300">{t("festivalPortal.none")}</p>
               <p className="mt-2 text-sm text-zinc-400">
-                Si crees que debería haber alguno, o quieres añadir el primero,{" "}
-                <Link href="/contact?type=owner_access&subject=No%20veo%20mi%20festival%20en%20mi-festival" className="text-purple-300 underline">escríbenos</Link>.
+                {t("festivalPortal.noneHint")}{" "}
+                <Link href="/contact?type=owner_access" className="font-semibold text-brand-soft underline underline-offset-4">{t("footer.link_contact")}</Link>
               </p>
             </div>
           )}
 
           <div className="mt-8">
-            <button
-              onClick={() => { setShowAddForm((v) => !v); setEditingId(null) }}
-              className={`w-full rounded-2xl px-6 py-4 text-sm font-black transition md:w-auto ${showAddForm ? "bg-white text-black" : "bg-purple-500 text-white hover:bg-purple-400"}`}
-            >
-              {showAddForm ? "✕ Cerrar formulario" : "+ Nuevo festival"}
+            <button onClick={() => { setShowAddForm((v) => !v); setEditingId(null) }} className={showAddForm ? ghostBtn : primaryBtn}>
+              {showAddForm ? t("ownerPortal.closeForm") : t("festivalPortal.newFestival")}
             </button>
             {showAddForm && (
-              <div className="mt-4 rounded-card border border-purple-500/30 bg-purple-500/[0.04] p-6">
-                <h3 className="mb-4 text-lg font-black">Nuevo festival</h3>
+              <div className="mt-4 rounded-card border border-brand/30 bg-brand/5 p-5 sm:p-6">
+                <h3 className="mb-4 text-lg font-semibold">{t("festivalPortal.newFestival")}</h3>
                 {renderForm(newForm, setNewForm, newGallery, setNewGallery, newPriceTiersRaw, setNewPriceTiersRaw, handleNewImageUpload, handleNewGalleryUpload)}
                 <div className="mt-5 flex gap-3">
-                  <button onClick={addFestival} disabled={saving} className="rounded-full bg-purple-500 px-6 py-3 text-sm font-black text-white transition hover:bg-purple-400 disabled:opacity-50">
-                    {saving ? "Guardando..." : "Crear festival"}
+                  <button onClick={addFestival} disabled={saving} className={primaryBtn}>
+                    {saving ? t("profile.saving") : t("festivalPortal.create")}
                   </button>
-                  <button onClick={() => { setShowAddForm(false); setNewForm(emptyForm); setNewGallery([]); setNewPriceTiersRaw("") }} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10">
-                    Cancelar
+                  <button onClick={() => { setShowAddForm(false); setNewForm(emptyForm); setNewGallery([]); setNewPriceTiersRaw("") }} className={ghostBtn}>
+                    {t("common.cancel")}
                   </button>
                 </div>
               </div>
@@ -503,33 +521,35 @@ export default function MiFestivalPage() {
           </div>
 
           {festivals.length > 0 && (
-            <div className="mt-8 grid gap-6">
+            <ul className="mt-8 space-y-4">
               {festivals.map((festival) => (
-                <div key={festival.id} className="rounded-card border border-white/10 bg-white/[0.03] p-6">
+                <li key={festival.id} className="rounded-card border border-white/10 bg-surface p-5">
                   {editingId === festival.id ? (
                     <div>
-                      <h3 className="mb-4 text-lg font-black">Editando: {festival.title}</h3>
+                      <h3 className="mb-4 text-lg font-semibold">{t("ownerPortal.editing").replace("{name}", festival.title)}</h3>
                       {renderForm(editForm, setEditForm, editGallery, setEditGallery, editPriceTiersRaw, setEditPriceTiersRaw, handleEditImageUpload, handleEditGalleryUpload)}
                       <div className="mt-5 flex gap-3">
-                        <button onClick={() => saveEdit(festival.id)} disabled={saving} className="rounded-full bg-purple-500 px-6 py-3 text-sm font-black text-white transition hover:bg-purple-400 disabled:opacity-50">
-                          {saving ? "Guardando..." : "Guardar cambios"}
+                        <button onClick={() => saveEdit(festival.id)} disabled={saving} className={primaryBtn}>
+                          {saving ? t("profile.saving") : t("ownerPortal.saveChanges")}
                         </button>
-                        <button onClick={cancelEdit} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10">Cancelar</button>
+                        <button onClick={cancelEdit} className={ghostBtn}>{t("common.cancel")}</button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                      <div>
-                        {festival.image && <img src={festival.image} alt={festival.title} className="mb-4 h-40 w-full rounded-2xl object-cover lg:w-80" />}
-                        <h2 className="text-2xl font-black">{festival.title}</h2>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs">📅 {festival.date || "TBA"}</span>
-                          <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs">🎟 {festival.price || "TBA"}</span>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 items-center gap-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {festival.image && <img src={festival.image} alt="" className="h-16 w-16 shrink-0 rounded-ctl object-cover" />}
+                        <div className="min-w-0">
+                          <h2 className="truncate text-lg font-semibold">{festival.title}</h2>
+                          <p className="mt-0.5 text-sm text-zinc-400">{[fmtDate(festival.date), festival.price].filter(Boolean).join(" · ")}</p>
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-3">
-                        <button onClick={() => startEdit(festival)} className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black">✏️ Editar</button>
-                        <button onClick={() => deleteFestival(festival.id)} className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500 hover:text-white">🗑️ Borrar</button>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => startEdit(festival)} className={`${ghostBtn} flex items-center gap-1.5`}><Pencil size={14} /> {t("ownerPortal.edit")}</button>
+                        <button onClick={() => deleteFestival(festival.id)} className={dangerBtn(pendingDelete === `f${festival.id}`)}>
+                          <Trash2 size={14} /> {pendingDelete === `f${festival.id}` ? t("festivalPortal.confirmDelete") : t("profilePage.delete")}
+                        </button>
                       </div>
                     </div>
                   )}
@@ -537,16 +557,18 @@ export default function MiFestivalPage() {
                     <div>
                       <button
                         onClick={() => setExpandedLineupId(expandedLineupId === festival.id ? null : festival.id)}
-                        className="mt-4 text-sm font-bold text-purple-300 underline"
+                        aria-expanded={expandedLineupId === festival.id}
+                        className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-brand-soft"
                       >
-                        {expandedLineupId === festival.id ? "Ocultar line-up" : `🎧 Gestionar line-up (${(sessions[festival.id] || []).length})`}
+                        <Headphones size={16} /> {t("festivalPortal.manageLineup").replace("{n}", String((sessions[festival.id] || []).length))}
+                        <ChevronDown size={16} className={`transition ${expandedLineupId === festival.id ? "rotate-180" : ""}`} />
                       </button>
                       {expandedLineupId === festival.id && renderLineup(festival)}
                     </div>
                   )}
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </section>
       </main>

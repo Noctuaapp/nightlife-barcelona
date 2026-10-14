@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation"
 import AdminShell from "../../../components/admin/AdminShell"
 
 import { supabase } from "../../../lib/supabase"
+import { ADMIN_EMAIL } from "../../../lib/admin"
+import { logError } from "../../../lib/log"
+import { toast } from "../../../components/ui/Toast"
+import CoordsField from "../../../components/admin/CoordsField"
+import { coordsPayload, coordToInput } from "../../../lib/coords"
 
 type Event = {
   id: number
@@ -31,7 +36,29 @@ type Event = {
   google_review_count: number | null
   recurring: boolean | null
   price_tiers: { label: string; price: string }[] | null
+  address: string | null
+  latitude: number | null
+  longitude: number | null
 }
+
+// Textos de los campos (antes salía el nombre interno de la columna: "club_name", "ticket_url"…).
+const FIELD_LABELS: Record<string, string> = {
+  title: "Título *",
+  club_name: "Sala o recinto",
+  address: "Dirección",
+  artist: "Artistas",
+  music: "Música",
+  date: "Fecha de inicio (AAAA-MM-DD)",
+  date_end: "Fecha de fin (opcional)",
+  start_time: "Hora de inicio (23:00)",
+  end_time: "Hora de fin (06:00)",
+  price: "Precio",
+  ticket_url: "Enlace de entradas",
+  image: "URL de la imagen",
+  description: "Descripción",
+}
+
+const emptyCoords = { latitude: "", longitude: "" }
 
 export default function AdminEventsPage() {
   const router = useRouter()
@@ -39,6 +66,7 @@ export default function AdminEventsPage() {
   const emptyEvent = {
     title: "",
     club_name: "",
+    address: "",
     artist: "",
     music: "",
     date: "",
@@ -82,12 +110,15 @@ export default function AdminEventsPage() {
   const [editGallery, setEditGallery] = useState<string[]>([])
   const [newPriceTiersRaw, setNewPriceTiersRaw] = useState("")
   const [editPriceTiersRaw, setEditPriceTiersRaw] = useState("")
+  // Coordenadas para que el evento salga en el mapa.
+  const [newCoords, setNewCoords] = useState(emptyCoords)
+  const [editCoords, setEditCoords] = useState(emptyCoords)
 
   useEffect(() => {
     const checkAdmin = async () => {
       const { data } = await supabase.auth.getSession()
 
-      if (data.session?.user.email !== "info@noctuaapp.com") {
+      if (data.session?.user.email !== ADMIN_EMAIL) {
         window.location.href = "/login"
         return
       }
@@ -105,7 +136,7 @@ export default function AdminEventsPage() {
       .order("date", { ascending: true })
 
     if (error) {
-      console.log("EVENTS ADMIN ERROR:", error)
+      logError("EVENTS ADMIN ERROR:", error)
       return
     }
 
@@ -128,7 +159,7 @@ export default function AdminEventsPage() {
     setUploading(false)
 
     if (error) {
-      console.log("UPLOAD ERROR:", error)
+      logError("UPLOAD ERROR:", error)
       return null
     }
 
@@ -148,7 +179,7 @@ export default function AdminEventsPage() {
       const filePath = `admin/${fileName}`
       const { error } = await supabase.storage.from("event-photos").upload(filePath, file)
       if (error) {
-        console.log("GALLERY UPLOAD ERROR:", error)
+        logError("GALLERY UPLOAD ERROR:", error)
         continue
       }
       const { data } = supabase.storage.from("event-photos").getPublicUrl(filePath)
@@ -214,6 +245,7 @@ export default function AdminEventsPage() {
         start_time: newEvent.start_time || null,
         end_time: newEvent.end_time || null,
         price_tiers: parsePriceTiers(newPriceTiersRaw).length > 0 ? parsePriceTiers(newPriceTiersRaw) : null,
+        ...coordsPayload(newCoords.latitude, newCoords.longitude),
         featured: false,
         sold_out: false,
         vip_tables: false,
@@ -222,15 +254,18 @@ export default function AdminEventsPage() {
       .single()
 
     if (error) {
-      console.log("Add club night ERROR:", error)
+      logError("Add event ERROR:", error)
+      toast(`No se ha podido crear: ${error.message}`, 5000)
       return
     }
 
     if (data) setEvents((prev) => [data, ...prev])
+    toast("Evento creado")
 
     setNewEvent(emptyEvent)
     setNewGallery([])
     setNewPriceTiersRaw("")
+    setNewCoords(emptyCoords)
   }
 
   const startEditing = (event: Event) => {
@@ -239,6 +274,7 @@ export default function AdminEventsPage() {
     setEditEvent({
       title: event.title || "",
       club_name: event.club_name || "",
+      address: event.address || "",
       artist: event.artist || "",
       music: event.music || "",
       date: event.date || "",
@@ -252,6 +288,10 @@ export default function AdminEventsPage() {
     })
     setEditGallery(Array.isArray(event.gallery) ? event.gallery : [])
     setEditPriceTiersRaw(serializePriceTiers((event as any).price_tiers))
+    setEditCoords({
+      latitude: coordToInput(event.latitude),
+      longitude: coordToInput(event.longitude),
+    })
   }
 
   const cancelEditing = () => {
@@ -259,6 +299,7 @@ export default function AdminEventsPage() {
     setEditEvent(emptyEvent)
     setEditGallery([])
     setEditPriceTiersRaw("")
+    setEditCoords(emptyCoords)
   }
 
   // Llegando desde el botón "Editar" de la ficha pública (/admin/events?edit=ID).
@@ -297,15 +338,18 @@ export default function AdminEventsPage() {
         gallery: editGallery.length > 0 ? editGallery : null,
         manual_photos: editGallery.length > 0,
         price_tiers: parsePriceTiers(editPriceTiersRaw).length > 0 ? parsePriceTiers(editPriceTiersRaw) : null,
+        ...coordsPayload(editCoords.latitude, editCoords.longitude),
       })
       .eq("id", id)
       .select()
       .single()
 
     if (error) {
-      console.log("EDIT EVENT ERROR:", error)
+      logError("EDIT EVENT ERROR:", error)
+      toast(`No se ha podido guardar: ${error.message}`, 5000)
       return
     }
+    toast("Cambios guardados")
 
     if (data) {
       setEvents((prev) => prev.map((event) => (event.id === id ? data : event)))
@@ -319,7 +363,7 @@ export default function AdminEventsPage() {
 
     const { error } = await supabase.from("events").update({ featured: newValue }).eq("id", event.id)
 
-    if (error) return console.log("FEATURED ERROR:", error)
+    if (error) return logError("FEATURED ERROR:", error)
 
     setEvents((prev) => prev.map((item) => (item.id === event.id ? { ...item, featured: newValue } : item)))
   }
@@ -327,14 +371,14 @@ export default function AdminEventsPage() {
   const toggleSoldOut = async (event: Event) => {
     const newValue = !event.sold_out
     const { error } = await supabase.from("events").update({ sold_out: newValue }).eq("id", event.id)
-    if (error) return console.log("SOLD OUT ERROR:", error)
+    if (error) return logError("SOLD OUT ERROR:", error)
     setEvents((prev) => prev.map((item) => (item.id === event.id ? { ...item, sold_out: newValue } : item)))
   }
 
   const toggleVipTables = async (event: Event) => {
     const newValue = !event.vip_tables
     const { error } = await supabase.from("events").update({ vip_tables: newValue }).eq("id", event.id)
-    if (error) return console.log("VIP TABLES ERROR:", error)
+    if (error) return logError("VIP TABLES ERROR:", error)
     setEvents((prev) => prev.map((item) => (item.id === event.id ? { ...item, vip_tables: newValue } : item)))
   }
 
@@ -351,7 +395,7 @@ export default function AdminEventsPage() {
   const toggleRecurring = async (event: Event) => {
     const newValue = !(event.recurring ?? true)
     const { error } = await supabase.from("events").update({ recurring: newValue }).eq("id", event.id)
-    if (error) return console.log("RECURRING ERROR:", error)
+    if (error) return logError("RECURRING ERROR:", error)
     setEvents((prev) => prev.map((item) => (item.id === event.id ? { ...item, recurring: newValue } : item)))
   }
 
@@ -370,7 +414,7 @@ export default function AdminEventsPage() {
   const deleteEvent = async (id: number) => {
     const { error } = await supabase.from("events").delete().eq("id", id)
 
-    if (error) return console.log("DELETE EVENT ERROR:", error)
+    if (error) return logError("DELETE EVENT ERROR:", error)
 
     setEvents((prev) => prev.filter((event) => event.id !== id))
   }
@@ -416,7 +460,7 @@ export default function AdminEventsPage() {
   )
 
   return (
-    <AdminShell title="Event control" subtitle="Create, edit and manage nightlife events across Barcelona.">
+    <AdminShell title="Eventos" subtitle="Crea, edita y gestiona los eventos y festivales.">
       <>
         <section className="mx-auto max-w-7xl">
           <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
@@ -426,10 +470,20 @@ export default function AdminEventsPage() {
                   key={key}
                   value={(newEvent as any)[key]}
                   onChange={(e) => setNewEvent({ ...newEvent, [key]: e.target.value })}
-                  placeholder={key}
+                  placeholder={FIELD_LABELS[key] || key}
+                  aria-label={FIELD_LABELS[key] || key}
                   className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
                 />
               ))}
+
+              <div className="lg:col-span-3">
+                <CoordsField
+                  latitude={newCoords.latitude}
+                  longitude={newCoords.longitude}
+                  address={newEvent.address}
+                  onChange={(latitude, longitude) => setNewCoords({ latitude, longitude })}
+                />
+              </div>
 
               <div className="lg:col-span-3">
                 <p className="mb-2 text-xs font-bold text-zinc-400">Foto de portada</p>
@@ -496,10 +550,20 @@ export default function AdminEventsPage() {
                           key={key}
                           value={(editEvent as any)[key]}
                           onChange={(e) => setEditEvent({ ...editEvent, [key]: e.target.value })}
-                          placeholder={key}
+                          placeholder={FIELD_LABELS[key] || key}
+                          aria-label={FIELD_LABELS[key] || key}
                           className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
                         />
                       ))}
+
+                      <div className="lg:col-span-3">
+                        <CoordsField
+                          latitude={editCoords.latitude}
+                          longitude={editCoords.longitude}
+                          address={editEvent.address}
+                          onChange={(latitude, longitude) => setEditCoords({ latitude, longitude })}
+                        />
+                      </div>
 
                       <div className="lg:col-span-3">
                         <p className="mb-2 text-xs font-bold text-zinc-400">Foto de portada</p>

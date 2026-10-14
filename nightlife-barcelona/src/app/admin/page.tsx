@@ -3,6 +3,10 @@
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "../../lib/supabase"
 import AdminShell from "../../components/admin/AdminShell"
+import { ADMIN_EMAIL } from "../../lib/admin"
+import { toast } from "../../components/ui/Toast"
+import CoordsField from "../../components/admin/CoordsField"
+import { coordsPayload, coordToInput } from "../../lib/coords"
 
 type Club = {
   id: number
@@ -35,6 +39,8 @@ type Club = {
   free_entry_info?: string
   gallery?: string[] | null
   manual_photos?: boolean | null
+  latitude?: number | null
+  longitude?: number | null
 }
 
 // Antes este desplegable no existía en ningún sitio del panel de admin: la página de Clubs se
@@ -74,6 +80,8 @@ type ClubFormData = {
   discount_info: string
   free_entry_info: string
   gallery: string[]
+  latitude: string
+  longitude: string
 }
 
 const emptyForm: ClubFormData = {
@@ -105,6 +113,8 @@ const emptyForm: ClubFormData = {
   discount_info: "",
   free_entry_info: "",
   gallery: [],
+  latitude: "",
+  longitude: "",
 }
 
 const clubToForm = (club: Club): ClubFormData => ({
@@ -136,6 +146,8 @@ const clubToForm = (club: Club): ClubFormData => ({
   discount_info: club.discount_info || "",
   free_entry_info: club.free_entry_info || "",
   gallery: Array.isArray(club.gallery) ? club.gallery : [],
+  latitude: coordToInput(club.latitude),
+  longitude: coordToInput(club.longitude),
 })
 
 export default function AdminPage() {
@@ -156,7 +168,7 @@ export default function AdminPage() {
   useEffect(() => {
     const checkAdmin = async () => {
       const { data } = await supabase.auth.getSession()
-      if (data.session?.user.email !== "info@noctuaapp.com") {
+      if (data.session?.user.email !== ADMIN_EMAIL) {
         window.location.href = "/login"
         return
       }
@@ -226,6 +238,7 @@ export default function AdminPage() {
     discount_info: form.discount_info.trim(),
     free_entry_info: form.free_entry_info.trim(),
     gallery: form.gallery.length > 0 ? form.gallery : null,
+    ...coordsPayload(form.latitude, form.longitude),
     // En cuanto guardas el formulario con alguna foto en la galería (ya sea porque las trajo el
     // pipeline de Google y las has dejado, o porque has quitado/subido alguna a mano), este club
     // queda marcado como "gestionado a mano": el cron de Google ya no le toca la galería ni la
@@ -235,14 +248,14 @@ export default function AdminPage() {
 
   const addClub = async () => {
     if (!newClub.name.trim()) {
-      alert("El nombre del club es obligatorio")
+      toast("El nombre del club es obligatorio")
       return
     }
     setSaving(true)
     const { data, error } = await supabase.from("clubs").insert([formToPayload(newClub)]).select()
     setSaving(false)
     if (error) {
-      alert("Error al añadir el club: " + error.message)
+      toast("Error al añadir el club: " + error.message)
       return
     }
     if (data && data[0]) {
@@ -264,7 +277,7 @@ export default function AdminPage() {
     const fileName = `club-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
     const { error: uploadError } = await supabase.storage.from("club-images").upload(fileName, file)
     if (uploadError) {
-      alert("Error al subir la imagen: " + uploadError.message)
+      toast("Error al subir la imagen: " + uploadError.message)
       setUploadingImage(false)
       e.target.value = ""
       return
@@ -343,14 +356,14 @@ export default function AdminPage() {
 
   const saveEdit = async (id: number) => {
     if (!editForm.name.trim()) {
-      alert("El nombre del club es obligatorio")
+      toast("El nombre del club es obligatorio")
       return
     }
     setSaving(true)
     const { data, error } = await supabase.from("clubs").update(formToPayload(editForm)).eq("id", id).select()
     setSaving(false)
     if (error) {
-      alert("Error al guardar los cambios: " + error.message)
+      toast("Error al guardar los cambios: " + error.message)
       return
     }
     if (data && data[0]) {
@@ -405,6 +418,15 @@ export default function AdminPage() {
       <div>
         <label className={labelClass}>Dirección</label>
         <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Carrer de Còrsega, 327" className={inputClass} />
+      </div>
+      <div className="md:col-span-2">
+        <CoordsField
+          latitude={form.latitude}
+          longitude={form.longitude}
+          address={form.address}
+          inputClassName={inputClass}
+          onChange={(latitude, longitude) => setForm({ ...form, latitude, longitude })}
+        />
       </div>
       <div>
         <label className={labelClass}>Música</label>

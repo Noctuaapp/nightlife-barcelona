@@ -2,21 +2,14 @@
 
 import { zoneOf, zonesPresent } from "../../lib/zones"
 import { clubOpenNow } from "../../lib/clubHours"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import ClubCard from "./ClubCard"
 import { supabase } from "../../lib/supabase"
 import { track } from "../../lib/track"
 import { useLanguage } from "../../context/LanguageContext"
 import { SearchIcon, CloseIcon, LocationIcon, FlameIcon, SlidersIcon, ChevronDownIcon } from "../ui/FilterIcons"
-
-// Antes cada tarjeta aparecía con una animación al hacer scroll; ahora se muestra directamente.
-function Reveal({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
-  return (
-    <div className={className} style={style ? { ...style, transitionDelay: undefined } : undefined}>
-      {children}
-    </div>
-  )
-}
+import ExploreSwitch from "./ExploreSwitch"
+import { STYLES } from "../../lib/areas"
 
 function toggleInSet(set: Set<string>, value: string): Set<string> {
   const next = new Set(set)
@@ -25,8 +18,11 @@ function toggleInSet(set: Set<string>, value: string): Set<string> {
   return next
 }
 
-const GENRE_FILTERS = ["Techno", "Commercial", "Cocktail Bar"]
-const ATTRIBUTE_FILTERS = ["Trending", "LGTBI+", "Sin cola", "Futbolín/Billar", "Descuento hoy", "Entrada gratis", "Público +30"]
+// Antes los estilos eran "Techno", "Commercial" y "Cocktail Bar" y se buscaban en inglés dentro de
+// la columna music, que está en español ("Comercial"): el filtro "Commercial" casi nunca encontraba
+// nada. Ahora usa los mismos estilos que las páginas /musica (src/lib/areas.ts).
+const GENRE_FILTERS = STYLES.filter((s) => s.slug !== "electronica").map((s) => s.slug)
+const ATTRIBUTE_FILTERS = ["trending", "lgtbi", "noQueue", "games", "discount", "free", "over30"]
 const AGE_FILTERS = ["+18", "+21", "+25"]
 const PAGE_SIZE = 9
 
@@ -53,6 +49,40 @@ function searchScore(club: any, rawQuery: string): number {
   if (music.split(/[\s,]+/).some((w) => w.startsWith(q))) return 10
   return 0
 }
+
+// Grupo de chips de un filtro. Fuera del componente: definido dentro se volvía a crear en cada
+// render y React desmontaba los botones (se perdía el foco al pulsar).
+const ChipGroup = ({
+  title,
+  options,
+  selected,
+  onToggle,
+  label = (v: string) => v,
+}: {
+  title: string
+  options: string[]
+  selected: Set<string>
+  onToggle: (value: string) => void
+  label?: (value: string) => string
+}) => (
+  <div>
+    <p className="mb-3 text-sm font-semibold text-zinc-300">{title}</p>
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => (
+        <button
+          key={opt}
+          onClick={() => onToggle(opt)}
+          aria-pressed={selected.has(opt)}
+          className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition active:scale-95 ${
+            selected.has(opt) ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:border-white/30 hover:bg-white/5"
+          }`}
+        >
+          {label(opt)}
+        </button>
+      ))}
+    </div>
+  </div>
+)
 
 export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] }) {
   const [clubs] = useState<any[]>(initialClubs)
@@ -112,22 +142,25 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   }
 
   const genreMatch = (club: any, g: string) => {
-    if (g === "Techno") return club.music?.toLowerCase().includes("techno")
-    if (g === "Commercial") return club.music?.toLowerCase().includes("commercial")
-    if (g === "Cocktail Bar") return club.music?.toLowerCase().includes("cocktail")
-    return false
+    const style = STYLES.find((s) => s.slug === g)
+    return !!style && typeof club.music === "string" && style.rx.test(club.music)
+  }
+  const styleLabel = (g: string) => {
+    const v = t(`areas.style.${g}`)
+    return v.charAt(0).toUpperCase() + v.slice(1)
   }
 
   const attributeMatch = (club: any, a: string) => {
-    if (a === "Trending") return club.trending === true
-    if (a === "LGTBI+") return club.lgtbi_friendly === true
-    if (a === "Sin cola") return club.queue === "No queue" || !club.queue
-    if (a === "Futbolín/Billar") return club.has_foosball === true
-    if (a === "Descuento hoy") return !!club.discount_info
-    if (a === "Entrada gratis") return !!club.free_entry_info
-    if (a === "Público +30") return club.audience === "+30" || club.audience === "+40"
+    if (a === "trending") return club.trending === true
+    if (a === "lgtbi") return club.lgtbi_friendly === true
+    if (a === "noQueue") return club.queue === "No queue" || !club.queue
+    if (a === "games") return club.has_foosball === true
+    if (a === "discount") return !!club.discount_info
+    if (a === "free") return !!club.free_entry_info
+    if (a === "over30") return club.audience === "+30" || club.audience === "+40"
     return false
   }
+  const attrLabel = (a: string) => t(`explorer.attr_${a}`)
 
   const ageMatch = (club: any, age: string) => {
     if (age === "+18") return club.age_min === 18
@@ -181,7 +214,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
       arr.sort((a, b) => boost(b) - boost(a))
       return arr
     }
-    if (sortBy === "rating") arr.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    if (sortBy === "rating") arr.sort((a, b) => (Number(b.google_rating || b.rating) || 0) - (Number(a.google_rating || a.rating) || 0))
     else if (sortBy === "name") arr.sort((a, b) => (a.name || "").localeCompare(b.name || ""))
     else if (sortBy === "distance" && userLat && userLng) {
       arr.sort((a, b) => {
@@ -207,16 +240,16 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   }, [search])
 
   const activeFilters: { label: string; onRemove: () => void }[] = [
-    ...Array.from(selectedGenres).map((g) => ({ label: g, onRemove: () => setSelectedGenres((s) => toggleInSet(s, g)) })),
-    ...Array.from(selectedAttributes).map((a) => ({ label: a, onRemove: () => setSelectedAttributes((s) => toggleInSet(s, a)) })),
+    ...Array.from(selectedGenres).map((g) => ({ label: styleLabel(g), onRemove: () => setSelectedGenres((s) => toggleInSet(s, g)) })),
+    ...Array.from(selectedAttributes).map((a) => ({ label: attrLabel(a), onRemove: () => setSelectedAttributes((s) => toggleInSet(s, a)) })),
     ...Array.from(selectedAges).map((age) => ({ label: age, onRemove: () => setSelectedAges((s) => toggleInSet(s, age)) })),
     ...Array.from(selectedZones).map((z) => ({ label: z, onRemove: () => setSelectedZones((s) => toggleInSet(s, z)) })),
     ...Array.from(selectedNeighborhoods).map((n) => ({ label: n, onRemove: () => setSelectedNeighborhoods((s) => toggleInSet(s, n)) })),
   ]
-  if (openNow) activeFilters.push({ label: "Abierto ahora", onRemove: () => setOpenNow(false) })
+  if (openNow) activeFilters.push({ label: t("explorer.now"), onRemove: () => setOpenNow(false) })
   if (nearMe)
     activeFilters.push({
-      label: "Cerca de mí",
+      label: t("explorer.near"),
       onRemove: () => {
         setNearMe(false)
         setUserLat(null)
@@ -246,7 +279,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   const requestNearMe = () => {
     setNearMeError("")
     if (!navigator.geolocation) {
-      setNearMeError("Tu navegador no permite compartir ubicación.")
+      setNearMeError(t("geo.unsupported"))
       return
     }
     setNearMeLoading(true)
@@ -259,13 +292,9 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
       },
       (err) => {
         setNearMeLoading(false)
-        if (err.code === err.PERMISSION_DENIED) {
-          setNearMeError("Necesitamos tu ubicación — revisa los permisos de ubicación de tu navegador para esta web.")
-        } else if (err.code === err.TIMEOUT) {
-          setNearMeError("No hemos podido obtener tu ubicación a tiempo. Inténtalo de nuevo.")
-        } else {
-          setNearMeError("No hemos podido obtener tu ubicación. Inténtalo de nuevo.")
-        }
+        if (err.code === err.PERMISSION_DENIED) setNearMeError(t("geo.denied"))
+        else if (err.code === err.TIMEOUT) setNearMeError(t("geo.timeout"))
+        else setNearMeError(t("geo.error"))
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     )
@@ -273,138 +302,88 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
 
   const activeFilterCount = selectedGenres.size + selectedAttributes.size + selectedAges.size + selectedNeighborhoods.size + selectedZones.size
 
-  const ChipGroup = ({
-    title,
-    options,
-    selected,
-    onToggle,
-  }: {
-    title: string
-    options: string[]
-    selected: Set<string>
-    onToggle: (value: string) => void
-  }) => (
-    <div>
-      <p className="mb-3 text-xs text-zinc-400">{title}</p>
-      <div className="flex flex-wrap gap-3">
-        {options.map((opt) => (
-          <button
-            key={opt}
-            onClick={() => onToggle(opt)}
-            className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium transition active:scale-95 ${
-              selected.has(opt)
-                ? "text-white shadow-[0_6px_20px_-4px_rgba(124,92,255,0.55)]"
-                : "border border-white/10 bg-white/[0.04] text-white hover:border-purple-400/30 hover:bg-white/[0.08]"
-            }`}
-            style={selected.has(opt) ? { background: "#7c5cff" } : undefined}
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
+  const quick = (active: boolean) =>
+    `flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition active:scale-95 disabled:opacity-60 ${
+      active ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
+    }`
 
   return (
     <>
-      <main className="relative min-h-screen pb-40 text-white">
+      <main className="relative min-h-screen bg-night pb-16 text-ink">
 
-        <section className="px-4 pt-14">
+        <section className="px-4 pt-8 sm:pt-12">
           <div className="mx-auto max-w-7xl">
-            <p className="text-sm text-zinc-400">{t("clubs.title")}</p>
-            {/* text-5xl fijo se salía de un móvil de 375px con la fuente display nueva — igual
-                que el titular de la home (ver HomeClient.tsx). break-words + tamaño menor en
-                mobile. */}
-            <h1 className="font-display mt-4 break-words text-4xl font-black leading-[1.05] text-white sm:text-5xl md:text-6xl">{t("clubs.subtitle")}</h1>
+            <ExploreSwitch active="clubs" />
+            <h1 className="font-display mt-6 break-words text-[2rem] leading-[1.06] text-ink sm:text-5xl md:text-6xl">{t("clubs.subtitle")}</h1>
           </div>
         </section>
 
-        {/* STICKY SEARCH + QUICK ACTIONS */}
-        <div className="sticky top-16 z-30 mt-8 border-y border-white/10 bg-night/85 py-3.5 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4">
-            <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-full border border-purple-400/25 bg-surface/90 px-6 py-3.5 shadow-[0_8px_30px_-14px_rgba(124,92,255,0.5)] backdrop-blur-xl transition focus-within:border-fuchsia-400/70 focus-within:shadow-[0_8px_36px_-8px_rgba(217,70,239,0.55)]">
-              <SearchIcon className="h-5 w-5 shrink-0 text-purple-300 transition group-focus-within:text-fuchsia-300" />
+        {/* Búsqueda + accesos rápidos. En móvil la búsqueda ocupa toda la fila y los botones
+            van en una fila deslizable (antes se partían en tres líneas y tapaban media pantalla). */}
+        <div className="sticky top-16 z-30 mt-6 border-y border-white/10 bg-night/90 py-3 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 lg:flex-row lg:items-center">
+            <div className="group flex min-w-0 flex-1 items-center gap-3 rounded-full border border-white/15 bg-surface px-5 py-3 transition focus-within:border-brand">
+              <SearchIcon className="h-5 w-5 shrink-0 text-zinc-400 transition group-focus-within:text-brand-soft" />
               <input
-                type="text"
+                type="search"
                 placeholder={t("clubs.search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-transparent text-base text-white outline-none placeholder:text-zinc-400"
+                aria-label={t("clubs.search")}
+                className="w-full bg-transparent text-base text-ink outline-none placeholder:text-zinc-400"
               />
               {search && (
-                <button onClick={() => setSearch("")} className="text-zinc-400 transition hover:text-white" aria-label="Limpiar búsqueda">
+                <button onClick={() => setSearch("")} className="text-zinc-400 transition hover:text-ink" aria-label={t("explorer.clearSearch")}>
                   <CloseIcon className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
 
-            <button
-              onClick={() => setOpenNow(!openNow)}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold transition active:scale-95 ${
-                openNow
-                  ? "border border-emerald-400/40 bg-emerald-400/15 text-emerald-300"
-                  : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
-              }`}
-            >
-              <span className="relative flex h-2 w-2 shrink-0">
-                {openNow && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />}
-                <span className={`relative inline-flex h-2 w-2 rounded-full ${openNow ? "bg-emerald-400" : "bg-zinc-600"}`} />
-              </span>
-              Ahora
-            </button>
-            <button
-              onClick={nearMe ? () => { setNearMe(false); setUserLat(null); setUserLng(null) } : requestNearMe}
-              disabled={nearMeLoading}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 disabled:opacity-60 ${
-                nearMe ? "shadow-[0_6px_20px_-4px_rgba(124,92,255,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
-              }`}
-              style={nearMe ? { background: "#7c5cff" } : undefined}
-            >
-              <LocationIcon className="h-4 w-4" />
-              {nearMeLoading ? "Localizando..." : "Cerca"}
-            </button>
-            <button
-              onClick={() => setSelectedAttributes((s) => toggleInSet(s, "Trending"))}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
-                selectedAttributes.has("Trending")
-                  ? "shadow-[0_6px_20px_-4px_rgba(124,92,255,0.55)]"
-                  : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
-              }`}
-              style={selectedAttributes.has("Trending") ? { background: "#7c5cff" } : undefined}
-            >
-              <FlameIcon className="h-4 w-4" />
-              Trending
-            </button>
-
-            <div className="relative shrink-0">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="appearance-none rounded-full border border-white/10 bg-white/[0.04] py-3.5 pl-4 pr-9 text-sm font-medium text-white outline-none"
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] lg:mx-0 lg:px-0">
+              <button onClick={() => setOpenNow(!openNow)} aria-pressed={openNow} className={quick(openNow)}>
+                <span className={`h-2 w-2 shrink-0 rounded-full ${openNow ? "bg-white" : "bg-open"}`} />
+                {t("explorer.now")}
+              </button>
+              <button
+                onClick={nearMe ? () => { setNearMe(false); setUserLat(null); setUserLng(null) } : requestNearMe}
+                disabled={nearMeLoading}
+                aria-pressed={nearMe}
+                className={quick(nearMe)}
               >
-                <option value="recommended" className="bg-black">Recomendado</option>
-                <option value="rating" className="bg-black">Mejor valorados</option>
-                <option value="name" className="bg-black">A-Z</option>
-                {nearMe && <option value="distance" className="bg-black">Más cercanos</option>}
-              </select>
-              <ChevronDownIcon className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+                <LocationIcon className="h-4 w-4" />
+                {nearMeLoading ? t("explorer.locating") : t("explorer.near")}
+              </button>
+              <button
+                onClick={() => setSelectedAttributes((s) => toggleInSet(s, "trending"))}
+                aria-pressed={selectedAttributes.has("trending")}
+                className={quick(selectedAttributes.has("trending"))}
+              >
+                <FlameIcon className="h-4 w-4" />
+                {t("explorer.trending")}
+              </button>
+              <div className="relative shrink-0">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  aria-label={t("explorer.sortLabel")}
+                  className="appearance-none rounded-full border border-white/10 bg-night py-2.5 pl-4 pr-9 text-sm font-semibold text-zinc-200 outline-none"
+                >
+                  <option value="recommended">{t("explorer.sortRecommended")}</option>
+                  <option value="rating">{t("explorer.sortRating")}</option>
+                  <option value="name">{t("explorer.sortName")}</option>
+                  {nearMe && <option value="distance">{t("explorer.sortDistance")}</option>}
+                </select>
+                <ChevronDownIcon className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+              </div>
+              <button onClick={() => setFiltersOpen(!filtersOpen)} aria-expanded={filtersOpen} className={quick(filtersOpen)}>
+                <SlidersIcon className="h-4 w-4" />
+                {t("explorer.filters")}
+                {activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+              </button>
             </div>
-
-            <button
-              onClick={() => setFiltersOpen(!filtersOpen)}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
-                filtersOpen ? "shadow-[0_6px_20px_-4px_rgba(124,92,255,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
-              }`}
-              style={filtersOpen ? { background: "#7c5cff" } : undefined}
-            >
-              <SlidersIcon className="h-4 w-4" />
-              Filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-            </button>
           </div>
 
-          {nearMeError && (
-            <p className="mx-auto mt-3 max-w-7xl px-4 text-xs font-semibold text-red-400">⚠️ {nearMeError}</p>
-          )}
+          {nearMeError && <p className="mx-auto mt-3 max-w-7xl px-4 text-sm font-semibold text-red-300">{nearMeError}</p>}
 
           {activeFilters.length > 0 && (
             <div className="mx-auto mt-3 flex max-w-7xl flex-wrap items-center gap-2 px-4">
@@ -412,50 +391,32 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                 <button
                   key={`${f.label}-${i}`}
                   onClick={f.onRemove}
-                  className="flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-400/10 px-3 py-1.5 text-xs font-semibold text-purple-200 transition hover:bg-purple-400/20"
+                  className="flex items-center gap-1.5 rounded-full bg-brand/15 px-3 py-1.5 text-xs font-semibold text-brand-soft transition hover:bg-brand/25"
                 >
-                  {f.label} <CloseIcon className="h-3 w-3 text-purple-300" />
+                  {f.label} <CloseIcon className="h-3 w-3" />
                 </button>
               ))}
-              <button onClick={clearAll} className="text-xs font-semibold text-zinc-400 underline-offset-2 hover:text-white hover:underline">
-                Limpiar todo
+              <button onClick={clearAll} className="text-xs font-semibold text-zinc-400 underline-offset-2 hover:text-ink hover:underline">
+                {t("explorer.clearAll")}
               </button>
             </div>
           )}
         </div>
 
-        {/* ADVANCED FILTERS PANEL — todos multi-selección y combinables entre sí. Se queda
-            siempre montado y anima su propia altura (grid-template-rows 0fr→1fr) en vez de
-            aparecer/desaparecer de golpe: la animación responde directamente a pulsar "Filtros",
-            no es un efecto suelto. */}
+        {/* Panel de filtros: todos multi-selección y combinables. Anima su altura al abrirse. */}
         <section
           className={`mx-auto grid max-w-7xl px-4 transition-[grid-template-rows,opacity] duration-300 ease-out ${
             filtersOpen ? "grid-rows-[1fr] pt-6 opacity-100" : "grid-rows-[0fr] opacity-0"
           }`}
         >
           <div className="overflow-hidden">
-            <div className="space-y-6 rounded-card border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
-              <ChipGroup
-                title="Estilo (elige varios)"
-                options={GENRE_FILTERS}
-                selected={selectedGenres}
-                onToggle={(v) => setSelectedGenres((s) => toggleInSet(s, v))}
-              />
-              <ChipGroup
-                title="Ambiente"
-                options={ATTRIBUTE_FILTERS}
-                selected={selectedAttributes}
-                onToggle={(v) => setSelectedAttributes((s) => toggleInSet(s, v))}
-              />
-              <ChipGroup
-                title="Edad mínima"
-                options={AGE_FILTERS}
-                selected={selectedAges}
-                onToggle={(v) => setSelectedAges((s) => toggleInSet(s, v))}
-              />
+            <div className="space-y-6 rounded-card border border-white/10 bg-surface p-5 sm:p-6">
+              <ChipGroup title={t("explorer.styleTitle")} options={GENRE_FILTERS} selected={selectedGenres} label={styleLabel} onToggle={(v) => setSelectedGenres((s) => toggleInSet(s, v))} />
+              <ChipGroup title={t("explorer.vibeTitle")} options={ATTRIBUTE_FILTERS} selected={selectedAttributes} label={attrLabel} onToggle={(v) => setSelectedAttributes((s) => toggleInSet(s, v))} />
+              <ChipGroup title={t("explorer.ageTitle")} options={AGE_FILTERS} selected={selectedAges} onToggle={(v) => setSelectedAges((s) => toggleInSet(s, v))} />
               {availableZones.length > 1 && (
                 <ChipGroup
-                  title="Zona (elige varias)"
+                  title={t("explorer.zoneTitle")}
                   options={availableZones}
                   selected={selectedZones}
                   onToggle={(v) => {
@@ -464,71 +425,60 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                   }}
                 />
               )}
-              <ChipGroup
-                title="Barrio (elige varios)"
-                options={neighborhoods}
-                selected={selectedNeighborhoods}
-                onToggle={(v) => setSelectedNeighborhoods((s) => toggleInSet(s, v))}
-              />
+              <ChipGroup title={t("explorer.barrioTitle")} options={neighborhoods} selected={selectedNeighborhoods} onToggle={(v) => setSelectedNeighborhoods((s) => toggleInSet(s, v))} />
             </div>
           </div>
         </section>
 
-        {/* Results count */}
-        <section className="mx-auto max-w-7xl px-4 pt-8">
-          <p className="text-sm text-zinc-400">
-            {sortedClubs.length} {sortedClubs.length === 1 ? "club encontrado" : "clubs encontrados"}
+        <section className="mx-auto max-w-7xl px-4 pt-6">
+          <p className="text-sm text-zinc-400" aria-live="polite">
+            {(sortedClubs.length === 1 ? t("explorer.countOne") : t("explorer.countMany")).replace("{n}", String(sortedClubs.length))}
           </p>
         </section>
 
-        {/* Results */}
-        <section className="mx-auto mt-4 grid max-w-7xl gap-8 px-4 md:grid-cols-2 xl:grid-cols-3">
+        <section className="mx-auto mt-4 grid max-w-7xl gap-5 px-4 md:grid-cols-2 xl:grid-cols-3">
           {visibleClubs.length === 0 ? (
-            <div className="col-span-full py-24 text-center">
-              <p className="text-lg font-bold text-zinc-300">No hay clubs con estos filtros</p>
-              <p className="mt-2 text-sm text-zinc-400">Prueba a quitar algún filtro o busca otro barrio.</p>
+            <div className="col-span-full py-20 text-center">
+              <p className="text-lg font-semibold text-zinc-200">{t("explorer.emptyTitle")}</p>
+              <p className="mt-2 text-sm text-zinc-400">{t("explorer.emptyBody")}</p>
               {activeFilters.length > 0 && (
-                <button
-                  onClick={clearAll}
-                  className="mt-6 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
-                >
-                  Limpiar filtros
+                <button onClick={clearAll} className="mt-6 rounded-ctl border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/10">
+                  {t("explorer.clearFilters")}
                 </button>
               )}
             </div>
           ) : (
-            visibleClubs.map((club, index) => (
-              <Reveal key={club.id} style={{ transitionDelay: `${Math.min(index, 8) * 60}ms` }}>
-                <ClubCard
-                  id={club.id}
-                  name={club.name}
-                  slug={club.slug}
-                  music={club.music}
-                  area={club.neighborhood}
-                  price={club.price}
-                  hours={club.hours}
-                  openDays={club.open_days}
-                  image={club.image}
-                  rating={club.google_rating || club.rating}
-                  lgtbi_friendly={club.lgtbi_friendly}
-                  verified={club.verified}
-                  discountInfo={club.discount_info}
-                  freeEntryInfo={club.free_entry_info}
-                  liveStatus={club.live_status}
-                  liveStatusUpdatedAt={club.live_status_updated_at}
-                />
-              </Reveal>
+            visibleClubs.map((club) => (
+              <ClubCard
+                key={club.id}
+                id={club.id}
+                name={club.name}
+                slug={club.slug}
+                music={club.music}
+                area={club.neighborhood}
+                price={club.price}
+                hours={club.hours}
+                openDays={club.open_days}
+                image={club.image}
+                rating={club.google_rating || club.rating}
+                lgtbi_friendly={club.lgtbi_friendly}
+                verified={club.verified}
+                discountInfo={club.discount_info}
+                freeEntryInfo={club.free_entry_info}
+                liveStatus={club.live_status}
+                liveStatusUpdatedAt={club.live_status_updated_at}
+              />
             ))
           )}
         </section>
 
         {visibleCount < sortedClubs.length && (
-          <div className="mt-12 text-center">
+          <div className="mt-10 text-center">
             <button
               onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-              className="rounded-2xl border border-white/15 bg-white/[0.03] px-8 py-4 font-bold text-white transition hover:bg-white hover:text-black"
+              className="rounded-ctl border border-white/15 bg-white/5 px-8 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/10"
             >
-              Mostrar más ({sortedClubs.length - visibleCount} más)
+              {t("explorer.showMore").replace("{n}", String(Math.min(PAGE_SIZE, sortedClubs.length - visibleCount)))}
             </button>
           </div>
         )}

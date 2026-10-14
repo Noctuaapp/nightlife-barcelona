@@ -8,6 +8,14 @@ import { notFound, permanentRedirect } from "next/navigation"
 import { supabase } from "../../../lib/supabase"
 import { findBySlug } from "../../../lib/slugLookup"
 
+// ISR: la ficha se genera la primera vez que alguien la pide y se sirve ya hecha durante 5 min
+// (antes se generaba de cero en cada visita, consultando la base de datos cada vez). Los cambios
+// del admin o del dueño tardan como mucho 5 min en verse.
+export const revalidate = 300
+export async function generateStaticParams() {
+  return []
+}
+
 type ClubPageProps = {
   params: Promise<{ slug: string }>
 }

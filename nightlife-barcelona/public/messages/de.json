@@ -308,11 +308,11 @@
     "emailPlaceholder": "Deine E-Mail",
     "subjectPlaceholder": "Betreff",
     "messagePlaceholder": "Schreibe deine Nachricht...",
-    "sendButton": "Nachricht senden →",
+    "sendButton": "Nachricht senden",
     "sending": "Wird gesendet...",
-    "successMessage": "✅ Nachricht gesendet. Noctua wird sie bald prüfen.",
+    "successMessage": "Nachricht gesendet. Noctua wird sie bald prüfen.",
     "errorEmptyMessage": "Bitte schreibe eine Nachricht.",
-    "types": "user_support||🙋 Nutzer-Support||Hilfe mit deinem Konto oder der App\nreport_issue||⚑ Falsche Informationen melden||Falsche Öffnungszeiten, Preise oder Daten\nsuggest_venue||📍 Ein Lokal vorschlagen||Kennst du einen fehlenden Club oder eine Bar?\nsuggest_essential||🧭 Etwas Wichtiges vorschlagen||Fehlender Geldautomat, Apotheke, Transport...\nclub_partnership||🤝 Partnerschaft mit Lokal||Zusammenarbeit für Clubs und Bars\nfestival_partnership||🎪 Partnerschaft mit Festival||Zusammenarbeit für Events und Festivals\nowner_access||🔑 Meinen Club oder mein Event verwalten||Du bist verantwortlich und möchtest deinen Eintrag selbst bearbeiten"
+    "types": "user_support||Nutzer-Support||Hilfe mit deinem Konto oder der App\nreport_issue||Falsche Informationen melden||Falsche Öffnungszeiten, Preise oder Daten\nsuggest_venue||Ein Lokal vorschlagen||Kennst du einen fehlenden Club oder eine Bar?\nsuggest_essential||Etwas Wichtiges vorschlagen||Fehlender Geldautomat, Apotheke, Transport...\nclub_partnership||Partnerschaft mit Lokal||Zusammenarbeit für Clubs und Bars\nfestival_partnership||Partnerschaft mit Festival||Zusammenarbeit für Events und Festivals\nowner_access||Meinen Club oder mein Event verwalten||Du bist verantwortlich und möchtest deinen Eintrag selbst bearbeiten"
   },
   "nearby": {
     "triggerButton": "Kommst du nicht rein?",

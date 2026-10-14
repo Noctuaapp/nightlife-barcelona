@@ -5,6 +5,8 @@ import { createPortal } from "react-dom"
 import Link from "next/link"
 
 import { useLanguage } from "../../context/LanguageContext"
+import { X } from "lucide-react"
+import NocOwl from "../mascot/NocOwl"
 
 type AuthGateModalProps = {
   open: boolean
@@ -44,12 +46,13 @@ export default function AuthGateModal({ open, onClose, subtitleKey }: AuthGateMo
         className="w-full max-w-md rounded-t-card border border-white/10 bg-night p-7 sm:rounded-card"
       >
         <div className="flex items-start justify-between gap-4">
-          <p className="text-4xl">✨</p>
+          <NocOwl size={44} mood="wink" />
           <button
             onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
+            aria-label={t("clubPage.close")}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 text-ink transition hover:bg-white/10"
           >
-            ✕
+            <X size={16} />
           </button>
         </div>
 

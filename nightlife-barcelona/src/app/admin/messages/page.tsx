@@ -5,6 +5,9 @@ import { useEffect, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 
 import { supabase } from "../../../lib/supabase"
+import { ADMIN_EMAIL } from "../../../lib/admin"
+import { logError } from "../../../lib/log"
+import { toast } from "../../../components/ui/Toast"
 
 type ContactMessage = {
   id: number
@@ -42,7 +45,7 @@ export default function AdminMessagesPage() {
     const checkAdmin = async () => {
       const { data, error } = await supabase.auth.getSession()
 
-      if (error || data.session?.user.email !== "info@noctuaapp.com") {
+      if (error || data.session?.user.email !== ADMIN_EMAIL) {
         window.location.href = "/login"
         return
       }
@@ -60,7 +63,7 @@ export default function AdminMessagesPage() {
       .order("created_at", { ascending: false })
 
     if (error) {
-      console.log("MESSAGES ERROR:", error)
+      logError("MESSAGES ERROR:", error)
       return
     }
 
@@ -77,7 +80,7 @@ export default function AdminMessagesPage() {
     const { error } = await supabase.from("contact_messages").update({ status }).eq("id", id)
 
     if (error) {
-      console.log("UPDATE MESSAGE ERROR:", error)
+      logError("UPDATE MESSAGE ERROR:", error)
       return
     }
 
@@ -91,8 +94,8 @@ export default function AdminMessagesPage() {
     const { error } = await supabase.from("contact_messages").delete().eq("id", id)
 
     if (error) {
-      console.log("DELETE MESSAGE ERROR:", error)
-      window.alert("No se pudo eliminar el mensaje")
+      logError("DELETE MESSAGE ERROR:", error)
+      toast("No se pudo eliminar el mensaje")
       return
     }
 
@@ -109,8 +112,8 @@ export default function AdminMessagesPage() {
     const { error } = await supabase.from("contact_messages").update(patch).eq("id", id)
 
     if (error) {
-      console.log("SPAM UPDATE ERROR:", error)
-      window.alert("No se pudo actualizar el mensaje")
+      logError("SPAM UPDATE ERROR:", error)
+      toast("No se pudo actualizar el mensaje")
       return
     }
 
@@ -129,8 +132,8 @@ export default function AdminMessagesPage() {
     const { error } = await supabase.from("contact_messages").delete().in("id", ids)
 
     if (error) {
-      console.log("EMPTY SPAM ERROR:", error)
-      window.alert("No se pudo vaciar el spam")
+      logError("EMPTY SPAM ERROR:", error)
+      toast("No se pudo vaciar el spam")
       return
     }
 
@@ -165,7 +168,7 @@ export default function AdminMessagesPage() {
       .eq("id", selectedMessage.id)
 
     if (error) {
-      console.log("SAVE REPLY ERROR:", error)
+      logError("SAVE REPLY ERROR:", error)
       setSendError("No se pudo guardar la respuesta")
       setSending(false)
       return
@@ -183,7 +186,7 @@ export default function AdminMessagesPage() {
       ])
 
       if (notifError) {
-        console.log("NOTIFICATION INSERT ERROR:", notifError)
+        logError("NOTIFICATION INSERT ERROR:", notifError)
       }
     }
 
@@ -217,7 +220,7 @@ export default function AdminMessagesPage() {
     setBroadcastSending(false)
 
     if (error) {
-      console.log("BROADCAST ERROR:", error)
+      logError("BROADCAST ERROR:", error)
       setBroadcastError("No se pudo enviar el aviso")
       return
     }

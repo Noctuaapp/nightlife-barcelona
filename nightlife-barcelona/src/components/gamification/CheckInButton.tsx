@@ -8,6 +8,7 @@ import BadgeToast from "../mascot/BadgeToast"
 import { evaluateBadges } from "../../lib/badges"
 import { useLanguage } from "../../context/LanguageContext"
 import Icon from "../ui/Icon"
+import { logError } from "../../lib/log"
 
 type CheckInButtonProps = {
   clubId: number
@@ -91,7 +92,7 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
       .eq("checkin_date", today)
     setSavingNote(false)
     if (noteError) {
-      console.log("CHECKIN NOTE ERROR:", noteError)
+      logError("CHECKIN NOTE ERROR:", noteError)
       return
     }
     setNoteSaved(true)
@@ -121,7 +122,7 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
       checkin_date: nightDate(),
     })
     if (insertError && insertError.code !== "23505") {
-      console.log("CHECKIN INSERT ERROR:", insertError)
+      logError("CHECKIN INSERT ERROR:", insertError)
       setError(t("checkin.error"))
       setWorking(false)
       return
@@ -172,7 +173,7 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
           return
         }
         if (rpcError || !result) {
-          console.log("CHECKIN RPC ERROR:", rpcError)
+          logError("CHECKIN RPC ERROR:", rpcError)
           setError(t("checkin.error"))
           setWorking(false)
           return

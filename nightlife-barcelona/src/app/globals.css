@@ -149,3 +149,19 @@ button, a {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/* Barra de secciones del admin: se desliza en horizontal con una barra fina siempre visible. */
+.admin-nav-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+.admin-nav-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.admin-nav-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-nav-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+}

@@ -17,6 +17,17 @@ const META: Record<string, { title: string; description: string }> = {
   hospital: { title: "Urgencias y hospitales en Barcelona", description: "Hospitales con urgencias 24 h en Barcelona y cómo llegar." },
 }
 
+// Las 12 categorías se generan al compilar (antes cada visita se renderizaba de cero) y cualquier
+// otra URL (/essentials/loquesea) da un 404 real en vez de una página vacía con código 200.
+export function generateStaticParams() {
+  return Object.keys(META).map((category) => ({ category }))
+}
+export const dynamicParams = false
+
+// Hoteles y casinos se mantienen accesibles, pero no se promocionan ni se piden indexar: no son
+// "esenciales" de la noche y diluyen la relevancia del resto para Google.
+const NOINDEX = new Set(["hotel", "casino"])
+
 export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
   const { category } = await params
   const meta = META[category]
@@ -25,6 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
     title: `${meta.title} | Noctua`,
     description: meta.description,
     alternates: { canonical: `https://www.noctuaapp.com/essentials/${category}` },
+    ...(NOINDEX.has(category) ? { robots: { index: false, follow: true } } : {}),
   }
 }
 

@@ -9,6 +9,8 @@ import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { useLanguage } from "../../context/LanguageContext"
 import AuthGateModal from "../ui/AuthGateModal"
+import { DoorClosed, X, Map as MapIcon, Navigation, Lock } from "lucide-react"
+import { logError } from "../../lib/log"
 
 type NearbyVenuesSheetProps = {
   // Id del club a excluir de los resultados (si se abre desde la ficha de un club). En la
@@ -28,6 +30,7 @@ type NearbyVenuesSheetProps = {
 type ClubRow = {
   id: number
   name: string
+  slug?: string | null
   image: string | null
   latitude: number | null
   longitude: number | null
@@ -110,13 +113,11 @@ export default function NearbyVenuesSheet({
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id || null))
   }, [])
 
-  if (!latitude || !longitude) return null
-
   const applyReason = (next: Reason) => {
     setReason(next)
     if (!rowsRef.current) return
     const origin = usingLiveLocation ? liveOriginRef.current : null
-    const [fromLat, fromLng] = origin || [latitude, longitude]
+    const [fromLat, fromLng] = origin || [latitude as number, longitude as number]
     setVenues(sortVenues(rowsRef.current, fromLat, fromLng, next))
 
     // Guardamos qué motivo se eligió (solo al elegir uno, no al deseleccionarlo) para poder
@@ -131,7 +132,7 @@ export default function NearbyVenuesSheet({
         .insert({ user_id: userId, venue_type: venueType, venue_id: venueId, venue_name: name, reason: next })
         .then(({ error }) => {
           if (error) {
-            console.log("ENTRY DENIAL INSERT ERROR:", error)
+            logError("ENTRY DENIAL INSERT ERROR:", error)
             return
           }
           setReasonSaved(true)
@@ -150,7 +151,7 @@ export default function NearbyVenuesSheet({
 
     let query = supabase
       .from("clubs")
-      .select("id, name, image, latitude, longitude, music, neighborhood, queue, trending, lgtbi_friendly")
+      .select("id, name, slug, image, latitude, longitude, music, neighborhood, queue, trending, lgtbi_friendly")
       .eq("hidden", false)
       .not("latitude", "is", null)
       .not("longitude", "is", null)
@@ -161,7 +162,7 @@ export default function NearbyVenuesSheet({
 
     const rows = (data || []) as ClubRow[]
     rowsRef.current = rows
-    setVenues(sortVenues(rows, latitude, longitude, reason))
+    setVenues(sortVenues(rows, latitude as number, longitude as number, reason))
     setLoading(false)
 
     // Refinado silencioso en segundo plano: si el GPS responde rápido, reordenamos con la
@@ -181,6 +182,10 @@ export default function NearbyVenuesSheet({
     }
   }, [venues, excludeClubId, latitude, longitude, reason])
 
+  // Sin coordenadas no hay nada que mostrar. Va después de todos los hooks (antes estaba antes de
+  // useCallback y rompía las reglas de los hooks de React).
+  if (!latitude || !longitude) return null
+
   const reasons: { key: Exclude<Reason, null>; label: string }[] = [
     { key: "dress", label: t("nearby.reasonDress") },
     { key: "full", label: t("nearby.reasonFull") },
@@ -192,9 +197,9 @@ export default function NearbyVenuesSheet({
     <>
       <button
         onClick={handleOpen}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:scale-[1.02] hover:bg-white/10"
+        className="flex w-full items-center justify-center gap-2 rounded-ctl border border-white/15 px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
       >
-        🚫 {t("nearby.triggerButton")}
+        <DoorClosed size={16} /> {t("nearby.triggerButton")}
       </button>
 
       {open && mounted && createPortal(
@@ -208,17 +213,17 @@ export default function NearbyVenuesSheet({
           >
             <div className="flex items-start justify-between gap-4 border-b border-white/5 p-6 pb-5">
               <div>
-                <p className="text-2xl">🚫✨</p>
-                <h3 className="mt-2 text-xl font-black text-white">{t("nearby.title")}</h3>
+                <h3 className="text-xl font-semibold text-ink">{t("nearby.title")}</h3>
                 <p className="mt-1 text-sm text-zinc-400">
                   {usingLiveLocation ? t("nearby.nearYou") : t("nearby.nearVenue").replace("{name}", name)}
                 </p>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
+                aria-label={t("clubPage.close")}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 text-ink transition hover:bg-white/10"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 
@@ -239,8 +244,8 @@ export default function NearbyVenuesSheet({
                     }}
                     className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
                       reason === r.key
-                        ? "border-purple-400/40 bg-purple-500/20 text-purple-200"
-                        : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"
+                        ? "border-brand bg-brand text-white"
+                        : "border-white/10 text-zinc-200 hover:bg-white/5"
                     }`}
                   >
                     {r.label}
@@ -248,7 +253,7 @@ export default function NearbyVenuesSheet({
                 ))}
               </div>
               {reasonSaved && (
-                <p className="mt-2.5 text-xs font-semibold text-emerald-400">
+                <p className="mt-2.5 text-xs font-semibold text-open">
                   {t("nearby.reasonSaved")}
                 </p>
               )}
@@ -266,12 +271,12 @@ export default function NearbyVenuesSheet({
 
               {venues !== null && venues.length === 0 && (
                 <div className="flex flex-col items-center gap-3 py-10 text-center">
-                  <p className="text-3xl">🗺️</p>
+                  <MapIcon size={28} className="text-brand-soft" />
                   <p className="max-w-xs text-sm text-zinc-400">{t("nearby.empty")}</p>
                   <Link
                     href="/map"
                     onClick={() => setOpen(false)}
-                    className="mt-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-xs font-bold text-white hover:bg-white/10"
+                    className="mt-2 rounded-ctl border border-white/15 px-5 py-2.5 text-sm font-semibold text-ink hover:bg-white/5"
                   >
                     {t("nearby.viewMap")}
                   </Link>
@@ -280,30 +285,30 @@ export default function NearbyVenuesSheet({
 
               {venues !== null &&
                 (userId ? venues : venues.slice(0, FREE_RESULTS)).map((v) => {
-                  const slug = createSlug(v.name)
+                  const slug = v.slug || createSlug(v.name)
                   return (
                     <div
                       key={v.id}
-                      className="group flex items-center gap-4 rounded-2xl border border-white/5 bg-white/[0.02] p-3 transition hover:border-white/15 hover:bg-white/[0.05]"
+                      className="group flex items-center gap-4 rounded-ctl border border-white/10 p-3 transition hover:border-white/25"
                     >
                       <Link href={`/clubs/${slug}`} onClick={() => setOpen(false)} className="flex flex-1 items-center gap-4 overflow-hidden">
-                        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-white/5">
-                          <img src={v.image || FALLBACK_IMAGE} alt={v.name} className="h-full w-full object-cover" />
+                        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-ctl bg-white/5">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={v.image || FALLBACK_IMAGE} alt="" className="h-full w-full object-cover" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
-                            <p className="truncate text-sm font-black text-white">{v.name}</p>
-                            {v.trending && <span className="shrink-0 text-xs">🔥</span>}
+                            <p className="truncate text-sm font-semibold text-ink">{v.name}</p>
                           </div>
                           <p className="truncate text-xs text-zinc-400">
                             {[v.music, v.neighborhood].filter(Boolean).join(" · ") || "Barcelona"}
                           </p>
                           <div className="mt-1.5 flex items-center gap-2">
-                            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-bold text-zinc-200">
-                              📍 {formatDistance(v.distanceMeters)}
+                            <span className="rounded-full border border-white/10 px-2.5 py-1 text-xs font-semibold text-zinc-200">
+                              {formatDistance(v.distanceMeters)}
                             </span>
                             {v.noQueue && (
-                              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
+                              <span className="rounded-full bg-open/15 px-2.5 py-1 text-xs font-semibold text-open">
                                 {t("club.no_queue")}
                               </span>
                             )}
@@ -315,10 +320,11 @@ export default function NearbyVenuesSheet({
                           href={`https://www.google.com/maps/dir/?api=1&destination=${v.latitude},${v.longitude}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 text-ink transition hover:bg-white/10"
                           title={t("nearby.directions")}
+                          aria-label={t("nearby.directions")}
                         >
-                          🗺️
+                          <Navigation size={16} />
                         </a>
                       )}
                     </div>
@@ -328,13 +334,13 @@ export default function NearbyVenuesSheet({
               {venues !== null && !userId && venues.length > FREE_RESULTS && (
                 <button
                   onClick={() => setShowAuthGate(true)}
-                  className="flex w-full flex-col items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-5 text-center transition hover:bg-white/[0.05]"
+                  className="flex w-full flex-col items-center gap-2 rounded-ctl border border-dashed border-white/15 p-5 text-center transition hover:bg-white/5"
                 >
-                  <p className="text-2xl">🔒</p>
-                  <p className="text-sm font-bold text-white">
+                  <Lock size={20} className="text-zinc-400" />
+                  <p className="text-sm font-semibold text-ink">
                     +{venues.length - FREE_RESULTS} {t("nearby.moreNearby")}
                   </p>
-                  <span className="mt-1 rounded-full bg-white px-4 py-2 text-xs font-black text-black">
+                  <span className="mt-1 rounded-ctl bg-brand px-4 py-2 text-xs font-semibold text-white">
                     {t("nearby.unlockAll")}
                   </span>
                 </button>

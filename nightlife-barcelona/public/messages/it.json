@@ -308,11 +308,11 @@
     "emailPlaceholder": "La tua email",
     "subjectPlaceholder": "Oggetto",
     "messagePlaceholder": "Scrivi il tuo messaggio...",
-    "sendButton": "Invia messaggio →",
+    "sendButton": "Invia messaggio",
     "sending": "Invio in corso...",
-    "successMessage": "✅ Messaggio inviato. Noctua lo esaminerà presto.",
+    "successMessage": "Messaggio inviato. Noctua lo esaminerà presto.",
     "errorEmptyMessage": "Per favore scrivi un messaggio.",
-    "types": "user_support||🙋 Supporto utente||Aiuto con il tuo account o l'app\nreport_issue||⚑ Segnala informazioni errate||Orari, prezzi o dati errati\nsuggest_venue||📍 Suggerisci un locale||Conosci un club o bar mancante?\nsuggest_essential||🧭 Suggerisci un servizio essenziale||Bancomat, farmacia, trasporti... mancanti\nclub_partnership||🤝 Partnership con locale||Collaborazione per club e bar\nfestival_partnership||🎪 Partnership con festival||Collaborazione per eventi e festival\nowner_access||🔑 Gestisci il mio club o evento||Sei il responsabile e vuoi modificare tu stesso la tua scheda"
+    "types": "user_support||Supporto utente||Aiuto con il tuo account o l'app\nreport_issue||Segnala informazioni errate||Orari, prezzi o dati errati\nsuggest_venue||Suggerisci un locale||Conosci un club o bar mancante?\nsuggest_essential||Suggerisci un servizio essenziale||Bancomat, farmacia, trasporti... mancanti\nclub_partnership||Partnership con locale||Collaborazione per club e bar\nfestival_partnership||Partnership con festival||Collaborazione per eventi e festival\nowner_access||Gestisci il mio club o evento||Sei il responsabile e vuoi modificare tu stesso la tua scheda"
   },
   "nearby": {
     "triggerButton": "Non ti fanno entrare?",

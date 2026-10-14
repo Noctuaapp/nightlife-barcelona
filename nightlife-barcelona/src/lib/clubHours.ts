@@ -102,3 +102,22 @@ export function clubOpenNow(hours: string | null | undefined, openDays?: string[
     return null
   }
 }
+
+// ¿Abre el club la noche de ese día de la semana (0 = domingo)? false solo si se sabe que no
+// (por open_days o por los días del horario); null si no hay datos para saberlo.
+export function clubOpensOn(hours: string | null | undefined, openDays: string[] | null | undefined, dow: number): boolean | null {
+  const letter = DAY_LETTERS[dow]
+  const openLetters = openDaysToLetters(openDays)
+  if (openLetters) return openLetters.includes(letter)
+  if (!hours || !hours.trim()) return null
+  let withDays = false
+  let match = false
+  for (const raw of hours.split(/[,|;]/)) {
+    const m = raw.trim().match(/^(?:([LMXJVSD/\-]+)\s+)?(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})$/)
+    if (!m) continue
+    if (!m[1]) return true
+    withDays = true
+    if (expandDays(m[1]).includes(letter)) match = true
+  }
+  return withDays ? match : null
+}

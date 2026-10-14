@@ -8,6 +8,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import CountrySelect from "../../components/ui/CountrySelect"
+import TermsText from "../../components/ui/TermsText"
 
 export default function SignupPage() {
   const { t, locale } = useLanguage()
@@ -31,7 +32,7 @@ export default function SignupPage() {
       return
     }
     if (!birthDate) {
-      setError("Indica tu fecha de nacimiento.")
+      setError(t("consent.birthDateRequired"))
       return
     }
     // Edad exacta a partir de la fecha completa (con solo el año no se puede saber si alguien de
@@ -41,7 +42,7 @@ export default function SignupPage() {
     let age = today.getFullYear() - bd.getFullYear()
     if (today.getMonth() < bd.getMonth() || (today.getMonth() === bd.getMonth() && today.getDate() < bd.getDate())) age--
     if (isNaN(age) || age < 18) {
-      setError("Noctua es solo para mayores de 18 años. No puedes registrarte.")
+      setError(t("consent.under18"))
       return
     }
     if (!acceptedTerms) {
@@ -97,22 +98,21 @@ export default function SignupPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-black pb-40 text-white">
+      <main className="min-h-screen bg-night pb-40 text-ink">
         <section className="relative overflow-hidden px-4 pt-14 pb-10">
-          <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-transparent to-transparent" />
           <div className="relative mx-auto max-w-md text-center">
-            <h1 className="text-5xl font-black tracking-tight">{t("signup.title")}</h1>
+            <h1 className="font-display text-4xl sm:text-5xl">{t("signup.title")}</h1>
             <p className="mt-4 text-zinc-400">{t("signup.subtitle")}</p>
           </div>
         </section>
 
         <section className="mx-auto max-w-md px-4">
-          <div className="rounded-card border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
+          <div className="rounded-card border border-white/10 bg-surface p-6 sm:p-8">
 
             {/* Google */}
             <button
               onClick={handleGoogle}
-              className="w-full flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white hover:text-black"
+              className="w-full flex items-center justify-center gap-3 rounded-ctl border border-white/15 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white hover:text-black"
             >
               <svg width="18" height="18" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -135,21 +135,21 @@ export default function SignupPage() {
                 placeholder={t("signup.username")}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
+                className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base outline-none focus:border-brand transition"
               />
               <input
                 type="email"
                 placeholder={t("signup.email")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
+                className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base outline-none focus:border-brand transition"
               />
               <input
                 type="password"
                 placeholder={t("signup.password")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
+                className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base outline-none focus:border-brand transition"
               />
               <CountrySelect value={country} onChange={setCountry} locale={locale} placeholder={t("signup.country")} />
               {/* Antes había una opción vacía seleccionable ("Género") que dejaba enviar el
@@ -162,24 +162,24 @@ export default function SignupPage() {
                 onChange={(e) => setGender(e.target.value)}
                 required
                 style={{ colorScheme: "dark" }}
-                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition text-zinc-300"
+                className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base outline-none focus:border-brand transition text-zinc-300"
               >
-                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="" disabled hidden>
+                <option style={{ backgroundColor: "#16141f", color: "#fff" }} value="" disabled hidden>
                   {t("signup.gender")}
                 </option>
-                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">
+                <option style={{ backgroundColor: "#16141f", color: "#fff" }} value="Hombre">
                   {t("signup.gender_male")}
                 </option>
-                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Mujer">
+                <option style={{ backgroundColor: "#16141f", color: "#fff" }} value="Mujer">
                   {t("signup.gender_female")}
                 </option>
-                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Prefiero no decirlo">
+                <option style={{ backgroundColor: "#16141f", color: "#fff" }} value="Prefiero no decirlo">
                   {t("signup.gender_unspecified")}
                 </option>
               </select>
 
               <div>
-                <label className="mb-2 block px-1 text-xs text-zinc-400">Fecha de nacimiento</label>
+                <label className="mb-2 block px-1 text-sm text-zinc-300">{t("consent.birthDate")}</label>
                 <input
                   type="date"
                   value={birthDate}
@@ -188,10 +188,10 @@ export default function SignupPage() {
                   max={new Date().toISOString().slice(0, 10)}
                   required
                   style={{ colorScheme: "dark" }}
-                  className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition text-zinc-300"
+                  className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base outline-none focus:border-brand transition text-zinc-300"
                 />
                 <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-400">
-                  Los datos del año de nacimiento se usarán para mejorar tus búsquedas.
+                  {t("birthYear.help")}
                 </p>
               </div>
 
@@ -200,14 +200,10 @@ export default function SignupPage() {
                   type="checkbox"
                   checked={acceptedTerms}
                   onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded accent-purple-500 flex-shrink-0"
+                  className="mt-1 h-4 w-4 rounded accent-[#7c5cff] flex-shrink-0"
                 />
                 <span className="text-sm text-zinc-400 leading-relaxed">
-                  Acepto los{" "}
-                  <a href="/terms" className="text-purple-400 hover:text-purple-300 transition">términos y condiciones</a>
-                  {" "}y la{" "}
-                  <a href="/privacy" className="text-purple-400 hover:text-purple-300 transition">política de privacidad</a>
-                  {" "}de Noctua, incluyendo el uso de mi ubicación para mostrar contenido relevante.
+                  <TermsText />
                 </span>
               </label>
 
@@ -216,26 +212,26 @@ export default function SignupPage() {
                   type="checkbox"
                   checked={confirmedAge}
                   onChange={(e) => setConfirmedAge(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded accent-purple-500 flex-shrink-0"
+                  className="mt-1 h-4 w-4 rounded accent-[#7c5cff] flex-shrink-0"
                 />
                 <span className="text-sm text-zinc-400 leading-relaxed">
-                  Confirmo que soy mayor de 18 años.
+                  {t("consent.ageConfirm")}
                 </span>
               </label>
 
-              {error && <p className="text-sm font-bold text-red-400">{error}</p>}
+              {error && <p className="text-sm font-semibold text-red-300">{error}</p>}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-2xl bg-white py-4 font-bold text-black transition hover:scale-[1.02] disabled:opacity-50"
+                className="w-full rounded-ctl bg-brand py-4 font-semibold text-white transition hover:bg-brand-strong disabled:opacity-50"
               >
                 {loading ? t("signup.creating") : t("signup.create")}
               </button>
             </form>
 
             <p className="mt-6 text-center text-sm text-zinc-400">
-              <Link href="/login" className="text-white hover:text-zinc-300 transition">
+              <Link href="/login" className="font-semibold text-ink underline-offset-4 hover:underline">
                 {t("signup.existing")}
               </Link>
             </p>

@@ -1,19 +1,26 @@
 "use client"
 
 import { zoneOf, zonesPresent } from "../../lib/zones"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { track } from "../../lib/track"
 import Image from "next/image"
 import Link from "next/link"
 import { useLanguage } from "../../context/LanguageContext"
 import { createSlug } from "../../lib/slug"
 import { SearchIcon, CloseIcon, LocationIcon, CalendarIcon, ChevronDownIcon } from "../ui/FilterIcons"
+import ExploreSwitch from "./ExploreSwitch"
+import Icon from "../ui/Icon"
+import { toDateLocale } from "../../lib/dateLocale"
 
 // Un evento de varios días (date_end) no se considera terminado hasta que pasa el último día,
 // no el primero.
+// "2026-11-14" se lee a mediodía para que ninguna zona horaria lo mueva de día.
+const dateOnly = (value: string) => new Date(value.length <= 10 ? `${value}T12:00:00` : value)
+
 const isEventPast = (date: string, dateEnd?: string | null): boolean => {
   if (!date) return false
-  const eventDate = new Date(dateEnd || date)
+  const eventDate = dateOnly(dateEnd || date)
+  eventDate.setHours(23, 59, 59, 0)
   const now = new Date()
   now.setHours(0, 0, 0, 0)
   return eventDate < now
@@ -23,21 +30,12 @@ const isEventPast = (date: string, dateEnd?: string | null): boolean => {
 // mismo (eso ya se nota por la fecha) ni ya ha pasado.
 const isUpcomingSoon = (date: string): boolean => {
   if (!date) return false
-  const eventDate = new Date(date)
+  const eventDate = dateOnly(date)
   const now = new Date()
   now.setHours(0, 0, 0, 0)
   const inOneWeek = new Date(now)
   inOneWeek.setDate(inOneWeek.getDate() + 7)
   return eventDate >= now && eventDate <= inOneWeek
-}
-
-// Antes cada tarjeta aparecía con una animación al hacer scroll; ahora se muestra directamente.
-function Reveal({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
-  return (
-    <div className={className} style={style ? { ...style, transitionDelay: undefined } : undefined}>
-      {children}
-    </div>
-  )
 }
 
 function toggleInSet(set: Set<string>, value: string): Set<string> {
@@ -82,10 +80,11 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   const [userLng, setUserLng] = useState<number | null>(null)
   const [nearMeLoading, setNearMeLoading] = useState(false)
   const [nearMeError, setNearMeError] = useState("")
-  const [hidePast, setHidePast] = useState(false)
+  // Los eventos pasados se ocultan por defecto (antes salían mezclados, solo atenuados).
+  const [hidePast, setHidePast] = useState(true)
   const [sortBy, setSortBy] = useState<"date" | "date_desc" | "featured">("date")
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
 
   const availableZones = zonesPresent(events)
 
@@ -176,14 +175,14 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   selectedZones.forEach((z) => activeFilters.push({ label: z, onRemove: () => setSelectedZones((s) => toggleInSet(s, z)) }))
   if (nearMe)
     activeFilters.push({
-      label: "Cerca de mí",
+      label: t("explorer.near"),
       onRemove: () => {
         setNearMe(false)
         setUserLat(null)
         setUserLng(null)
       },
     })
-  if (hidePast) activeFilters.push({ label: "Solo próximos", onRemove: () => setHidePast(false) })
+  if (!hidePast) activeFilters.push({ label: t("eventsExplorer.showPast"), onRemove: () => setHidePast(true) })
   if (search) activeFilters.push({ label: `"${search}"`, onRemove: () => setSearch("") })
 
   const clearAll = () => {
@@ -193,7 +192,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
     setNearMe(false)
     setUserLat(null)
     setUserLng(null)
-    setHidePast(false)
+    setHidePast(true)
   }
 
   // Mismo arreglo que en ClubsExplorer: sin callback de error ni loading, el botón "Cerca"
@@ -201,7 +200,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   const requestNearMe = () => {
     setNearMeError("")
     if (!navigator.geolocation) {
-      setNearMeError("Tu navegador no permite compartir ubicación.")
+      setNearMeError(t("geo.unsupported"))
       return
     }
     setNearMeLoading(true)
@@ -214,122 +213,91 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
       },
       (err) => {
         setNearMeLoading(false)
-        if (err.code === err.PERMISSION_DENIED) {
-          setNearMeError("Necesitamos tu ubicación — revisa los permisos de ubicación de tu navegador para esta web.")
-        } else if (err.code === err.TIMEOUT) {
-          setNearMeError("No hemos podido obtener tu ubicación a tiempo. Inténtalo de nuevo.")
-        } else {
-          setNearMeError("No hemos podido obtener tu ubicación. Inténtalo de nuevo.")
-        }
+        if (err.code === err.PERMISSION_DENIED) setNearMeError(t("geo.denied"))
+        else if (err.code === err.TIMEOUT) setNearMeError(t("geo.timeout"))
+        else setNearMeError(t("geo.error"))
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     )
   }
 
+  const quick = (active: boolean) =>
+    `flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition active:scale-95 disabled:opacity-60 ${
+      active ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
+    }`
+
   return (
     <>
-      <main className="relative min-h-screen pb-40 text-white">
+      <main className="relative min-h-screen bg-night pb-40 text-ink">
 
-        <section className="px-4 pt-14">
+        <section className="px-4 pt-8 sm:pt-12">
           <div className="mx-auto max-w-7xl">
-            <p className="text-sm text-zinc-400">{t("events.title")}</p>
-            {/* text-5xl fijo se salía de un móvil de 375px con la fuente display nueva — igual
-                que el titular de la home (ver HomeClient.tsx). break-words + tamaño menor en
-                mobile. */}
-            <h1 className="font-display mt-4 break-words text-4xl font-black leading-[1.05] text-white sm:text-5xl md:text-6xl">{t("events.subtitle")}</h1>
+            <ExploreSwitch active="events" />
+            <h1 className="font-display mt-6 break-words text-[2rem] leading-[1.06] text-ink sm:text-5xl md:text-6xl">{t("events.subtitle")}</h1>
           </div>
         </section>
 
-        {/* STICKY SEARCH + QUICK ACTIONS */}
-        <div className="sticky top-16 z-30 mt-8 border-y border-white/10 bg-night/85 py-3.5 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4">
-            <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-full border border-purple-400/25 bg-surface/90 px-6 py-3.5 shadow-[0_8px_30px_-14px_rgba(124,92,255,0.5)] backdrop-blur-xl transition focus-within:border-fuchsia-400/70 focus-within:shadow-[0_8px_36px_-8px_rgba(217,70,239,0.55)]">
-              <SearchIcon className="h-5 w-5 shrink-0 text-purple-300 transition group-focus-within:text-fuchsia-300" />
+        <div className="sticky top-16 z-30 mt-6 border-y border-white/10 bg-night/90 py-3 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 lg:flex-row lg:items-center">
+            <div className="group flex min-w-0 flex-1 items-center gap-3 rounded-full border border-white/15 bg-surface px-5 py-3 transition focus-within:border-brand">
+              <SearchIcon className="h-5 w-5 shrink-0 text-zinc-400 transition group-focus-within:text-brand-soft" />
               <input
-                type="text"
+                type="search"
                 placeholder={t("events.search")}
+                aria-label={t("events.search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-transparent text-base text-white outline-none placeholder:text-zinc-400"
+                className="w-full bg-transparent text-base text-ink outline-none placeholder:text-zinc-400"
               />
               {search && (
-                <button onClick={() => setSearch("")} className="text-zinc-400 transition hover:text-white" aria-label="Limpiar búsqueda">
+                <button onClick={() => setSearch("")} className="text-zinc-400 transition hover:text-ink" aria-label={t("explorer.clearSearch")}>
                   <CloseIcon className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
 
-            <button
-              onClick={nearMe ? () => { setNearMe(false); setUserLat(null); setUserLng(null) } : requestNearMe}
-              disabled={nearMeLoading}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 disabled:opacity-60 ${
-                nearMe ? "shadow-[0_6px_20px_-4px_rgba(124,92,255,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
-              }`}
-              style={nearMe ? { background: "#7c5cff" } : undefined}
-            >
-              <LocationIcon className="h-4 w-4" />
-              {nearMeLoading ? "Localizando..." : "Cerca"}
-            </button>
-
-            <button
-              onClick={() => setHidePast(!hidePast)}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
-                hidePast ? "shadow-[0_6px_20px_-4px_rgba(124,92,255,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
-              }`}
-              style={hidePast ? { background: "#7c5cff" } : undefined}
-            >
-              <CalendarIcon className="h-4 w-4" />
-              Solo próximos
-            </button>
-
-            <div className="relative shrink-0">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="appearance-none rounded-full border border-white/10 bg-white/[0.04] py-3.5 pl-4 pr-9 text-sm font-medium text-white outline-none"
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] lg:mx-0 lg:px-0">
+              <button
+                onClick={nearMe ? () => { setNearMe(false); setUserLat(null); setUserLng(null) } : requestNearMe}
+                disabled={nearMeLoading}
+                aria-pressed={nearMe}
+                className={quick(nearMe)}
               >
-                <option value="date" className="bg-black">Próximos primero</option>
-                <option value="date_desc" className="bg-black">Más lejanos primero</option>
-                <option value="featured" className="bg-black">Destacados primero</option>
-              </select>
-              <ChevronDownIcon className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+                <LocationIcon className="h-4 w-4" />
+                {nearMeLoading ? t("explorer.locating") : t("explorer.near")}
+              </button>
+              {filters.map((f) => (
+                <button key={f.key} onClick={() => setSelectedFilters((s) => toggleInSet(s, f.key))} aria-pressed={selectedFilters.has(f.key)} className={quick(selectedFilters.has(f.key))}>
+                  {f.label}
+                </button>
+              ))}
+              <button onClick={() => setHidePast(!hidePast)} aria-pressed={!hidePast} className={quick(!hidePast)}>
+                <CalendarIcon className="h-4 w-4" />
+                {t("eventsExplorer.showPast")}
+              </button>
+              <div className="relative shrink-0">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  aria-label={t("explorer.sortLabel")}
+                  className="appearance-none rounded-full border border-white/10 bg-night py-2.5 pl-4 pr-9 text-sm font-semibold text-zinc-200 outline-none"
+                >
+                  <option value="date">{t("eventsExplorer.sortDate")}</option>
+                  <option value="date_desc">{t("eventsExplorer.sortDateDesc")}</option>
+                  <option value="featured">{t("eventsExplorer.sortFeatured")}</option>
+                </select>
+                <ChevronDownIcon className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+              </div>
+              {availableZones.length > 1 &&
+                availableZones.map((z) => (
+                  <button key={z} onClick={() => setSelectedZones((s) => toggleInSet(s, z))} aria-pressed={selectedZones.has(z)} className={quick(selectedZones.has(z))}>
+                    {z}
+                  </button>
+                ))}
             </div>
           </div>
 
-          <div className="mx-auto mt-3 flex max-w-7xl flex-wrap gap-2 px-4">
-            {filters.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setSelectedFilters((s) => toggleInSet(s, f.key))}
-                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition active:scale-95 ${
-                  selectedFilters.has(f.key)
-                    ? "text-white shadow-[0_6px_20px_-4px_rgba(124,92,255,0.55)]"
-                    : "border border-white/10 bg-white/[0.04] text-white hover:border-purple-400/30 hover:bg-white/[0.08]"
-                }`}
-                style={selectedFilters.has(f.key) ? { background: "#7c5cff" } : undefined}
-              >
-                {f.label}
-              </button>
-            ))}
-            {availableZones.length > 1 &&
-              availableZones.map((z) => (
-                <button
-                  key={z}
-                  onClick={() => setSelectedZones((s) => toggleInSet(s, z))}
-                  className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition active:scale-95 ${
-                    selectedZones.has(z)
-                      ? "bg-white text-black"
-                      : "border border-white/10 bg-white/[0.04] text-zinc-300 hover:border-purple-400/30 hover:bg-white/[0.08]"
-                  }`}
-                >
-                  📍 {z}
-                </button>
-              ))}
-          </div>
-
-          {nearMeError && (
-            <p className="mx-auto mt-3 max-w-7xl px-4 text-xs font-semibold text-red-400">⚠️ {nearMeError}</p>
-          )}
+          {nearMeError && <p className="mx-auto mt-3 max-w-7xl px-4 text-sm font-semibold text-red-300">{nearMeError}</p>}
 
           {activeFilters.length > 0 && (
             <div className="mx-auto mt-3 flex max-w-7xl flex-wrap items-center gap-2 px-4">
@@ -337,164 +305,103 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                 <button
                   key={`${f.label}-${i}`}
                   onClick={f.onRemove}
-                  className="flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-400/10 px-3 py-1.5 text-xs font-semibold text-purple-200 transition hover:bg-purple-400/20"
+                  className="flex items-center gap-1.5 rounded-full bg-brand/15 px-3 py-1.5 text-xs font-semibold text-brand-soft transition hover:bg-brand/25"
                 >
-                  {f.label} <CloseIcon className="h-3 w-3 text-purple-300" />
+                  {f.label} <CloseIcon className="h-3 w-3" />
                 </button>
               ))}
-              <button onClick={clearAll} className="text-xs font-semibold text-zinc-400 underline-offset-2 hover:text-white hover:underline">
-                Limpiar todo
+              <button onClick={clearAll} className="text-xs font-semibold text-zinc-400 underline-offset-2 hover:text-ink hover:underline">
+                {t("explorer.clearAll")}
               </button>
             </div>
           )}
         </div>
 
-        {/* Results count */}
-        <section className="mx-auto max-w-7xl px-4 pt-8">
-          <p className="text-sm text-zinc-400">
-            {sortedEvents.length} {sortedEvents.length === 1 ? "evento encontrado" : "eventos encontrados"}
+        <section className="mx-auto max-w-7xl px-4 pt-6">
+          <p className="text-sm text-zinc-400" aria-live="polite">
+            {(sortedEvents.length === 1 ? t("eventsExplorer.countOne") : t("eventsExplorer.countMany")).replace("{n}", String(sortedEvents.length))}
           </p>
         </section>
 
-        {/* Results */}
-        <section className="mx-auto mt-4 grid max-w-7xl gap-8 px-4 md:grid-cols-2 xl:grid-cols-3">
+        <section className="mx-auto mt-4 grid max-w-7xl gap-5 px-4 md:grid-cols-2 xl:grid-cols-3">
           {visibleEvents.length === 0 ? (
-            <div className="col-span-full py-24 text-center">
-              <p className="text-lg font-bold text-zinc-300">No hay eventos con estos filtros</p>
-              <p className="mt-2 text-sm text-zinc-400">Prueba a quitar algún filtro.</p>
+            <div className="col-span-full py-20 text-center">
+              <p className="text-lg font-semibold text-zinc-200">{t("eventsExplorer.emptyTitle")}</p>
+              <p className="mt-2 text-sm text-zinc-400">{t("eventsExplorer.emptyBody")}</p>
               {activeFilters.length > 0 && (
-                <button
-                  onClick={clearAll}
-                  className="mt-6 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
-                >
-                  Limpiar filtros
+                <button onClick={clearAll} className="mt-6 rounded-ctl border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/10">
+                  {t("explorer.clearFilters")}
                 </button>
               )}
             </div>
           ) : (
-            visibleEvents.map((event, index) => {
+            visibleEvents.map((event) => {
               const past = isEventPast(event.date, event.date_end)
-              const upcomingSoon = !past && isUpcomingSoon(event.date)
+              const soon = !past && isUpcomingSoon(event.date)
+              const fmt = (d: string) => dateOnly(d).toLocaleDateString(toDateLocale(locale), { weekday: "short", day: "numeric", month: "short" })
               const dateLabel = event.date
-                ? new Date(event.date).toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })
-                : ""
-              // Si tiene date_end distinto de date, es un evento de varios días -> se muestra
-              // como rango en vez de un solo día.
-              const dateEndLabel =
-                event.date_end && event.date_end !== event.date
-                  ? new Date(event.date_end).toLocaleDateString("es-ES", { day: "numeric", month: "short" })
-                  : null
+                ? event.date_end && event.date_end !== event.date
+                  ? `${fmt(event.date)} – ${fmt(event.date_end)}`
+                  : fmt(event.date)
+                : t("eventPage.dateTbc")
               return (
-                <Reveal key={event.id} style={{ transitionDelay: `${Math.min(index, 8) * 60}ms` }}>
-                  {/* Antes era una tarjeta más (imagen + franja de chips abajo), igual que las de
-                      club — cualquier entrada se parecía a cualquier otra cosa de la app. Ahora
-                      tiene forma de entrada real: póster arriba, y debajo un talón separado por
-                      una línea perforada con muescas (los dos círculos -top-3, del color de fondo
-                      de la página, simulan el troquelado de una entrada física). Los datos
-                      prácticos — fecha, hora, precio — viven en el talón, no sobre la foto. */}
-                  <Link
-                    href={`/event/${createSlug(event.title)}`}
-                    className={`group block overflow-hidden rounded-card border bg-white/[0.03] transition duration-500 hover:-translate-y-2 hover:border-purple-400/30 hover:shadow-[0_20px_60px_-15px_rgba(124,92,255,0.35)] ${
-                      past ? "border-white/5 opacity-60" : "border-white/10"
-                    }`}
-                  >
-                    <div className="relative h-[380px] overflow-hidden">
-                      {event.image ? (
-                        <Image
-                          src={event.image}
-                          alt={event.title}
-                          fill
-                          className="object-cover transition duration-700 group-hover:scale-110"
-                        />
-                      ) : (
-                        // Antes caía en el fallback fijo "/clubs/razz.jpg" (archivo inexistente,
-                        // 404, y compartido con otros clubs/eventos). Ahora, sin foto propia, un
-                        // degradado neutro en vez de la imagen de otro club.
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-900/60 via-black to-black">
-                          <span className="text-6xl opacity-30">🎉</span>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
-
-                      <div className="absolute left-5 top-5 flex flex-wrap gap-2">
-                        {past && (
-                          <div className="rounded-full border border-zinc-500/30 bg-zinc-800/80 px-4 py-2 text-xs font-semibold text-zinc-400 backdrop-blur-xl">
-                            ⏹ Evento terminado
-                          </div>
-                        )}
-                        {event.featured && !past && (
-                          <div className="rounded-full border border-white/10 bg-black/50 px-4 py-2 text-xs font-semibold text-white backdrop-blur-xl">
-                            ⭐ {t("events.featured")}
-                          </div>
-                        )}
-                        {upcomingSoon && (
-                          <div className="rounded-full border border-purple-400/30 bg-purple-500/20 px-4 py-2 text-xs font-semibold text-purple-200 backdrop-blur-xl">
-                            🔜 Próximamente
-                          </div>
-                        )}
-                        {event.sold_out && !past && (
-                          <div className="rounded-full border border-red-500/30 bg-red-500/20 px-4 py-2 text-xs font-semibold text-red-300 backdrop-blur-xl">
-                            🚫 Sold out
-                          </div>
-                        )}
-                        {event.vip_tables && !past && (
-                          <div className="rounded-full border border-amber-500/30 bg-amber-500/20 px-4 py-2 text-xs font-semibold text-amber-300 backdrop-blur-xl">
-                            🛋️ Mesa VIP
-                          </div>
-                        )}
+                // Tarjeta compacta con el mismo esquema que la de club (antes medía 500 px, con
+                // emojis en cada etiqueta y un "talón" de entrada decorativo).
+                <Link
+                  key={event.id}
+                  href={`/event/${event.slug || createSlug(event.title)}`}
+                  className={`group block overflow-hidden rounded-card border bg-surface transition hover:border-white/25 ${past ? "border-white/5 opacity-60" : "border-white/10"}`}
+                >
+                  <div className="relative h-48 overflow-hidden">
+                    {event.image ? (
+                      <Image src={event.image} alt={event.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition duration-500 group-hover:scale-[1.03]" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand/30 via-surface to-night">
+                        <Icon name="calendar" className="h-12 w-12 text-white/20" />
                       </div>
-
-                      <div className="absolute bottom-0 left-0 w-full p-6">
-                        {event.music && (
-                          <p className="text-sm uppercase tracking-wide text-zinc-400">{event.music}</p>
-                        )}
-                        <h2 className="mt-2 text-4xl font-black tracking-tight text-white">{event.title}</h2>
-                        {event.description && <p className="mt-3 text-zinc-300 line-clamp-2">{event.description}</p>}
-                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
+                    <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+                      <span className="rounded-full bg-night/80 px-2.5 py-1 text-xs font-semibold text-ink">{past ? t("event.finishedValue") : dateLabel}</span>
+                      {soon && <span className="rounded-full bg-brand px-2.5 py-1 text-xs font-semibold text-white">{t("eventsExplorer.thisWeek")}</span>}
+                      {event.sold_out && !past && <span className="rounded-full bg-red-500/80 px-2.5 py-1 text-xs font-semibold text-white">{t("event.soldOut")}</span>}
                     </div>
-
-                    {/* Talón de la entrada */}
-                    <div className="relative border-t border-dashed border-white/20 bg-black/40 px-6 py-5">
-                      <span aria-hidden="true" className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-night" />
-                      <span aria-hidden="true" className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-night" />
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-white">
-                            {past ? "Terminado" : dateEndLabel ? `${dateLabel} - ${dateEndLabel}` : dateLabel}
-                          </p>
-                          <p className="mt-1 truncate text-xs text-zinc-400">
-                            📍 {event.club_name || "Barcelona"}
-                            {event.artist ? ` · 🎧 ${event.artist}` : ""}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          {(event.start_time || event.end_time) && (
-                            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-300">
-                              {event.start_time}{event.end_time ? `-${event.end_time}` : ""}
-                            </span>
-                          )}
-                          {event.price && (
-                            <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-black">
-                              {event.price}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <h2 className="min-w-0 text-lg font-semibold leading-snug text-ink">
+                        {event.title}
+                        {event.featured && !past && <Icon name="star" className="ml-1.5 inline h-4 w-4 align-[-2px] text-warn" />}
+                      </h2>
                     </div>
-                  </Link>
-                </Reveal>
+                    <p className="mt-0.5 truncate text-sm text-zinc-400">
+                      {[event.club_name || "Barcelona", event.music].filter(Boolean).join(" · ")}
+                    </p>
+                    {(event.start_time || event.price) && (
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                        {event.start_time && (
+                          <span className="rounded-full border border-white/10 px-2.5 py-1 font-semibold text-zinc-200">
+                            {event.start_time}
+                            {event.end_time ? ` – ${event.end_time}` : ""}
+                          </span>
+                        )}
+                        {event.price && <span className="rounded-full border border-white/10 px-2.5 py-1 font-semibold text-zinc-200">{event.price}</span>}
+                      </div>
+                    )}
+                  </div>
+                </Link>
               )
             })
           )}
         </section>
 
         {visibleCount < sortedEvents.length && (
-          <div className="mt-12 text-center">
+          <div className="mt-10 text-center">
             <button
               onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-              className="rounded-2xl border border-white/15 bg-white/[0.03] px-8 py-4 font-bold text-white transition hover:bg-white hover:text-black"
+              className="rounded-ctl border border-white/15 bg-white/5 px-8 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/10"
             >
-              Mostrar más ({sortedEvents.length - visibleCount} más)
+              {t("explorer.showMore").replace("{n}", String(Math.min(PAGE_SIZE, sortedEvents.length - visibleCount)))}
             </button>
           </div>
         )}

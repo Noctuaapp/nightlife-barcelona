@@ -5,6 +5,9 @@ import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { getSortedCountries } from "../../../lib/countries"
 import CountrySelect from "../../../components/ui/CountrySelect"
+import { ADMIN_EMAIL } from "../../../lib/admin"
+import { logError } from "../../../lib/log"
+import { toast } from "../../../components/ui/Toast"
 
 // El admin es una herramienta interna en español, así que aquí no depende del idioma del
 // visitante — siempre se muestra (y se guarda) en español, con bandera.
@@ -104,7 +107,7 @@ export default function AdminUsersPage() {
     }
     if (clubId) {
       const { error } = await supabase.from("clubs").update({ owner_user_id: userId }).eq("id", clubId)
-      if (error) { window.alert("No se pudo vincular el club: " + error.message); setSavingLink(false); return }
+      if (error) { toast("No se pudo vincular el club: " + error.message); setSavingLink(false); return }
     }
     setOwnableClubs((prev) =>
       prev.map((c) => {
@@ -132,7 +135,7 @@ export default function AdminUsersPage() {
       .update({ owner_user_id: currentlyOwned ? null : userId })
       .eq("id", festivalId)
     setSavingLink(false)
-    if (error) { window.alert("No se pudo actualizar el festival: " + error.message); return }
+    if (error) { toast("No se pudo actualizar el festival: " + error.message); return }
     setOwnableFestivals((prev) =>
       prev.map((e) => (e.id === festivalId ? { ...e, owner_user_id: currentlyOwned ? null : userId } : e))
     )
@@ -150,7 +153,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     const checkAdmin = async () => {
       const { data } = await supabase.auth.getSession()
-      if (data.session?.user.email !== "info@noctuaapp.com") {
+      if (data.session?.user.email !== ADMIN_EMAIL) {
         window.location.href = "/login"
         return
       }
@@ -162,7 +165,7 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     // admin_list_users() es una función solo para admin (antes la vista users_view).
     const { data: rawUsers, error } = await supabase.rpc("admin_list_users")
-    if (error) { console.log("USERS ERROR:", error); return }
+    if (error) { logError("USERS ERROR:", error); return }
     const data = [...((rawUsers || []) as any[])].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )
@@ -170,7 +173,7 @@ export default function AdminUsersPage() {
     // country se pide aparte de users_view (igual que is_blocked) porque la vista de Supabase
     // no incluía esta columna hasta ahora: así no hace falta tocar la vista para que aparezca.
     const { data: profiles, error: profilesError } = await supabase.from("profiles").select("id, is_blocked, country, block_reason, block_note")
-    if (profilesError) console.log("PROFILES ERROR:", profilesError)
+    if (profilesError) logError("PROFILES ERROR:", profilesError)
 
     const blockedMap = new Map((profiles || []).map((p) => [p.id, !!p.is_blocked]))
     const reasonMap = new Map((profiles || []).map((p) => [p.id, { r: p.block_reason as string | null, n: p.block_note as string | null }]))
@@ -223,8 +226,8 @@ export default function AdminUsersPage() {
     setSavingEdit(false)
 
     if (error) {
-      console.log("UPDATE USER ERROR:", error)
-      window.alert("No se pudo guardar el usuario")
+      logError("UPDATE USER ERROR:", error)
+      toast("No se pudo guardar el usuario")
       return
     }
 
@@ -261,8 +264,8 @@ export default function AdminUsersPage() {
     setBlockingId(null)
 
     if (error) {
-      console.log("BLOCK USER ERROR:", error)
-      window.alert("No se pudo actualizar el bloqueo")
+      logError("BLOCK USER ERROR:", error)
+      toast("No se pudo actualizar el bloqueo")
       return
     }
 
@@ -296,8 +299,8 @@ export default function AdminUsersPage() {
     setSendingMessage(false)
 
     if (error) {
-      console.log("SEND USER MESSAGE ERROR:", error)
-      window.alert("No se pudo enviar el mensaje")
+      logError("SEND USER MESSAGE ERROR:", error)
+      toast("No se pudo enviar el mensaje")
       return
     }
 

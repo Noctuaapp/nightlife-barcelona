@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
+import { logError } from "../../lib/log"
 
 export type ShareStop = {
   kind: "club" | "event"
@@ -69,7 +70,7 @@ export default function SharePlanButton({
       setState("copied")
       setTimeout(() => setState("idle"), 3000)
     } catch (e) {
-      console.log("SHARE PLAN ERROR:", e)
+      logError("SHARE PLAN ERROR:", e)
       setState("error")
       setTimeout(() => setState("idle"), 3000)
     }

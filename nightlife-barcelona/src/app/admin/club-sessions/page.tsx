@@ -3,6 +3,8 @@
 import { useEffect, useState, type ChangeEvent } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
+import { ADMIN_EMAIL } from "../../../lib/admin"
+import { toast } from "../../../components/ui/Toast"
 
 type Club = {
   id: number
@@ -48,7 +50,7 @@ export default function AdminClubSessionsPage() {
   useEffect(() => {
     const checkAdmin = async () => {
       const { data } = await supabase.auth.getSession()
-      if (data.session?.user.email !== "info@noctuaapp.com") {
+      if (data.session?.user.email !== ADMIN_EMAIL) {
         window.location.href = "/login"
         return
       }
@@ -80,7 +82,7 @@ export default function AdminClubSessionsPage() {
     const fileName = `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
     const { error } = await supabase.storage.from("club-images").upload(fileName, file)
     setUploading(false)
-    if (error) { alert("Error al subir la imagen: " + error.message); return null }
+    if (error) { toast("Error al subir la imagen: " + error.message); return null }
     const { data } = supabase.storage.from("club-images").getPublicUrl(fileName)
     return data.publicUrl
   }
@@ -110,11 +112,11 @@ export default function AdminClubSessionsPage() {
 
   const addSession = async () => {
     if (!newSession.club_id || !newSession.name.trim()) {
-      alert("Elige un club y ponle un nombre a la sesión")
+      toast("Elige un club y ponle un nombre a la sesión")
       return
     }
     const { data, error } = await supabase.from("club_sessions").insert(formToPayload(newSession)).select().single()
-    if (error) { alert("Error al añadir la sesión: " + error.message); return }
+    if (error) { toast("Error al añadir la sesión: " + error.message); return }
     if (data) setSessions((prev) => [...prev, data])
     setNewSession(emptyForm)
   }
@@ -137,11 +139,11 @@ export default function AdminClubSessionsPage() {
 
   const saveEdit = async (id: number) => {
     if (!editSession.club_id || !editSession.name.trim()) {
-      alert("Elige un club y ponle un nombre a la sesión")
+      toast("Elige un club y ponle un nombre a la sesión")
       return
     }
     const { data, error } = await supabase.from("club_sessions").update(formToPayload(editSession)).eq("id", id).select().single()
-    if (error) { alert("Error al guardar los cambios: " + error.message); return }
+    if (error) { toast("Error al guardar los cambios: " + error.message); return }
     if (data) setSessions((prev) => prev.map((s) => (s.id === id ? data : s)))
     cancelEdit()
   }

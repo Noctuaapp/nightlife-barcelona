@@ -8,52 +8,28 @@ import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"
 import BottomNav from "@/components/layout/BottomNav"
 import BadgesAndChallenges from "@/components/gamification/BadgesAndChallenges"
+import { Compass, Crown, Flame } from "lucide-react"
 
-// Ventajas de cada nivel. De momento son el roadmap de Club Noctua — solo la insignia de perfil
-// (el nombre y el icono del nivel, visibles ya en /profile) está activa de verdad; el resto son
-// beneficios que se irán habilitando más adelante y por eso llevan la etiqueta "Próximamente".
-const PERKS: Record<string, { active: string[]; soon: string[] }> = {
-  bronce: {
-    active: ["Insignia Bronce en tu perfil", "Favoritos, planifica tu noche y check-in en todos los locales"],
-    soon: [],
-  },
-  plata: {
-    active: ["Insignia Plata en tu perfil"],
-    soon: ["Descuento de bienvenida en locales seleccionados"],
-  },
-  oro: {
-    active: ["Insignia Oro en tu perfil"],
-    soon: ["Acceso anticipado a entradas de eventos con aforo limitado"],
-  },
-  platino: {
-    active: ["Insignia Platino en tu perfil"],
-    soon: ["Descuentos exclusivos en una selección de clubs asociados"],
-  },
-  zafiro: {
-    active: ["Insignia Zafiro en tu perfil"],
-    soon: ["Invitaciones a preventas VIP y sorteos de Noctua"],
-  },
-  diamante: {
-    active: ["Insignia Diamante en tu perfil"],
-    soon: ["Acceso a lista de invitados en eventos seleccionados"],
-  },
-  elite: {
-    active: ["Insignia Élite en tu perfil"],
-    soon: ["Ventajas exclusivas para los miembros más fieles de Noctua"],
-  },
+// Ventajas de cada nivel (textos en clubNoctua.*). Solo la insignia de perfil está activa de
+// verdad; el resto se irá habilitando y por eso lleva la etiqueta "Próximamente".
+const PERKS: Record<string, { base?: boolean; soon?: boolean }> = {
+  bronce: { base: true },
+  plata: { soon: true },
+  oro: { soon: true },
+  platino: { soon: true },
+  zafiro: { soon: true },
+  diamante: { soon: true },
+  elite: { soon: true },
 }
 
-// Insignias de barrio: no es una tabla nueva ni una columna nueva, es información que ya
-// existe (club_checkins + clubs.neighborhood) vista desde otro ángulo. Un check-in cuenta como
-// "una noche" en ese barrio; a partir de ahí, tres niveles según cuántas noches distintas lleva
-// en cada barrio — igual de reales que el XP, solo que agrupados por geografía en vez de en
-// total.
+// Insignias de barrio: check-ins (club_checkins) agrupados por el barrio del club. Un check-in
+// cuenta como una noche en ese barrio; tres niveles según cuántas lleva en cada uno.
 type NeighborhoodBadge = { neighborhood: string; count: number }
 
-function badgeTier(count: number): { label: string; icon: string; color: string } {
-  if (count >= 6) return { label: "Leyenda", icon: "👑", color: "#7c5cff" }
-  if (count >= 3) return { label: "Habitual", icon: "🔥", color: "#f59e0b" }
-  return { label: "Explorador", icon: "🧭", color: "#34d399" }
+function badgeTier(count: number): { key: string; icon: typeof Compass } {
+  if (count >= 6) return { key: "legend", icon: Crown }
+  if (count >= 3) return { key: "regular", icon: Flame }
+  return { key: "explorer", icon: Compass }
 }
 
 export default function ClubNoctuaPage() {
@@ -95,123 +71,81 @@ export default function ClubNoctuaPage() {
   const currentKey = xp !== null ? getLevelInfo(xp).key : null
 
   return (
-    <div className="min-h-screen flex flex-col bg-night">
+    <div className="flex min-h-screen flex-col bg-night text-ink">
       <Header />
-      <main className="flex-1 px-4 py-16 max-w-3xl mx-auto w-full">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-16 pt-8 sm:pt-12">
         <div className="mb-10">
-          <p className="text-xs font-semibold text-purple-400 mb-3">Club Noctua</p>
-          <h1 className="text-3xl font-black text-white mb-3">Niveles y ventajas</h1>
-          <p className="text-white/60 text-sm leading-relaxed max-w-xl">
-            Gana XP saliendo de fiesta — asistiendo a noches, haciendo check-in en el local y usando Noctua con
-            regularidad — y sube de nivel. Las ventajas marcadas como <span className="text-white/80 font-semibold">Próximamente</span> todavía
-            no están activas: hoy el sistema muestra tu progreso e insignia, y las iremos activando por fases.
-          </p>
+          <h1 className="font-display text-[2.1rem] leading-[1.06] sm:text-5xl">Club Noctua</h1>
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-zinc-300">{t("clubNoctua.intro")}</p>
           {xp !== null && (
-            <p className="mt-4 text-sm text-zinc-400">
-              Ahora mismo tienes <span className="font-bold text-white">{xp} XP</span>.
-            </p>
+            <p className="mt-3 text-sm text-zinc-400">{t("clubNoctua.youHave").replace("{n}", String(xp))}</p>
           )}
         </div>
 
         <BadgesAndChallenges />
 
         {neighborhoodBadges.length > 0 && (
-          <div className="mb-10">
-            <p className="text-xs font-semibold text-purple-400 mb-3">Barrios conquistados</p>
-            <p className="text-white/60 text-sm leading-relaxed max-w-xl mb-4">
-              Cada check-in cuenta como una noche en ese barrio. Tres check-ins y eres Habitual, seis y eres Leyenda.
-            </p>
-            <div className="flex flex-wrap gap-3">
+          <section className="mb-10">
+            <h2 className="text-lg font-semibold text-ink">{t("clubNoctua.hoodsTitle")}</h2>
+            <p className="mb-4 mt-1 max-w-xl text-sm leading-relaxed text-zinc-400">{t("clubNoctua.hoodsBody")}</p>
+            <ul className="flex flex-wrap gap-2">
               {neighborhoodBadges.map((b) => {
                 const tier = badgeTier(b.count)
+                const TIcon = tier.icon
                 return (
-                  <div
-                    key={b.neighborhood}
-                    className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"
-                    style={{ borderColor: `${tier.color}40` }}
-                  >
-                    <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base"
-                      style={{ background: `${tier.color}22`, border: `1px solid ${tier.color}55` }}
-                    >
-                      {tier.icon}
-                    </span>
+                  <li key={b.neighborhood} className="flex items-center gap-3 rounded-card border border-white/10 bg-surface px-4 py-3">
+                    <TIcon size={20} className="shrink-0 text-brand-soft" />
                     <div>
-                      <p className="text-sm font-bold text-white">{b.neighborhood}</p>
+                      <p className="text-sm font-semibold text-ink">{b.neighborhood}</p>
                       <p className="text-xs text-zinc-400">
-                        {tier.label} · {b.count} {b.count === 1 ? "noche" : "noches"}
+                        {t(`clubNoctua.tier_${tier.key}`)} · {(b.count === 1 ? t("clubNoctua.nightOne") : t("clubNoctua.nightMany")).replace("{n}", String(b.count))}
                       </p>
                     </div>
-                  </div>
+                  </li>
                 )
               })}
-            </div>
-          </div>
+            </ul>
+          </section>
         )}
 
-        <div className="space-y-4">
-          {LEVELS.map((level, i) => {
-            const perks = PERKS[level.key] || { active: [], soon: [] }
-            const isCurrent = currentKey === level.key
-            const nextLevel = LEVELS[i + 1]
-            return (
-              <div
-                key={level.key}
-                className={`rounded-card p-[1px] ${
-                  isCurrent
-                    ? "bg-gradient-to-br from-white/50 via-white/15 to-white/0"
-                    : "bg-gradient-to-br from-white/15 via-white/[0.04] to-white/0"
-                }`}
-              >
-                <div className="rounded-card bg-night/95 p-6">
+        <section>
+          <h2 className="mb-4 text-lg font-semibold text-ink">{t("clubNoctua.levelsTitle")}</h2>
+          <ul className="space-y-3">
+            {LEVELS.map((level, i) => {
+              const perks = PERKS[level.key] || {}
+              const isCurrent = currentKey === level.key
+              const nextLevel = LEVELS[i + 1]
+              const name = t(`levels.${level.key}`)
+              return (
+                <li key={level.key} className={`rounded-card border p-5 ${isCurrent ? "border-brand/60 bg-brand/10" : "border-white/10 bg-surface"}`}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <span
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl"
-                        style={{ background: `${level.color}22`, border: `1px solid ${level.color}55` }}
-                      >
-                        {level.icon}
-                      </span>
+                      <span className="h-4 w-4 shrink-0 rounded-full" style={{ background: level.color }} aria-hidden="true" />
                       <div>
-                        <p className="text-lg font-black text-white">{t(`levels.${level.key}`)}</p>
+                        <p className="text-base font-semibold text-ink">{name}</p>
                         <p className="text-xs text-zinc-400">
-                          {level.min === 0 ? "Desde el primer XP" : `A partir de ${level.min} XP`}
-                          {nextLevel ? ` · hasta ${nextLevel.min - 1} XP` : ""}
+                          {level.min === 0 ? t("clubNoctua.fromFirst") : t("clubNoctua.fromXp").replace("{n}", String(level.min))}
+                          {nextLevel ? ` · ${t("clubNoctua.upToXp").replace("{n}", String(nextLevel.min - 1))}` : ""}
                         </p>
                       </div>
                     </div>
-                    {isCurrent && (
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-black">
-                        Tu nivel actual
+                    {isCurrent && <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-night">{t("clubNoctua.current")}</span>}
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200">{t("clubNoctua.perkBadge").replace("{name}", name)}</span>
+                    {perks.base && <span className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200">{t("clubNoctua.perkBase")}</span>}
+                    {perks.soon && (
+                      <span className="flex items-center gap-1.5 rounded-full border border-dashed border-white/15 px-3 py-1.5 text-xs text-zinc-400">
+                        {t(`clubNoctua.perkSoon_${level.key}`)}
+                        <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-xs font-semibold text-zinc-300">{t("clubNoctua.soon")}</span>
                       </span>
                     )}
                   </div>
-
-                  {(perks.active.length > 0 || perks.soon.length > 0) && (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {perks.active.map((p) => (
-                        <span key={p} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-300">
-                          {p}
-                        </span>
-                      ))}
-                      {perks.soon.map((p) => (
-                        <span
-                          key={p}
-                          className="flex items-center gap-1.5 rounded-full border border-dashed border-white/15 bg-transparent px-3 py-1.5 text-xs text-zinc-400"
-                        >
-                          {p}
-                          <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-xs font-bold text-zinc-400">
-                            Próximamente
-                          </span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
       </main>
       <Footer />
       <BottomNav />

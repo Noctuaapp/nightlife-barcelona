@@ -11,10 +11,26 @@ const DAY_RE = "(monday|tuesday|wednesday|thursday|friday|saturday|sunday)"
 export type OpenStatus = {
   state: "open" | "closed" | "unknown"
   soon: boolean // abierto pero cierra en menos de una hora
-  label: string // texto corto en castellano; vacío si no se sabe nada útil
+  label: string // texto corto (traducido si se pasa t); vacío si no se sabe nada útil
 }
 
 const UNKNOWN: OpenStatus = { state: "unknown", soon: false, label: "" }
+
+// Textos: si se pasa la función t() del idioma activo se traducen (claves openStatus.*); si no,
+// salen en castellano.
+type Translate = (key: string) => string
+const ES: Record<string, string> = {
+  h24: "Abierto 24 h",
+  closesSoon: "Cierra pronto · {time}",
+  openUntil: "Abierto · hasta {time}",
+  closedOpens: "Cerrado · abre {time}",
+  closed: "Cerrado",
+  until: "Hasta las {time}",
+}
+function L(tr: Translate | undefined, key: string, time = ""): string {
+  const tpl = tr ? tr(`openStatus.${key}`) : ES[key]
+  return (tpl === `openStatus.${key}` ? ES[key] : tpl).replace("{time}", time)
+}
 
 function madridNow(): { day: number; minutes: number } {
   const parts = new Intl.DateTimeFormat("en-GB", {
@@ -50,7 +66,7 @@ function dayInRange(day: number, from: number, to: number): boolean {
   return from <= to ? day >= from && day <= to : day >= from || day <= to
 }
 
-export function getOpenStatus(raw: string | null | undefined): OpenStatus {
+export function getOpenStatus(raw: string | null | undefined, tr?: Translate): OpenStatus {
   if (!raw || !raw.trim()) return UNKNOWN
   try {
     const now = madridNow()
@@ -66,14 +82,14 @@ export function getOpenStatus(raw: string | null | undefined): OpenStatus {
     const yesterdayIn = !hasDay || dayInRange((now.day + 6) % 7, from, to)
 
     if (/24\s*hours/.test(rest)) {
-      return todayIn ? { state: "open", soon: false, label: "Abierto 24 h" } : UNKNOWN
+      return todayIn ? { state: "open", soon: false, label: L(tr, "h24") } : UNKNOWN
     }
 
     const range = rest.match(/(\d{1,2}):(\d{2})\s*(am|pm)?\s*[–—-]\s*(\d{1,2}):(\d{2})\s*(am|pm)?/)
     if (range) {
       const open = to24(range[1], range[2], range[3])
       const close = to24(range[4], range[5], range[6])
-      if (open === close) return todayIn ? { state: "open", soon: false, label: "Abierto 24 h" } : UNKNOWN
+      if (open === close) return todayIn ? { state: "open", soon: false, label: L(tr, "h24") } : UNKNOWN
       if (!todayIn && !yesterdayIn) return UNKNOWN
 
       const crossesMidnight = close < open
@@ -87,15 +103,15 @@ export function getOpenStatus(raw: string | null | undefined): OpenStatus {
         return {
           state: "open",
           soon,
-          label: soon ? `Cierra pronto · ${fmt(close)}` : `Abierto · hasta ${fmt(close)}`,
+          label: soon ? L(tr, "closesSoon", fmt(close)) : L(tr, "openUntil", fmt(close)),
         }
       }
       // Solo se puede decir "abre a..." con certeza si el horario de hoy aplica.
-      return { state: "closed", soon: false, label: todayIn ? `Cerrado · abre ${fmt(open)}` : "Cerrado" }
+      return { state: "closed", soon: false, label: todayIn ? L(tr, "closedOpens", fmt(open)) : L(tr, "closed") }
     }
 
     const until = rest.match(/until\s+(\d{1,2}):(\d{2})\s*(am|pm)?/)
-    if (until) return { state: "unknown", soon: false, label: `Hasta las ${fmt(to24(until[1], until[2], until[3]))}` }
+    if (until) return { state: "unknown", soon: false, label: L(tr, "until", fmt(to24(until[1], until[2], until[3]))) }
 
     return UNKNOWN
   } catch {
