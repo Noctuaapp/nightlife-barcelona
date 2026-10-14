@@ -49,7 +49,11 @@
     "seeAll": "Ver todos",
     "featured": "Destacados",
     "noResults": "No hay locales con este filtro ahora mismo.",
-    "exploreAll": "Explorar los {n} locales"
+    "exploreAll": "Explorar los {n} locales",
+    "liveOpenOne": "{n} local abierto ahora",
+    "liveOpenMany": "{n} locales abiertos ahora",
+    "liveTonight": "Esta noche en Barcelona",
+    "heroImageAlt": "Barcelona de noche, con la Sagrada Família y la Torre Glòries iluminadas"
   },
   "filters": {
     "all": "Todos"

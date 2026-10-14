@@ -112,6 +112,8 @@ export default function HomeClient({ initialClubs }: { initialClubs: Club[] }) {
   }, [clubs])
 
   const isOpen = (c: Club) => (mounted ? openMap[c.id] ?? null : null)
+  // Locales abiertos ahora (para el indicador en directo de la portada).
+  const openCount = mounted ? Object.values(openMap).filter((v) => v === true).length : 0
   const dist = (c: Club) =>
     geo.pos && c.latitude && c.longitude ? distanceInMeters(geo.pos.lat, geo.pos.lng, Number(c.latitude), Number(c.longitude)) : null
 
@@ -168,47 +170,88 @@ export default function HomeClient({ initialClubs }: { initialClubs: Club[] }) {
       <Header />
 
       <main className="min-h-screen bg-night pb-28 text-ink md:pb-16">
-        {/* PORTADA: frase corta + buscador */}
-        <section className="mx-auto max-w-7xl px-4 pb-6 pt-8 sm:px-6 sm:pt-14">
-          <h1 className="font-display max-w-3xl text-[2.1rem] leading-[1.05] sm:text-5xl md:text-6xl">
-            {t("home.hero")} <span className="text-brand-soft">{t("home.hero_accent")}</span>
-          </h1>
-          <p className="mt-4 max-w-xl text-base leading-relaxed text-zinc-300">{t("home.subtitle")}</p>
+        {/* PORTADA: Barcelona de noche a sangre (la foto del skyline con los mismos violetas y azules
+            del header), un indicador en directo con los locales abiertos ahora, el titular grande
+            con la segunda línea en el degradado de neón de la marca, y el buscador en cristal. */}
+        <section className="relative isolate overflow-hidden">
+          <Image
+            src="/hero/skyline_barcelona.jpeg"
+            alt={t("home.heroImageAlt")}
+            fill
+            priority
+            sizes="100vw"
+            className="-z-20 object-cover object-[38%_45%] sm:object-center"
+          />
+          {/* Lectura del texto: oscurece la izquierda en pantallas grandes y funde con la página abajo */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 -z-10"
+            style={{ background: "linear-gradient(180deg, rgba(7,8,20,0.55) 0%, rgba(7,8,20,0.35) 35%, rgba(10,9,16,0.85) 78%, #0a0910 100%)" }}
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 -z-10 hidden md:block"
+            style={{ background: "linear-gradient(90deg, rgba(7,8,20,0.88) 0%, rgba(7,8,20,0.55) 45%, rgba(7,8,20,0) 75%)" }}
+          />
 
-          <form onSubmit={handleSearch} role="search" className="mt-6 max-w-2xl">
-            <div className="flex items-center gap-2 rounded-full border border-white/15 bg-surface p-1.5 pl-5 focus-within:border-brand-soft">
-              <Icon name="search" className="h-4 w-4 shrink-0 text-muted" />
-              <label htmlFor="home-search" className="sr-only">
-                {t("home.searchLabel")}
-              </label>
-              <input
-                id="home-search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t("home.searchPlaceholder")}
-                className="min-w-0 flex-1 bg-transparent py-2 text-base text-ink outline-none placeholder:text-zinc-400"
-              />
-              <button type="submit" className="shrink-0 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong">
-                {t("home.search")}
-              </button>
-            </div>
-          </form>
+          <div className="mx-auto max-w-7xl px-4 pb-10 pt-10 sm:px-6 sm:pb-16 sm:pt-20 lg:pb-20 lg:pt-28">
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-md sm:text-sm">
+              <span aria-hidden="true" className="live-dot h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
+              {openCount > 0
+                ? (openCount === 1 ? t("home.liveOpenOne") : t("home.liveOpenMany")).replace("{n}", String(openCount))
+                : t("home.liveTonight")}
+            </p>
 
-          <nav aria-label={t("home.quickTitle")} className="scrollbar-none -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-            {quickLinks.map((q) => (
-              <Link
-                key={q.href}
-                href={q.href}
-                className="flex shrink-0 items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white/5"
+            <h1 className="mt-5 max-w-4xl font-display text-[2.6rem] leading-[0.98] tracking-tight text-white [text-shadow:0_2px_30px_rgba(0,0,0,0.45)] sm:text-6xl lg:text-[5.25rem]">
+              {t("home.hero")}
+              <span
+                className="block bg-clip-text pb-1 text-transparent"
+                style={{ backgroundImage: "linear-gradient(90deg, #6cf2f2 0%, #3b82ff 35%, #a855f7 68%, #ec4899 100%)" }}
               >
-                <Icon name={q.icon} className="h-4 w-4 text-brand-soft" /> {q.label}
-              </Link>
-            ))}
-          </nav>
+                {t("home.hero_accent")}
+              </span>
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-zinc-200 sm:text-lg">{t("home.subtitle")}</p>
+
+            <form onSubmit={handleSearch} role="search" className="mt-7 max-w-2xl">
+              <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 p-1.5 pl-5 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.8)] backdrop-blur-xl transition focus-within:border-cyan-300/60 focus-within:bg-white/[0.14]">
+                <Icon name="search" className="h-5 w-5 shrink-0 text-white/70" />
+                <label htmlFor="home-search" className="sr-only">
+                  {t("home.searchLabel")}
+                </label>
+                <input
+                  id="home-search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t("home.searchPlaceholder")}
+                  className="min-w-0 flex-1 bg-transparent py-2.5 text-base text-white outline-none placeholder:text-white/60"
+                />
+                <button
+                  type="submit"
+                  className="shrink-0 rounded-full px-5 py-3 text-sm font-bold text-white shadow-[0_8px_24px_-8px_rgba(236,72,153,0.7)] transition hover:opacity-90 sm:px-7"
+                  style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+                >
+                  {t("home.search")}
+                </button>
+              </div>
+            </form>
+
+            <nav aria-label={t("home.quickTitle")} className="scrollbar-none -mx-4 mt-5 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
+              {quickLinks.map((q) => (
+                <Link
+                  key={q.href}
+                  href={q.href}
+                  className="flex shrink-0 items-center gap-2 rounded-full border border-white/15 bg-black/30 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:border-cyan-300/50 hover:bg-black/45"
+                >
+                  <Icon name={q.icon} className="h-4 w-4 text-cyan-300" /> {q.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
         </section>
 
         {/* ESTA NOCHE: carrusel en la primera pantalla */}
-        <section className="mx-auto max-w-7xl px-4 sm:px-6" aria-labelledby="tonight-title">
+        <section className="mx-auto max-w-7xl px-4 pt-2 sm:px-6" aria-labelledby="tonight-title">
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 id="tonight-title" className="text-xl font-semibold">

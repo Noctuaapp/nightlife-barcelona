@@ -49,7 +49,11 @@
     "seeAll": "Alles bekijken",
     "featured": "Uitgelicht",
     "noResults": "Op dit moment geen locaties met dit filter.",
-    "exploreAll": "Ontdek de {n} locaties"
+    "exploreAll": "Ontdek de {n} locaties",
+    "liveOpenOne": "{n} locatie nu open",
+    "liveOpenMany": "{n} locaties nu open",
+    "liveTonight": "Vanavond in Barcelona",
+    "heroImageAlt": "Barcelona bij nacht, met de verlichte Sagrada Família en Torre Glòries"
   },
   "filters": {
     "all": "Alle"

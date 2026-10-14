@@ -49,7 +49,11 @@
     "seeAll": "See all",
     "featured": "Featured",
     "noResults": "No venues match this filter right now.",
-    "exploreAll": "Explore all {n} venues"
+    "exploreAll": "Explore all {n} venues",
+    "liveOpenOne": "{n} venue open now",
+    "liveOpenMany": "{n} venues open now",
+    "liveTonight": "Tonight in Barcelona",
+    "heroImageAlt": "Barcelona at night, with the Sagrada Família and Torre Glòries lit up"
   },
   "filters": {
     "all": "All"

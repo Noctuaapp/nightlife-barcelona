@@ -49,7 +49,11 @@
     "seeAll": "Tout voir",
     "featured": "À la une",
     "noResults": "Aucun lieu avec ce filtre pour le moment.",
-    "exploreAll": "Explorer les {n} lieux"
+    "exploreAll": "Explorer les {n} lieux",
+    "liveOpenOne": "{n} lieu ouvert maintenant",
+    "liveOpenMany": "{n} lieux ouverts maintenant",
+    "liveTonight": "Ce soir à Barcelone",
+    "heroImageAlt": "Barcelone la nuit, avec la Sagrada Família et la Torre Glòries illuminées"
   },
   "filters": {
     "all": "Tous"

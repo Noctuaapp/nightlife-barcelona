@@ -82,6 +82,17 @@ export default function Header() {
 
   const currentLang = languages.find((l) => l.code === locale) || languages[0]
 
+  // Hora de Barcelona junto a la ciudad (en pantallas medianas y grandes). Se pinta en el cliente
+  // para que el HTML del servidor y el del navegador coincidan.
+  const [clock, setClock] = useState<string | null>(null)
+  useEffect(() => {
+    const fmt = () =>
+      new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).format(new Date())
+    setClock(fmt())
+    const id = setInterval(() => setClock(fmt()), 30000)
+    return () => clearInterval(id)
+  }, [])
+
 
   const showBack = !(["/", "/login", "/signup", "/map", "/events", "/clubs", "/essentials", "/favorites", "/profile", "/plan", "/admin", "/admin/events", "/admin/club-events", "/admin/essentials", "/admin/tickets", "/admin/messages", "/admin/dashboard"].includes(pathname)) && !pathname.startsWith("/admin/")
   const hideHeader = pathname === "/map"
@@ -459,7 +470,14 @@ export default function Header() {
                 <ChevronLeft size={18} aria-hidden="true" />
                 <span>{t("common.back")}</span>
               </button>
-            ) : null}
+            ) : (
+              // Ciudad + hora, solo informativo (sin desplegable mientras Barcelona sea la única ciudad).
+              <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] py-1.5 pl-3 pr-3.5 text-xs font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] sm:py-2 sm:text-sm">
+                <span aria-hidden="true" className="live-dot h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+                <span>{selectedCity.name}</span>
+                {clock && <span className="hidden tabular-nums text-white/55 sm:inline">{clock}</span>}
+              </div>
+            )}
           </div>
 
           <Link href="/" aria-label="Noctua" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">

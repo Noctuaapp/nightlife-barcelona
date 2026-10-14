@@ -28,18 +28,15 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Marca centrada */}
-        <div className="mx-auto mb-12 flex max-w-md flex-col items-center text-center">
-          <Image src="/noctua_logo.png" alt="Noctua" width={160} height={98} className="h-12 w-auto object-contain" />
-          <p className="mt-4 text-sm leading-relaxed text-zinc-400">
-            {t("footer.tagline")}
-          </p>
-        </div>
+        {/* Explorar a la izquierda, marca en el centro, Legal a la derecha (en el móvil, la marca
+            arriba y las dos columnas debajo, una a cada lado). */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-[1fr_auto_1fr] md:items-start">
+          <div className="col-span-2 mx-auto flex max-w-sm flex-col items-center text-center md:order-2 md:col-span-1">
+            <Image src="/noctua_logo.png" alt="Noctua" width={160} height={98} className="h-12 w-auto object-contain" />
+            <p className="mt-4 text-sm leading-relaxed text-zinc-400">{t("footer.tagline")}</p>
+          </div>
 
-        {/* Enlaces */}
-        <div className="mx-auto grid max-w-2xl grid-cols-2 gap-10 text-center sm:text-left">
-          {/* Links */}
-          <div>
+          <div className="text-left md:order-1">
             <p className="mb-4 text-sm font-semibold text-zinc-300">{t("footer.explore")}</p>
             <div className="flex flex-col gap-3">
               <Link href="/clubs" className="text-sm text-zinc-400 transition hover:text-ink">{t("nav.clubs")}</Link>
@@ -50,10 +47,9 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Legal */}
-          <div>
+          <div className="text-right md:order-3">
             <p className="mb-4 text-sm font-semibold text-zinc-300">{t("footer.legal")}</p>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col items-end gap-3">
               <Link href="/privacy" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_privacy")}</Link>
               <Link href="/terms" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_terms")}</Link>
               <Link href="/contact" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_contact")}</Link>
