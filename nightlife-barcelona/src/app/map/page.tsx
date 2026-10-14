@@ -6,6 +6,7 @@ import "mapbox-gl/dist/mapbox-gl.css"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { supabase } from "../../lib/supabase"
+import { track } from "../../lib/track"
 import BottomNav from "../../components/layout/BottomNav"
 import { createSlug } from "../../lib/slug"
 import { useLanguage } from "../../context/LanguageContext"
@@ -282,14 +283,8 @@ export default function MapPage() {
   useEffect(() => {
     const query = search.trim()
     if (query.length < 2) return
-    const timeout = setTimeout(async () => {
-      const { data: userData } = await supabase.auth.getUser()
-      await supabase.from("analytics").insert({
-        event_type: "search",
-        item_type: filter,
-        item_name: query,
-        user_id: userData.user?.id || null,
-      })
+    const timeout = setTimeout(() => {
+      track("search", { itemType: filter, itemName: query.toLowerCase().slice(0, 80), meta: { from: "map" } })
     }, 1200)
     return () => clearTimeout(timeout)
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import ClubsExplorer from "../../components/nightlife/ClubsExplorer"
-import { supabase } from "../../lib/supabase"
+import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../../lib/clubQueries"
 
 export const revalidate = 3600
 
@@ -23,12 +23,12 @@ export const metadata: Metadata = {
 }
 
 export default async function ClubsPage() {
-  const { data: clubs } = await supabase.from("clubs").select("*").eq("hidden", false)
+  const clubs = await fetchVisibleClubs(LIST_CLUB_FIELDS)
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    itemListElement: (clubs || []).slice(0, 30).map((club, index) => ({
+    itemListElement: clubs.slice(0, 30).map((club, index) => ({
       "@type": "ListItem",
       position: index + 1,
       item: {
@@ -41,9 +41,6 @@ export default async function ClubsPage() {
           addressCountry: "ES",
         },
         priceRange: club.price || undefined,
-        ...(club.rating
-          ? { aggregateRating: { "@type": "AggregateRating", ratingValue: club.rating, reviewCount: club.people || 1 } }
-          : {}),
       },
     })),
   }
@@ -51,7 +48,7 @@ export default async function ClubsPage() {
   return (
     <>
       <Header />
-      <ClubsExplorer initialClubs={clubs || []} />
+      <ClubsExplorer initialClubs={clubs} />
       <BottomNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     </>

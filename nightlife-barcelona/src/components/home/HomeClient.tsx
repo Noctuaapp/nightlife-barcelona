@@ -15,35 +15,7 @@ import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import ArrowIcon from "../ui/ArrowIcon"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
-
-function isOpenNow(hours?: string): boolean | null {
-  if (!hours) return null
-  try {
-    const order = ["D", "L", "M", "X", "J", "V", "S"]
-    const now = new Date()
-    const currentDay = order[now.getDay()]
-    const currentMin = now.getHours() * 60 + now.getMinutes()
-    const prevDay = order[(order.indexOf(currentDay) - 1 + 7) % 7]
-
-    for (const part of hours.split(",")) {
-      const m = part.trim().match(/^([A-Z/]+)\s+(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/)
-      if (!m) continue
-      const days = m[1].split("/")
-      const startMin = parseInt(m[2]) * 60 + parseInt(m[3])
-      let endMin = parseInt(m[4]) * 60 + parseInt(m[5])
-      const overnight = endMin <= startMin
-      if (overnight) endMin += 24 * 60
-
-      for (const d of days) {
-        if (d === currentDay && currentMin >= startMin && currentMin <= endMin) return true
-        if (d === prevDay && overnight && currentMin + 24 * 60 <= endMin) return true
-      }
-    }
-    return false
-  } catch {
-    return null
-  }
-}
+import { clubOpenNow } from "../../lib/clubHours"
 
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T>(null)
@@ -122,7 +94,9 @@ const TABS = [
   { key: "free", label: "Gratis" },
 ]
 
-const TICKER_ITEMS = ["Info actualizada cada noche", "120+ locales en Barcelona", "100% gratis", "Sin registro para explorar"]
+// El número de locales sale de la base de datos (antes decía "120+" fijo mientras el contador de
+// justo encima mostraba 257+).
+const tickerItems = (count: number) => ["Info actualizada cada noche", `${count}+ locales en Barcelona`, "100% gratis", "Sin registro para explorar"]
 
 export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
   const { t } = useLanguage()
@@ -160,7 +134,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
     // vacía por mucho que hubiera locales marcados como tal.
     else if (activeTab === "lgtbi") base = clubs.filter((c) => c.lgtbi_friendly)
     else if (activeTab === "free") base = clubs.filter((c) => c.price?.toLowerCase().includes("gratis"))
-    else if (activeTab === "open") base = clubs.filter((c) => isOpenNow(c.hours) === true)
+    else if (activeTab === "open") base = clubs.filter((c) => clubOpenNow(c.hours, c.open_days) === true)
     else if (activeTab === "near") {
       // Sin ubicación todavía no hay nada que ordenar: se muestran los de siempre hasta que llegue.
       base = geo.pos
@@ -272,7 +246,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
                 >
                   {t("home.hero") || "Tu noche en Barcelona"}
                   <span className="block bg-gradient-to-r from-purple-400 via-purple-300 to-amber-300 bg-clip-text text-transparent">
-                    empieza aquí.
+                    {t("home.hero_accent") || "empieza aquí."}
                   </span>
                 </h1>
 
@@ -305,7 +279,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
                     <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">Clubs y bares</p>
                   </div>
                   <div>
-                    <p className="text-3xl font-black">24/7</p>
+                    <p className="text-3xl font-black">Cada noche</p>
                     <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">Info actualizada</p>
                   </div>
                   <div>
@@ -319,7 +293,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
             {/* ticker — normal document flow now, never overlaps the content above */}
             <div className="relative z-10 w-full overflow-hidden border-t border-white/5 bg-black/40 py-3 backdrop-blur">
               <div className="ticker-track flex w-max gap-16 text-xs uppercase tracking-[0.3em] text-zinc-500">
-                {[...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
+                {Array.from({ length: 3 }, () => tickerItems(clubs.length || 120)).flat().map((item, i) => (
                   <span key={i} className="flex items-center gap-2 whitespace-nowrap">
                     <span className="h-1 w-1 rounded-full bg-purple-400" /> {item}
                   </span>
@@ -407,7 +381,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
                 </p>
               ) : (
                 displayedClubs.map((club, index) => {
-                  const open = isOpenNow(club.hours)
+                  const open = clubOpenNow(club.hours, club.open_days)
                   return (
                     <Reveal key={club.id} style={{ transitionDelay: `${index * 70}ms` }}>
                       <Link
@@ -430,7 +404,7 @@ export default function HomeClient({ initialClubs }: { initialClubs: any[] }) {
                           )}
                           {club.verified && (
                             <span className="flex items-center gap-1 rounded-full bg-purple-500/90 px-3 py-1 text-[11px] font-bold text-white">
-                              ● Verified
+                              ● Verificado
                             </span>
                           )}
                         </div>

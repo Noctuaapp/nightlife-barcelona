@@ -14,8 +14,9 @@
     "contact": "Contacte i ajuda"
   },
   "home": {
-    "hero": "Descobreix Barcelona al capvespre...",
-    "subtitle": "Noctua és l'app d'oci nocturn de Barcelona. Troba i explora els millors clubs, bars, esdeveniments i serveis nocturns. Crea un compte gratuït per guardar els teus locals favorits i planificar la teva nit amb IA.",
+    "hero": "La teva nit a Barcelona",
+    "hero_accent": "comença aquí.",
+    "subtitle": "Clubs, esdeveniments i tot el que necessites per sortir de nit a Barcelona: horaris, preus, com arribar-hi i què hi ha obert ara.",
     "clubs": "Clubs",
     "nightlife": "Vida nocturna a Barcelona",
     "explore": "Veure tots els clubs →",
@@ -197,11 +198,15 @@
   },
   "footer": {
     "tagline": "La plataforma d'oci nocturn de Barcelona. Troba els millors clubs, esdeveniments i serveis nocturns.",
-    "venue_cta": "Ets propietari d'un club? Contacta'ns →",
+    "venue_cta": "Tens un club, un esdeveniment o un negoci nocturn? Contacta'ns",
     "explore": "Explorar",
     "legal": "Legal",
     "copyright": "© 2026 Noctua · Barcelona Nightlife",
-    "privacy_note": "Noctua utilitza el teu email per gestionar el teu compte. Google Sign-In només comparteix el teu nom i email. Mai venem les teves dades ni les fem servir per publicitat."
+    "privacy_note": "Noctua fa servir el teu email per gestionar el teu compte. Google Sign-In només comparteix el teu nom i email. Mai venem les teves dades personals ni les fem servir per a publicitat; només fem servir estadístiques agregades i anònimes.",
+    "link_privacy": "Privacitat",
+    "link_terms": "Termes",
+    "link_contact": "Contacte",
+    "link_faq": "Preguntes freqüents"
   },
   "privacy": {
     "title": "Política de Privacitat",
@@ -488,7 +493,16 @@
     "noGeolocation": "El teu navegador no permet compartir ubicació.",
     "permissionDenied": "Necessitem la teva ubicació per confirmar el check-in.",
     "error": "No s'ha pogut registrar el check-in, torna-ho a provar.",
-    "hint": "Confirma que ets al local i guanya +{xp} XP per pujar de nivell"
+    "hint": "Confirma que ets al local i guanya +{xp} XP per pujar de nivell",
+    "lowAccuracy": "No et podem localitzar amb prou precisió. Surt a un lloc amb més senyal i torna-ho a provar.",
+    "ambiguous": "Hi ha altres locals molt a prop i no podem saber en quin ets. Apropa't a la porta i torna-ho a provar.",
+    "limit": "Ja has fet el màxim de check-ins d'aquesta nit.",
+    "tooSoon": "Acabes de fer check-in en un altre local. Espera uns minuts i torna-ho a provar.",
+    "blocked": "El teu compte no pot fer check-ins ara mateix.",
+    "notePrompt": "Com va la nit? Deixa una nota per a qui vingui després.",
+    "notePlaceholder": "Ex. cua curta, bon ambient...",
+    "notePublish": "Publicar",
+    "noteDone": "✓ Nota publicada — gràcies per avisar"
   },
   "levels": {
     "title": "El teu nivell",

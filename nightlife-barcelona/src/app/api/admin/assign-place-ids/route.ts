@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { isAdminRequest } from "@/lib/adminAuth"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
 
-// Visita esta URL repetidamente (recarga la página) hasta que "remaining" salga en 0.
+// Lánzalo repetidamente desde /admin/herramientas hasta que "remaining" salga en 0.
 // Procesa de 15 en 15 para no superar el límite de tiempo de Vercel.
-// https://TU_DOMINIO/api/admin/assign-place-ids?secret=TU_ADMIN_SECRET
+// Se lanza desde el panel: /admin/herramientas (sin claves en la URL).
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  if (searchParams.get("secret") !== process.env.ADMIN_SECRET) {
+  if (!(await isAdminRequest(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
 

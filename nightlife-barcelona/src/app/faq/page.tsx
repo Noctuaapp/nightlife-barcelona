@@ -62,6 +62,7 @@ export default function FAQPage() {
                     >
                       <button
                         onClick={() => toggle(key)}
+                        aria-expanded={isOpen}
                         className="w-full flex items-center justify-between px-5 py-4 text-left gap-4 cursor-pointer"
                       >
                         <span className="text-white/90 text-sm font-medium leading-snug">
@@ -74,13 +75,13 @@ export default function FAQPage() {
                           +
                         </span>
                       </button>
-                      {isOpen && (
-                        <div className="px-5 pb-4">
-                          <p className="text-white/55 text-sm leading-relaxed">
-                            {item.a}
-                          </p>
-                        </div>
-                      )}
+                      {/* La respuesta siempre está en el HTML (antes solo existía al abrirla, así que
+                          Google veía preguntas sin respuesta); cerrada solo se oculta. */}
+                      <div className="px-5 pb-4" hidden={!isOpen}>
+                        <p className="text-white/55 text-sm leading-relaxed">
+                          {item.a}
+                        </p>
+                      </div>
                     </div>
                   )
                 })}

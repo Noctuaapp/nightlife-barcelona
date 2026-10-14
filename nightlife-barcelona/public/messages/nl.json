@@ -14,8 +14,9 @@
     "contact": "Contact en hulp"
   },
   "home": {
-    "hero": "Ontdek Barcelona na zonsondergang...",
-    "subtitle": "Noctua is de Barcelona nachtleven app. Vind de beste clubs, bars, evenementen en nachtelijke diensten. Maak een gratis account aan om je favoriete locaties op te slaan en je nacht te plannen met AI.",
+    "hero": "Jouw nacht in Barcelona",
+    "hero_accent": "begint hier.",
+    "subtitle": "Clubs, evenementen en alles wat je nodig hebt voor een avond uit in Barcelona: openingstijden, prijzen, hoe je er komt en wat nu open is.",
     "clubs": "Clubs",
     "nightlife": "Nachtleven in Barcelona",
     "explore": "Alle clubs bekijken →",
@@ -197,11 +198,15 @@
   },
   "footer": {
     "tagline": "Barcelona's nachtleven platform. Vind de beste clubs, evenementen en nachtelijke diensten.",
-    "venue_cta": "Heb je een club? Neem contact op →",
+    "venue_cta": "Heb je een club, evenement of nachtzaak? Neem contact op",
     "explore": "Verkennen",
     "legal": "Juridisch",
     "copyright": "© 2026 Noctua · Barcelona Nightlife",
-    "privacy_note": "Noctua gebruikt je e-mail om je account te beheren. Google Sign-In deelt alleen je naam en e-mail. We verkopen je gegevens nooit."
+    "privacy_note": "Noctua gebruikt je e-mail om je account te beheren. Google Sign-In deelt alleen je naam en e-mail. We verkopen nooit je persoonsgegevens en gebruiken ze niet voor advertenties; we gebruiken alleen geaggregeerde, anonieme statistieken.",
+    "link_privacy": "Privacy",
+    "link_terms": "Voorwaarden",
+    "link_contact": "Contact",
+    "link_faq": "Veelgestelde vragen"
   },
   "privacy": {
     "title": "Privacybeleid",
@@ -488,7 +493,16 @@
     "noGeolocation": "Je browser staat het delen van locatie niet toe.",
     "permissionDenied": "We hebben je locatie nodig om de check-in te bevestigen.",
     "error": "Check-in kon niet worden geregistreerd, probeer het opnieuw.",
-    "hint": "Bevestig dat je aanwezig bent en verdien +{xp} XP om level te stijgen"
+    "hint": "Bevestig dat je aanwezig bent en verdien +{xp} XP om level te stijgen",
+    "lowAccuracy": "We kunnen je locatie niet nauwkeurig genoeg bepalen. Ga naar een plek met beter bereik en probeer het opnieuw.",
+    "ambiguous": "Er zijn andere locaties vlakbij en we kunnen niet zien waar je bent. Ga dichter bij de ingang staan en probeer het opnieuw.",
+    "limit": "Je hebt het maximale aantal check-ins voor vannacht bereikt.",
+    "tooSoon": "Je hebt net ergens anders ingecheckt. Wacht een paar minuten en probeer het opnieuw.",
+    "blocked": "Je account kan nu niet inchecken.",
+    "notePrompt": "Hoe is de avond? Laat een berichtje achter voor wie later komt.",
+    "notePlaceholder": "Bijv. korte rij, goede sfeer...",
+    "notePublish": "Plaatsen",
+    "noteDone": "✓ Bericht geplaatst — bedankt voor de tip"
   },
   "levels": {
     "title": "Jouw niveau",

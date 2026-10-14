@@ -4,41 +4,35 @@ import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import AdminEditButton from "../../../components/admin/AdminEditButton"
 import ClubPageContent from "../../../components/nightlife/ClubPageContent"
-import { notFound } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 import { supabase } from "../../../lib/supabase"
-import { createSlug } from "../../../lib/slug"
+import { findBySlug } from "../../../lib/slugLookup"
 
 type ClubPageProps = {
   params: Promise<{ slug: string }>
 }
 
 // Antes esta ficha no tenía generateMetadata ni datos estructurados propios: todos los clubs
-// compartían el mismo <title> y descripción genéricos de la portada (definidos en layout.tsx),
-// así que Google no podía distinguir en resultados de búsqueda "Pacha Barcelona" de "Razzmatazz"
-// — ambos aparecían con el mismo título de la home. `cache()` evita pedir la lista de clubs dos
-// veces (una para generateMetadata, otra para la página) en la misma petición.
-const getClub = cache(async (slug: string) => {
-  // Filtramos hidden igual que en el listado — si no, un club oculto desde el admin seguía siendo
-  // visitable por enlace directo (compartido, indexado por Google, guardado en favoritos antes de
-  // ocultarlo...), que es justo lo que "ocultar" pretende evitar.
-  const { data: clubs } = await supabase.from("clubs").select("*").eq("hidden", false)
-  return clubs?.find((club) => createSlug(club.name) === slug) || null
-})
+// compartían el mismo <title> de la portada. `cache()` evita repetir la búsqueda (una vez para
+// generateMetadata y otra para la página) en la misma petición. La búsqueda ya no descarga todos
+// los clubs: ver src/lib/slugLookup.ts. Los clubs ocultos desde el admin no se encuentran.
+const getClub = cache(async (slug: string) => findBySlug("club", slug))
 
 export async function generateMetadata({ params }: ClubPageProps): Promise<Metadata> {
   const { slug } = await params
-  const club = await getClub(slug)
+  const match = await getClub(slug)
 
-  if (!club) {
+  if (!match) {
     return { title: "Club no encontrado | Noctua" }
   }
+  const club = match.row
 
   const title = `${club.name} — Discoteca en ${club.neighborhood || "Barcelona"} | Noctua`
   const description = (
     club.description ||
     `Toda la información de ${club.name}: horarios, precio de entrada, estilo musical y cómo llegar. Descúbrelo en Noctua.`
   ).slice(0, 160)
-  const url = `https://www.noctuaapp.com/clubs/${slug}`
+  const url = `https://www.noctuaapp.com/clubs/${match.canonicalSlug}`
 
   return {
     title,
@@ -64,23 +58,20 @@ export async function generateMetadata({ params }: ClubPageProps): Promise<Metad
 
 export default async function ClubPage({ params }: ClubPageProps) {
   const { slug } = await params
-  const club = await getClub(slug)
+  const match = await getClub(slug)
 
   // notFound() devuelve un 404 real. Antes se pintaba "Club not found" pero con código 200, y
   // Google lo cuenta como "soft 404" (página vacía que dice existir).
-  if (!club) notFound()
+  if (!match) notFound()
+  // URL antigua o con otro formato → 301 a la buena (una sola URL por club para Google).
+  if (!match.exact) permanentRedirect(`/clubs/${match.canonicalSlug}`)
+  const club = match.row
 
-  const { data: clubEvents } = await supabase
-    .from("club_events")
-    .select("*")
-    .eq("club_id", club.id)
-    .order("date", { ascending: true })
-
-  const { data: clubSessions } = await supabase
-    .from("club_sessions")
-    .select("*")
-    .eq("club_id", club.id)
-    .order("sort_order", { ascending: true })
+  // En paralelo (antes iban una detrás de otra y sumaban sus tiempos).
+  const [{ data: clubEvents }, { data: clubSessions }] = await Promise.all([
+    supabase.from("club_events").select("*").eq("club_id", club.id).order("date", { ascending: true }),
+    supabase.from("club_sessions").select("*").eq("club_id", club.id).order("sort_order", { ascending: true }),
+  ])
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -88,7 +79,7 @@ export default async function ClubPage({ params }: ClubPageProps) {
     name: club.name,
     description: club.description || undefined,
     image: club.image || undefined,
-    url: `https://www.noctuaapp.com/clubs/${slug}`,
+    url: `https://www.noctuaapp.com/clubs/${match.canonicalSlug}`,
     address: {
       "@type": "PostalAddress",
       streetAddress: club.address || undefined,
@@ -99,15 +90,9 @@ export default async function ClubPage({ params }: ClubPageProps) {
       ? { geo: { "@type": "GeoCoordinates", latitude: club.latitude, longitude: club.longitude } }
       : {}),
     priceRange: club.price || undefined,
-    ...(club.rating || club.google_rating
-      ? {
-          aggregateRating: {
-            "@type": "AggregateRating",
-            ratingValue: club.rating || club.google_rating,
-            reviewCount: club.reviews_count || club.review_count || club.google_review_count || club.people || 1,
-          },
-        }
-      : {}),
+    // Sin aggregateRating a propósito: las valoraciones son de Google, no de usuarios de Noctua, y
+    // las directrices de Google prohíben marcar como propias reseñas de terceros (riesgo de
+    // penalización manual de los resultados enriquecidos).
   }
 
   return (

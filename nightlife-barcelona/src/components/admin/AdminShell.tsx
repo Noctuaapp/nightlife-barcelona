@@ -11,13 +11,14 @@ const ADMIN_NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/admin/datos", label: "Datos", icon: "💎" },
   { href: "/admin", label: "Clubs", icon: "🏛️" },
-  { href: "/admin/events", label: "Events", icon: "🎉" },
-  { href: "/admin/club-events", label: "Club nights", icon: "🎧" },
-  { href: "/admin/essentials", label: "Essentials", icon: "📍" },
-  { href: "/admin/users", label: "Users", icon: "👥" },
-  { href: "/admin/messages", label: "Messages", icon: "💬" },
+  { href: "/admin/events", label: "Eventos", icon: "🎉" },
+  { href: "/admin/club-events", label: "Noches de club", icon: "🎧" },
+  { href: "/admin/essentials", label: "Esenciales", icon: "📍" },
+  { href: "/admin/users", label: "Usuarios", icon: "👥" },
+  { href: "/admin/messages", label: "Mensajes", icon: "💬" },
   { href: "/admin/entry-denials", label: "No dejan entrar", icon: "🚫" },
-  { href: "/admin/analytics", label: "Analytics", icon: "📈" },
+  { href: "/admin/analytics", label: "Analítica", icon: "📈" },
+  { href: "/admin/herramientas", label: "Herramientas", icon: "🛠️" },
 ]
 
 export default function AdminShell({

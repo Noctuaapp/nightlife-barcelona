@@ -1,6 +1,11 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+// El español va incluido en el propio código (no se pide por red). Antes t() devolvía "" hasta que
+// llegaba el JSON, así que el HTML que generaba el servidor —el que lee Google— salía con los
+// textos vacíos: Privacidad, Términos y FAQ se veían en blanco, y en cada carga había un parpadeo
+// sin textos. Ahora la primera pintura ya trae el español y los demás idiomas se cargan encima.
+import esMessages from "../../public/messages/es.json"
 
 type Locale = "es" | "en" | "ca" | "fr" | "de" | "it" | "nl"
 
@@ -32,50 +37,43 @@ function lookup(messages: Record<string, any>, key: string): string | undefined 
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("es")
-  const [messages, setMessages] = useState<Record<string, any>>({})
-  const [fallbackMessages, setFallbackMessages] = useState<Record<string, any>>({})
-  const [loaded, setLoaded] = useState(false)
+  const [messages, setMessages] = useState<Record<string, any>>(esMessages)
+  const fallbackMessages: Record<string, any> = esMessages
 
   useEffect(() => {
-    const saved = (localStorage.getItem("noctua_locale") as Locale) || "es"
+    let saved: Locale = "es"
+    try {
+      saved = (localStorage.getItem("noctua_locale") as Locale) || "es"
+    } catch {
+      /* modo privado: se queda en español */
+    }
     setLocaleState(saved)
   }, [])
 
   useEffect(() => {
-    setLoaded(false)
-    // Antes esto llevaba "?v=" + Date.now(), que invalidaba el caché del navegador en cada
-    // carga y obligaba a descargar el JSON entero (35-40KB) en cada página/navegación. Los
-    // archivos son estáticos y cambian solo cuando se despliega una versión nueva del sitio,
-    // así que dejamos que el navegador los cachee con normalidad.
-    fetch(`/messages/${locale}.json`)
-      .then((res) => res.json())
-      .then((data) => {
-        setMessages(data)
-        setLoaded(true)
-      })
-      .catch(() => setLoaded(true))
-  }, [locale])
-
-  // Se carga aparte, una sola vez, salvo que el idioma activo ya sea español (entonces no hace
-  // falta pedirlo dos veces).
-  useEffect(() => {
+    // Accesibilidad y analítica: la etiqueta <html lang> sigue al idioma elegido.
+    document.documentElement.lang = locale
     if (locale === FALLBACK_LOCALE) {
-      setFallbackMessages(messages)
+      setMessages(esMessages)
       return
     }
-    fetch(`/messages/${FALLBACK_LOCALE}.json`)
+    // Mientras llega el otro idioma se sigue viendo el español (nunca textos vacíos).
+    fetch(`/messages/${locale}.json`)
       .then((res) => res.json())
-      .then((data) => setFallbackMessages(data))
-      .catch(() => {})
-  }, [locale, messages])
+      .then((data) => setMessages(data))
+      .catch(() => setMessages(esMessages))
+  }, [locale])
 
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale)
-    localStorage.setItem("noctua_locale", newLocale)
+    try {
+      localStorage.setItem("noctua_locale", newLocale)
+    } catch {
+      /* sin almacenamiento: el idioma dura lo que la pestaña */
+    }
   }
 
   const t = (key: string): string => {
-    if (!loaded) return ""
     const direct = lookup(messages, key)
     if (direct !== undefined) return direct
 

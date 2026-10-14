@@ -89,8 +89,8 @@ export default function SurpriseMe({ clubs }: { clubs: any[] }) {
 
     let msg = ""
     const tiers: { label: string; fn: (c: any) => boolean }[] = [
-      { label: "", fn: (c) => clubOpenNow(c.hours) === true && matches(c) && isNear(c) },
-      { label: "Nada abierto con ese rollo ahora mismo; te propongo otra cosa abierta.", fn: (c) => clubOpenNow(c.hours) === true && isNear(c) },
+      { label: "", fn: (c) => clubOpenNow(c.hours, c.open_days) === true && matches(c) && isNear(c) },
+      { label: "Nada abierto con ese rollo ahora mismo; te propongo otra cosa abierta.", fn: (c) => clubOpenNow(c.hours, c.open_days) === true && isNear(c) },
       { label: "Ahora no hay nada abierto: te dejo un plan para más tarde.", fn: (c) => matches(c) && isNear(c) },
       { label: "Ahora no hay nada abierto: te dejo un plan para más tarde.", fn: () => true },
     ]
@@ -130,7 +130,7 @@ export default function SurpriseMe({ clubs }: { clubs: any[] }) {
 
   const card = phase === "result" ? result : shown
   const dist = card && pos && card.latitude && card.longitude ? distanceInMeters(pos.lat, pos.lon, Number(card.latitude), Number(card.longitude)) : null
-  const isOpen = card ? clubOpenNow(card.hours) : null
+  const isOpen = card ? clubOpenNow(card.hours, card.open_days) : null
 
   return (
     <>

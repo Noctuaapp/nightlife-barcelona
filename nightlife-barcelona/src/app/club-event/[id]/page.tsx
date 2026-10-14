@@ -1,9 +1,10 @@
-import Link from "next/link"
+import { notFound } from "next/navigation"
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import AdminEditButton from "../../../components/admin/AdminEditButton"
 import ClubEventPageContent from "../../../components/nightlife/ClubEventPageContent"
 import { supabase } from "../../../lib/supabase"
+import { createSlug } from "../../../lib/slug"
 
 type ClubEventPageProps = {
   params: Promise<{
@@ -20,18 +21,8 @@ export default async function ClubEventPage({ params }: ClubEventPageProps) {
     .eq("id", Number(id))
     .single()
 
-  if (!clubEvent) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <div className="text-center">
-          <h1 className="text-5xl font-black">Noche de club no encontrada</h1>
-          <Link href="/" className="mt-6 inline-block rounded-full bg-white px-6 py-3 font-bold text-black">
-            Volver al inicio
-          </Link>
-        </div>
-      </main>
-    )
-  }
+  // 404 real (antes pintaba "no encontrada" con código 200, un soft 404 para Google).
+  if (!clubEvent) notFound()
 
   const { data: tickets } = await supabase
     .from("tickets")
@@ -40,11 +31,13 @@ export default async function ClubEventPage({ params }: ClubEventPageProps) {
     .eq("available", true)
     .order("price", { ascending: true })
 
-  const clubSlug = clubEvent.club_name
-    ?.toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/\s+/g, "-") || ""
+  // Mismo slug que el resto de la web (antes tenía su propia versión, que dejaba símbolos como
+  // "&" o "'" en el enlace y llevaba a un 404 en clubs con esos caracteres en el nombre).
+  let clubSlug = createSlug(clubEvent.club_name)
+  if (clubEvent.club_id) {
+    const { data: club } = await supabase.from("clubs").select("slug").eq("id", clubEvent.club_id).maybeSingle()
+    if (club?.slug) clubSlug = club.slug
+  }
 
   return (
     <>

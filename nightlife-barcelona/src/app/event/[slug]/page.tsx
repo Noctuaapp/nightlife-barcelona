@@ -1,34 +1,29 @@
 import type { Metadata } from "next"
 import { cache } from "react"
-import { notFound } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import AdminEditButton from "../../../components/admin/AdminEditButton"
 import EventPageContent from "../../../components/nightlife/EventPageContent"
 import { supabase } from "../../../lib/supabase"
-import { createSlug } from "../../../lib/slug"
+import { findBySlug } from "../../../lib/slugLookup"
 
 type EventPageProps = {
   params: Promise<{ slug: string }>
 }
 
-// Igual que en /clubs/[slug]: antes todos los eventos compartían el <title>/descripción genéricos
-// de la home, así que "Fiesta de Halloween en Pacha" y "Concierto de Techno en Razzmatazz"
-// aparecían con el mismo título en Google. cache() evita pedir la lista de eventos dos veces.
-const getEvent = cache(async (slug: string) => {
-  // Filtramos hidden igual que en el listado, si no un evento oculto seguía siendo visitable
-  // por enlace directo.
-  const { data: events } = await supabase.from("events").select("*").eq("hidden", false)
-  return events?.find((e) => createSlug(e.title) === slug) || null
-})
+// Igual que en /clubs/[slug]: título propio por evento y búsqueda ligera por slug (ver
+// src/lib/slugLookup.ts). cache() evita repetir la búsqueda en la misma petición.
+const getEvent = cache(async (slug: string) => findBySlug("event", slug))
 
 export async function generateMetadata({ params }: EventPageProps): Promise<Metadata> {
   const { slug } = await params
-  const event = await getEvent(slug)
+  const match = await getEvent(slug)
 
-  if (!event) {
+  if (!match) {
     return { title: "Evento no encontrado | Noctua" }
   }
+  const event = match.row
 
   const venue = event.club_name ? ` en ${event.club_name}` : ""
   const title = `${event.title}${venue} | Noctua`
@@ -36,7 +31,7 @@ export async function generateMetadata({ params }: EventPageProps): Promise<Meta
     event.description ||
     `${event.title}${venue ? ` en ${event.club_name}` : ""}, Barcelona. Fecha, horario, precio de entrada y cómo conseguir tickets en Noctua.`
   ).slice(0, 160)
-  const url = `https://www.noctuaapp.com/event/${slug}`
+  const url = `https://www.noctuaapp.com/event/${match.canonicalSlug}`
 
   return {
     title,
@@ -62,23 +57,17 @@ export async function generateMetadata({ params }: EventPageProps): Promise<Meta
 
 export default async function EventPage({ params }: EventPageProps) {
   const { slug } = await params
-  const event = await getEvent(slug)
+  const match = await getEvent(slug)
 
   // 404 real en vez de una página "no encontrado" con código 200 (soft 404 para Google).
-  if (!event) notFound()
+  if (!match) notFound()
+  if (!match.exact) permanentRedirect(`/event/${match.canonicalSlug}`)
+  const event = match.row
 
-  const { data: tickets } = await supabase
-    .from("tickets")
-    .select("*")
-    .eq("event_id", event.id)
-    .eq("available", true)
-    .order("price", { ascending: true })
-
-  const { data: sessions } = await supabase
-    .from("event_sessions")
-    .select("*")
-    .eq("event_id", event.id)
-    .order("date", { ascending: true })
+  const [{ data: tickets }, { data: sessions }] = await Promise.all([
+    supabase.from("tickets").select("*").eq("event_id", event.id).eq("available", true).order("price", { ascending: true }),
+    supabase.from("event_sessions").select("*").eq("event_id", event.id).order("date", { ascending: true }),
+  ])
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -86,12 +75,12 @@ export default async function EventPage({ params }: EventPageProps) {
     name: event.title,
     description: event.description || undefined,
     image: event.image || undefined,
-    url: `https://www.noctuaapp.com/event/${slug}`,
+    url: `https://www.noctuaapp.com/event/${match.canonicalSlug}`,
     startDate: event.date || undefined,
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-    eventStatus: event.sold_out
-      ? "https://schema.org/EventCancelled"
-      : "https://schema.org/EventScheduled",
+    // Antes un evento agotado se declaraba "EventCancelled" (cancelado) — Google lo mostraba como
+    // cancelado. Agotado se indica en la oferta (availability), no en el estado del evento.
+    eventStatus: "https://schema.org/EventScheduled",
     location: {
       "@type": "Place",
       name: event.club_name || "Barcelona",
@@ -106,7 +95,15 @@ export default async function EventPage({ params }: EventPageProps) {
         : {}),
     },
     ...(event.price
-      ? { offers: { "@type": "Offer", price: event.price, priceCurrency: "EUR", url: event.ticket_url || undefined } }
+      ? {
+          offers: {
+            "@type": "Offer",
+            price: event.price,
+            priceCurrency: "EUR",
+            url: event.ticket_url || undefined,
+            availability: event.sold_out ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
+          },
+        }
       : {}),
   }
 

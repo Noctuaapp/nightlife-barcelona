@@ -14,8 +14,9 @@
     "contact": "Contatto e assistenza"
   },
   "home": {
-    "hero": "Scopri Barcellona dopo il tramonto...",
-    "subtitle": "Noctua è l'app per la vita notturna di Barcellona. Trova i migliori club, bar, eventi e servizi notturni. Crea un account gratuito per salvare i tuoi locali preferiti e pianificare la tua notte con l'IA.",
+    "hero": "La tua notte a Barcellona",
+    "hero_accent": "inizia qui.",
+    "subtitle": "Club, eventi e tutto ciò che serve per uscire la sera a Barcellona: orari, prezzi, come arrivarci e cosa è aperto adesso.",
     "clubs": "Club",
     "nightlife": "Vita notturna a Barcellona",
     "explore": "Esplora tutti i club →",
@@ -197,11 +198,15 @@
   },
   "footer": {
     "tagline": "La piattaforma per la vita notturna di Barcellona. Trova i migliori club, eventi e servizi notturni.",
-    "venue_cta": "Hai un club? Contattaci →",
+    "venue_cta": "Hai un club, un evento o un'attività notturna? Contattaci",
     "explore": "Esplora",
     "legal": "Legale",
     "copyright": "© 2026 Noctua · Barcelona Nightlife",
-    "privacy_note": "Noctua usa la tua email per gestire il tuo account. Google Sign-In condivide solo il tuo nome e email. Non vendiamo mai i tuoi dati."
+    "privacy_note": "Noctua usa la tua email per gestire il tuo account. Google Sign-In condivide solo nome ed email. Non vendiamo mai i tuoi dati personali né li usiamo per la pubblicità; usiamo solo statistiche aggregate e anonime.",
+    "link_privacy": "Privacy",
+    "link_terms": "Termini",
+    "link_contact": "Contatti",
+    "link_faq": "Domande frequenti"
   },
   "privacy": {
     "title": "Informativa sulla Privacy",
@@ -488,7 +493,16 @@
     "noGeolocation": "Il tuo browser non consente di condividere la posizione.",
     "permissionDenied": "Ci serve la tua posizione per confermare il check-in.",
     "error": "Non è stato possibile registrare il check-in, riprova.",
-    "hint": "Conferma che sei nel locale e guadagna +{xp} XP per salire di livello"
+    "hint": "Conferma che sei nel locale e guadagna +{xp} XP per salire di livello",
+    "lowAccuracy": "Non riusciamo a localizzarti con abbastanza precisione. Spostati dove c'è più segnale e riprova.",
+    "ambiguous": "Ci sono altri locali molto vicini e non possiamo sapere in quale sei. Avvicinati all'ingresso e riprova.",
+    "limit": "Hai raggiunto il numero massimo di check-in per stanotte.",
+    "tooSoon": "Hai appena fatto check-in in un altro locale. Aspetta qualche minuto e riprova.",
+    "blocked": "Il tuo account non può fare check-in in questo momento.",
+    "notePrompt": "Com'è la serata? Lascia una nota a chi arriva dopo.",
+    "notePlaceholder": "Es. poca fila, bella atmosfera...",
+    "notePublish": "Pubblica",
+    "noteDone": "✓ Nota pubblicata — grazie per l'avviso"
   },
   "levels": {
     "title": "Il tuo livello",

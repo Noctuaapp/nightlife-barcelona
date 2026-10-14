@@ -19,12 +19,20 @@ function addOneYear(dateStr: string): string {
   return d.toISOString().slice(0, 10)
 }
 
+// "Primavera Sound 2026" → "Primavera Sound 2027". Antes la fecha pasaba al año siguiente pero el
+// título se quedaba con el año viejo, y en la web salía "Primavera Sound 2026 · jue 3 jun" (de 2027).
+// Solo se cambia el año que coincide con el de la edición que termina. La URL no cambia: el slug
+// queda guardado en la base de datos.
+function bumpYearInTitle(title: string, fromYear: number): string {
+  return title.replace(new RegExp(`\\b${fromYear}\\b`, "g"), String(fromYear + 1))
+}
+
 // Un evento de varios días (date_end) no ha terminado hasta que pasa el último día, no el
 // primero, así que la comparación con "hoy" usa date_end cuando existe.
 const NOT_OVER_FILTER = (today: string) => `date_end.lt.${today},and(date_end.is.null,date.lt.${today})`
 
 export async function GET(req: Request) {
-  if (!isAuthorizedCronRequest(req)) {
+  if (!(await isAuthorizedCronRequest(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -60,10 +68,12 @@ export async function GET(req: Request) {
     // date_end (rango de días), también se avanza un año para mantener la misma duración.
     const newDate = addOneYear(ev.date as string)
     const newDateEnd = ev.date_end ? addOneYear(ev.date_end as string) : null
+    const newTitle = ev.title ? bumpYearInTitle(ev.title as string, new Date(ev.date as string).getFullYear()) : ev.title
 
     await supabase
       .from("events")
       .update({
+        title: newTitle,
         date: newDate,
         date_end: newDateEnd,
         hidden: true,
@@ -72,7 +82,7 @@ export async function GET(req: Request) {
       })
       .eq("id", ev.id)
 
-    results.push({ event: ev.title, status: "advanced", newDate })
+    results.push({ event: newTitle, status: "advanced", newDate })
   }
 
   const { count: remaining } = await supabase

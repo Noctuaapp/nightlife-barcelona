@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import { Unbounded, Plus_Jakarta_Sans } from "next/font/google"
 import { Analytics } from "@vercel/analytics/react"
-import { NightlifeProvider } from "../context/NightlifeContext"
 import { FavoritesProvider } from "../context/FavoritesContext"
 import { LanguageProvider } from "../context/LanguageContext"
 import MaintenanceGate from "../components/system/MaintenanceGate"
@@ -83,9 +82,7 @@ export default function RootLayout({
       <body>
         <LanguageProvider>
           <FavoritesProvider>
-            <NightlifeProvider>
-              <MaintenanceGate>{children}</MaintenanceGate>
-            </NightlifeProvider>
+            <MaintenanceGate>{children}</MaintenanceGate>
           </FavoritesProvider>
         </LanguageProvider>
         <TrafficSource />

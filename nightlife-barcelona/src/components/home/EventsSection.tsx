@@ -6,6 +6,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
+import { toDateLocale } from "../../lib/dateLocale"
 import { createSlug } from "../../lib/slug"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
@@ -44,7 +45,7 @@ const isUpcomingSoon = (date: string | null): boolean => {
 export default function EventsSection() {
   const [events, setEvents] = useState<Event[]>([])
   const [selectedCategory, setSelectedCategory] = useState("All")
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const router = useRouter()
   const geo = useGeolocation()
 
@@ -65,7 +66,15 @@ export default function EventsSection() {
     fetchEvents()
   }, [])
 
-  const today = new Date().toISOString().split("T")[0]
+  // Fecha de hoy en Madrid (antes era la fecha UTC, que entre las 00:00 y las 02:00 aún es "ayer").
+  const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" })
+  // "2026-11-14" → "sáb, 14 nov" en el idioma activo (antes se mostraba la fecha en bruto).
+  const formatEventDate = (date: string | null) => {
+    if (!date) return ""
+    const d = new Date(date + "T12:00:00")
+    if (Number.isNaN(d.getTime())) return date
+    return d.toLocaleDateString(toDateLocale(locale), { weekday: "short", day: "numeric", month: "short" })
+  }
   // Antes esta insignia "● Eventos en directo" se mostraba siempre, aunque no hubiera ningún
   // evento esta noche — dando a entender que algo está pasando ahora mismo cuando no es así.
   // Ahora solo aparece cuando de verdad hay un evento con fecha de hoy.
@@ -90,13 +99,19 @@ export default function EventsSection() {
         .sort((a, b) => (distTo(a) as number) - (distTo(b) as number))
         .slice(0, 3)
     }
+    // "Todos": antes eran los destacados aunque ya hubieran pasado o no tuvieran fecha (en octubre
+    // salían Sant Joan y un festival de julio bajo "Qué está pasando"). Ahora solo eventos con
+    // fecha de hoy en adelante: primero los destacados y después los más cercanos en el tiempo.
+    if (selectedCategory === "All") {
+      const next = events.filter((e) => !!e.date && e.date >= today)
+      return [...next.filter((e) => e.featured), ...next.filter((e) => !e.featured)].slice(0, 3)
+    }
     return events
       .filter((event) => {
-        if (selectedCategory === "All") return event.featured === true
         if (selectedCategory === "Tonight") return event.date === today
-        if (selectedCategory === "Featured") return event.featured === true
+        if (selectedCategory === "Featured") return event.featured === true && upcoming(event)
         if (selectedCategory === "Free") return upcoming(event) && (event.price || "").toLowerCase().includes("gratis")
-        if (selectedCategory === "Sold out") return event.sold_out === true
+        if (selectedCategory === "Sold out") return event.sold_out === true && upcoming(event)
         return true
       })
       .slice(0, 3)
@@ -142,7 +157,7 @@ export default function EventsSection() {
 
       <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {filteredEvents.length === 0 ? (
-          <p className="col-span-3 text-center text-zinc-500 py-10">No events found.</p>
+          <p className="col-span-3 text-center text-zinc-500 py-10">No hay eventos próximos con este filtro.</p>
         ) : (
           filteredEvents.map((event, index) => (
             // Misma forma de entrada que en /events (ver EventsExplorer.tsx): póster arriba,
@@ -202,7 +217,7 @@ export default function EventsSection() {
                 </div>
 
                 <div className="absolute right-5 top-5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300 backdrop-blur-xl">
-                  {event.date === today ? t("events.tonight") : event.date}
+                  {event.date === today ? t("events.tonight") : formatEventDate(event.date)}
                   {selectedCategory === "Near" && distTo(event) !== null ? ` · ${formatDistance(distTo(event) as number)}` : ""}
                 </div>
 

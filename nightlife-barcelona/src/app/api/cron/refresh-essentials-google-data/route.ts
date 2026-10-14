@@ -137,7 +137,7 @@ async function cachePhoto(
 // si ya se ha llegado al límite diario (GOOGLE_PLACES_DAILY_LIMIT), no hace ninguna llamada a
 // Google en este ciclo — corta aquí en vez de seguir gastando. Ver src/lib/googlePlacesBudget.ts.
 export async function GET(req: Request) {
-  if (!isAuthorizedCronRequest(req)) {
+  if (!(await isAuthorizedCronRequest(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { zoneOf, zonesPresent } from "../../../lib/zones"
+import { madridClock } from "../../../lib/clubHours"
 import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
@@ -32,14 +33,22 @@ const categoryConfig: Record<string, { icon: string; color: string; key: string 
   hospital: { icon: "🏥", color: "#ef4444", key: "Hospital" },
 }
 
-// Horario real del Metro de Barcelona (igual todos los días salvo el cierre):
-// abre siempre a las 05:00, cierra a las 00:00 entre semana, 02:00 los sábados,
-// y los domingos y festivos no cierra (24h). No tenemos calendario de festivos,
-// así que festivos concretos no se detectan todavía.
+// Horario del Metro de Barcelona (TMB), siempre con la hora de Madrid:
+//   lunes a jueves y domingo: 05:00–00:00 · viernes y vísperas de festivo: 05:00–02:00 ·
+//   sábado: servicio continuo toda la noche hasta el domingo a las 00:00.
+// Antes decía que el sábado cerraba a las 02:00 y que el domingo era 24 h (al revés), y usaba la
+// hora del móvil, así que a las 01:00 de un viernes ya marcaba el horario del sábado. Las vísperas
+// de festivo todavía no se detectan (no hay calendario de festivos).
 function getMetroSchedule(): { label: string; isLate: boolean } {
-  const day = new Date().getDay() // 0 = domingo, 6 = sábado
-  if (day === 0) return { label: "🟢 Abierto 24h (domingo)", isLate: false }
-  if (day === 6) return { label: "🟡 Abierto hasta las 02:00 · abre a las 05:00", isLate: true }
+  const { dow, minutes } = madridClock() // dow: 0 = domingo
+  if (minutes < 5 * 60) {
+    const yesterday = (dow + 6) % 7
+    if (yesterday === 6) return { label: "🟢 Abierto toda la noche (noche del sábado)", isLate: true }
+    if (yesterday === 5 && minutes < 2 * 60) return { label: "🟡 Abierto hasta las 02:00", isLate: true }
+    return { label: "🔴 Cerrado ahora · abre a las 05:00", isLate: false }
+  }
+  if (dow === 5) return { label: "🟡 Hoy abre hasta las 02:00", isLate: true }
+  if (dow === 6) return { label: "🟢 Hoy sin cierre: toda la noche", isLate: true }
   return { label: "Abierto hasta las 00:00 · abre a las 05:00", isLate: false }
 }
 

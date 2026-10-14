@@ -201,12 +201,26 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
   }, [])
 
   useEffect(() => {
+    // "También te puede interesar": antes eran 3 clubs al azar de los 8 primeros de la tabla, así
+    // que se recomendaban sitios sin relación y con notas de 2/5. Ahora se priorizan locales del
+    // mismo barrio y del mismo estilo de música, con buena nota, y se varía entre los mejores.
     const loadRelated = async () => {
-      const { data } = await supabase.from("clubs").select("*").eq("hidden", false).neq("id", club.id).limit(8)
-      if (data) {
-        const shuffled = [...data].sort(() => Math.random() - 0.5).slice(0, 3)
-        setRelated(shuffled)
+      const fields = "id, name, slug, image, neighborhood, music, rating, google_rating"
+      let { data, error } = await supabase.from("clubs").select(fields).eq("hidden", false).neq("id", club.id)
+      if (error) ({ data } = await supabase.from("clubs").select("*").eq("hidden", false).neq("id", club.id))
+      if (!data) return
+      const myMusic = String(club.music || "").toLowerCase().split(/[,/]/).map((m: string) => m.trim()).filter(Boolean)
+      const score = (r: any) => {
+        const rating = Number(r.google_rating || r.rating || 0)
+        let points = rating >= 4 ? rating : rating >= 3.5 ? rating / 2 : 0
+        if (club.neighborhood && r.neighborhood === club.neighborhood) points += 3
+        const theirMusic = String(r.music || "").toLowerCase()
+        if (myMusic.some((m: string) => theirMusic.includes(m))) points += 2
+        if (r.image) points += 1
+        return points
       }
+      const best = [...data].sort((a, b) => score(b) - score(a)).slice(0, 6)
+      setRelated(best.sort(() => Math.random() - 0.5).slice(0, 3))
     }
     const loadFavCount = async () => {
       const { count } = await supabase
@@ -1326,7 +1340,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
             {related.map((r) => {
               const rRating = r.google_rating || r.rating || null
               return (
-                <Link key={r.id} href={`/clubs/${createSlug(r.name)}`} className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] transition hover:border-white/20">
+                <Link key={r.id} href={`/clubs/${r.slug || createSlug(r.name)}`} className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] transition hover:border-white/20">
                   <div className="relative h-44 overflow-hidden">
                     <img src={r.image || FALLBACK_CLUB_IMAGE} alt={r.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />

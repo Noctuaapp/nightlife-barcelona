@@ -14,8 +14,9 @@
     "contact": "Contact & help"
   },
   "home": {
-    "hero": "Discover Barcelona after dark...",
-    "subtitle": "Noctua is a Barcelona nightlife discovery app. Find and explore the best clubs, bars, live events, festivals and late-night essentials. Create a free account to save your favourite venues and plan your night with AI.",
+    "hero": "Your night in Barcelona",
+    "hero_accent": "starts here.",
+    "subtitle": "Clubs, events and everything you need for a night out in Barcelona: opening hours, prices, how to get there and what's open right now.",
     "clubs": "Clubs",
     "nightlife": "Nightlife in Barcelona",
     "explore": "Explore all clubs →",
@@ -197,11 +198,15 @@
   },
   "footer": {
     "tagline": "Barcelona's nightlife discovery platform. Find the best clubs, events and late-night essentials.",
-    "venue_cta": "Own a club? Contact us →",
+    "venue_cta": "Own a club, an event or a late-night business? Contact us",
     "explore": "Explore",
     "legal": "Legal",
     "copyright": "© 2026 Noctua · Barcelona Nightlife",
-    "privacy_note": "Noctua uses your email to manage your account. Google Sign-In only shares your name and email. We never sell your data or use it for advertising."
+    "privacy_note": "Noctua uses your email to manage your account. Google Sign-In only shares your name and email. We never sell your personal data or use it for advertising; we only use aggregated, anonymous statistics.",
+    "link_privacy": "Privacy",
+    "link_terms": "Terms",
+    "link_contact": "Contact",
+    "link_faq": "FAQ"
   },
   "privacy": {
     "title": "Privacy Policy",
@@ -488,7 +493,16 @@
     "noGeolocation": "Your browser doesn't support sharing location.",
     "permissionDenied": "We need your location to confirm the check-in.",
     "error": "Couldn't register the check-in, try again.",
-    "hint": "Confirm you're at the venue and earn +{xp} XP to level up"
+    "hint": "Confirm you're at the venue and earn +{xp} XP to level up",
+    "lowAccuracy": "We can't pinpoint your location precisely enough. Move somewhere with better signal and try again.",
+    "ambiguous": "There are other venues very close by and we can't tell which one you're at. Get closer to the entrance and try again.",
+    "limit": "You've reached the maximum number of check-ins for tonight.",
+    "tooSoon": "You just checked in somewhere else. Wait a few minutes and try again.",
+    "blocked": "Your account can't check in right now.",
+    "notePrompt": "How's the night going? Leave a note for whoever comes next.",
+    "notePlaceholder": "E.g. short queue, great vibe...",
+    "notePublish": "Post",
+    "noteDone": "✓ Note posted — thanks for the heads-up"
   },
   "levels": {
     "title": "Your level",

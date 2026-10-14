@@ -7,6 +7,7 @@ import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import AuthGateModal from "../../components/ui/AuthGateModal"
 import { supabase } from "../../lib/supabase"
+import { track } from "../../lib/track"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
 import { zoneOf, zonesPresent } from "../../lib/zones"
@@ -401,13 +402,8 @@ export default function PlanPage() {
     if (areaSet.size > 0) parts.push(`zona:${Array.from(areaSet).join("/")}`)
     if (dresscode && dresscode !== "Cualquiera") parts.push(`dresscode:${dresscode}`)
     if (parts.length === 0) return
-    const { data: userData } = await supabase.auth.getUser()
-    await supabase.from("analytics").insert({
-      event_type: "filter_used",
-      item_type: "plan",
-      item_name: parts.join(" | "),
-      user_id: userData.user?.id || null,
-    })
+    // Mismo registro que el resto de la web (con sesión, origen y dispositivo).
+    await track("filter_used", { itemType: "plan", itemName: parts.join(" | ") })
   }
 
   const generatePlan = () => {

@@ -1,6 +1,7 @@
 "use client"
 
 import { zoneOf, zonesPresent } from "../../lib/zones"
+import { clubOpenNow } from "../../lib/clubHours"
 import { useEffect, useMemo, useRef, useState } from "react"
 import ClubCard from "./ClubCard"
 import { supabase } from "../../lib/supabase"
@@ -132,66 +133,6 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     setVisibleCount(PAGE_SIZE)
   }, [selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, selectedZones, search, openNow, nearMe, sortBy])
 
-  const isOpenNow = (hours: string): boolean => {
-    if (!hours) return false
-
-    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Madrid" }))
-    const currentMinutes = now.getHours() * 60 + now.getMinutes()
-    const currentDay = now.getDay()
-
-    const dayMap: Record<string, number> = { L: 1, M: 2, X: 3, J: 4, V: 5, S: 6, D: 0 }
-    const dayOrder = [1, 2, 3, 4, 5, 6, 0]
-
-    const isDayActive = (daysStr: string): boolean => {
-      const parts = daysStr.split("/")
-      for (const part of parts) {
-        if (part.includes("-")) {
-          const [from, to] = part.split("-")
-          const fromIdx = dayOrder.indexOf(dayMap[from])
-          const toIdx = dayOrder.indexOf(dayMap[to])
-          const currentIdx = dayOrder.indexOf(currentDay)
-          if (fromIdx !== -1 && toIdx !== -1 && currentIdx !== -1) {
-            if (fromIdx <= toIdx) {
-              if (currentIdx >= fromIdx && currentIdx <= toIdx) return true
-            } else {
-              if (currentIdx >= fromIdx || currentIdx <= toIdx) return true
-            }
-          }
-        } else {
-          if (dayMap[part] === currentDay) return true
-        }
-      }
-      return false
-    }
-
-    const periods = hours.split("|").map((s) => s.trim())
-
-    for (const period of periods) {
-      const withDay = period.match(/^([LMXJVSD/\-]+)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/)
-      const noDay = period.match(/^(\d{2}:\d{2})-(\d{2}:\d{2})$/)
-
-      if (withDay) {
-        if (!isDayActive(withDay[1])) continue
-        const startMin = parseInt(withDay[2].split(":")[0]) * 60 + parseInt(withDay[2].split(":")[1])
-        const endMin = parseInt(withDay[3].split(":")[0]) * 60 + parseInt(withDay[3].split(":")[1])
-        if (endMin < startMin) {
-          if (currentMinutes >= startMin || currentMinutes <= endMin) return true
-        } else {
-          if (currentMinutes >= startMin && currentMinutes <= endMin) return true
-        }
-      } else if (noDay) {
-        const startMin = parseInt(noDay[1].split(":")[0]) * 60 + parseInt(noDay[1].split(":")[1])
-        const endMin = parseInt(noDay[2].split(":")[0]) * 60 + parseInt(noDay[2].split(":")[1])
-        if (endMin < startMin) {
-          if (currentMinutes >= startMin || currentMinutes <= endMin) return true
-        } else {
-          if (currentMinutes >= startMin && currentMinutes <= endMin) return true
-        }
-      }
-    }
-    return false
-  }
-
   const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371
     const dLat = ((lat2 - lat1) * Math.PI) / 180
@@ -248,7 +189,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
 
       const matchesSearch = searchScore(club, search) > 0
 
-      const matchesOpenNow = !openNow || isOpenNow(club.hours)
+      const matchesOpenNow = !openNow || clubOpenNow(club.hours, club.open_days) === true
 
       const matchesNearMe =
         !nearMe ||

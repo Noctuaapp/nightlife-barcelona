@@ -1,4 +1,4 @@
-import { supabase } from "../lib/supabase"
+import { fetchVisibleClubs, HOME_CLUB_FIELDS } from "../lib/clubQueries"
 import HomeClient from "../components/home/HomeClient"
 
 // Antes esta página empezaba con "use client" y pedía los clubs a Supabase dentro de un
@@ -11,7 +11,7 @@ import HomeClient from "../components/home/HomeClient"
 export const revalidate = 3600
 
 export default async function Home() {
-  const { data: clubs } = await supabase.from("clubs").select("*").eq("hidden", false)
+  const clubs = await fetchVisibleClubs(HOME_CLUB_FIELDS)
 
-  return <HomeClient initialClubs={clubs || []} />
+  return <HomeClient initialClubs={clubs} />
 }

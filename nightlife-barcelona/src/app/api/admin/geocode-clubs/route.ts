@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { isAdminRequest } from "@/lib/adminAuth"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -7,11 +8,10 @@ export const maxDuration = 60
 // Rellena latitude/longitude de los locales que no la tienen, a partir de su dirección, con
 // OpenStreetMap Nominatim (gratis; sin tocar la cuota de Google). Procesa 10 por visita (Nominatim
 // pide como máximo 1 petición por segundo). Recarga hasta que "remaining" sea 0.
-// https://TU_DOMINIO/api/admin/geocode-clubs?secret=TU_ADMIN_SECRET
+// Se lanza desde el panel: /admin/herramientas (sin claves en la URL).
 // Un resultado solo se acepta si cae dentro del área metropolitana de Barcelona.
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  if (searchParams.get("secret") !== process.env.ADMIN_SECRET) {
+  if (!(await isAdminRequest(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
 

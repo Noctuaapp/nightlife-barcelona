@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next"
 import { supabase } from "../lib/supabase"
 import { createSlug } from "../lib/slug"
+import type { DbRow } from "../lib/clubQueries"
 
 const BASE_URL = "https://www.noctuaapp.com"
 
@@ -36,23 +37,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ]
 
-  const [{ data: clubs }, { data: events }] = await Promise.all([
-    supabase.from("clubs").select("name").eq("hidden", false),
-    supabase.from("events").select("title").eq("hidden", false),
-  ])
+  // Se usa el slug guardado en la base de datos (la URL canónica). Si la columna aún no existe,
+  // la consulta falla y se vuelve a pedir solo el nombre, como antes.
+  const load = async (table: "clubs" | "events", nameField: "name" | "title") => {
+    const withSlug = await supabase.from(table).select(`${nameField}, slug`).eq("hidden", false)
+    if (!withSlug.error) return (withSlug.data || []) as unknown as DbRow[]
+    const plain = await supabase.from(table).select(nameField).eq("hidden", false)
+    return (plain.data || []) as unknown as DbRow[]
+  }
+  const [clubs, events] = await Promise.all([load("clubs", "name"), load("events", "title")])
 
-  const clubRoutes: MetadataRoute.Sitemap = (clubs || [])
-    .filter((c) => c.name)
+  const clubRoutes: MetadataRoute.Sitemap = clubs
+    .filter((c) => c.slug || c.name)
     .map((c) => ({
-      url: `${BASE_URL}/clubs/${createSlug(c.name)}`,
+      url: `${BASE_URL}/clubs/${c.slug || createSlug(c.name)}`,
       changeFrequency: "weekly" as const,
       priority: 0.7,
     }))
 
-  const eventRoutes: MetadataRoute.Sitemap = (events || [])
-    .filter((e) => e.title)
+  const eventRoutes: MetadataRoute.Sitemap = events
+    .filter((e) => e.slug || e.title)
     .map((e) => ({
-      url: `${BASE_URL}/event/${createSlug(e.title)}`,
+      url: `${BASE_URL}/event/${e.slug || createSlug(e.title)}`,
       changeFrequency: "daily" as const,
       priority: 0.7,
     }))

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { isAuthorizedCronRequest } from "@/lib/adminAuth"
 import { isOverBudget, recordGoogleCalls, createCounter, googleFetch, fetchRichData } from "@/lib/googlePlacesBudget"
 
 export const dynamic = "force-dynamic"
@@ -60,13 +61,9 @@ const BARCELONA_BIAS = { circle: { center: { latitude: 41.3874, longitude: 2.168
 // Al principio: visita esta URL repetidamente (recarga la página) hasta que "remaining" salga en 0,
 // para traer las fotos/reseñas de los 130 clubs por primera vez.
 // Luego el cron diario va reciclando los más antiguos automáticamente, unos pocos cada vez.
-// Para probarla a mano: https://TU_DOMINIO/api/cron/refresh-google-data?secret=TU_ADMIN_SECRET
+// Para probarla a mano: botón en /admin/herramientas.
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  const authHeader = req.headers.get("authorization")
-  const isVercelCron = authHeader === `Bearer ${process.env.CRON_SECRET}`
-  const isManual = searchParams.get("secret") === process.env.ADMIN_SECRET
-  if (!isVercelCron && !isManual) {
+  if (!(await isAuthorizedCronRequest(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
 

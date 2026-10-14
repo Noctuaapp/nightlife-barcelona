@@ -14,17 +14,11 @@ type CheckInButtonProps = {
   longitude: number | null
 }
 
-// Radio de tolerancia del GPS para considerar que alguien está "en" el club. Los GPS de móvil
-// dentro de un edificio en una zona urbana densa (mucha discoteca está en sótanos/locales sin
-// buena señal) pueden dar 80-120m de error fácilmente, así que 200m es un compromiso entre
-// exigencia real y no bloquear a gente que sí está allí.
+// Límites del check-in. La comprobación de verdad se hace ahora en el servidor (función
+// do_checkin en Supabase): antes todo se validaba en el navegador y cualquiera podía saltárselo
+// insertando la fila directamente. Aquí solo se usan para el modo de respaldo (ver más abajo).
 const MAX_DISTANCE_METERS = 80
-// Si el móvil dice que su posición tiene más de este margen de error, no se acepta el check-in
-// (mejor pedir que lo intente de nuevo que validar a alguien que puede estar en la calle de al lado).
 const MAX_ACCURACY_METERS = 50
-// Margen mínimo con el siguiente local más cercano: si hay otro club casi igual de cerca, el GPS
-// no puede distinguir en cuál está la persona y no se valida.
-const MIN_GAP_TO_NEXT_VENUE = 25
 
 // Noche actual en Madrid (YYYY-MM-DD): hasta las 06:00 cuenta como la noche anterior. Antes se
 // usaba la fecha UTC, que cambia a las 01:00-02:00 hora de Madrid y partía una misma noche en dos.
@@ -106,6 +100,47 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
 
   if (!latitude || !longitude) return null
 
+  // Check-in antiguo (validado solo en el navegador). Solo se usa si la función do_checkin aún no
+  // existe en Supabase; en cuanto se ejecuta el SQL deja de usarse.
+  const legacyCheckIn = async (lat: number, lng: number, accuracy: number) => {
+    if (!userId || !latitude || !longitude) return
+    if (accuracy > MAX_ACCURACY_METERS) {
+      setError(t("checkin.lowAccuracy"))
+      setWorking(false)
+      return
+    }
+    if (distanceInMeters(lat, lng, latitude, longitude) > MAX_DISTANCE_METERS) {
+      setError(t("checkin.tooFar"))
+      setWorking(false)
+      return
+    }
+    const { error: insertError } = await supabase.from("club_checkins").insert({
+      user_id: userId,
+      club_id: clubId,
+      checkin_date: nightDate(),
+    })
+    if (insertError && insertError.code !== "23505") {
+      console.log("CHECKIN INSERT ERROR:", insertError)
+      setError(t("checkin.error"))
+      setWorking(false)
+      return
+    }
+    setCheckedInToday(true)
+    setWorking(false)
+    if (insertError) return
+    const { awarded } = await awardXp(supabase, {
+      userId,
+      actionType: "checkin",
+      itemType: "club",
+      itemId: clubId,
+      amount: XP_AMOUNTS.checkin,
+    })
+    if (awarded) {
+      setJustEarned(true)
+      setTimeout(() => setJustEarned(false), 2500)
+    }
+  }
+
   const handleCheckIn = () => {
     if (!userId) {
       window.location.href = "/login"
@@ -121,73 +156,49 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        if (position.coords.accuracy > MAX_ACCURACY_METERS) {
-          setError("No podemos localizarte con suficiente precisión. Sal a un sitio con mejor señal e inténtalo de nuevo.")
-          setWorking(false)
-          return
-        }
-        const dist = distanceInMeters(
-          position.coords.latitude,
-          position.coords.longitude,
-          latitude,
-          longitude
-        )
+        const { latitude: lat, longitude: lng, accuracy } = position.coords
 
-        if (dist > MAX_DISTANCE_METERS) {
-          setError(t("checkin.tooFar"))
-          setWorking(false)
-          return
-        }
-
-        // ¿Es este el local más cercano? Se compara con el resto de clubs visibles.
-        const { data: others } = await supabase
-          .from("clubs")
-          .select("id, latitude, longitude")
-          .eq("hidden", false)
-          .neq("id", clubId)
-          .not("latitude", "is", null)
-        let nearestOther = Infinity
-        for (const o of others || []) {
-          const d = distanceInMeters(position.coords.latitude, position.coords.longitude, Number(o.latitude), Number(o.longitude))
-          if (d < nearestOther) nearestOther = d
-        }
-        if (nearestOther - dist < MIN_GAP_TO_NEXT_VENUE) {
-          setError("Hay otros locales muy cerca y no podemos saber en cuál estás. Acércate a la puerta e inténtalo otra vez.")
-          setWorking(false)
-          return
-        }
-
-        const today = nightDate()
-        const { error: insertError } = await supabase.from("club_checkins").insert({
-          user_id: userId,
-          club_id: clubId,
-          checkin_date: today,
+        const { data: result, error: rpcError } = await supabase.rpc("do_checkin", {
+          p_club_id: clubId,
+          p_lat: lat,
+          p_lng: lng,
+          p_accuracy: accuracy,
         })
 
-        if (insertError) {
-          // Violación de la restricción única (ya había check-in hoy) — no es un fallo real.
-          if (insertError.code === "23505") {
-            setCheckedInToday(true)
-          } else {
-            console.log("CHECKIN INSERT ERROR:", insertError)
-            setError(t("checkin.error"))
+        // Respaldo mientras no exista la función en la base de datos (SQL sin ejecutar todavía).
+        if (rpcError && (rpcError.code === "PGRST202" || rpcError.code === "42883")) {
+          await legacyCheckIn(lat, lng, accuracy)
+          return
+        }
+        if (rpcError || !result) {
+          console.log("CHECKIN RPC ERROR:", rpcError)
+          setError(t("checkin.error"))
+          setWorking(false)
+          return
+        }
+
+        const res = result as { ok: boolean; reason?: string; awarded?: boolean }
+        if (!res.ok) {
+          const messages: Record<string, string> = {
+            low_accuracy: t("checkin.lowAccuracy"),
+            too_far: t("checkin.tooFar"),
+            ambiguous: t("checkin.ambiguous"),
+            limit: t("checkin.limit"),
+            too_soon: t("checkin.tooSoon"),
+            blocked: t("checkin.blocked"),
           }
+          if (res.reason === "login") {
+            window.location.href = "/login"
+            return
+          }
+          setError(messages[res.reason || ""] || t("checkin.error"))
           setWorking(false)
           return
         }
 
         setCheckedInToday(true)
         setWorking(false)
-
-        const { awarded } = await awardXp(supabase, {
-          userId,
-          actionType: "checkin",
-          itemType: "club",
-          itemId: clubId,
-          amount: XP_AMOUNTS.checkin,
-        })
-
-        if (awarded) {
+        if (res.awarded) {
           setJustEarned(true)
           setTimeout(() => setJustEarned(false), 2500)
         }
@@ -221,13 +232,13 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
       <XpBurst show={justEarned} amount={XP_AMOUNTS.checkin} />
       {checkedInToday && !noteSaved && (
         <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-          <p className="text-xs font-semibold text-zinc-400">¿Cómo está la noche? Déjale una nota a quien venga después.</p>
+          <p className="text-xs font-semibold text-zinc-400">{t("checkin.notePrompt")}</p>
           <div className="mt-2 flex gap-2">
             <input
               value={note}
               onChange={(e) => setNote(e.target.value)}
               maxLength={140}
-              placeholder="Ej. cola corta, buen ambiente..."
+              placeholder={t("checkin.notePlaceholder")}
               className="flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none focus:border-purple-500/50"
             />
             <button
@@ -235,13 +246,13 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
               disabled={savingNote || !note.trim()}
               className="rounded-xl bg-purple-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-purple-400 disabled:opacity-50"
             >
-              {savingNote ? "..." : "Publicar"}
+              {savingNote ? "..." : t("checkin.notePublish")}
             </button>
           </div>
         </div>
       )}
       {checkedInToday && noteSaved && (
-        <p className="mt-2 text-center text-[11px] text-emerald-400">✓ Nota publicada — gracias por avisar</p>
+        <p className="mt-2 text-center text-[11px] text-emerald-400">{t("checkin.noteDone")}</p>
       )}
       {!checkedInToday && (
         <p className="mt-2 text-center text-[11px] leading-snug text-zinc-500">

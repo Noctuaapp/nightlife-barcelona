@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { isAdminRequest } from "@/lib/adminAuth"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -9,9 +10,9 @@ export const maxDuration = 60
 // para poder revisarlo antes de publicar. Se salta lo que ya existe en la tabla.
 //
 //   Vista previa (no escribe nada):
-//   /api/admin/import-osm-clubs?secret=TU_ADMIN_SECRET&area=barcelona
+//   /api/admin/import-osm-clubs?area=barcelona
 //   Importar de verdad:
-//   /api/admin/import-osm-clubs?secret=TU_ADMIN_SECRET&area=barcelona&dry=0
+//   /api/admin/import-osm-clubs?area=barcelona&dry=0
 //   area = barcelona | hospitalet | badalona
 
 const AREAS: Record<string, { osmPattern: string; city: string }> = {
@@ -90,7 +91,7 @@ function cleanUrl(v?: string): string | null {
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  if (searchParams.get("secret") !== process.env.ADMIN_SECRET) {
+  if (!(await isAdminRequest(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
   const areaKey = (searchParams.get("area") || "").toLowerCase()

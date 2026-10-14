@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { isAdminRequest } from "@/lib/adminAuth"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -30,12 +31,11 @@ function namesLikelyMatch(clubName: string, googleName: string): boolean {
 
 // EJECUTAR UNA VEZ (necesita la columna nueva de la nota de abajo) para limpiar de golpe los
 // clubs que se emparejaron mal con el sitio equivocado de Google (p.ej. "Costa Breve" con fotos
-// de "Costa Brava"). Visita esta URL repetidamente hasta que "remaining" salga en 0 — igual que
+// de "Costa Brava"). Lánzalo repetidamente desde /admin/herramientas hasta que "remaining" salga en 0 — igual que
 // hiciste con las otras dos herramientas. A partir de ahí el cron diario ya evita este error solo.
-// https://TU_DOMINIO/api/admin/fix-mismatched-clubs?secret=TU_ADMIN_SECRET
+// Se lanza desde el panel: /admin/herramientas (sin claves en la URL).
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  if (searchParams.get("secret") !== process.env.ADMIN_SECRET) {
+  if (!(await isAdminRequest(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
 

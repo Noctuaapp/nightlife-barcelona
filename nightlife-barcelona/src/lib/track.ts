@@ -57,6 +57,19 @@ function deviceType(): string {
   return window.matchMedia && window.matchMedia("(max-width: 767px)").matches ? "mobile" : "desktop"
 }
 
+// Robots y navegadores automatizados (Googlebot ejecuta JavaScript y disparaba eventos como si
+// fuera una visita real, inflando las cifras que luego se quieren enseñar o vender).
+const BOT_UA = /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|embedly|quora link|whatsapp|telegrambot|discordbot|preview|headless|lighthouse|pagespeed|gtmetrix|pingdom|uptime/i
+
+function isAutomated(): boolean {
+  try {
+    if (navigator.webdriver) return true
+    return BOT_UA.test(navigator.userAgent || "")
+  } catch {
+    return false
+  }
+}
+
 type TrackOptions = {
   itemType?: string | null
   itemId?: number | string | null
@@ -68,14 +81,16 @@ type TrackOptions = {
 // Registra un evento. Nunca lanza error ni bloquea la interfaz: si falla, se ignora.
 export async function track(eventType: string, opts: TrackOptions = {}) {
   try {
-    if (typeof window === "undefined") return
-    const { data } = await supabase.auth.getUser()
+    if (typeof window === "undefined" || isAutomated()) return
+    // getSession lee la sesión guardada en el navegador; getUser hacía una llamada de red extra a
+    // Supabase por cada evento registrado.
+    const { data } = await supabase.auth.getSession()
     await supabase.from("analytics").insert({
       event_type: eventType,
       item_type: opts.itemType ?? null,
       item_id: opts.itemId ?? null,
       item_name: opts.itemName ?? null,
-      user_id: data.user?.id || null,
+      user_id: data.session?.user.id || null,
       session_id: getSessionId(),
       source: getTrafficSource(),
       device: deviceType(),

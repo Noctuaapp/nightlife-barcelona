@@ -41,6 +41,22 @@ const languages = [
   { code: "nl", flag: "https://flagcdn.com/w40/nl.png", name: "Nederlands" },
 ]
 
+// El Header se monta de nuevo en cada página, así que todo lo que hace al montarse se repetía en
+// cada clic: tiempo, recordatorios de favoritos, racha semanal... Estas tareas solo necesitan
+// hacerse una vez por sesión de navegación (pestaña abierta).
+function oncePerSession(key: string): boolean {
+  try {
+    if (sessionStorage.getItem(key)) return false
+    sessionStorage.setItem(key, "1")
+    return true
+  } catch {
+    return true
+  }
+}
+
+const WEATHER_CACHE_KEY = "noctua_weather"
+const WEATHER_TTL_MS = 30 * 60 * 1000
+
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -100,6 +116,7 @@ export default function Header() {
     // días distintos (usando las visitas a fichas de club/evento que ya se registraban en
     // "analytics"), se da la recompensa una vez por semana ISO y se avisa por notificación.
     const checkWeeklyStreak = async (userId: string) => {
+      if (!oncePerSession(`noctua_streak_checked_${userId}`)) return
       const { data: profile } = await supabase
         .from("profiles")
         .select("streak_week")
@@ -160,6 +177,16 @@ export default function Header() {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
+        // Caché de 30 min por pestaña: antes se pedía el tiempo a open-meteo en cada página.
+        try {
+          const cached = JSON.parse(sessionStorage.getItem(WEATHER_CACHE_KEY) || "null")
+          if (cached && cached.city === selectedCity.slug && Date.now() - cached.at < WEATHER_TTL_MS) {
+            setWeather(cached.weather)
+            return
+          }
+        } catch {
+          /* caché ilegible: se vuelve a pedir */
+        }
         const res = await fetch(
           `https://api.open-meteo.com/v1/forecast?latitude=${selectedCity.lat}&longitude=${selectedCity.lng}&current=temperature_2m,weathercode&hourly=temperature_2m,weathercode&timezone=Europe/Madrid&forecast_days=2`
         )
@@ -209,7 +236,13 @@ export default function Header() {
           return { label, icon, temp: temp ?? 0 }
         })
 
-        setWeather({ temp: currentTemp, icon: currentIcon, nightHours })
+        const fresh = { temp: currentTemp, icon: currentIcon, nightHours }
+        setWeather(fresh)
+        try {
+          sessionStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({ city: selectedCity.slug, at: Date.now(), weather: fresh }))
+        } catch {
+          /* sin almacenamiento: no pasa nada */
+        }
       } catch (e) {
         console.log("Weather error:", e)
       }
@@ -298,7 +331,9 @@ export default function Header() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) return
 
-      await checkFavoriteReminders(userData.user.id)
+      if (oncePerSession(`noctua_reminders_checked_${userData.user.id}`)) {
+        await checkFavoriteReminders(userData.user.id)
+      }
 
       const { data, error } = await supabase
         .from("notifications")

@@ -14,8 +14,9 @@
     "contact": "Kontakt & Hilfe"
   },
   "home": {
-    "hero": "Entdecke Barcelona nach Einbruch der Dunkelheit...",
-    "subtitle": "Noctua ist die Barcelona Nachtleben-App. Entdecke die besten Clubs, Bars, Events und Nachtservices. Erstelle ein kostenloses Konto, um deine Lieblingslocations zu speichern und deine Nacht mit KI zu planen.",
+    "hero": "Deine Nacht in Barcelona",
+    "hero_accent": "beginnt hier.",
+    "subtitle": "Clubs, Events und alles, was du für eine Nacht in Barcelona brauchst: Öffnungszeiten, Preise, Anfahrt und was gerade geöffnet hat.",
     "clubs": "Clubs",
     "nightlife": "Nachtleben in Barcelona",
     "explore": "Alle Clubs entdecken →",
@@ -197,11 +198,15 @@
   },
   "footer": {
     "tagline": "Barcelonas Nachtleben-Plattform. Finde die besten Clubs, Events und Nachtservices.",
-    "venue_cta": "Betreibst du einen Club? Kontaktiere uns →",
+    "venue_cta": "Du hast einen Club, ein Event oder ein Nachtgeschäft? Kontaktiere uns",
     "explore": "Entdecken",
     "legal": "Rechtliches",
     "copyright": "© 2026 Noctua · Barcelona Nightlife",
-    "privacy_note": "Noctua verwendet deine E-Mail zur Kontoverwaltung. Google Sign-In teilt nur deinen Namen und deine E-Mail. Wir verkaufen deine Daten nie."
+    "privacy_note": "Noctua nutzt deine E-Mail zur Verwaltung deines Kontos. Google Sign-In teilt nur deinen Namen und deine E-Mail. Wir verkaufen niemals deine personenbezogenen Daten und nutzen sie nicht für Werbung; wir verwenden nur aggregierte, anonyme Statistiken.",
+    "link_privacy": "Datenschutz",
+    "link_terms": "Nutzungsbedingungen",
+    "link_contact": "Kontakt",
+    "link_faq": "FAQ"
   },
   "privacy": {
     "title": "Datenschutzerklärung",
@@ -488,7 +493,16 @@
     "noGeolocation": "Dein Browser unterstützt keine Standortfreigabe.",
     "permissionDenied": "Wir brauchen deinen Standort, um den Check-in zu bestätigen.",
     "error": "Check-in konnte nicht gespeichert werden, versuch es noch einmal.",
-    "hint": "Bestätige, dass du vor Ort bist, und erhalte +{xp} XP, um aufzusteigen"
+    "hint": "Bestätige, dass du vor Ort bist, und erhalte +{xp} XP, um aufzusteigen",
+    "lowAccuracy": "Wir können deinen Standort nicht genau genug bestimmen. Geh an eine Stelle mit besserem Empfang und versuch es erneut.",
+    "ambiguous": "Es gibt andere Locations ganz in der Nähe, wir können nicht erkennen, wo du bist. Geh näher zum Eingang und versuch es erneut.",
+    "limit": "Du hast heute Nacht die maximale Anzahl an Check-ins erreicht.",
+    "tooSoon": "Du hast gerade woanders eingecheckt. Warte ein paar Minuten und versuch es erneut.",
+    "blocked": "Dein Konto kann gerade nicht einchecken.",
+    "notePrompt": "Wie ist die Stimmung? Hinterlass eine Notiz für alle, die später kommen.",
+    "notePlaceholder": "Z. B. kurze Schlange, gute Stimmung...",
+    "notePublish": "Posten",
+    "noteDone": "✓ Notiz gepostet — danke für den Hinweis"
   },
   "levels": {
     "title": "Dein Level",
