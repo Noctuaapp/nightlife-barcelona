@@ -24,9 +24,9 @@ export default function BottomNav() {
     checkAdmin()
   }, [])
 
-  // Se esconde tras unos segundos sin interactuar y reaparece al tocar, mover el ratón,
-  // hacer scroll o pulsar una tecla.
-  const visible = useIdleVisible(3000, pathname)
+  // Se esconde a 1,5 s sin interactuar y reaparece al tocar, mover el ratón, hacer scroll o
+  // pulsar una tecla.
+  const visible = useIdleVisible(1500, pathname)
 
   const navItems = [
     { label: t("nav.home"), href: "/", icon: Home },

@@ -238,7 +238,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
           </div>
         </section>
 
-        <div className="sticky top-16 z-30 mt-6 border-y border-white/10 bg-night/90 py-3 backdrop-blur-xl">
+        <div className="sticky top-[72px] z-30 sm:top-20 mt-6 border-y border-white/10 bg-night/90 py-3 backdrop-blur-xl">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 lg:flex-row lg:items-center">
             <div className="group flex min-w-0 flex-1 items-center gap-3 rounded-full border border-white/15 bg-surface px-5 py-3 transition focus-within:border-brand">
               <SearchIcon className="h-5 w-5 shrink-0 text-zinc-400 transition group-focus-within:text-brand-soft" />

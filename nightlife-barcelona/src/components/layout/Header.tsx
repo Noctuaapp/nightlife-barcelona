@@ -9,6 +9,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { awardXp, XP_AMOUNTS, currentIsoWeek } from "../../lib/xp"
 import { ADMIN_EMAIL } from "../../lib/admin"
 import { logError } from "../../lib/log"
+import { Bell, ChevronLeft } from "lucide-react"
 
 const cities = [
   { name: "Barcelona", slug: "barcelona", active: true, lat: 41.3851, lng: 2.1734 },
@@ -63,9 +64,9 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [cityOpen, setCityOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
-  const [selectedCity, setSelectedCity] = useState(cities[0])
+  // Barcelona es la única ciudad por ahora (se usa para el tiempo del menú).
+  const [selectedCity] = useState(cities[0])
   // Barra de registro en el header: solo para quien no tiene sesión, y se puede cerrar (se
   // recuerda en localStorage, igual que las notificaciones leídas). Empieza en "true" (oculta)
   // para no hacerla parpadear un instante antes de comprobar localStorage tras montar.
@@ -80,6 +81,7 @@ export default function Header() {
   const { locale, setLocale, t } = useLanguage()
 
   const currentLang = languages.find((l) => l.code === locale) || languages[0]
+
 
   const showBack = !(["/", "/login", "/signup", "/map", "/events", "/clubs", "/essentials", "/favorites", "/profile", "/plan", "/admin", "/admin/events", "/admin/club-events", "/admin/essentials", "/admin/tickets", "/admin/messages", "/admin/dashboard"].includes(pathname)) && !pathname.startsWith("/admin/")
   const hideHeader = pathname === "/map"
@@ -433,58 +435,43 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-2xl">
-        <div className="flex h-20 items-center justify-between px-6 relative">
+      {/* Header: la noche de Barcelona en azul tinta (no negro plano), el búho iluminado como un
+          neón con un halo detrás y una línea de luz abajo, como la que se escapa bajo la puerta de
+          un club. Los colores salen del propio logo (azul eléctrico y cian) y del violeta/magenta
+          de los botones de la app. */}
+      <header className="sticky top-0 z-50">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, #0c1234 0%, #070814 100%)" }} />
+          <div className="absolute -left-24 -top-28 h-56 w-80 rounded-full" style={{ background: "radial-gradient(closest-side, rgba(168,85,247,0.24), transparent)" }} />
+          <div className="absolute -right-20 -top-32 h-60 w-80 rounded-full" style={{ background: "radial-gradient(closest-side, rgba(236,72,153,0.16), transparent)" }} />
+          <div className="absolute left-1/2 top-1/2 h-40 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: "radial-gradient(closest-side, rgba(29,107,255,0.42), rgba(108,242,242,0.12) 55%, transparent)" }} />
+        </div>
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(108,242,242,0.75) 18%, rgba(29,107,255,0.95) 42%, rgba(168,85,247,0.95) 66%, rgba(236,72,153,0.8) 84%, transparent)" }} />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-[12%] -bottom-1 h-2 opacity-60 blur-md" style={{ background: "linear-gradient(90deg, rgba(108,242,242,0.6), rgba(29,107,255,0.7), rgba(168,85,247,0.7), rgba(236,72,153,0.6))" }} />
+
+        <div className="relative mx-auto flex h-[72px] max-w-7xl items-center justify-between px-4 sm:h-20 sm:px-6">
           <div className="flex items-center gap-2">
             {showBack ? (
               <button
                 onClick={() => router.back()}
-                className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-white transition hover:scale-105"
-                style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}
+                className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.07] py-2 pl-2.5 pr-4 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition hover:border-cyan-300/40 hover:bg-white/[0.12]"
               >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M10 3L5 8L10 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <ChevronLeft size={18} aria-hidden="true" />
                 <span>{t("common.back")}</span>
               </button>
-            ) : (
-              <div className="relative">
-                <button
-                  onClick={() => setCityOpen(!cityOpen)}
-                  className="flex items-center gap-1 sm:gap-2 rounded-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-white transition hover:bg-white/10"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-                >
-                  <span className="text-xs sm:text-sm">📍</span>
-                  <span>{selectedCity.name}</span>
-                  <svg width="8" height="5" viewBox="0 0 10 6" fill="none" className="sm:w-[10px] sm:h-[6px]">
-                    <path d="M1 1L5 5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-                {cityOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setCityOpen(false)} />
-                    <div className="absolute left-0 top-12 z-50 w-52 rounded-2xl border border-white/10 shadow-2xl overflow-hidden" style={{ background: "#111" }}>
-                      {cities.map((city) => (
-                        <button key={city.slug} onClick={() => { setSelectedCity(city); setCityOpen(false) }}
-                          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition">
-                          <span>{city.name}</span>
-                          <span className="text-emerald-400 text-xs">✓</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+            ) : null}
           </div>
 
-          <Link href="/" className="absolute left-1/2 -translate-x-1/2">
-            {/* Antes era un <img> normal de 324KB sin optimizar, cargado en TODAS las páginas.
-                Con next/image (y el archivo ya reducido a 600px de ancho) el navegador recibe
-                una versión comprimida y en el formato óptimo (WebP/AVIF) según soporte, y con
-                priority=true se prioriza su carga porque es el elemento visible más arriba del
-                header en cada página. */}
-            <Image src="/noctua_logo.png" alt="Noctua" width={160} height={98} className="h-12 w-auto object-contain" style={{ maxWidth: "160px" }} priority />
+          <Link href="/" aria-label="Noctua" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <Image
+              src="/noctua_logo.png"
+              alt="Noctua"
+              width={160}
+              height={98}
+              className="h-11 w-auto object-contain drop-shadow-[0_0_14px_rgba(56,140,255,0.55)] sm:h-[52px]"
+              style={{ maxWidth: "160px" }}
+              priority
+            />
           </Link>
 
           <div className="flex items-center gap-2">
@@ -492,12 +479,13 @@ export default function Header() {
               <div className="relative">
                 <button
                   onClick={toggleNotifications}
-                  className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 transition hover:bg-white/20 outline-none"
+                  aria-label={t("header.notifications")}
+                  className="relative flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/[0.07] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] outline-none transition hover:border-cyan-300/40 hover:bg-white/[0.12] hover:shadow-[0_0_22px_-4px_rgba(108,242,242,0.5)]"
                   style={{ WebkitTapHighlightColor: "transparent" }}
                 >
-                  <span className="text-lg">🔔</span>
+                  <Bell size={19} strokeWidth={1.8} aria-hidden="true" />
                   {unreadCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-[11px] font-bold text-white ring-2 ring-[#0b1030]" style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}>
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
@@ -515,7 +503,7 @@ export default function Header() {
                         calc ni min): el panel siempre mide "todo el ancho menos 16px a cada
                         lado", tope de 22rem, nunca se sale de la pantalla. En pantallas grandes
                         (sm:) vuelve a anclarse bajo la campana con ancho fijo. */}
-                    <div className="fixed left-4 right-4 top-[84px] z-50 mx-auto max-h-[70vh] max-w-[22rem] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl sm:left-auto sm:right-6 sm:w-80 sm:max-w-none" style={{ background: "#111" }}>
+                    <div className="fixed left-4 right-4 top-[80px] z-50 mx-auto max-h-[70vh] max-w-[22rem] overflow-y-auto rounded-2xl border border-white/10 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.85)] sm:left-auto sm:right-6 sm:top-[88px] sm:w-80 sm:max-w-none" style={{ background: "linear-gradient(180deg, #10183f 0%, #0a0c1c 100%)" }}>
                       <div className="border-b border-white/10 px-4 py-3">
                         <p className="text-sm font-bold text-white">{t("header.notifications")}</p>
                       </div>
@@ -573,21 +561,22 @@ export default function Header() {
 
             <button
               onClick={() => setMenuOpen(true)}
-              className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 transition hover:bg-white/20 outline-none"
+              aria-label={t("header.openMenu")}
+              className="group flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/[0.07] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] outline-none transition hover:border-cyan-300/40 hover:bg-white/[0.12] hover:shadow-[0_0_22px_-4px_rgba(108,242,242,0.5)]"
               style={{ WebkitTapHighlightColor: "transparent" }}
             >
-              <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
-                <rect y="0" width="20" height="2" rx="1" fill="white" />
-                <rect y="6" width="20" height="2" rx="1" fill="white" />
-                <rect y="12" width="20" height="2" rx="1" fill="white" />
-              </svg>
+              <span aria-hidden="true" className="flex w-[18px] flex-col items-end gap-[5px]">
+                <span className="h-[2px] w-full rounded-full bg-white" />
+                <span className="h-[2px] w-[13px] rounded-full bg-white transition-all group-hover:w-full" />
+                <span className="h-[2px] w-[8px] rounded-full bg-gradient-to-r from-cyan-300 to-blue-500 transition-all group-hover:w-full" />
+              </span>
             </button>
           </div>
         </div>
       </header>
 
       {!isLoggedIn && !bannerDismissed && (
-        <div className="sticky top-20 z-40 border-b border-white/5 bg-black/70 backdrop-blur-2xl">
+        <div className="sticky top-[72px] z-40 border-b border-white/[0.06] backdrop-blur-2xl sm:top-20" style={{ background: "linear-gradient(90deg, #141034, #0a0c1e)" }}>
           <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2.5 sm:px-6">
             <p className="min-w-0 flex-1 truncate text-xs text-zinc-300 sm:text-sm">
               <span className="text-white">{t("authGate.bannerText")}</span>
@@ -616,7 +605,7 @@ export default function Header() {
 
       <div style={{
         position: "fixed", top: 0, right: 0, zIndex: 200, height: "100%", width: "288px",
-        background: "#000", borderLeft: "1px solid rgba(255,255,255,0.1)",
+        background: "linear-gradient(180deg, #0f1640 0%, #080a18 45%, #06070f 100%)", borderLeft: "1px solid rgba(255,255,255,0.1)",
         display: "flex", flexDirection: "column",
         transform: menuOpen ? "translateX(0)" : "translateX(100%)",
         transition: "transform 0.3s ease-in-out",
@@ -654,15 +643,6 @@ export default function Header() {
               <span className="text-xl">👤</span>{t("nav.profile")}
             </Link>
           )}
-          <Link href="/clubs" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-            <span className="text-xl">🪩</span>{t("nav.clubs")}
-          </Link>
-          <Link href="/events" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-            <span className="text-xl">🎉</span>{t("nav.events")}
-          </Link>
-          <Link href="/essentials" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-            <span className="text-xl">📍</span>{t("nav.essentials")}
-          </Link>
           <Link href="/map" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
             <span className="text-xl">🗺️</span>{t("nav.map")}
           </Link>

@@ -337,7 +337,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
         <ClubReviews clubId={event.id} rating={displayRating} count={reviewCount} table="event_reviews" column="event_id" />
       </div>
 
-      <div className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-40 border-t border-white/10 bg-night/95 px-4 py-3 backdrop-blur lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-night/95 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-md items-center gap-2">
           {ticketUrl ? (
             <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} flex-1 py-3`}>
@@ -349,11 +349,11 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
             </a>
           ) : null}
           {ticketUrl && directionsUrl && (
-            <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className={`${secondaryBtn} h-11 w-11 px-0`} aria-label={t("clubPage.directions")}>
+            <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl border border-white/15 bg-white/5 text-ink transition hover:bg-white/10" aria-label={t("clubPage.directions")}>
               <Icon name="map" className="h-4 w-4" />
             </a>
           )}
-          <button onClick={shareEvent} className={`${secondaryBtn} h-11 w-11 px-0`} aria-label={t("clubPage.share")}>
+          <button onClick={shareEvent} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl border border-white/15 bg-white/5 text-ink transition hover:bg-white/10" aria-label={t("clubPage.share")}>
             <Icon name="share" className="h-4 w-4" />
           </button>
         </div>

@@ -25,6 +25,8 @@ type NearbyVenuesSheetProps = {
   name: string
   latitude: number | null
   longitude: number | null
+  // Botón discreto (enlace con icono) en vez del botón grande.
+  compact?: boolean
 }
 
 type ClubRow = {
@@ -90,6 +92,7 @@ export default function NearbyVenuesSheet({
   name,
   latitude,
   longitude,
+  compact = false,
 }: NearbyVenuesSheetProps) {
   const { t } = useLanguage()
   const [open, setOpen] = useState(false)
@@ -197,7 +200,11 @@ export default function NearbyVenuesSheet({
     <>
       <button
         onClick={handleOpen}
-        className="flex w-full items-center justify-center gap-2 rounded-ctl border border-white/15 px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
+        className={
+          compact
+            ? "mt-3 flex w-full items-center justify-center gap-2 rounded-ctl px-3 py-2 text-xs font-semibold text-zinc-300 transition hover:bg-white/5 hover:text-ink"
+            : "flex w-full items-center justify-center gap-2 rounded-ctl border border-white/15 px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
+        }
       >
         <DoorClosed size={16} /> {t("nearby.triggerButton")}
       </button>

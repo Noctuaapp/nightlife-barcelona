@@ -435,8 +435,8 @@
     "subtitle": "Erstelle ein kostenloses Konto, um die interaktive Nightlife-Karte von Barcelona zu erkunden.",
     "results": "Ergebnisse",
     "noResults": "Keine Ergebnisse gefunden.",
-    "viewClub": "Club ansehen →",
-    "viewEvent": "Event ansehen →",
+    "viewClub": "Club ansehen",
+    "viewEvent": "Event ansehen",
     "close": "Schließen",
     "list": "Liste",
     "following": "Verfolgen aktiv",
@@ -571,7 +571,9 @@
     "going": "Bin dabei",
     "hint": "Markiere, dass du hingehst, und erhalte +{xp} XP, um aufzusteigen",
     "countTonight": "+{n} Nachtschwärmer gehen heute hin",
-    "count": "+{n} Nachtschwärmer gehen hin"
+    "count": "+{n} Nachtschwärmer gehen hin",
+    "willGoShort": "Bin dabei",
+    "goingShort": "Dabei ✓"
   },
   "checkin": {
     "cta": "Hier einchecken",
@@ -590,7 +592,9 @@
     "notePrompt": "Wie ist die Stimmung? Hinterlass eine Notiz für alle, die später kommen.",
     "notePlaceholder": "Z. B. kurze Schlange, gute Stimmung...",
     "notePublish": "Posten",
-    "noteDone": "✓ Notiz gepostet — danke für den Hinweis"
+    "noteDone": "✓ Notiz gepostet — danke für den Hinweis",
+    "ctaShort": "Check-in",
+    "doneShort": "Heute erledigt"
   },
   "levels": {
     "title": "Dein Level",
@@ -615,7 +619,9 @@
     "reminder_same_day": "Am selben Tag",
     "reminder_1_day": "1 Tag vorher",
     "reminder_3_days": "3 Tage vorher",
-    "reminder_1_week": "1 Woche vorher"
+    "reminder_1_week": "1 Woche vorher",
+    "saveShort": "Merken",
+    "savedShort": "Gemerkt"
   },
   "authGate": {
     "title": "Registrier dich und genieße alles von Noctua",
@@ -745,7 +751,9 @@
     "vibeFull": "Voll",
     "vibeQuiet": "Ruhig",
     "walk": "Zu Fuß",
-    "website": "Offizielle Website"
+    "website": "Offizielle Website",
+    "rideCopied": "Adresse kopiert: Füge sie in der App ein",
+    "rideHint": "Öffnet die App, wenn sie installiert ist; sonst den Store zum Herunterladen."
   },
   "eventPage": {
     "dateTbc": "Datum folgt"

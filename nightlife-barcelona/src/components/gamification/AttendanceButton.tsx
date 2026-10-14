@@ -12,6 +12,8 @@ type AttendanceButtonProps = {
   itemType: "event" | "club_event" | "club"
   itemId: number
   title?: string
+  // "tile": recuadro pequeño, para la fila de acciones de la ficha de club.
+  variant?: "full" | "tile"
 }
 
 // Inicio de la "noche" actual: las 06:00 más recientes en Madrid. Una marca de asistencia a un
@@ -41,7 +43,7 @@ function currentNightDate(): string {
 
 // Botón "Asistiré esta noche" — marca intención de asistencia (independiente de favoritos).
 // Ya no da XP: el XP se gana con el check-in real en el local.
-export default function AttendanceButton({ itemType, itemId }: AttendanceButtonProps) {
+export default function AttendanceButton({ itemType, itemId, variant = "full" }: AttendanceButtonProps) {
   const { t } = useLanguage()
   const [userId, setUserId] = useState<string | null>(null)
   const [attending, setAttending] = useState(false)
@@ -115,6 +117,26 @@ export default function AttendanceButton({ itemType, itemId }: AttendanceButtonP
   }
 
   if (loading) return null
+
+  if (variant === "tile") {
+    const shownCount = count >= 10 ? Math.floor(count / 10) * 10 : 0
+    return (
+      <div className="relative h-full">
+        <BadgeToast keys={newBadges} onDone={() => setNewBadges([])} />
+        <button
+          onClick={toggleAttendance}
+          aria-pressed={attending}
+          className={`flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-ctl px-2 py-3 text-xs font-semibold transition ${
+            attending ? "bg-open text-night" : "border border-white/10 bg-white/5 text-ink hover:bg-white/10"
+          }`}
+        >
+          <Icon name={attending ? "check" : "calendar"} className="h-5 w-5" />
+          {attending ? t("attendance.goingShort") : t("attendance.willGoShort")}
+          {shownCount > 0 && <span className="text-[11px] font-medium opacity-80">+{shownCount}</span>}
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="relative">

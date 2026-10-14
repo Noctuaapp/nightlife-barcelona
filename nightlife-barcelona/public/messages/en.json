@@ -435,8 +435,8 @@
     "subtitle": "Create a free account to explore Barcelona's interactive nightlife map.",
     "results": "results",
     "noResults": "No results found.",
-    "viewClub": "View club →",
-    "viewEvent": "View event →",
+    "viewClub": "View club",
+    "viewEvent": "View event",
     "close": "Close",
     "list": "List",
     "following": "Following",
@@ -571,7 +571,9 @@
     "going": "Going",
     "hint": "Mark that you're going and earn +{xp} XP to level up",
     "countTonight": "+{n} night owls going tonight",
-    "count": "+{n} night owls going"
+    "count": "+{n} night owls going",
+    "willGoShort": "I'm going",
+    "goingShort": "Going"
   },
   "checkin": {
     "cta": "Check in here",
@@ -590,7 +592,9 @@
     "notePrompt": "How's the night going? Leave a note for whoever comes next.",
     "notePlaceholder": "E.g. short queue, great vibe...",
     "notePublish": "Post",
-    "noteDone": "✓ Note posted — thanks for the heads-up"
+    "noteDone": "✓ Note posted — thanks for the heads-up",
+    "ctaShort": "Check in",
+    "doneShort": "Done today"
   },
   "levels": {
     "title": "Your level",
@@ -615,7 +619,9 @@
     "reminder_same_day": "Same day",
     "reminder_1_day": "1 day before",
     "reminder_3_days": "3 days before",
-    "reminder_1_week": "1 week before"
+    "reminder_1_week": "1 week before",
+    "saveShort": "Save",
+    "savedShort": "Saved"
   },
   "authGate": {
     "title": "Sign up and enjoy all of Noctua",
@@ -745,7 +751,9 @@
     "vibeFull": "Packed",
     "vibeQuiet": "Quiet",
     "walk": "Walk there",
-    "website": "Website"
+    "website": "Website",
+    "rideCopied": "Address copied: paste it in the app",
+    "rideHint": "Opens the app if you have it installed; otherwise, the store to download it."
   },
   "eventPage": {
     "dateTbc": "Date to be confirmed"

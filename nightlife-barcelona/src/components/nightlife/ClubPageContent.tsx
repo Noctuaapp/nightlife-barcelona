@@ -242,6 +242,10 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
 
   const secondaryBtn =
     "flex items-center justify-center gap-2 rounded-ctl border border-white/15 bg-white/5 px-5 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/10"
+  // Botón cuadrado solo con icono. Antes se hacía con secondaryBtn + "px-0", pero el px-5 de
+  // secondaryBtn ganaba y el icono se quedaba en 2 px de ancho: en el móvil se veía un punto.
+  const iconBtn =
+    "flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl border border-white/15 bg-white/5 text-ink transition hover:bg-white/10"
   const primaryBtn =
     "flex items-center justify-center gap-2 rounded-ctl bg-brand px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-strong"
 
@@ -333,8 +337,8 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                   <Icon name="globe" className="h-4 w-4" /> {t("clubPage.website")}
                 </a>
               )}
-              <button onClick={shareClub} className={`${secondaryBtn} px-4`} aria-label={t("clubPage.share")}>
-                <Icon name="share" className="h-4 w-4" />
+              <button onClick={shareClub} className={`${iconBtn} h-auto min-h-[50px] w-[52px]`} aria-label={t("clubPage.share")}>
+                <Icon name="share" className="h-5 w-5" />
               </button>
             </div>
           </div>
@@ -408,8 +412,9 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
 
       <section id="club-content" className="mx-auto max-w-6xl scroll-mt-24 px-4 pt-10 sm:px-6">
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* COLUMNA PRINCIPAL — en móvil va después de las acciones */}
-          <div className="order-last min-w-0 space-y-6 lg:order-none lg:col-span-2">
+          {/* COLUMNA PRINCIPAL — en móvil va primero; las acciones (guardar, asistiré, check-in)
+              quedan debajo, en una fila compacta, para no cortar la información */}
+          <div className="min-w-0 space-y-6 lg:col-span-2">
             {club.description && (
               <Panel>
                 <PanelTitle>{t("clubPage.about").replace("{name}", club.name)}</PanelTitle>
@@ -417,7 +422,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
               </Panel>
             )}
 
-            <div role="tablist" className="scrollbar-none sticky top-16 z-20 -mx-4 flex gap-2 overflow-x-auto bg-night/95 px-4 py-3 backdrop-blur sm:mx-0 sm:px-0">
+            <div role="tablist" className="scrollbar-none sticky top-[72px] z-20 sm:top-20 -mx-4 flex gap-2 overflow-x-auto bg-night/95 px-4 py-3 backdrop-blur sm:mx-0 sm:px-0">
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
@@ -550,7 +555,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
 
           {/* ACCIONES */}
           <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
-            <div className="rounded-card border border-white/10 bg-surface p-5">
+            <div className="rounded-card border border-white/10 bg-surface p-4">
               {ticketUrl && (
                 <a
                   href={ticketUrl}
@@ -562,10 +567,13 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                   <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
                 </a>
               )}
-              <FavoriteButton itemType="club" itemId={club.id} />
-              <AttendanceButton itemType="club" itemId={club.id} title={club.name} />
-              <CheckInButton clubId={club.id} latitude={club.latitude} longitude={club.longitude} />
+              <div className="grid grid-cols-3 gap-2">
+                <FavoriteButton itemType="club" itemId={club.id} variant="tile" />
+                <AttendanceButton itemType="club" itemId={club.id} title={club.name} variant="tile" />
+                <CheckInButton clubId={club.id} latitude={club.latitude} longitude={club.longitude} variant="tile" />
+              </div>
               <NearbyVenuesSheet
+                compact
                 excludeClubId={club.id}
                 venueType="club"
                 venueId={club.id}
@@ -647,8 +655,9 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
         </section>
       )}
 
-      {/* BARRA FIJA EN MÓVIL — siempre visible, justo encima de la navegación inferior */}
-      <div className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-40 border-t border-white/10 bg-night/95 px-4 py-3 backdrop-blur lg:hidden">
+      {/* BARRA FIJA EN MÓVIL — pegada abajo; la barra de navegación flotante pasa por encima un
+          momento al tocar y se esconde sola */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-night/95 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-md items-center gap-2">
           {ticketUrl ? (
             <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} flex-1 py-3`}>
@@ -660,12 +669,13 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
             </a>
           ) : null}
           {ticketUrl && directionsUrl && (
-            <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className={`${secondaryBtn} h-11 w-11 px-0`} aria-label={t("clubPage.directions")}>
-              <Icon name="map" className="h-4 w-4" />
+            <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className={iconBtn} aria-label={t("clubPage.directions")}>
+              <Icon name="map" className="h-5 w-5" />
             </a>
           )}
-          <button onClick={shareClub} className={`${secondaryBtn} h-11 w-11 px-0`} aria-label={t("clubPage.share")}>
-            <Icon name="share" className="h-4 w-4" />
+          <FavoriteButton itemType="club" itemId={club.id} variant="icon" />
+          <button onClick={shareClub} className={iconBtn} aria-label={t("clubPage.share")}>
+            <Icon name="share" className="h-5 w-5" />
           </button>
         </div>
       </div>

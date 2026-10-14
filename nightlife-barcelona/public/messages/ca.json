@@ -435,8 +435,8 @@
     "subtitle": "Crea un compte gratuït per explorar el mapa interactiu de la vida nocturna de Barcelona.",
     "results": "resultats",
     "noResults": "No s'han trobat resultats.",
-    "viewClub": "Veure club →",
-    "viewEvent": "Veure esdeveniment →",
+    "viewClub": "Veure club",
+    "viewEvent": "Veure esdeveniment",
     "close": "Tancar",
     "list": "Llista",
     "following": "Seguint",
@@ -571,7 +571,9 @@
     "going": "Hi vaig",
     "hint": "Marca que hi aniràs i guanya +{xp} XP per pujar de nivell",
     "countTonight": "+{n} noctàmbuls hi van aquesta nit",
-    "count": "+{n} noctàmbuls hi van"
+    "count": "+{n} noctàmbuls hi van",
+    "willGoShort": "Hi aniré",
+    "goingShort": "Hi vaig"
   },
   "checkin": {
     "cta": "Fes check-in aquí",
@@ -590,7 +592,9 @@
     "notePrompt": "Com va la nit? Deixa una nota per a qui vingui després.",
     "notePlaceholder": "Ex. cua curta, bon ambient...",
     "notePublish": "Publicar",
-    "noteDone": "✓ Nota publicada — gràcies per avisar"
+    "noteDone": "✓ Nota publicada — gràcies per avisar",
+    "ctaShort": "Check-in",
+    "doneShort": "Fet avui"
   },
   "levels": {
     "title": "El teu nivell",
@@ -615,7 +619,9 @@
     "reminder_same_day": "El mateix dia",
     "reminder_1_day": "1 dia abans",
     "reminder_3_days": "3 dies abans",
-    "reminder_1_week": "1 setmana abans"
+    "reminder_1_week": "1 setmana abans",
+    "saveShort": "Desa",
+    "savedShort": "Desat"
   },
   "authGate": {
     "title": "Registra't i gaudeix de tot Noctua",
@@ -745,7 +751,9 @@
     "vibeFull": "Ple",
     "vibeQuiet": "Tranquil",
     "walk": "Anar-hi a peu",
-    "website": "Web oficial"
+    "website": "Web oficial",
+    "rideCopied": "Adreça copiada: enganxa-la a l'app",
+    "rideHint": "S'obre l'app si la tens instal·lada; si no, la botiga per descarregar-la."
   },
   "eventPage": {
     "dateTbc": "Data per confirmar"

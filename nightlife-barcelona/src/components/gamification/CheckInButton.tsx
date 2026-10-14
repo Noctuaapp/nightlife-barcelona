@@ -14,6 +14,8 @@ type CheckInButtonProps = {
   clubId: number
   latitude: number | null
   longitude: number | null
+  // "tile": recuadro pequeño; las notas y avisos ocupan toda la fila de debajo.
+  variant?: "full" | "tile"
 }
 
 // Límites del check-in. La comprobación de verdad se hace ahora en el servidor (función
@@ -40,7 +42,7 @@ function distanceInMeters(lat1: number, lon1: number, lat2: number, lon2: number
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-export default function CheckInButton({ clubId, latitude, longitude }: CheckInButtonProps) {
+export default function CheckInButton({ clubId, latitude, longitude, variant = "full" }: CheckInButtonProps) {
   const { t } = useLanguage()
   const [userId, setUserId] = useState<string | null>(null)
   const [checkedInToday, setCheckedInToday] = useState(false)
@@ -217,22 +219,33 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
 
   if (loading) return null
 
+  const tile = variant === "tile"
   return (
-    <div className="relative mt-3">
+    // En modo "tile" el contenedor no ocupa caja propia (display: contents): el botón es una celda
+    // de la rejilla de acciones y la nota o el error de después ocupan la fila entera.
+    <div className={tile ? "contents" : "relative mt-3"}>
       <BadgeToast keys={newBadges} onDone={() => setNewBadges([])} />
       <button
         onClick={handleCheckIn}
         disabled={working || checkedInToday}
-        className={`flex w-full items-center justify-center gap-2 rounded-ctl px-6 py-3.5 text-sm font-semibold transition ${
+        title={!checkedInToday ? t("checkin.hint").replace("{xp}", String(XP_AMOUNTS.checkin)) : undefined}
+        className={`${
+          tile
+            ? "relative flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-ctl px-2 py-3 text-xs"
+            : "flex w-full items-center justify-center gap-2 rounded-ctl px-6 py-3.5 text-sm"
+        } font-semibold transition ${
           checkedInToday ? "bg-brand/20 text-brand-soft" : "border border-white/10 bg-white/5 text-ink hover:bg-white/10"
         }`}
       >
-        <Icon name={checkedInToday ? "check" : "map"} className="h-4 w-4" />
-        {checkedInToday ? t("checkin.done") : working ? t("checkin.locating") : t("checkin.cta")}
+        <Icon name={checkedInToday ? "check" : "map"} className={tile ? "h-5 w-5" : "h-4 w-4"} />
+        {tile
+          ? checkedInToday ? t("checkin.doneShort") : working ? t("checkin.locating") : t("checkin.ctaShort")
+          : checkedInToday ? t("checkin.done") : working ? t("checkin.locating") : t("checkin.cta")}
+        {tile && !checkedInToday && <span className="text-[11px] font-medium text-brand-soft">+{XP_AMOUNTS.checkin} XP</span>}
       </button>
       <XpBurst show={justEarned} amount={XP_AMOUNTS.checkin} />
       {checkedInToday && !noteSaved && (
-        <div className="mt-3 rounded-ctl border border-white/10 bg-white/[0.03] p-3">
+        <div className={`mt-3 rounded-ctl border border-white/10 bg-white/[0.03] p-3 ${tile ? "col-span-full mt-0" : ""}`}>
           <p className="text-xs font-semibold text-zinc-300">{t("checkin.notePrompt")}</p>
           <div className="mt-2 flex gap-2">
             <input
@@ -253,9 +266,9 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
         </div>
       )}
       {checkedInToday && noteSaved && (
-        <p className="mt-2 text-center text-xs text-open">{t("checkin.noteDone")}</p>
+        <p className={`mt-2 text-center text-xs text-open ${tile ? "col-span-full mt-0" : ""}`}>{t("checkin.noteDone")}</p>
       )}
-      {!checkedInToday && (
+      {!checkedInToday && !tile && (
         <p className="mt-2 text-center text-xs leading-snug text-zinc-400">
           {t("checkin.hint").replace("{xp}", String(XP_AMOUNTS.checkin))}
           {" · "}
@@ -264,7 +277,7 @@ export default function CheckInButton({ clubId, latitude, longitude }: CheckInBu
           </a>
         </p>
       )}
-      {error && <p className="mt-2 text-center text-xs text-red-400">{error}</p>}
+      {error && <p className={`mt-2 text-center text-xs text-red-400 ${tile ? "col-span-full mt-0" : ""}`}>{error}</p>}
     </div>
   )
 }

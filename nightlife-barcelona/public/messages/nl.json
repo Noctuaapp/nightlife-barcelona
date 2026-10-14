@@ -435,8 +435,8 @@
     "subtitle": "Maak een gratis account aan om de interactieve nachtlevenkaart van Barcelona te verkennen.",
     "results": "resultaten",
     "noResults": "Geen resultaten gevonden.",
-    "viewClub": "Bekijk club →",
-    "viewEvent": "Bekijk evenement →",
+    "viewClub": "Bekijk club",
+    "viewEvent": "Bekijk evenement",
     "close": "Sluiten",
     "list": "Lijst",
     "following": "Volgen actief",
@@ -571,7 +571,9 @@
     "going": "Ik ga",
     "hint": "Geef aan dat je gaat en verdien +{xp} XP om level te stijgen",
     "countTonight": "+{n} nachtbrakers gaan er vanavond heen",
-    "count": "+{n} nachtbrakers gaan erheen"
+    "count": "+{n} nachtbrakers gaan erheen",
+    "willGoShort": "Ik ga",
+    "goingShort": "Ik ga ✓"
   },
   "checkin": {
     "cta": "Check hier in",
@@ -590,7 +592,9 @@
     "notePrompt": "Hoe is de avond? Laat een berichtje achter voor wie later komt.",
     "notePlaceholder": "Bijv. korte rij, goede sfeer...",
     "notePublish": "Plaatsen",
-    "noteDone": "✓ Bericht geplaatst — bedankt voor de tip"
+    "noteDone": "✓ Bericht geplaatst — bedankt voor de tip",
+    "ctaShort": "Check-in",
+    "doneShort": "Vandaag gedaan"
   },
   "levels": {
     "title": "Jouw niveau",
@@ -615,7 +619,9 @@
     "reminder_same_day": "Dezelfde dag",
     "reminder_1_day": "1 dag van tevoren",
     "reminder_3_days": "3 dagen van tevoren",
-    "reminder_1_week": "1 week van tevoren"
+    "reminder_1_week": "1 week van tevoren",
+    "saveShort": "Bewaren",
+    "savedShort": "Bewaard"
   },
   "authGate": {
     "title": "Registreer je en geniet van heel Noctua",
@@ -745,7 +751,9 @@
     "vibeFull": "Vol",
     "vibeQuiet": "Rustig",
     "walk": "Lopen",
-    "website": "Officiële website"
+    "website": "Officiële website",
+    "rideCopied": "Adres gekopieerd: plak het in de app",
+    "rideHint": "Opent de app als je die hebt; anders de winkel om hem te downloaden."
   },
   "eventPage": {
     "dateTbc": "Datum nog niet bekend"

@@ -42,33 +42,38 @@ export default function ClubReviews({
 
   return (
     <section className="mx-auto mb-16 max-w-6xl px-4 sm:px-6" aria-label={t("clubPage.reviews")}>
-      <div className="rounded-card border border-white/10 bg-surface p-6 sm:p-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
-          <div className="flex items-center gap-4">
-            {rating && <p className="font-display text-4xl text-ink">{Number(rating).toFixed(1)}</p>}
-            <div>
-              {rating && <Stars rating={rating} size="h-4 w-4" />}
-              <p className="mt-1 text-xs text-zinc-400">
-                {(count || reviews.length).toLocaleString("es-ES")} {t("clubPage.reviewsCount")}
-              </p>
-            </div>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div className="flex items-center gap-3">
+          {rating && <p className="font-display text-3xl text-ink">{Number(rating).toFixed(1)}</p>}
+          <div>
+            {rating && <Stars rating={rating} size="h-3.5 w-3.5" />}
+            <p className="mt-0.5 text-xs text-zinc-400">
+              {(count || reviews.length).toLocaleString("es-ES")} {t("clubPage.reviewsCount")}
+            </p>
           </div>
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400">
-            <Icon name="google" className="h-3.5 w-3.5" /> {t("clubPage.googleReviews")}
-          </span>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {reviews.map((r) => (
-            <article key={r.id} className="rounded-ctl border border-white/10 bg-white/[0.02] p-5">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-ink">{r.author_name}</p>
-                {r.rating ? <Stars rating={r.rating} /> : null}
-              </div>
-              {r.relative_time && <p className="mt-0.5 text-xs text-zinc-400">{r.relative_time}</p>}
-              {r.text && <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-zinc-300">{r.text}</p>}
-            </article>
-          ))}
-        </div>
+        <span className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400">
+          <Icon name="google" className="h-3.5 w-3.5" /> {t("clubPage.googleReviews")}
+        </span>
+      </div>
+      {/* Cuatro reseñas en tarjetas cuadradas (2×2 en el móvil, una fila de 4 en pantallas
+          grandes) en vez de bloques alargados. */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {reviews.map((r) => (
+          <article key={r.id} className="flex aspect-square flex-col overflow-hidden rounded-card border border-white/10 bg-surface p-3.5 sm:p-4">
+            <div className="flex items-center gap-2">
+              <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-ink">
+                {(r.author_name || "?").trim().charAt(0).toUpperCase()}
+              </span>
+              <p className="min-w-0 truncate text-xs font-semibold text-ink">{r.author_name}</p>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-2">
+              {r.rating ? <Stars rating={r.rating} size="h-3 w-3" /> : <span />}
+              {r.relative_time && <p className="truncate text-[11px] text-zinc-400">{r.relative_time}</p>}
+            </div>
+            {r.text && <p className="mt-2 line-clamp-5 text-xs leading-relaxed text-zinc-300 sm:line-clamp-6">{r.text}</p>}
+          </article>
+        ))}
       </div>
     </section>
   )

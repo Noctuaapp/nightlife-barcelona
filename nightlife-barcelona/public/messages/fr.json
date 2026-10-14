@@ -435,8 +435,8 @@
     "subtitle": "Crée un compte gratuit pour explorer la carte interactive de la vie nocturne de Barcelone.",
     "results": "résultats",
     "noResults": "Aucun résultat trouvé.",
-    "viewClub": "Voir le club →",
-    "viewEvent": "Voir l'événement →",
+    "viewClub": "Voir le club",
+    "viewEvent": "Voir l'événement",
     "close": "Fermer",
     "list": "Liste",
     "following": "Suivi en cours",
@@ -571,7 +571,9 @@
     "going": "J'y vais",
     "hint": "Indique que tu y vas et gagne +{xp} XP pour monter de niveau",
     "countTonight": "+{n} noctambules y vont ce soir",
-    "count": "+{n} noctambules y vont"
+    "count": "+{n} noctambules y vont",
+    "willGoShort": "J'y vais",
+    "goingShort": "J'y vais ✓"
   },
   "checkin": {
     "cta": "Faire le check-in ici",
@@ -590,7 +592,9 @@
     "notePrompt": "Comment se passe la soirée ? Laisse une note à ceux qui viendront après.",
     "notePlaceholder": "Ex. peu d'attente, bonne ambiance...",
     "notePublish": "Publier",
-    "noteDone": "✓ Note publiée — merci de l'info"
+    "noteDone": "✓ Note publiée — merci de l'info",
+    "ctaShort": "Check-in",
+    "doneShort": "Fait aujourd'hui"
   },
   "levels": {
     "title": "Ton niveau",
@@ -615,7 +619,9 @@
     "reminder_same_day": "Le jour même",
     "reminder_1_day": "1 jour avant",
     "reminder_3_days": "3 jours avant",
-    "reminder_1_week": "1 semaine avant"
+    "reminder_1_week": "1 semaine avant",
+    "saveShort": "Enregistrer",
+    "savedShort": "Enregistré"
   },
   "authGate": {
     "title": "Inscris-toi et profite de tout Noctua",
@@ -745,7 +751,9 @@
     "vibeFull": "Plein",
     "vibeQuiet": "Calme",
     "walk": "À pied",
-    "website": "Site officiel"
+    "website": "Site officiel",
+    "rideCopied": "Adresse copiée : colle-la dans l'appli",
+    "rideHint": "Ouvre l'appli si elle est installée ; sinon, le store pour la télécharger."
   },
   "eventPage": {
     "dateTbc": "Date à confirmer"

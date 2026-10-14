@@ -28,17 +28,16 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Top row */}
-        <div className="grid gap-12 md:grid-cols-3">
+        {/* Marca centrada */}
+        <div className="mx-auto mb-12 flex max-w-md flex-col items-center text-center">
+          <Image src="/noctua_logo.png" alt="Noctua" width={160} height={98} className="h-12 w-auto object-contain" />
+          <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+            {t("footer.tagline")}
+          </p>
+        </div>
 
-          {/* Brand */}
-          <div>
-            <Image src="/noctua_logo.png" alt="Noctua" width={160} height={98} className="h-10 w-auto object-contain" />
-            <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-              {t("footer.tagline")}
-            </p>
-          </div>
-
+        {/* Enlaces */}
+        <div className="mx-auto grid max-w-2xl grid-cols-2 gap-10 text-center sm:text-left">
           {/* Links */}
           <div>
             <p className="mb-4 text-sm font-semibold text-zinc-300">{t("footer.explore")}</p>
@@ -64,7 +63,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom row */}
-        <div className="mt-12 flex border-t border-white/10 pt-8 flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="mt-12 flex flex-col items-center gap-3 border-t border-white/10 pt-8 text-center">
           <p className="text-xs text-zinc-400">{t("footer.copyright")}</p>
           <p className="max-w-md text-xs text-zinc-400">
             {t("footer.privacy_note")}
