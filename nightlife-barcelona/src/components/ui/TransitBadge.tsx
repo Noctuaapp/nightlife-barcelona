@@ -38,11 +38,16 @@ export function NitbusRouteRow({
   seeStopsLabel,
   unknownLabel,
   onLinkClick,
+  near,
 }: {
   code: string
   seeStopsLabel: string
   unknownLabel: string
   onLinkClick?: (e: React.MouseEvent) => void
+  // Coordenadas del sitio desde el que se mira esto (un club, p.ej.), para que "ver paradas"
+  // busque alrededor de ahí en vez de a ciegas por toda España. Opcional: sin ubicación concreta
+  // se ancla al centro de Barcelona (ver nightBusStopsUrl).
+  near?: { lat: number; lon: number }
 }) {
   const line = getNightBusLine(code)
   if (!line) {
@@ -53,6 +58,7 @@ export function NitbusRouteRow({
       </div>
     )
   }
+  const stopsUrl = nightBusStopsUrl(line.code, near)
   const { from, to, note } = parseRoute(line.route)
   return (
     <div className="flex items-start gap-2.5">
@@ -70,7 +76,7 @@ export function NitbusRouteRow({
         <p className="mt-0.5 text-zinc-400">
           {note && <>{note} · </>}
           <a
-            href={nightBusStopsUrl(line.code)}
+            href={stopsUrl}
             target="_blank"
             rel="noopener noreferrer"
             onClick={onLinkClick}

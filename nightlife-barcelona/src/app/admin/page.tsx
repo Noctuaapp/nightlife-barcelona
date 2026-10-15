@@ -29,6 +29,7 @@ type Club = {
   trending: boolean
   sold_out: boolean
   lgtbi_friendly: boolean
+  swinger_friendly?: boolean
   verified?: boolean
   vip_tables?: boolean
   venue_type?: string
@@ -68,6 +69,7 @@ type ClubFormData = {
   smoking_area: boolean
   table_booking: boolean
   lgtbi_friendly: boolean
+  swinger_friendly: boolean
   verified: boolean
   vip_tables: boolean
   trending: boolean
@@ -101,6 +103,7 @@ const emptyForm: ClubFormData = {
   smoking_area: false,
   table_booking: false,
   lgtbi_friendly: false,
+  swinger_friendly: false,
   verified: false,
   vip_tables: false,
   trending: false,
@@ -134,6 +137,7 @@ const clubToForm = (club: Club): ClubFormData => ({
   smoking_area: !!club.smoking_area,
   table_booking: !!club.table_booking,
   lgtbi_friendly: !!club.lgtbi_friendly,
+  swinger_friendly: !!club.swinger_friendly,
   verified: !!club.verified,
   vip_tables: !!club.vip_tables,
   trending: !!club.trending,
@@ -226,6 +230,7 @@ export default function AdminPage() {
     smoking_area: form.smoking_area,
     table_booking: form.table_booking,
     lgtbi_friendly: form.lgtbi_friendly,
+    swinger_friendly: form.swinger_friendly,
     verified: form.verified,
     vip_tables: form.vip_tables,
     trending: form.trending,
@@ -560,6 +565,7 @@ export default function AdminPage() {
           { key: "vip_tables" as const, label: "🛋️ Mesa VIP" },
           { key: "has_foosball" as const, label: "🎱 Futbolín/Billar" },
           { key: "lgtbi_friendly" as const, label: "🏳️‍🌈 LGTBI+" },
+          { key: "swinger_friendly" as const, label: "🔞 Swinger" },
           { key: "verified" as const, label: "✓ Verified" },
           { key: "trending" as const, label: "🔥 Trending" },
           { key: "sold_out" as const, label: "🚫 Sold out" },

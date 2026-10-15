@@ -148,7 +148,12 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
           {club.night_buses &&
             splitNightBusCodes(club.night_buses).map((raw) => (
               <div key={raw} className="rounded-ctl border border-white/10 bg-white/[0.02] px-3 py-2.5">
-                <NitbusRouteRow code={raw} seeStopsLabel={t("clubPage.seeStops")} unknownLabel={t("clubPage.lineUnknown")} />
+                <NitbusRouteRow
+                  code={raw}
+                  seeStopsLabel={t("clubPage.seeStops")}
+                  unknownLabel={t("clubPage.lineUnknown")}
+                  near={hasCoords ? { lat, lon: lng } : undefined}
+                />
               </div>
             ))}
           <Row tone="bus" badge={<Icon name="map" className="h-3.5 w-3.5" />}>

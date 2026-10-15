@@ -22,7 +22,7 @@ function toggleInSet(set: Set<string>, value: string): Set<string> {
 // la columna music, que está en español ("Comercial"): el filtro "Commercial" casi nunca encontraba
 // nada. Ahora usa los mismos estilos que las páginas /musica (src/lib/areas.ts).
 const GENRE_FILTERS = STYLES.filter((s) => s.slug !== "electronica").map((s) => s.slug)
-const ATTRIBUTE_FILTERS = ["trending", "lgtbi", "noQueue", "games", "discount", "free", "over30"]
+const ATTRIBUTE_FILTERS = ["trending", "lgtbi", "swinger", "noQueue", "games", "discount", "free", "over30"]
 const AGE_FILTERS = ["+18", "+21", "+25"]
 const PAGE_SIZE = 9
 
@@ -153,6 +153,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   const attributeMatch = (club: any, a: string) => {
     if (a === "trending") return club.trending === true
     if (a === "lgtbi") return club.lgtbi_friendly === true
+    if (a === "swinger") return club.swinger_friendly === true
     if (a === "noQueue") return club.queue === "No queue" || !club.queue
     if (a === "games") return club.has_foosball === true
     if (a === "discount") return !!club.discount_info

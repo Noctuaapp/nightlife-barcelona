@@ -16,6 +16,7 @@ type Tool = {
   description: string
   batch?: boolean // devuelve "remaining": se puede repetir hasta que llegue a 0
   osm?: boolean
+  fourvenues?: boolean
 }
 
 const TOOLS: Tool[] = [
@@ -74,6 +75,14 @@ const TOOLS: Tool[] = [
     description: "Todo entra oculto para revisarlo antes de publicar. Sin marcar «Importar de verdad» solo es una vista previa.",
     osm: true,
   },
+  {
+    key: "import-fourvenues",
+    path: "/api/admin/import-fourvenues-sessions",
+    title: "Importar sesiones desde la ticketing del club",
+    description:
+      "Lee la página del club en Fourvenues (Wolf y otros usan esta plataforma) y detecta sus noches fijas semanales con el precio real de las entradas. Sin marcar «Importar de verdad» solo es una vista previa.",
+    fourvenues: true,
+  },
 ]
 
 const MAX_ROUNDS = 40
@@ -86,6 +95,9 @@ export default function AdminToolsPage() {
   const [state, setState] = useState<Record<string, RunState>>({})
   const [osmArea, setOsmArea] = useState("barcelona")
   const [osmReal, setOsmReal] = useState(false)
+  const [fvClub, setFvClub] = useState("")
+  const [fvUrl, setFvUrl] = useState("")
+  const [fvReal, setFvReal] = useState(false)
   const stopRef = useRef<Record<string, boolean>>({})
 
   useEffect(() => {
@@ -106,7 +118,11 @@ export default function AdminToolsPage() {
     const { data } = await supabase.auth.getSession()
     const token = data.session?.access_token
     if (!token) throw new Error("Sesión caducada: vuelve a iniciar sesión.")
-    const url = tool.osm ? `${tool.path}?area=${osmArea}${osmReal ? "&dry=0" : ""}` : tool.path
+    const url = tool.osm
+      ? `${tool.path}?area=${osmArea}${osmReal ? "&dry=0" : ""}`
+      : tool.fourvenues
+        ? `${tool.path}?venueUrl=${encodeURIComponent(fvUrl)}&club=${encodeURIComponent(fvClub)}${fvReal ? "&dry=0" : ""}`
+        : tool.path
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
     const json: ToolResult = await res.json().catch(() => ({ error: `Respuesta no válida (${res.status})` }))
     if (!res.ok) throw new Error(json?.error || `Error ${res.status}`)
@@ -177,10 +193,33 @@ export default function AdminToolsPage() {
                 </div>
               )}
 
+              {tool.fourvenues && (
+                <div className="mt-4 flex flex-col gap-2 text-sm">
+                  <input
+                    type="text"
+                    value={fvUrl}
+                    onChange={(e) => setFvUrl(e.target.value)}
+                    placeholder="https://site.fourvenues.com/es/nombre-del-club"
+                    className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-zinc-500"
+                  />
+                  <input
+                    type="text"
+                    value={fvClub}
+                    onChange={(e) => setFvClub(e.target.value)}
+                    placeholder="Nombre del club tal cual está en tu tabla (solo falta para importar de verdad)"
+                    className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-white placeholder:text-zinc-500"
+                  />
+                  <label className="flex items-center gap-2 text-zinc-300">
+                    <input type="checkbox" checked={fvReal} onChange={(e) => setFvReal(e.target.checked)} />
+                    Importar de verdad
+                  </label>
+                </div>
+              )}
+
               <div className="mt-4 flex flex-wrap gap-2">
                 <button
                   onClick={() => run(tool, false)}
-                  disabled={st?.running}
+                  disabled={st?.running || (tool.fourvenues && (!fvUrl || (fvReal && !fvClub)))}
                   className="rounded-xl bg-white px-4 py-2 text-sm font-bold text-black transition hover:bg-zinc-200 disabled:opacity-50"
                 >
                   {st?.running ? "Ejecutando…" : "Ejecutar"}

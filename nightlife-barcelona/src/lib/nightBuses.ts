@@ -54,11 +54,20 @@ export function parseRoute(route: string): ParsedRoute {
   return { from: base, to: null, note }
 }
 
-// Enlace para encontrar la parada más cercana de esta línea. Antes iba a un agregador externo
-// (redtransporte.com) que se veía mal y poco fiable; Google Maps es el mismo sitio que ya usamos
-// para "parada nitbus cerca" en la ficha de club, así que es consistente y siempre funciona.
-export function nightBusStopsUrl(code: string): string {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`parada nitbus ${code.trim().toUpperCase()} Barcelona`)}`
+// Enlace para encontrar la parada más cercana de esta línea. Antes era una búsqueda de texto
+// libre ("parada nitbus N6 Barcelona") sin ubicación: Google Maps la interpretaba como una
+// búsqueda de sitios con ese nombre en toda España y devolvía estaciones de autobús
+// interurbanas (Barcelona Nord...) que no tienen nada que ver — no una búsqueda "cerca de aquí".
+// Anclar la búsqueda a unas coordenadas (como ya hacíamos en la ficha de club con "parada nitbus
+// cerca") hace que Google Maps busque alrededor de ese punto de verdad. Sin coordenadas de un
+// sitio concreto (p.ej. el roster de todas las líneas, sin un club de referencia) se ancla al
+// centro de Barcelona en vez de a nada, que es mejor que una búsqueda a ciegas por todo el país.
+const BARCELONA_CENTER = { lat: 41.3851, lon: 2.1734 }
+
+export function nightBusStopsUrl(code: string, near?: { lat: number; lon: number }): string {
+  const { lat, lon } = near || BARCELONA_CENTER
+  const zoom = near ? 16 : 13
+  return `https://www.google.com/maps/search/${encodeURIComponent(`parada nitbus ${code.trim().toUpperCase()}`)}/@${lat},${lon},${zoom}z`
 }
 
 // Separa el texto libre que escribe el admin en códigos individuales. No solo por comas: si

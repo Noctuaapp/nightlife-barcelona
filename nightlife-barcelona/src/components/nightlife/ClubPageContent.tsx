@@ -202,16 +202,13 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
     { key: "capacity", label: t("clubPage.fCapacity").replace("{n}", String(capacity)), icon: "users", active: !!capacity },
   ].filter((f) => f.active)
 
+  // Antes esta lista repetía, como pregunta/respuesta, exactamente los mismos datos que ya se ven
+  // arriba en "Datos prácticos" (precio, horario, edad, aforo) y en las características (dress
+  // code, reserva de mesas, VIP, fumadores, futbolín): un "FAQ" que no añadía nada, solo
+  // reformulaba lo que el usuario ya había leído dos secciones antes. Lo único que de verdad no
+  // está en ningún otro sitio de la ficha es la promo del día y las condiciones de entrada
+  // gratuita, así que son las únicas que quedan aquí.
   const faqs = [
-    club.price && { q: t("clubPage.faqPriceQ"), a: t("clubPage.faqPriceA").replace("{v}", club.price) },
-    club.hours && { q: t("clubPage.faqHoursQ"), a: t("clubPage.faqHoursA").replace("{v}", club.hours) },
-    club.dresscode && { q: t("clubPage.faqDressQ"), a: t("clubPage.faqDressA").replace("{v}", club.dresscode) },
-    club.table_booking && { q: t("clubPage.faqBookingQ"), a: t("clubPage.faqBookingA") },
-    club.vip_tables && { q: t("clubPage.faqVipQ"), a: t("clubPage.faqVipA") },
-    club.smoking_area && { q: t("clubPage.faqSmokingQ"), a: t("clubPage.faqSmokingA") },
-    minAge && { q: t("clubPage.faqAgeQ"), a: t("clubPage.faqAgeA").replace("{v}", String(minAge)) },
-    capacity && { q: t("clubPage.faqCapacityQ"), a: t("clubPage.faqCapacityA").replace("{v}", String(capacity)) },
-    club.has_foosball && { q: t("clubPage.faqGamesQ"), a: t("clubPage.faqGamesA") },
     club.discount_info && { q: t("clubPage.faqPromoQ"), a: club.discount_info },
     club.free_entry_info && { q: t("clubPage.faqFreeQ"), a: club.free_entry_info },
   ].filter(Boolean) as { q: string; a: string }[]
