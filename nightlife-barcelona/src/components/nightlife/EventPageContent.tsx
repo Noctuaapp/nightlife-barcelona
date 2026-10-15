@@ -17,6 +17,8 @@ import { toast } from "../ui/Toast"
 import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
+import { InlineEditText, InlineEditImage } from "../admin/InlineEdit"
+import { useIsAdmin } from "../../lib/useIsAdmin"
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
@@ -45,6 +47,7 @@ function Panel({ children, className = "" }: { children: React.ReactNode; classN
 
 export default function EventPageContent({ event, tickets, sessions }: { event: any; tickets: any[]; sessions: any[] }) {
   const { t, locale } = useLanguage()
+  const isAdmin = useIsAdmin()
   // La fecha depende del día en que se mira: se calcula tras montar (HTML de servidor y navegador iguales).
   const [past, setPast] = useState(false)
   useEffect(() => setPast(isEventPast(event.date, event.date_end)), [event.date, event.date_end])
@@ -99,11 +102,17 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
   const allImages = [event.image, ...galleryImages].filter(Boolean) as string[]
 
   const quickFacts = [
-    shortDate && { key: "date", icon: "calendar", label: t("event.date"), value: past ? t("event.finishedValue") : shortDate },
-    event.start_time && { key: "time", icon: "clock", label: t("event.schedule"), value: `${event.start_time}${event.end_time ? ` – ${event.end_time}` : ""}` },
-    event.price && { key: "price", icon: "ticket", label: t("event.price"), value: event.price },
-    event.music && { key: "music", icon: "music", label: t("club.music"), value: event.music },
-  ].filter(Boolean) as { key: string; icon: string; label: string; value: string }[]
+    shortDate && { key: "date", field: null, icon: "calendar", label: t("event.date"), value: past ? t("event.finishedValue") : shortDate },
+    event.start_time && {
+      key: "time",
+      field: null,
+      icon: "clock",
+      label: t("event.schedule"),
+      value: `${event.start_time}${event.end_time ? ` – ${event.end_time}` : ""}`,
+    },
+    event.price && { key: "price", field: "price", icon: "ticket", label: t("event.price"), value: event.price },
+    event.music && { key: "music", field: "music", icon: "music", label: t("club.music"), value: event.music },
+  ].filter(Boolean) as { key: string; field: string | null; icon: string; label: string; value: string }[]
 
   const secondaryBtn =
     "flex items-center justify-center gap-2 rounded-ctl border border-white/15 bg-white/5 px-5 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/10"
@@ -116,6 +125,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
         <div className="relative h-[46vh] max-h-[560px] min-h-[320px] w-full overflow-hidden">
           <Image src={event.image || FALLBACK_IMAGE} alt={event.title} fill priority sizes="100vw" unoptimized={!event.image} className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-night via-night/40 to-transparent" />
+          <InlineEditImage table="events" id={event.id} field="image" bucket="event-images" label="Cambiar foto principal" />
         </div>
 
         <div className="relative -mt-28 px-4 sm:-mt-36 sm:px-6">
@@ -143,8 +153,12 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
               </div>
             )}
 
-            {event.music && <p className="text-sm font-semibold text-brand-soft">{event.music}</p>}
-            <h1 className="font-display mt-1 break-words text-[2.2rem] leading-[1.04] text-ink sm:text-6xl md:text-7xl">{event.title}</h1>
+            <p className="text-sm font-semibold text-brand-soft empty:hidden">
+              <InlineEditText table="events" id={event.id} field="music" value={event.music} emptyLabel="añadir estilo musical" />
+            </p>
+            <h1 className="font-display mt-1 break-words text-[2.2rem] leading-[1.04] text-ink sm:text-6xl md:text-7xl">
+              <InlineEditText table="events" id={event.id} field="title" value={event.title} />
+            </h1>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-300">
               <span className="flex items-center gap-1.5">
@@ -193,7 +207,9 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                 <Icon name={f.icon} className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" />
                 <div className="min-w-0">
                   <dt className="text-xs text-zinc-400">{f.label}</dt>
-                  <dd className="mt-0.5 break-words text-sm font-semibold leading-snug text-ink">{f.value}</dd>
+                  <dd className="mt-0.5 break-words text-sm font-semibold leading-snug text-ink">
+                    {f.field ? <InlineEditText table="events" id={event.id} field={f.field} value={f.value} /> : f.value}
+                  </dd>
                 </div>
               </div>
             ))}
@@ -204,10 +220,12 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
       <section className="mx-auto max-w-6xl px-4 pt-10 sm:px-6">
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="order-last min-w-0 space-y-6 lg:order-none lg:col-span-2">
-            {(event.description || event.artist) && (
+            {(event.description || event.artist || isAdmin) && (
               <Panel>
                 <h2 className="mb-4 text-lg font-semibold text-ink">{t("event.about")}</h2>
-                {event.description && <p className="text-base leading-relaxed text-zinc-200">{event.description}</p>}
+                <p className="text-base leading-relaxed text-zinc-200 empty:hidden">
+                  <InlineEditText table="events" id={event.id} field="description" value={event.description} multiline emptyLabel="añadir descripción" />
+                </p>
                 {event.artist && (
                   <div className="mt-5 flex items-center gap-3 rounded-ctl border border-white/10 p-4">
                     <Icon name="headphones" className="h-5 w-5 shrink-0 text-brand-soft" />
@@ -333,7 +351,11 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
       </section>
 
       <div className="mt-16">
-        <ClubGallery images={allImages} name={event.title} />
+        <ClubGallery
+          images={allImages}
+          name={event.title}
+          edit={{ table: "events", id: event.id, bucket: "event-photos", gallery: Array.isArray(event.gallery) ? event.gallery : [] }}
+        />
         <ClubReviews clubId={event.id} rating={displayRating} count={reviewCount} table="event_reviews" column="event_id" />
       </div>
 

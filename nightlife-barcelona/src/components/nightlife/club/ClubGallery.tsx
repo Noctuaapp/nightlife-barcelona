@@ -1,53 +1,136 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Icon from "../../ui/Icon"
 import { useLanguage } from "../../../context/LanguageContext"
+import { useIsAdmin } from "../../../lib/useIsAdmin"
+import { supabase } from "../../../lib/supabase"
+import { toast } from "../../ui/Toast"
 
 // Galería de fotos de la ficha: mosaico en escritorio, carrusel en móvil y visor a pantalla
 // completa. Todas las fotos pasan por next/image (tamaño adaptado a la pantalla y formato moderno).
-export default function ClubGallery({ images, name }: { images: string[]; name: string }) {
+//
+// `edit` (opcional): si se pasa y eres admin, añade debajo una tira para subir fotos nuevas y
+// quitar las que ya hay, directamente desde la ficha pública (sin ir a /admin). `gallery` debe ser
+// el array crudo de ese campo en la base de datos (sin la foto principal, que se edita aparte
+// desde la cabecera de la ficha).
+type GalleryEdit = { table: string; id: number; bucket: string; gallery: string[] }
+
+export default function ClubGallery({ images, name, edit }: { images: string[]; name: string; edit?: GalleryEdit }) {
   const { t } = useLanguage()
+  const isAdmin = useIsAdmin()
+  const router = useRouter()
   const [open, setOpen] = useState<number | null>(null)
-  if (images.length < 2) return null
+  const [uploading, setUploading] = useState(false)
+  const canManage = !!edit && isAdmin
+
+  if (images.length < 2 && !canManage) return null
 
   const go = (delta: number) => setOpen((i) => (i === null ? null : (i + delta + images.length) % images.length))
+
+  const addPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!edit) return
+    const files = e.target.files
+    e.target.value = ""
+    if (!files || files.length === 0) return
+    setUploading(true)
+    const urls: string[] = []
+    for (const file of Array.from(files)) {
+      const ext = file.name.split(".").pop()
+      const fileName = `inline-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+      const { error } = await supabase.storage.from(edit.bucket).upload(fileName, file)
+      if (error) continue
+      const { data } = supabase.storage.from(edit.bucket).getPublicUrl(fileName)
+      urls.push(data.publicUrl)
+    }
+    setUploading(false)
+    if (urls.length === 0) {
+      toast("No se pudo subir ninguna foto")
+      return
+    }
+    const { error } = await supabase.from(edit.table).update({ gallery: [...edit.gallery, ...urls] }).eq("id", edit.id)
+    if (error) {
+      toast("Error al guardar: " + error.message)
+      return
+    }
+    router.refresh()
+  }
+
+  const removePhoto = async (url: string) => {
+    if (!edit) return
+    const next = edit.gallery.filter((u) => u !== url)
+    const { error } = await supabase.from(edit.table).update({ gallery: next.length > 0 ? next : null }).eq("id", edit.id)
+    if (error) {
+      toast("Error al borrar la foto: " + error.message)
+      return
+    }
+    router.refresh()
+  }
 
   return (
     <section className="mx-auto mb-16 max-w-6xl px-4 sm:px-6" aria-label={t("clubPage.gallery")}>
       <h2 className="mb-4 text-lg font-semibold text-ink">{t("clubPage.gallery")}</h2>
 
-      <div className="hidden h-[420px] grid-cols-4 grid-rows-2 gap-3 sm:grid">
-        {images.slice(0, 5).map((src, i) => (
-          <button
-            key={src + i}
-            onClick={() => setOpen(i)}
-            className={`group relative overflow-hidden rounded-card ${i === 0 ? "col-span-2 row-span-2" : ""}`}
-            aria-label={`${t("clubPage.openPhoto")} ${i + 1}`}
-          >
-            <Image src={src} alt={`${name} ${i + 1}`} fill sizes={i === 0 ? "50vw" : "25vw"} className="object-cover" />
-            {i === 4 && images.length > 5 && (
-              <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-lg font-semibold text-white">
-                +{images.length - 5}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      {images.length >= 2 && (
+        <>
+          <div className="hidden h-[420px] grid-cols-4 grid-rows-2 gap-3 sm:grid">
+            {images.slice(0, 5).map((src, i) => (
+              <button
+                key={src + i}
+                onClick={() => setOpen(i)}
+                className={`group relative overflow-hidden rounded-card ${i === 0 ? "col-span-2 row-span-2" : ""}`}
+                aria-label={`${t("clubPage.openPhoto")} ${i + 1}`}
+              >
+                <Image src={src} alt={`${name} ${i + 1}`} fill sizes={i === 0 ? "50vw" : "25vw"} className="object-cover" />
+                {i === 4 && images.length > 5 && (
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-lg font-semibold text-white">
+                    +{images.length - 5}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
 
-      <div className="scrollbar-none -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 sm:hidden">
-        {images.map((src, i) => (
-          <button
-            key={src + i}
-            onClick={() => setOpen(i)}
-            className="relative h-[56vw] w-[78vw] shrink-0 snap-center overflow-hidden rounded-card"
-            aria-label={`${t("clubPage.openPhoto")} ${i + 1}`}
-          >
-            <Image src={src} alt={`${name} ${i + 1}`} fill sizes="78vw" className="object-cover" />
-          </button>
-        ))}
-      </div>
+          <div className="scrollbar-none -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 sm:hidden">
+            {images.map((src, i) => (
+              <button
+                key={src + i}
+                onClick={() => setOpen(i)}
+                className="relative h-[56vw] w-[78vw] shrink-0 snap-center overflow-hidden rounded-card"
+                aria-label={`${t("clubPage.openPhoto")} ${i + 1}`}
+              >
+                <Image src={src} alt={`${name} ${i + 1}`} fill sizes="78vw" className="object-cover" />
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {canManage && (
+        <div className={images.length >= 2 ? "mt-5" : ""}>
+          <p className="mb-2 text-xs font-semibold text-zinc-400">Fotos de la galería (solo tú lo ves)</p>
+          <div className="flex flex-wrap gap-3">
+            {edit!.gallery.map((url) => (
+              <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10">
+                <Image src={url} alt="" fill sizes="80px" className="object-cover" />
+                <button
+                  onClick={() => removePhoto(url)}
+                  className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition group-hover:opacity-100"
+                  aria-label="Quitar foto"
+                >
+                  <Icon name="close" className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+            <label className="flex h-20 w-20 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-white/20 text-center text-xs font-bold text-zinc-400 transition hover:border-purple-400/50 hover:text-white">
+              {uploading ? "Subiendo…" : "+ Añadir"}
+              <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={addPhotos} />
+            </label>
+          </div>
+        </div>
+      )}
 
       {open !== null && (
         <div

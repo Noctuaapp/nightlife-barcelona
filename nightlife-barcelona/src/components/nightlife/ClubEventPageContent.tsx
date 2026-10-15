@@ -13,6 +13,8 @@ import { track } from "../../lib/track"
 import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
+import { InlineEditText, InlineEditImage } from "../admin/InlineEdit"
+import { useIsAdmin } from "../../lib/useIsAdmin"
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
@@ -72,6 +74,7 @@ export default function ClubEventPageContent({
   clubSlug: string
 }) {
   const { t, locale } = useLanguage()
+  const isAdmin = useIsAdmin()
   const [past, setPast] = useState(false)
   useEffect(() => {
     if (!clubEvent.date) return
@@ -123,11 +126,11 @@ export default function ClubEventPageContent({
   }
 
   const facts = [
-    dateLabel && { key: "date", icon: "calendar", label: t("event.date"), value: past ? t("event.finishedValue") : dateLabel },
-    timeLabel && { key: "time", icon: "clock", label: t("event.schedule"), value: timeLabel },
-    clubEvent.price && { key: "price", icon: "ticket", label: t("event.price"), value: clubEvent.price },
-    clubEvent.music && { key: "music", icon: "music", label: t("club.music"), value: clubEvent.music },
-  ].filter(Boolean) as { key: string; icon: string; label: string; value: string }[]
+    dateLabel && { key: "date", field: null, icon: "calendar", label: t("event.date"), value: past ? t("event.finishedValue") : dateLabel },
+    timeLabel && { key: "time", field: null, icon: "clock", label: t("event.schedule"), value: timeLabel },
+    clubEvent.price && { key: "price", field: "price", icon: "ticket", label: t("event.price"), value: clubEvent.price },
+    clubEvent.music && { key: "music", field: "music", icon: "music", label: t("club.music"), value: clubEvent.music },
+  ].filter(Boolean) as { key: string; field: string | null; icon: string; label: string; value: string }[]
 
   const primaryBtn = "flex items-center justify-center gap-2 rounded-ctl bg-brand px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-strong"
   const secondaryBtn = "flex items-center justify-center gap-2 rounded-ctl border border-white/15 bg-white/5 px-5 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/10"
@@ -138,6 +141,7 @@ export default function ClubEventPageContent({
         <div className="relative h-[40vh] max-h-[480px] min-h-[280px] w-full overflow-hidden">
           <Image src={image || FALLBACK_IMAGE} alt={clubEvent.title} fill priority sizes="100vw" unoptimized={!image} className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-night via-night/40 to-transparent" />
+          <InlineEditImage table="club_events" id={clubEvent.id} field="image" bucket="event-images" label="Cambiar foto principal" />
         </div>
 
         <div className="relative -mt-24 px-4 sm:-mt-32 sm:px-6">
@@ -161,8 +165,12 @@ export default function ClubEventPageContent({
               </div>
             )}
 
-            {clubEvent.music && <p className="text-sm font-semibold text-brand-soft">{clubEvent.music}</p>}
-            <h1 className="font-display mt-1 break-words text-[2.1rem] leading-[1.05] text-ink sm:text-6xl">{clubEvent.title}</h1>
+            <p className="text-sm font-semibold text-brand-soft empty:hidden">
+              <InlineEditText table="club_events" id={clubEvent.id} field="music" value={clubEvent.music} emptyLabel="añadir estilo musical" />
+            </p>
+            <h1 className="font-display mt-1 break-words text-[2.1rem] leading-[1.05] text-ink sm:text-6xl">
+              <InlineEditText table="club_events" id={clubEvent.id} field="title" value={clubEvent.title} />
+            </h1>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-300">
               {dateLabel && (
@@ -221,7 +229,9 @@ export default function ClubEventPageContent({
                 <Icon name={f.icon} className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" />
                 <div className="min-w-0">
                   <dt className="text-xs text-zinc-400">{f.label}</dt>
-                  <dd className="mt-0.5 break-words text-sm font-semibold leading-snug text-ink">{f.value}</dd>
+                  <dd className="mt-0.5 break-words text-sm font-semibold leading-snug text-ink">
+                    {f.field ? <InlineEditText table="club_events" id={clubEvent.id} field={f.field} value={f.value} /> : f.value}
+                  </dd>
                 </div>
               </div>
             ))}
@@ -232,10 +242,12 @@ export default function ClubEventPageContent({
       <section className="mx-auto max-w-6xl px-4 pt-10 sm:px-6">
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="order-last min-w-0 space-y-6 lg:order-none lg:col-span-2">
-            {(clubEvent.description || clubEvent.artist) && (
+            {(clubEvent.description || clubEvent.artist || isAdmin) && (
               <Panel>
                 <h2 className="mb-4 text-lg font-semibold text-ink">{t("clubEvent.aboutThisNight")}</h2>
-                {clubEvent.description && <p className="whitespace-pre-line text-base leading-relaxed text-zinc-200">{clubEvent.description}</p>}
+                <p className="whitespace-pre-line text-base leading-relaxed text-zinc-200 empty:hidden">
+                  <InlineEditText table="club_events" id={clubEvent.id} field="description" value={clubEvent.description} multiline emptyLabel="añadir descripción" />
+                </p>
                 {clubEvent.artist && (
                   <div className="mt-5 flex items-center gap-3 rounded-ctl border border-white/10 p-4">
                     <Icon name="headphones" className="h-5 w-5 shrink-0 text-brand-soft" />

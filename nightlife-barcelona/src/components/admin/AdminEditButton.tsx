@@ -1,8 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { supabase } from "../../lib/supabase"
-import { ADMIN_EMAIL } from "../../lib/admin"
+import { useIsAdmin } from "../../lib/useIsAdmin"
 
 type Kind = "club" | "event" | "clubEvent" | "essential"
 
@@ -26,15 +24,7 @@ function PencilIcon({ className = "h-4 w-4" }: { className?: string }) {
 // elemento ya en modo edición. `inline` lo deja en el flujo de la página (para paneles);
 // sin `inline` flota arriba a la derecha de la ficha, debajo de la cabecera.
 export default function AdminEditButton({ kind, id, inline = false }: { kind: Kind; id: number; inline?: boolean }) {
-  const [isAdmin, setIsAdmin] = useState(false)
-
-  useEffect(() => {
-    let alive = true
-    supabase.auth.getSession().then(({ data }) => {
-      if (alive && data.session?.user.email === ADMIN_EMAIL) setIsAdmin(true)
-    })
-    return () => { alive = false }
-  }, [])
+  const isAdmin = useIsAdmin()
 
   if (!isAdmin) return null
   return (

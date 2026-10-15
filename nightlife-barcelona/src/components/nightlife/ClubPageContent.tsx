@@ -19,6 +19,8 @@ import Stars from "./club/Stars"
 import Icon from "../ui/Icon"
 import { toast } from "../ui/Toast"
 import { supabase } from "../../lib/supabase"
+import { InlineEditText, InlineEditImage } from "../admin/InlineEdit"
+import { useIsAdmin } from "../../lib/useIsAdmin"
 import { FALLBACK_IMAGE as FALLBACK_CLUB_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
 import { clubOpenNow } from "../../lib/clubHours"
@@ -53,6 +55,7 @@ function PanelTitle({ children }: { children: React.ReactNode }) {
 
 export default function ClubPageContent({ club, clubEvents, clubSessions = [] }: { club: any; clubEvents: any[]; clubSessions?: any[] }) {
   const { t, locale } = useLanguage()
+  const isAdmin = useIsAdmin()
   const [activeTab, setActiveTab] = useState<Tab>("about")
   const [related, setRelated] = useState<any[]>([])
   const [openFaq, setOpenFaq] = useState<number | null>(null)
@@ -214,11 +217,11 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
   ].filter(Boolean) as { q: string; a: string }[]
 
   const quickFacts = [
-    club.music && { key: "music", icon: "music", label: t("club.music"), value: club.music },
-    club.price && { key: "price", icon: "ticket", label: t("club.price"), value: club.price },
-    club.hours && { key: "hours", icon: "clock", label: t("club.hours"), value: club.hours },
-    minAge && { key: "age", icon: "id", label: t("clubPage.minAge"), value: `+${minAge}` },
-  ].filter(Boolean) as { key: string; icon: string; label: string; value: string }[]
+    club.music && { key: "music", field: "music", icon: "music", label: t("club.music"), value: club.music },
+    club.price && { key: "price", field: "price", icon: "ticket", label: t("club.price"), value: club.price },
+    club.hours && { key: "hours", field: "hours", icon: "clock", label: t("club.hours"), value: club.hours },
+    minAge && { key: "age", field: "min_age", icon: "id", label: t("clubPage.minAge"), value: String(minAge) },
+  ].filter(Boolean) as { key: string; field: string | null; icon: string; label: string; value: string }[]
 
   const galleryImages: string[] = (
     Array.isArray(club.gallery) ? club.gallery : Array.isArray(club.images) ? club.images : [club.image_2, club.image_3, club.image_4]
@@ -261,6 +264,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
             className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-night via-night/40 to-transparent" />
+          <InlineEditImage table="clubs" id={club.id} field="image" bucket="club-images" label="Cambiar foto principal" />
         </div>
 
         <div className="relative -mt-28 px-4 sm:-mt-36 sm:px-6">
@@ -285,8 +289,12 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
               </div>
             )}
 
-            {club.music && <p className="text-sm font-semibold text-brand-soft">{club.music}</p>}
-            <h1 className="font-display mt-1 break-words text-[2.4rem] leading-[1.02] text-ink sm:text-6xl md:text-7xl">{club.name}</h1>
+            <p className="text-sm font-semibold text-brand-soft empty:hidden">
+              <InlineEditText table="clubs" id={club.id} field="music" value={club.music} emptyLabel="añadir estilo musical" />
+            </p>
+            <h1 className="font-display mt-1 break-words text-[2.4rem] leading-[1.02] text-ink sm:text-6xl md:text-7xl">
+              <InlineEditText table="clubs" id={club.id} field="name" value={club.name} />
+            </h1>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
               <span className="flex items-center gap-1.5 text-zinc-300">
@@ -351,7 +359,16 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                 <Icon name={f.icon} className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" />
                 <div className="min-w-0">
                   <dt className="text-xs text-zinc-400">{f.label}</dt>
-                  <dd className="mt-0.5 break-words text-sm font-semibold leading-snug text-ink">{f.value}</dd>
+                  <dd className="mt-0.5 break-words text-sm font-semibold leading-snug text-ink">
+                    {f.field ? (
+                      <>
+                        {f.key === "age" && "+"}
+                        <InlineEditText table="clubs" id={club.id} field={f.field} value={f.value} />
+                      </>
+                    ) : (
+                      f.value
+                    )}
+                  </dd>
                 </div>
               </div>
             ))}
@@ -412,10 +429,12 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
           {/* COLUMNA PRINCIPAL — en móvil va primero; las acciones (guardar, asistiré, check-in)
               quedan debajo, en una fila compacta, para no cortar la información */}
           <div className="min-w-0 space-y-6 lg:col-span-2">
-            {club.description && (
+            {(club.description || isAdmin) && (
               <Panel>
                 <PanelTitle>{t("clubPage.about").replace("{name}", club.name)}</PanelTitle>
-                <p className="text-base leading-relaxed text-zinc-200">{club.description}</p>
+                <p className="text-base leading-relaxed text-zinc-200">
+                  <InlineEditText table="clubs" id={club.id} field="description" value={club.description} multiline emptyLabel="añadir descripción" />
+                </p>
               </Panel>
             )}
 
@@ -492,15 +511,16 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                 {clubSessions.map((session: any) => (
                   <Panel key={session.id}>
                     <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                      {session.image ? (
-                        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-ctl">
+                      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-ctl">
+                        {session.image ? (
                           <Image src={session.image} alt={session.name} fill sizes="96px" className="object-cover" />
-                        </div>
-                      ) : (
-                        <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-ctl border border-white/10 bg-white/5">
-                          <Icon name="calendar" className="h-8 w-8 text-muted" />
-                        </div>
-                      )}
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center border border-white/10 bg-white/5">
+                            <Icon name="calendar" className="h-8 w-8 text-muted" />
+                          </div>
+                        )}
+                        <InlineEditImage table="club_sessions" id={session.id} field="image" bucket="club-images" label="Cambiar" />
+                      </div>
                       <div className="min-w-0 flex-1">
                         {session.day_of_week && (
                           <span className="inline-block rounded-full bg-brand/15 px-3 py-1 text-xs font-semibold text-brand-soft">{session.day_of_week}</span>
@@ -509,7 +529,11 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                         <div className="mt-2 flex flex-wrap gap-2 text-sm text-zinc-300">
                           {session.music && <span className="rounded-full border border-white/10 px-3 py-1">{session.music}</span>}
                           {session.price && <span className="rounded-full border border-white/10 px-3 py-1">{session.price}</span>}
-                          {session.dresscode && <span className="rounded-full border border-white/10 px-3 py-1">{session.dresscode}</span>}
+                          {session.dresscode && (
+                            <span className="rounded-full border border-white/10 px-3 py-1">
+                              {t("clubPage.fDresscode")}: {session.dresscode}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -615,7 +639,11 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
       </section>
 
       <div className="mt-16">
-        <ClubGallery images={allImages} name={club.name} />
+        <ClubGallery
+          images={allImages}
+          name={club.name}
+          edit={{ table: "clubs", id: club.id, bucket: "club-photos", gallery: Array.isArray(club.gallery) ? club.gallery : [] }}
+        />
         <ClubReviews clubId={club.id} rating={displayRating} count={reviewCount} />
       </div>
 
