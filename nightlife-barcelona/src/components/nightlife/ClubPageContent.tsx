@@ -220,7 +220,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
     club.music && { key: "music", field: "music", icon: "music", label: t("club.music"), value: club.music },
     club.price && { key: "price", field: "price", icon: "ticket", label: t("club.price"), value: club.price },
     club.hours && { key: "hours", field: "hours", icon: "clock", label: t("club.hours"), value: club.hours },
-    minAge && { key: "age", field: "min_age", icon: "id", label: t("clubPage.minAge"), value: String(minAge) },
+    minAge && { key: "age", field: "age_min", icon: "id", label: t("clubPage.minAge"), value: String(minAge) },
   ].filter(Boolean) as { key: string; field: string | null; icon: string; label: string; value: string }[]
 
   const galleryImages: string[] = (

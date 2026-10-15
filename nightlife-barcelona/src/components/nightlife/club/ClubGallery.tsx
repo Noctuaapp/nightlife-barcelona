@@ -27,6 +27,7 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
   // La ficha es ISR (tarda en regenerarse): no esperamos a que vuelva a buscar los datos para
   // reflejar lo que se acaba de subir o quitar, se enseña ya mismo con lo guardado.
   const [galleryOverride, setGalleryOverride] = useState<string[] | null>(null)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
   const canManage = !!edit && isAdmin
   const gallery = galleryOverride ?? edit?.gallery ?? []
   // `images` llega como [foto principal, ...galería]; si se gestiona aquí, se muestra la versión
@@ -79,6 +80,20 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
     router.refresh()
   }
 
+  const reorderPhoto = async (from: number, to: number) => {
+    if (!edit || from === to || from < 0 || to < 0 || from >= gallery.length || to >= gallery.length) return
+    const next = [...gallery]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    const { error } = await supabase.from(edit.table).update({ gallery: next }).eq("id", edit.id)
+    if (error) {
+      toast("Error al reordenar: " + error.message)
+      return
+    }
+    setGalleryOverride(next)
+    router.refresh()
+  }
+
   return (
     <section className="mx-auto mb-16 max-w-6xl px-4 sm:px-6" aria-label={t("clubPage.gallery")}>
       <h2 className="mb-4 text-lg font-semibold text-ink">{t("clubPage.gallery")}</h2>
@@ -120,11 +135,25 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
 
       {canManage && (
         <div className={displayImages.length >= 2 ? "mt-5" : ""}>
-          <p className="mb-2 text-xs font-semibold text-zinc-400">Fotos de la galería (solo tú lo ves)</p>
+          <p className="mb-2 text-xs font-semibold text-zinc-400">Fotos de la galería (solo tú lo ves) — arrastra para reordenar</p>
           <div className="flex flex-wrap gap-3">
-            {gallery.map((url) => (
-              <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10">
-                <Image src={url} alt="" fill sizes="80px" className="object-cover" />
+            {gallery.map((url, i) => (
+              <div
+                key={url}
+                draggable
+                onDragStart={() => setDragIndex(i)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  if (dragIndex !== null) reorderPhoto(dragIndex, i)
+                  setDragIndex(null)
+                }}
+                onDragEnd={() => setDragIndex(null)}
+                className={`group relative h-20 w-20 shrink-0 cursor-move overflow-hidden rounded-xl border transition ${
+                  dragIndex === i ? "border-purple-400 opacity-50" : "border-white/10"
+                }`}
+              >
+                <Image src={url} alt="" fill sizes="80px" className="pointer-events-none object-cover" />
                 <button
                   onClick={() => removePhoto(url)}
                   className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition group-hover:opacity-100"
