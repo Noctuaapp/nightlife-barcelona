@@ -7,6 +7,7 @@ import { ADMIN_EMAIL } from "../../lib/admin"
 import { toast } from "../../components/ui/Toast"
 import CoordsField from "../../components/admin/CoordsField"
 import { coordsPayload, coordToInput } from "../../lib/coords"
+import { touchCache, clubPaths } from "../../lib/touchCache"
 
 type Club = {
   id: number
@@ -260,6 +261,7 @@ export default function AdminPage() {
     }
     if (data && data[0]) {
       setClubs((prev) => [...prev, data[0] as Club].sort((a, b) => a.name.localeCompare(b.name)))
+      touchCache(clubPaths((data[0] as { slug?: string | null }).slug))
     }
     setNewClub(emptyForm)
     setShowAddForm(false)
@@ -368,6 +370,7 @@ export default function AdminPage() {
     }
     if (data && data[0]) {
       setClubs((prev) => prev.map((c) => c.id === id ? (data[0] as Club) : c))
+      touchCache(clubPaths((data[0] as { slug?: string | null }).slug))
     }
     setEditingId(null)
   }

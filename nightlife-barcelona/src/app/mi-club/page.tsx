@@ -9,6 +9,7 @@ import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import { toast } from "../../components/ui/Toast"
+import { touchCache, clubPaths, clubEventPaths } from "../../lib/touchCache"
 
 // Portal para que un club verificado edite su propia ficha sin pasar por Jordi. Un club queda
 // "vinculado" cuando su fila en `clubs` tiene `owner_user_id` = el id de un usuario de Supabase
@@ -310,7 +311,10 @@ export default function MiClubPage() {
     const { data, error } = await supabase.from("club_events").insert(eventFormToPayload(newEventForm, club.id, club.name)).select().single()
     setSavingEvent(false)
     if (error) { fail("ownerPortal.errCreateNight", error.message); return }
-    if (data) setEvents((prev) => [...prev, data].sort((a, b) => (a.date || "").localeCompare(b.date || "")))
+    if (data) {
+      setEvents((prev) => [...prev, data].sort((a, b) => (a.date || "").localeCompare(b.date || "")))
+      touchCache(clubEventPaths(data.id))
+    }
     setNewEventForm(emptyEventForm)
     setShowAddEventForm(false)
     toast(t("ownerPortal.nightCreated"))
@@ -333,7 +337,10 @@ export default function MiClubPage() {
     const { data, error } = await supabase.from("club_events").update(eventFormToPayload(editEventForm, club.id, club.name)).eq("id", id).select().single()
     setSavingEvent(false)
     if (error) { fail("ownerPortal.errSave", error.message); return }
-    if (data) setEvents((prev) => prev.map((e) => (e.id === id ? data : e)))
+    if (data) {
+      setEvents((prev) => prev.map((e) => (e.id === id ? data : e)))
+      touchCache(clubEventPaths(id))
+    }
     setEditingEventId(null)
     toast(t("ownerPortal.saved"))
   }
@@ -360,6 +367,7 @@ export default function MiClubPage() {
     if (data) {
       setClub(data as Club)
       setForm(clubToForm(data as Club))
+      touchCache(clubPaths((data as { slug?: string | null }).slug))
     }
     setSavedFlash(true)
     setTimeout(() => setSavedFlash(false), 3000)
@@ -374,6 +382,7 @@ export default function MiClubPage() {
     setUpdatingStatus(false)
     if (error) { fail("ownerPortal.errStatus", error.message); return }
     setClub((data as Club) || { ...club, live_status: status, live_status_updated_at: nowIso })
+    touchCache(clubPaths((club as unknown as { slug?: string | null }).slug))
   }
 
   const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {

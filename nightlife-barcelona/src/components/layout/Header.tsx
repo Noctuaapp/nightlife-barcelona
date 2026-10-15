@@ -57,7 +57,7 @@ function oncePerSession(key: string): boolean {
 }
 
 // El tiempo se guarda 30 min por pestaña (antes se pedía a open-meteo en cada página).
-const WEATHER_CACHE_KEY = "noctua_weather_v3"
+const WEATHER_CACHE_KEY = "noctua_weather_v4"
 const WEATHER_TTL_MS = 30 * 60 * 1000
 
 export default function Header() {
@@ -74,8 +74,11 @@ export default function Header() {
   const [weather, setWeather] = useState<{
     temp: number
     icon: string
+    code: number
     nightHours: WeatherHour[]
   } | null>(null)
+  // Aviso pequeño de "hace buen día para salir" / "coge paraguas o abrigo", una vez al día.
+  const [weatherTipDismissed, setWeatherTipDismissed] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
   const { locale, setLocale, t } = useLanguage()
@@ -250,7 +253,7 @@ export default function Header() {
           return { label, icon, temp: temp ?? 0 }
         })
 
-        const fresh = { temp: currentTemp, icon: currentIcon, nightHours }
+        const fresh = { temp: currentTemp, icon: currentIcon, code: currentCode, nightHours }
         setWeather(fresh)
         try {
           sessionStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({ at: Date.now(), city: selectedCity.slug, weather: fresh }))
@@ -404,6 +407,42 @@ export default function Header() {
       logError("LOCALSTORAGE ERROR:", e)
     }
   }
+
+  // Clave con la fecha de hoy: el aviso vuelve a poder salir al día siguiente aunque ayer se
+  // cerrara (el tiempo de hoy no es el de ayer).
+  const weatherTipKey = () => `noctua_weather_tip_dismissed_${new Date().toISOString().slice(0, 10)}`
+  useEffect(() => {
+    try {
+      setWeatherTipDismissed(localStorage.getItem(weatherTipKey()) === "1")
+    } catch (e) {
+      logError("LOCALSTORAGE ERROR:", e)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const dismissWeatherTip = () => {
+    setWeatherTipDismissed(true)
+    try {
+      localStorage.setItem(weatherTipKey(), "1")
+    } catch (e) {
+      logError("LOCALSTORAGE ERROR:", e)
+    }
+  }
+
+  // Lluvia o nieve: coger paraguas pesa más que el frío o que el buen tiempo. Antes "buena noche"
+  // solo saltaba con cielo despejado/poco nuboso Y 18º o más: con un día nublado de 19-20º (muy
+  // normal en Barcelona) no salía ningún aviso. Ahora casi siempre hay uno: frío, lluvia, buena
+  // noche o, si no encaja en ninguno (p. ej. 13-16º sin lluvia), simplemente no se muestra nada.
+  const RAIN_CODES = new Set([51, 53, 55, 61, 63, 65, 71, 73, 75, 80, 81, 82, 95])
+  const weatherTip: { icon: string; textKey: string } | null = !weather
+    ? null
+    : RAIN_CODES.has(weather.code)
+    ? { icon: "☔️", textKey: "weatherTip.rain" }
+    : weather.temp <= 12
+    ? { icon: "🧥", textKey: "weatherTip.cold" }
+    : weather.temp >= 17
+    ? { icon: "🌙", textKey: "weatherTip.nice" }
+    : null
 
   const isUnread = (n: NotificationRow) =>
     n.type === "broadcast" ? !readBroadcastIds.includes(n.id) : !n.read
@@ -608,6 +647,27 @@ export default function Header() {
             </Link>
             <button
               onClick={dismissBanner}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-500 transition hover:text-white"
+              aria-label="Cerrar"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {weatherTip && !weatherTipDismissed && (
+        // Sin "sticky": si la barra de registro también está visible, esta simplemente va
+        // justo debajo en el flujo normal, sin pelearse por la misma posición al hacer scroll.
+        <div
+          className="border-b border-white/[0.06]"
+          style={{ background: "linear-gradient(90deg, #141034, #0a0c1e)" }}
+        >
+          <div className="mx-auto flex max-w-5xl items-center gap-2.5 px-4 py-2 sm:px-6">
+            <span aria-hidden="true" className="text-sm">{weatherTip.icon}</span>
+            <p className="min-w-0 flex-1 truncate text-xs text-zinc-300 sm:text-sm">{t(weatherTip.textKey)}</p>
+            <button
+              onClick={dismissWeatherTip}
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-500 transition hover:text-white"
               aria-label="Cerrar"
             >

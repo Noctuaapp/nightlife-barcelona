@@ -53,7 +53,10 @@
     "liveOpenOne": "{n} local abierto ahora",
     "liveOpenMany": "{n} locales abiertos ahora",
     "liveTonight": "Esta noche en Barcelona",
-    "heroImageAlt": "Barcelona de noche, con la Sagrada Família y la Torre Glòries iluminadas"
+    "heroImageAlt": "Barcelona de noche, con la Sagrada Família y la Torre Glòries iluminadas",
+    "statsClubs": "clubs en Barcelona",
+    "statsEvents": "eventos activos",
+    "statsEssentials": "esenciales cerca de ti"
   },
   "filters": {
     "all": "Todos"
@@ -853,7 +856,8 @@
     "noFilterResults": "No hay resultados con estos filtros",
     "twoFingers": "Usa dos dedos para mover el mapa",
     "placesOne": "{n} sitio",
-    "openNowOne": "{n} abierto ahora"
+    "openNowOne": "{n} abierto ahora",
+    "allSubcategories": "Todos"
   },
   "areas": {
     "titleBarrio": "Discotecas en {name}",
@@ -1308,5 +1312,10 @@
     "errSessionTitle": "Escribe un título para la sesión",
     "errSessionDay": "Elige el día de esta sesión",
     "errSessionAdd": "No se ha podido añadir la sesión"
+  },
+  "weatherTip": {
+    "rain": "Esta noche puede llover: coge un paraguas (aunque dentro del club estarás cubierto).",
+    "cold": "Hace frío esta noche: coge un abrigo (luego dentro del local hará calor).",
+    "nice": "Hace buena noche para salir por Barcelona."
   }
 }

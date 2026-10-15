@@ -53,7 +53,10 @@
     "liveOpenOne": "{n} lieu ouvert maintenant",
     "liveOpenMany": "{n} lieux ouverts maintenant",
     "liveTonight": "Ce soir à Barcelone",
-    "heroImageAlt": "Barcelone la nuit, avec la Sagrada Família et la Torre Glòries illuminées"
+    "heroImageAlt": "Barcelone la nuit, avec la Sagrada Família et la Torre Glòries illuminées",
+    "statsClubs": "clubs à Barcelone",
+    "statsEvents": "événements actifs",
+    "statsEssentials": "essentiels à proximité"
   },
   "filters": {
     "all": "Tous"
@@ -853,7 +856,8 @@
     "noFilterResults": "Aucun résultat avec ces filtres",
     "twoFingers": "Utilise deux doigts pour déplacer la carte",
     "placesOne": "{n} lieu",
-    "openNowOne": "{n} ouvert maintenant"
+    "openNowOne": "{n} ouvert maintenant",
+    "allSubcategories": "Tous"
   },
   "areas": {
     "titleBarrio": "Discothèques à {name}",
@@ -1308,5 +1312,10 @@
     "arch_curious_line": "Tu commences à découvrir Barcelone.",
     "arch_first_title": "Premiers pas",
     "arch_first_line": "Le mois prochain, encore plus."
+  },
+  "weatherTip": {
+    "rain": "Il pourrait pleuvoir ce soir : prends un parapluie (tu seras à l'abri une fois à l'intérieur).",
+    "cold": "Il fait froid ce soir : prends un manteau (il fera chaud une fois à l'intérieur).",
+    "nice": "C'est une belle nuit pour sortir à Barcelone."
   }
 }

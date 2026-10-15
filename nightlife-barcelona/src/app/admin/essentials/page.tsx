@@ -8,11 +8,14 @@ import { logError } from "../../../lib/log"
 import { toast } from "../../../components/ui/Toast"
 import CoordsField from "../../../components/admin/CoordsField"
 import { coordsPayload, coordToInput, parseCoords } from "../../../lib/coords"
+import { touchCache, essentialPaths } from "../../../lib/touchCache"
+import { ESSENTIAL_CATEGORIES } from "../../../lib/essentialCategories"
 
 type Essential = {
   id: number
   name: string
   category: string
+  subcategory: string | null
   address: string | null
   neighborhood: string | null
   description: string | null
@@ -27,6 +30,7 @@ type Essential = {
 const emptyForm = {
   name: "",
   category: "",
+  subcategory: "",
   address: "",
   neighborhood: "",
   description: "",
@@ -37,7 +41,17 @@ const emptyForm = {
   longitude: "",
 }
 
-const categories = ["Pharmacy", "ATM", "Food", "Transport", "Metro", "Nitbus", "Taxi", "Supermarket", "Hotel", "Casino", "Other"]
+// Antes esta lista vivía por su cuenta y se había desincronizado de ESSENTIAL_CATEGORIES (le
+// faltaban Gas Station y Hospital, y tenía un "Other" que la web pública no reconoce). Ahora sale
+// de la misma fuente que usa la página pública, así que no pueden volver a desincronizarse.
+const categories = ESSENTIAL_CATEGORIES.map((c) => c.key)
+
+// Sugerencias rápidas de subcategoría según la categoría elegida — campo libre, así que esto
+// es solo una ayuda para escribir rápido desde el móvil, no una lista cerrada.
+const SUBCATEGORY_HINTS: Record<string, string[]> = {
+  ATM: ["CaixaBank", "Santander", "BBVA", "Banco Sabadell", "ING", "Bankinter", "Unicaja", "Abanca"],
+  Food: ["Pizza", "Kebab", "Hamburguesas", "Bocadillos", "Döner", "Asiática", "Churrería", "24h"],
+}
 
 export default function AdminEssentialsPage() {
   const [essentials, setEssentials] = useState<Essential[]>([])
@@ -97,10 +111,14 @@ export default function AdminEssentialsPage() {
     if (!newEssential.name || !newEssential.category) return
     const { data, error } = await supabase.from("essentials").insert({
       ...newEssential,
+      subcategory: newEssential.subcategory.trim() || null,
       ...coordsPayload(newEssential.latitude, newEssential.longitude),
     }).select().single()
     if (error) { logError("ADD ERROR:", error); toast(`No se ha podido crear: ${error.message}`, 5000); return }
-    if (data) setEssentials((prev) => [data, ...prev])
+    if (data) {
+      setEssentials((prev) => [data, ...prev])
+      touchCache(essentialPaths())
+    }
     toast("Esencial creado")
     setNewEssential(emptyForm)
   }
@@ -108,7 +126,7 @@ export default function AdminEssentialsPage() {
   const startEditing = (item: Essential) => {
     setEditingId(item.id)
     setEditEssential({
-      name: item.name || "", category: item.category || "", address: item.address || "",
+      name: item.name || "", category: item.category || "", subcategory: item.subcategory || "", address: item.address || "",
       neighborhood: item.neighborhood || "", description: item.description || "",
       image: item.image || "", open_hours: item.open_hours || "", maps_link: item.maps_link || "",
       latitude: coordToInput(item.latitude), longitude: coordToInput(item.longitude),
@@ -145,11 +163,15 @@ export default function AdminEssentialsPage() {
     if (!editEssential.name) return
     const { data, error } = await supabase.from("essentials").update({
       ...editEssential,
+      subcategory: editEssential.subcategory.trim() || null,
       ...coordsPayload(editEssential.latitude, editEssential.longitude),
     }).eq("id", id).select().single()
     if (error) { logError("EDIT ERROR:", error); toast(`No se ha podido guardar: ${error.message}`, 5000); return }
     toast("Cambios guardados")
-    if (data) setEssentials((prev) => prev.map((e) => e.id === id ? data : e))
+    if (data) {
+      setEssentials((prev) => prev.map((e) => e.id === id ? data : e))
+      touchCache(essentialPaths())
+    }
     cancelEditing()
   }
 
@@ -198,6 +220,19 @@ export default function AdminEssentialsPage() {
         <option value="">Categoría *</option>
         {categories.map((c) => <option key={c} value={c}>{c}</option>)}
       </select>
+
+      {(data.category === "ATM" || data.category === "Food") && (
+        <input
+          value={data.subcategory}
+          onChange={(e) => setData({ ...data, subcategory: e.target.value })}
+          list="subcategory-hints"
+          placeholder={data.category === "ATM" ? "Banco (p. ej. CaixaBank)" : "Tipo de comida (p. ej. Pizza)"}
+          className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+        />
+      )}
+      <datalist id="subcategory-hints">
+        {(SUBCATEGORY_HINTS[data.category] || []).map((s) => <option key={s} value={s} />)}
+      </datalist>
 
       <input value={data.neighborhood} onChange={(e) => setData({ ...data, neighborhood: e.target.value })} placeholder="Barrio" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
       <input value={data.address} onChange={(e) => setData({ ...data, address: e.target.value })} placeholder="Dirección" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
@@ -292,6 +327,7 @@ export default function AdminEssentialsPage() {
                       <div>
                         <div className="flex items-center gap-3">
                           <span className="rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 text-xs font-semibold text-teal-300">{item.category}</span>
+                          {item.subcategory && <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-300">{item.subcategory}</span>}
                           {item.neighborhood && <span className="text-sm text-zinc-400">📍 {item.neighborhood}</span>}
                         </div>
                         <h2 className="mt-2 text-2xl font-black text-white">{item.name}</h2>

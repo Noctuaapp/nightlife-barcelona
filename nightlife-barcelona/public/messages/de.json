@@ -53,7 +53,10 @@
     "liveOpenOne": "{n} Location jetzt geöffnet",
     "liveOpenMany": "{n} Locations jetzt geöffnet",
     "liveTonight": "Heute Nacht in Barcelona",
-    "heroImageAlt": "Barcelona bei Nacht mit beleuchteter Sagrada Família und Torre Glòries"
+    "heroImageAlt": "Barcelona bei Nacht mit beleuchteter Sagrada Família und Torre Glòries",
+    "statsClubs": "Clubs in Barcelona",
+    "statsEvents": "aktive Events",
+    "statsEssentials": "Essentials in der Nähe"
   },
   "filters": {
     "all": "Alle"
@@ -853,7 +856,8 @@
     "noFilterResults": "Keine Ergebnisse mit diesen Filtern",
     "twoFingers": "Nutze zwei Finger, um die Karte zu bewegen",
     "placesOne": "{n} Ort",
-    "openNowOne": "{n} jetzt geöffnet"
+    "openNowOne": "{n} jetzt geöffnet",
+    "allSubcategories": "Alle"
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",
@@ -1308,5 +1312,10 @@
     "arch_curious_line": "Du entdeckst Barcelona nach und nach.",
     "arch_first_title": "Erste Schritte",
     "arch_first_line": "Nächsten Monat mehr."
+  },
+  "weatherTip": {
+    "rain": "Heute Nacht könnte es regnen: nimm einen Schirm mit (drinnen bist du geschützt).",
+    "cold": "Es ist kalt heute Nacht: nimm eine Jacke mit (drinnen wird es warm).",
+    "nice": "Eine schöne Nacht, um in Barcelona auszugehen."
   }
 }

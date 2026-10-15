@@ -48,6 +48,10 @@ type Essential = {
   latitude: number | null
   longitude: number | null
   highFee?: boolean
+  // Subdivisión libre dentro de la categoría: el banco en un cajero (CaixaBank, Santander...) o
+  // el tipo de comida en un local de Food (Pizza, Kebab, Hamburguesas...). Opcional: si un local
+  // no la tiene puesta, simplemente no entra en ningún chip de subcategoría.
+  subcategory: string | null
 }
 
 
@@ -81,6 +85,7 @@ export default function EssentialCategoryPage() {
   const [selected, setSelected] = useState<Essential | null>(null)
   const [selectedNeighborhood, setSelectedNeighborhood] = useState("All")
   const [selectedZone, setSelectedZone] = useState("All")
+  const [selectedSubcategory, setSelectedSubcategory] = useState("All")
   const [loading, setLoading] = useState(true)
   const [mapReady, setMapReady] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -94,6 +99,12 @@ export default function EssentialCategoryPage() {
   const userMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const mapWrapperRef = useRef<HTMLDivElement>(null)
   const pendingFitRef = useRef<[number, number][] | null>(null)
+  // Leído dentro de los listeners táctiles del mapa, que se montan una sola vez: necesitan ver
+  // el valor de mobileView al vuelo, no el que había cuando se añadió el listener.
+  const mobileViewRef = useRef(mobileView)
+  useEffect(() => {
+    mobileViewRef.current = mobileView
+  }, [mobileView])
   const didInitialFit = useRef(false)
 
   // Encuadra el mapa a un conjunto de puntos. Si el mapa está oculto (móvil, vista lista) no
@@ -165,21 +176,24 @@ export default function EssentialCategoryPage() {
     map.current.dragRotate.disable()
     map.current.touchZoomRotate.disableRotation()
 
-    // En pantallas táctiles el mapa se comía el gesto de un dedo y no se podía desplazar la
-    // página. Ahora: un dedo desplaza la página; dos dedos mueven/hacen zoom en el mapa (se
-    // activa el arrastre solo mientras haya dos dedos). Con ratón no cambia nada.
+    // En el móvil, la lista y el mapa son dos pestañas exclusivas (nunca se ven juntos): cuando
+    // la pestaña activa es "Mapa", el mapa ocupa toda la vista y no compite con ningún scroll de
+    // página, así que un dedo lo mueve con normalidad, como cualquier mapa. El gesto de dos dedos
+    // solo hace falta en pantallas táctiles anchas (tablet en horizontal) donde lista y mapa se
+    // ven a la vez lado a lado y un dedo necesita poder seguir desplazando la página.
     const mapEl = mapContainer.current
     const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches
+    const exclusiveMobileMap = () => mobileViewRef.current === "map" && window.innerWidth < 768
     let hintTimer: ReturnType<typeof setTimeout> | undefined
     const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length >= 2) {
+      if (exclusiveMobileMap() || e.touches.length >= 2) {
         map.current?.dragPan.enable()
-        if (e.cancelable) e.preventDefault()
+        if (e.cancelable && e.touches.length >= 2) e.preventDefault()
       }
     }
     const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length >= 2) {
-        if (e.cancelable) e.preventDefault()
+      if (exclusiveMobileMap() || e.touches.length >= 2) {
+        if (e.cancelable && e.touches.length >= 2) e.preventDefault()
         return
       }
       setMapHint(true)
@@ -187,10 +201,11 @@ export default function EssentialCategoryPage() {
       hintTimer = setTimeout(() => setMapHint(false), 1200)
     }
     const onTouchEnd = (e: TouchEvent) => {
-      if (e.touches.length === 0) map.current?.dragPan.disable()
+      if (e.touches.length === 0 && !exclusiveMobileMap()) map.current?.dragPan.disable()
     }
     if (isTouch) {
-      map.current.dragPan.disable()
+      if (exclusiveMobileMap()) map.current.dragPan.enable()
+      else map.current.dragPan.disable()
       mapEl.addEventListener("touchstart", onTouchStart, { capture: true, passive: false })
       mapEl.addEventListener("touchmove", onTouchMove, { capture: true, passive: false })
       mapEl.addEventListener("touchend", onTouchEnd, { capture: true, passive: true })
@@ -217,6 +232,13 @@ export default function EssentialCategoryPage() {
   // El mapa está oculto (display:none) en móvil cuando la vista es "list", así que
   // hace falta forzar un resize cuando se vuelve a mostrar o Mapbox lo pinta mal.
   useEffect(() => {
+    // Pestaña exclusiva "Mapa" en móvil: el mapa es todo lo que hay en pantalla, así que un
+    // dedo lo mueve con normalidad (ver el efecto de arriba que crea el mapa).
+    const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches
+    if (isTouch) {
+      if (mobileView === "map" && window.innerWidth < 768) map.current?.dragPan.enable()
+      else map.current?.dragPan.disable()
+    }
     if (mobileView === "map") {
       setTimeout(() => {
         // En el móvil, al pasar a "Mapa" se sube la página hasta el mapa (antes quedaba debajo
@@ -325,10 +347,24 @@ export default function EssentialCategoryPage() {
       new Set(essentials.filter((e) => selectedZone === "All" || zoneOf(e) === selectedZone).map((e) => e.neighborhood).filter(Boolean))
     ),
   ]
+  // Solo se enseña si hay al menos dos sitios con la subcategoría puesta: si nadie la ha
+  // rellenado todavía, no tiene sentido un filtro con una sola opción.
+  // Se agrupa ignorando mayúsculas/espacios ("Kebab" y "kebab " cuentan como lo mismo, porque es
+  // texto libre escrito a mano en el admin y antes salían como dos chips distintos), pero se
+  // enseña la primera forma tal cual se escribió, no una versión forzada a minúsculas.
+  const subcategoryKey = (s: string) => s.trim().toLowerCase()
+  const availableSubcategories = Array.from(
+    essentials.reduce((map, e) => {
+      const raw = (e.subcategory || "").trim()
+      if (raw && !map.has(subcategoryKey(raw))) map.set(subcategoryKey(raw), raw)
+      return map
+    }, new Map<string, string>())
+  ).map(([, label]) => label)
 
   const filteredEssentials = essentials
     .filter((e) => (selectedZone === "All" ? true : zoneOf(e) === selectedZone))
     .filter((e) => (selectedNeighborhood === "All" ? true : e.neighborhood === selectedNeighborhood))
+    .filter((e) => (selectedSubcategory === "All" ? true : subcategoryKey(e.subcategory || "") === subcategoryKey(selectedSubcategory)))
     .filter((e) => !openOnly || getOpenStatus(e.open_hours).state === "open")
     .slice()
     .sort((a, b) => {
@@ -512,6 +548,21 @@ export default function EssentialCategoryPage() {
                 })}
               </div>
             )}
+            {availableSubcategories.length > 1 && (
+              <div className="flex w-full gap-2.5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {["All", ...availableSubcategories].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSelectedSubcategory(s)}
+                    className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
+                      selectedSubcategory === s ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
+                    }`}
+                  >
+                    {s === "All" ? t("essentialsPage.allSubcategories") : s}
+                  </button>
+                ))}
+              </div>
+            )}
             <button
               onClick={() => (userLocation ? setSortByDistance(!sortByDistance) : locateMe())}
               disabled={locating}
@@ -576,7 +627,7 @@ export default function EssentialCategoryPage() {
             <div className={`md:col-span-7 ${mobileView === "list" ? "hidden md:block" : ""}`}>
               <div
                 ref={mapWrapperRef}
-                className="relative h-[65dvh] min-h-[380px] scroll-mt-20 overflow-hidden rounded-card border border-white/10 md:sticky md:top-24 md:h-[640px]"
+                className="relative h-[78dvh] min-h-[420px] scroll-mt-20 overflow-hidden rounded-card border border-white/10 md:sticky md:top-24 md:h-[640px]"
               >
                 <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
 

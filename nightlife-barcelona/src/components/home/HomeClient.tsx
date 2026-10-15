@@ -37,6 +37,15 @@ const TABS = [
   { key: "free", label: "home.tabFree" },
 ] as const
 
+// Redondea hacia abajo para que la cifra sea siempre "aproximada por debajo" (nunca promete más
+// locales de los que realmente hay): a la decena por debajo de 200, a la media centena a partir
+// de ahí.
+function roughly(n: number): number {
+  if (n <= 0) return 0
+  const step = n < 200 ? 10 : 50
+  return Math.floor(n / step) * step
+}
+
 function quality(c: Club): number {
   const rating = Number(c.google_rating || c.rating || 0)
   return (c.image ? 2 : 0) + (rating >= 4 ? rating : rating / 2) + (c.trending ? 1 : 0)
@@ -89,7 +98,15 @@ function ClubTile({ club, openNow, distance, compact = false }: { club: Club; op
   )
 }
 
-export default function HomeClient({ initialClubs }: { initialClubs: Club[] }) {
+export default function HomeClient({
+  initialClubs,
+  eventsCount = 0,
+  essentialsCount = 0,
+}: {
+  initialClubs: Club[]
+  eventsCount?: number
+  essentialsCount?: number
+}) {
   const { t } = useLanguage()
   const clubs = initialClubs
   const geo = useGeolocation()
@@ -236,6 +253,20 @@ export default function HomeClient({ initialClubs }: { initialClubs: Club[] }) {
               </div>
             </form>
 
+            {/* Cifras de la app: estáticas (sin animación ni contador que suba), solo para dar
+               una idea rápida de tamaño antes de los accesos rápidos. */}
+            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-200">
+              <span>
+                <strong className="font-display text-base text-white">{roughly(clubs.length)}+</strong> {t("home.statsClubs")}
+              </span>
+              <span>
+                <strong className="font-display text-base text-white">{roughly(eventsCount)}+</strong> {t("home.statsEvents")}
+              </span>
+              <span>
+                <strong className="font-display text-base text-white">{roughly(essentialsCount)}+</strong> {t("home.statsEssentials")}
+              </span>
+            </div>
+
             <nav aria-label={t("home.quickTitle")} className="scrollbar-none -mx-4 mt-5 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
               {quickLinks.map((q) => (
                 <Link
@@ -268,11 +299,18 @@ export default function HomeClient({ initialClubs }: { initialClubs: Club[] }) {
               {t("home.seeAll")}
             </Link>
           </div>
-          <div className="scrollbar-none -mx-4 mt-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
-            {tonight.list.map((club) => {
-              const d = dist(club)
-              return <ClubTile key={club.id} club={club} openNow={isOpen(club)} distance={d !== null ? formatDistance(d) : null} compact />
-            })}
+          <div className="relative -mx-4 mt-4 sm:mx-0">
+            <div className="scroll-x-thin flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:px-0">
+              {tonight.list.map((club) => {
+                const d = dist(club)
+                return <ClubTile key={club.id} club={club} openNow={isOpen(club)} distance={d !== null ? formatDistance(d) : null} compact />
+              })}
+            </div>
+            {/* Pista visual de que hay más locales deslizando a la derecha (el móvil no siempre
+               deja ver la barra de scroll). */}
+            {tonight.list.length > 2 && (
+              <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-night to-transparent sm:hidden" />
+            )}
           </div>
         </section>
 

@@ -27,6 +27,9 @@ export default function EssentialsPage() {
   const [search, setSearch] = useState("")
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [nearMe, setNearMe] = useState(false)
+  // Filtro por categoría dentro de "cerca de mí": antes mezclaba cualquier tipo de esencial en
+  // los resultados ordenados por distancia, sin forma de pedir "solo cajeros cerca" o similar.
+  const [nearMeCategory, setNearMeCategory] = useState("All")
   const [locating, setLocating] = useState(false)
   const [locationDenied, setLocationDenied] = useState(false)
   // Depende de la hora: se calcula tras montar para que el HTML del servidor y el del navegador coincidan.
@@ -118,6 +121,7 @@ export default function EssentialsPage() {
     ? userLocation
       ? textMatches
           .filter((e) => e.latitude && e.longitude)
+          .filter((e) => nearMeCategory === "All" || e.category === nearMeCategory)
           .map((e) => ({ ...e, _dist: distanceInMeters(userLocation.lat, userLocation.lng, Number(e.latitude), Number(e.longitude)) }))
           .sort((a, b) => a._dist - b._dist)
           .slice(0, 30)
@@ -173,6 +177,21 @@ export default function EssentialsPage() {
 
         {showResults ? (
           <section className="mx-auto mt-8 max-w-7xl px-4">
+            {nearMe && userLocation && (
+              <div className="mb-4 flex gap-2.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {["All", ...categories].map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setNearMeCategory(c)}
+                    className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
+                      nearMeCategory === c ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
+                    }`}
+                  >
+                    {c === "All" ? t("essentialsPage.allSubcategories") : t(categoryNameKey(c))}
+                  </button>
+                ))}
+              </div>
+            )}
             <p className="mb-4 text-sm text-zinc-400" aria-live="polite">
               {nearMe && !userLocation
                 ? locating

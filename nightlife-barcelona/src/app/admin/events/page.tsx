@@ -11,6 +11,7 @@ import { logError } from "../../../lib/log"
 import { toast } from "../../../components/ui/Toast"
 import CoordsField from "../../../components/admin/CoordsField"
 import { coordsPayload, coordToInput } from "../../../lib/coords"
+import { touchCache, eventPaths } from "../../../lib/touchCache"
 
 type Event = {
   id: number
@@ -259,7 +260,10 @@ export default function AdminEventsPage() {
       return
     }
 
-    if (data) setEvents((prev) => [data, ...prev])
+    if (data) {
+      setEvents((prev) => [data, ...prev])
+      touchCache(eventPaths(data.slug))
+    }
     toast("Evento creado")
 
     setNewEvent(emptyEvent)
@@ -353,6 +357,7 @@ export default function AdminEventsPage() {
 
     if (data) {
       setEvents((prev) => prev.map((event) => (event.id === id ? data : event)))
+      touchCache(eventPaths(data.slug))
     }
 
     cancelEditing()

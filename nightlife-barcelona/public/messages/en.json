@@ -53,7 +53,10 @@
     "liveOpenOne": "{n} venue open now",
     "liveOpenMany": "{n} venues open now",
     "liveTonight": "Tonight in Barcelona",
-    "heroImageAlt": "Barcelona at night, with the Sagrada Família and Torre Glòries lit up"
+    "heroImageAlt": "Barcelona at night, with the Sagrada Família and Torre Glòries lit up",
+    "statsClubs": "clubs in Barcelona",
+    "statsEvents": "active events",
+    "statsEssentials": "essentials nearby"
   },
   "filters": {
     "all": "All"
@@ -853,7 +856,8 @@
     "noFilterResults": "No results with these filters",
     "twoFingers": "Use two fingers to move the map",
     "placesOne": "{n} place",
-    "openNowOne": "{n} open now"
+    "openNowOne": "{n} open now",
+    "allSubcategories": "All"
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",
@@ -1308,5 +1312,10 @@
     "errSessionTitle": "Add a title for the session",
     "errSessionDay": "Pick the day of this session",
     "errSessionAdd": "Couldn't add the session"
+  },
+  "weatherTip": {
+    "rain": "It may rain tonight: grab an umbrella (you will be covered once inside).",
+    "cold": "It is cold tonight: grab a coat (it will warm up once inside).",
+    "nice": "It is a great night to go out in Barcelona."
   }
 }

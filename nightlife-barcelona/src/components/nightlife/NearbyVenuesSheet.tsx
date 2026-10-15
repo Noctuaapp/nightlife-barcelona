@@ -52,6 +52,11 @@ const MAX_RESULTS = 8
 // quedan detrás del modal de registro (decisión de producto: mantener abierto lo que ayuda a
 // descubrir/compartir, topar lo que es personal o cuesta recursos).
 const FREE_RESULTS = 3
+// Antes se cogían los 8 clubs más cercanos de TODA la base de datos, sin tope de distancia: en
+// zonas con pocos locales activos, eso podía sugerir sitios a varios km. Si no hay suficientes
+// alternativas de verdad cerca, es mejor mostrar pocas (o ninguna, con el aviso de "nearby.empty")
+// que mandar a alguien a caminar varios kilómetros.
+const MAX_DISTANCE_METERS = 1500
 
 function sortVenues(rows: ClubRow[], fromLat: number, fromLng: number, reason: Reason): VenueResult[] {
   const withDistance: VenueResult[] = rows
@@ -61,6 +66,7 @@ function sortVenues(rows: ClubRow[], fromLat: number, fromLng: number, reason: R
       distanceMeters: distanceInMeters(fromLat, fromLng, c.latitude as number, c.longitude as number),
       noQueue: !c.queue || /no queue|sin cola/i.test(c.queue),
     }))
+    .filter((c) => c.distanceMeters <= MAX_DISTANCE_METERS)
 
   const boostNoQueue = reason === "full" || reason === "group"
 
