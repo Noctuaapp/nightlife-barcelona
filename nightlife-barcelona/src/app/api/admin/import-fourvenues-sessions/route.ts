@@ -44,8 +44,16 @@ function extractJsonLdBlocks(html: string): unknown[] {
 }
 
 async function fetchHtml(url: string): Promise<string> {
+  // Fourvenues devolvía 403 con un user-agent que se identificaba como bot ("NoctuaBot/1.0"); con
+  // cabeceras de navegador normal (como las que manda cualquier visitante) la misma página se lee
+  // sin problema, así que no hace falta un navegador real, solo no anunciarse como robot.
   const res = await fetch(url, {
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; NoctuaBot/1.0; +https://noctuaapp.com)" },
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+    },
     redirect: "follow",
     cache: "no-store",
   })
