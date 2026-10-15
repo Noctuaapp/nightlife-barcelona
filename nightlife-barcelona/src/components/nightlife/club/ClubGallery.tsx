@@ -24,11 +24,18 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
   const router = useRouter()
   const [open, setOpen] = useState<number | null>(null)
   const [uploading, setUploading] = useState(false)
+  // La ficha es ISR (tarda en regenerarse): no esperamos a que vuelva a buscar los datos para
+  // reflejar lo que se acaba de subir o quitar, se enseña ya mismo con lo guardado.
+  const [galleryOverride, setGalleryOverride] = useState<string[] | null>(null)
   const canManage = !!edit && isAdmin
+  const gallery = galleryOverride ?? edit?.gallery ?? []
+  // `images` llega como [foto principal, ...galería]; si se gestiona aquí, se muestra la versión
+  // al día en vez de esperar a que la página se regenere.
+  const displayImages = canManage ? ([images[0], ...gallery].filter(Boolean) as string[]) : images
 
-  if (images.length < 2 && !canManage) return null
+  if (displayImages.length < 2 && !canManage) return null
 
-  const go = (delta: number) => setOpen((i) => (i === null ? null : (i + delta + images.length) % images.length))
+  const go = (delta: number) => setOpen((i) => (i === null ? null : (i + delta + displayImages.length) % displayImages.length))
 
   const addPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!edit) return
@@ -50,22 +57,25 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
       toast("No se pudo subir ninguna foto")
       return
     }
-    const { error } = await supabase.from(edit.table).update({ gallery: [...edit.gallery, ...urls] }).eq("id", edit.id)
+    const next = [...gallery, ...urls]
+    const { error } = await supabase.from(edit.table).update({ gallery: next }).eq("id", edit.id)
     if (error) {
       toast("Error al guardar: " + error.message)
       return
     }
+    setGalleryOverride(next)
     router.refresh()
   }
 
   const removePhoto = async (url: string) => {
     if (!edit) return
-    const next = edit.gallery.filter((u) => u !== url)
+    const next = gallery.filter((u) => u !== url)
     const { error } = await supabase.from(edit.table).update({ gallery: next.length > 0 ? next : null }).eq("id", edit.id)
     if (error) {
       toast("Error al borrar la foto: " + error.message)
       return
     }
+    setGalleryOverride(next)
     router.refresh()
   }
 
@@ -73,10 +83,10 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
     <section className="mx-auto mb-16 max-w-6xl px-4 sm:px-6" aria-label={t("clubPage.gallery")}>
       <h2 className="mb-4 text-lg font-semibold text-ink">{t("clubPage.gallery")}</h2>
 
-      {images.length >= 2 && (
+      {displayImages.length >= 2 && (
         <>
           <div className="hidden h-[420px] grid-cols-4 grid-rows-2 gap-3 sm:grid">
-            {images.slice(0, 5).map((src, i) => (
+            {displayImages.slice(0, 5).map((src, i) => (
               <button
                 key={src + i}
                 onClick={() => setOpen(i)}
@@ -84,9 +94,9 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
                 aria-label={`${t("clubPage.openPhoto")} ${i + 1}`}
               >
                 <Image src={src} alt={`${name} ${i + 1}`} fill sizes={i === 0 ? "50vw" : "25vw"} className="object-cover" />
-                {i === 4 && images.length > 5 && (
+                {i === 4 && displayImages.length > 5 && (
                   <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-lg font-semibold text-white">
-                    +{images.length - 5}
+                    +{displayImages.length - 5}
                   </span>
                 )}
               </button>
@@ -94,7 +104,7 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
           </div>
 
           <div className="scrollbar-none -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 sm:hidden">
-            {images.map((src, i) => (
+            {displayImages.map((src, i) => (
               <button
                 key={src + i}
                 onClick={() => setOpen(i)}
@@ -109,10 +119,10 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
       )}
 
       {canManage && (
-        <div className={images.length >= 2 ? "mt-5" : ""}>
+        <div className={displayImages.length >= 2 ? "mt-5" : ""}>
           <p className="mb-2 text-xs font-semibold text-zinc-400">Fotos de la galería (solo tú lo ves)</p>
           <div className="flex flex-wrap gap-3">
-            {edit!.gallery.map((url) => (
+            {gallery.map((url) => (
               <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10">
                 <Image src={url} alt="" fill sizes="80px" className="object-cover" />
                 <button
@@ -153,7 +163,7 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
             <Icon name="arrow" className="h-5 w-5 rotate-180" />
           </button>
           <div className="relative h-[80vh] w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
-            <Image src={images[open]} alt={name} fill sizes="100vw" className="object-contain" />
+            <Image src={displayImages[open]} alt={name} fill sizes="100vw" className="object-contain" />
           </div>
           <button
             onClick={(e) => {

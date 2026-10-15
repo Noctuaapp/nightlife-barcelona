@@ -40,13 +40,16 @@ export function InlineEditText({
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value || "")
   const [saving, setSaving] = useState(false)
+  // La ficha es ISR (se regenera cada 5 min): `router.refresh()` no garantiza traer el dato nuevo
+  // al momento, así que en vez de depender de eso, una vez se guarda bien se enseña directamente
+  // lo guardado — no lo que diga `value` (que puede seguir siendo la versión cacheada un rato).
+  const [saved, setSaved] = useState<string | null>(null)
   const ref = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
 
-  // `draft` solo importa mientras se está editando, así que no hace falta sincronizarlo con
-  // `value` mediante un efecto: se rellena al entrar en modo edición (ver startEditing) y, si
-  // `value` cambia por fuera mientras no se edita, el texto mostrado ya sale directo de `value`.
+  const shown = saved !== null ? saved : value || ""
+
   const startEditing = () => {
-    setDraft(value || "")
+    setDraft(shown)
     setEditing(true)
   }
 
@@ -58,11 +61,11 @@ export function InlineEditText({
     }
   }, [editing])
 
-  if (!isAdmin) return <>{value || null}</>
+  if (!isAdmin) return <>{shown || null}</>
 
   const save = async () => {
     const next = draft.trim()
-    if (next === (value || "")) {
+    if (next === shown) {
       setEditing(false)
       return
     }
@@ -72,14 +75,14 @@ export function InlineEditText({
     setEditing(false)
     if (error) {
       toast("No se pudo guardar: " + error.message)
-      setDraft(value || "")
       return
     }
+    setSaved(next)
     router.refresh()
   }
 
   const cancel = () => {
-    setDraft(value || "")
+    setDraft(shown)
     setEditing(false)
   }
 
@@ -95,7 +98,7 @@ export function InlineEditText({
         className={`cursor-text rounded px-0.5 -mx-0.5 transition hover:bg-purple-400/15 ${className}`}
         title="Click para editar"
       >
-        {value || <span className="italic text-purple-300/70">+ {emptyLabel}</span>}
+        {shown || <span className="italic text-purple-300/70">+ {emptyLabel}</span>}
       </span>
     )
   }
@@ -143,9 +146,12 @@ export function InlineEditImage({ table, id, field, bucket, label = "Cambiar ima
   const isAdmin = useIsAdmin()
   const router = useRouter()
   const [uploading, setUploading] = useState(false)
+  // Igual que en el texto: no esperamos a que la ISR de la página traiga la imagen nueva, se
+  // enseña directamente la que se acaba de subir, tapando la antigua.
+  const [savedUrl, setSavedUrl] = useState<string | null>(null)
   const inputId = `inline-img-${table}-${id}-${field}`
 
-  if (!isAdmin) return null
+  if (!isAdmin) return savedUrl ? <SavedImageOverlay src={savedUrl} /> : null
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -167,16 +173,28 @@ export function InlineEditImage({ table, id, field, bucket, label = "Cambiar ima
       toast("Error al guardar la imagen: " + error.message)
       return
     }
+    setSavedUrl(data.publicUrl)
     router.refresh()
   }
 
   return (
-    <label
-      htmlFor={inputId}
-      className={`absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-black/0 text-center text-sm font-bold text-white opacity-0 transition hover:bg-black/50 hover:opacity-100 ${className}`}
-    >
-      {uploading ? "Subiendo…" : `📁 ${label}`}
-      <input id={inputId} type="file" accept="image/*" className="hidden" disabled={uploading} onChange={handleFile} />
-    </label>
+    <>
+      {savedUrl && <SavedImageOverlay src={savedUrl} />}
+      <label
+        htmlFor={inputId}
+        className={`absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-black/0 text-center text-sm font-bold text-white opacity-0 transition hover:bg-black/50 hover:opacity-100 ${className}`}
+      >
+        {uploading ? "Subiendo…" : `📁 ${label}`}
+        <input id={inputId} type="file" accept="image/*" className="hidden" disabled={uploading} onChange={handleFile} />
+      </label>
+    </>
   )
+}
+
+// Tapa la imagen vieja (la que vino del servidor) con la recién subida mientras la ISR de la
+// página se pone al día. Usa <img> normal, no next/image, porque esto vive fuera de su control de
+// tamaños y solo necesita cubrir el mismo hueco que la imagen original.
+function SavedImageOverlay({ src }: { src: string }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" className="absolute inset-0 z-[5] h-full w-full object-cover" />
 }
