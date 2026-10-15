@@ -12,11 +12,12 @@ import { toast } from "../../ui/Toast"
 // Galería de fotos de la ficha: mosaico en escritorio, carrusel en móvil y visor a pantalla
 // completa. Todas las fotos pasan por next/image (tamaño adaptado a la pantalla y formato moderno).
 //
-// `edit` (opcional): si se pasa y eres admin, añade debajo una tira para subir fotos nuevas y
-// quitar las que ya hay, directamente desde la ficha pública (sin ir a /admin). `gallery` debe ser
-// el array crudo de ese campo en la base de datos (sin la foto principal, que se edita aparte
-// desde la cabecera de la ficha).
-type GalleryEdit = { table: string; id: number; bucket: string; gallery: string[] }
+// `edit` (opcional): si se pasa y eres admin, añade debajo una tira para subir, quitar y reordenar
+// fotos directamente desde la ficha pública (sin ir a /admin). La portada (`heroField`, por
+// defecto "image") y la galería (`gallery`) son dos columnas distintas en la base de datos, pero
+// aquí se tratan como una sola lista: la primera foto de la tira ES la portada, así que arrastrar
+// una foto al principio la convierte de verdad en la portada (la antigua pasa a la galería).
+type GalleryEdit = { table: string; id: number; bucket: string; gallery: string[]; heroField?: string }
 
 export default function ClubGallery({ images, name, edit }: { images: string[]; name: string; edit?: GalleryEdit }) {
   const { t } = useLanguage()
@@ -25,18 +26,36 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
   const [open, setOpen] = useState<number | null>(null)
   const [uploading, setUploading] = useState(false)
   // La ficha es ISR (tarda en regenerarse): no esperamos a que vuelva a buscar los datos para
-  // reflejar lo que se acaba de subir o quitar, se enseña ya mismo con lo guardado.
-  const [galleryOverride, setGalleryOverride] = useState<string[] | null>(null)
+  // reflejar lo que se acaba de subir, quitar o reordenar, se enseña ya mismo con lo guardado.
+  const [photosOverride, setPhotosOverride] = useState<string[] | null>(null)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const canManage = !!edit && isAdmin
-  const gallery = galleryOverride ?? edit?.gallery ?? []
-  // `images` llega como [foto principal, ...galería]; si se gestiona aquí, se muestra la versión
-  // al día en vez de esperar a que la página se regenere.
-  const displayImages = canManage ? ([images[0], ...gallery].filter(Boolean) as string[]) : images
+  const heroField = edit?.heroField || "image"
+
+  // `images` llega como [portada, ...galería]. Si se gestiona aquí, se reconstruye igual a partir
+  // de `edit` (que lleva el dato crudo de cada columna) para poder escribir luego en las dos.
+  const basePhotos = edit ? ([images[0], ...edit.gallery].filter(Boolean) as string[]) : images
+  const displayImages = canManage ? (photosOverride ?? basePhotos) : images
 
   if (displayImages.length < 2 && !canManage) return null
 
   const go = (delta: number) => setOpen((i) => (i === null ? null : (i + delta + displayImages.length) % displayImages.length))
+
+  // Guarda la lista completa reordenada: la posición 0 pasa a ser la portada de verdad (columna
+  // `heroField`) y el resto, la galería (columna `gallery`).
+  const saveOrder = async (next: string[]) => {
+    if (!edit) return
+    const { error } = await supabase
+      .from(edit.table)
+      .update({ [heroField]: next[0] || null, gallery: next.length > 1 ? next.slice(1) : null })
+      .eq("id", edit.id)
+    if (error) {
+      toast("Error al guardar: " + error.message)
+      return
+    }
+    setPhotosOverride(next)
+    router.refresh()
+  }
 
   const addPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!edit) return
@@ -58,40 +77,20 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
       toast("No se pudo subir ninguna foto")
       return
     }
-    const next = [...gallery, ...urls]
-    const { error } = await supabase.from(edit.table).update({ gallery: next }).eq("id", edit.id)
-    if (error) {
-      toast("Error al guardar: " + error.message)
-      return
-    }
-    setGalleryOverride(next)
-    router.refresh()
+    await saveOrder([...displayImages, ...urls])
   }
 
-  const removePhoto = async (url: string) => {
-    if (!edit) return
-    const next = gallery.filter((u) => u !== url)
-    const { error } = await supabase.from(edit.table).update({ gallery: next.length > 0 ? next : null }).eq("id", edit.id)
-    if (error) {
-      toast("Error al borrar la foto: " + error.message)
-      return
-    }
-    setGalleryOverride(next)
-    router.refresh()
+  const removePhoto = (url: string) => {
+    if (displayImages.length <= 1) return // siempre tiene que quedar al menos una foto de portada
+    saveOrder(displayImages.filter((u) => u !== url))
   }
 
-  const reorderPhoto = async (from: number, to: number) => {
-    if (!edit || from === to || from < 0 || to < 0 || from >= gallery.length || to >= gallery.length) return
-    const next = [...gallery]
+  const reorderPhoto = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0 || from >= displayImages.length || to >= displayImages.length) return
+    const next = [...displayImages]
     const [moved] = next.splice(from, 1)
     next.splice(to, 0, moved)
-    const { error } = await supabase.from(edit.table).update({ gallery: next }).eq("id", edit.id)
-    if (error) {
-      toast("Error al reordenar: " + error.message)
-      return
-    }
-    setGalleryOverride(next)
-    router.refresh()
+    saveOrder(next)
   }
 
   return (
@@ -135,9 +134,9 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
 
       {canManage && (
         <div className={displayImages.length >= 2 ? "mt-5" : ""}>
-          <p className="mb-2 text-xs font-semibold text-zinc-400">Fotos de la galería (solo tú lo ves) — arrastra para reordenar</p>
+          <p className="mb-2 text-xs font-semibold text-zinc-400">Todas las fotos (solo tú lo ves) — arrastra para reordenar; la primera es la portada</p>
           <div className="flex flex-wrap gap-3">
-            {gallery.map((url, i) => (
+            {displayImages.map((url, i) => (
               <div
                 key={url}
                 draggable
@@ -154,13 +153,18 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
                 }`}
               >
                 <Image src={url} alt="" fill sizes="80px" className="pointer-events-none object-cover" />
-                <button
-                  onClick={() => removePhoto(url)}
-                  className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition group-hover:opacity-100"
-                  aria-label="Quitar foto"
-                >
-                  <Icon name="close" className="h-3.5 w-3.5" />
-                </button>
+                {i === 0 && (
+                  <span className="absolute bottom-0 left-0 right-0 bg-black/70 py-0.5 text-center text-[10px] font-bold text-white">Portada</span>
+                )}
+                {displayImages.length > 1 && (
+                  <button
+                    onClick={() => removePhoto(url)}
+                    className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition group-hover:opacity-100"
+                    aria-label="Quitar foto"
+                  >
+                    <Icon name="close" className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             ))}
             <label className="flex h-20 w-20 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-white/20 text-center text-xs font-bold text-zinc-400 transition hover:border-purple-400/50 hover:text-white">
