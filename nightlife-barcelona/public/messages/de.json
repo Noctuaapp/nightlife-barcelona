@@ -848,7 +848,7 @@
     "taxiNow": "Jetzt ein Taxi rufen",
     "taxiRanksHint": "Weiter unten findest du die Taxistände, falls du lieber eins nehmen willst.",
     "nitbusTitle": "NitBus",
-    "nitbusBody": "Das sind die wichtigsten Haltestellen, an denen sich mehrere Linien treffen. Den genauen Fahrplan jeder Linie findest du in der TMB-App und an der Haltestelle.",
+    "nitbusBody": "Vollständiges Nachtbusnetz (Nitbus) und wohin jede Linie fährt. Tippe bei einer Linie auf „Haltestellen ansehen\" für die offizielle Haltestellenkarte.",
     "allArea": "Ganzes Gebiet",
     "allBarrios": "Alle Viertel",
     "farAway": "Du scheinst weit weg von Barcelona zu sein, daher wird die ganze Kategorie angezeigt.",
@@ -857,7 +857,13 @@
     "twoFingers": "Nutze zwei Finger, um die Karte zu bewegen",
     "placesOne": "{n} Ort",
     "openNowOne": "{n} jetzt geöffnet",
-    "allSubcategories": "Alle"
+    "allSubcategories": "Alle",
+    "taxiNoRanks": "Hier sind noch keine echten Taxistände hinterlegt — nutze die Buttons oben, um jetzt ein Taxi zu rufen.",
+    "metroSearchPlaceholder": "Station suchen (z. B. Diagonal)",
+    "allLines": "Alle Linien",
+    "nitbusLinesCount": "{n} Nachtlinien",
+    "nitbusHours": "Jede Nacht, 22:20–06:00 Uhr",
+    "nitbusHoursNote": "Takt und letzter Bus variieren je Linie — tippe bei einer Linie auf „Haltestellen ansehen“ für den genauen Fahrplan."
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",

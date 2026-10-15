@@ -848,7 +848,7 @@
     "taxiNow": "Commander un taxi maintenant",
     "taxiRanksHint": "Plus bas, tu as les stations de taxis si tu préfères aller en prendre un.",
     "nitbusTitle": "NitBus",
-    "nitbusBody": "Voici les principaux arrêts, où se croisent plusieurs lignes. L'horaire exact de chaque ligne est dans l'appli TMB et sur le panneau de l'arrêt.",
+    "nitbusBody": "Réseau complet des lignes de bus de nuit (Nitbus) et leur destination. Appuyez sur « voir les arrêts » sur une ligne pour la carte officielle arrêt par arrêt.",
     "allArea": "Toute la zone",
     "allBarrios": "Tous les quartiers",
     "farAway": "Tu sembles loin de Barcelone, on affiche donc toute la catégorie.",
@@ -857,7 +857,13 @@
     "twoFingers": "Utilise deux doigts pour déplacer la carte",
     "placesOne": "{n} lieu",
     "openNowOne": "{n} ouvert maintenant",
-    "allSubcategories": "Tous"
+    "allSubcategories": "Tous",
+    "taxiNoRanks": "Nous n'avons pas encore de vraies stations de taxi ici — utilisez les boutons ci-dessus pour en commander un maintenant.",
+    "metroSearchPlaceholder": "Rechercher une station (ex. Diagonal)",
+    "allLines": "Toutes les lignes",
+    "nitbusLinesCount": "{n} lignes de nuit",
+    "nitbusHours": "Chaque nuit, de 22h20 à 6h00",
+    "nitbusHoursNote": "La fréquence et le dernier bus exact varient selon la ligne — touchez « voir les arrêts » sur une ligne pour l'horaire détaillé."
   },
   "areas": {
     "titleBarrio": "Discothèques à {name}",

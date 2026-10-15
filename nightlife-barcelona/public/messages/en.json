@@ -848,7 +848,7 @@
     "taxiNow": "Get a taxi now",
     "taxiRanksHint": "Taxi ranks are listed below if you'd rather walk to one.",
     "nitbusTitle": "NitBus",
-    "nitbusBody": "These are the main stops, where several lines meet. Each line's exact timetable is in the TMB app and on the stop display.",
+    "nitbusBody": "Full night-bus (Nitbus) network and where each line goes. Tap \"see stops\" on any line for the official stop-by-stop map.",
     "allArea": "Whole area",
     "allBarrios": "All neighbourhoods",
     "farAway": "You seem to be far from Barcelona, so the whole category is shown.",
@@ -857,7 +857,13 @@
     "twoFingers": "Use two fingers to move the map",
     "placesOne": "{n} place",
     "openNowOne": "{n} open now",
-    "allSubcategories": "All"
+    "allSubcategories": "All",
+    "taxiNoRanks": "We don't have real taxi ranks loaded here yet — use the buttons above to call one now.",
+    "metroSearchPlaceholder": "Search a station (e.g. Diagonal)",
+    "allLines": "All lines",
+    "nitbusLinesCount": "{n} night lines",
+    "nitbusHours": "Every night, 10:20 pm – 6:00 am",
+    "nitbusHoursNote": "Frequency and the exact last bus vary by line — tap \"see stops\" on any line for the detailed timetable."
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",

@@ -51,6 +51,11 @@ const categories = ESSENTIAL_CATEGORIES.map((c) => c.key)
 const SUBCATEGORY_HINTS: Record<string, string[]> = {
   ATM: ["CaixaBank", "Santander", "BBVA", "Banco Sabadell", "ING", "Bankinter", "Unicaja", "Abanca"],
   Food: ["Pizza", "Kebab", "Hamburguesas", "Bocadillos", "Döner", "Asiática", "Churrería", "24h"],
+  // Código de línea Nitbus (N0-N16): con esto la ficha pública ya sabe mostrar el recorrido real
+  // de la línea (ver src/lib/nightBuses.ts) en vez de solo el nombre de la parada.
+  Nitbus: ["N0", "N1", "N2", "N3", "N4", "N5", "N6", "N7", "N8", "N9", "N11", "N12", "N13", "N14", "N15", "N16"],
+  // Línea(s) de metro/FGC que paran aquí (p. ej. "L3" o "L3, L5" si es un intercambiador).
+  Metro: ["L1", "L2", "L3", "L4", "L5", "L9N", "L9S", "L10N", "L10S", "L11", "L6", "L7", "L8", "L12"],
 }
 
 export default function AdminEssentialsPage() {
@@ -221,12 +226,20 @@ export default function AdminEssentialsPage() {
         {categories.map((c) => <option key={c} value={c}>{c}</option>)}
       </select>
 
-      {(data.category === "ATM" || data.category === "Food") && (
+      {(data.category === "ATM" || data.category === "Food" || data.category === "Nitbus" || data.category === "Metro") && (
         <input
           value={data.subcategory}
           onChange={(e) => setData({ ...data, subcategory: e.target.value })}
           list="subcategory-hints"
-          placeholder={data.category === "ATM" ? "Banco (p. ej. CaixaBank)" : "Tipo de comida (p. ej. Pizza)"}
+          placeholder={
+            data.category === "ATM"
+              ? "Banco (p. ej. CaixaBank)"
+              : data.category === "Food"
+              ? "Tipo de comida (p. ej. Pizza)"
+              : data.category === "Nitbus"
+              ? "Línea(s), ej. N6 o N6, N9"
+              : "Línea de metro (p. ej. L3)"
+          }
           className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
         />
       )}

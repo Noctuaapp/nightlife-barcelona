@@ -848,7 +848,7 @@
     "taxiNow": "Demanar un taxi ara",
     "taxiRanksHint": "Més avall tens les parades de taxi si prefereixes anar a agafar-ne un.",
     "nitbusTitle": "NitBus",
-    "nitbusBody": "Aquestes són les parades principals, on coincideixen diverses línies. L'horari exacte de cada línia és a l'app de TMB i al panell de la parada.",
+    "nitbusBody": "Xarxa completa de línies nocturnes (Nitbus) i cap a on va cadascuna. Toca \"veure parades\" a qualsevol línia per al mapa oficial parada a parada.",
     "allArea": "Tota l'àrea",
     "allBarrios": "Tots els barris",
     "farAway": "Sembla que ets lluny de Barcelona, així que es mostra tota la categoria.",
@@ -857,7 +857,13 @@
     "twoFingers": "Fes servir dos dits per moure el mapa",
     "placesOne": "{n} lloc",
     "openNowOne": "{n} obert ara",
-    "allSubcategories": "Tots"
+    "allSubcategories": "Tots",
+    "taxiNoRanks": "Encara no tenim parades de taxi reals carregades aquí — fes servir els botons de dalt per demanar-ne un ara.",
+    "metroSearchPlaceholder": "Busca una estació (p. ex. Diagonal)",
+    "allLines": "Totes les línies",
+    "nitbusLinesCount": "{n} línies nocturnes",
+    "nitbusHours": "Cada nit, de 22:20 a 06:00",
+    "nitbusHoursNote": "La freqüència i l'últim bus exacte varien segons la línia — toca «veure parades» a qualsevol línia per a l'horari detallat."
   },
   "areas": {
     "titleBarrio": "Discoteques a {name}",

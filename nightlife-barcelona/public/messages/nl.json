@@ -848,7 +848,7 @@
     "taxiNow": "Nu een taxi bestellen",
     "taxiRanksHint": "Verderop vind je de taxistandplaatsen als je liever zelf een taxi pakt.",
     "nitbusTitle": "NitBus",
-    "nitbusBody": "Dit zijn de belangrijkste haltes, waar meerdere lijnen samenkomen. De exacte dienstregeling van elke lijn staat in de TMB-app en op het bord bij de halte.",
+    "nitbusBody": "Volledig nachtbusnetwerk (Nitbus) en waar elke lijn naartoe gaat. Tik op \"bekijk haltes\" bij een lijn voor de officiële haltekaart.",
     "allArea": "Het hele gebied",
     "allBarrios": "Alle wijken",
     "farAway": "Je lijkt ver van Barcelona te zijn, dus we tonen de hele categorie.",
@@ -857,7 +857,13 @@
     "twoFingers": "Gebruik twee vingers om de kaart te verplaatsen",
     "placesOne": "{n} plek",
     "openNowOne": "{n} nu open",
-    "allSubcategories": "Alle"
+    "allSubcategories": "Alle",
+    "taxiNoRanks": "We hebben hier nog geen echte taxistandplaatsen — gebruik de knoppen hierboven om er nu een te bestellen.",
+    "metroSearchPlaceholder": "Zoek een station (bijv. Diagonal)",
+    "allLines": "Alle lijnen",
+    "nitbusLinesCount": "{n} nachtlijnen",
+    "nitbusHours": "Elke nacht, van 22:20 tot 06:00",
+    "nitbusHoursNote": "Frequentie en de exacte laatste bus verschillen per lijn — tik bij een lijn op \"haltes bekijken\" voor de volledige dienstregeling."
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",

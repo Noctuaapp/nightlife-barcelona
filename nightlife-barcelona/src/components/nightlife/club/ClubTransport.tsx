@@ -5,10 +5,11 @@ import Icon from "../../ui/Icon"
 import RideButtons from "./RideButtons"
 import { supabase } from "../../../lib/supabase"
 import { useLanguage } from "../../../context/LanguageContext"
-import { getNightBusLine, splitNightBusCodes, nightBusStopsUrl } from "../../../lib/nightBuses"
+import { splitNightBusCodes } from "../../../lib/nightBuses"
 import { nearestMetroStations } from "../../../lib/metroStations"
 import { getMetroTonight } from "../../../lib/transitHours"
 import { distanceInMeters, formatDistance, walkingMinutes, walkingDirectionsUrl } from "../../../lib/geo"
+import { MetroLineBadge, NitbusRouteRow } from "../../ui/TransitBadge"
 
 // Cómo llegar y, sobre todo, cómo volver: metro (con su horario de esta noche), NitBus y taxi.
 const PLACA_CATALUNYA = { lat: 41.3869, lon: 2.1701 }
@@ -104,27 +105,36 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
               <p className={`text-xs font-semibold ${metroTonight?.state === "closed" ? "text-zinc-400" : "text-open"}`}>{metroLabel}</p>
             )}
           </div>
-          <div className="mt-3 flex flex-col gap-2">
+          <div className="mt-3 flex flex-col gap-2.5">
             {club.metro_lines
-              ? club.metro_lines.split(",").map((line) => (
-                  <Row key={line.trim()} tone="metro" badge={line.trim()}>
-                    {t("clubPage.metroLine")}
-                  </Row>
+              ? club.metro_lines.split(",").map((l) => l.trim()).filter(Boolean).map((code) => (
+                  <div key={code} className="flex items-center gap-2.5 rounded-ctl border border-white/10 bg-white/[0.02] px-3 py-2.5">
+                    <MetroLineBadge code={code} />
+                    <span className="text-sm text-zinc-300">{t("clubPage.metroLine")}</span>
+                  </div>
                 ))
               : metro.map((s) => (
-                  <Row key={s.name} tone="metro" badge={`${formatDistance(s.distanceMeters)} · ${walkingMinutes(s.distanceMeters)} min`}>
-                    <span className="flex items-center justify-between gap-3">
-                      <span className="min-w-0">{s.name}</span>
-                      <a
-                        href={walkingDirectionsUrl(lat, lng, s.lat, s.lon)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="shrink-0 text-xs font-semibold text-red-200 underline underline-offset-2"
-                      >
-                        {t("clubPage.walk")}
-                      </a>
-                    </span>
-                  </Row>
+                  <div key={s.name} className="flex items-center gap-3 rounded-ctl border border-white/10 bg-white/[0.02] px-3 py-2.5">
+                    {s.lines && s.lines.length > 0 && (
+                      <div className="flex shrink-0 gap-1">
+                        {s.lines.map((l) => (
+                          <MetroLineBadge key={l} code={l} />
+                        ))}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1 text-sm leading-snug">
+                      <p className="truncate font-semibold text-ink">{s.name}</p>
+                      <p className="text-xs text-zinc-400">{formatDistance(s.distanceMeters)} · {walkingMinutes(s.distanceMeters)} min</p>
+                    </div>
+                    <a
+                      href={walkingDirectionsUrl(lat, lng, s.lat, s.lon)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 text-xs font-semibold text-red-200 underline underline-offset-2"
+                    >
+                      {t("clubPage.walk")}
+                    </a>
+                  </div>
                 ))}
           </div>
         </div>
@@ -134,30 +144,13 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
         <p className="flex items-center gap-2 text-sm font-semibold text-ink">
           <Icon name="bus" className="h-4 w-4 text-muted" /> {t("club.night_buses")}
         </p>
-        <div className="mt-3 flex flex-col gap-2">
+        <div className="mt-3 flex flex-col gap-2.5">
           {club.night_buses &&
-            splitNightBusCodes(club.night_buses).map((raw) => {
-              const line = getNightBusLine(raw)
-              return (
-                <Row key={raw} tone="bus" badge={line ? line.code : raw}>
-                  {line ? (
-                    <>
-                      {line.route}{" "}
-                      <a
-                        href={nightBusStopsUrl(line.code)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-semibold text-sky-200 underline underline-offset-2"
-                      >
-                        {t("clubPage.seeStops")}
-                      </a>
-                    </>
-                  ) : (
-                    t("clubPage.lineUnknown")
-                  )}
-                </Row>
-              )
-            })}
+            splitNightBusCodes(club.night_buses).map((raw) => (
+              <div key={raw} className="rounded-ctl border border-white/10 bg-white/[0.02] px-3 py-2.5">
+                <NitbusRouteRow code={raw} seeStopsLabel={t("clubPage.seeStops")} unknownLabel={t("clubPage.lineUnknown")} />
+              </div>
+            ))}
           <Row tone="bus" badge={<Icon name="map" className="h-3.5 w-3.5" />}>
             <a href={nitbusNearby} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-200 underline underline-offset-2">
               {t("clubPage.nitbusNearby")}

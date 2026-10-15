@@ -37,12 +37,28 @@ export function getNightBusLine(raw: string): NightBusLine | null {
   return NIGHT_BUS_LINES[code] || null
 }
 
-// Enlace al plano oficial de esa línea concreta (parada a parada, como imagen) — es donde vive
-// de verdad el recorrido completo, así que en vez de inventarnos una lista de paradas enlazamos
-// directamente a la fuente real cuando alguien quiere ver "todas las paradas que hace el bus".
+export type ParsedRoute = { from: string; to: string | null; note: string | null }
+
+// Descompone "Roquetes ↔ Santa Coloma de Gramenet (Les Oliveres)" en origen/destino/nota, para
+// poder dibujar el recorrido como dos paradas con una flecha en vez de una frase corrida — así se
+// lee de un vistazo, como en un rótulo de parada real, en lugar de tener que leer el texto entero
+// para encontrar a dónde va.
+export function parseRoute(route: string): ParsedRoute {
+  const noteMatch = route.match(/\(([^)]+)\)\s*$/)
+  const note = noteMatch ? noteMatch[1].trim() : null
+  const base = (noteMatch ? route.slice(0, noteMatch.index) : route).trim()
+  if (base.includes("↔")) {
+    const [from, to] = base.split("↔").map((s) => s.trim())
+    return { from, to, note }
+  }
+  return { from: base, to: null, note }
+}
+
+// Enlace para encontrar la parada más cercana de esta línea. Antes iba a un agregador externo
+// (redtransporte.com) que se veía mal y poco fiable; Google Maps es el mismo sitio que ya usamos
+// para "parada nitbus cerca" en la ficha de club, así que es consistente y siempre funciona.
 export function nightBusStopsUrl(code: string): string {
-  const num = code.trim().toUpperCase().replace(/^N/, "")
-  return `https://www.redtransporte.com/barcelona/nitbus/linea-n${num}.html`
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`parada nitbus ${code.trim().toUpperCase()} Barcelona`)}`
 }
 
 // Separa el texto libre que escribe el admin en códigos individuales. No solo por comas: si

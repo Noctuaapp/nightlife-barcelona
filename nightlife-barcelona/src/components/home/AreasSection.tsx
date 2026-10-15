@@ -1,19 +1,20 @@
 "use client"
 
 import Link from "next/link"
-import { Pill, Banknote, UtensilsCrossed, ShoppingCart, Bus, CarTaxiFront, type LucideIcon } from "lucide-react"
+import { Pill, Banknote, UtensilsCrossed, ShoppingCart, Bus, TrainFront, type LucideIcon } from "lucide-react"
 import { useLanguage } from "../../context/LanguageContext"
 
 // Esenciales de la noche en la portada: accesos directos compactos. Antes eran 7 tarjetas de
 // 300 px de alto con degradados de colores, e incluían Hotel y Casino, que no son esenciales para
 // volver a casa o resolver algo a las 3 de la mañana. Ahora son los 6 que sí lo son.
+// Taxi se quitó (no informaba de nada; pedir uno ya funciona desde la ficha de cada club).
 const CATEGORIES: { key: string; slug: string; icon: LucideIcon }[] = [
   { key: "Pharmacy", slug: "pharmacy", icon: Pill },
   { key: "ATM", slug: "atm", icon: Banknote },
   { key: "Food", slug: "food", icon: UtensilsCrossed },
   { key: "Supermarket", slug: "supermarket", icon: ShoppingCart },
+  { key: "Metro", slug: "metro", icon: TrainFront },
   { key: "Nitbus", slug: "nitbus", icon: Bus },
-  { key: "Taxi", slug: "taxi", icon: CarTaxiFront },
 ]
 
 export default function AreasSection() {
