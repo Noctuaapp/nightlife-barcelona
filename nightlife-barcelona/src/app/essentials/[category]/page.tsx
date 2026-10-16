@@ -175,7 +175,10 @@ export default function EssentialCategoryPage() {
       }
       // .eq("hidden", false) igual que en el listado — si no, un esencial oculto desde el admin
       // seguía siendo visitable por enlace directo.
-      const { data } = await supabase.from("essentials").select("*").ilike("category", category).eq("hidden", false).order("name")
+      // El slug de la URL no es el valor real de la columna `category` cuando lleva más de una
+      // palabra ("gas-station" en la URL, pero "Gas Station" en la base) — usar el slug tal cual
+      // en el ilike no encontraba ninguna fila. Hay que usar la "key" real de la categoría.
+      const { data } = await supabase.from("essentials").select("*").ilike("category", info?.key || category).eq("hidden", false).order("name")
       let rows: Essential[] = data ? data.map(cleanEssential) : []
 
       // Metro: con 155 estaciones sería inviable pedirte que las cargues una a una en el admin, así
@@ -183,6 +186,20 @@ export default function EssentialCategoryPage() {
       // alguna cargada a mano (con foto, por ejemplo), esa gana: se evita duplicar por proximidad
       // (<120m), no por nombre exacto, porque los nombres no siempre coinciden letra a letra.
       if (category === "metro") {
+        // Si una estación se cargó a mano (con foto, por ejemplo) sin rellenar sus líneas, antes
+        // se quedaba sin L1/L2/L3... para siempre — el catálogo la descartaba por estar a <120m de
+        // esa fila real, pero la fila real no traía las líneas consigo. Así que desaparecía al
+        // filtrar por línea (p. ej. Drassanes). Ahora, si la fila real no tiene líneas propias, se
+        // le copian las de la estación del catálogo más cercana antes de descartar esa del catálogo.
+        const catalogLinesNear = (lat: number, lon: number): string | null => {
+          const hit = METRO_STATIONS.find((s) => s.lines && s.lines.length > 0 && distanceInMeters(lat, lon, s.lat, s.lon) < 120)
+          return hit ? hit.lines!.join(", ") : null
+        }
+        rows = rows.map((r) =>
+          r.subcategory || !r.latitude || !r.longitude
+            ? r
+            : { ...r, subcategory: catalogLinesNear(Number(r.latitude), Number(r.longitude)) }
+        )
         const yaCubierta = (lat: number, lon: number) =>
           rows.some((r) => r.latitude && r.longitude && distanceInMeters(lat, lon, Number(r.latitude), Number(r.longitude)) < 120)
         const catalogo: Essential[] = METRO_STATIONS.filter((s) => !yaCubierta(s.lat, s.lon)).map((s, i) => ({
@@ -206,7 +223,7 @@ export default function EssentialCategoryPage() {
       setLoading(false)
     }
     fetchEssentials()
-  }, [category])
+  }, [category, info?.key])
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return
@@ -507,11 +524,17 @@ export default function EssentialCategoryPage() {
         onClick={handleCardClick}
         className={`flex cursor-pointer gap-4 rounded-card border p-4 transition ${isSelected ? "border-brand/60 bg-brand/10" : "border-white/10 bg-surface hover:border-white/25"}`}
       >
-        <EssentialPhoto src={item.image} alt={item.name} icon={<CatIcon size={24} />} color={config.color} className="h-16 w-16 shrink-0 rounded-ctl" />
+        {/* Metro: de 155 estaciones solo unas pocas llevan foto propia (las que alguien cargó a
+            mano) — mezclar fotos reales con el icono genérico en la misma lista quedaba
+            descuadrado (unas con foto, otras con un simple tren). Mejor que las 155 se vean igual:
+            siempre el icono, nunca la foto, aunque alguna la tenga. */}
+        <EssentialPhoto src={category === "metro" ? null : item.image} alt={item.name} icon={<CatIcon size={24} />} color={config.color} className="h-16 w-16 shrink-0 rounded-ctl" />
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold leading-snug text-ink">{item.name}</h3>
           {item.highFee && <span className="mt-1 inline-block rounded-full bg-warn/15 px-2.5 py-0.5 text-xs font-semibold text-warn">{t("essentialsPage.highFee")}</span>}
-          <p className="mt-0.5 truncate text-sm text-zinc-400">{[item.neighborhood, item.address].filter(Boolean).join(" · ")}</p>
+          {category !== "metro" && (
+            <p className="mt-0.5 truncate text-sm text-zinc-400">{[item.neighborhood, item.address].filter(Boolean).join(" · ")}</p>
+          )}
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold">
             {status.label && <span className={status.state === "open" ? (status.soon ? "text-warn" : "text-open") : "text-zinc-400"}>{status.label}</span>}
             {distanceLabel && <span className="text-brand-soft">{distanceLabel}</span>}

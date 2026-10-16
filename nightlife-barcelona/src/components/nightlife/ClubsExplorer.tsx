@@ -323,15 +323,15 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
             van en una fila deslizable (antes se partían en tres líneas y tapaban media pantalla). */}
         <div className="sticky top-[72px] z-30 sm:top-20 mt-6 border-y border-white/10 bg-night/90 py-3 backdrop-blur-xl">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 lg:flex-row lg:items-center">
-            <div className="group flex min-w-0 flex-1 items-center gap-3 rounded-full border border-white/15 bg-surface px-5 py-3 transition focus-within:border-brand">
-              <SearchIcon className="h-5 w-5 shrink-0 text-zinc-400 transition group-focus-within:text-brand-soft" />
+            <div className="group flex min-w-0 flex-1 items-center gap-3 rounded-full border border-white/15 bg-surface px-5 py-3 transition">
+              <SearchIcon className="h-5 w-5 shrink-0 text-zinc-400 transition" />
               <input
                 type="search"
                 placeholder={t("clubs.search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 aria-label={t("clubs.search")}
-                className="w-full bg-transparent text-base text-ink outline-none placeholder:text-zinc-400"
+                className="w-full appearance-none bg-transparent text-base text-ink outline-none focus-visible:outline-none placeholder:text-zinc-400 [&::-webkit-search-decoration]:appearance-none"
               />
               {search && (
                 <button onClick={() => setSearch("")} className="text-zinc-400 transition hover:text-ink" aria-label={t("explorer.clearSearch")}>

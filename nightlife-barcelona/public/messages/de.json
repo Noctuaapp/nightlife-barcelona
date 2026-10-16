@@ -863,7 +863,8 @@
     "allLines": "Alle Linien",
     "nitbusLinesCount": "{n} Nachtlinien",
     "nitbusHours": "Jede Nacht, 22:20–06:00 Uhr",
-    "nitbusHoursNote": "Takt und letzter Bus variieren je Linie — tippe bei einer Linie auf „Haltestellen ansehen“ für den genauen Fahrplan."
+    "nitbusHoursNote": "Takt und letzter Bus variieren je Linie — tippe bei einer Linie auf „Haltestellen ansehen“ für den genauen Fahrplan.",
+    "allCategories": "Alle Kategorien"
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",

@@ -71,11 +71,12 @@ export default function EssentialsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale])
 
-  // Taxi ya no es una categoría de esenciales: no informaba de nada (solo oficinas de Uber/Cabify,
-  // que no son un sitio al que ir a pie) y pedir un taxi ya funciona bien desde la ficha de cada
-  // club. Si queda alguna fila vieja con category="Taxi" en la base, se oculta aquí también.
+  // Taxi y Transport ya no son categorías de esenciales: no informaban de nada útil como sitio al
+  // que ir a pie (Taxi solo tenía oficinas de Uber/Cabify; Transport solo el Aerobus) y moverse de
+  // noche ya funciona bien desde la ficha de cada club. Si queda alguna fila vieja con esa
+  // categoría en la base, se oculta aquí también.
   const categories = Array.from(new Set(essentials.map((e) => e.category)))
-    .filter((c) => c !== "Taxi")
+    .filter((c) => c !== "Taxi" && c !== "Transport")
     .sort((a, b) => categoryRank(a) - categoryRank(b))
   const itemsByCategory = (cat: string) => essentials.filter((e) => e.category === cat)
   const openCount = (cat: string) => itemsByCategory(cat).filter((e) => getOpenStatus(e.open_hours).state === "open").length
@@ -159,7 +160,7 @@ export default function EssentialsPage() {
                   aria-label={t("essentialsPage.searchPlaceholder")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-transparent text-base text-ink outline-none placeholder:text-zinc-400"
+                  className="w-full bg-transparent text-base text-ink outline-none focus-visible:outline-none placeholder:text-zinc-400"
                 />
                 {search && (
                   <button onClick={() => setSearch("")} className="text-zinc-400 hover:text-ink" aria-label={t("explorer.clearSearch")}>

@@ -863,7 +863,8 @@
     "allLines": "All lines",
     "nitbusLinesCount": "{n} night lines",
     "nitbusHours": "Every night, 10:20 pm – 6:00 am",
-    "nitbusHoursNote": "Frequency and the exact last bus vary by line — tap \"see stops\" on any line for the detailed timetable."
+    "nitbusHoursNote": "Frequency and the exact last bus vary by line — tap \"see stops\" on any line for the detailed timetable.",
+    "allCategories": "All categories"
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",

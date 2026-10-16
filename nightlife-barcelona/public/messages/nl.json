@@ -863,7 +863,8 @@
     "allLines": "Alle lijnen",
     "nitbusLinesCount": "{n} nachtlijnen",
     "nitbusHours": "Elke nacht, van 22:20 tot 06:00",
-    "nitbusHoursNote": "Frequentie en de exacte laatste bus verschillen per lijn — tik bij een lijn op \"haltes bekijken\" voor de volledige dienstregeling."
+    "nitbusHoursNote": "Frequentie en de exacte laatste bus verschillen per lijn — tik bij een lijn op \"haltes bekijken\" voor de volledige dienstregeling.",
+    "allCategories": "Alle categorieën"
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",

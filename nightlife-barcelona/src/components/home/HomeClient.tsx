@@ -241,7 +241,7 @@ export default function HomeClient({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={t("home.searchPlaceholder")}
-                  className="min-w-0 flex-1 bg-transparent py-2.5 text-base text-white outline-none placeholder:text-white/60"
+                  className="min-w-0 flex-1 bg-transparent py-2.5 text-base text-white outline-none focus-visible:outline-none placeholder:text-white/60"
                 />
                 <button
                   type="submit"

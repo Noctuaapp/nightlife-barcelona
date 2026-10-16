@@ -1,10 +1,12 @@
-import { Pill, Banknote, UtensilsCrossed, Plane, TrainFront, Bus, ShoppingCart, BedDouble, Dices, Fuel, Hospital, MapPin, type LucideIcon } from "lucide-react"
+import { Pill, Banknote, UtensilsCrossed, TrainFront, Bus, ShoppingCart, BedDouble, Dices, Fuel, Hospital, MapPin, type LucideIcon } from "lucide-react"
 
 // Categorías de esenciales: el valor de la columna `category` → URL e icono. Antes cada página
 // tenía su copia con un emoji y un color distinto por categoría (doce colores compitiendo con el
 // violeta de la marca). Ahora: un icono de línea y el mismo color para todas.
-// "Taxi" se quitó de aquí (ver /essentials/page.tsx): no informaba de nada (solo oficinas de
-// Uber/Cabify) y pedir un taxi ya funciona bien desde la ficha de cada club (RideButtons).
+// "Taxi" y "Transport" se quitaron de aquí (ver /essentials/page.tsx): no informaban de nada útil
+// como sitio al que ir andando (Taxi solo tenía oficinas de Uber/Cabify; Transport solo el
+// Aerobus) y moverse de noche ya funciona bien desde la ficha de cada club (RideButtons) y la
+// categoría Nitbus/Metro.
 export const ESSENTIAL_CATEGORIES: { key: string; slug: string; icon: LucideIcon }[] = [
   { key: "Pharmacy", slug: "pharmacy", icon: Pill },
   { key: "ATM", slug: "atm", icon: Banknote },
@@ -12,7 +14,6 @@ export const ESSENTIAL_CATEGORIES: { key: string; slug: string; icon: LucideIcon
   { key: "Supermarket", slug: "supermarket", icon: ShoppingCart },
   { key: "Metro", slug: "metro", icon: TrainFront },
   { key: "Nitbus", slug: "nitbus", icon: Bus },
-  { key: "Transport", slug: "transport", icon: Plane },
   { key: "Hospital", slug: "hospital", icon: Hospital },
   { key: "Gas Station", slug: "gas-station", icon: Fuel },
   { key: "Hotel", slug: "hotel", icon: BedDouble },

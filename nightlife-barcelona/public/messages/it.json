@@ -863,7 +863,8 @@
     "allLines": "Tutte le linee",
     "nitbusLinesCount": "{n} linee notturne",
     "nitbusHours": "Ogni notte, dalle 22:20 alle 06:00",
-    "nitbusHoursNote": "La frequenza e l'ultimo bus esatto variano per linea — tocca \"vedi fermate\" su una linea per l'orario dettagliato."
+    "nitbusHoursNote": "La frequenza e l'ultimo bus esatto variano per linea — tocca \"vedi fermate\" su una linea per l'orario dettagliato.",
+    "allCategories": "Tutte le categorie"
   },
   "areas": {
     "titleBarrio": "Discoteche a {name}",

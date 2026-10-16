@@ -863,7 +863,8 @@
     "allLines": "Totes les línies",
     "nitbusLinesCount": "{n} línies nocturnes",
     "nitbusHours": "Cada nit, de 22:20 a 06:00",
-    "nitbusHoursNote": "La freqüència i l'últim bus exacte varien segons la línia — toca «veure parades» a qualsevol línia per a l'horari detallat."
+    "nitbusHoursNote": "La freqüència i l'últim bus exacte varien segons la línia — toca «veure parades» a qualsevol línia per a l'horari detallat.",
+    "allCategories": "Totes les categories"
   },
   "areas": {
     "titleBarrio": "Discoteques a {name}",

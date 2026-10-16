@@ -248,7 +248,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                 aria-label={t("events.search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-transparent text-base text-ink outline-none placeholder:text-zinc-400"
+                className="w-full bg-transparent text-base text-ink outline-none focus-visible:outline-none placeholder:text-zinc-400"
               />
               {search && (
                 <button onClick={() => setSearch("")} className="text-zinc-400 transition hover:text-ink" aria-label={t("explorer.clearSearch")}>

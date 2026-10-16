@@ -13,9 +13,17 @@ import { createSlug } from "../../lib/slug"
 import { useLanguage } from "../../context/LanguageContext"
 import ArrowIcon from "../../components/ui/ArrowIcon"
 import { zoneOf, zonesPresent } from "../../lib/zones"
+import { categoryRank, categoryNameKey } from "../../lib/essentialCategories"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { Disc3, CalendarDays, MapPin, Footprints, X, List, LocateFixed, Search, type LucideIcon } from "lucide-react"
 import { logError } from "../../lib/log"
+
+// "Taxi" y "Transport" ya no son categorías de esenciales (ver essentialCategories.ts y
+// ClubTransport.tsx): no informaban de nada útil como sitio al que ir a pie (Taxi solo oficinas
+// de Uber/Cabify/Bolt; Transport solo el Aerobus) y pedir un taxi ya funciona desde la ficha de
+// cada club. La lista de categorías y la ficha de club ya las excluían, pero este mapa general
+// cargaba `essentials` sin filtrar nada — mismo filtro aquí.
+const NOT_A_RANK = /cabify|uber|bolt|free\s?now|oficina|office|headquarter/i
 
 type Club = {
   id: number
@@ -129,6 +137,42 @@ const SearchInput = ({ value, onChange, accent }: { value: string; onChange: (v:
       <path d="M16.5 16.5L21 21" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round"/>
     </svg>
   </div>
+  )
+}
+
+// Un <select> nativo se veía mal aquí: el desplegable de opciones lo pinta el sistema operativo
+// en blanco, sin seguir el tema oscuro de la app, y en móvil tapaba la lista de resultados de
+// forma rara. Este es un desplegable propio (botón + lista flotante) con el mismo estilo que el
+// resto del mapa, para que combine igual en todos los navegadores.
+const FilterSelect = ({ value, options, onChange, placeholder, accent }: { value: string; options: { value: string; label: string }[]; onChange: (v: string) => void; placeholder: string; accent: string }) => {
+  const [open, setOpen] = useState(false)
+  const current = options.find((o) => o.value === value)
+  return (
+    <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
+      <button type="button" onClick={() => setOpen((o) => !o)}
+        style={{ width: "100%", textAlign: "left", borderRadius: "10px", border: open ? `1px solid ${accent}` : "1px solid rgba(255,255,255,0.12)",
+          background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: "12px", fontWeight: 600,
+          padding: "7px 24px 7px 10px", cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis",
+          whiteSpace: "nowrap", position: "relative", boxSizing: "border-box" }}>
+        {current ? current.label : placeholder}
+        <span style={{ position: "absolute", right: "8px", top: "50%", transform: open ? "translateY(-50%) rotate(180deg)" : "translateY(-50%)", pointerEvents: "none", fontSize: "9px", color: "rgba(255,255,255,0.5)", transition: "transform 0.15s ease" }}>▾</span>
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 29 }} />
+          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, maxHeight: "240px", overflowY: "auto", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.14)", background: "rgba(13,10,28,0.98)", backdropFilter: "blur(16px)", boxShadow: "0 16px 40px -14px rgba(0,0,0,0.85)" }}>
+            {options.map((o) => (
+              <button key={o.value || "all"} type="button" onClick={() => { onChange(o.value); setOpen(false) }}
+                style={{ display: "block", width: "100%", textAlign: "left", padding: "9px 12px", fontSize: "13px",
+                  fontWeight: o.value === value ? 700 : 500, color: o.value === value ? "#fff" : "rgba(255,255,255,0.7)",
+                  background: o.value === value ? `${accent}22` : "none", border: "none", cursor: "pointer" }}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 
@@ -278,9 +322,23 @@ export default function MapPage() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
   const [search, setSearch] = useState("")
   const [zone, setZone] = useState("")
+  const [category, setCategory] = useState("")
   const [mapQuery, setMapQuery] = useState("")
   const [mapSearchOpen, setMapSearchOpen] = useState(false)
-  useEffect(() => { setZone("") }, [filter])
+  const mapSearchRef = useRef<HTMLDivElement>(null)
+  useEffect(() => { setZone(""); setCategory("") }, [filter])
+  // El buscador flotante se quedaba abierto para siempre: antes solo se cerraba al borrar el
+  // texto o elegir un resultado, así que si lo abrías sin escribir nada (p. ej. para "usar mi
+  // ubicación") no había forma de cerrarlo ni volviendo a pulsarlo (ya estaba enfocado, así que
+  // el evento de foco no se repetía). Ahora un clic fuera lo cierra.
+  useEffect(() => {
+    if (!mapSearchOpen) return
+    const onDocPointerDown = (e: PointerEvent) => {
+      if (mapSearchRef.current && !mapSearchRef.current.contains(e.target as Node)) setMapSearchOpen(false)
+    }
+    document.addEventListener("pointerdown", onDocPointerDown)
+    return () => document.removeEventListener("pointerdown", onDocPointerDown)
+  }, [mapSearchOpen])
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const [trackingActive, setTrackingActive] = useState(false)
   const [walkingTime, setWalkingTime] = useState<string | null>(null)
@@ -350,7 +408,7 @@ export default function MapPage() {
       ])
       if (clubsData) setClubs(clubsData)
       if (eventsData) setEvents(eventsData)
-      if (essentialsData) setEssentials(essentialsData)
+      if (essentialsData) setEssentials(essentialsData.filter((e) => e.category !== "Taxi" && e.category !== "Transport" && !NOT_A_RANK.test(e.name || "")))
     }
     fetchData()
   }, [])
@@ -393,8 +451,8 @@ export default function MapPage() {
     const inZone = (i: { neighborhood?: string | null; address?: string | null }) => !zone || zoneOf(i) === zone
     if (filter === "clubs") clubs.filter((c) => c.latitude && c.longitude && inZone(c)).forEach((c) => addMarker(c.latitude!, c.longitude!, c))
     else if (filter === "events") events.filter((e) => e.latitude && e.longitude && inZone(e)).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
-    else if (filter === "essentials") essentials.filter((e) => e.latitude && e.longitude && inZone(e)).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
-  }, [filter, mapReady, clubs, events, essentials, zone])
+    else if (filter === "essentials") essentials.filter((e) => e.latitude && e.longitude && inZone(e) && (!category || e.category === category)).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
+  }, [filter, mapReady, clubs, events, essentials, zone, category])
 
   useEffect(() => {
     if (urlHandledRef.current || !mapReady) return
@@ -494,21 +552,53 @@ export default function MapPage() {
 
   const rawList = filter === "clubs" ? clubs : filter === "events" ? events : essentials
   const zonesAvail = zonesPresent(rawList as { neighborhood?: string | null; address?: string | null }[])
-  const zoneChips = zonesAvail.length > 1 ? (
-    <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingTop: "10px", paddingBottom: "2px" }}>
-      {["", ...zonesAvail].map((z) => (
-        <button key={z || "all"} onClick={() => setZone(z)}
-          style={{ flexShrink: 0, borderRadius: "9999px", padding: "5px 11px", fontSize: "11px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
-            border: zone === z ? `1px solid ${COLORS[filter]}` : "1px solid rgba(255,255,255,0.12)",
-            background: zone === z ? `${COLORS[filter]}33` : "rgba(255,255,255,0.04)",
-            color: zone === z ? "#fff" : "rgba(255,255,255,0.55)" }}>
-          {z === "" ? t("essentialsPage.allArea") : z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", "")}
-        </button>
-      ))}
-    </div>
-  ) : null
+  const categoriesAvail = filter === "essentials"
+    ? Array.from(new Set(essentials.map((e) => e.category))).sort((a, b) => categoryRank(a) - categoryRank(b))
+    : []
+  // En esenciales, con cuatro municipios y diez categorías a la vez, la fila de chips se volvía
+  // larga e ilegible — dos desplegables (zona y categoría) son más compactos y claros para cruzar
+  // ambos filtros. Clubs/eventos solo tienen zona, así que ahí se mantienen los chips de siempre.
+  const filterChips = filter === "essentials" ? (
+    (zonesAvail.length > 1 || categoriesAvail.length > 1) && (
+      <div style={{ display: "flex", gap: "6px", paddingTop: "10px", paddingBottom: "2px" }}>
+        {zonesAvail.length > 1 && (
+          <FilterSelect
+            accent={COLORS[filter]}
+            placeholder={t("essentialsPage.allArea")}
+            value={zone}
+            onChange={setZone}
+            options={[{ value: "", label: t("essentialsPage.allArea") }, ...zonesAvail.map((z) => ({ value: z, label: z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", "") }))]}
+          />
+        )}
+        {categoriesAvail.length > 1 && (
+          <FilterSelect
+            accent={COLORS[filter]}
+            placeholder={t("essentialsPage.allCategories")}
+            value={category}
+            onChange={setCategory}
+            options={[{ value: "", label: t("essentialsPage.allCategories") }, ...categoriesAvail.map((c) => ({ value: c, label: t(categoryNameKey(c)) }))]}
+          />
+        )}
+      </div>
+    )
+  ) : (
+    zonesAvail.length > 1 ? (
+      <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingTop: "10px", paddingBottom: "2px" }}>
+        {["", ...zonesAvail].map((z) => (
+          <button key={z || "all"} onClick={() => setZone(z)}
+            style={{ flexShrink: 0, borderRadius: "9999px", padding: "5px 11px", fontSize: "11px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
+              border: zone === z ? `1px solid ${COLORS[filter]}` : "1px solid rgba(255,255,255,0.12)",
+              background: zone === z ? `${COLORS[filter]}33` : "rgba(255,255,255,0.04)",
+              color: zone === z ? "#fff" : "rgba(255,255,255,0.55)" }}>
+            {z === "" ? t("essentialsPage.allArea") : z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", "")}
+          </button>
+        ))}
+      </div>
+    ) : null
+  )
   const currentList = rawList.filter((item) => {
     if (zone && zoneOf(item as { neighborhood?: string | null; address?: string | null }) !== zone) return false
+    if (filter === "essentials" && category && (item as Essential).category !== category) return false
     if (!search) return true
     const name = getName(item).toLowerCase()
     const sub = getSub(item).toLowerCase()
@@ -524,7 +614,9 @@ export default function MapPage() {
       : null
   const mapResults = (() => {
     const base = (rawList as (Club | Event | Essential)[]).filter(
-      (i) => i.latitude && i.longitude && (!zone || zoneOf(i as { neighborhood?: string | null; address?: string | null }) === zone)
+      (i) => i.latitude && i.longitude
+        && (!zone || zoneOf(i as { neighborhood?: string | null; address?: string | null }) === zone)
+        && (filter !== "essentials" || !category || (i as Essential).category === category)
     )
     if (!mapQ) {
       if (!userLocation) return []
@@ -616,7 +708,7 @@ export default function MapPage() {
       <aside className="hidden lg:flex" style={{ width: showList === false ? "0px" : "320px", borderRight: showList === false ? "none" : "1px solid rgba(255,255,255,0.1)", background: "#0a0910", flexDirection: "column", overflow: "hidden", flexShrink: 0, transition: "width 0.3s ease", minWidth: 0 }}>
           <div style={{ padding: "14px 14px 0" }}>
             <SearchInput value={search} onChange={setSearch} accent={COLORS[filter]} />
-            {zoneChips}
+            {filterChips}
             <p style={{ marginTop: "10px", fontSize: "12px", color: "#a19fad" }}>
               {currentList.filter((i) => i.latitude && i.longitude).length} {t("map.results")}
             </p>
@@ -661,12 +753,12 @@ export default function MapPage() {
 
           {/* Buscador flotante: escribe un nombre y salta directo a ese sitio; con tu ubicación
               activada ordena por cercanía y la ruta a pie se dibuja al seleccionarlo. */}
-          <div style={{ position: "absolute", top: "58px", left: "12px", right: "12px", maxWidth: "420px", zIndex: 15 }}>
+          <div ref={mapSearchRef} style={{ position: "absolute", top: "58px", left: "12px", right: "12px", maxWidth: "420px", zIndex: 15 }}>
             <div style={{ position: "relative" }}>
               <input
                 value={mapQuery}
                 onChange={(e) => { setMapQuery(e.target.value); setMapSearchOpen(true) }}
-                onFocus={() => setMapSearchOpen(true)}
+                onClick={() => setMapSearchOpen((o) => !o)}
                 placeholder={t("map.searchPlaceholder").replace("{type}", t(`nav.${filter}`).toLowerCase())}
                 aria-label={t("map.searchPlaceholder").replace("{type}", t(`nav.${filter}`).toLowerCase())}
                 style={{ width: "100%", boxSizing: "border-box", borderRadius: "9999px", border: `1px solid ${COLORS[filter]}66`, background: "rgba(22,16,41,0.92)", color: "#fff", padding: "12px 44px 12px 18px", fontSize: "16px", outline: "none", backdropFilter: "blur(14px)", boxShadow: `0 10px 30px -12px ${COLORS[filter]}99` }}
@@ -715,7 +807,7 @@ export default function MapPage() {
                   <p style={{ fontWeight: 600, color: "#fff", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}><FilterIcon f={filter} /> {t(`nav.${filter}`)}</p>
                   <button onClick={() => setShowList(false)} aria-label={t("clubPage.close")} style={{ color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 8px", cursor: "pointer", display: "flex" }}><X size={16} /></button>
                 </div>
-                <div style={{ marginBottom: "10px" }}><SearchInput value={search} onChange={setSearch} accent={COLORS[filter]} />{zoneChips}</div>
+                <div style={{ marginBottom: "10px" }}><SearchInput value={search} onChange={setSearch} accent={COLORS[filter]} />{filterChips}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {(currentList as (Club | Event | Essential)[]).filter((item) => item.latitude && item.longitude).map((item) => (
                     <button key={item.id}

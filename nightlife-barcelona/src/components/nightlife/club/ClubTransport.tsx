@@ -161,20 +161,23 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
               {t("clubPage.nitbusNearby")}
             </a>
           </Row>
+          {/* Antes esto salía como una fila más, del mismo tamaño que las paradas reales — y "Plaça
+              Catalunya" acababa pareciendo la parada principal del club. Es solo una nota aparte
+              (casi todas las líneas de NitBus de la ciudad pasan por allí, no solo las de este
+              club), así que va como frase pequeña con asterisco, no como una fila de transporte más. */}
           {distCatalunya != null && distCatalunya > 300 && (
-            <Row tone="bus" badge={`${formatDistance(distCatalunya)} · ${walkingMinutes(distCatalunya)} min`}>
-              <span className="flex items-center justify-between gap-3">
-                <span className="min-w-0">{t("clubPage.catalunyaHub")}</span>
-                <a
-                  href={walkingDirectionsUrl(lat, lng, PLACA_CATALUNYA.lat, PLACA_CATALUNYA.lon)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="shrink-0 text-xs font-semibold text-sky-200 underline underline-offset-2"
-                >
-                  {t("clubPage.walk")}
-                </a>
-              </span>
-            </Row>
+            <p className="px-1 text-xs text-zinc-500">
+              * {t("clubPage.catalunyaHub")} ·{" "}
+              <a
+                href={walkingDirectionsUrl(lat, lng, PLACA_CATALUNYA.lat, PLACA_CATALUNYA.lon)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-zinc-400 underline underline-offset-2"
+              >
+                {t("clubPage.walk")}
+              </a>{" "}
+              ({formatDistance(distCatalunya)} · {walkingMinutes(distCatalunya)} min)
+            </p>
           )}
         </div>
       </div>

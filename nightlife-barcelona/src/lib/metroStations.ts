@@ -23,7 +23,7 @@ export const METRO_STATIONS: MetroStation[] = [
   { name: 'Canyelles', lat: 41.4417701, lon: 2.1664392, lines: ["L3"] },
   { name: 'Collblanc', lat: 41.3758735, lon: 2.1184045, lines: ["L5", "L9", "L10"] },
   { name: 'Congrés | Indians', lat: 41.4234164, lon: 2.1812853, lines: ["L5"] },
-  { name: 'La Rambla | Drassanes', lat: 41.3766732, lon: 2.1757735, lines: ["L3"] },
+  { name: 'Drassanes', lat: 41.3766732, lon: 2.1757735, lines: ["L3"] },
   { name: 'Entença', lat: 41.3839818, lon: 2.1449598, lines: ["L5"] },
   { name: 'Fontana', lat: 41.4020564, lon: 2.1529786, lines: ["L3"] },
   { name: 'Gavarra', lat: 41.3579852, lon: 2.0792152, lines: ["L5"] },
@@ -165,7 +165,6 @@ export const METRO_STATIONS: MetroStation[] = [
   { name: 'Mercat Nou', lat: 41.3727946, lon: 2.1333313, lines: ["L1"] },
   { name: 'Zona Franca', lat: 41.3429845, lon: 2.1449718, lines: ["L10"] },
   { name: 'Port Comercial | La Factoria', lat: 41.3359835, lon: 2.1406663, lines: ["L10"] },
-  { name: 'Barcelona-Plaça Catalunya', lat: 41.3857711, lon: 2.168329, lines: ["L1", "L3", "L6", "L7"] },
 ]
 
 // Hasta 2 estaciones dentro de 900m (una distancia caminable de verdad de noche, no "en la misma
