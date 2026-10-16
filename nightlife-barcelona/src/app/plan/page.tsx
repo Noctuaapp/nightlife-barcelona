@@ -410,11 +410,11 @@ export default function PlanPage() {
       .map((e) => ({ ...e, ...scoreEvent(e, prefs, todayStr, t) }))
       .sort((a, b) => b.score - a.score)
 
-    // Los eventos de esa noche entran en el plan (el mejor) o como alternativas.
+    // Los eventos de esa noche entran en el plan (el mejor) o como alternativas. Ya no se
+    // sugieren eventos de otra noche aquí — si no es esta noche, no pinta nada en el plan de hoy.
     const onThatNight = scoredEvents.filter((e) => eventOnDate(e, todayStr))
     const tonightEvent = onThatNight[0]
-    const later = scoredEvents.filter((e) => e.date && e.date > todayStr).sort((a, b) => (a.date || "").localeCompare(b.date || ""))
-    const upcoming = [...onThatNight.slice(1, 4), ...later].slice(0, 6)
+    const upcoming = onThatNight.slice(1, 4)
 
     const top = scoredClubs[0]
     const second = scoredClubs[1]
