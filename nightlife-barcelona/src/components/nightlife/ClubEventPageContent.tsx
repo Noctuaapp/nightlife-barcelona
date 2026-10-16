@@ -85,7 +85,8 @@ export default function ClubEventPageContent({
     setPast(end < today)
   }, [clubEvent.date])
 
-  const trackClick = (eventType: string) => track(eventType, { itemType: "club_event", itemId: clubEvent.id, itemName: clubEvent.title })
+  const trackClick = (eventType: string, meta?: Record<string, unknown>) =>
+    track(eventType, { itemType: "club_event", itemId: clubEvent.id, itemName: clubEvent.title, meta })
   useEffect(() => {
     trackClick("page_view")
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -276,7 +277,13 @@ export default function ClubEventPageContent({
                 )}
                 <div className="mt-5">
                   <p className="mb-2 text-sm font-semibold text-ink">{t("clubPage.taxi")}</p>
-                  <RideButtons name={clubName || clubEvent.title} address={club?.address} lat={lat} lng={lng} />
+                  <RideButtons
+                    name={clubName || clubEvent.title}
+                    address={club?.address}
+                    lat={lat}
+                    lng={lng}
+                    onRideClick={(provider) => trackClick("ride_click", { provider })}
+                  />
                 </div>
               </Panel>
             )}

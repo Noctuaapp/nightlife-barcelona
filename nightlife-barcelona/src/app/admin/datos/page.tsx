@@ -22,6 +22,7 @@ const SOURCE_LABELS: Record<string, string> = {
   direct: "Directo",
 }
 const WEEKDAYS = ["", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+const RIDE_PROVIDER_LABELS: Record<string, string> = { uber: "Uber", cabify: "Cabify", freenow: "FREE NOW" }
 
 const isoDay = (d: Date) => d.toLocaleDateString("sv-SE")
 const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return isoDay(d) }
@@ -99,6 +100,7 @@ export default function AdminDatosPage() {
   const [searches, setSearches] = useState<any[]>([])
   const [audience, setAudience] = useState<any>(null)
   const [clubsMeta, setClubsMeta] = useState<Record<string, any>>({})
+  const [rideClicks, setRideClicks] = useState<{ provider: string; n: number }[]>([])
 
   const [selected, setSelected] = useState<{ type: "club" | "event"; id: number; name: string } | null>(null)
   const [detail, setDetail] = useState<any>(null)
@@ -120,13 +122,14 @@ export default function AdminDatosPage() {
     setLoading(true)
     setError("")
     const range = { p_from: from, p_to: to }
-    const [ov, ci, ei, se, au, clubs] = await Promise.all([
+    const [ov, ci, ei, se, au, clubs, rc] = await Promise.all([
       supabase.rpc("admin_data_overview", range),
       supabase.rpc("admin_data_items", { p_type: "club", ...range }),
       supabase.rpc("admin_data_items", { p_type: "event", ...range }),
       supabase.rpc("admin_data_searches", range),
       supabase.rpc("admin_data_audience", { ...range, p_type: null, p_id: null }),
       supabase.from("clubs").select("id, name, city, neighborhood, address, venue_type"),
+      supabase.rpc("admin_ride_clicks", range),
     ])
     const firstErr = [ov, ci, ei, se, au].find((r) => r.error)?.error
     if (firstErr) setError(`No se pudieron cargar los datos: ${firstErr.message}. ¿Has ejecutado datos_funciones.sql en Supabase?`)
@@ -135,6 +138,7 @@ export default function AdminDatosPage() {
     setEventItems(ei.data || [])
     setSearches(se.data || [])
     setAudience(au.data)
+    setRideClicks(rc.data || [])
     const meta: Record<string, any> = {}
     for (const c of clubs.data || []) meta[String(c.id)] = { ...c, zone: zoneOf(c) }
     setClubsMeta(meta)
@@ -333,6 +337,10 @@ export default function AdminDatosPage() {
               <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                 <p className="mb-4 text-sm font-bold">Visitas por día de la semana</p>
                 <Bars color="#f59e0b" data={[1, 2, 3, 4, 5, 6, 7].map((d) => ({ label: WEEKDAYS[d], value: (overview.weekdays || []).find((x: any) => x.d === d)?.n || 0 }))} />
+              </div>
+              <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
+                <p className="mb-4 text-sm font-bold">Clics en Uber / Cabify / FREE NOW</p>
+                <ListBars rows={rideClicks.map((r) => ({ label: RIDE_PROVIDER_LABELS[r.provider] || r.provider, n: r.n }))} />
               </div>
             </div>
           </div>

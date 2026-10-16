@@ -198,3 +198,75 @@ function SavedImageOverlay({ src }: { src: string }) {
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt="" className="absolute inset-0 z-[5] h-full w-full object-cover" />
 }
+
+// Tarifas combinadas de un festival (packs de varios días, abonos...), guardadas como una lista
+// libre en la columna `price_tiers` (jsonb: [{label, price}]) — no es una columna de texto suelta,
+// así que no vale InlineEditText: aquí se edita la lista entera y se guarda de una vez. Para quien
+// no es admin solo se enseñan las filas ya guardadas (igual que antes de este componente).
+type Tier = { label: string; price: string }
+
+export function InlineEditTiers({ table, id, value }: { table: string; id: number; value: Tier[] | null }) {
+  const isAdmin = useIsAdmin()
+  const router = useRouter()
+  const [tiers, setTiers] = useState<Tier[]>(() => (Array.isArray(value) ? value : []))
+  const [saving, setSaving] = useState(false)
+
+  if (!isAdmin) {
+    const list = Array.isArray(value) ? value : []
+    return (
+      <>
+        {list.map((tier, i) => (
+          <div key={i} className="flex items-center justify-between gap-4">
+            <dt className="text-zinc-400">{tier.label}</dt>
+            <dd className="font-semibold text-ink">{tier.price}</dd>
+          </div>
+        ))}
+      </>
+    )
+  }
+
+  const persist = async (next: Tier[]) => {
+    setTiers(next)
+    setSaving(true)
+    const { error } = await supabase.from(table).update({ price_tiers: next.length > 0 ? next : null }).eq("id", id)
+    setSaving(false)
+    if (error) toast("No se pudo guardar: " + error.message)
+    else router.refresh()
+  }
+
+  const update = (i: number, patch: Partial<Tier>) => setTiers((prev) => prev.map((t, idx) => (idx === i ? { ...t, ...patch } : t)))
+  const commit = () => persist(tiers)
+  const remove = (i: number) => persist(tiers.filter((_, idx) => idx !== i))
+  const add = () => persist([...tiers, { label: "Abono 2 días", price: "80 €" }])
+
+  return (
+    <div className="space-y-2 py-1">
+      {tiers.map((tier, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <input
+            value={tier.label}
+            disabled={saving}
+            onChange={(e) => update(i, { label: e.target.value })}
+            onBlur={commit}
+            placeholder="Ej. Abono 2 días"
+            className="min-w-0 flex-1 rounded-md border border-purple-400/40 bg-black/30 px-2 py-1 text-xs text-zinc-200 outline-none focus:border-purple-400"
+          />
+          <input
+            value={tier.price}
+            disabled={saving}
+            onChange={(e) => update(i, { price: e.target.value })}
+            onBlur={commit}
+            placeholder="80 €"
+            className="w-20 shrink-0 rounded-md border border-purple-400/40 bg-black/30 px-2 py-1 text-right text-xs font-semibold text-ink outline-none focus:border-purple-400"
+          />
+          <button onClick={() => remove(i)} disabled={saving} aria-label="Quitar tarifa" className="shrink-0 text-zinc-400 transition hover:text-red-300">
+            ✕
+          </button>
+        </div>
+      ))}
+      <button onClick={add} disabled={saving} className="text-xs font-semibold text-purple-300 transition hover:text-purple-200">
+        + Añadir pack / tarifa combinada
+      </button>
+    </div>
+  )
+}

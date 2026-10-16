@@ -17,7 +17,7 @@ import { toast } from "../ui/Toast"
 import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
-import { InlineEditText, InlineEditImage } from "../admin/InlineEdit"
+import { InlineEditText, InlineEditImage, InlineEditTiers } from "../admin/InlineEdit"
 import { useIsAdmin } from "../../lib/useIsAdmin"
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
@@ -59,7 +59,8 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
   const venue = event.club_name || event.address || "Barcelona"
   const hasCoords = !!event.latitude && !!event.longitude
 
-  const trackClick = (eventType: string) => track(eventType, { itemType: "event", itemId: event.id, itemName: event.title })
+  const trackClick = (eventType: string, meta?: Record<string, unknown>) =>
+    track(eventType, { itemType: "event", itemId: event.id, itemName: event.title, meta })
 
   useEffect(() => {
     trackClick("page_view")
@@ -238,9 +239,9 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
               </Panel>
             )}
 
-            {sessions && sessions.length > 0 && (
+            {(sessions.length > 0 || isAdmin) && (
               <Panel>
-                <EventSessionsCalendar sessions={sessions} eventName={event.title} />
+                <EventSessionsCalendar sessions={sessions} eventName={event.title} eventId={event.id} />
               </Panel>
             )}
 
@@ -260,7 +261,13 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                 )}
                 <div className="mt-5">
                   <p className="mb-2 text-sm font-semibold text-ink">{t("clubPage.taxi")}</p>
-                  <RideButtons name={event.title} address={event.address} lat={hasCoords ? Number(event.latitude) : null} lng={hasCoords ? Number(event.longitude) : null} />
+                  <RideButtons
+                    name={event.title}
+                    address={event.address}
+                    lat={hasCoords ? Number(event.latitude) : null}
+                    lng={hasCoords ? Number(event.longitude) : null}
+                    onRideClick={(provider) => trackClick("ride_click", { provider })}
+                  />
                 </div>
               </Panel>
             )}
@@ -282,19 +289,15 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                     </dd>
                   </div>
                 )}
-                {priceTiers.length > 0
-                  ? priceTiers.map((tier, i) => (
-                      <div key={i} className="flex items-center justify-between gap-4">
-                        <dt className="text-zinc-400">{tier.label}</dt>
-                        <dd className="font-semibold text-ink">{tier.price}</dd>
-                      </div>
-                    ))
-                  : event.price && (
-                      <div className="flex items-center justify-between gap-4">
-                        <dt className="text-zinc-400">{t("event.price")}</dt>
-                        <dd className="font-semibold text-ink">{event.price}</dd>
-                      </div>
-                    )}
+                {priceTiers.length === 0 && (event.price || isAdmin) && (
+                  <div className="flex items-center justify-between gap-4">
+                    <dt className="text-zinc-400">{t("event.price")}</dt>
+                    <dd className="font-semibold text-ink">
+                      <InlineEditText table="events" id={event.id} field="price" value={event.price} emptyLabel="precio" className="text-right" />
+                    </dd>
+                  </div>
+                )}
+                {(priceTiers.length > 0 || isAdmin) && <InlineEditTiers table="events" id={event.id} value={event.price_tiers} />}
               </dl>
 
               <div className="mt-4 space-y-3">

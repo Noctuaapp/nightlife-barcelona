@@ -522,16 +522,28 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                         <InlineEditImage table="club_sessions" id={session.id} field="image" bucket="club-images" label="Cambiar" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        {session.day_of_week && (
-                          <span className="inline-block rounded-full bg-brand/15 px-3 py-1 text-xs font-semibold text-brand-soft">{session.day_of_week}</span>
+                        {(session.day_of_week || isAdmin) && (
+                          <span className="inline-block rounded-full bg-brand/15 px-3 py-1 text-xs font-semibold text-brand-soft">
+                            <InlineEditText table="club_sessions" id={session.id} field="day_of_week" value={session.day_of_week} placeholder="Viernes" emptyLabel="día" />
+                          </span>
                         )}
-                        <h3 className="mt-2 text-lg font-semibold text-ink">{session.name}</h3>
+                        <h3 className="mt-2 text-lg font-semibold text-ink">
+                          <InlineEditText table="club_sessions" id={session.id} field="name" value={session.name} />
+                        </h3>
                         <div className="mt-2 flex flex-wrap gap-2 text-sm text-zinc-300">
-                          {session.music && <span className="rounded-full border border-white/10 px-3 py-1">{session.music}</span>}
-                          {session.price && <span className="rounded-full border border-white/10 px-3 py-1">{session.price}</span>}
-                          {session.dresscode && (
+                          {(session.music || isAdmin) && (
                             <span className="rounded-full border border-white/10 px-3 py-1">
-                              {t("clubPage.fDresscode")}: {session.dresscode}
+                              <InlineEditText table="club_sessions" id={session.id} field="music" value={session.music} emptyLabel="música" />
+                            </span>
+                          )}
+                          {(session.price || isAdmin) && (
+                            <span className="rounded-full border border-white/10 px-3 py-1">
+                              <InlineEditText table="club_sessions" id={session.id} field="price" value={session.price} emptyLabel="precio" />
+                            </span>
+                          )}
+                          {(session.dresscode || isAdmin) && (
+                            <span className="rounded-full border border-white/10 px-3 py-1">
+                              {t("clubPage.fDresscode")}: <InlineEditText table="club_sessions" id={session.id} field="dresscode" value={session.dresscode} emptyLabel="vestimenta" />
                             </span>
                           )}
                         </div>
