@@ -69,19 +69,36 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
     if (!files || files.length === 0) return
     setUploading(true)
     const urls: string[] = []
-    for (const file of Array.from(files)) {
-      const ext = file.name.split(".").pop()
-      const fileName = `inline-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-      const { error } = await supabase.storage.from(edit.bucket).upload(fileName, file)
-      if (error) continue
-      const { data } = supabase.storage.from(edit.bucket).getPublicUrl(fileName)
-      urls.push(data.publicUrl)
+    let firstError: string | null = null
+    // Antes, si upload() lanzaba una excepción (red caída, CORS, bucket mal configurado...) en
+    // vez de devolver un error normal, no había try/catch que lo recogiera: la función se
+    // paraba a medias, "uploading" se quedaba en true para siempre y el botón "+ Añadir" quedaba
+    // inservible sin ningún aviso — exactamente "como si no reaccionase" en todos los intentos
+    // siguientes de esa visita. Además, un fallo normal (p. ej. de permisos) se ignoraba en
+    // silencio (continue) sin decir por qué. Ahora cualquier fallo se muestra y el botón
+    // siempre se reactiva.
+    try {
+      for (const file of Array.from(files)) {
+        const ext = file.name.split(".").pop()
+        const fileName = `inline-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+        const { error } = await supabase.storage.from(edit.bucket).upload(fileName, file)
+        if (error) {
+          if (!firstError) firstError = error.message
+          continue
+        }
+        const { data } = supabase.storage.from(edit.bucket).getPublicUrl(fileName)
+        urls.push(data.publicUrl)
+      }
+    } catch (err) {
+      if (!firstError) firstError = err instanceof Error ? err.message : String(err)
+    } finally {
+      setUploading(false)
     }
-    setUploading(false)
     if (urls.length === 0) {
-      toast("No se pudo subir ninguna foto")
+      toast(firstError ? "No se pudo subir ninguna foto: " + firstError : "No se pudo subir ninguna foto", 6000)
       return
     }
+    if (firstError) toast("Alguna foto no se pudo subir: " + firstError, 6000)
     await saveOrder([...displayImages, ...urls])
   }
 
