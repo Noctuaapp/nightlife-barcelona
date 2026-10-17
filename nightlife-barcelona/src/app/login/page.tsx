@@ -7,7 +7,6 @@ import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { safeNextPath } from "../../lib/nextPath"
 import { useLanguage } from "../../context/LanguageContext"
-import { ADMIN_EMAIL } from "../../lib/admin"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -22,11 +21,11 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
     if (error) { setError(error.message); return }
-    if (email === ADMIN_EMAIL) {
-      window.location.href = "/admin"
-    } else {
-      window.location.href = safeNextPath()
-    }
+    // Antes, el admin siempre aterrizaba en /admin al entrar, aunque viniera a usar la web como
+    // cualquier otra persona. Ahora entra igual que todo el mundo: a la portada (o a donde
+    // estuviera antes de que le pidiera iniciar sesión, vía ?next=). El acceso a /admin sigue
+    // ahí, en el menú, para cuando quiera ir a gestionar.
+    window.location.href = safeNextPath()
   }
 
   const loginWithGoogle = async () => {
