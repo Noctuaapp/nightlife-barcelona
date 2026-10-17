@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 import AdminShell from "../../components/admin/AdminShell"
 import { ADMIN_EMAIL } from "../../lib/admin"
@@ -8,10 +9,12 @@ import { toast } from "../../components/ui/Toast"
 import CoordsField from "../../components/admin/CoordsField"
 import { coordsPayload, coordToInput } from "../../lib/coords"
 import { touchCache, clubPaths } from "../../lib/touchCache"
+import { createSlug } from "../../lib/slug"
 
 type Club = {
   id: number
   name: string
+  slug?: string | null
   neighborhood: string
   address?: string
   music: string
@@ -707,7 +710,16 @@ export default function AdminPage() {
 
                   {editingId === club.id ? (
                     <div>
-                      <h3 className="mb-4 text-lg font-black">Editando: {club.name}</h3>
+                      <div className="mb-4 flex items-center gap-2 flex-wrap">
+                        <h3 className="text-lg font-black">Editando: {club.name}</h3>
+                        <Link
+                          href={`/clubs/${club.slug || createSlug(club.name)}`}
+                          target="_blank"
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-zinc-300 hover:bg-white hover:text-black transition"
+                        >
+                          Ver ficha ↗
+                        </Link>
+                      </div>
                       {renderClubForm(editForm, setEditForm)}
                       <div className="mt-5 flex gap-3">
                         <button onClick={() => saveEdit(club.id)} disabled={saving}
@@ -718,6 +730,13 @@ export default function AdminPage() {
                           className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white hover:bg-white/10 transition">
                           Cancelar
                         </button>
+                        <Link
+                          href={`/clubs/${club.slug || createSlug(club.name)}`}
+                          target="_blank"
+                          className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white hover:bg-white/10 transition"
+                        >
+                          Ir al club ↗
+                        </Link>
                       </div>
                     </div>
                   ) : (

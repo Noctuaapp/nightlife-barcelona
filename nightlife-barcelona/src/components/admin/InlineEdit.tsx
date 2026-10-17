@@ -158,23 +158,30 @@ export function InlineEditImage({ table, id, field, bucket, label = "Cambiar ima
     e.target.value = ""
     if (!file) return
     setUploading(true)
-    const ext = file.name.split(".").pop()
-    const fileName = `inline-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-    const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file)
-    if (uploadError) {
+    // Mismo fallo que en ClubGallery: si upload() lanza una excepción (en vez de devolver un
+    // error normal) sin try/catch alrededor, "uploading" se quedaba en true para siempre y el
+    // overlay quedaba inservible sin ningún aviso — exactamente "le doy y no pasa nada".
+    try {
+      const ext = file.name.split(".").pop()
+      const fileName = `inline-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+      const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file)
+      if (uploadError) {
+        toast("Error al subir la imagen: " + uploadError.message, 6000)
+        return
+      }
+      const { data } = supabase.storage.from(bucket).getPublicUrl(fileName)
+      const { error } = await supabase.from(table).update({ [field]: data.publicUrl }).eq("id", id)
+      if (error) {
+        toast("Error al guardar la imagen: " + error.message, 6000)
+        return
+      }
+      setSavedUrl(data.publicUrl)
+      router.refresh()
+    } catch (err) {
+      toast("Error al subir la imagen: " + (err instanceof Error ? err.message : String(err)), 6000)
+    } finally {
       setUploading(false)
-      toast("Error al subir la imagen: " + uploadError.message)
-      return
     }
-    const { data } = supabase.storage.from(bucket).getPublicUrl(fileName)
-    const { error } = await supabase.from(table).update({ [field]: data.publicUrl }).eq("id", id)
-    setUploading(false)
-    if (error) {
-      toast("Error al guardar la imagen: " + error.message)
-      return
-    }
-    setSavedUrl(data.publicUrl)
-    router.refresh()
   }
 
   return (

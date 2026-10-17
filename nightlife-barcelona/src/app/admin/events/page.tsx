@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 import AdminShell from "../../../components/admin/AdminShell"
 
@@ -12,10 +13,12 @@ import { toast } from "../../../components/ui/Toast"
 import CoordsField from "../../../components/admin/CoordsField"
 import { coordsPayload, coordToInput } from "../../../lib/coords"
 import { touchCache, eventPaths } from "../../../lib/touchCache"
+import { createSlug } from "../../../lib/slug"
 
 type Event = {
   id: number
   title: string
+  slug?: string | null
   club_name: string | null
   artist: string | null
   music: string | null
@@ -653,6 +656,13 @@ export default function AdminEventsPage() {
 
                       <button onClick={() => saveEditing(event.id)} disabled={uploading} className="rounded-2xl bg-emerald-400 px-8 py-4 font-bold text-black disabled:opacity-50">Save changes</button>
                       <button onClick={cancelEditing} className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 font-bold">Cancel</button>
+                      <Link
+                        href={`/event/${event.slug || createSlug(event.title)}`}
+                        target="_blank"
+                        className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 font-bold text-white hover:bg-white hover:text-black transition"
+                      >
+                        Ir al evento ↗
+                      </Link>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
