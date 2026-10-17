@@ -161,6 +161,7 @@ export default function AdminEventsPage() {
 
     if (error) {
       logError("UPLOAD ERROR:", error)
+      toast("Error al subir la imagen: " + error.message, 6000)
       return null
     }
 
@@ -174,6 +175,7 @@ export default function AdminEventsPage() {
   const uploadGalleryFiles = async (files: FileList): Promise<string[]> => {
     setUploading(true)
     const urls: string[] = []
+    let firstError: string | null = null
     for (const file of Array.from(files)) {
       const fileExt = file.name.split(".").pop()
       const fileName = `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
@@ -181,12 +183,16 @@ export default function AdminEventsPage() {
       const { error } = await supabase.storage.from("event-photos").upload(filePath, file)
       if (error) {
         logError("GALLERY UPLOAD ERROR:", error)
+        if (!firstError) firstError = error.message
         continue
       }
       const { data } = supabase.storage.from("event-photos").getPublicUrl(filePath)
       urls.push(data.publicUrl)
     }
     setUploading(false)
+    // Antes un fallo aquí se tragaba en silencio (solo consola): la foto no aparecía y
+    // parecía que el botón no reaccionaba. Ahora se avisa con el error real.
+    if (firstError) toast("Error al subir la foto a la galería: " + firstError, 6000)
     return urls
   }
 

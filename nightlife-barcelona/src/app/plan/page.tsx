@@ -4,8 +4,9 @@ import SharePlanButton from "@/components/plan/SharePlanButton"
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import {
-  User, Users, UsersRound, PartyPopper, Coins, Wallet, CreditCard, Gem, Flame, Wine, AudioWaveform, Sparkles, Rainbow, Shuffle,
-  Moon, Sunrise, Infinity as InfinityIcon, Clock, Ticket, Disc3, Map as MapIcon, type LucideIcon,
+  User, Users, UsersRound, PartyPopper, Coins, Wallet, CreditCard, Gem, Flame, Wine, AudioWaveform, Sparkles, Shuffle,
+  Moon, Sunrise, Infinity as InfinityIcon, Clock, Ticket, Disc3, Map as MapIcon, TrainFront, Bus, X,
+  type LucideIcon,
 } from "lucide-react"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
@@ -19,6 +20,9 @@ import { STYLES, neighborhoodsOf } from "../../lib/areas"
 import { clubOpensOn } from "../../lib/clubHours"
 import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
+import { distanceInMeters, formatDistance } from "../../lib/geo"
+import { cleanEssential } from "../../lib/essentials"
+import { UtensilsCrossed, ShoppingCart } from "lucide-react"
 
 // "Planifica tu noche". Cambios de la auditoría de octubre 2026:
 // - Los estilos de música eran "Commercial" y "Cocktail Bar" (en inglés) contra datos en español:
@@ -51,6 +55,79 @@ function parseBudget(price: string | null): number {
   if (/free|gratis|gratu/i.test(price)) return 0
   const first = price.match(/\d+/)
   return first ? parseInt(first[0], 10) : 0
+}
+
+// Distancia en km entre dos coordenadas (fórmula de Haversine) — se usa para que las dos
+// paradas del itinerario queden cerca entre sí, no una en cada punta de la ciudad.
+function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLon = toRad(lon2 - lon1)
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+const EARLY_VENUE_TYPES = new Set(["Pub", "Bar musical"])
+const LATE_VENUE_TYPES = new Set(["Discoteca"])
+const DEFAULT_MAX_PAIR_KM = 2.5
+const EXPANDED_MAX_PAIR_KM = 5
+
+// Elige las dos paradas de club del itinerario priorizando que queden cerca entre sí. "poolEarly"
+// y "poolLate" ya vienen filtrados por si el local sigue abierto a la hora en que tocaría llegar
+// a cada parada (ver clubOpenAtAbsMinutes) — así no se recomienda ir a un bar que cierra a las
+// 02:30 cuando el plan llegaría a las 4:30. Si ningún par cae dentro de maxKm, devuelve null para
+// que quien llama decida si avisa y ofrece ampliar el rango.
+function pickNearbyClubPair(poolEarly: any[], poolLate: any[], maxKm: number): [any, any] | null {
+  const shortEarly = poolEarly.slice(0, 10)
+  const shortLate = poolLate.slice(0, 10)
+  let best: [any, any] | null = null
+  let bestCombined = -Infinity
+  for (const a of shortEarly) {
+    for (const b of shortLate) {
+      if (a.id === b.id) continue
+      if (a.latitude == null || a.longitude == null || b.latitude == null || b.longitude == null) continue
+      if (distanceKm(a.latitude, a.longitude, b.latitude, b.longitude) > maxKm) continue
+      let combined = a.sortScore + b.sortScore
+      if (EARLY_VENUE_TYPES.has(a.venue_type)) combined += 10
+      if (LATE_VENUE_TYPES.has(b.venue_type)) combined += 10
+      if (combined > bestCombined) {
+        bestCombined = combined
+        best = [a, b]
+      }
+    }
+  }
+  return best
+}
+
+// "02:30" son las 2:30 de la madrugada, es decir, ya de "mañana" respecto a cuando empezó la
+// noche (23:00 de ayer) — se cuenta como 26:30 desde esa medianoche, igual que hace el resto de
+// la web (Header, clubHours) para no liarse con el cambio de día.
+function toAbsMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map((n) => parseInt(n, 10))
+  let abs = (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m)
+  if (h < 12) abs += 1440
+  return abs
+}
+
+// ¿Sigue abierto el local a esos minutos (en el mismo "desde medianoche de ayer" de toAbsMinutes)?
+// Simplificado a propósito: no distingue horarios por día de la semana (eso ya lo filtra
+// clubOpensOn antes) — solo mira si CUALQUIER franja de su horario cubre esa hora. null = no se
+// puede saber con el formato guardado, y entonces no se descarta el local (mejor no bloquear que
+// bloquear mal).
+function clubOpenAtAbsMinutes(hours: string | null | undefined, absMinutes: number): boolean | null {
+  if (!hours || !hours.trim()) return null
+  let parsed = false
+  for (const raw of hours.split(/[,|;]/)) {
+    const m = raw.trim().match(/^(?:[LMXJVSD/\-]+\s+)?(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})$/)
+    if (!m) continue
+    parsed = true
+    const start = parseInt(m[1], 10) * 60 + parseInt(m[2], 10)
+    let end = parseInt(m[3], 10) * 60 + parseInt(m[4], 10)
+    if (end <= start) end += 1440
+    if (absMinutes >= start && absMinutes < end) return true
+  }
+  return parsed ? false : null
 }
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
@@ -135,10 +212,8 @@ function scoreClub(club: any, prefs: Prefs, t: (key: string) => string): { score
     reasons.push(t("planPage.reasonVerified"))
   }
 
-  if (!club.queue || /no queue|sin cola/i.test(club.queue)) {
-    score += 6
-    reasons.push(t("planPage.reasonNoQueue"))
-  }
+  // Quitado "Sin cola habitual": no tenemos datos reales de colas por local, así que no
+  // podíamos afirmarlo con garantías (podía decirlo de un sitio que sí tiene cola algunas noches).
 
   if (prefs.groupKey === "grande" && club.vip_tables) {
     score += 15
@@ -210,12 +285,14 @@ const BUDGET_OPTIONS: { key: string; icon: LucideIcon; max: number; range: strin
   { key: "sinlimite", icon: Gem, max: 9999, range: "60 €+" },
 ]
 
+// "Pride" vivía aquí como un vibe más, pero marcaba el mismo "lgtbi: true" que el checkbox del
+// paso final ("Priorizar ambiente LGTBI+ friendly") — el mismo filtro aparecía dos veces en el
+// flujo (paso 3 y paso 7). Se deja un solo sitio para elegirlo: el checkbox del paso final.
 const VIBE_PRESETS: { key: string; icon: LucideIcon; lgtbi?: boolean }[] = [
   { key: "fiesta", icon: Flame },
   { key: "chill", icon: Wine },
   { key: "under", icon: AudioWaveform },
   { key: "glam", icon: Sparkles },
-  { key: "pride", icon: Rainbow, lgtbi: true },
   { key: "live", icon: Shuffle },
 ]
 
@@ -245,6 +322,12 @@ type Stop = {
   image: string | null
   href: string
   mapHref: string | null
+  // Metro/bus nocturno del local, si se han rellenado en su ficha — se pintan como un pequeño
+  // esquema de "cómo llegar" bajo cada parada del itinerario.
+  metroLines: string | null
+  nightBuses: string | null
+  // Sitio de comida o supermercado más cercano al local (de los datos ya cargados en Esenciales).
+  nearbyEssential: { name: string; category: string; distance: string } | null
 }
 
 export default function PlanPage() {
@@ -252,6 +335,9 @@ export default function PlanPage() {
   const [clubs, setClubs] = useState<any[]>([])
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  // Sitios de comida y supermercados ya cargados para Esenciales (tabla "essentials") — se
+  // reutilizan aquí para enseñar el más cercano a cada local sin llamar a ninguna API de mapas.
+  const [nearbyEssentials, setNearbyEssentials] = useState<any[]>([])
 
   const [phase, setPhase] = useState<"form" | "loading" | "results">("form")
   const [step, setStep] = useState(0)
@@ -274,6 +360,15 @@ export default function PlanPage() {
   const [alternatives, setAlternatives] = useState<any[]>([])
   const [otherEvents, setOtherEvents] = useState<any[]>([])
   const [noResults, setNoResults] = useState(false)
+  const [zoneFallback, setZoneFallback] = useState(false)
+  // Si las dos paradas de club quedaron lejos entre sí (no había ningún par cercano con estos
+  // filtros), se avisa y se ofrece ampliar el rango con "No importa la distancia".
+  const [farApart, setFarApart] = useState(false)
+  const [maxPairKm, setMaxPairKm] = useState(DEFAULT_MAX_PAIR_KM)
+  // Mensajito gracioso que va rotando al final del plan — se puede quitar con la X y no vuelve
+  // a aparecer hasta el próximo plan generado.
+  const [tipIndex, setTipIndex] = useState(0)
+  const [tipDismissed, setTipDismissed] = useState(false)
   // Clubs ya mostrados en esta sesión: "Rehacer plan" los evita para no devolver siempre lo mismo.
   const [seenClubIds, setSeenClubIds] = useState<Set<string>>(new Set())
 
@@ -290,12 +385,32 @@ export default function PlanPage() {
     Promise.all([
       supabase.from("clubs").select("*").eq("hidden", false),
       supabase.from("events").select("*").eq("hidden", false).order("date", { ascending: true }),
-    ]).then(([{ data: clubsData }, { data: eventsData }]) => {
+      supabase.from("essentials").select("*").eq("hidden", false).in("category", ["Food", "Supermarket"]),
+    ]).then(([{ data: clubsData }, { data: eventsData }, { data: essentialsData }]) => {
       if (clubsData) setClubs(clubsData)
       if (eventsData) setEvents(eventsData)
+      if (essentialsData) setNearbyEssentials(essentialsData.map(cleanEssential))
       setLoading(false)
     })
   }, [])
+
+  // El sitio de comida o supermercado más cercano a unas coordenadas, de los ya cargados.
+  const nearestEssentialTo = (lat: number | null | undefined, lon: number | null | undefined) => {
+    if (lat == null || lon == null) return null
+    let best: any = null
+    let bestDist = Infinity
+    for (const e of nearbyEssentials) {
+      if (e.latitude == null || e.longitude == null) continue
+      const d = distanceInMeters(lat, lon, Number(e.latitude), Number(e.longitude))
+      if (d < bestDist) {
+        bestDist = d
+        best = e
+      }
+    }
+    // Más de 800m ya no es "al lado del local" — mejor no mostrar nada que un dato poco útil.
+    if (!best || bestDist > 800) return null
+    return { name: best.name as string, category: best.category as string, distance: formatDistance(bestDist) }
+  }
 
   // Barrios con más locales (de los datos reales, no de una lista fija).
   const areaOptions = useMemo(() => neighborhoodsOf(clubs.filter((c) => !zoneSel || zoneOf(c) === zoneSel)).slice(0, 12).map((n) => n.name), [clubs, zoneSel])
@@ -344,6 +459,24 @@ export default function PlanPage() {
     t("planPage.stepVenueType"), t("planPage.stepMusic"), t("planPage.stepArea"), t("planPage.stepFinal"),
   ]
   const LOADING_MESSAGES = [t("planPage.loading1"), t("planPage.loading2"), t("planPage.loading3"), t("planPage.loading4"), t("planPage.loading5")]
+  const FUN_TIPS = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => t(`planPage.funTip${n}`))
+
+  // Rota el mensajito gracioso cada 7s mientras se ven los resultados y no se ha cerrado con la X.
+  useEffect(() => {
+    if (phase !== "results" || tipDismissed) return
+    const interval = setInterval(() => setTipIndex((i) => (i + 1) % FUN_TIPS.length), 7000)
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, tipDismissed])
+
+  // Al cambiar de paso (p.ej. al llegar al último, que es más largo que los demás porque junta
+  // noche/hora/dresscode/checkboxes), antes te quedabas donde estaba el scroll y aparecías a
+  // media pantalla o abajo, sin ver el principio del paso nuevo. Ahora siempre sube hasta el
+  // título del paso.
+  useEffect(() => {
+    if (phase !== "form") return
+    document.getElementById("plan-step-top")?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [step, phase])
 
   const styleLabel = (slug: string) => cap(t(`areas.style.${slug}`))
   const dressLabel = (d: string) => (d === "any" ? t("planPage.dressAny") : d === "Elegante" ? t("planPage.dressElegant") : d)
@@ -383,32 +516,68 @@ export default function PlanPage() {
       clearInterval(interval)
       computePlan()
       setPhase("results")
+      setTipIndex(0)
+      setTipDismissed(false)
       setTimeout(() => document.getElementById("results")?.scrollIntoView({ behavior: "smooth" }), 100)
     }, 1200)
   }
 
-  const computePlan = () => {
+  // Botón "No importa la distancia, quiero pasarlo bien": amplía el rango entre los dos locales
+  // y recalcula sin repetir toda la animación de carga, ya solo es un ajuste fino del mismo plan.
+  const expandSearchRange = () => {
+    setMaxPairKm(EXPANDED_MAX_PAIR_KM)
+    computePlan(EXPANDED_MAX_PAIR_KM)
+  }
+
+  const computePlan = (maxKmOverride?: number) => {
+    const pairKm = maxKmOverride ?? maxPairKm
     const prefs: Prefs = { groupKey, budgetMax, vibeKey, musicSet, areaSet, venueTypeSet, dresscode, lgtbi, mature }
     // Pequeño factor aleatorio: con puntuaciones parecidas, "Rehacer plan" da variedad real.
     const jitter = () => Math.random() * 8
     const dow = planDate.getDay()
 
-    const allScoredClubs = clubs
-      .filter((c) => !c.sold_out)
+    const baseClubFilters = (c: any) => !c.sold_out && clubOpensOn(c.hours, c.open_days, dow) !== false
+
+    // Si la zona elegida no tiene ningún club que cumpla el resto de filtros, en vez de dejar
+    // el plan vacío, se suelta el filtro de zona y se busca en toda la ciudad (lo más parecido
+    // que haya, no "nada"). Se avisa de esto en el resultado.
+    let usedZoneFallback = false
+    let allScoredClubs = clubs
+      .filter(baseClubFilters)
       .filter((c) => !zoneSel || zoneOf(c) === zoneSel)
-      .filter((c) => clubOpensOn(c.hours, c.open_days, dow) !== false)
       .map((c) => ({ ...c, ...scoreClub(c, prefs, t) }))
       .map((c) => ({ ...c, sortScore: c.score + jitter() }))
       .sort((a, b) => b.sortScore - a.sortScore)
 
+    if (zoneSel && allScoredClubs.length === 0) {
+      usedZoneFallback = true
+      allScoredClubs = clubs
+        .filter(baseClubFilters)
+        .map((c) => ({ ...c, ...scoreClub(c, prefs, t) }))
+        .map((c) => ({ ...c, sortScore: c.score + jitter() }))
+        .sort((a, b) => b.sortScore - a.sortScore)
+    }
+
     const freshClubs = allScoredClubs.filter((c) => !seenClubIds.has(String(c.id)))
     const scoredClubs = freshClubs.length >= 2 ? freshClubs : allScoredClubs
+    const fresh = (pool: any[]) => {
+      const f = pool.filter((c) => !seenClubIds.has(String(c.id)))
+      return f.length > 0 ? f : pool
+    }
 
-    const scoredEvents = events
+    let scoredEvents = events
       .filter((e) => !e.sold_out)
       .filter((e) => !zoneSel || zoneOf(e) === zoneSel)
       .map((e) => ({ ...e, ...scoreEvent(e, prefs, todayStr, t) }))
       .sort((a, b) => b.score - a.score)
+
+    if (usedZoneFallback) {
+      scoredEvents = events
+        .filter((e) => !e.sold_out)
+        .map((e) => ({ ...e, ...scoreEvent(e, prefs, todayStr, t) }))
+        .sort((a, b) => b.score - a.score)
+    }
+    setZoneFallback(usedZoneFallback)
 
     // Los eventos de esa noche entran en el plan (el mejor) o como alternativas. Ya no se
     // sugieren eventos de otra noche aquí — si no es esta noche, no pinta nada en el plan de hoy.
@@ -416,8 +585,34 @@ export default function PlanPage() {
     const tonightEvent = onThatNight[0]
     const upcoming = onThatNight.slice(1, 4)
 
-    const top = scoredClubs[0]
-    const second = scoredClubs[1]
+    const win = TIME_WINDOWS[timeKey]
+    // Horas de llegada a cada parada, fijas de antemano según la hora de salida elegida (y el
+    // evento de esta noche, si lo hay) — da igual qué club se escoja, las horas no cambian.
+    const earlyCursor = tonightEvent ? addMinutes(tonightEvent.start_time || win.start, 120) : win.start
+    const lateCursor = addMinutes(earlyCursor, 120)
+    const earlyAbs = toAbsMinutes(earlyCursor)
+    const lateAbs = toAbsMinutes(lateCursor)
+
+    // Antes se elegían los dos locales mejor puntuados sin mirar si seguían abiertos a la hora en
+    // que el plan llegaría — podía mandarte a un bar que cierra a las 02:30 cuando la llegada
+    // calculada era a las 4:30. Ahora cada parada solo se elige entre los que, según su horario,
+    // sigan abiertos a esa hora (si no hay datos de horario, no se descarta: mejor no bloquear
+    // que bloquear mal).
+    const openAt = (pool: any[], absMinutes: number) => pool.filter((c) => clubOpenAtAbsMinutes(c.hours, absMinutes) !== false)
+    const earlyPool = fresh(openAt(allScoredClubs, earlyAbs))
+    const latePool = fresh(openAt(allScoredClubs, lateAbs))
+
+    // Las dos paradas de club: se intenta que queden cerca entre sí (y, si cuadra, empezar por
+    // pub/bar musical y acabar en discoteca) dentro de maxPairKm. Si ningún par de las mejores
+    // puntuadas cumple eso, se cae al comportamiento anterior (las dos mejor puntuadas que sigan
+    // abiertas a esa hora, aunque queden lejos) y se avisa con "farApart" para ofrecer ampliar
+    // el rango.
+    const nearbyPair = earlyPool.length > 0 && latePool.length > 0 ? pickNearbyClubPair(earlyPool, latePool, pairKm) : null
+    const top = nearbyPair ? nearbyPair[0] : (earlyPool[0] ?? scoredClubs[0])
+    const second = nearbyPair ? nearbyPair[1] : (latePool.find((c) => c.id !== top?.id) ?? scoredClubs.find((c) => c.id !== top?.id))
+    const bothHaveCoords = !!top && !!second && top.latitude != null && top.longitude != null && second.latitude != null && second.longitude != null
+    const pairIsFar = !nearbyPair && bothHaveCoords && distanceKm(top.latitude, top.longitude, second.latitude, second.longitude) > pairKm
+    setFarApart(pairIsFar)
 
     // Alternativas: primero las del mismo barrio o dresscode que el plan principal.
     const rest = allScoredClubs.filter((c) => c.id !== top?.id && c.id !== second?.id)
@@ -433,9 +628,7 @@ export default function PlanPage() {
       })
     }
 
-    const win = TIME_WINDOWS[timeKey]
     const newStops: Stop[] = []
-    let cursor = win.start
 
     if (tonightEvent) {
       newStops.push({
@@ -448,14 +641,16 @@ export default function PlanPage() {
         image: tonightEvent.image,
         href: `/event/${tonightEvent.slug || createSlug(tonightEvent.title)}`,
         mapHref: tonightEvent.latitude && tonightEvent.longitude ? `/map?type=events&id=${tonightEvent.id}` : null,
+        metroLines: tonightEvent.metro_lines || null,
+        nightBuses: tonightEvent.night_buses || null,
+        nearbyEssential: nearestEssentialTo(tonightEvent.latitude, tonightEvent.longitude),
       })
-      cursor = addMinutes(tonightEvent.start_time || win.start, 120)
     }
-    for (const club of [top, second]) {
+    for (const [i, club] of [top, second].entries()) {
       if (!club) continue
       newStops.push({
         id: `club-${club.id}`,
-        time: cursor,
+        time: i === 0 ? earlyCursor : lateCursor,
         kind: "club",
         title: club.name,
         subtitle: club.neighborhood || "Barcelona",
@@ -463,8 +658,10 @@ export default function PlanPage() {
         image: club.image,
         href: `/clubs/${club.slug || createSlug(club.name)}`,
         mapHref: club.latitude && club.longitude ? `/map?type=clubs&id=${club.id}` : null,
+        metroLines: club.metro_lines || null,
+        nightBuses: club.night_buses || null,
+        nearbyEssential: nearestEssentialTo(club.latitude, club.longitude),
       })
-      cursor = addMinutes(cursor, 120)
     }
 
     setStops(newStops)
@@ -488,6 +685,9 @@ export default function PlanPage() {
     setPhase("form")
     setStep(0)
     setSeenClubIds(new Set())
+    setMaxPairKm(DEFAULT_MAX_PAIR_KM)
+    setFarApart(false)
+    setZoneFallback(false)
   }
 
   const editPlan = () => {
@@ -539,7 +739,7 @@ export default function PlanPage() {
         ) : (
           <>
             {phase === "form" && (
-              <section className="mx-auto max-w-2xl px-4">
+              <section id="plan-step-top" className="mx-auto max-w-2xl scroll-mt-20 px-4">
                 <div className="mb-3 flex items-center gap-1.5" aria-hidden="true">
                   {STEP_TITLES.map((title, i) => (
                     <div key={title} className={`h-1 flex-1 rounded-full transition-colors ${i <= step ? "bg-brand" : "bg-white/10"}`} />
@@ -770,8 +970,21 @@ export default function PlanPage() {
                     </div>
 
                     <div>
-                      <h2 className="mb-5 text-lg font-semibold">{t("planPage.yourItinerary")}</h2>
-                      <ol className="relative space-y-5 border-l border-white/15 pl-6">
+                      <h2 className="mb-2 text-lg font-semibold">{t("planPage.yourItinerary")}</h2>
+                      {zoneFallback && (
+                        <p className="mb-3 rounded-ctl border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-zinc-300">
+                          {t("planPage.zoneFallbackNote")}
+                        </p>
+                      )}
+                      {farApart && (
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-ctl border border-white/10 bg-white/5 px-4 py-2.5">
+                          <p className="text-xs text-zinc-300">{t("planPage.farApartNote")}</p>
+                          <button onClick={expandSearchRange} className="shrink-0 text-xs font-semibold text-brand-soft underline-offset-4 hover:underline">
+                            {t("planPage.expandRangeCta")}
+                          </button>
+                        </div>
+                      )}
+                      <ol className="relative mt-3 space-y-5 border-l border-white/15 pl-6">
                         {stops.map((stop) => (
                           <li key={stop.id} className="relative">
                             <span className="absolute -left-[37px] top-4 flex h-6 w-6 items-center justify-center rounded-full border border-white/15 bg-night text-brand-soft">
@@ -801,6 +1014,30 @@ export default function PlanPage() {
                                       </span>
                                     ))}
                                   </div>
+                                )}
+                                {(stop.metroLines || stop.nightBuses) && (
+                                  <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-400">
+                                    {stop.metroLines && (
+                                      <span className="flex items-center gap-1">
+                                        <TrainFront size={13} className="text-brand-soft" /> {stop.metroLines}
+                                      </span>
+                                    )}
+                                    {stop.nightBuses && (
+                                      <span className="flex items-center gap-1">
+                                        <Bus size={13} className="text-brand-soft" /> {stop.nightBuses}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                {stop.nearbyEssential && (
+                                  <p className="mt-2 flex items-center gap-1 text-xs text-zinc-400">
+                                    {stop.nearbyEssential.category === "Supermarket" ? (
+                                      <ShoppingCart size={13} className="text-brand-soft" />
+                                    ) : (
+                                      <UtensilsCrossed size={13} className="text-brand-soft" />
+                                    )}
+                                    {stop.nearbyEssential.name} · {stop.nearbyEssential.distance}
+                                  </p>
                                 )}
                               </div>
                             </Link>
@@ -856,6 +1093,16 @@ export default function PlanPage() {
                             </Link>
                           ))}
                         </div>
+                      </div>
+                    )}
+
+                    {!tipDismissed && (
+                      <div className="flex items-start gap-3 rounded-card border border-brand/20 bg-brand/[0.06] p-4">
+                        <Sparkles size={18} className="mt-0.5 shrink-0 text-brand-soft" />
+                        <p className="flex-1 text-sm text-zinc-200">{FUN_TIPS[tipIndex]}</p>
+                        <button onClick={() => setTipDismissed(true)} aria-label={t("common.close")} className="shrink-0 text-zinc-400 hover:text-white">
+                          <X size={16} />
+                        </button>
                       </div>
                     )}
 

@@ -31,6 +31,9 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const canManage = !!edit && isAdmin
   const heroField = edit?.heroField || "image"
+  // Encima de qué foto está el dedo/ratón mientras se arrastra — antes solo había feedback de
+  // la que se estaba moviendo (dragIndex), no de dónde iba a caer.
+  const [overIndex, setOverIndex] = useState<number | null>(null)
 
   // `images` llega como [portada, ...galería]. Si se gestiona aquí, se reconstruye igual a partir
   // de `edit` (que lleva el dato crudo de cada columna) para poder escribir luego en las dos.
@@ -95,6 +98,33 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
     saveOrder(next)
   }
 
+  // Arrastrar para reordenar con Pointer Events en vez del Drag and Drop nativo de HTML5: ese
+  // API no funciona con el dedo en móvil (solo con ratón), así que en el teléfono la tira de
+  // fotos no reaccionaba al deslizar. Pointer Events sí funciona igual con ratón y con el dedo.
+  const handlePointerDown = (i: number) => (e: React.PointerEvent<HTMLDivElement>) => {
+    // El botón ✕ de quitar foto vive dentro de la misma miniatura: si el dedo/clic empieza ahí,
+    // no se arranca un arrastre (si no, nunca se podía quitar una foto en el móvil).
+    if ((e.target as HTMLElement).closest("button")) return
+    setDragIndex(i)
+    setOverIndex(i)
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragIndex === null) return
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+    const thumb = el?.closest<HTMLElement>("[data-photo-index]")
+    if (!thumb) return
+    const idx = parseInt(thumb.dataset.photoIndex || "", 10)
+    if (!isNaN(idx)) setOverIndex(idx)
+  }
+
+  const endDrag = () => {
+    if (dragIndex !== null && overIndex !== null) reorderPhoto(dragIndex, overIndex)
+    setDragIndex(null)
+    setOverIndex(null)
+  }
+
   return (
     <section className="mx-auto mb-16 max-w-6xl px-4 sm:px-6" aria-label={t("clubPage.gallery")}>
       <h2 className="mb-4 text-lg font-semibold text-ink">{t("clubPage.gallery")}</h2>
@@ -141,17 +171,14 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
             {displayImages.map((url, i) => (
               <div
                 key={url + i}
-                draggable
-                onDragStart={() => setDragIndex(i)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  if (dragIndex !== null) reorderPhoto(dragIndex, i)
-                  setDragIndex(null)
-                }}
-                onDragEnd={() => setDragIndex(null)}
-                className={`group relative h-20 w-20 shrink-0 cursor-move overflow-hidden rounded-xl border transition ${
-                  dragIndex === i ? "border-purple-400 opacity-50" : "border-white/10"
+                data-photo-index={i}
+                onPointerDown={handlePointerDown(i)}
+                onPointerMove={handlePointerMove}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+                style={{ touchAction: "none" }}
+                className={`group relative h-20 w-20 shrink-0 cursor-move select-none overflow-hidden rounded-xl border transition ${
+                  dragIndex === i ? "border-purple-400 opacity-50" : overIndex === i && dragIndex !== null ? "border-purple-400" : "border-white/10"
                 }`}
               >
                 <Image src={url} alt="" fill sizes="80px" className="pointer-events-none object-cover" />

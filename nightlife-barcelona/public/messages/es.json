@@ -65,7 +65,8 @@
     "back": "Volver",
     "search": "Buscar",
     "loading": "Cargando...",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "close": "Cerrar"
   },
   "login": {
     "title": "Iniciar sesión",
@@ -546,7 +547,18 @@
     "dressAny": "Me da igual",
     "dressElegant": "Elegante",
     "mature": "Prefiero ambiente +30",
-    "shareTitle": "Plan de la noche · {date}"
+    "shareTitle": "Plan de la noche · {date}",
+    "zoneFallbackNote": "No había ningún plan que encajara en la zona que elegiste, así que te enseñamos lo más parecido en el resto de la ciudad.",
+    "farApartNote": "Los dos locales de este plan quedan un poco lejos entre sí.",
+    "expandRangeCta": "No importa la distancia, quiero pasarlo bien",
+    "funTip1": "Lleva algo de efectivo: algunos locales no aceptan tarjeta en la entrada.",
+    "funTip2": "Si vas en grupo grande, escribid al local antes para reservar mesa y evitar colas.",
+    "funTip3": "El metro de Barcelona cierra pronto los findes — mira los nocturnos (N) antes de salir.",
+    "funTip4": "Bebe agua entre copa y copa, la noche dura más y la pasas mejor.",
+    "funTip5": "Guarda la ubicación del local en el móvil antes de salir, luego hay poca cobertura con tanta gente.",
+    "funTip6": "Si cambias de planes a media noche, dile a alguien de tu grupo dónde vas.",
+    "funTip7": "Llegar un poco antes de la hora punta suele salir más barato y sin cola.",
+    "funTip8": "Un buen desayuno después de la fiesta es sagrado — hay sitios abiertos ya de madrugada."
   },
   "favoritesPage": {
     "loading": "Cargando favoritos...",
