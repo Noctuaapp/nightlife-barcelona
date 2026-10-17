@@ -11,32 +11,25 @@ export default function Footer() {
     <footer className="mt-20 border-t border-white/10 bg-night px-4 pb-28 pt-14 text-ink md:pb-14">
       <div className="mx-auto max-w-7xl">
 
-        {/* ¿Tienes un club? — destacado arriba del todo del footer */}
-        <div className="mb-12 overflow-hidden rounded-2xl p-[1px]" style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}>
-          <div className="flex flex-col gap-5 rounded-2xl bg-night/90 px-6 py-7 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-            <div className="min-w-0">
-              <p className="text-xl font-black leading-tight text-white sm:text-2xl">🪩 {t("footer.venueTitle")}</p>
-              <p className="mt-2 text-sm text-zinc-300">{t("footer.venueText")}</p>
-            </div>
-            <Link
-              href="/contact?type=club_partnership"
-              className="shrink-0 rounded-full px-7 py-3.5 text-center text-sm font-black text-white shadow-[0_8px_24px_-6px_rgba(236,72,153,0.6)] transition hover:opacity-90"
-              style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+        {/* Top row */}
+        <div className="grid gap-12 md:grid-cols-3">
+
+          {/* Brand */}
+          <div>
+            <Image src="/noctua_logo.png" alt="Noctua" width={160} height={98} className="h-10 w-auto object-contain" />
+            <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+              {t("footer.tagline")}
+            </p>
+            <a
+              href="/para-locales"
+              className="mt-5 inline-block rounded-ctl border border-white/15 px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-white/5"
             >
-              {t("footer.venueButton")}
-            </Link>
-          </div>
-        </div>
-
-        {/* Explorar a la izquierda, marca en el centro, Legal a la derecha (en el móvil, la marca
-            arriba y las dos columnas debajo, una a cada lado). */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-[1fr_auto_1fr] md:items-start">
-          <div className="col-span-2 mx-auto flex max-w-sm flex-col items-center text-center md:order-2 md:col-span-1">
-            <Image src="/noctua_logo.png" alt="Noctua" width={160} height={98} className="h-12 w-auto object-contain" />
-            <p className="mt-4 text-sm leading-relaxed text-zinc-400">{t("footer.tagline")}</p>
+              {t("footer.venue_cta")}
+            </a>
           </div>
 
-          <div className="text-left md:order-1">
+          {/* Links */}
+          <div>
             <p className="mb-4 text-sm font-semibold text-zinc-300">{t("footer.explore")}</p>
             <div className="flex flex-col gap-3">
               <Link href="/clubs" className="text-sm text-zinc-400 transition hover:text-ink">{t("nav.clubs")}</Link>
@@ -47,19 +40,21 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="text-right md:order-3">
+          {/* Legal */}
+          <div>
             <p className="mb-4 text-sm font-semibold text-zinc-300">{t("footer.legal")}</p>
-            <div className="flex flex-col items-end gap-3">
+            <div className="flex flex-col gap-3">
               <Link href="/privacy" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_privacy")}</Link>
               <Link href="/terms" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_terms")}</Link>
               <Link href="/contact" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_contact")}</Link>
               <Link href="/faq" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_faq")}</Link>
+              <Link href="/opinion" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_feedback")}</Link>
             </div>
           </div>
         </div>
 
         {/* Bottom row */}
-        <div className="mt-12 flex flex-col items-center gap-3 border-t border-white/10 pt-8 text-center">
+        <div className="mt-12 flex border-t border-white/10 pt-8 flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <p className="text-xs text-zinc-400">{t("footer.copyright")}</p>
           <p className="max-w-md text-xs text-zinc-400">
             {t("footer.privacy_note")}

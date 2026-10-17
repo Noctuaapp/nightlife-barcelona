@@ -5,9 +5,7 @@ import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { getSortedCountries } from "../../../lib/countries"
 import CountrySelect from "../../../components/ui/CountrySelect"
-import { ADMIN_EMAIL } from "../../../lib/admin"
-import { logError } from "../../../lib/log"
-import { toast } from "../../../components/ui/Toast"
+import { BLOCK_REASONS, BLOCK_DURATIONS, computeBlockedUntil, isBlockActive, type BlockDuration } from "../../../lib/blockReasons"
 
 // El admin es una herramienta interna en español, así que aquí no depende del idioma del
 // visitante — siempre se muestra (y se guarda) en español, con bandera.
@@ -24,19 +22,8 @@ type User = {
   is_blocked: boolean
   block_reason?: string | null
   block_note?: string | null
+  blocked_until?: string | null
 }
-
-// Motivos predefinidos de bloqueo; el usuario los ve traducidos en su pantalla de cuenta suspendida.
-const BLOCK_REASONS: { code: string; label: string }[] = [
-  { code: "spam", label: "Spam o publicidad no autorizada" },
-  { code: "offensive", label: "Contenido ofensivo o acoso a otros usuarios" },
-  { code: "false_reports", label: "Reportes o información falsa reiterada" },
-  { code: "impersonation", label: "Suplantación de identidad" },
-  { code: "fake_checkins", label: "Check-ins o asistencias falsas" },
-  { code: "xp_abuse", label: "Abuso del sistema de puntos (XP)" },
-  { code: "illegal", label: "Actividad o contenido ilegal" },
-  { code: "other", label: "Incumplimiento de los términos de servicio" },
-]
 
 type OwnableClub = { id: number; name: string; owner_user_id: string | null }
 // Festivales (tabla "events", distinta de las noches de club "club_events"). Una noche de club
@@ -65,6 +52,7 @@ export default function AdminUsersPage() {
   const [blockTarget, setBlockTarget] = useState<User | null>(null)
   const [blockReason, setBlockReason] = useState("spam")
   const [blockNote, setBlockNote] = useState("")
+  const [blockDuration, setBlockDuration] = useState<BlockDuration>("forever")
 
   // Vincular un usuario a "su" club y/o "sus" festivales (owner_user_id en clubs / events), para
   // que luego pueda gestionarlos él mismo desde /mi-club y /mi-festival sin tocar SQL a mano. Las
@@ -107,7 +95,7 @@ export default function AdminUsersPage() {
     }
     if (clubId) {
       const { error } = await supabase.from("clubs").update({ owner_user_id: userId }).eq("id", clubId)
-      if (error) { toast("No se pudo vincular el club: " + error.message); setSavingLink(false); return }
+      if (error) { window.alert("No se pudo vincular el club: " + error.message); setSavingLink(false); return }
     }
     setOwnableClubs((prev) =>
       prev.map((c) => {
@@ -135,7 +123,7 @@ export default function AdminUsersPage() {
       .update({ owner_user_id: currentlyOwned ? null : userId })
       .eq("id", festivalId)
     setSavingLink(false)
-    if (error) { toast("No se pudo actualizar el festival: " + error.message); return }
+    if (error) { window.alert("No se pudo actualizar el festival: " + error.message); return }
     setOwnableFestivals((prev) =>
       prev.map((e) => (e.id === festivalId ? { ...e, owner_user_id: currentlyOwned ? null : userId } : e))
     )
@@ -153,7 +141,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     const checkAdmin = async () => {
       const { data } = await supabase.auth.getSession()
-      if (data.session?.user.email !== ADMIN_EMAIL) {
+      if (data.session?.user.email !== "info@noctuaapp.com") {
         window.location.href = "/login"
         return
       }
@@ -165,19 +153,22 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     // admin_list_users() es una función solo para admin (antes la vista users_view).
     const { data: rawUsers, error } = await supabase.rpc("admin_list_users")
-    if (error) { logError("USERS ERROR:", error); return }
+    if (error) { console.log("USERS ERROR:", error); return }
     const data = [...((rawUsers || []) as any[])].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )
 
     // country se pide aparte de users_view (igual que is_blocked) porque la vista de Supabase
     // no incluía esta columna hasta ahora: así no hace falta tocar la vista para que aparezca.
-    const { data: profiles, error: profilesError } = await supabase.from("profiles").select("id, is_blocked, country, block_reason, block_note")
-    if (profilesError) logError("PROFILES ERROR:", profilesError)
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, is_blocked, country, block_reason, block_note, blocked_until")
+    if (profilesError) console.log("PROFILES ERROR:", profilesError)
 
     const blockedMap = new Map((profiles || []).map((p) => [p.id, !!p.is_blocked]))
     const reasonMap = new Map((profiles || []).map((p) => [p.id, { r: p.block_reason as string | null, n: p.block_note as string | null }]))
     const countryMap = new Map((profiles || []).map((p) => [p.id, p.country as string | null]))
+    const untilMap = new Map((profiles || []).map((p) => [p.id, (p as any).blocked_until as string | null]))
 
     if (data) {
       setUsers(
@@ -186,6 +177,7 @@ export default function AdminUsersPage() {
           is_blocked: blockedMap.get(u.id) ?? false,
           block_reason: reasonMap.get(u.id)?.r ?? null,
           block_note: reasonMap.get(u.id)?.n ?? null,
+          blocked_until: untilMap.get(u.id) ?? null,
           country: u.country ?? countryMap.get(u.id) ?? null,
         }))
       )
@@ -226,8 +218,8 @@ export default function AdminUsersPage() {
     setSavingEdit(false)
 
     if (error) {
-      logError("UPDATE USER ERROR:", error)
-      toast("No se pudo guardar el usuario")
+      console.log("UPDATE USER ERROR:", error)
+      window.alert("No se pudo guardar el usuario")
       return
     }
 
@@ -249,23 +241,26 @@ export default function AdminUsersPage() {
     }
     setBlockReason("spam")
     setBlockNote("")
+    setBlockDuration("forever")
     setBlockTarget(user)
   }
 
   const applyBlock = async (user: User, nextBlocked: boolean) => {
     setBlockingId(user.id)
+    const blockedUntil = nextBlocked ? computeBlockedUntil(blockDuration) : null
     const { error } = await supabase.from("profiles").upsert({
       id: user.id,
       is_blocked: nextBlocked,
       block_reason: nextBlocked ? blockReason : null,
       block_note: nextBlocked ? blockNote.trim().slice(0, 300) || null : null,
       blocked_at: nextBlocked ? new Date().toISOString() : null,
+      blocked_until: blockedUntil,
     })
     setBlockingId(null)
 
     if (error) {
-      logError("BLOCK USER ERROR:", error)
-      toast("No se pudo actualizar el bloqueo")
+      console.log("BLOCK USER ERROR:", error)
+      window.alert("No se pudo actualizar el bloqueo")
       return
     }
 
@@ -273,7 +268,13 @@ export default function AdminUsersPage() {
     setUsers((prev) =>
       prev.map((x) =>
         x.id === user.id
-          ? { ...x, is_blocked: nextBlocked, block_reason: nextBlocked ? blockReason : null, block_note: nextBlocked ? blockNote.trim() || null : null }
+          ? {
+              ...x,
+              is_blocked: nextBlocked,
+              block_reason: nextBlocked ? blockReason : null,
+              block_note: nextBlocked ? blockNote.trim() || null : null,
+              blocked_until: blockedUntil,
+            }
           : x
       )
     )
@@ -299,8 +300,8 @@ export default function AdminUsersPage() {
     setSendingMessage(false)
 
     if (error) {
-      logError("SEND USER MESSAGE ERROR:", error)
-      toast("No se pudo enviar el mensaje")
+      console.log("SEND USER MESSAGE ERROR:", error)
+      window.alert("No se pudo enviar el mensaje")
       return
     }
 
@@ -354,7 +355,9 @@ export default function AdminUsersPage() {
                         </div>
                         {user.is_blocked && (
                           <span className="rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-bold uppercase text-red-300">
-                            Bloqueado{user.block_reason ? ` · ${BLOCK_REASONS.find((x) => x.code === user.block_reason)?.label || user.block_reason}` : ""}
+                            {isBlockActive(user.is_blocked, user.blocked_until ?? null) ? "Bloqueado" : "Bloqueo caducado"}
+                            {user.block_reason ? ` · ${BLOCK_REASONS.find((x) => x.code === user.block_reason)?.label || user.block_reason}` : ""}
+                            {user.blocked_until ? ` · hasta ${new Date(user.blocked_until).toLocaleDateString("es-ES")}` : " · para siempre"}
                           </span>
                         )}
                       </div>
@@ -569,6 +572,17 @@ export default function AdminUsersPage() {
             >
               {BLOCK_REASONS.map((r) => (
                 <option key={r.code} value={r.code}>{r.label}</option>
+              ))}
+            </select>
+            <label className="mt-4 block text-xs font-bold text-zinc-400">Duración</label>
+            <select
+              value={blockDuration}
+              onChange={(e) => setBlockDuration(e.target.value as BlockDuration)}
+              style={{ colorScheme: "dark" }}
+              className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white"
+            >
+              {BLOCK_DURATIONS.map((d) => (
+                <option key={d.code} value={d.code}>{d.label}</option>
               ))}
             </select>
             <label className="mt-4 block text-xs font-bold text-zinc-400">Mensaje adicional (opcional, lo verá el usuario)</label>

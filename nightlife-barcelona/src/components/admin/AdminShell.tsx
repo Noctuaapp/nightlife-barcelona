@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, BarChart3, Disc3, BadgeCheck, CalendarDays, Headphones, MapPin, Users,
-  MessageSquare, Ban, Wrench, ChevronLeft, ChevronRight, type LucideIcon,
+  MessageSquare, Ban, Wrench, Flag, Star, ChevronLeft, ChevronRight, type LucideIcon,
 } from "lucide-react"
 
 // Navegación única y completa del admin: todas las pantallas comparten esta lista.
@@ -18,6 +18,8 @@ const ADMIN_NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/admin/club-events", label: "Noches de club", icon: Headphones },
   { href: "/admin/essentials", label: "Esenciales", icon: MapPin },
   { href: "/admin/users", label: "Usuarios", icon: Users },
+  { href: "/admin/notas", label: "Notas denunciadas", icon: Flag },
+  { href: "/admin/opinion", label: "Opiniones", icon: Star },
   { href: "/admin/messages", label: "Mensajes", icon: MessageSquare },
   { href: "/admin/entry-denials", label: "No dejan entrar", icon: Ban },
   { href: "/admin/herramientas", label: "Herramientas", icon: Wrench },

@@ -1,0 +1,56 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import Icon from "../ui/Icon"
+import { useLanguage } from "../../context/LanguageContext"
+
+// Chip flotante arriba a la derecha de la portada que va rotando frases cortas sobre cosas que
+// la app ya hace y que mucha gente no descubre sola (niveles, notas de check-in, planificar,
+// favoritos, el mapa...). Es publicidad de la propia app, dentro de la propia app.
+const MESSAGES: { icon: string; key: string }[] = [
+  { icon: "star", key: "homeTicker.msg1" },
+  { icon: "note", key: "homeTicker.msg2" },
+  { icon: "calendar", key: "homeTicker.msg3" },
+  { icon: "sparkle", key: "homeTicker.msg4" },
+  { icon: "heart", key: "homeTicker.msg5" },
+  { icon: "hourglass", key: "homeTicker.msg6" },
+  { icon: "car", key: "homeTicker.msg7" },
+  { icon: "thermometer", key: "homeTicker.msg8" },
+  { icon: "map", key: "homeTicker.msg9" },
+]
+
+export default function FeatureTicker() {
+  const { t } = useLanguage()
+  const [index, setIndex] = useState(0)
+  const [visible, setVisible] = useState(true)
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      // Un pelín de fundido antes de cambiar el texto, no un corte seco.
+      setVisible(false)
+      setTimeout(() => {
+        setIndex((i) => (i + 1) % MESSAGES.length)
+        setVisible(true)
+      }, 220)
+    }, 4200)
+    return () => clearInterval(id)
+  }, [])
+
+  const current = MESSAGES[index]
+
+  return (
+    <div
+      aria-live="polite"
+      className="absolute right-3 top-3 z-10 hidden max-w-[230px] items-center gap-2 rounded-full border border-white/15 bg-black/40 px-3.5 py-2 text-xs font-medium text-white/90 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.7)] backdrop-blur-md sm:flex sm:right-6 sm:top-6 sm:max-w-[280px] sm:text-sm"
+    >
+      <Icon name={current.icon} className="h-4 w-4 shrink-0 text-cyan-300" />
+      <span
+        className="noctua-ticker-text truncate transition-all duration-200"
+        style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(-3px)" }}
+      >
+        {t(current.key)}
+      </span>
+      <style>{`@media (prefers-reduced-motion: reduce) { .noctua-ticker-text { transition: none !important; opacity: 1 !important; transform: none !important; } }`}</style>
+    </div>
+  )
+}

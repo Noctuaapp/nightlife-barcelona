@@ -245,7 +245,8 @@
     "link_faq": "Domande frequenti",
     "venueTitle": "Hai un club, un evento o un'attività notturna?",
     "venueText": "Appari su Noctua, gestisci la tua scheda e raggiungi più persone ogni sera.",
-    "venueButton": "Contattaci"
+    "venueButton": "Contattaci",
+    "link_feedback": "Valutaci"
   },
   "privacy": {
     "title": "Informativa sulla Privacy",
@@ -603,7 +604,8 @@
     "notePublish": "Pubblica",
     "noteDone": "✓ Nota pubblicata — grazie per l'avviso",
     "ctaShort": "Check-in",
-    "doneShort": "Fatto oggi"
+    "doneShort": "Fatto oggi",
+    "noteRespect": "Sii rispettoso: le note offensive o false possono essere segnalate e il tuo profilo può essere sanzionato."
   },
   "levels": {
     "title": "Il tuo livello",
@@ -620,7 +622,10 @@
     "platino": "Platino",
     "zafiro": "Zaffiro",
     "diamante": "Diamante",
-    "viewAll": "Vedi livelli e vantaggi"
+    "viewAll": "Vedi livelli e vantaggi",
+    "levelUpTitle": "Sali di livello!",
+    "levelUpBody": "Continua a goderti Noctua per sbloccare il tuo prossimo badge.",
+    "waitingUntil": "Hai già l'XP necessario, ma il tuo nuovo livello si sblocca il {date}."
   },
   "favorites": {
     "saved": "Salvato",
@@ -763,7 +768,15 @@
     "walk": "A piedi",
     "website": "Sito ufficiale",
     "rideCopied": "Indirizzo copiato: incollalo nell'app",
-    "rideHint": "Apre l'app se ce l'hai installata; altrimenti lo store per scaricarla."
+    "rideHint": "Apre l'app se ce l'hai installata; altrimenti lo store per scaricarla.",
+    "noteUpvote": "Utile",
+    "noteDownvote": "Non utile",
+    "noteReport": "Segnala",
+    "noteReportConfirm": "Segnalare questa nota? La esamineremo e, se necessario, agiremo di conseguenza.",
+    "noteReported": "Nota segnalata. Grazie per averci avvisato.",
+    "noteReportedShort": "Segnalata",
+    "notesHide": "Nascondi note",
+    "loginToVote": "Accedi per valutare o segnalare le note."
   },
   "eventPage": {
     "dateTbc": "Data da confermare"
@@ -782,7 +795,8 @@
     "streakTitle": "Serie settimanale",
     "streakBody": "Hai guadagnato +{xp} XP usando Noctua per più giorni questa settimana.",
     "dailyStreakTitle": "{days} giorni di fila!",
-    "dailyStreakBody": "Hai guadagnato +{xp} XP per essere tornato anche oggi."
+    "dailyStreakBody": "Hai guadagnato +{xp} XP per essere tornato anche oggi.",
+    "levelUpBody": "Sei salito al livello {level}. Apri Club Noctua per vederlo."
   },
   "surprise": {
     "moodAny": "Qualsiasi cosa",
@@ -1082,7 +1096,13 @@
     "c2_title": "Voce della notte",
     "c2_desc": "Lascia una nota dopo un check-in per chi arriva dopo",
     "c3_title": "Piano in corso",
-    "c3_desc": "Segna 2 piani con «Ci vado»"
+    "c3_desc": "Segna 2 piani con «Ci vado»",
+    "c4_title": "Nuovo quartiere",
+    "c4_desc": "Fai il check-in in un quartiere dove non eri mai stato",
+    "c5_title": "Vicino della notte",
+    "c5_desc": "Valuta la nota di check-in di qualcuno",
+    "c6_title": "Doppia notte",
+    "c6_desc": "Fai il check-in in 2 notti diverse questa settimana"
   },
   "invite": {
     "title": "Invita un amico",
@@ -1330,5 +1350,28 @@
     "rain": "Stanotte potrebbe piovere: porta un ombrello (dentro il locale sarai al riparo).",
     "cold": "Stanotte fa freddo: porta un cappotto (dentro il locale farà caldo).",
     "nice": "È una bella notte per uscire a Barcellona."
+  },
+  "opinion": {
+    "title": "Cosa pensi di Noctua?",
+    "subtitle": "Mezzo minuto. Ci aiuta a migliorare l'app per tutti.",
+    "ratingLabel": "La tua valutazione",
+    "commentLabel": "Qualcosa che miglioreresti? (opzionale)",
+    "commentPlaceholder": "Dicci cosa cambieresti...",
+    "errorNoRating": "Scegli una valutazione prima di inviare.",
+    "errorSend": "Impossibile inviare, riprova.",
+    "submit": "Invia valutazione",
+    "sending": "Invio...",
+    "thanks": "Grazie per la tua opinione!"
+  },
+  "homeTicker": {
+    "msg1": "Sali di livello su Club Noctua e sblocca vantaggi",
+    "msg2": "Lascia una nota al check-in per chi arriva dopo",
+    "msg3": "Pianifica la tua serata e condividila con gli amici",
+    "msg4": "Nessuna idea? Tocca Sorprendimi e ti proponiamo un posto",
+    "msg5": "Salva i tuoi locali preferiti per trovarli al volo",
+    "msg6": "Ti avvisiamo prima che inizi un evento che segui",
+    "msg7": "Ogni locale con orari, prezzo e come arrivarci",
+    "msg8": "Guarda il meteo di stasera prima di uscire",
+    "msg9": "Guarda sulla mappa cosa è aperto vicino a te"
   }
 }

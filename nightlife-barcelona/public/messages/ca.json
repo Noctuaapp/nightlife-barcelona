@@ -245,7 +245,8 @@
     "link_faq": "Preguntes freqüents",
     "venueTitle": "Tens un club, un esdeveniment o un negoci nocturn?",
     "venueText": "Apareix a Noctua, gestiona la teva fitxa i arriba a més gent cada nit.",
-    "venueButton": "Contacta'ns"
+    "venueButton": "Contacta'ns",
+    "link_feedback": "Valora'ns"
   },
   "privacy": {
     "title": "Política de Privacitat",
@@ -603,7 +604,8 @@
     "notePublish": "Publicar",
     "noteDone": "✓ Nota publicada — gràcies per avisar",
     "ctaShort": "Check-in",
-    "doneShort": "Fet avui"
+    "doneShort": "Fet avui",
+    "noteRespect": "Sigues respectuós: les notes ofensives o falses es poden denunciar i el teu perfil pot ser sancionat."
   },
   "levels": {
     "title": "El teu nivell",
@@ -620,7 +622,10 @@
     "platino": "Platí",
     "zafiro": "Safir",
     "diamante": "Diamant",
-    "viewAll": "Veure nivells i avantatges"
+    "viewAll": "Veure nivells i avantatges",
+    "levelUpTitle": "Puges de nivell!",
+    "levelUpBody": "Segueix gaudint de Noctua per desbloquejar la teva propera insígnia.",
+    "waitingUntil": "Ja tens l'XP, però el teu nou nivell es desbloqueja el {date}."
   },
   "favorites": {
     "saved": "Desat",
@@ -763,7 +768,15 @@
     "walk": "Anar-hi a peu",
     "website": "Web oficial",
     "rideCopied": "Adreça copiada: enganxa-la a l'app",
-    "rideHint": "S'obre l'app si la tens instal·lada; si no, la botiga per descarregar-la."
+    "rideHint": "S'obre l'app si la tens instal·lada; si no, la botiga per descarregar-la.",
+    "noteUpvote": "Em sembla útil",
+    "noteDownvote": "No em sembla útil",
+    "noteReport": "Denunciar",
+    "noteReportConfirm": "Vols denunciar aquesta nota? La revisarem i, si cal, prendrem mesures.",
+    "noteReported": "Nota denunciada. Gràcies per avisar-nos.",
+    "noteReportedShort": "Denunciada",
+    "notesHide": "Amagar notes",
+    "loginToVote": "Inicia sessió per valorar o denunciar notes."
   },
   "eventPage": {
     "dateTbc": "Data per confirmar"
@@ -782,7 +795,8 @@
     "streakTitle": "Ratxa setmanal",
     "streakBody": "Has guanyat +{xp} XP per fer servir Noctua diversos dies aquesta setmana.",
     "dailyStreakTitle": "{days} dies seguits!",
-    "dailyStreakBody": "Has guanyat +{xp} XP per entrar avui també."
+    "dailyStreakBody": "Has guanyat +{xp} XP per entrar avui també.",
+    "levelUpBody": "Has pujat a {level}. Entra a Club Noctua per veure-ho."
   },
   "surprise": {
     "moodAny": "El que sigui",
@@ -1082,7 +1096,13 @@
     "c2_title": "Veu de la nit",
     "c2_desc": "Deixa una nota després d'un check-in per a qui vingui després",
     "c3_title": "Pla en marxa",
-    "c3_desc": "Marca 2 plans amb «Hi aniré»"
+    "c3_desc": "Marca 2 plans amb «Hi aniré»",
+    "c4_title": "Barri nou",
+    "c4_desc": "Fes check-in en un barri on no havies estat abans",
+    "c5_title": "Veí de la nit",
+    "c5_desc": "Valora la nota de check-in d'algú",
+    "c6_title": "Doble nit",
+    "c6_desc": "Fes check-in en 2 nits diferents aquesta setmana"
   },
   "clubNoctua": {
     "intro": "Guanya XP sortint: fent check-in als locals, completant reptes i fent servir Noctua amb regularitat, i puja de nivell. Els avantatges marcats com a «Properament» encara no estan actius: ara veus el teu progrés i la teva insígnia.",
@@ -1330,5 +1350,28 @@
     "rain": "Aquesta nit pot ploure: agafa un paraigua (dins del local estaràs cobert).",
     "cold": "Fa fred aquesta nit: agafa un abric (dins del local farà calor).",
     "nice": "Fa bona nit per sortir per Barcelona."
+  },
+  "opinion": {
+    "title": "Què et sembla Noctua?",
+    "subtitle": "Mig minut. Ens ajuda a millorar l'app per a tothom.",
+    "ratingLabel": "La teva valoració",
+    "commentLabel": "Alguna cosa que milloraries? (opcional)",
+    "commentPlaceholder": "Explica'ns què canviaries...",
+    "errorNoRating": "Tria una valoració abans d'enviar.",
+    "errorSend": "No s'ha pogut enviar, torna-ho a provar.",
+    "submit": "Enviar valoració",
+    "sending": "Enviant...",
+    "thanks": "Gràcies per la teva opinió!"
+  },
+  "homeTicker": {
+    "msg1": "Puja de nivell a Club Noctua i desbloqueja avantatges",
+    "msg2": "Deixa una nota en fer check-in per a qui vingui després",
+    "msg3": "Planifica la teva nit i guarda el pla amb amics",
+    "msg4": "Sense idees? Prem Sorprèn-me i et proposem un lloc",
+    "msg5": "Guarda els teus locals preferits per trobar-los ràpid",
+    "msg6": "T'avisem abans que comenci l'esdeveniment que segueixes",
+    "msg7": "Cada local amb el seu horari, preu i com arribar-hi",
+    "msg8": "Consulta el temps d'aquesta nit abans de sortir",
+    "msg9": "Mira al mapa què tens obert a prop teu"
   }
 }

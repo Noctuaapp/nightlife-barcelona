@@ -245,7 +245,8 @@
     "link_faq": "Veelgestelde vragen",
     "venueTitle": "Heb je een club, een evenement of een nachtzaak?",
     "venueText": "Kom op Noctua, beheer je pagina en bereik elke avond meer mensen.",
-    "venueButton": "Neem contact op"
+    "venueButton": "Neem contact op",
+    "link_feedback": "Beoordeel ons"
   },
   "privacy": {
     "title": "Privacybeleid",
@@ -603,7 +604,8 @@
     "notePublish": "Plaatsen",
     "noteDone": "✓ Bericht geplaatst — bedankt voor de tip",
     "ctaShort": "Check-in",
-    "doneShort": "Vandaag gedaan"
+    "doneShort": "Vandaag gedaan",
+    "noteRespect": "Wees respectvol: aanstootgevende of valse notities kunnen worden gemeld en je profiel kan worden geschorst."
   },
   "levels": {
     "title": "Jouw niveau",
@@ -620,7 +622,10 @@
     "platino": "Platina",
     "zafiro": "Saffier",
     "diamante": "Diamant",
-    "viewAll": "Bekijk niveaus en voordelen"
+    "viewAll": "Bekijk niveaus en voordelen",
+    "levelUpTitle": "Level up!",
+    "levelUpBody": "Blijf Noctua gebruiken om je volgende badge te ontgrendelen.",
+    "waitingUntil": "Je hebt al genoeg XP, maar je nieuwe level wordt pas op {date} ontgrendeld."
   },
   "favorites": {
     "saved": "Opgeslagen",
@@ -763,7 +768,15 @@
     "walk": "Lopen",
     "website": "Officiële website",
     "rideCopied": "Adres gekopieerd: plak het in de app",
-    "rideHint": "Opent de app als je die hebt; anders de winkel om hem te downloaden."
+    "rideHint": "Opent de app als je die hebt; anders de winkel om hem te downloaden.",
+    "noteUpvote": "Nuttig",
+    "noteDownvote": "Niet nuttig",
+    "noteReport": "Melden",
+    "noteReportConfirm": "Deze notitie melden? We bekijken het en ondernemen indien nodig actie.",
+    "noteReported": "Notitie gemeld. Bedankt voor de melding.",
+    "noteReportedShort": "Gemeld",
+    "notesHide": "Notities verbergen",
+    "loginToVote": "Log in om notities te beoordelen of te melden."
   },
   "eventPage": {
     "dateTbc": "Datum nog niet bekend"
@@ -782,7 +795,8 @@
     "streakTitle": "Weekreeks",
     "streakBody": "Je hebt +{xp} XP verdiend door Noctua deze week op meerdere dagen te gebruiken.",
     "dailyStreakTitle": "{days} dagen op rij!",
-    "dailyStreakBody": "Je hebt +{xp} XP verdiend omdat je ook vandaag weer langskwam."
+    "dailyStreakBody": "Je hebt +{xp} XP verdiend omdat je ook vandaag weer langskwam.",
+    "levelUpBody": "Je bent naar {level} gegaan. Open Club Noctua om het te zien."
   },
   "surprise": {
     "moodAny": "Maakt niet uit",
@@ -1082,7 +1096,13 @@
     "c2_title": "Stem van de nacht",
     "c2_desc": "Laat na een check-in een notitie achter voor wie na je komt",
     "c3_title": "Plan in gang",
-    "c3_desc": "Markeer 2 plannen met ‘Ik ga’"
+    "c3_desc": "Markeer 2 plannen met ‘Ik ga’",
+    "c4_title": "Nieuwe buurt",
+    "c4_desc": "Check in op een plek in een buurt waar je nog niet was",
+    "c5_title": "Buurman van de nacht",
+    "c5_desc": "Beoordeel iemands check-in notitie",
+    "c6_title": "Dubbele nacht",
+    "c6_desc": "Check in op 2 verschillende avonden deze week"
   },
   "invite": {
     "title": "Nodig een vriend uit",
@@ -1330,5 +1350,28 @@
     "rain": "Vanavond kan het regenen: neem een paraplu (binnen sta je droog).",
     "cold": "Het is koud vanavond: neem een jas (binnen wordt het warm).",
     "nice": "Het is een mooie avond om uit te gaan in Barcelona."
+  },
+  "opinion": {
+    "title": "Wat vind je van Noctua?",
+    "subtitle": "Kost een halve minuut. Het helpt ons de app voor iedereen te verbeteren.",
+    "ratingLabel": "Jouw beoordeling",
+    "commentLabel": "Iets dat je zou verbeteren? (optioneel)",
+    "commentPlaceholder": "Vertel ons wat je zou veranderen...",
+    "errorNoRating": "Kies een beoordeling voordat je verzendt.",
+    "errorSend": "Verzenden mislukt, probeer het opnieuw.",
+    "submit": "Beoordeling versturen",
+    "sending": "Versturen...",
+    "thanks": "Bedankt voor je mening!"
+  },
+  "homeTicker": {
+    "msg1": "Level op in Club Noctua en ontgrendel voordelen",
+    "msg2": "Laat bij het inchecken een notitie achter voor de volgende",
+    "msg3": "Plan je avond en deel het plan met vrienden",
+    "msg4": "Geen idee? Tik op Verras me en wij stellen iets voor",
+    "msg5": "Bewaar je favoriete plekken om ze snel terug te vinden",
+    "msg6": "We herinneren je voordat een gevolgd evenement begint",
+    "msg7": "Elke plek met openingstijden, prijs en route",
+    "msg8": "Check het weer van vanavond voordat je weggaat",
+    "msg9": "Bekijk op de kaart wat er dichtbij open is"
   }
 }

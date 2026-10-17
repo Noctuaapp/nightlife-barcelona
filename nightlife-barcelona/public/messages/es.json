@@ -246,7 +246,8 @@
     "link_faq": "Preguntas frecuentes",
     "venueTitle": "¿Tienes un club, un evento o un negocio nocturno?",
     "venueText": "Aparece en Noctua, gestiona tu ficha y llega a más gente cada noche.",
-    "venueButton": "Contáctanos"
+    "venueButton": "Contáctanos",
+    "link_feedback": "Valóranos"
   },
   "privacy": {
     "title": "Política de Privacidad",
@@ -1108,7 +1109,13 @@
     "c2_title": "Voz de la noche",
     "c2_desc": "Deja una nota tras un check-in para quien venga después",
     "c3_title": "Plan en marcha",
-    "c3_desc": "Marca 2 planes con «Asistiré»"
+    "c3_desc": "Marca 2 planes con «Asistiré»",
+    "c4_title": "Barrio nuevo",
+    "c4_desc": "Haz check-in en un barrio donde no habías estado antes",
+    "c5_title": "Vecino de la noche",
+    "c5_desc": "Valora la nota de check-in de alguien",
+    "c6_title": "Doble noche",
+    "c6_desc": "Haz check-in en 2 noches distintas esta semana"
   },
   "clubNoctua": {
     "intro": "Gana XP saliendo: haciendo check-in en los locales, completando retos y usando Noctua con regularidad, y sube de nivel. Las ventajas marcadas como «Próximamente» aún no están activas: hoy ves tu progreso y tu insignia.",
@@ -1356,5 +1363,28 @@
     "rain": "Esta noche puede llover: coge un paraguas (aunque dentro del club estarás cubierto).",
     "cold": "Hace frío esta noche: coge un abrigo (luego dentro del local hará calor).",
     "nice": "Hace buena noche para salir por Barcelona."
+  },
+  "opinion": {
+    "title": "¿Qué te parece Noctua?",
+    "subtitle": "Medio minuto. Nos ayuda a mejorar la app para todo el mundo.",
+    "ratingLabel": "Tu valoración",
+    "commentLabel": "¿Algo que mejorarías? (opcional)",
+    "commentPlaceholder": "Cuéntanos qué cambiarías...",
+    "errorNoRating": "Elige una valoración antes de enviar.",
+    "errorSend": "No se pudo enviar, inténtalo de nuevo.",
+    "submit": "Enviar valoración",
+    "sending": "Enviando...",
+    "thanks": "¡Gracias por tu opinión!"
+  },
+  "homeTicker": {
+    "msg1": "Sube de nivel en Club Noctua y desbloquea ventajas",
+    "msg2": "Deja una nota al hacer check-in para quien venga después",
+    "msg3": "Planifica tu noche y guarda el plan con amigos",
+    "msg4": "¿Sin ideas? Pulsa Sorpréndeme y te proponemos un sitio",
+    "msg5": "Guarda tus locales favoritos para encontrarlos rápido",
+    "msg6": "Te avisamos antes de que empiece el evento que sigues",
+    "msg7": "Cada local con su horario, precio y cómo llegar o volver",
+    "msg8": "Consulta el tiempo de esta noche antes de salir",
+    "msg9": "Mira en el mapa qué tienes abierto cerca de ti"
   }
 }

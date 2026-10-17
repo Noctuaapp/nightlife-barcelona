@@ -245,7 +245,8 @@
     "link_faq": "FAQ",
     "venueTitle": "Du hast einen Club, ein Event oder ein Nachtgeschäft?",
     "venueText": "Erscheine auf Noctua, verwalte dein Profil und erreiche jede Nacht mehr Leute.",
-    "venueButton": "Kontaktiere uns"
+    "venueButton": "Kontaktiere uns",
+    "link_feedback": "Bewerte uns"
   },
   "privacy": {
     "title": "Datenschutzerklärung",
@@ -603,7 +604,8 @@
     "notePublish": "Posten",
     "noteDone": "✓ Notiz gepostet — danke für den Hinweis",
     "ctaShort": "Check-in",
-    "doneShort": "Heute erledigt"
+    "doneShort": "Heute erledigt",
+    "noteRespect": "Sei respektvoll: Anstößige oder falsche Notizen können gemeldet werden, und dein Profil kann gesperrt werden."
   },
   "levels": {
     "title": "Dein Level",
@@ -620,7 +622,10 @@
     "platino": "Platin",
     "zafiro": "Saphir",
     "diamante": "Diamant",
-    "viewAll": "Level und Vorteile ansehen"
+    "viewAll": "Level und Vorteile ansehen",
+    "levelUpTitle": "Level-up!",
+    "levelUpBody": "Nutze Noctua weiter, um dein nächstes Abzeichen freizuschalten.",
+    "waitingUntil": "Du hast schon genug XP, aber dein neues Level wird erst am {date} freigeschaltet."
   },
   "favorites": {
     "saved": "Gespeichert",
@@ -763,7 +768,15 @@
     "walk": "Zu Fuß",
     "website": "Offizielle Website",
     "rideCopied": "Adresse kopiert: Füge sie in der App ein",
-    "rideHint": "Öffnet die App, wenn sie installiert ist; sonst den Store zum Herunterladen."
+    "rideHint": "Öffnet die App, wenn sie installiert ist; sonst den Store zum Herunterladen.",
+    "noteUpvote": "Hilfreich",
+    "noteDownvote": "Nicht hilfreich",
+    "noteReport": "Melden",
+    "noteReportConfirm": "Diese Notiz melden? Wir prüfen sie und ergreifen bei Bedarf Maßnahmen.",
+    "noteReported": "Notiz gemeldet. Danke für den Hinweis.",
+    "noteReportedShort": "Gemeldet",
+    "notesHide": "Notizen ausblenden",
+    "loginToVote": "Melde dich an, um Notizen zu bewerten oder zu melden."
   },
   "eventPage": {
     "dateTbc": "Datum folgt"
@@ -782,7 +795,8 @@
     "streakTitle": "Wochenserie",
     "streakBody": "Du hast +{xp} XP bekommen, weil du Noctua diese Woche an mehreren Tagen genutzt hast.",
     "dailyStreakTitle": "{days} Tage in Folge!",
-    "dailyStreakBody": "Du hast +{xp} XP bekommen, weil du auch heute wieder da warst."
+    "dailyStreakBody": "Du hast +{xp} XP bekommen, weil du auch heute wieder da warst.",
+    "levelUpBody": "Du bist auf {level} aufgestiegen. Öffne Club Noctua, um es zu sehen."
   },
   "surprise": {
     "moodAny": "Egal was",
@@ -1082,7 +1096,13 @@
     "c2_title": "Stimme der Nacht",
     "c2_desc": "Hinterlass nach einem Check-in eine Notiz für alle, die nach dir kommen",
     "c3_title": "Plan läuft",
-    "c3_desc": "Markiere 2 Pläne mit „Bin dabei“"
+    "c3_desc": "Markiere 2 Pläne mit „Bin dabei“",
+    "c4_title": "Neues Viertel",
+    "c4_desc": "Checke in einem Viertel ein, in dem du noch nicht warst",
+    "c5_title": "Nachtnachbar",
+    "c5_desc": "Bewerte die Check-in-Notiz von jemandem",
+    "c6_title": "Doppelte Nacht",
+    "c6_desc": "Checke diese Woche an 2 verschiedenen Nächten ein"
   },
   "invite": {
     "title": "Lade einen Freund ein",
@@ -1330,5 +1350,28 @@
     "rain": "Heute Nacht könnte es regnen: nimm einen Schirm mit (drinnen bist du geschützt).",
     "cold": "Es ist kalt heute Nacht: nimm eine Jacke mit (drinnen wird es warm).",
     "nice": "Eine schöne Nacht, um in Barcelona auszugehen."
+  },
+  "opinion": {
+    "title": "Was hältst du von Noctua?",
+    "subtitle": "Dauert eine halbe Minute. Hilft uns, die App für alle zu verbessern.",
+    "ratingLabel": "Deine Bewertung",
+    "commentLabel": "Etwas, das du verbessern würdest? (optional)",
+    "commentPlaceholder": "Sag uns, was du ändern würdest...",
+    "errorNoRating": "Wähle eine Bewertung, bevor du sendest.",
+    "errorSend": "Senden fehlgeschlagen, versuch es erneut.",
+    "submit": "Bewertung senden",
+    "sending": "Wird gesendet...",
+    "thanks": "Danke für dein Feedback!"
+  },
+  "homeTicker": {
+    "msg1": "Steig im Club Noctua auf und schalte Vorteile frei",
+    "msg2": "Hinterlasse beim Check-in eine Notiz für die nächste Person",
+    "msg3": "Plane deine Nacht und teile sie mit Freunden",
+    "msg4": "Keine Idee? Tippe auf Überrasch mich für einen Vorschlag",
+    "msg5": "Speichere deine Lieblingsorte, um sie schnell zu finden",
+    "msg6": "Wir erinnern dich, bevor ein verfolgtes Event beginnt",
+    "msg7": "Jeder Laden mit Öffnungszeiten, Preis und Anfahrt",
+    "msg8": "Schau vor dem Losgehen nach dem Wetter heute Nacht",
+    "msg9": "Sieh auf der Karte, was in deiner Nähe offen ist"
   }
 }

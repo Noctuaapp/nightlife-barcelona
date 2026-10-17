@@ -8,6 +8,7 @@ import BottomNav from "../layout/BottomNav"
 import Footer from "../layout/Footer"
 import EventsSection from "./EventsSection"
 import SurpriseMe from "./SurpriseMe"
+import FeatureTicker from "./FeatureTicker"
 import ReferralBanner from "./ReferralBanner"
 import AreasSection from "./AreasSection"
 import Icon from "../ui/Icon"
@@ -210,6 +211,8 @@ export default function HomeClient({
             className="absolute inset-0 -z-10 hidden md:block"
             style={{ background: "linear-gradient(90deg, rgba(7,8,20,0.88) 0%, rgba(7,8,20,0.55) 45%, rgba(7,8,20,0) 75%)" }}
           />
+
+          <FeatureTicker />
 
           <div className="mx-auto max-w-7xl px-4 pb-10 pt-10 sm:px-6 sm:pb-16 sm:pt-20 lg:pb-20 lg:pt-28">
             <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-md sm:text-sm">
