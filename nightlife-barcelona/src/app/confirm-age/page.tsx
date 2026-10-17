@@ -25,16 +25,32 @@ export default function ConfirmAgePage() {
         router.replace("/login")
         return
       }
+      const user = data.session.user
       const { data: profile } = await supabase
         .from("profiles")
-        .select("terms_accepted_at")
-        .eq("id", data.session.user.id)
+        .select("terms_accepted_at, username, gender, country")
+        .eq("id", user.id)
         .maybeSingle()
+
+      // Si el alta fue con email y hubo que confirmar el correo antes de tener sesión, el
+      // username/género/país se quedaron solo en los metadatos de auth (signup los guarda ahí
+      // además de en profiles, justo para este caso) — se sincronizan aquí, la primera vez que
+      // hay sesión, en vez de perderse para siempre.
+      const meta = user.user_metadata as { username?: string; country?: string; gender?: string } | null
+      if (meta?.username && !profile?.username) {
+        await supabase.from("profiles").upsert({
+          id: user.id,
+          username: meta.username,
+          gender: profile?.gender || meta.gender || null,
+          country: profile?.country || meta.country || null,
+        })
+      }
+
       if (profile?.terms_accepted_at) {
         router.replace("/")
         return
       }
-      setUserId(data.session.user.id)
+      setUserId(user.id)
       setChecking(false)
     }
     check()

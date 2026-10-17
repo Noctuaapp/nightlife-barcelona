@@ -8,7 +8,29 @@ import { useLanguage } from "../../context/LanguageContext"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import CountrySelect from "../../components/ui/CountrySelect"
-import TermsText from "../../components/ui/TermsText"
+
+// Dominios de correo temporal/desechable más usados (10 minutos, buzones de un solo uso, etc.).
+// Confirmar el correo ya filtra direcciones inventadas o mal escritas (el enlace nunca llega),
+// pero no filtra estas, porque sí reciben el correo de verdad — solo que a nadie que vaya a
+// volver. La lista no es exhaustiva (salen dominios nuevos constantemente) pero cubre los que
+// más se repiten.
+const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  "mailinator.com", "10minutemail.com", "10minutemail.net", "20minutemail.com",
+  "guerrillamail.com", "guerrillamail.net", "guerrillamail.org", "guerrillamail.biz",
+  "guerrillamail.de", "temp-mail.org", "tempmail.com", "tempmail.net", "tempmailo.com",
+  "throwawaymail.com", "yopmail.com", "yopmail.net", "yopmail.fr", "trashmail.com",
+  "trashmail.net", "getnada.com", "maildrop.cc", "sharklasers.com", "dispostable.com",
+  "mytemp.email", "fakeinbox.com", "mailnesia.com", "emailondeck.com", "mohmal.com",
+  "moakt.com", "33mail.com", "spamgourmet.com", "mintemail.com", "mail-temporaire.fr",
+  "discard.email", "discardmail.com", "tempinbox.com", "fakemailgenerator.com",
+  "burnermail.io", "crazymailing.com", "emailtemporario.com.br", "correotemporal.org",
+  "tempr.email", "inboxkitten.com", "luxusmail.org", "mailcatch.com", "spam4.me",
+])
+
+function isDisposableEmail(value: string): boolean {
+  const domain = value.split("@")[1]?.toLowerCase().trim()
+  return !!domain && DISPOSABLE_EMAIL_DOMAINS.has(domain)
+}
 
 export default function SignupPage() {
   const { t, locale } = useLanguage()
@@ -22,6 +44,11 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [confirmedAge, setConfirmedAge] = useState(false)
+  // Si el proyecto de Supabase tiene activado "Confirm email" (Authentication → Providers →
+  // Email), signUp() no deja sesión abierta hasta que se pulsa el enlace del correo — antes aquí
+  // se redirigía igualmente a la web como si ya hubiera entrado, y la persona se encontraba sin
+  // explicación pidiéndole iniciar sesión otra vez. Ahora se detecta y se muestra un aviso claro.
+  const [checkEmail, setCheckEmail] = useState(false)
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,8 +58,12 @@ export default function SignupPage() {
       setError(t("signup.error_fill_all"))
       return
     }
+    if (isDisposableEmail(email)) {
+      setError("No se admiten correos temporales ni desechables. Usa un correo real al que tengas acceso.")
+      return
+    }
     if (!birthDate) {
-      setError(t("consent.birthDateRequired"))
+      setError("Indica tu fecha de nacimiento.")
       return
     }
     // Edad exacta a partir de la fecha completa (con solo el año no se puede saber si alguien de
@@ -42,7 +73,7 @@ export default function SignupPage() {
     let age = today.getFullYear() - bd.getFullYear()
     if (today.getMonth() < bd.getMonth() || (today.getMonth() === bd.getMonth() && today.getDate() < bd.getDate())) age--
     if (isNaN(age) || age < 18) {
-      setError(t("consent.under18"))
+      setError("Noctua es solo para mayores de 18 años. No puedes registrarte.")
       return
     }
     if (!acceptedTerms) {
@@ -60,13 +91,29 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        data: { username, country },
+        // Se guarda también en los metadatos de auth (no solo en profiles) porque, si Supabase
+        // exige confirmar el correo, el upsert a profiles de más abajo no llega a ejecutarse
+        // (no hay sesión todavía) — así el username/género/país no se pierden: confirm-age los
+        // recupera de aquí la primera vez que la persona entra tras confirmar.
+        data: { username, country, gender },
       },
     })
 
     if (signUpError) {
       setError(signUpError.message)
       setLoading(false)
+      return
+    }
+
+    // Con "Confirm email" activado en Supabase, signUp() no abre sesión todavía (hay que pulsar
+    // el enlace del correo primero) — data.session viene null. Antes se redirigía igualmente
+    // como si ya hubiera entrado, y además este upsert fallaba en silencio (sin sesión, las
+    // políticas de la tabla no dejan escribir), así que el perfil (usuario, género, etc.) se
+    // perdía para quien tuviera que confirmar el correo. Ahora, si no hay sesión, se avisa de que
+    // hay que revisar el correo en vez de seguir como si nada.
+    if (!data.session) {
+      setLoading(false)
+      setCheckEmail(true)
       return
     }
 
@@ -95,24 +142,49 @@ export default function SignupPage() {
     })
   }
 
+  if (checkEmail) {
+    return (
+      <>
+        <Header />
+        <main className="flex min-h-screen flex-col items-center justify-center bg-black px-4 text-center text-white">
+          <div className="w-full max-w-md rounded-card border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
+            <p className="mb-3 text-xs font-semibold text-purple-400">Un último paso</p>
+            <h1 className="mb-3 text-2xl font-bold">Revisa tu correo</h1>
+            <p className="text-sm leading-relaxed text-zinc-400">
+              Te hemos enviado un enlace de confirmación a <span className="font-semibold text-white">{email}</span>. Ábrelo desde el móvil o el ordenador para activar tu cuenta y poder entrar.
+            </p>
+            <div className="mt-5 rounded-ctl border border-white/10 bg-white/5 px-4 py-3 text-left">
+              <p className="text-sm font-semibold text-white">¿No te llega?</p>
+              <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+                Revisa la carpeta de spam o promociones — muchas veces el correo de confirmación acaba ahí. Si tras unos minutos sigue sin aparecer, prueba a registrarte otra vez.
+              </p>
+            </div>
+          </div>
+        </main>
+        <BottomNav />
+      </>
+    )
+  }
+
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-night pb-40 text-ink">
+      <main className="min-h-screen bg-black pb-40 text-white">
         <section className="relative overflow-hidden px-4 pt-14 pb-10">
+          <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-transparent to-transparent" />
           <div className="relative mx-auto max-w-md text-center">
-            <h1 className="font-display text-4xl sm:text-5xl">{t("signup.title")}</h1>
+            <h1 className="text-5xl font-black tracking-tight">{t("signup.title")}</h1>
             <p className="mt-4 text-zinc-400">{t("signup.subtitle")}</p>
           </div>
         </section>
 
         <section className="mx-auto max-w-md px-4">
-          <div className="rounded-card border border-white/10 bg-surface p-6 sm:p-8">
+          <div className="rounded-card border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
 
             {/* Google */}
             <button
               onClick={handleGoogle}
-              className="w-full flex items-center justify-center gap-3 rounded-ctl border border-white/15 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white hover:text-black"
+              className="w-full flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white hover:text-black"
             >
               <svg width="18" height="18" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -135,21 +207,21 @@ export default function SignupPage() {
                 placeholder={t("signup.username")}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base outline-none focus:border-brand transition"
+                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
               />
               <input
                 type="email"
                 placeholder={t("signup.email")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base outline-none focus:border-brand transition"
+                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
               />
               <input
                 type="password"
                 placeholder={t("signup.password")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base outline-none focus:border-brand transition"
+                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
               />
               <CountrySelect value={country} onChange={setCountry} locale={locale} placeholder={t("signup.country")} />
               {/* Antes había una opción vacía seleccionable ("Género") que dejaba enviar el
@@ -162,24 +234,24 @@ export default function SignupPage() {
                 onChange={(e) => setGender(e.target.value)}
                 required
                 style={{ colorScheme: "dark" }}
-                className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base outline-none focus:border-brand transition text-zinc-300"
+                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition text-zinc-300"
               >
-                <option style={{ backgroundColor: "#16141f", color: "#fff" }} value="" disabled hidden>
+                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="" disabled hidden>
                   {t("signup.gender")}
                 </option>
-                <option style={{ backgroundColor: "#16141f", color: "#fff" }} value="Hombre">
+                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">
                   {t("signup.gender_male")}
                 </option>
-                <option style={{ backgroundColor: "#16141f", color: "#fff" }} value="Mujer">
+                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Mujer">
                   {t("signup.gender_female")}
                 </option>
-                <option style={{ backgroundColor: "#16141f", color: "#fff" }} value="Prefiero no decirlo">
+                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Prefiero no decirlo">
                   {t("signup.gender_unspecified")}
                 </option>
               </select>
 
               <div>
-                <label className="mb-2 block px-1 text-sm text-zinc-300">{t("consent.birthDate")}</label>
+                <label className="mb-2 block px-1 text-xs text-zinc-400">Fecha de nacimiento</label>
                 <input
                   type="date"
                   value={birthDate}
@@ -188,10 +260,10 @@ export default function SignupPage() {
                   max={new Date().toISOString().slice(0, 10)}
                   required
                   style={{ colorScheme: "dark" }}
-                  className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base outline-none focus:border-brand transition text-zinc-300"
+                  className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition text-zinc-300"
                 />
                 <p className="mt-2 px-1 text-xs leading-relaxed text-zinc-400">
-                  {t("birthYear.help")}
+                  Los datos del año de nacimiento se usarán para mejorar tus búsquedas.
                 </p>
               </div>
 
@@ -200,10 +272,14 @@ export default function SignupPage() {
                   type="checkbox"
                   checked={acceptedTerms}
                   onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded accent-[#7c5cff] flex-shrink-0"
+                  className="mt-1 h-4 w-4 rounded accent-purple-500 flex-shrink-0"
                 />
                 <span className="text-sm text-zinc-400 leading-relaxed">
-                  <TermsText />
+                  Acepto los{" "}
+                  <a href="/terms" className="text-purple-400 hover:text-purple-300 transition">términos y condiciones</a>
+                  {" "}y la{" "}
+                  <a href="/privacy" className="text-purple-400 hover:text-purple-300 transition">política de privacidad</a>
+                  {" "}de Noctua, incluyendo el uso de mi ubicación para mostrar contenido relevante.
                 </span>
               </label>
 
@@ -212,26 +288,26 @@ export default function SignupPage() {
                   type="checkbox"
                   checked={confirmedAge}
                   onChange={(e) => setConfirmedAge(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded accent-[#7c5cff] flex-shrink-0"
+                  className="mt-1 h-4 w-4 rounded accent-purple-500 flex-shrink-0"
                 />
                 <span className="text-sm text-zinc-400 leading-relaxed">
-                  {t("consent.ageConfirm")}
+                  Confirmo que soy mayor de 18 años.
                 </span>
               </label>
 
-              {error && <p className="text-sm font-semibold text-red-300">{error}</p>}
+              {error && <p className="text-sm font-bold text-red-400">{error}</p>}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-ctl bg-brand py-4 font-semibold text-white transition hover:bg-brand-strong disabled:opacity-50"
+                className="w-full rounded-2xl bg-white py-4 font-bold text-black transition hover:scale-[1.02] disabled:opacity-50"
               >
                 {loading ? t("signup.creating") : t("signup.create")}
               </button>
             </form>
 
             <p className="mt-6 text-center text-sm text-zinc-400">
-              <Link href="/login" className="font-semibold text-ink underline-offset-4 hover:underline">
+              <Link href="/login" className="text-white hover:text-zinc-300 transition">
                 {t("signup.existing")}
               </Link>
             </p>

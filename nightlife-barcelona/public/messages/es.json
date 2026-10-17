@@ -549,6 +549,7 @@
     "mature": "Prefiero ambiente +30",
     "shareTitle": "Plan de la noche · {date}",
     "zoneFallbackNote": "No había ningún plan que encajara en la zona que elegiste, así que te enseñamos lo más parecido en el resto de la ciudad.",
+    "noBarriosForZone": "Todavía no tenemos barrios guardados para esta zona — puedes seguir sin elegir uno.",
     "farApartNote": "Los dos locales de este plan quedan un poco lejos entre sí.",
     "expandRangeCta": "No importa la distancia, quiero pasarlo bien",
     "funTip1": "Lleva algo de efectivo: algunos locales no aceptan tarjeta en la entrada.",

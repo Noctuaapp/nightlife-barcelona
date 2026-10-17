@@ -354,6 +354,10 @@ export default function PlanPage() {
   const [timeKey, setTimeKey] = useState<"early" | "peak" | "late" | "allnight">("peak")
   const [dayOffset, setDayOffset] = useState(0)
   const [lgtbi, setLgtbi] = useState(false)
+  // Contador que solo sube al marcar (no al desmarcar) la casilla LGTBI+ — cambiar la key del
+  // emoji de la bandera fuerza que el navegador reinicie la animación cada vez, incluso si se
+  // marca, desmarca y se vuelve a marcar rápido.
+  const [prideBurstKey, setPrideBurstKey] = useState(0)
   const [mature, setMature] = useState(false)
 
   const [stops, setStops] = useState<Stop[]>([])
@@ -729,9 +733,23 @@ export default function PlanPage() {
     <>
       <Header />
       <main className="relative min-h-screen bg-night pb-40 text-ink">
-        <section className="mx-auto max-w-2xl px-4 pb-8 pt-10 sm:pt-14">
-          <h1 className="font-display text-[2.1rem] leading-[1.06] sm:text-6xl">{t("nav.plan")}</h1>
-          <p className="mt-4 max-w-xl text-base leading-relaxed text-zinc-300">{t("planPage.subtitle")}</p>
+        {/* Antes era título + subtítulo sobre negro liso, sin ningún elemento visual — la queja
+            de que se sentía "oscuro y triste" para una app de ocio nocturno. El resplandor
+            violeta (estático, un solo color de marca, nada de manchas animadas) rompe el vacío,
+            y el icono junto al título da una referencia de fiesta inmediata sin depender de
+            fotos que en este punto del flujo todavía no hay. */}
+        <section className="relative mx-auto max-w-2xl overflow-hidden px-4 pb-8 pt-10 sm:pt-14">
+          <div aria-hidden="true" className="pointer-events-none absolute -top-20 left-10 h-64 w-64 rounded-full bg-brand/20 blur-[90px]" />
+          <div className="relative flex items-start gap-4">
+            <span className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-brand/30 bg-brand/10 text-brand-soft sm:h-16 sm:w-16">
+              <Disc3 size={24} className="sm:hidden" />
+              <Disc3 size={30} className="hidden sm:block" />
+            </span>
+            <div>
+              <h1 className="font-display text-[2.1rem] leading-[1.06] sm:text-6xl">{t("nav.plan")}</h1>
+              <p className="mt-3 max-w-xl text-base leading-relaxed text-zinc-300">{t("planPage.subtitle")}</p>
+            </div>
+          </div>
         </section>
 
         {loading ? (
@@ -835,13 +853,17 @@ export default function PlanPage() {
                         </div>
                       )}
                       <p className="mb-4 text-sm text-zinc-300">{t("planPage.areaInstruction")}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {areaOptions.map((a) => (
-                          <button key={a} onClick={() => setAreaSet((s) => toggleInSet(s, a))} aria-pressed={areaSet.has(a)} className={chip(areaSet.has(a))}>
-                            {a}
-                          </button>
-                        ))}
-                      </div>
+                      {areaOptions.length === 0 ? (
+                        <p className="text-sm text-zinc-500">{t("planPage.noBarriosForZone")}</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {areaOptions.map((a) => (
+                            <button key={a} onClick={() => setAreaSet((s) => toggleInSet(s, a))} aria-pressed={areaSet.has(a)} className={chip(areaSet.has(a))}>
+                              {a}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -890,9 +912,27 @@ export default function PlanPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="flex cursor-pointer items-center gap-3 rounded-ctl border border-white/10 bg-surface px-4 py-3.5 text-sm font-semibold text-ink">
-                          <input type="checkbox" checked={lgtbi} onChange={() => setLgtbi(!lgtbi)} className="h-4 w-4 accent-[#7c5cff]" />
+                        <label className="relative flex cursor-pointer items-center gap-3 rounded-ctl border border-white/10 bg-surface px-4 py-3.5 text-sm font-semibold text-ink">
+                          <input
+                            type="checkbox"
+                            checked={lgtbi}
+                            onChange={() => {
+                              const next = !lgtbi
+                              setLgtbi(next)
+                              if (next) setPrideBurstKey((k) => k + 1)
+                            }}
+                            className="h-4 w-4 accent-[#7c5cff]"
+                          />
                           {t("planPage.lgtbiPriority")}
+                          {prideBurstKey > 0 && (
+                            <span
+                              key={prideBurstKey}
+                              aria-hidden="true"
+                              className="pride-burst pointer-events-none absolute -top-5 right-4 text-2xl"
+                            >
+                              🏳️‍🌈
+                            </span>
+                          )}
                         </label>
                         <label className="flex cursor-pointer items-center gap-3 rounded-ctl border border-white/10 bg-surface px-4 py-3.5 text-sm font-semibold text-ink">
                           <input type="checkbox" checked={mature} onChange={() => setMature(!mature)} className="h-4 w-4 accent-[#7c5cff]" />
@@ -968,6 +1008,16 @@ export default function PlanPage() {
                         </div>
                       </dl>
                     </div>
+
+                    {!tipDismissed && (
+                      <div className="flex items-start gap-4 rounded-card border border-brand/20 bg-brand/[0.06] p-5">
+                        <Sparkles size={24} className="mt-0.5 shrink-0 text-brand-soft" />
+                        <p className="flex-1 text-base font-medium leading-snug text-ink">{FUN_TIPS[tipIndex]}</p>
+                        <button onClick={() => setTipDismissed(true)} aria-label={t("common.close")} className="shrink-0 text-zinc-400 hover:text-white">
+                          <X size={20} />
+                        </button>
+                      </div>
+                    )}
 
                     <div>
                       <h2 className="mb-2 text-lg font-semibold">{t("planPage.yourItinerary")}</h2>
@@ -1093,16 +1143,6 @@ export default function PlanPage() {
                             </Link>
                           ))}
                         </div>
-                      </div>
-                    )}
-
-                    {!tipDismissed && (
-                      <div className="flex items-start gap-3 rounded-card border border-brand/20 bg-brand/[0.06] p-4">
-                        <Sparkles size={18} className="mt-0.5 shrink-0 text-brand-soft" />
-                        <p className="flex-1 text-sm text-zinc-200">{FUN_TIPS[tipIndex]}</p>
-                        <button onClick={() => setTipDismissed(true)} aria-label={t("common.close")} className="shrink-0 text-zinc-400 hover:text-white">
-                          <X size={16} />
-                        </button>
                       </div>
                     )}
 

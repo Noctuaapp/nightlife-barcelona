@@ -150,24 +150,33 @@ export default function AdminEventsPage() {
 
   const uploadImage = async (file: File) => {
     setUploading(true)
+    // Antes, si upload() lanzaba una excepción (red caída, CORS, bucket mal configurado...)
+    // en vez de devolver un error normal, no había try/catch que lo recogiera: la función se
+    // paraba a medias, "uploading" se quedaba en true para siempre y el botón quedaba
+    // deshabilitado sin ningún aviso — "como si no reaccionase". Ahora cualquier fallo se
+    // muestra y el estado siempre se libera.
+    try {
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${Date.now()}.${fileExt}`
+      const filePath = `events/${fileName}`
 
-    const fileExt = file.name.split(".").pop()
-    const fileName = `${Date.now()}.${fileExt}`
-    const filePath = `events/${fileName}`
+      const { error } = await supabase.storage.from("event-images").upload(filePath, file)
 
-    const { error } = await supabase.storage.from("event-images").upload(filePath, file)
+      if (error) {
+        logError("UPLOAD ERROR:", error)
+        toast("Error al subir la imagen: " + error.message, 6000)
+        return null
+      }
 
-    setUploading(false)
-
-    if (error) {
-      logError("UPLOAD ERROR:", error)
-      toast("Error al subir la imagen: " + error.message, 6000)
+      const { data } = supabase.storage.from("event-images").getPublicUrl(filePath)
+      return data.publicUrl
+    } catch (err) {
+      logError("UPLOAD ERROR:", err)
+      toast("Error al subir la imagen: " + (err instanceof Error ? err.message : String(err)), 6000)
       return null
+    } finally {
+      setUploading(false)
     }
-
-    const { data } = supabase.storage.from("event-images").getPublicUrl(filePath)
-
-    return data.publicUrl
   }
 
   // Subida múltiple a la galería manual. Usa el bucket "event-photos" (el mismo que usa el
@@ -176,20 +185,28 @@ export default function AdminEventsPage() {
     setUploading(true)
     const urls: string[] = []
     let firstError: string | null = null
-    for (const file of Array.from(files)) {
-      const fileExt = file.name.split(".").pop()
-      const fileName = `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
-      const filePath = `admin/${fileName}`
-      const { error } = await supabase.storage.from("event-photos").upload(filePath, file)
-      if (error) {
-        logError("GALLERY UPLOAD ERROR:", error)
-        if (!firstError) firstError = error.message
-        continue
+    // Igual que en uploadImage: una excepción no controlada aquí dejaba "uploading" en true
+    // para siempre sin ningún aviso visible.
+    try {
+      for (const file of Array.from(files)) {
+        const fileExt = file.name.split(".").pop()
+        const fileName = `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+        const filePath = `admin/${fileName}`
+        const { error } = await supabase.storage.from("event-photos").upload(filePath, file)
+        if (error) {
+          logError("GALLERY UPLOAD ERROR:", error)
+          if (!firstError) firstError = error.message
+          continue
+        }
+        const { data } = supabase.storage.from("event-photos").getPublicUrl(filePath)
+        urls.push(data.publicUrl)
       }
-      const { data } = supabase.storage.from("event-photos").getPublicUrl(filePath)
-      urls.push(data.publicUrl)
+    } catch (err) {
+      logError("GALLERY UPLOAD ERROR:", err)
+      if (!firstError) firstError = err instanceof Error ? err.message : String(err)
+    } finally {
+      setUploading(false)
     }
-    setUploading(false)
     // Antes un fallo aquí se tragaba en silencio (solo consola): la foto no aparecía y
     // parecía que el botón no reaccionaba. Ahora se avisa con el error real.
     if (firstError) toast("Error al subir la foto a la galería: " + firstError, 6000)
@@ -199,23 +216,30 @@ export default function AdminEventsPage() {
   const handleNewImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    const input = e.target
 
     const publicUrl = await uploadImage(file)
 
     if (publicUrl) {
       setNewEvent((prev) => ({ ...prev, image: publicUrl }))
     }
+    // Sin esto, si se intenta subir el mismo archivo otra vez (p. ej. tras corregir algo y
+    // volver a seleccionarlo), el navegador no dispara onChange porque el input ya tenía
+    // ese mismo valor — parece que "no reacciona" aunque en realidad nunca llegó a intentarlo.
+    input.value = ""
   }
 
   const handleEditImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    const input = e.target
 
     const publicUrl = await uploadImage(file)
 
     if (publicUrl) {
       setEditEvent((prev) => ({ ...prev, image: publicUrl }))
     }
+    input.value = ""
   }
 
   const handleNewGalleryUpload = async (e: ChangeEvent<HTMLInputElement>) => {

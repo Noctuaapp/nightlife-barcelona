@@ -284,20 +284,30 @@ export default function AdminPage() {
   ) => {
     const file = e.target.files?.[0]
     if (!file) return
+    const input = e.target
     setUploadingImage(true)
-    const fileExt = file.name.split(".").pop()
-    const fileName = `club-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
-    const { error: uploadError } = await supabase.storage.from("club-images").upload(fileName, file)
-    if (uploadError) {
-      toast("Error al subir la imagen: " + uploadError.message)
+    // Antes, si upload() lanzaba una excepción (red caída, CORS, bucket mal configurado...)
+    // en vez de devolver un error normal, no había try/catch que lo recogiera: la función se
+    // paraba a medias, uploadingImage se quedaba en true para siempre (el botón de subir
+    // quedaba deshabilitado sin aviso, "como si no reaccionase" en todos los intentos
+    // siguientes de esa visita) y nunca se veía ningún mensaje. Ahora cualquier fallo, sea el
+    // que sea, se muestra y el botón siempre se reactiva.
+    try {
+      const fileExt = file.name.split(".").pop()
+      const fileName = `club-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+      const { error: uploadError } = await supabase.storage.from("club-images").upload(fileName, file)
+      if (uploadError) {
+        toast("Error al subir la imagen: " + uploadError.message, 6000)
+        return
+      }
+      const { data } = supabase.storage.from("club-images").getPublicUrl(fileName)
+      setForm({ ...form, image: data.publicUrl })
+    } catch (err) {
+      toast("Error al subir la imagen: " + (err instanceof Error ? err.message : String(err)), 6000)
+    } finally {
       setUploadingImage(false)
-      e.target.value = ""
-      return
+      input.value = ""
     }
-    const { data } = supabase.storage.from("club-images").getPublicUrl(fileName)
-    setForm({ ...form, image: data.publicUrl })
-    setUploadingImage(false)
-    e.target.value = ""
   }
 
   // Galería del club (las fotos que se ven en la ficha, debajo de la principal). Usa el mismo
@@ -312,27 +322,36 @@ export default function AdminPage() {
   ) => {
     const files = e.target.files
     if (!files || files.length === 0) return
+    const input = e.target
     setUploadingGallery(true)
     const urls: string[] = []
     let firstError: string | null = null
-    for (const file of Array.from(files)) {
-      const fileExt = file.name.split(".").pop()
-      const fileName = `admin/manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
-      const { error } = await supabase.storage.from("club-photos").upload(fileName, file)
-      if (error) {
-        // Antes este error se tragaba en silencio (continue) y la foto simplemente no
-        // aparecía, como si el botón no reaccionara. Lo mostramos para saber la causa real
-        // (típicamente una política de Storage del bucket "club-photos" que no permite subir).
-        if (!firstError) firstError = error.message
-        continue
+    // Igual que en handleImageUpload: una excepción no controlada aquí dejaba el botón
+    // deshabilitado para siempre sin ningún aviso. El try/catch asegura que, pase lo que
+    // pase, el estado se libera y se ve algún mensaje.
+    try {
+      for (const file of Array.from(files)) {
+        const fileExt = file.name.split(".").pop()
+        const fileName = `admin/manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+        const { error } = await supabase.storage.from("club-photos").upload(fileName, file)
+        if (error) {
+          // Antes este error se tragaba en silencio (continue) y la foto simplemente no
+          // aparecía, como si el botón no reaccionara. Lo mostramos para saber la causa real
+          // (típicamente una política de Storage del bucket "club-photos" que no permite subir).
+          if (!firstError) firstError = error.message
+          continue
+        }
+        const { data } = supabase.storage.from("club-photos").getPublicUrl(fileName)
+        urls.push(data.publicUrl)
       }
-      const { data } = supabase.storage.from("club-photos").getPublicUrl(fileName)
-      urls.push(data.publicUrl)
+    } catch (err) {
+      if (!firstError) firstError = err instanceof Error ? err.message : String(err)
+    } finally {
+      setUploadingGallery(false)
+      if (urls.length > 0) setForm({ ...form, gallery: [...form.gallery, ...urls] })
+      if (firstError) toast("Error al subir la foto a la galería: " + firstError, 6000)
+      input.value = ""
     }
-    setUploadingGallery(false)
-    if (urls.length > 0) setForm({ ...form, gallery: [...form.gallery, ...urls] })
-    if (firstError) toast("Error al subir la foto a la galería: " + firstError)
-    e.target.value = ""
   }
 
   const removeGalleryPhoto = (url: string, form: ClubFormData, setForm: (f: ClubFormData) => void) => {
