@@ -51,6 +51,7 @@ export const XP_AMOUNTS = {
   attendance: 10, // marcar "Asistiré esta noche"
   checkin: 15, // check-in geolocalizado en el club
   streak: 30, // racha semanal (>=3 días distintos de actividad en los últimos 7 días)
+  dailyLogin: 5, // entrar en la app un día más seguido del anterior (racha diaria de inicios de sesión)
 }
 
 // Llama a la función de Postgres award_xp(), que inserta la fila en xp_events (con protección
@@ -61,7 +62,7 @@ export async function awardXp(
   supabase: SupabaseClient,
   params: {
     userId: string
-    actionType: "attendance" | "checkin" | "streak" | "badge" | "challenge"
+    actionType: "attendance" | "checkin" | "streak" | "badge" | "challenge" | "daily_login"
     itemType?: string | null
     itemId?: number | null
     amount: number
@@ -92,4 +93,18 @@ export function currentIsoWeek(date = new Date()): string {
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
   const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
   return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`
+}
+
+// Fecha de hoy ("2026-10-17") en hora de Madrid, no la del dispositivo — para que la racha diaria
+// de inicios de sesión cuente los días igual para todo el mundo, sea cual sea su zona horaria.
+export function madridDateStr(date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(date)
+}
+
+// Día anterior a una fecha "YYYY-MM-DD" (en el mismo formato), para saber si la racha diaria
+// sigue (el último inicio de sesión fue ayer) o se rompe (fue antes de ayer, o nunca).
+export function dayBefore(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00Z")
+  d.setUTCDate(d.getUTCDate() - 1)
+  return d.toISOString().slice(0, 10)
 }

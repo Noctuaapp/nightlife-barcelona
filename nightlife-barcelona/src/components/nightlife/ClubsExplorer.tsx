@@ -1,15 +1,53 @@
 "use client"
 
-import { zoneOf, zonesPresent } from "../../lib/zones"
-import { clubOpenNow } from "../../lib/clubHours"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import ClubCard from "./ClubCard"
-import { supabase } from "../../lib/supabase"
-import { track } from "../../lib/track"
 import { useLanguage } from "../../context/LanguageContext"
 import { SearchIcon, CloseIcon, LocationIcon, FlameIcon, SlidersIcon, ChevronDownIcon } from "../ui/FilterIcons"
-import ExploreSwitch from "./ExploreSwitch"
-import { STYLES } from "../../lib/areas"
+
+function useReveal<T extends HTMLElement>() {
+  const ref = useRef<T>(null)
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.1 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+  return { ref, visible }
+}
+
+function Reveal({
+  children,
+  className = "",
+  style,
+}: {
+  children: React.ReactNode
+  className?: string
+  style?: React.CSSProperties
+}) {
+  const { ref, visible } = useReveal<HTMLDivElement>()
+  return (
+    <div
+      ref={ref}
+      style={style}
+      className={`transition-all duration-700 ease-out motion-reduce:transition-none ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+      } ${className}`}
+    >
+      {children}
+    </div>
+  )
+}
 
 function toggleInSet(set: Set<string>, value: string): Set<string> {
   const next = new Set(set)
@@ -18,71 +56,12 @@ function toggleInSet(set: Set<string>, value: string): Set<string> {
   return next
 }
 
-// Antes los estilos eran "Techno", "Commercial" y "Cocktail Bar" y se buscaban en inglés dentro de
-// la columna music, que está en español ("Comercial"): el filtro "Commercial" casi nunca encontraba
-// nada. Ahora usa los mismos estilos que las páginas /musica (src/lib/areas.ts).
-const GENRE_FILTERS = STYLES.filter((s) => s.slug !== "electronica").map((s) => s.slug)
-const ATTRIBUTE_FILTERS = ["trending", "lgtbi", "swinger", "noQueue", "games", "discount", "free", "over30"]
-const AGE_FILTERS = ["+18", "+21", "+25"]
+const GENRE_FILTERS = ["Techno", "Commercial", "Cocktail Bar"]
+const ATTRIBUTE_FILTERS = ["Trending", "LGTBI+", "Sin cola", "Futbolín/Billar", "Descuento hoy", "Entrada gratis"]
+// Antes solo había "+18", "+21", "+25": los clubs con edad mínima de 30 (campo age_min = 30, editable
+// desde la ficha del club) no se podían filtrar por aquí, aunque el dato existiera. Se añade "+30".
+const AGE_FILTERS = ["+18", "+21", "+25", "+30"]
 const PAGE_SIZE = 9
-
-// Búsqueda sin tildes ni mayúsculas, con puntuación de relevancia: antes "ku" devolvía cualquier
-// club que contuviera "ku" en cualquier parte (Marku, Sakura...) en el orden por defecto, así
-// que el club buscado salía el segundo o el décimo. Ahora el nombre exacto va primero, luego
-// los que empiezan por la búsqueda, luego los que tienen una palabra que empieza así, etc.
-const norm = (s: string) =>
-  (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim()
-
-function searchScore(club: any, rawQuery: string): number {
-  const q = norm(rawQuery)
-  if (!q) return 1
-  const name = norm(club.name)
-  const hood = norm(club.neighborhood)
-  const music = norm(club.music)
-  const short = q.length < 3
-  if (name === q) return 100
-  if (name.startsWith(q)) return 80
-  if (name.split(" ").some((w) => w.startsWith(q))) return 60
-  if (!short && name.includes(q)) return 40
-  if (hood === q || hood.startsWith(q)) return 25
-  if (!short && hood.includes(q)) return 20
-  if (music.split(/[\s,]+/).some((w) => w.startsWith(q))) return 10
-  return 0
-}
-
-// Grupo de chips de un filtro. Fuera del componente: definido dentro se volvía a crear en cada
-// render y React desmontaba los botones (se perdía el foco al pulsar).
-const ChipGroup = ({
-  title,
-  options,
-  selected,
-  onToggle,
-  label = (v: string) => v,
-}: {
-  title: string
-  options: string[]
-  selected: Set<string>
-  onToggle: (value: string) => void
-  label?: (value: string) => string
-}) => (
-  <div>
-    <p className="mb-3 text-sm font-semibold text-zinc-300">{title}</p>
-    <div className="flex flex-wrap gap-2">
-      {options.map((opt) => (
-        <button
-          key={opt}
-          onClick={() => onToggle(opt)}
-          aria-pressed={selected.has(opt)}
-          className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition active:scale-95 ${
-            selected.has(opt) ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:border-white/30 hover:bg-white/5"
-          }`}
-        >
-          {label(opt)}
-        </button>
-      ))}
-    </div>
-  </div>
-)
 
 export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] }) {
   const [clubs] = useState<any[]>(initialClubs)
@@ -90,46 +69,79 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   const [selectedAttributes, setSelectedAttributes] = useState<Set<string>>(new Set())
   const [selectedAges, setSelectedAges] = useState<Set<string>>(new Set())
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<Set<string>>(new Set())
-  const [selectedZones, setSelectedZones] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState("")
   const [openNow, setOpenNow] = useState(false)
   const [nearMe, setNearMe] = useState(false)
   const [userLat, setUserLat] = useState<number | null>(null)
   const [userLng, setUserLng] = useState<number | null>(null)
-  const [nearMeLoading, setNearMeLoading] = useState(false)
-  const [nearMeError, setNearMeError] = useState("")
-  // Edad aproximada del usuario (si ha indicado año de nacimiento): en el orden "recomendado",
-  // a partir de 30 años suben primero las discotecas de público +30/+40.
-  const [userAge, setUserAge] = useState<number | null>(null)
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      const { data: auth } = await supabase.auth.getUser()
-      if (!auth.user) return
-      const { data: prof } = await supabase.from("profiles").select("birth_year").eq("id", auth.user.id).maybeSingle()
-      if (!cancelled && prof?.birth_year) setUserAge(new Date().getFullYear() - Number(prof.birth_year))
-    })()
-    return () => { cancelled = true }
-  }, [])
   const [sortBy, setSortBy] = useState<"recommended" | "rating" | "name" | "distance">("recommended")
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const { t } = useLanguage()
 
-  // La búsqueda de la home navega a /clubs?search=...; antes ese parámetro se ignoraba.
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search)
-      const q = params.get("search")
-      if (q) setSearch(q)
-      // "Ver todos" desde "Abierto ahora" de la portada llega con ?open=1.
-      if (params.get("open") === "1") setOpenNow(true)
-    } catch {}
-  }, [])
-
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
-  }, [selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, selectedZones, search, openNow, nearMe, sortBy])
+  }, [selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, search, openNow, nearMe, sortBy])
+
+  const isOpenNow = (hours: string): boolean => {
+    if (!hours) return false
+
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Madrid" }))
+    const currentMinutes = now.getHours() * 60 + now.getMinutes()
+    const currentDay = now.getDay()
+
+    const dayMap: Record<string, number> = { L: 1, M: 2, X: 3, J: 4, V: 5, S: 6, D: 0 }
+    const dayOrder = [1, 2, 3, 4, 5, 6, 0]
+
+    const isDayActive = (daysStr: string): boolean => {
+      const parts = daysStr.split("/")
+      for (const part of parts) {
+        if (part.includes("-")) {
+          const [from, to] = part.split("-")
+          const fromIdx = dayOrder.indexOf(dayMap[from])
+          const toIdx = dayOrder.indexOf(dayMap[to])
+          const currentIdx = dayOrder.indexOf(currentDay)
+          if (fromIdx !== -1 && toIdx !== -1 && currentIdx !== -1) {
+            if (fromIdx <= toIdx) {
+              if (currentIdx >= fromIdx && currentIdx <= toIdx) return true
+            } else {
+              if (currentIdx >= fromIdx || currentIdx <= toIdx) return true
+            }
+          }
+        } else {
+          if (dayMap[part] === currentDay) return true
+        }
+      }
+      return false
+    }
+
+    const periods = hours.split("|").map((s) => s.trim())
+
+    for (const period of periods) {
+      const withDay = period.match(/^([LMXJVSD/\-]+)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/)
+      const noDay = period.match(/^(\d{2}:\d{2})-(\d{2}:\d{2})$/)
+
+      if (withDay) {
+        if (!isDayActive(withDay[1])) continue
+        const startMin = parseInt(withDay[2].split(":")[0]) * 60 + parseInt(withDay[2].split(":")[1])
+        const endMin = parseInt(withDay[3].split(":")[0]) * 60 + parseInt(withDay[3].split(":")[1])
+        if (endMin < startMin) {
+          if (currentMinutes >= startMin || currentMinutes <= endMin) return true
+        } else {
+          if (currentMinutes >= startMin && currentMinutes <= endMin) return true
+        }
+      } else if (noDay) {
+        const startMin = parseInt(noDay[1].split(":")[0]) * 60 + parseInt(noDay[1].split(":")[1])
+        const endMin = parseInt(noDay[2].split(":")[0]) * 60 + parseInt(noDay[2].split(":")[1])
+        if (endMin < startMin) {
+          if (currentMinutes >= startMin || currentMinutes <= endMin) return true
+        } else {
+          if (currentMinutes >= startMin && currentMinutes <= endMin) return true
+        }
+      }
+    }
+    return false
+  }
 
   const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371
@@ -142,44 +154,31 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   }
 
   const genreMatch = (club: any, g: string) => {
-    const style = STYLES.find((s) => s.slug === g)
-    return !!style && typeof club.music === "string" && style.rx.test(club.music)
-  }
-  const styleLabel = (g: string) => {
-    const v = t(`areas.style.${g}`)
-    return v.charAt(0).toUpperCase() + v.slice(1)
+    if (g === "Techno") return club.music?.toLowerCase().includes("techno")
+    if (g === "Commercial") return club.music?.toLowerCase().includes("commercial")
+    if (g === "Cocktail Bar") return club.music?.toLowerCase().includes("cocktail")
+    return false
   }
 
   const attributeMatch = (club: any, a: string) => {
-    if (a === "trending") return club.trending === true
-    if (a === "lgtbi") return club.lgtbi_friendly === true
-    if (a === "swinger") return club.swinger_friendly === true
-    if (a === "noQueue") return club.queue === "No queue" || !club.queue
-    if (a === "games") return club.has_foosball === true
-    if (a === "discount") return !!club.discount_info
-    if (a === "free") return !!club.free_entry_info
-    if (a === "over30") return club.audience === "+30" || club.audience === "+40"
+    if (a === "Trending") return club.trending === true
+    if (a === "LGTBI+") return club.lgtbi_friendly === true
+    if (a === "Sin cola") return club.queue === "No queue" || !club.queue
+    if (a === "Futbolín/Billar") return club.has_foosball === true
+    if (a === "Descuento hoy") return !!club.discount_info
+    if (a === "Entrada gratis") return !!club.free_entry_info
     return false
   }
-  const attrLabel = (a: string) => t(`explorer.attr_${a}`)
 
   const ageMatch = (club: any, age: string) => {
     if (age === "+18") return club.age_min === 18
     if (age === "+21") return club.age_min === 21
     if (age === "+25") return club.age_min === 25
+    if (age === "+30") return club.age_min === 30
     return false
   }
 
-  const availableZones = zonesPresent(clubs)
-  // Los barrios que se ofrecen dependen de la zona elegida (con cientos de locales, una lista plana es inmanejable).
-  const neighborhoods = Array.from(
-    new Set(
-      clubs
-        .filter((c) => selectedZones.size === 0 || selectedZones.has(zoneOf(c)))
-        .map((c) => c.neighborhood)
-        .filter(Boolean)
-    )
-  ).sort() as string[]
+  const neighborhoods = Array.from(new Set(clubs.map((c) => c.neighborhood).filter(Boolean))).sort()
 
   const filteredClubs = useMemo(() => {
     return clubs.filter((club) => {
@@ -187,11 +186,14 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
       const matchesAttributes = Array.from(selectedAttributes).every((a) => attributeMatch(club, a))
       const matchesAge = selectedAges.size === 0 || Array.from(selectedAges).some((age) => ageMatch(club, age))
       const matchesNeighborhood = selectedNeighborhoods.size === 0 || selectedNeighborhoods.has(club.neighborhood)
-      const matchesZone = selectedZones.size === 0 || selectedZones.has(zoneOf(club))
 
-      const matchesSearch = searchScore(club, search) > 0
+      const matchesSearch =
+        search === "" ||
+        club.name?.toLowerCase().includes(search.toLowerCase()) ||
+        club.neighborhood?.toLowerCase().includes(search.toLowerCase()) ||
+        club.music?.toLowerCase().includes(search.toLowerCase())
 
-      const matchesOpenNow = !openNow || clubOpenNow(club.hours, club.open_days) === true
+      const matchesOpenNow = !openNow || isOpenNow(club.hours)
 
       const matchesNearMe =
         !nearMe ||
@@ -199,23 +201,14 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         !userLng ||
         (club.latitude && club.longitude && getDistance(userLat, userLng, club.latitude, club.longitude) <= 2)
 
-      return matchesGenre && matchesAttributes && matchesAge && matchesNeighborhood && matchesZone && matchesSearch && matchesOpenNow && matchesNearMe
+      return matchesGenre && matchesAttributes && matchesAge && matchesNeighborhood && matchesSearch && matchesOpenNow && matchesNearMe
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clubs, selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, selectedZones, search, openNow, nearMe, userLat, userLng])
+  }, [clubs, selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, search, openNow, nearMe, userLat, userLng])
 
   const sortedClubs = useMemo(() => {
     const arr = [...filteredClubs]
-    if (search.trim() && sortBy === "recommended") {
-      arr.sort((a, b) => searchScore(b, search) - searchScore(a, search))
-      return arr
-    }
-    if (sortBy === "recommended" && userAge !== null && userAge >= 30) {
-      const boost = (c: any) => (c.audience === "+30" || c.audience === "+40" ? 1 : 0)
-      arr.sort((a, b) => boost(b) - boost(a))
-      return arr
-    }
-    if (sortBy === "rating") arr.sort((a, b) => (Number(b.google_rating || b.rating) || 0) - (Number(a.google_rating || a.rating) || 0))
+    if (sortBy === "rating") arr.sort((a, b) => (b.rating || 0) - (a.rating || 0))
     else if (sortBy === "name") arr.sort((a, b) => (a.name || "").localeCompare(b.name || ""))
     else if (sortBy === "distance" && userLat && userLng) {
       arr.sort((a, b) => {
@@ -225,32 +218,20 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
       })
     }
     return arr
-  }, [filteredClubs, sortBy, userLat, userLng, search, userAge])
+  }, [filteredClubs, sortBy, userLat, userLng])
 
   const visibleClubs = sortedClubs.slice(0, visibleCount)
 
-  // Analítica de búsquedas del listado: qué se busca y cuántos resultados da (0 = demanda sin cubrir).
-  useEffect(() => {
-    const q = search.trim()
-    if (q.length < 2) return
-    const timeout = setTimeout(() => {
-      track("search", { itemType: "club", itemName: q.toLowerCase().slice(0, 80), resultsCount: sortedClubs.length })
-    }, 1500)
-    return () => clearTimeout(timeout)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search])
-
   const activeFilters: { label: string; onRemove: () => void }[] = [
-    ...Array.from(selectedGenres).map((g) => ({ label: styleLabel(g), onRemove: () => setSelectedGenres((s) => toggleInSet(s, g)) })),
-    ...Array.from(selectedAttributes).map((a) => ({ label: attrLabel(a), onRemove: () => setSelectedAttributes((s) => toggleInSet(s, a)) })),
+    ...Array.from(selectedGenres).map((g) => ({ label: g, onRemove: () => setSelectedGenres((s) => toggleInSet(s, g)) })),
+    ...Array.from(selectedAttributes).map((a) => ({ label: a, onRemove: () => setSelectedAttributes((s) => toggleInSet(s, a)) })),
     ...Array.from(selectedAges).map((age) => ({ label: age, onRemove: () => setSelectedAges((s) => toggleInSet(s, age)) })),
-    ...Array.from(selectedZones).map((z) => ({ label: z, onRemove: () => setSelectedZones((s) => toggleInSet(s, z)) })),
     ...Array.from(selectedNeighborhoods).map((n) => ({ label: n, onRemove: () => setSelectedNeighborhoods((s) => toggleInSet(s, n)) })),
   ]
-  if (openNow) activeFilters.push({ label: t("explorer.now"), onRemove: () => setOpenNow(false) })
+  if (openNow) activeFilters.push({ label: "Abierto ahora", onRemove: () => setOpenNow(false) })
   if (nearMe)
     activeFilters.push({
-      label: t("explorer.near"),
+      label: "Cerca de mí",
       onRemove: () => {
         setNearMe(false)
         setUserLat(null)
@@ -264,7 +245,6 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     setSelectedAttributes(new Set())
     setSelectedAges(new Set())
     setSelectedNeighborhoods(new Set())
-    setSelectedZones(new Set())
     setOpenNow(false)
     setNearMe(false)
     setUserLat(null)
@@ -272,119 +252,153 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     setSearch("")
   }
 
-  // Antes esto no tenía callback de error ni estado de carga: si el móvil denegaba el permiso,
-  // tardaba (GPS en frío dentro de un local puede tardar bastante) o el navegador bloqueaba la
-  // geolocalización por no estar en un gesto directo del usuario, el botón "Cerca" simplemente
-  // no hacía nada — parecía roto, sin ningún mensaje. Ahora hay carga visible, mensaje de error
-  // explicado (incluyendo qué hacer) y un timeout para no dejarlo colgado indefinidamente.
   const requestNearMe = () => {
-    setNearMeError("")
-    if (!navigator.geolocation) {
-      setNearMeError(t("geo.unsupported"))
-      return
-    }
-    setNearMeLoading(true)
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserLat(pos.coords.latitude)
-        setUserLng(pos.coords.longitude)
-        setNearMe(true)
-        setNearMeLoading(false)
-      },
-      (err) => {
-        setNearMeLoading(false)
-        if (err.code === err.PERMISSION_DENIED) setNearMeError(t("geo.denied"))
-        else if (err.code === err.TIMEOUT) setNearMeError(t("geo.timeout"))
-        else setNearMeError(t("geo.error"))
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    )
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition((pos) => {
+      setUserLat(pos.coords.latitude)
+      setUserLng(pos.coords.longitude)
+      setNearMe(true)
+    })
   }
 
-  const activeFilterCount = selectedGenres.size + selectedAttributes.size + selectedAges.size + selectedNeighborhoods.size + selectedZones.size
+  const activeFilterCount = selectedGenres.size + selectedAttributes.size + selectedAges.size + selectedNeighborhoods.size
 
-  const quick = (active: boolean) =>
-    `flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition active:scale-95 disabled:opacity-60 ${
-      active ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
-    }`
+  const ChipGroup = ({
+    title,
+    options,
+    selected,
+    onToggle,
+  }: {
+    title: string
+    options: string[]
+    selected: Set<string>
+    onToggle: (value: string) => void
+  }) => (
+    <div>
+      <p className="mb-3 text-xs uppercase tracking-widest text-zinc-500">{title}</p>
+      <div className="flex flex-wrap gap-3">
+        {options.map((opt) => (
+          <button
+            key={opt}
+            onClick={() => onToggle(opt)}
+            className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium transition active:scale-95 ${
+              selected.has(opt)
+                ? "text-white shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
+                : "border border-white/10 bg-white/[0.04] text-white hover:border-purple-400/30 hover:bg-white/[0.08]"
+            }`}
+            style={selected.has(opt) ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
 
   return (
     <>
-      <main className="relative min-h-screen bg-night pb-16 text-ink">
+      <main className="relative min-h-screen pb-40 text-white">
+        <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#050308]">
+          <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-purple-600/20 blur-[120px] animate-[float_18s_ease-in-out_infinite]" />
+          <div className="absolute -right-40 top-1/3 h-[450px] w-[450px] rounded-full bg-amber-500/10 blur-[130px] animate-[float_22s_ease-in-out_infinite_reverse]" />
+          <div
+            className="absolute inset-0 opacity-30"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)",
+              backgroundSize: "56px 56px",
+            }}
+          />
+        </div>
 
-        <section className="px-4 pt-8 sm:pt-12">
+        <section className="px-4 pt-14">
           <div className="mx-auto max-w-7xl">
-            <ExploreSwitch active="clubs" />
-            <h1 className="font-display mt-6 break-words text-[2rem] leading-[1.06] text-ink sm:text-5xl md:text-6xl">{t("clubs.subtitle")}</h1>
+            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("clubs.title")}</p>
+            <h1 className="font-display mt-4 text-5xl font-black text-white md:text-6xl">{t("clubs.subtitle")}</h1>
           </div>
         </section>
 
-        {/* Búsqueda + accesos rápidos. En móvil la búsqueda ocupa toda la fila y los botones
-            van en una fila deslizable (antes se partían en tres líneas y tapaban media pantalla). */}
-        <div className="sticky top-[72px] z-30 sm:top-20 mt-6 border-y border-white/10 bg-night/90 py-3 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 lg:flex-row lg:items-center">
-            <div className="group flex min-w-0 flex-1 items-center gap-3 rounded-full border border-white/15 bg-surface px-5 py-3 transition">
-              <SearchIcon className="h-5 w-5 shrink-0 text-zinc-400 transition" />
+        {/* STICKY SEARCH + QUICK ACTIONS */}
+        <div className="sticky top-0 z-30 mt-8 border-y border-white/10 bg-black/70 py-4 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4">
+            <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3.5 backdrop-blur-xl transition focus-within:border-purple-400/50 focus-within:bg-white/[0.08]">
+              <SearchIcon className="h-4 w-4 shrink-0 text-zinc-500 transition group-focus-within:text-purple-300" />
               <input
-                type="search"
+                type="text"
                 placeholder={t("clubs.search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                aria-label={t("clubs.search")}
-                className="w-full appearance-none bg-transparent text-base text-ink outline-none focus-visible:outline-none placeholder:text-zinc-400 [&::-webkit-search-decoration]:appearance-none"
+                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
               />
               {search && (
-                <button onClick={() => setSearch("")} className="text-zinc-400 transition hover:text-ink" aria-label={t("explorer.clearSearch")}>
+                <button onClick={() => setSearch("")} className="text-zinc-500 transition hover:text-white" aria-label="Limpiar búsqueda">
                   <CloseIcon className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
 
-            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] lg:mx-0 lg:px-0">
-              <button onClick={() => setOpenNow(!openNow)} aria-pressed={openNow} className={quick(openNow)}>
-                <span className={`h-2 w-2 shrink-0 rounded-full ${openNow ? "bg-white" : "bg-open"}`} />
-                {t("explorer.now")}
-              </button>
-              <button
-                onClick={nearMe ? () => { setNearMe(false); setUserLat(null); setUserLng(null) } : requestNearMe}
-                disabled={nearMeLoading}
-                aria-pressed={nearMe}
-                className={quick(nearMe)}
-              >
-                <LocationIcon className="h-4 w-4" />
-                {nearMeLoading ? t("explorer.locating") : t("explorer.near")}
-              </button>
-              <button
-                onClick={() => setSelectedAttributes((s) => toggleInSet(s, "trending"))}
-                aria-pressed={selectedAttributes.has("trending")}
-                className={quick(selectedAttributes.has("trending"))}
-              >
-                <FlameIcon className="h-4 w-4" />
-                {t("explorer.trending")}
-              </button>
-              <div className="relative shrink-0">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                  aria-label={t("explorer.sortLabel")}
-                  className="appearance-none rounded-full border border-white/10 bg-night py-2.5 pl-4 pr-9 text-sm font-semibold text-zinc-200 outline-none"
-                >
-                  <option value="recommended">{t("explorer.sortRecommended")}</option>
-                  <option value="rating">{t("explorer.sortRating")}</option>
-                  <option value="name">{t("explorer.sortName")}</option>
-                  {nearMe && <option value="distance">{t("explorer.sortDistance")}</option>}
-                </select>
-                <ChevronDownIcon className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
-              </div>
-              <button onClick={() => setFiltersOpen(!filtersOpen)} aria-expanded={filtersOpen} className={quick(filtersOpen)}>
-                <SlidersIcon className="h-4 w-4" />
-                {t("explorer.filters")}
-                {activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-              </button>
-            </div>
-          </div>
+            <button
+              onClick={() => setOpenNow(!openNow)}
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold transition active:scale-95 ${
+                openNow
+                  ? "border border-emerald-400/40 bg-emerald-400/15 text-emerald-300"
+                  : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+              }`}
+            >
+              <span className="relative flex h-2 w-2 shrink-0">
+                {openNow && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />}
+                <span className={`relative inline-flex h-2 w-2 rounded-full ${openNow ? "bg-emerald-400" : "bg-zinc-600"}`} />
+              </span>
+              Ahora
+            </button>
+            <button
+              onClick={nearMe ? () => { setNearMe(false); setUserLat(null); setUserLng(null) } : requestNearMe}
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
+                nearMe ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+              }`}
+              style={nearMe ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
+            >
+              <LocationIcon className="h-4 w-4" />
+              Cerca
+            </button>
+            <button
+              onClick={() => setSelectedAttributes((s) => toggleInSet(s, "Trending"))}
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
+                selectedAttributes.has("Trending")
+                  ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
+                  : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+              }`}
+              style={selectedAttributes.has("Trending") ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
+            >
+              <FlameIcon className="h-4 w-4" />
+              Trending
+            </button>
 
-          {nearMeError && <p className="mx-auto mt-3 max-w-7xl px-4 text-sm font-semibold text-red-300">{nearMeError}</p>}
+            <div className="relative shrink-0">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                className="appearance-none rounded-full border border-white/10 bg-white/[0.04] py-3.5 pl-4 pr-9 text-sm font-medium text-white outline-none"
+              >
+                <option value="recommended" className="bg-black">Recomendado</option>
+                <option value="rating" className="bg-black">Mejor valorados</option>
+                <option value="name" className="bg-black">A-Z</option>
+                {nearMe && <option value="distance" className="bg-black">Más cercanos</option>}
+              </select>
+              <ChevronDownIcon className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+            </div>
+
+            <button
+              onClick={() => setFiltersOpen(!filtersOpen)}
+              className={`flex shrink-0 items-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
+                filtersOpen ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+              }`}
+              style={filtersOpen ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
+            >
+              <SlidersIcon className="h-4 w-4" />
+              Filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+            </button>
+          </div>
 
           {activeFilters.length > 0 && (
             <div className="mx-auto mt-3 flex max-w-7xl flex-wrap items-center gap-2 px-4">
@@ -392,98 +406,132 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                 <button
                   key={`${f.label}-${i}`}
                   onClick={f.onRemove}
-                  className="flex items-center gap-1.5 rounded-full bg-brand/15 px-3 py-1.5 text-xs font-semibold text-brand-soft transition hover:bg-brand/25"
+                  className="flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-400/10 px-3 py-1.5 text-xs font-semibold text-purple-200 transition hover:bg-purple-400/20"
                 >
-                  {f.label} <CloseIcon className="h-3 w-3" />
+                  {f.label} <CloseIcon className="h-3 w-3 text-purple-300" />
                 </button>
               ))}
-              <button onClick={clearAll} className="text-xs font-semibold text-zinc-400 underline-offset-2 hover:text-ink hover:underline">
-                {t("explorer.clearAll")}
+              <button onClick={clearAll} className="text-xs font-semibold text-zinc-500 underline-offset-2 hover:text-white hover:underline">
+                Limpiar todo
               </button>
             </div>
           )}
         </div>
 
-        {/* Panel de filtros: todos multi-selección y combinables. Anima su altura al abrirse. */}
+        {/* ADVANCED FILTERS PANEL — todos multi-selección y combinables entre sí. Se queda
+            siempre montado y anima su propia altura (grid-template-rows 0fr→1fr) en vez de
+            aparecer/desaparecer de golpe: la animación responde directamente a pulsar "Filtros",
+            no es un efecto suelto. */}
         <section
           className={`mx-auto grid max-w-7xl px-4 transition-[grid-template-rows,opacity] duration-300 ease-out ${
             filtersOpen ? "grid-rows-[1fr] pt-6 opacity-100" : "grid-rows-[0fr] opacity-0"
           }`}
         >
           <div className="overflow-hidden">
-            <div className="space-y-6 rounded-card border border-white/10 bg-surface p-5 sm:p-6">
-              <ChipGroup title={t("explorer.styleTitle")} options={GENRE_FILTERS} selected={selectedGenres} label={styleLabel} onToggle={(v) => setSelectedGenres((s) => toggleInSet(s, v))} />
-              <ChipGroup title={t("explorer.vibeTitle")} options={ATTRIBUTE_FILTERS} selected={selectedAttributes} label={attrLabel} onToggle={(v) => setSelectedAttributes((s) => toggleInSet(s, v))} />
-              <ChipGroup title={t("explorer.ageTitle")} options={AGE_FILTERS} selected={selectedAges} onToggle={(v) => setSelectedAges((s) => toggleInSet(s, v))} />
-              {availableZones.length > 1 && (
-                <ChipGroup
-                  title={t("explorer.zoneTitle")}
-                  options={availableZones}
-                  selected={selectedZones}
-                  onToggle={(v) => {
-                    setSelectedZones((s) => toggleInSet(s, v))
-                    setSelectedNeighborhoods(new Set())
-                  }}
-                />
-              )}
-              <ChipGroup title={t("explorer.barrioTitle")} options={neighborhoods} selected={selectedNeighborhoods} onToggle={(v) => setSelectedNeighborhoods((s) => toggleInSet(s, v))} />
+            <div className="space-y-6 rounded-[28px] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
+              <ChipGroup
+                title="Estilo (elige varios)"
+                options={GENRE_FILTERS}
+                selected={selectedGenres}
+                onToggle={(v) => setSelectedGenres((s) => toggleInSet(s, v))}
+              />
+              <ChipGroup
+                title="Ambiente"
+                options={ATTRIBUTE_FILTERS}
+                selected={selectedAttributes}
+                onToggle={(v) => setSelectedAttributes((s) => toggleInSet(s, v))}
+              />
+              <ChipGroup
+                title="Edad mínima"
+                options={AGE_FILTERS}
+                selected={selectedAges}
+                onToggle={(v) => setSelectedAges((s) => toggleInSet(s, v))}
+              />
+              <ChipGroup
+                title="Barrio (elige varios)"
+                options={neighborhoods}
+                selected={selectedNeighborhoods}
+                onToggle={(v) => setSelectedNeighborhoods((s) => toggleInSet(s, v))}
+              />
             </div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 pt-6">
-          <p className="text-sm text-zinc-400" aria-live="polite">
-            {(sortedClubs.length === 1 ? t("explorer.countOne") : t("explorer.countMany")).replace("{n}", String(sortedClubs.length))}
+        {/* Results count */}
+        <section className="mx-auto max-w-7xl px-4 pt-8">
+          <p className="text-sm text-zinc-500">
+            {sortedClubs.length} {sortedClubs.length === 1 ? "club encontrado" : "clubs encontrados"}
           </p>
         </section>
 
-        <section className="mx-auto mt-4 grid max-w-7xl gap-5 px-4 md:grid-cols-2 xl:grid-cols-3">
+        {/* Results */}
+        <section className="mx-auto mt-4 grid max-w-7xl gap-8 px-4 md:grid-cols-2 xl:grid-cols-3">
           {visibleClubs.length === 0 ? (
-            <div className="col-span-full py-20 text-center">
-              <p className="text-lg font-semibold text-zinc-200">{t("explorer.emptyTitle")}</p>
-              <p className="mt-2 text-sm text-zinc-400">{t("explorer.emptyBody")}</p>
+            <div className="col-span-full py-24 text-center">
+              <p className="text-lg font-bold text-zinc-300">No hay clubs con estos filtros</p>
+              <p className="mt-2 text-sm text-zinc-500">Prueba a quitar algún filtro o busca otro barrio.</p>
               {activeFilters.length > 0 && (
-                <button onClick={clearAll} className="mt-6 rounded-ctl border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/10">
-                  {t("explorer.clearFilters")}
+                <button
+                  onClick={clearAll}
+                  className="mt-6 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
+                >
+                  Limpiar filtros
                 </button>
               )}
             </div>
           ) : (
-            visibleClubs.map((club) => (
-              <ClubCard
-                key={club.id}
-                id={club.id}
-                name={club.name}
-                slug={club.slug}
-                music={club.music}
-                area={club.neighborhood}
-                price={club.price}
-                hours={club.hours}
-                openDays={club.open_days}
-                image={club.image}
-                rating={club.google_rating || club.rating}
-                lgtbi_friendly={club.lgtbi_friendly}
-                verified={club.verified}
-                discountInfo={club.discount_info}
-                freeEntryInfo={club.free_entry_info}
-                liveStatus={club.live_status}
-                liveStatusUpdatedAt={club.live_status_updated_at}
-              />
+            visibleClubs.map((club, index) => (
+              <Reveal key={club.id} style={{ transitionDelay: `${Math.min(index, 8) * 60}ms` }}>
+                <ClubCard
+                  id={club.id}
+                  name={club.name}
+                  music={club.music}
+                  area={club.neighborhood}
+                  price={club.price}
+                  hours={club.hours}
+                  image={club.image}
+                  rating={club.rating}
+                  people={club.people}
+                  badges={club.badges}
+                  terrace={club.terrace}
+                  vip={club.vip_tables}
+                  smokingArea={club.smoking_area}
+                  tableBooking={club.table_booking}
+                  dresscode={club.dresscode}
+                  lgtbi_friendly={club.lgtbi_friendly}
+                  verified={club.verified}
+                  hasFoosball={club.has_foosball}
+                  discountInfo={club.discount_info}
+                  freeEntryInfo={club.free_entry_info}
+                />
+              </Reveal>
             ))
           )}
         </section>
 
         {visibleCount < sortedClubs.length && (
-          <div className="mt-10 text-center">
+          <div className="mt-12 text-center">
             <button
               onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-              className="rounded-ctl border border-white/15 bg-white/5 px-8 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/10"
+              className="rounded-2xl border border-white/15 bg-white/[0.03] px-8 py-4 font-bold text-white transition hover:bg-white hover:text-black"
             >
-              {t("explorer.showMore").replace("{n}", String(Math.min(PAGE_SIZE, sortedClubs.length - visibleCount)))}
+              Mostrar más ({sortedClubs.length - visibleCount} más)
             </button>
           </div>
         )}
       </main>
+
+      <style jsx global>{`
+        @keyframes float {
+          0%,
+          100% {
+            transform: translate(0, 0) scale(1);
+          }
+          50% {
+            transform: translate(30px, -20px) scale(1.08);
+          }
+        }
+      `}</style>
     </>
   )
 }

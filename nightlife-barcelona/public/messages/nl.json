@@ -581,7 +581,8 @@
     "countTonight": "+{n} nachtbrakers gaan er vanavond heen",
     "count": "+{n} nachtbrakers gaan erheen",
     "willGoShort": "Ik ga",
-    "goingShort": "Ik ga ✓"
+    "goingShort": "Ik ga ✓",
+    "closedTonight": "Vanavond gesloten"
   },
   "checkin": {
     "cta": "Check hier in",
@@ -614,6 +615,7 @@
     "nextIn": "Je hebt nog",
     "toNextLevel": "XP nodig voor het volgende niveau",
     "maxLevel": "Maximale niveau bereikt!",
+    "streakDays": "{days} dagen op rij",
     "viewMine": "Bekijk mijn niveau",
     "platino": "Platina",
     "zafiro": "Saffier",
@@ -778,7 +780,9 @@
     "reminderInDays": "is over {n} dagen",
     "reminderFallback": "Je opgeslagen evenement",
     "streakTitle": "Weekreeks",
-    "streakBody": "Je hebt +{xp} XP verdiend door Noctua deze week op meerdere dagen te gebruiken."
+    "streakBody": "Je hebt +{xp} XP verdiend door Noctua deze week op meerdere dagen te gebruiken.",
+    "dailyStreakTitle": "{days} dagen op rij!",
+    "dailyStreakBody": "Je hebt +{xp} XP verdiend omdat je ook vandaag weer langskwam."
   },
   "surprise": {
     "moodAny": "Maakt niet uit",

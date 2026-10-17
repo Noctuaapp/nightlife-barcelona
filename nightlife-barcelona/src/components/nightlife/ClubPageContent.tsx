@@ -23,7 +23,7 @@ import { InlineEditText, InlineEditImage } from "../admin/InlineEdit"
 import { useIsAdmin } from "../../lib/useIsAdmin"
 import { FALLBACK_IMAGE as FALLBACK_CLUB_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
-import { clubOpenNow } from "../../lib/clubHours"
+import { clubOpenNow, clubOpensOn, madridClock } from "../../lib/clubHours"
 import { toDateLocale } from "../../lib/dateLocale"
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
@@ -78,6 +78,11 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
   const hasCoords = !!club.latitude && !!club.longitude
 
   const trackClick = (eventType: string) => track(eventType, { itemType: "club", itemId: club.id, itemName: club.name })
+
+  // false solo cuando se sabe con certeza que el club no abre esta noche (por open_days o por los
+  // días de su horario) — null (sin datos para saberlo) no bloquea nada, igual que en el resto de
+  // sitios donde se usa clubOpensOn.
+  const opensTonight = clubOpensOn(club.hours, club.open_days, madridClock().dow) !== false
 
   useEffect(() => {
     setOpenNow(clubOpenNow(club.hours, club.open_days))
@@ -602,7 +607,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
               )}
               <div className="grid grid-cols-3 gap-2">
                 <FavoriteButton itemType="club" itemId={club.id} variant="tile" />
-                <AttendanceButton itemType="club" itemId={club.id} title={club.name} variant="tile" />
+                <AttendanceButton itemType="club" itemId={club.id} title={club.name} variant="tile" disabled={!opensTonight} />
                 <CheckInButton clubId={club.id} latitude={club.latitude} longitude={club.longitude} variant="tile" />
               </div>
               <NearbyVenuesSheet

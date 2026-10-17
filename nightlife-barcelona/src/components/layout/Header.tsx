@@ -6,7 +6,7 @@ import Image from "next/image"
 import { useRouter, usePathname } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
-import { awardXp, XP_AMOUNTS, currentIsoWeek } from "../../lib/xp"
+import { awardXp, XP_AMOUNTS, currentIsoWeek, madridDateStr, dayBefore } from "../../lib/xp"
 import { ADMIN_EMAIL } from "../../lib/admin"
 import { logError } from "../../lib/log"
 import { Bell, ChevronLeft, User, Map, Sparkles, Heart, MessageCircle, ShieldCheck, Globe, X, Check } from "lucide-react"
@@ -42,6 +42,7 @@ const languages = [
   { code: "de", flag: "https://flagcdn.com/w40/de.png", name: "Deutsch" },
   { code: "it", flag: "https://flagcdn.com/w40/it.png", name: "Italiano" },
   { code: "nl", flag: "https://flagcdn.com/w40/nl.png", name: "Nederlands" },
+  { code: "pt", flag: "https://flagcdn.com/w40/pt.png", name: "Português" },
 ]
 
 // El Header se monta de nuevo en cada página: la racha semanal y los recordatorios solo hace falta
@@ -169,6 +170,41 @@ export default function Header() {
       }
     }
 
+    // Racha diaria de inicios de sesión: cada día (hora de Madrid) que se entra seguido del
+    // anterior suma la racha y da un poco de XP; si se falla un día, la racha vuelve a 1. A
+    // diferencia de la racha semanal (que exige 3 días de actividad en 7), esta premia
+    // simplemente volver cada día, aunque sea un ratito — así que el XP por día es bajo (5,
+    // menos que un check-in) para que no sea la forma más rentable de ganar XP.
+    const checkDailyStreak = async (userId: string) => {
+      if (!oncePerSession(`noctua_daily_streak_checked_${userId}`)) return
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("login_streak_days, last_login_date")
+        .eq("id", userId)
+        .maybeSingle()
+
+      const today = madridDateStr()
+      if (profile?.last_login_date === today) return // ya contado hoy
+
+      const newStreak = profile?.last_login_date === dayBefore(today) ? (profile?.login_streak_days || 0) + 1 : 1
+
+      const { error: streakError } = await supabase
+        .from("profiles")
+        .update({ login_streak_days: newStreak, last_login_date: today })
+        .eq("id", userId)
+      if (streakError) return
+
+      const { awarded } = await awardXp(supabase, { userId, actionType: "daily_login", amount: XP_AMOUNTS.dailyLogin })
+      if (awarded && newStreak > 1) {
+        await supabase.from("notifications").insert({
+          user_id: userId,
+          title: `🔥 ${t("header.dailyStreakTitle").replace("{days}", String(newStreak))}`,
+          body: t("header.dailyStreakBody").replace("{xp}", String(XP_AMOUNTS.dailyLogin)),
+          type: "xp_streak",
+        })
+      }
+    }
+
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession()
       setIsLoggedIn(!!data.session)
@@ -177,6 +213,7 @@ export default function Header() {
         checkBlocked(data.session.user.id)
         checkTermsAccepted(data.session.user.id)
         checkWeeklyStreak(data.session.user.id)
+        checkDailyStreak(data.session.user.id)
       }
     }
     checkSession()

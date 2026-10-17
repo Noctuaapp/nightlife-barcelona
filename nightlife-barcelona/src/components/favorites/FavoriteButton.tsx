@@ -6,6 +6,7 @@ import { useFavorites } from "../../context/FavoritesContext"
 import { useLanguage } from "../../context/LanguageContext"
 import AuthGateModal from "../ui/AuthGateModal"
 import Icon from "../ui/Icon"
+import { toast } from "../ui/Toast"
 
 type FavoriteButtonProps = {
   itemType: "club" | "event" | "club_event"
@@ -37,6 +38,16 @@ export default function FavoriteButton({
   const handleToggle = async () => {
     const ok = await toggleFavorite(itemType, itemId)
     if (!ok) setShowAuthGate(true)
+  }
+
+  // Antes, elegir una opción de aviso actualizaba el color del botón pero no decía nada más — y
+  // como "el mismo día" ya viene marcado por defecto desde que se guarda (reminder_days_before: 0),
+  // tocarlo no cambiaba nada visible: parecía que el toque no había hecho nada y no había manera de
+  // "confirmarlo". Ahora cada toque, cambie o no el valor, muestra un aviso claro de que ha quedado
+  // guardado.
+  const handleReminder = async (value: number) => {
+    await setReminder(itemType, itemId, value)
+    toast(`✓ ${t(REMINDER_OPTIONS.find((o) => o.value === value)?.key || "")}`)
   }
 
   return (
@@ -83,13 +94,14 @@ export default function FavoriteButton({
             {REMINDER_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
-                onClick={() => setReminder(itemType, itemId, opt.value)}
-                className={`rounded-full px-4 py-2 text-xs font-bold transition ${
+                onClick={() => handleReminder(opt.value)}
+                className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition ${
                   currentReminder === opt.value
                     ? "bg-white text-black"
                     : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/10"
                 }`}
               >
+                {currentReminder === opt.value && <Icon name="check" className="h-3.5 w-3.5" />}
                 {t(opt.key)}
               </button>
             ))}

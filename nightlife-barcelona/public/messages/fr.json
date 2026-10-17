@@ -581,7 +581,8 @@
     "countTonight": "+{n} noctambules y vont ce soir",
     "count": "+{n} noctambules y vont",
     "willGoShort": "J'y vais",
-    "goingShort": "J'y vais ✓"
+    "goingShort": "J'y vais ✓",
+    "closedTonight": "Fermé ce soir"
   },
   "checkin": {
     "cta": "Faire le check-in ici",
@@ -614,6 +615,7 @@
     "nextIn": "Il te manque",
     "toNextLevel": "XP pour le niveau suivant",
     "maxLevel": "Niveau maximum atteint !",
+    "streakDays": "{days} jours de suite",
     "viewMine": "Voir mon niveau",
     "platino": "Platine",
     "zafiro": "Saphir",
@@ -778,7 +780,9 @@
     "reminderInDays": "c'est dans {n} jours",
     "reminderFallback": "Ton événement enregistré",
     "streakTitle": "Série de la semaine",
-    "streakBody": "Tu as gagné +{xp} XP en utilisant Noctua plusieurs jours cette semaine."
+    "streakBody": "Tu as gagné +{xp} XP en utilisant Noctua plusieurs jours cette semaine.",
+    "dailyStreakTitle": "{days} jours de suite !",
+    "dailyStreakBody": "Tu as gagné +{xp} XP pour être revenu aujourd'hui aussi."
   },
   "surprise": {
     "moodAny": "N'importe quoi",

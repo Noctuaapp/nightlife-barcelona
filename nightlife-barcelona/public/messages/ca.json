@@ -581,7 +581,8 @@
     "countTonight": "+{n} noctàmbuls hi van aquesta nit",
     "count": "+{n} noctàmbuls hi van",
     "willGoShort": "Hi aniré",
-    "goingShort": "Hi vaig"
+    "goingShort": "Hi vaig",
+    "closedTonight": "No obre aquesta nit"
   },
   "checkin": {
     "cta": "Fes check-in aquí",
@@ -614,6 +615,7 @@
     "nextIn": "Et falten",
     "toNextLevel": "XP pel següent nivell",
     "maxLevel": "Nivell màxim assolit!",
+    "streakDays": "{days} dies seguits",
     "viewMine": "Veure el meu nivell",
     "platino": "Platí",
     "zafiro": "Safir",
@@ -778,7 +780,9 @@
     "reminderInDays": "és d'aquí a {n} dies",
     "reminderFallback": "El teu esdeveniment desat",
     "streakTitle": "Ratxa setmanal",
-    "streakBody": "Has guanyat +{xp} XP per fer servir Noctua diversos dies aquesta setmana."
+    "streakBody": "Has guanyat +{xp} XP per fer servir Noctua diversos dies aquesta setmana.",
+    "dailyStreakTitle": "{days} dies seguits!",
+    "dailyStreakBody": "Has guanyat +{xp} XP per entrar avui també."
   },
   "surprise": {
     "moodAny": "El que sigui",

@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import ArrowIcon from "../../components/ui/ArrowIcon"
 import TermsText from "../../components/ui/TermsText"
+import CountrySelect from "../../components/ui/CountrySelect"
 import { useLanguage } from "../../context/LanguageContext"
 
 export default function ConfirmAgePage() {
   const router = useRouter()
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const [checking, setChecking] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
@@ -17,6 +18,14 @@ export default function ConfirmAgePage() {
   const [birthDate, setBirthDate] = useState("")
   const [error, setError] = useState("")
   const [saving, setSaving] = useState(false)
+  // Quien entra con Google nunca pasa por el formulario de registro (Google no da usuario,
+  // género ni país), así que esos campos se quedaban vacíos para siempre. Ahora, si al llegar
+  // aquí el perfil todavía no tiene usuario, se piden en esta misma pantalla — igual de
+  // obligatorio que la fecha de nacimiento, sea cual sea el método con el que se ha entrado.
+  const [needsProfile, setNeedsProfile] = useState(false)
+  const [username, setUsername] = useState("")
+  const [gender, setGender] = useState("")
+  const [country, setCountry] = useState("")
 
   useEffect(() => {
     const check = async () => {
@@ -37,6 +46,7 @@ export default function ConfirmAgePage() {
       // además de en profiles, justo para este caso) — se sincronizan aquí, la primera vez que
       // hay sesión, en vez de perderse para siempre.
       const meta = user.user_metadata as { username?: string; country?: string; gender?: string } | null
+      let finalUsername = profile?.username || null
       if (meta?.username && !profile?.username) {
         await supabase.from("profiles").upsert({
           id: user.id,
@@ -44,11 +54,19 @@ export default function ConfirmAgePage() {
           gender: profile?.gender || meta.gender || null,
           country: profile?.country || meta.country || null,
         })
+        finalUsername = meta.username
       }
 
       if (profile?.terms_accepted_at) {
         router.replace("/")
         return
+      }
+      // Sin usuario (típico de entrar con Google, que no lo da) — se pide aquí mismo, junto con
+      // el resto de datos obligatorios.
+      if (!finalUsername) {
+        setNeedsProfile(true)
+        setGender(profile?.gender || meta?.gender || "")
+        setCountry(profile?.country || meta?.country || "")
       }
       setUserId(user.id)
       setChecking(false)
@@ -58,6 +76,10 @@ export default function ConfirmAgePage() {
 
   const handleConfirm = async () => {
     setError("")
+    if (needsProfile && (!username.trim() || !gender)) {
+      setError(t("signup.error_fill_all"))
+      return
+    }
     if (!acceptedTerms || !confirmedAge) {
       setError(t("consent.checkBoth"))
       return
@@ -80,6 +102,9 @@ export default function ConfirmAgePage() {
       id: userId,
       terms_accepted_at: new Date().toISOString(),
       birth_year: bd.getFullYear(),
+      ...(needsProfile
+        ? { username: username.toLowerCase().trim(), gender: gender || null, country: country || null }
+        : {}),
     })
     setSaving(false)
     if (upsertError) {
@@ -102,6 +127,39 @@ export default function ConfirmAgePage() {
       <div className="w-full max-w-md rounded-card border border-white/10 bg-surface p-8">
         <h1 className="mb-3 text-2xl font-semibold">{t("consent.title")}</h1>
         <p className="mb-6 text-sm leading-relaxed text-zinc-300">{t("consent.body")}</p>
+
+        {needsProfile && (
+          <div className="mb-5 space-y-3">
+            <input
+              type="text"
+              placeholder={t("signup.username")}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand transition"
+            />
+            <CountrySelect value={country} onChange={setCountry} locale={locale} placeholder={t("signup.country")} />
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              required
+              style={{ colorScheme: "dark" }}
+              className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-zinc-300 outline-none focus:border-brand transition"
+            >
+              <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="" disabled hidden>
+                {t("signup.gender")}
+              </option>
+              <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">
+                {t("signup.gender_male")}
+              </option>
+              <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Mujer">
+                {t("signup.gender_female")}
+              </option>
+              <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Prefiero no decirlo">
+                {t("signup.gender_unspecified")}
+              </option>
+            </select>
+          </div>
+        )}
 
         <div className="space-y-4">
           <label className="flex cursor-pointer items-start gap-3">

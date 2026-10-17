@@ -581,7 +581,8 @@
     "countTonight": "+{n} night owls going tonight",
     "count": "+{n} night owls going",
     "willGoShort": "I'm going",
-    "goingShort": "Going"
+    "goingShort": "Going",
+    "closedTonight": "Closed tonight"
   },
   "checkin": {
     "cta": "Check in here",
@@ -614,6 +615,7 @@
     "nextIn": "You need",
     "toNextLevel": "XP for the next level",
     "maxLevel": "Max level reached!",
+    "streakDays": "{days}-day streak",
     "viewMine": "See my level",
     "platino": "Platinum",
     "zafiro": "Sapphire",
@@ -778,7 +780,9 @@
     "reminderInDays": "is in {n} days",
     "reminderFallback": "Your saved event",
     "streakTitle": "Weekly streak",
-    "streakBody": "You earned +{xp} XP for using Noctua several days this week."
+    "streakBody": "You earned +{xp} XP for using Noctua several days this week.",
+    "dailyStreakTitle": "{days}-day streak!",
+    "dailyStreakBody": "You earned +{xp} XP for coming back today too."
   },
   "surprise": {
     "moodAny": "Anything",

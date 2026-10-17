@@ -7,9 +7,9 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 // sin textos. Ahora la primera pintura ya trae el español y los demás idiomas se cargan encima.
 import esMessages from "../../public/messages/es.json"
 
-// Idiomas de la web (los 7 del selector del menú, con su bandera).
-type Locale = "es" | "en" | "ca" | "fr" | "de" | "it" | "nl"
-const ACTIVE_LOCALES: Locale[] = ["es", "en", "ca", "fr", "de", "it", "nl"]
+// Idiomas de la web (los 8 del selector del menú, con su bandera).
+type Locale = "es" | "en" | "ca" | "fr" | "de" | "it" | "nl" | "pt"
+const ACTIVE_LOCALES: Locale[] = ["es", "en", "ca", "fr", "de", "it", "nl", "pt"]
 
 type LanguageContextType = {
   locale: Locale

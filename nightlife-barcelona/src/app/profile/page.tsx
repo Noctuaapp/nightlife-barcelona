@@ -101,6 +101,7 @@ export default function ProfilePage() {
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [xp, setXp] = useState(0)
+  const [loginStreakDays, setLoginStreakDays] = useState(0)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [avatarError, setAvatarError] = useState("")
 
@@ -129,7 +130,7 @@ export default function ProfilePage() {
       setUserId(data.user.id)
       setEmail(data.user.email || "")
 
-      const { data: profile } = await supabase.from("profiles").select("username, username_updated_at, avatar_url, xp, birth_year").eq("id", data.user.id).single()
+      const { data: profile } = await supabase.from("profiles").select("username, username_updated_at, avatar_url, xp, birth_year, login_streak_days").eq("id", data.user.id).single()
       if (profile) {
         setUsername(profile.username || "")
         setNewUsername(profile.username || "")
@@ -137,6 +138,7 @@ export default function ProfilePage() {
         setAvatarUrl(profile.avatar_url || null)
         setXp(profile.xp || 0)
         setBirthYear(profile.birth_year ? String(profile.birth_year) : "")
+        setLoginStreakDays(profile.login_streak_days || 0)
       }
 
       const [{ data: ownedClub }, { data: ownedFestival }] = await Promise.all([
@@ -486,6 +488,11 @@ export default function ProfilePage() {
             <p className="mt-2 text-xs text-zinc-400">
               {level.next ? `${t("levels.nextIn")} ${level.xpToNext} ${t("levels.toNextLevel")}` : t("levels.maxLevel")}
             </p>
+            {loginStreakDays > 1 && (
+              <p className="mt-2 text-xs font-semibold text-amber-300">
+                🔥 {t("levels.streakDays").replace("{days}", String(loginStreakDays))}
+              </p>
+            )}
           </Link>
         </section>
 

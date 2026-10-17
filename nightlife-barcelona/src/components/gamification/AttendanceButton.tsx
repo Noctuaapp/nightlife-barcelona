@@ -14,6 +14,11 @@ type AttendanceButtonProps = {
   title?: string
   // "tile": recuadro pequeño, para la fila de acciones de la ficha de club.
   variant?: "full" | "tile"
+  // Antes se podía marcar "Asistiré esta noche" en un club que esa noche directamente no abre
+  // (open_days/horario lo dicen) — el botón no miraba el horario para nada. La ficha del club
+  // pasa este flag cuando sabe con certeza que no abre esta noche; el botón queda visible pero
+  // deshabilitado (en vez de desaparecer, para no romper la rejilla de 3 columnas de acciones).
+  disabled?: boolean
 }
 
 // Inicio de la "noche" actual: las 06:00 más recientes en Madrid. Una marca de asistencia a un
@@ -43,7 +48,7 @@ function currentNightDate(): string {
 
 // Botón "Asistiré esta noche" — marca intención de asistencia (independiente de favoritos).
 // Ya no da XP: el XP se gana con el check-in real en el local.
-export default function AttendanceButton({ itemType, itemId, variant = "full" }: AttendanceButtonProps) {
+export default function AttendanceButton({ itemType, itemId, variant = "full", disabled = false }: AttendanceButtonProps) {
   const { t } = useLanguage()
   const [userId, setUserId] = useState<string | null>(null)
   const [attending, setAttending] = useState(false)
@@ -77,6 +82,7 @@ export default function AttendanceButton({ itemType, itemId, variant = "full" }:
   }, [itemType, itemId])
 
   const toggleAttendance = async () => {
+    if (disabled) return
     if (!userId) {
       window.location.href = "/login"
       return
@@ -126,13 +132,19 @@ export default function AttendanceButton({ itemType, itemId, variant = "full" }:
         <button
           onClick={toggleAttendance}
           aria-pressed={attending}
+          disabled={disabled}
+          title={disabled ? t("attendance.closedTonight") : undefined}
           className={`flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-ctl px-2 py-3 text-xs font-semibold transition ${
-            attending ? "bg-open text-night" : "border border-white/10 bg-white/5 text-ink hover:bg-white/10"
+            disabled
+              ? "cursor-not-allowed border border-white/5 bg-white/[0.02] text-zinc-500"
+              : attending
+                ? "bg-open text-night"
+                : "border border-white/10 bg-white/5 text-ink hover:bg-white/10"
           }`}
         >
           <Icon name={attending ? "check" : "calendar"} className="h-5 w-5" />
-          {attending ? t("attendance.goingShort") : t("attendance.willGoShort")}
-          {shownCount > 0 && <span className="text-[11px] font-medium opacity-80">+{shownCount}</span>}
+          {disabled ? t("attendance.closedTonight") : attending ? t("attendance.goingShort") : t("attendance.willGoShort")}
+          {!disabled && shownCount > 0 && <span className="text-[11px] font-medium opacity-80">+{shownCount}</span>}
         </button>
       </div>
     )
@@ -144,14 +156,19 @@ export default function AttendanceButton({ itemType, itemId, variant = "full" }:
       <button
         onClick={toggleAttendance}
         aria-pressed={attending}
+        disabled={disabled}
         className={`mt-3 flex w-full items-center justify-center gap-2 rounded-ctl px-6 py-3.5 text-sm font-semibold transition ${
-          attending ? "bg-open text-night" : "border border-white/10 bg-white/5 text-ink hover:bg-white/10"
+          disabled
+            ? "cursor-not-allowed border border-white/5 bg-white/[0.02] text-zinc-500"
+            : attending
+              ? "bg-open text-night"
+              : "border border-white/10 bg-white/5 text-ink hover:bg-white/10"
         }`}
       >
         <Icon name={attending ? "check" : "calendar"} className="h-4 w-4" />
-        {attending ? t("attendance.going") : t("attendance.willGo")}
+        {disabled ? t("attendance.closedTonight") : attending ? t("attendance.going") : t("attendance.willGo")}
       </button>
-      {count >= 10 && (
+      {!disabled && count >= 10 && (
         <p className="mt-2 text-center text-xs font-semibold text-zinc-300">
           {(itemType === "club" ? t("attendance.countTonight") : t("attendance.count")).replace("{n}", String(Math.floor(count / 10) * 10))}
         </p>
