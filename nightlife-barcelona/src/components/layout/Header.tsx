@@ -9,7 +9,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { awardXp, XP_AMOUNTS, currentIsoWeek } from "../../lib/xp"
 import { ADMIN_EMAIL } from "../../lib/admin"
 import { logError } from "../../lib/log"
-import { Bell, ChevronLeft } from "lucide-react"
+import { Bell, ChevronLeft, User, Map, Sparkles, Heart, MessageCircle, ShieldCheck, Globe, X, Check } from "lucide-react"
 
 const cities = [
   { name: "Barcelona", slug: "barcelona", active: true, lat: 41.3851, lng: 2.1734 },
@@ -699,7 +699,9 @@ export default function Header() {
       }}>
         <div className="flex items-center justify-between px-6 py-6 border-b border-white/10">
           <p className="text-sm uppercase tracking-widest text-zinc-500">{t("header.menu")}</p>
-          <button onClick={() => setMenuOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-white hover:bg-white/10 transition text-lg outline-none">✕</button>
+          <button onClick={() => setMenuOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-white hover:bg-white/10 transition outline-none" aria-label={t("header.menu")}>
+            <X size={18} strokeWidth={1.8} aria-hidden="true" />
+          </button>
         </div>
 
         {!isLoggedIn && (
@@ -725,26 +727,26 @@ export default function Header() {
         <div className="flex flex-col gap-1 px-4 py-4 flex-1">
           {isLoggedIn && (
             <Link href="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-              <span className="text-xl">👤</span>{t("nav.profile")}
+              <User size={19} strokeWidth={1.7} className="text-purple-300" aria-hidden="true" />{t("nav.profile")}
             </Link>
           )}
           <Link href="/map" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-            <span className="text-xl">🗺️</span>{t("nav.map")}
+            <Map size={19} strokeWidth={1.7} className="text-purple-300" aria-hidden="true" />{t("nav.map")}
           </Link>
           <Link href="/plan" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-            <span className="text-xl">✨</span>{t("nav.plan")}
+            <Sparkles size={19} strokeWidth={1.7} className="text-purple-300" aria-hidden="true" />{t("nav.plan")}
           </Link>
           <Link href="/favorites" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-            <span className="text-xl">❤️</span>{t("nav.favorites")}
+            <Heart size={19} strokeWidth={1.7} className="text-purple-300" aria-hidden="true" />{t("nav.favorites")}
           </Link>
           {/* Antes no había ninguna forma de contactar con soporte desde el menú — solo se
               llegaba a /contact si alguien encontraba el enlace en el footer. */}
           <Link href="/contact" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-            <span className="text-xl">💬</span>{t("nav.contact")}
+            <MessageCircle size={19} strokeWidth={1.7} className="text-purple-300" aria-hidden="true" />{t("nav.contact")}
           </Link>
           {isAdmin && (
             <Link href="/admin/dashboard" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
-              <span className="text-xl">🛡️</span>Admin
+              <ShieldCheck size={19} strokeWidth={1.7} className="text-purple-300" aria-hidden="true" />Admin
             </Link>
           )}
         </div>
@@ -789,8 +791,9 @@ export default function Header() {
             className="w-full flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition"
           >
             <div className="flex items-center gap-2">
+              <Globe size={16} strokeWidth={1.7} className="text-purple-300" aria-hidden="true" />
               <img src={currentLang.flag} alt={currentLang.name} style={{ width: "18px", height: "13px", objectFit: "cover", borderRadius: "2px" }} />
-              <span>🌐 {currentLang.name}</span>
+              <span>{currentLang.name}</span>
             </div>
             <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ transform: langOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
               <path d="M1 1L5 5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -806,7 +809,7 @@ export default function Header() {
                 >
                   <img src={lang.flag} alt={lang.name} style={{ width: "18px", height: "13px", objectFit: "cover", borderRadius: "2px" }} />
                   <span>{lang.name}</span>
-                  {locale === lang.code && <span className="ml-auto text-emerald-400 text-xs">✓</span>}
+                  {locale === lang.code && <Check size={14} strokeWidth={2} className="ml-auto text-emerald-400" aria-hidden="true" />}
                 </button>
               ))}
             </div>

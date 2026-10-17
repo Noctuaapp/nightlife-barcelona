@@ -63,19 +63,17 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
   }
 
   const addPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    // DEBUG TEMPORAL — quitar en cuanto encontremos el fallo real.
-    console.log("[ClubGallery] addPhotos: evento disparado", { edit, filesLength: e.target.files?.length })
-    if (!edit) {
-      console.log("[ClubGallery] addPhotos: salida porque 'edit' es falsy")
-      return
-    }
-    const files = e.target.files
+    if (!edit) return
+    // `e.target.files` es una lista EN VIVO ligada al campo: en Chrome, vaciar el campo con
+    // `e.target.value = ""` también vacía esa lista, aunque se haya guardado antes en una
+    // variable — así que si se hace el `.value = ""` antes de leer los archivos de verdad (o
+    // guardando solo la referencia, no una copia), para cuando se comprueba cuántos hay, ya son
+    // 0. Por eso antes "no pasaba nada" al elegir foto: el archivo se descartaba a sí mismo, sin
+    // ningún error que capturar. Aquí se copian los archivos a una lista propia (`Array.from`)
+    // ANTES de tocar `.value`, así sobreviven a que el campo se vacíe justo después.
+    const files = e.target.files ? Array.from(e.target.files) : []
     e.target.value = ""
-    if (!files || files.length === 0) {
-      console.log("[ClubGallery] addPhotos: salida porque no hay archivos")
-      return
-    }
-    console.log("[ClubGallery] addPhotos: subiendo", files.length, "archivo(s) al bucket", edit.bucket)
+    if (files.length === 0) return
     setUploading(true)
     const urls: string[] = []
     let firstError: string | null = null
@@ -87,12 +85,10 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
     // silencio (continue) sin decir por qué. Ahora cualquier fallo se muestra y el botón
     // siempre se reactiva.
     try {
-      for (const file of Array.from(files)) {
+      for (const file of files) {
         const ext = file.name.split(".").pop()
         const fileName = `inline-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-        console.log("[ClubGallery] addPhotos: subiendo archivo", fileName)
         const { error } = await supabase.storage.from(edit.bucket).upload(fileName, file)
-        console.log("[ClubGallery] addPhotos: resultado upload", { error })
         if (error) {
           if (!firstError) firstError = error.message
           continue
@@ -101,12 +97,10 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
         urls.push(data.publicUrl)
       }
     } catch (err) {
-      console.log("[ClubGallery] addPhotos: EXCEPCIÓN capturada", err)
       if (!firstError) firstError = err instanceof Error ? err.message : String(err)
     } finally {
       setUploading(false)
     }
-    console.log("[ClubGallery] addPhotos: fin del intento", { urlsSubidas: urls.length, firstError })
     if (urls.length === 0) {
       toast(firstError ? "No se pudo subir ninguna foto: " + firstError : "No se pudo subir ninguna foto", 6000)
       return
