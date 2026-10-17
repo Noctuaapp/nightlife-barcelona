@@ -314,16 +314,24 @@ export default function AdminPage() {
     if (!files || files.length === 0) return
     setUploadingGallery(true)
     const urls: string[] = []
+    let firstError: string | null = null
     for (const file of Array.from(files)) {
       const fileExt = file.name.split(".").pop()
       const fileName = `admin/manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
       const { error } = await supabase.storage.from("club-photos").upload(fileName, file)
-      if (error) continue
+      if (error) {
+        // Antes este error se tragaba en silencio (continue) y la foto simplemente no
+        // aparecía, como si el botón no reaccionara. Lo mostramos para saber la causa real
+        // (típicamente una política de Storage del bucket "club-photos" que no permite subir).
+        if (!firstError) firstError = error.message
+        continue
+      }
       const { data } = supabase.storage.from("club-photos").getPublicUrl(fileName)
       urls.push(data.publicUrl)
     }
     setUploadingGallery(false)
     if (urls.length > 0) setForm({ ...form, gallery: [...form.gallery, ...urls] })
+    if (firstError) toast("Error al subir la foto a la galería: " + firstError)
     e.target.value = ""
   }
 
