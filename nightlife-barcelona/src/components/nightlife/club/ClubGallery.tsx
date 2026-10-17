@@ -34,7 +34,9 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
 
   // `images` llega como [portada, ...galería]. Si se gestiona aquí, se reconstruye igual a partir
   // de `edit` (que lleva el dato crudo de cada columna) para poder escribir luego en las dos.
-  const basePhotos = edit ? ([images[0], ...edit.gallery].filter(Boolean) as string[]) : images
+  // `Array.from(new Set(...))` quita duplicados (p.ej. si la portada quedó repetida también
+  // dentro de la galería), que si no rompían el listado de miniaturas de abajo (claves repetidas).
+  const basePhotos = edit ? (Array.from(new Set([images[0], ...edit.gallery].filter(Boolean))) as string[]) : images
   const displayImages = canManage ? (photosOverride ?? basePhotos) : images
 
   if (displayImages.length < 2 && !canManage) return null
@@ -138,7 +140,7 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
           <div className="flex flex-wrap gap-3">
             {displayImages.map((url, i) => (
               <div
-                key={url}
+                key={url + i}
                 draggable
                 onDragStart={() => setDragIndex(i)}
                 onDragOver={(e) => e.preventDefault()}

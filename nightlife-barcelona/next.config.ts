@@ -23,6 +23,13 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
+      {
+        // Fotos de festivales/fiestas mayores sacadas de Wikimedia Commons (licencia libre),
+        // enlazadas directamente en vez de subirlas al storage propio.
+        protocol: "https",
+        hostname: "commons.wikimedia.org",
+        pathname: "/wiki/Special:FilePath/**",
+      },
     ],
   },
 }
