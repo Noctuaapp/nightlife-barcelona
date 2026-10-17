@@ -17,7 +17,7 @@ export const LEVELS = [
   { key: "platino", name: "Platino", min: 1800, icon: "🔷", color: "#7dd3fc", perkKey: "platino" },
   { key: "zafiro", name: "Zafiro", min: 3500, icon: "🔵", color: "#3b82f6", perkKey: "zafiro" },
   { key: "diamante", name: "Diamante", min: 6000, icon: "💎", color: "#67e8f9", perkKey: "diamante" },
-  { key: "elite", name: "Élite", min: 10000, icon: "👑", color: "#7c5cff", perkKey: "elite" },
+  { key: "elite", name: "Élite", min: 10000, icon: "👑", color: "#dc2626", perkKey: "elite" },
 ] as const
 
 // Días mínimos desde que se alcanzó el nivel anterior para poder pasar a este. Debe coincidir

@@ -18,7 +18,9 @@ function darken(hex: string, amount: number): string {
 // levelColor: color del nivel actual (LEVELS.color en lib/xp.ts) para que Noc cambie de Bronce a
 // Élite — el cuerpo usa ese color, y orejas/alas una versión oscurecida del mismo (darken() no
 // baja de 0, así que un color ya oscuro como el de Élite simplemente se queda cerca del negro en
-// vez de dar números negativos). Sin levelColor (login, invitar...) se queda el morado de siempre.
+// vez de dar números negativos). Sin levelColor (login, invitar...) se usa un gris neutro — antes
+// era un morado (#8b5cf6) casi idéntico al de Élite (#7c5cff), así que en Élite parecía que Noc
+// "no cambiaba de color" cuando en realidad sí lo hacía, solo que al mismo morado de siempre.
 export default function NocOwl({
   size = 64,
   mood = "happy",
@@ -31,10 +33,10 @@ export default function NocOwl({
   levelColor?: string
 }) {
   const pupilR = mood === "wow" ? 6.5 : 4.5
-  const bodyTop = levelColor || "#8b5cf6"
-  const bodyBottom = levelColor ? darken(levelColor, 40) : "#5b21b6"
-  const accent = levelColor ? darken(levelColor, 20) : "#6d28d9"
-  const wing = levelColor ? darken(levelColor, 55) : "#4c1d95"
+  const bodyTop = levelColor || "#71717a"
+  const bodyBottom = levelColor ? darken(levelColor, 40) : "#3f3f46"
+  const accent = levelColor ? darken(levelColor, 20) : "#52525b"
+  const wing = levelColor ? darken(levelColor, 55) : "#27272a"
   // Id único por instancia: con varios Noc a la vez en pantalla (p. ej. de niveles distintos),
   // un id de gradiente fijo compartido haría que todos usaran el color del último def pintado.
   const gradientId = `noc-body-${useId()}`
