@@ -7,7 +7,7 @@ import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { useFavorites } from "../../context/FavoritesContext"
 import { useLanguage } from "../../context/LanguageContext"
-import { getLevelStatus, LEVELS } from "../../lib/xp"
+import { getLevelStatus } from "../../lib/xp"
 import { Heart, Trophy, CalendarDays, Gift, Building2, Music2, Camera, Pin, Trash2, MessageSquare, Megaphone, AlarmClock, Bell, ChevronRight } from "lucide-react"
 import BirthYearSelect from "../../components/ui/BirthYearSelect"
 import { createSlug } from "../../lib/slug"
@@ -451,11 +451,10 @@ export default function ProfilePage() {
   const today = new Date().toISOString().split("T")[0]
   const unreadCount = notifHistory.filter((n) => !n.read).length
   const isAdmin = email === ADMIN_EMAIL
-  // El admin siempre se ve a nivel Élite al 100%, sin tocar su XP real guardado — así se puede
-  // probar cómo se ve el sistema desde dentro sin falsear los datos de verdad.
-  const level = isAdmin
-    ? { current: LEVELS[LEVELS.length - 1], next: null, xpToNext: null, progressPct: 100, unlocksAt: null }
-    : getLevelStatus(xp, levelKey, levelSince)
+  // Antes el admin se veía siempre a nivel Élite al 100% sin tocar su XP real — pero eso hacía
+  // que Noc se quedara fijo en el color de Élite y que el XP mostrado no coincidiera con la
+  // insignia. Ahora el admin ve su nivel y su XP real, igual que cualquier usuario.
+  const level = getLevelStatus(xp, levelKey, levelSince)
 
   const card = "rounded-card border border-white/10 bg-surface p-5 sm:p-6"
   const h2 = "text-lg font-semibold text-ink"

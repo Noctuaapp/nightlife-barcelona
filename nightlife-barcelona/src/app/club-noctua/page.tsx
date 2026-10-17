@@ -9,7 +9,6 @@ import Footer from "@/components/layout/Footer"
 import BottomNav from "@/components/layout/BottomNav"
 import BadgesAndChallenges from "@/components/gamification/BadgesAndChallenges"
 import NocOwl from "@/components/mascot/NocOwl"
-import { ADMIN_EMAIL } from "../../lib/admin"
 import { toDateLocale } from "../../lib/dateLocale"
 import { Compass, Crown, Flame } from "lucide-react"
 
@@ -38,7 +37,6 @@ function badgeTier(count: number): { key: string; icon: typeof Compass } {
 export default function ClubNoctuaPage() {
   const { t, locale } = useLanguage()
   const [xp, setXp] = useState<number | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
   const [levelKey, setLevelKey] = useState<string | null>(null)
   const [levelSince, setLevelSince] = useState<string | null>(null)
   const [neighborhoodBadges, setNeighborhoodBadges] = useState<NeighborhoodBadge[]>([])
@@ -47,7 +45,6 @@ export default function ClubNoctuaPage() {
     const load = async () => {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) return
-      setIsAdmin(userData.user.email === ADMIN_EMAIL)
       const { data } = await supabase.from("profiles").select("xp").eq("id", userData.user.id).maybeSingle()
       setXp(data?.xp ?? 0)
 
@@ -89,11 +86,10 @@ export default function ClubNoctuaPage() {
     load()
   }, [])
 
-  const status = xp !== null
-    ? isAdmin
-      ? { current: LEVELS[LEVELS.length - 1], next: null, xpToNext: null, progressPct: 100, unlocksAt: null }
-      : getLevelStatus(xp, levelKey, levelSince)
-    : null
+  // Antes el admin se veía siempre a nivel Élite al 100% sin tocar su XP real — pero eso hacía
+  // que Noc se quedara fijo en el color de Élite y que el XP mostrado no coincidiera con la
+  // insignia. Ahora el admin ve su nivel y su XP real, igual que cualquier usuario.
+  const status = xp !== null ? getLevelStatus(xp, levelKey, levelSince) : null
   const currentKey = status?.current.key ?? null
 
   return (
