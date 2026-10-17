@@ -40,9 +40,11 @@ export default function EventsSection() {
   const geo = useGeolocation()
 
   // Sin el filtro "Agotado": no ayuda a decidir a qué ir.
+  // "Esta noche" se quitó: si esa noche no había ningún evento el filtro se quedaba vacío. En su
+  // lugar, "Próximos" enseña siempre los eventos más cercanos en el tiempo (haya algo hoy o no).
   const categories = [
     { key: "All", label: t("filters.all") },
-    { key: "Tonight", label: t("events.tonight") },
+    { key: "Upcoming", label: t("events.upcoming") },
     { key: "Featured", label: t("events.featured") },
     { key: "Free", label: t("events.free") },
     { key: "Near", label: t("home.tabNear") },
@@ -96,9 +98,12 @@ export default function EventsSection() {
       const next = events.filter((e) => !!e.date && e.date >= today)
       return [...next.filter((e) => e.featured), ...next.filter((e) => !e.featured)].slice(0, 3)
     }
+    if (selectedCategory === "Upcoming") {
+      // Cronológico puro (sin priorizar destacados) — los eventos vienen ya ordenados por fecha.
+      return events.filter((e) => !!e.date && e.date >= today).slice(0, 3)
+    }
     return events
       .filter((event) => {
-        if (selectedCategory === "Tonight") return event.date === today
         if (selectedCategory === "Featured") return event.featured === true && upcoming(event)
         if (selectedCategory === "Free") return upcoming(event) && (event.price || "").toLowerCase().includes("gratis")
         return true
