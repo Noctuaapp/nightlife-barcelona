@@ -41,11 +41,11 @@ export default function FeatureTicker() {
   return (
     <div
       aria-live="polite"
-      className="absolute right-3 top-3 z-10 hidden max-w-[230px] items-center gap-2 rounded-full border border-white/15 bg-black/40 px-3.5 py-2 text-xs font-medium text-white/90 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.7)] backdrop-blur-md sm:flex sm:right-6 sm:top-6 sm:max-w-[280px] sm:text-sm"
+      className="absolute right-3 top-3 z-10 hidden w-[260px] items-start gap-2 rounded-2xl border border-white/15 bg-black/40 px-3.5 py-2.5 text-xs font-medium leading-snug text-white/90 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.7)] backdrop-blur-md sm:flex sm:right-6 sm:top-6 sm:w-[300px] sm:text-sm"
     >
-      <Icon name={current.icon} className="h-4 w-4 shrink-0 text-cyan-300" />
+      <Icon name={current.icon} className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
       <span
-        className="noctua-ticker-text truncate transition-all duration-200"
+        className="noctua-ticker-text line-clamp-2 transition-all duration-200"
         style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(-3px)" }}
       >
         {t(current.key)}
