@@ -22,7 +22,7 @@ const weatherCodes: Record<number, string> = {
   75: "🌨", 80: "🌦", 81: "🌧", 82: "⛈", 95: "⛈",
 }
 
-type WeatherHour = { label: string; icon: string; temp: number }
+type WeatherHour = { label: string; icon: string; temp: number; code: number | null }
 
 type NotificationRow = {
   id: number
@@ -250,7 +250,7 @@ export default function Header() {
           const code = idx !== -1 ? data.hourly.weathercode[idx] : null
           const icon = code !== null ? (weatherCodes[code] || "🌡") : "🌡"
           const label = `${pad(hour)}:00`
-          return { label, icon, temp: temp ?? 0 }
+          return { label, icon, temp: temp ?? 0, code }
         })
 
         const fresh = { temp: currentTemp, icon: currentIcon, code: currentCode, nightHours }
@@ -433,16 +433,23 @@ export default function Header() {
   // solo saltaba con cielo despejado/poco nuboso Y 18º o más: con un día nublado de 19-20º (muy
   // normal en Barcelona) no salía ningún aviso. Ahora casi siempre hay uno: frío, lluvia, buena
   // noche o, si no encaja en ninguno (p. ej. 13-16º sin lluvia), simplemente no se muestra nada.
+  //
+  // Antes se miraba el tiempo ACTUAL (weather.code/weather.temp): si a media tarde hacía sol pero
+  // por la noche iba a llover, salía "buena noche para salir" aunque fuera a llover a la hora de
+  // salir. Ahora se mira la previsión de las horas de la franja nocturna (23h-06h), que es la que
+  // importa para decidir si salir.
   const RAIN_CODES = new Set([51, 53, 55, 61, 63, 65, 71, 73, 75, 80, 81, 82, 95])
-  const weatherTip: { icon: string; textKey: string } | null = !weather
-    ? null
-    : RAIN_CODES.has(weather.code)
-    ? { icon: "☔️", textKey: "weatherTip.rain" }
-    : weather.temp <= 12
-    ? { icon: "🧥", textKey: "weatherTip.cold" }
-    : weather.temp >= 17
-    ? { icon: "🌙", textKey: "weatherTip.nice" }
-    : null
+  const weatherTip: { icon: string; textKey: string } | null = (() => {
+    if (!weather || weather.nightHours.length === 0) return null
+    const anyRain = weather.nightHours.some((h) => h.code !== null && RAIN_CODES.has(h.code))
+    if (anyRain) return { icon: "☔️", textKey: "weatherTip.rain" }
+    const nightTemps = weather.nightHours.map((h) => h.temp)
+    const minNightTemp = Math.min(...nightTemps)
+    const maxNightTemp = Math.max(...nightTemps)
+    if (minNightTemp <= 12) return { icon: "🧥", textKey: "weatherTip.cold" }
+    if (maxNightTemp >= 17) return { icon: "🌙", textKey: "weatherTip.nice" }
+    return null
+  })()
 
   const isUnread = (n: NotificationRow) =>
     n.type === "broadcast" ? !readBroadcastIds.includes(n.id) : !n.read
