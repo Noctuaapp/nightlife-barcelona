@@ -616,7 +616,8 @@
     "notePublish": "Publicar",
     "noteDone": "✓ Nota publicada — gracias por avisar",
     "ctaShort": "Check-in",
-    "doneShort": "Hecho hoy"
+    "doneShort": "Hecho hoy",
+    "noteRespect": "Sé respetuoso: las notas ofensivas o falsas se pueden denunciar y tu perfil puede ser sancionado."
   },
   "levels": {
     "title": "Tu nivel",
@@ -633,7 +634,10 @@
     "platino": "Platino",
     "zafiro": "Zafiro",
     "diamante": "Diamante",
-    "viewAll": "Ver niveles y ventajas"
+    "viewAll": "Ver niveles y ventajas",
+    "levelUpTitle": "¡Subes de nivel!",
+    "levelUpBody": "Sigue disfrutando Noctua para desbloquear tu próxima insignia.",
+    "waitingUntil": "Ya tienes el XP, pero tu nuevo nivel se desbloquea el {date}."
   },
   "favorites": {
     "saved": "Guardado",
@@ -776,7 +780,15 @@
     "walk": "Ir andando",
     "website": "Web oficial",
     "rideCopied": "Dirección copiada: pégala en la app",
-    "rideHint": "Se abre la app si la tienes instalada; si no, la tienda para descargarla."
+    "rideHint": "Se abre la app si la tienes instalada; si no, la tienda para descargarla.",
+    "noteUpvote": "Me parece útil",
+    "noteDownvote": "No me parece útil",
+    "noteReport": "Denunciar",
+    "noteReportConfirm": "¿Denunciar esta nota? La revisaremos y, si corresponde, se tomarán medidas.",
+    "noteReported": "Nota denunciada. Gracias por avisarnos.",
+    "noteReportedShort": "Denunciada",
+    "notesHide": "Ocultar notas",
+    "loginToVote": "Inicia sesión para valorar o denunciar notas."
   },
   "eventPage": {
     "dateTbc": "Fecha por confirmar"
@@ -795,7 +807,8 @@
     "streakTitle": "Racha semanal",
     "streakBody": "Has ganado +{xp} XP por usar Noctua varios días esta semana.",
     "dailyStreakTitle": "¡{days} días seguidos!",
-    "dailyStreakBody": "Has ganado +{xp} XP por entrar hoy también."
+    "dailyStreakBody": "Has ganado +{xp} XP por entrar hoy también.",
+    "levelUpBody": "Has subido a {level}. Entra en Club Noctua para verlo."
   },
   "surprise": {
     "moodAny": "Lo que sea",

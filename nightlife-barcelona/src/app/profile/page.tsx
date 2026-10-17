@@ -7,12 +7,13 @@ import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { useFavorites } from "../../context/FavoritesContext"
 import { useLanguage } from "../../context/LanguageContext"
-import { getLevelInfo } from "../../lib/xp"
+import { getLevelStatus, LEVELS } from "../../lib/xp"
 import { Heart, Trophy, CalendarDays, Gift, Building2, Music2, Camera, Pin, Trash2, MessageSquare, Megaphone, AlarmClock, Bell, ChevronRight } from "lucide-react"
 import BirthYearSelect from "../../components/ui/BirthYearSelect"
 import { createSlug } from "../../lib/slug"
 import { toDateLocale } from "../../lib/dateLocale"
 import { ADMIN_EMAIL } from "../../lib/admin"
+import NocOwl from "../../components/mascot/NocOwl"
 
 // Perfil. Rehecho tras la auditoría de octubre 2026: fuera las cifras de relleno ("BCN · Ciudad",
 // "🌙 Night owl", "Noctua Member") y los emojis como iconos; arriba, el acceso a todo lo de "tu
@@ -102,6 +103,11 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [xp, setXp] = useState(0)
   const [loginStreakDays, setLoginStreakDays] = useState(0)
+  // Nivel efectivo gateado por tiempo (profiles.level_key/level_since). Null hasta que se ejecute
+  // supabase/9_niveles_y_moderacion.sql o si la consulta falla por cualquier motivo — en ese caso
+  // getLevelStatus cae de vuelta al cálculo de nivel puro por XP, sin romper nada.
+  const [levelKey, setLevelKey] = useState<string | null>(null)
+  const [levelSince, setLevelSince] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [avatarError, setAvatarError] = useState("")
 
@@ -140,6 +146,21 @@ export default function ProfilePage() {
         setBirthYear(profile.birth_year ? String(profile.birth_year) : "")
         setLoginStreakDays(profile.login_streak_days || 0)
       }
+
+      // Consulta aparte y a propósito: si las columnas level_key/level_since todavía no existen
+      // (no se ha ejecutado supabase/9_niveles_y_moderacion.sql), esta llamada falla sola sin
+      // tumbar el resto de la página — getLevelStatus ya sabe comportarse igual que antes sin ellas.
+      try {
+        const { data: levelData, error: levelError } = await supabase
+          .from("profiles")
+          .select("level_key, level_since")
+          .eq("id", data.user.id)
+          .maybeSingle()
+        if (!levelError && levelData) {
+          setLevelKey(levelData.level_key || null)
+          setLevelSince(levelData.level_since || null)
+        }
+      } catch {}
 
       const [{ data: ownedClub }, { data: ownedFestival }] = await Promise.all([
         supabase.from("clubs").select("id").eq("owner_user_id", data.user.id).maybeSingle(),
@@ -429,7 +450,12 @@ export default function ProfilePage() {
   const initials = username ? username.slice(0, 2).toUpperCase() : email.slice(0, 2).toUpperCase()
   const today = new Date().toISOString().split("T")[0]
   const unreadCount = notifHistory.filter((n) => !n.read).length
-  const level = getLevelInfo(xp)
+  const isAdmin = email === ADMIN_EMAIL
+  // El admin siempre se ve a nivel Élite al 100%, sin tocar su XP real guardado — así se puede
+  // probar cómo se ve el sistema desde dentro sin falsear los datos de verdad.
+  const level = isAdmin
+    ? { current: LEVELS[LEVELS.length - 1], next: null, xpToNext: null, progressPct: 100, unlocksAt: null }
+    : getLevelStatus(xp, levelKey, levelSince)
 
   const card = "rounded-card border border-white/10 bg-surface p-5 sm:p-6"
   const h2 = "text-lg font-semibold text-ink"
@@ -475,8 +501,8 @@ export default function ProfilePage() {
           <Link href="/club-noctua" className="mt-6 block rounded-card border border-white/10 bg-surface p-5 transition hover:border-white/25">
             <div className="flex items-center justify-between gap-3">
               <span className="flex items-center gap-2 text-base font-semibold text-ink">
-                <span className="h-3 w-3 rounded-full" style={{ background: level.color }} aria-hidden="true" />
-                {t(`levels.${level.key}`)}
+                <NocOwl size={28} levelColor={level.current.color} />
+                {t(`levels.${level.current.key}`)}
               </span>
               <span className="text-sm font-semibold text-zinc-300">
                 {xp} {t("levels.xpLabel")}
@@ -486,7 +512,11 @@ export default function ProfilePage() {
               <div className="h-full rounded-full bg-brand" style={{ width: `${level.progressPct}%` }} />
             </div>
             <p className="mt-2 text-xs text-zinc-400">
-              {level.next ? `${t("levels.nextIn")} ${level.xpToNext} ${t("levels.toNextLevel")}` : t("levels.maxLevel")}
+              {level.unlocksAt
+                ? t("levels.waitingUntil").replace("{date}", level.unlocksAt.toLocaleDateString(toDateLocale(locale), { day: "numeric", month: "short" }))
+                : level.next
+                  ? `${t("levels.nextIn")} ${level.xpToNext} ${t("levels.toNextLevel")}`
+                  : t("levels.maxLevel")}
             </p>
             {loginStreakDays > 1 && (
               <p className="mt-2 text-xs font-semibold text-amber-300">

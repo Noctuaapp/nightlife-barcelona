@@ -60,7 +60,12 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
   const [related, setRelated] = useState<any[]>([])
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [liveCheckins, setLiveCheckins] = useState(0)
-  const [liveNotes, setLiveNotes] = useState<{ note: string; note_created_at: string }[]>([])
+  const [userId, setUserId] = useState<string | null>(null)
+  type LiveNote = { id: number; note: string; note_created_at: string; upvotes: number; downvotes: number; myVote: 1 | -1 | 0; reported: boolean }
+  const [liveNotes, setLiveNotes] = useState<LiveNote[]>([])
+  // Si hay muchas notas se puede ocultar el bloque entero (lo pidió Jordi): se recuerda por club
+  // mientras dure la pestaña, no hace falta que sea permanente entre visitas.
+  const [notesHidden, setNotesHidden] = useState(false)
   // La hora depende del momento en que se mira: se calcula tras montar para que el HTML del
   // servidor y el del navegador coincidan.
   const [openNow, setOpenNow] = useState<boolean | null>(null)
@@ -118,26 +123,106 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
     }
 
     // Notas de check-in de las últimas 6 h: lo único realmente "en directo" de la ficha.
-    const loadLiveNotes = async () => {
+    // Se consulta club_checkins directamente (no la vista club_live_notes) porque aquí sí
+    // necesitamos el id de cada check-in para poder votar y denunciar su nota.
+    const loadLiveNotes = async (uid: string | null) => {
       const { data } = await supabase
-        .from("club_live_notes")
-        .select("note, note_created_at")
+        .from("club_checkins")
+        .select("id, note, note_created_at")
         .eq("club_id", club.id)
+        .not("note", "is", null)
         .order("note_created_at", { ascending: false })
-        .limit(5)
-      if (data) {
-        const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000
-        setLiveNotes(data.filter((n) => n.note_created_at && new Date(n.note_created_at).getTime() > sixHoursAgo))
-      }
+        .limit(8)
+      if (!data) return
+      const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000
+      const fresh = data.filter((n) => n.note_created_at && new Date(n.note_created_at).getTime() > sixHoursAgo)
+      setLiveNotes(fresh.map((n) => ({ ...n, upvotes: 0, downvotes: 0, myVote: 0, reported: false })))
+
+      // Votos y denuncias ya hechas: aparte y en try/catch porque las tablas
+      // club_checkin_votes/club_checkin_reports aún no existen (SQL pendiente de ejecutar) — si
+      // fallan, las notas se ven igual, solo sin los contadores todavía.
+      if (!fresh.length) return
+      try {
+        const ids = fresh.map((n) => n.id)
+        const { data: votes } = await supabase.from("club_checkin_votes").select("checkin_id, user_id, vote").in("checkin_id", ids)
+        const { data: myReports } = uid
+          ? await supabase.from("club_checkin_reports").select("checkin_id").eq("reporter_id", uid).in("checkin_id", ids)
+          : { data: null }
+        setLiveNotes((prev) =>
+          prev.map((n) => {
+            const forNote = (votes || []).filter((v) => v.checkin_id === n.id)
+            const mine = uid ? forNote.find((v) => v.user_id === uid) : undefined
+            return {
+              ...n,
+              upvotes: forNote.filter((v) => v.vote === 1).length,
+              downvotes: forNote.filter((v) => v.vote === -1).length,
+              myVote: mine ? mine.vote : 0,
+              reported: !!myReports?.some((r) => r.checkin_id === n.id),
+            }
+          })
+        )
+      } catch {}
+    }
+
+    const loadUser = async () => {
+      const { data } = await supabase.auth.getUser()
+      const uid = data.user?.id ?? null
+      setUserId(uid)
+      return uid
     }
 
     supabase.rpc("club_live_checkins", { p_club_id: club.id }).then(({ data }) => {
       if (typeof data === "number") setLiveCheckins(data)
     })
     loadRelated()
-    loadLiveNotes()
+    loadUser().then(loadLiveNotes)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club.id])
+
+  const handleNoteVote = async (noteId: number, vote: 1 | -1) => {
+    if (!userId) {
+      toast(t("clubPage.loginToVote"))
+      return
+    }
+    const target = liveNotes.find((n) => n.id === noteId)
+    if (!target) return
+    const newVote = target.myVote === vote ? 0 : vote
+    // Optimista: se actualiza ya en pantalla y se intenta guardar después.
+    setLiveNotes((prev) =>
+      prev.map((n) => {
+        if (n.id !== noteId) return n
+        let upvotes = n.upvotes
+        let downvotes = n.downvotes
+        if (n.myVote === 1) upvotes--
+        if (n.myVote === -1) downvotes--
+        if (newVote === 1) upvotes++
+        if (newVote === -1) downvotes++
+        return { ...n, upvotes, downvotes, myVote: newVote }
+      })
+    )
+    try {
+      if (newVote === 0) {
+        await supabase.from("club_checkin_votes").delete().eq("checkin_id", noteId).eq("user_id", userId)
+      } else {
+        await supabase.from("club_checkin_votes").upsert({ checkin_id: noteId, user_id: userId, vote: newVote }, { onConflict: "checkin_id,user_id" })
+      }
+    } catch {
+      // Sin la tabla todavía (SQL pendiente) el voto se queda solo en pantalla hasta recargar.
+    }
+  }
+
+  const handleNoteReport = async (noteId: number) => {
+    if (!userId) {
+      toast(t("clubPage.loginToVote"))
+      return
+    }
+    if (!window.confirm(t("clubPage.noteReportConfirm"))) return
+    setLiveNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, reported: true } : n)))
+    try {
+      await supabase.from("club_checkin_reports").insert({ checkin_id: noteId, reporter_id: userId })
+    } catch {}
+    toast(t("clubPage.noteReported"))
+  }
 
   const shareClub = async () => {
     trackClick("share_click")
@@ -392,20 +477,66 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                 {liveDetail && <span className="text-zinc-300">· {liveDetail}</span>}
               </p>
             )}
-            {liveNotes.length > 0 && (
-              <div className={`grid gap-3 sm:grid-cols-2 ${vibe ? "mt-4" : ""}`}>
-                {liveNotes.map((n, i) => {
-                  const mins = Math.max(0, Math.round((Date.now() - new Date(n.note_created_at).getTime()) / 60000))
-                  const ago = mins < 1 ? t("clubPage.justNow") : mins < 60 ? t("clubPage.minAgo").replace("{n}", String(mins)) : t("clubPage.hoursAgo").replace("{n}", String(Math.round(mins / 60)))
-                  return (
-                    <blockquote key={i} className="rounded-ctl border border-white/10 bg-night/40 p-4">
-                      <p className="text-sm leading-relaxed text-ink">“{n.note}”</p>
-                      <footer className="mt-2 text-xs text-zinc-400">
-                        {t("clubPage.noteFromDoor")} · {ago}
-                      </footer>
-                    </blockquote>
-                  )
-                })}
+            {liveNotes.length > 0 && !notesHidden && (
+              <div className={vibe ? "mt-4" : ""}>
+                <div className="flex items-center justify-end">
+                  <button
+                    onClick={() => setNotesHidden(true)}
+                    aria-label={t("clubPage.notesHide")}
+                    className="-m-1.5 rounded-full p-1.5 text-zinc-500 transition hover:bg-white/5 hover:text-ink"
+                  >
+                    <Icon name="close" className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className={`grid gap-3 sm:grid-cols-2 ${liveNotes.length > 4 ? "max-h-[420px] overflow-y-auto pr-1" : ""}`}>
+                  {liveNotes.map((n) => {
+                    const mins = Math.max(0, Math.round((Date.now() - new Date(n.note_created_at).getTime()) / 60000))
+                    const ago = mins < 1 ? t("clubPage.justNow") : mins < 60 ? t("clubPage.minAgo").replace("{n}", String(mins)) : t("clubPage.hoursAgo").replace("{n}", String(Math.round(mins / 60)))
+                    return (
+                      <blockquote key={n.id} className="rounded-ctl border border-white/10 bg-night/40 p-4">
+                        <p className="text-sm leading-relaxed text-ink">“{n.note}”</p>
+                        <footer className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs text-zinc-400">
+                            {t("clubPage.noteFromDoor")} · {ago}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleNoteVote(n.id, 1)}
+                              aria-label={t("clubPage.noteUpvote")}
+                              className={`flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition ${
+                                n.myVote === 1 ? "border-open/50 bg-open/15 text-open" : "border-white/10 text-zinc-400 hover:text-ink"
+                              }`}
+                            >
+                              <Icon name="thumbsUp" className="h-3.5 w-3.5" />
+                              {n.upvotes > 0 && n.upvotes}
+                            </button>
+                            <button
+                              onClick={() => handleNoteVote(n.id, -1)}
+                              aria-label={t("clubPage.noteDownvote")}
+                              className={`flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition ${
+                                n.myVote === -1 ? "border-red-500/50 bg-red-500/15 text-red-400" : "border-white/10 text-zinc-400 hover:text-ink"
+                              }`}
+                            >
+                              <Icon name="thumbsDown" className="h-3.5 w-3.5" />
+                              {n.downvotes > 0 && n.downvotes}
+                            </button>
+                            {n.reported ? (
+                              <span className="text-[11px] text-zinc-500">{t("clubPage.noteReportedShort")}</span>
+                            ) : (
+                              <button
+                                onClick={() => handleNoteReport(n.id)}
+                                aria-label={t("clubPage.noteReport")}
+                                className="rounded-full border border-white/10 p-1.5 text-zinc-500 transition hover:border-red-500/40 hover:text-red-400"
+                              >
+                                <Icon name="flag" className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </span>
+                        </footer>
+                      </blockquote>
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>

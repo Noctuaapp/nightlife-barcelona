@@ -263,6 +263,10 @@ export default function CheckInButton({ clubId, latitude, longitude, variant = "
               {savingNote ? "..." : t("checkin.notePublish")}
             </button>
           </div>
+          {/* Recordatorio de buen uso: la nota la va a leer cualquiera que mire la ficha del club
+              en las próximas horas, así que conviene dejar claro que hay normas y que se puede
+              denunciar — antes no había ningún aviso de este tipo. */}
+          <p className="mt-2 text-[11px] leading-snug text-zinc-500">{t("checkin.noteRespect")}</p>
         </div>
       )}
       {checkedInToday && noteSaved && (

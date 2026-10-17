@@ -1,8 +1,43 @@
+import { useId } from "react"
+
 // Noc, el búho de Noctua. SVG propio (sin imágenes externas) con varios estados de ánimo.
 export type OwlMood = "happy" | "wink" | "sleepy" | "party" | "wow"
 
-export default function NocOwl({ size = 64, mood = "happy", className = "" }: { size?: number; mood?: OwlMood; className?: string }) {
+// Oscurece un color hex un poco, para el degradado de la barriga (igual que el morado de
+// siempre tenía un tono claro y uno oscuro). Si el valor no es un hex válido, lo deja tal cual.
+function darken(hex: string, amount: number): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex)
+  if (!m) return hex
+  const n = parseInt(m[1], 16)
+  const r = Math.max(0, ((n >> 16) & 255) - amount)
+  const g = Math.max(0, ((n >> 8) & 255) - amount)
+  const b = Math.max(0, (n & 255) - amount)
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`
+}
+
+// levelColor: color del nivel actual (LEVELS.color en lib/xp.ts) para que Noc cambie de Bronce a
+// Élite — el cuerpo usa ese color, y orejas/alas una versión oscurecida del mismo (darken() no
+// baja de 0, así que un color ya oscuro como el de Élite simplemente se queda cerca del negro en
+// vez de dar números negativos). Sin levelColor (login, invitar...) se queda el morado de siempre.
+export default function NocOwl({
+  size = 64,
+  mood = "happy",
+  className = "",
+  levelColor,
+}: {
+  size?: number
+  mood?: OwlMood
+  className?: string
+  levelColor?: string
+}) {
   const pupilR = mood === "wow" ? 6.5 : 4.5
+  const bodyTop = levelColor || "#8b5cf6"
+  const bodyBottom = levelColor ? darken(levelColor, 40) : "#5b21b6"
+  const accent = levelColor ? darken(levelColor, 20) : "#6d28d9"
+  const wing = levelColor ? darken(levelColor, 55) : "#4c1d95"
+  // Id único por instancia: con varios Noc a la vez en pantalla (p. ej. de niveles distintos),
+  // un id de gradiente fijo compartido haría que todos usaran el color del último def pintado.
+  const gradientId = `noc-body-${useId()}`
   return (
     <svg
       viewBox="0 0 120 120"
@@ -14,23 +49,23 @@ export default function NocOwl({ size = 64, mood = "happy", className = "" }: { 
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <linearGradient id="noc-body" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#8b5cf6" />
-          <stop offset="100%" stopColor="#5b21b6" />
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={bodyTop} />
+          <stop offset="100%" stopColor={bodyBottom} />
         </linearGradient>
       </defs>
 
       {/* orejas */}
-      <path d="M28 44 L22 12 L50 32 Z" fill="#6d28d9" />
-      <path d="M92 44 L98 12 L70 32 Z" fill="#6d28d9" />
+      <path d="M28 44 L22 12 L50 32 Z" fill={accent} />
+      <path d="M92 44 L98 12 L70 32 Z" fill={accent} />
 
       {/* cuerpo y barriga */}
-      <ellipse cx="60" cy="70" rx="40" ry="44" fill="url(#noc-body)" />
+      <ellipse cx="60" cy="70" rx="40" ry="44" fill={`url(#${gradientId})`} />
       <ellipse cx="60" cy="86" rx="22" ry="24" fill="#c4b5fd" opacity="0.35" />
 
       {/* alas */}
-      <path d="M21 72 Q12 96 34 108 Q29 88 32 76 Z" fill="#4c1d95" />
-      <path d="M99 72 Q108 96 86 108 Q91 88 88 76 Z" fill="#4c1d95" />
+      <path d="M21 72 Q12 96 34 108 Q29 88 32 76 Z" fill={wing} />
+      <path d="M99 72 Q108 96 86 108 Q91 88 88 76 Z" fill={wing} />
 
       {/* ojos */}
       <circle cx="44" cy="58" r="16" fill="#fff" />
@@ -50,8 +85,8 @@ export default function NocOwl({ size = 64, mood = "happy", className = "" }: { 
       {/* párpados si tiene sueño */}
       {mood === "sleepy" && (
         <>
-          <path d="M28 58 A16 16 0 0 1 60 58 Z" fill="#6d28d9" />
-          <path d="M60 58 A16 16 0 0 1 92 58 Z" fill="#6d28d9" />
+          <path d="M28 58 A16 16 0 0 1 60 58 Z" fill={accent} />
+          <path d="M60 58 A16 16 0 0 1 92 58 Z" fill={accent} />
         </>
       )}
 

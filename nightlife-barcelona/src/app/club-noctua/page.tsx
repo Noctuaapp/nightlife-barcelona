@@ -3,11 +3,14 @@
 import { useEffect, useState } from "react"
 import { useLanguage } from "../../context/LanguageContext"
 import { supabase } from "../../lib/supabase"
-import { LEVELS, getLevelInfo } from "../../lib/xp"
+import { LEVELS, getLevelStatus } from "../../lib/xp"
 import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"
 import BottomNav from "@/components/layout/BottomNav"
 import BadgesAndChallenges from "@/components/gamification/BadgesAndChallenges"
+import NocOwl from "@/components/mascot/NocOwl"
+import { ADMIN_EMAIL } from "../../lib/admin"
+import { toDateLocale } from "../../lib/dateLocale"
 import { Compass, Crown, Flame } from "lucide-react"
 
 // Ventajas de cada nivel (textos en clubNoctua.*). Solo la insignia de perfil está activa de
@@ -33,16 +36,34 @@ function badgeTier(count: number): { key: string; icon: typeof Compass } {
 }
 
 export default function ClubNoctuaPage() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const [xp, setXp] = useState<number | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [levelKey, setLevelKey] = useState<string | null>(null)
+  const [levelSince, setLevelSince] = useState<string | null>(null)
   const [neighborhoodBadges, setNeighborhoodBadges] = useState<NeighborhoodBadge[]>([])
 
   useEffect(() => {
     const load = async () => {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) return
+      setIsAdmin(userData.user.email === ADMIN_EMAIL)
       const { data } = await supabase.from("profiles").select("xp").eq("id", userData.user.id).maybeSingle()
       setXp(data?.xp ?? 0)
+
+      // Aparte y a propósito: si level_key/level_since todavía no existen (antes de ejecutar
+      // supabase/9_niveles_y_moderacion.sql), esto falla solo sin tumbar el resto de la página.
+      try {
+        const { data: levelData, error: levelError } = await supabase
+          .from("profiles")
+          .select("level_key, level_since")
+          .eq("id", userData.user.id)
+          .maybeSingle()
+        if (!levelError && levelData) {
+          setLevelKey(levelData.level_key || null)
+          setLevelSince(levelData.level_since || null)
+        }
+      } catch {}
 
       const { data: checkins } = await supabase
         .from("club_checkins")
@@ -68,17 +89,30 @@ export default function ClubNoctuaPage() {
     load()
   }, [])
 
-  const currentKey = xp !== null ? getLevelInfo(xp).key : null
+  const status = xp !== null
+    ? isAdmin
+      ? { current: LEVELS[LEVELS.length - 1], next: null, xpToNext: null, progressPct: 100, unlocksAt: null }
+      : getLevelStatus(xp, levelKey, levelSince)
+    : null
+  const currentKey = status?.current.key ?? null
 
   return (
     <div className="flex min-h-screen flex-col bg-night text-ink">
       <Header />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-16 pt-8 sm:pt-12">
         <div className="mb-10">
-          <h1 className="font-display text-[2.1rem] leading-[1.06] sm:text-5xl">Club Noctua</h1>
+          <div className="flex items-center gap-4">
+            {status && <NocOwl size={56} levelColor={status.current.color} mood="wink" />}
+            <h1 className="font-display text-[2.1rem] leading-[1.06] sm:text-5xl">Club Noctua</h1>
+          </div>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-zinc-300">{t("clubNoctua.intro")}</p>
           {xp !== null && (
             <p className="mt-3 text-sm text-zinc-400">{t("clubNoctua.youHave").replace("{n}", String(xp))}</p>
+          )}
+          {status?.unlocksAt && (
+            <p className="mt-2 text-sm font-semibold text-brand-soft">
+              {t("levels.waitingUntil").replace("{date}", status.unlocksAt.toLocaleDateString(toDateLocale(locale), { day: "numeric", month: "short" }))}
+            </p>
           )}
         </div>
 

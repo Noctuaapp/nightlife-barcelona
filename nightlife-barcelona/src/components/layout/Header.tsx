@@ -6,9 +6,10 @@ import Image from "next/image"
 import { useRouter, usePathname } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
-import { awardXp, XP_AMOUNTS, currentIsoWeek, madridDateStr, dayBefore } from "../../lib/xp"
+import { awardXp, XP_AMOUNTS, currentIsoWeek, madridDateStr, dayBefore, checkLevelUp } from "../../lib/xp"
 import { ADMIN_EMAIL } from "../../lib/admin"
 import { logError } from "../../lib/log"
+import LevelUpModal from "../mascot/LevelUpModal"
 import { Bell, ChevronLeft, User, Map, Sparkles, Heart, MessageCircle, ShieldCheck, Globe, X, Check } from "lucide-react"
 
 const cities = [
@@ -28,7 +29,7 @@ type NotificationRow = {
   id: number
   title: string
   body: string
-  type: "reply" | "broadcast" | "favorite_reminder" | "admin_message" | "xp_streak"
+  type: "reply" | "broadcast" | "favorite_reminder" | "admin_message" | "xp_streak" | "level_up"
   read: boolean
   created_at: string | null
   related_message_id: number | null
@@ -64,6 +65,9 @@ const WEATHER_TTL_MS = 30 * 60 * 1000
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  // Nivel al que se acaba de subir, para disparar el modal de celebración — null el resto del
+  // tiempo. Ver checkNewLevel más abajo y supabase/9_niveles_y_moderacion.sql.
+  const [newLevel, setNewLevel] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
   // Barcelona es la única ciudad por ahora (se usa para el tiempo del menú).
@@ -205,6 +209,23 @@ export default function Header() {
       }
     }
 
+    // Detecta si el XP y el tiempo transcurrido ya alcanzan para subir de nivel (recompute_level
+    // en Postgres) y, si es así, dispara el modal de celebración + una notificación — igual que
+    // las dos rachas, una sola comprobación por pestaña. Antes de ejecutar el SQL, checkLevelUp
+    // devuelve null sin más (la función de Postgres aún no existe), así que no rompe nada.
+    const checkNewLevel = async (userId: string) => {
+      if (!oncePerSession(`noctua_level_checked_${userId}`)) return
+      const leveledTo = await checkLevelUp(supabase, userId)
+      if (!leveledTo) return
+      setNewLevel(leveledTo)
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        title: `🎉 ${t("levels.levelUpTitle")}`,
+        body: t("header.levelUpBody").replace("{level}", t(`levels.${leveledTo}`)),
+        type: "level_up",
+      })
+    }
+
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession()
       setIsLoggedIn(!!data.session)
@@ -214,6 +235,7 @@ export default function Header() {
         checkTermsAccepted(data.session.user.id)
         checkWeeklyStreak(data.session.user.id)
         checkDailyStreak(data.session.user.id)
+        checkNewLevel(data.session.user.id)
       }
     }
     checkSession()
@@ -529,6 +551,7 @@ export default function Header() {
 
   return (
     <>
+      <LevelUpModal levelKey={newLevel} onDone={() => setNewLevel(null)} />
       {/* Header: la noche de Barcelona en azul tinta (no negro plano), el búho iluminado como un
           neón con un halo detrás y una línea de luz abajo, como la que se escapa bajo la puerta de
           un club. Los colores salen del propio logo (azul eléctrico y cian) y del violeta/magenta

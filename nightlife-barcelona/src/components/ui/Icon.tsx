@@ -42,6 +42,8 @@ export default function Icon({ name, className = "h-5 w-5", style }: { name: str
     case "sparkle": return <svg {...p}><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /></svg>
     case "shield": return <svg {...p}><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z" /></svg>
     case "chat": return <svg {...p}><rect x="3" y="4" width="18" height="12" rx="3" /><path d="M8 16v4l4-4" /></svg>
+    case "thumbsUp": return <svg {...p}><path d="M7 11v9H4v-9zM7 11l3-7a2 2 0 012 2v4h5a2 2 0 012 2.3l-1.3 6A2 2 0 0115.7 20H7" /></svg>
+    case "thumbsDown": return <svg {...p}><path d="M17 13V4h3v9zM17 13l-3 7a2 2 0 01-2-2v-4H7a2 2 0 01-2-2.3l1.3-6A2 2 0 018.3 4H17" /></svg>
     default: return null
   }
 }
