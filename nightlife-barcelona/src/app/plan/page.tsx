@@ -323,11 +323,11 @@ export default function PlanPage() {
       }
       const topMusic = top(MUSIC_OPTIONS, (c, opt) => styleMatches(c.music, opt))
       const topVenue = top(VENUE_TYPE_OPTIONS.map((v) => v.value), (c, opt) => c.venue_type === opt)
-      const topArea = top(areaOptions, (c, opt) => c.neighborhood === opt)
-      if (topMusic.length === 0 && topVenue.length === 0 && topArea.length === 0) return
+      // El barrio ya no se preselecciona automáticamente (salía siempre Eixample por ser el
+      // barrio con más locales/visitas) — el usuario elige sus barrios a mano.
+      if (topMusic.length === 0 && topVenue.length === 0) return
       if (topMusic.length > 0) setMusicSet(new Set(topMusic))
       if (topVenue.length > 0) setVenueTypeSet(new Set(topVenue))
-      if (topArea.length > 0) setAreaSet(new Set(topArea))
       setAutoDetected(true)
     }
     detect()

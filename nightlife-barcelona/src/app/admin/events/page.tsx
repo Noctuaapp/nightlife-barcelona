@@ -470,16 +470,28 @@ export default function AdminEventsPage() {
         <section className="mx-auto max-w-7xl">
           <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
             <div className="grid gap-4 lg:grid-cols-3">
-              {Object.keys(emptyEvent).map((key) => (
-                <input
-                  key={key}
-                  value={(newEvent as any)[key]}
-                  onChange={(e) => setNewEvent({ ...newEvent, [key]: e.target.value })}
-                  placeholder={FIELD_LABELS[key] || key}
-                  aria-label={FIELD_LABELS[key] || key}
-                  className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
-                />
-              ))}
+              {Object.keys(emptyEvent).map((key) =>
+                key === "description" ? (
+                  <textarea
+                    key={key}
+                    value={(newEvent as any)[key]}
+                    onChange={(e) => setNewEvent({ ...newEvent, [key]: e.target.value })}
+                    placeholder={FIELD_LABELS[key] || key}
+                    aria-label={FIELD_LABELS[key] || key}
+                    rows={5}
+                    className="lg:col-span-3 resize-y rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                  />
+                ) : (
+                  <input
+                    key={key}
+                    value={(newEvent as any)[key]}
+                    onChange={(e) => setNewEvent({ ...newEvent, [key]: e.target.value })}
+                    placeholder={FIELD_LABELS[key] || key}
+                    aria-label={FIELD_LABELS[key] || key}
+                    className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                  />
+                )
+              )}
 
               <div className="lg:col-span-3">
                 <CoordsField
@@ -550,16 +562,28 @@ export default function AdminEventsPage() {
                 <div key={event.id} id={`event-${event.id}`} className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                   {editingId === event.id ? (
                     <div className="grid gap-4 lg:grid-cols-3">
-                      {Object.keys(emptyEvent).map((key) => (
-                        <input
-                          key={key}
-                          value={(editEvent as any)[key]}
-                          onChange={(e) => setEditEvent({ ...editEvent, [key]: e.target.value })}
-                          placeholder={FIELD_LABELS[key] || key}
-                          aria-label={FIELD_LABELS[key] || key}
-                          className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
-                        />
-                      ))}
+                      {Object.keys(emptyEvent).map((key) =>
+                        key === "description" ? (
+                          <textarea
+                            key={key}
+                            value={(editEvent as any)[key]}
+                            onChange={(e) => setEditEvent({ ...editEvent, [key]: e.target.value })}
+                            placeholder={FIELD_LABELS[key] || key}
+                            aria-label={FIELD_LABELS[key] || key}
+                            rows={5}
+                            className="lg:col-span-3 resize-y rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                          />
+                        ) : (
+                          <input
+                            key={key}
+                            value={(editEvent as any)[key]}
+                            onChange={(e) => setEditEvent({ ...editEvent, [key]: e.target.value })}
+                            placeholder={FIELD_LABELS[key] || key}
+                            aria-label={FIELD_LABELS[key] || key}
+                            className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
+                          />
+                        )
+                      )}
 
                       <div className="lg:col-span-3">
                         <CoordsField

@@ -43,6 +43,7 @@ type Club = {
   manual_photos?: boolean | null
   latitude?: number | null
   longitude?: number | null
+  description?: string | null
 }
 
 // Antes este desplegable no existía en ningún sitio del panel de admin: la página de Clubs se
@@ -85,6 +86,7 @@ type ClubFormData = {
   gallery: string[]
   latitude: string
   longitude: string
+  description: string
 }
 
 const emptyForm: ClubFormData = {
@@ -119,6 +121,7 @@ const emptyForm: ClubFormData = {
   gallery: [],
   latitude: "",
   longitude: "",
+  description: "",
 }
 
 const clubToForm = (club: Club): ClubFormData => ({
@@ -153,6 +156,7 @@ const clubToForm = (club: Club): ClubFormData => ({
   gallery: Array.isArray(club.gallery) ? club.gallery : [],
   latitude: coordToInput(club.latitude),
   longitude: coordToInput(club.longitude),
+  description: club.description || "",
 })
 
 export default function AdminPage() {
@@ -244,6 +248,7 @@ export default function AdminPage() {
     discount_info: form.discount_info.trim(),
     free_entry_info: form.free_entry_info.trim(),
     gallery: form.gallery.length > 0 ? form.gallery : null,
+    description: form.description.trim() || null,
     ...coordsPayload(form.latitude, form.longitude),
     // En cuanto guardas el formulario con alguna foto en la galería (ya sea porque las trajo el
     // pipeline de Google y las has dejado, o porque has quitado/subido alguna a mano), este club
@@ -447,6 +452,16 @@ export default function AdminPage() {
       <div>
         <label className={labelClass}>Horario</label>
         <input value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} placeholder="23:55 - 06:00" className={inputClass} />
+      </div>
+      <div className="md:col-span-2">
+        <label className={labelClass}>Descripción</label>
+        <textarea
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          placeholder="Cuenta cómo es el local, el ambiente, qué lo hace especial... (sin límite de palabras)"
+          rows={5}
+          className={`${inputClass} resize-y`}
+        />
       </div>
       <div className="md:col-span-2">
         <label className={labelClass}>Imagen</label>
