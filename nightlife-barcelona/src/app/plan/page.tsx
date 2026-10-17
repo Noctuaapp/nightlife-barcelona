@@ -733,20 +733,24 @@ export default function PlanPage() {
     <>
       <Header />
       <main className="relative min-h-screen bg-night pb-40 text-ink">
-        {/* Antes era título + subtítulo sobre negro liso, sin ningún elemento visual — la queja
-            de que se sentía "oscuro y triste" para una app de ocio nocturno. El resplandor
-            violeta (estático, un solo color de marca, nada de manchas animadas) rompe el vacío,
-            y el icono junto al título da una referencia de fiesta inmediata sin depender de
-            fotos que en este punto del flujo todavía no hay. */}
-        <section className="relative mx-auto max-w-2xl overflow-hidden px-4 pb-8 pt-10 sm:pt-14">
-          <div aria-hidden="true" className="pointer-events-none absolute -top-20 left-10 h-64 w-64 rounded-full bg-brand/20 blur-[90px]" />
+        {/* El primer intento (un resplandor pequeño solo en la cabecera) era tan sutil que
+            apenas se notaba, y al hacer scroll por los pasos desaparecía y volvía a quedar todo
+            negro liso. Ahora el ambiente violeta es fijo a la pantalla (sigue ahí en todas las
+            fases: formulario, cargando, resultado) y mucho más intenso — sigue siendo un único
+            color de marca, estático, sin manchas animadas, pero ya se nota. */}
+        <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+          <div className="absolute -left-24 -top-32 h-[26rem] w-[26rem] rounded-full bg-brand/25 blur-[110px]" />
+          <div className="absolute -right-32 top-1/3 h-[22rem] w-[22rem] rounded-full bg-brand-soft/10 blur-[120px]" />
+        </div>
+
+        <section className="relative mx-auto max-w-2xl px-4 pb-8 pt-10 sm:pt-14">
           <div className="relative flex items-start gap-4">
-            <span className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-brand/30 bg-brand/10 text-brand-soft sm:h-16 sm:w-16">
-              <Disc3 size={24} className="sm:hidden" />
+            <span className="relative mt-1 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-brand/40 bg-brand/15 text-brand-soft shadow-[0_0_30px_rgba(124,92,255,0.35)] sm:h-16 sm:w-16">
+              <Disc3 size={26} className="sm:hidden" />
               <Disc3 size={30} className="hidden sm:block" />
             </span>
             <div>
-              <h1 className="font-display text-[2.1rem] leading-[1.06] sm:text-6xl">{t("nav.plan")}</h1>
+              <h1 className="neon-brand font-display text-[2.1rem] leading-[1.06] sm:text-6xl">{t("nav.plan")}</h1>
               <p className="mt-3 max-w-xl text-base leading-relaxed text-zinc-300">{t("planPage.subtitle")}</p>
             </div>
           </div>

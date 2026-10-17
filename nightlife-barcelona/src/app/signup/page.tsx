@@ -32,6 +32,31 @@ function isDisposableEmail(value: string): boolean {
   return !!domain && DISPOSABLE_EMAIL_DOMAINS.has(domain)
 }
 
+// Comprobar contraseñas filtradas de verdad (contra una lista real, tipo HaveIBeenPwned) es una
+// función de pago en Supabase ("Leaked Password Protection", solo a partir del plan Pro). Como
+// alternativa gratuita, se bloquean aquí las contraseñas más obvias/repetidas — no es lo mismo,
+// pero corta el caso más burdo (y más común) sin coste.
+const COMMON_WEAK_PASSWORDS = new Set([
+  "12345678", "123456789", "1234567890", "password", "password1", "password123",
+  "qwerty123", "qwertyuiop", "11111111", "123123123", "123123123a", "abc123456",
+  "iloveyou1", "admin1234", "letmein123", "welcome123", "monkey123", "football1",
+  "123456789a", "87654321", "00000000", "zxcvbnm123", "qwerty1234", "1q2w3e4r5t",
+  "abcd1234", "trustno1", "sunshine1", "princess1", "dragon123", "superman1",
+  "noctua123", "barcelona1",
+])
+
+function isWeakPassword(value: string, email: string, username: string): boolean {
+  if (value.length < 8) return true
+  const lower = value.toLowerCase()
+  if (COMMON_WEAK_PASSWORDS.has(lower)) return true
+  if (/^\d+$/.test(value)) return true // solo números (12345678, 00000000...)
+  if (new Set(lower).size <= 2) return true // aaaaaaaa, abababab...
+  const emailLocal = email.split("@")[0]?.toLowerCase().trim()
+  if (emailLocal && lower === emailLocal) return true
+  if (username && lower === username.toLowerCase().trim()) return true
+  return false
+}
+
 export default function SignupPage() {
   const { t, locale } = useLanguage()
   const [email, setEmail] = useState("")
@@ -60,6 +85,10 @@ export default function SignupPage() {
     }
     if (isDisposableEmail(email)) {
       setError("No se admiten correos temporales ni desechables. Usa un correo real al que tengas acceso.")
+      return
+    }
+    if (isWeakPassword(password, email, username)) {
+      setError("Esa contraseña es demasiado fácil de adivinar (o está entre las más usadas/filtradas). Usa una distinta, de al menos 8 caracteres, que no sea solo números ni tu usuario o correo.")
       return
     }
     if (!birthDate) {

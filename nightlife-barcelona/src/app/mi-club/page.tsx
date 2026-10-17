@@ -279,13 +279,19 @@ export default function MiClubPage() {
 
   const uploadEventImage = async (file: File) => {
     setUploadingEventImage(true)
-    const fileExt = file.name.split(".").pop()
-    const fileName = `owner-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
-    const { error } = await supabase.storage.from("event-photos").upload(fileName, file)
-    setUploadingEventImage(false)
-    if (error) { fail("ownerPortal.errUpload", error.message); return null }
-    const { data } = supabase.storage.from("event-photos").getPublicUrl(fileName)
-    return data.publicUrl
+    try {
+      const fileExt = file.name.split(".").pop()
+      const fileName = `owner-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+      const { error } = await supabase.storage.from("event-photos").upload(fileName, file)
+      if (error) { fail("ownerPortal.errUpload", error.message); return null }
+      const { data } = supabase.storage.from("event-photos").getPublicUrl(fileName)
+      return data.publicUrl
+    } catch (err) {
+      fail("ownerPortal.errUpload", err instanceof Error ? err.message : String(err))
+      return null
+    } finally {
+      setUploadingEventImage(false)
+    }
   }
 
   const handleNewEventImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -388,38 +394,60 @@ export default function MiClubPage() {
   const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !form) return
+    const input = e.target
     setUploadingImage(true)
-    const fileExt = file.name.split(".").pop()
-    const fileName = `club-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
-    const { error: uploadError } = await supabase.storage.from("club-images").upload(fileName, file)
-    if (uploadError) {
-      fail("ownerPortal.errUpload", uploadError.message)
+    // Antes, si upload() lanzaba una excepción (red caída, CORS...) en vez de devolver un
+    // error normal, no había try/catch que lo recogiera: la función se paraba a medias,
+    // uploadingImage se quedaba en true para siempre y el botón quedaba deshabilitado sin
+    // ningún aviso — "como si no reaccionase" en todos los intentos siguientes. Ahora cualquier
+    // fallo se muestra y el botón siempre se reactiva.
+    try {
+      const fileExt = file.name.split(".").pop()
+      const fileName = `club-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+      const { error: uploadError } = await supabase.storage.from("club-images").upload(fileName, file)
+      if (uploadError) {
+        fail("ownerPortal.errUpload", uploadError.message)
+        return
+      }
+      const { data } = supabase.storage.from("club-images").getPublicUrl(fileName)
+      setForm({ ...form, image: data.publicUrl })
+    } catch (err) {
+      fail("ownerPortal.errUpload", err instanceof Error ? err.message : String(err))
+    } finally {
       setUploadingImage(false)
-      e.target.value = ""
-      return
+      input.value = ""
     }
-    const { data } = supabase.storage.from("club-images").getPublicUrl(fileName)
-    setForm({ ...form, image: data.publicUrl })
-    setUploadingImage(false)
-    e.target.value = ""
   }
 
   const handleGalleryUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0 || !form) return
+    const input = e.target
     setUploadingGallery(true)
     const urls: string[] = []
-    for (const file of Array.from(files)) {
-      const fileExt = file.name.split(".").pop()
-      const fileName = `owner/manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
-      const { error } = await supabase.storage.from("club-photos").upload(fileName, file)
-      if (error) continue
-      const { data } = supabase.storage.from("club-photos").getPublicUrl(fileName)
-      urls.push(data.publicUrl)
+    let firstError: string | null = null
+    // Antes un fallo aquí se tragaba en silencio (continue, sin aviso) y además una excepción
+    // no controlada habría dejado uploadingGallery en true para siempre.
+    try {
+      for (const file of Array.from(files)) {
+        const fileExt = file.name.split(".").pop()
+        const fileName = `owner/manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+        const { error } = await supabase.storage.from("club-photos").upload(fileName, file)
+        if (error) {
+          if (!firstError) firstError = error.message
+          continue
+        }
+        const { data } = supabase.storage.from("club-photos").getPublicUrl(fileName)
+        urls.push(data.publicUrl)
+      }
+    } catch (err) {
+      if (!firstError) firstError = err instanceof Error ? err.message : String(err)
+    } finally {
+      setUploadingGallery(false)
+      if (urls.length > 0) setForm({ ...form, gallery: [...form.gallery, ...urls] })
+      if (firstError) fail("ownerPortal.errUpload", firstError)
+      input.value = ""
     }
-    setUploadingGallery(false)
-    if (urls.length > 0) setForm({ ...form, gallery: [...form.gallery, ...urls] })
-    e.target.value = ""
   }
 
   const removeGalleryPhoto = (url: string) => {

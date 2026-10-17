@@ -146,6 +146,13 @@ body {
   animation: pride-burst 1.6s ease-out both;
 }
 
+/* Brillo tipo neón en el titular de "Planifica tu noche" — un único color de marca, estático
+   (nada de parpadeo), para dar un poco de energía de fiesta a un titular que si no queda
+   plano sobre fondo negro. */
+.neon-brand {
+  text-shadow: 0 0 18px rgba(124, 92, 255, 0.55), 0 0 46px rgba(124, 92, 255, 0.25);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;

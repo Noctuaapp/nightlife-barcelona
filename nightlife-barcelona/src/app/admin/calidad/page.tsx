@@ -5,7 +5,6 @@ import Link from "next/link"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { createSlug } from "../../../lib/slug"
-import { ADMIN_EMAIL } from "../../../lib/admin"
 
 // Calidad de las fichas de clubs. La auditoría de octubre 2026 detectó que lo que más resta
 // credibilidad (y lo que más frena la indexación en Google) son fichas con datos por defecto o
@@ -48,7 +47,7 @@ export default function AdminQualityPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user.email !== ADMIN_EMAIL) {
+      if (data.session?.user.email !== "info@noctuaapp.com") {
         window.location.href = "/login"
         return
       }
@@ -85,7 +84,14 @@ export default function AdminQualityPage() {
     return { price: count("price"), hours: count("hours") }
   }, [clubs])
 
-  const rows = useMemo(() => {
+  // Antes "rows" ya salía filtrado por el botón de categoría seleccionado, y "counts" se
+  // calculaba a partir de "rows" — es decir, al pulsar "Música" los números de las DEMÁS
+  // categorías (Descripción, Foto, Precio...) se recalculaban solo sobre las fichas que ya
+  // tenían problema de música, no sobre todas. Por eso parecía que "los números cambiaban
+  // solos" al cambiar de botón. Ahora "allRows" (sin filtrar por categoría) es la base tanto
+  // para los contadores como para la lista filtrada, así los números de cada botón siempre
+  // reflejan el total real, se seleccione lo que se seleccione.
+  const allRows = useMemo(() => {
     return clubs
       .filter((c) => !onlyVisible || !c.hidden)
       .map((c) => {
@@ -107,15 +113,20 @@ export default function AdminQualityPage() {
         if (!c.neighborhood) issues.push({ key: "hood", label: "Sin barrio", weight: 1 })
         return { club: c, issues, score: issues.reduce((a, i) => a + i.weight, 0) }
       })
-      .filter((r) => r.issues.length > 0 && (!filter || r.issues.some((i) => i.key.startsWith(filter))))
+      .filter((r) => r.issues.length > 0)
+  }, [clubs, onlyVisible, repeated])
+
+  const rows = useMemo(() => {
+    return allRows
+      .filter((r) => !filter || r.issues.some((i) => i.key.startsWith(filter)))
       .sort((a, b) => b.score - a.score)
-  }, [clubs, onlyVisible, filter, repeated])
+  }, [allRows, filter])
 
   const counts = useMemo(() => {
     const m = new Map<string, number>()
-    for (const r of rows) for (const i of r.issues) m.set(i.key.split("_")[0], (m.get(i.key.split("_")[0]) || 0) + 1)
+    for (const r of allRows) for (const i of r.issues) m.set(i.key.split("_")[0], (m.get(i.key.split("_")[0]) || 0) + 1)
     return m
-  }, [rows])
+  }, [allRows])
 
   const FILTERS = [
     { key: "", label: "Todos" },
