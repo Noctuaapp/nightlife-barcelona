@@ -485,24 +485,20 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                 <ClubCard
                   id={club.id}
                   name={club.name}
+                  slug={club.slug}
                   music={club.music}
                   area={club.neighborhood}
                   price={club.price}
                   hours={club.hours}
+                  openDays={club.open_days}
                   image={club.image}
                   rating={club.rating}
-                  people={club.people}
-                  badges={club.badges}
-                  terrace={club.terrace}
-                  vip={club.vip_tables}
-                  smokingArea={club.smoking_area}
-                  tableBooking={club.table_booking}
-                  dresscode={club.dresscode}
                   lgtbi_friendly={club.lgtbi_friendly}
                   verified={club.verified}
-                  hasFoosball={club.has_foosball}
                   discountInfo={club.discount_info}
                   freeEntryInfo={club.free_entry_info}
+                  liveStatus={club.live_status}
+                  liveStatusUpdatedAt={club.live_status_updated_at}
                 />
               </Reveal>
             ))

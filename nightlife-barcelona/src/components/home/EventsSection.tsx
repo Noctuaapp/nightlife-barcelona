@@ -30,6 +30,11 @@ type Event = {
   sold_out: boolean | null
   latitude: number | null
   longitude: number | null
+  // "event": fichas de /events (tabla events). "club_event": noches sueltas que publica un club
+  // desde /mi-club (tabla club_events, sin tabla de hidden ni coordenadas propias — por eso antes
+  // nunca aparecían aquí: esta sección solo miraba "events"). Determina a qué ruta enlaza la
+  // tarjeta y si se puede ver en el mapa (club_events no tiene lat/lng propia).
+  kind: "event" | "club_event"
 }
 
 export default function EventsSection() {
@@ -52,8 +57,28 @@ export default function EventsSection() {
 
   useEffect(() => {
     const fetchEvents = async () => {
-      const { data } = await supabase.from("events").select("*").eq("hidden", false).order("date", { ascending: true })
-      if (data) setEvents(data)
+      // "Qué está pasando" solo miraba la tabla events: las noches sueltas que publica cada club
+      // desde /mi-club (tabla club_events) nunca aparecían aquí aunque fueran justo lo que está
+      // pasando esta noche. club_events no tiene columna "hidden" (nada la filtra en ningún sitio
+      // del código) ni lat/lng propia, así que esas se añaden sin coordenadas: no entran en el
+      // filtro "Cerca" pero sí en el resto.
+      const [eventsRes, clubEventsRes] = await Promise.all([
+        supabase.from("events").select("*").eq("hidden", false).order("date", { ascending: true }),
+        supabase.from("club_events").select("*").order("date", { ascending: true }),
+      ])
+      const fromEvents: Event[] = (eventsRes.data || []).map((e) => ({ ...e, kind: "event" }))
+      const fromClubEvents: Event[] = (clubEventsRes.data || []).map((ce) => ({
+        ...ce,
+        latitude: null,
+        longitude: null,
+        kind: "club_event",
+      }))
+      const merged = [...fromEvents, ...fromClubEvents].sort((a, b) => {
+        if (!a.date) return 1
+        if (!b.date) return -1
+        return a.date.localeCompare(b.date)
+      })
+      setEvents(merged)
     }
     fetchEvents()
   }, [])
@@ -150,8 +175,12 @@ export default function EventsSection() {
         ) : (
           filteredEvents.map((event) => (
             <Link
-              href={`/event/${(event as Event & { slug?: string }).slug || createSlug(event.title)}`}
-              key={event.id}
+              href={
+                event.kind === "club_event"
+                  ? `/club-event/${event.id}`
+                  : `/event/${(event as Event & { slug?: string }).slug || createSlug(event.title)}`
+              }
+              key={`${event.kind}-${event.id}`}
               className="group block overflow-hidden rounded-card border border-white/10 bg-surface transition hover:border-white/25"
             >
               <div className="relative h-52 overflow-hidden">
@@ -179,16 +208,21 @@ export default function EventsSection() {
                 </p>
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <span className="text-sm font-semibold text-ink">{event.price || ""}</span>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      router.push(`/map?type=events&id=${event.id}`)
-                    }}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 hover:text-ink"
-                  >
-                    <Icon name="map" className="h-3.5 w-3.5" /> {t("homeEvents.onMap")}
-                  </button>
+                  {/* Las noches de club (club_events) no tienen coordenadas propias y /map no las
+                      soporta todavía, así que para esas se omite el botón en vez de llevar a un mapa
+                      que no las va a encontrar. */}
+                  {event.kind !== "club_event" && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        router.push(`/map?type=events&id=${event.id}`)
+                      }}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 hover:text-ink"
+                    >
+                      <Icon name="map" className="h-3.5 w-3.5" /> {t("homeEvents.onMap")}
+                    </button>
+                  )}
                 </div>
               </div>
             </Link>
