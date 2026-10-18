@@ -7,6 +7,7 @@ import AdminEditButton from "../../../components/admin/AdminEditButton"
 import ClubEventPageContent from "../../../components/nightlife/ClubEventPageContent"
 import { supabase } from "../../../lib/supabase"
 import { createSlug } from "../../../lib/slug"
+import { EVENT_IMAGE_FALLBACK, parsePriceEUR } from "../../../lib/structuredData"
 
 type ClubEventPageProps = {
   params: Promise<{ id: string }>
@@ -89,12 +90,18 @@ export default async function ClubEventPage({ params }: ClubEventPageProps) {
   const clubSlug = club?.slug || (clubEvent.club_name ? createSlug(clubEvent.club_name) : "")
   const clubName = club?.name || clubEvent.club_name || null
 
+  // clubEvent.price es texto libre ("15€", "Gratis"...) — Google exige un número limpio en el
+  // Offer. Antes el offer de esta página ni siquiera llevaba "price" (solo url y availability),
+  // así que Google lo marcaba como campo obligatorio ausente en cualquier noche con ticket_url.
+  const clubEventPrice = parsePriceEUR(clubEvent.price)
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Event",
     name: clubEvent.title,
     description: clubEvent.description || undefined,
-    image: clubEvent.image || club?.image || undefined,
+    // Nunca vacío: Google exige al menos una imagen para el resultado enriquecido de evento.
+    image: clubEvent.image || club?.image || EVENT_IMAGE_FALLBACK,
     url: `https://www.noctuaapp.com/club-event/${clubEvent.id}`,
     startDate: clubEvent.date ? `${clubEvent.date}${clubEvent.start_time && /^\d{1,2}:\d{2}$/.test(clubEvent.start_time) ? `T${clubEvent.start_time.padStart(5, "0")}` : ""}` : undefined,
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
@@ -111,10 +118,15 @@ export default async function ClubEventPage({ params }: ClubEventPageProps) {
       },
       ...(club?.latitude && club?.longitude ? { geo: { "@type": "GeoCoordinates", latitude: club.latitude, longitude: club.longitude } } : {}),
     },
-    ...(clubEvent.ticket_url
+    // Antes se incluía "offers" con url+availability pero SIN price — Google lo marca como campo
+    // obligatorio ausente. Ahora solo se declara el offer cuando hay un precio real que mandar;
+    // si no se puede sacar un número del texto, se omite "offers" entero (mejor que uno inválido).
+    ...(clubEvent.ticket_url && clubEventPrice !== null
       ? {
           offers: {
             "@type": "Offer",
+            price: clubEventPrice,
+            priceCurrency: "EUR",
             url: clubEvent.ticket_url,
             availability: clubEvent.sold_out ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
           },

@@ -478,7 +478,13 @@ export default function ProfilePage() {
       <main className="min-h-screen bg-night pb-40 text-ink">
         <section className="mx-auto max-w-3xl px-4 pt-8 sm:pt-12">
           <div className="flex items-center gap-4">
-            <label className="group relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center rounded-full" aria-label={t("profilePage.changePhoto")}>
+            {/* Ventaja propia de la app (no depende de ningún local): el aro del avatar lleva el
+                color de tu nivel, así se nota de un vistazo sin tener que entrar a mirarlo. */}
+            <label
+              className="group relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center rounded-full ring-[3px] ring-offset-2 ring-offset-night"
+              style={{ ["--tw-ring-color" as any]: level.current.color }}
+              aria-label={t("profilePage.changePhoto")}
+            >
               {avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={avatarUrl} alt="" className="h-20 w-20 rounded-full object-cover" />

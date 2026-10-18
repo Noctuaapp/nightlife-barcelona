@@ -7,6 +7,7 @@ import AdminEditButton from "../../../components/admin/AdminEditButton"
 import EventPageContent from "../../../components/nightlife/EventPageContent"
 import { supabase } from "../../../lib/supabase"
 import { findBySlug } from "../../../lib/slugLookup"
+import { EVENT_IMAGE_FALLBACK, parsePriceEUR } from "../../../lib/structuredData"
 
 // ISR: la ficha se genera la primera vez que alguien la pide y se sirve ya hecha durante 5 min
 // (antes se generaba de cero en cada visita, consultando la base de datos cada vez). Los cambios
@@ -77,12 +78,18 @@ export default async function EventPage({ params }: EventPageProps) {
     supabase.from("event_sessions").select("*").eq("event_id", event.id).order("date", { ascending: true }),
   ])
 
+  // event.price es texto libre que escribe el admin ("15€", "Gratis", "10-15€"...) — Google
+  // exige un número limpio en el Offer, así que se pasa por parsePriceEUR() (ver lib/structuredData).
+  // Si no se puede sacar un número, se omite "offers" entero en vez de mandar uno inválido.
+  const eventPrice = parsePriceEUR(event.price)
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Event",
     name: event.title,
     description: event.description || undefined,
-    image: event.image || undefined,
+    // Nunca vacío: Google exige al menos una imagen para el resultado enriquecido de evento.
+    image: event.image || EVENT_IMAGE_FALLBACK,
     url: `https://www.noctuaapp.com/event/${match.canonicalSlug}`,
     startDate: event.date || undefined,
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
@@ -102,11 +109,11 @@ export default async function EventPage({ params }: EventPageProps) {
         ? { geo: { "@type": "GeoCoordinates", latitude: event.latitude, longitude: event.longitude } }
         : {}),
     },
-    ...(event.price
+    ...(eventPrice !== null
       ? {
           offers: {
             "@type": "Offer",
-            price: event.price,
+            price: eventPrice,
             priceCurrency: "EUR",
             url: event.ticket_url || undefined,
             availability: event.sold_out ? "https://schema.org/SoldOut" : "https://schema.org/InStock",

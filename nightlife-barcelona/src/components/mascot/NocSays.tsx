@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import NocOwl, { OwlMood } from "./NocOwl"
 import { useLanguage } from "../../context/LanguageContext"
 import { madridClock } from "../../lib/clubHours"
+import { supabase } from "../../lib/supabase"
+import { getLevelStatus } from "../../lib/xp"
 
 // Frase de Noc según la hora y el día en Madrid. Se calcula tras montar (no en el servidor) para
 // no provocar un error de hidratación: la hora del servidor y la del navegador no coinciden.
@@ -68,13 +70,35 @@ export function useNocLine(): { line: string; mood: OwlMood } {
   return state
 }
 
+// Color del nivel de quien esté conectado, para que este Noc (el de la portada) también cambie de
+// color según el nivel — antes solo lo hacía en /perfil y /club-noctua. Sin sesión se queda en el
+// gris neutro por defecto de NocOwl.
+export function useOwnLevelColor(): string | undefined {
+  const [color, setColor] = useState<string | undefined>(undefined)
+  useEffect(() => {
+    let active = true
+    const load = async () => {
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) return
+      const { data: profile } = await supabase.from("profiles").select("xp, level_key, level_since").eq("id", userData.user.id).maybeSingle()
+      if (!active || !profile) return
+      const status = getLevelStatus(profile.xp || 0, profile.level_key || null, profile.level_since || null)
+      setColor(status.current.color)
+    }
+    load()
+    return () => { active = false }
+  }, [])
+  return color
+}
+
 // Globo de diálogo con Noc a la izquierda. Si todavía no hay frase (primer render) no pinta nada.
 export default function NocSays({ owlSize = 56, className = "" }: { owlSize?: number; className?: string }) {
   const { line, mood } = useNocLine()
+  const levelColor = useOwnLevelColor()
   if (!line) return null
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <NocOwl size={owlSize} mood={mood} className="shrink-0" />
+      <NocOwl size={owlSize} mood={mood} levelColor={levelColor} className="shrink-0" />
       <p className="rounded-card rounded-bl-sm border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm leading-snug text-zinc-200">{line}</p>
     </div>
   )

@@ -758,7 +758,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                   onClick={() => trackClick("instagram_click")}
                   className={`${secondaryBtn} mt-3 w-full`}
                 >
-                  <Icon name="instagram" className="h-4 w-4" /> Instagram
+                  <Icon name="instagram" className="h-4 w-4" /> {t("clubPage.followInstagram")}
                 </a>
               )}
               <a

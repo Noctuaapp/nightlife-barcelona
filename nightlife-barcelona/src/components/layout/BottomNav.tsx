@@ -33,7 +33,8 @@ export default function BottomNav() {
     { label: t("nav.clubs"), href: "/clubs", icon: Martini },
     { label: t("nav.events"), href: "/events", icon: Ticket },
     { label: t("nav.essentials"), href: "/essentials", icon: Backpack },
-    ...(isAdmin ? [{ label: "Admin", href: "/admin", icon: Shield }] : []),
+    // Al entrar en admin se va directo al dashboard, no a la gestión de clubs (que sigue en /admin).
+    ...(isAdmin ? [{ label: "Admin", href: "/admin/dashboard", icon: Shield }] : []),
   ]
 
   return (
