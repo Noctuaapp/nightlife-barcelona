@@ -4,9 +4,14 @@ import { useEffect, useState } from "react"
 import Icon from "../ui/Icon"
 import { useLanguage } from "../../context/LanguageContext"
 
-// Chip flotante arriba a la derecha de la portada que va rotando frases cortas sobre cosas que
-// la app ya hace y que mucha gente no descubre sola (niveles, notas de check-in, planificar,
-// favoritos, el mapa...). Es publicidad de la propia app, dentro de la propia app.
+// Va rotando frases cortas sobre cosas que la app ya hace y que mucha gente no descubre sola
+// (niveles, notas de check-in, planificar, favoritos, el mapa...). Es publicidad de la propia
+// app, dentro de la propia app.
+//
+// En pantallas sm+ es un chip flotante arriba a la derecha de la portada (con sitio de sobra para
+// no chocar con nada). En móvil, flotarlo ahí tapaba el aviso de "x locales abiertos ahora" (poco
+// ancho, mismo rincón) — así que en móvil deja de ser "absolute" y pasa a ser su propia fila, en
+// flujo normal, encima de ese aviso: nunca puede superponerse a nada porque ocupa su propio sitio.
 const MESSAGES: { icon: string; key: string }[] = [
   { icon: "star", key: "homeTicker.msg1" },
   { icon: "note", key: "homeTicker.msg2" },
@@ -37,20 +42,34 @@ export default function FeatureTicker() {
   }, [])
 
   const current = MESSAGES[index]
+  const textCls = "noctua-ticker-text transition-all duration-200"
+  const textStyle = { opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(-3px)" } as const
 
   return (
-    <div
-      aria-live="polite"
-      className="absolute right-3 top-3 z-10 flex w-[150px] items-start gap-1.5 rounded-2xl border border-white/15 bg-black/40 px-2.5 py-2 text-[10px] font-medium leading-snug text-white/90 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.7)] backdrop-blur-md sm:right-6 sm:top-6 sm:w-[300px] sm:gap-2 sm:px-3.5 sm:py-2.5 sm:text-sm"
-    >
-      <Icon name={current.icon} className="mt-0.5 h-3 w-3 shrink-0 text-cyan-300 sm:h-4 sm:w-4" />
-      <span
-        className="noctua-ticker-text line-clamp-3 transition-all duration-200 sm:line-clamp-2"
-        style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(-3px)" }}
+    <>
+      {/* Móvil: fila normal, sin "absolute" — no puede tapar nada porque empuja su propio sitio. */}
+      <div
+        aria-live="polite"
+        className="relative z-10 mx-4 mb-3 mt-3 flex items-start gap-1.5 rounded-2xl border border-white/15 bg-black/40 px-3 py-2 text-xs font-medium leading-snug text-white/90 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.7)] backdrop-blur-md sm:hidden"
       >
-        {t(current.key)}
-      </span>
+        <Icon name={current.icon} className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" />
+        <span className={`${textCls} line-clamp-2`} style={textStyle}>
+          {t(current.key)}
+        </span>
+      </div>
+
+      {/* sm+: chip flotante arriba a la derecha, con sitio de sobra. */}
+      <div
+        aria-live="polite"
+        className="absolute right-6 top-6 z-10 hidden w-[300px] items-start gap-2 rounded-2xl border border-white/15 bg-black/40 px-3.5 py-2.5 text-sm font-medium leading-snug text-white/90 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.7)] backdrop-blur-md sm:flex"
+      >
+        <Icon name={current.icon} className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
+        <span className={`${textCls} line-clamp-2`} style={textStyle}>
+          {t(current.key)}
+        </span>
+      </div>
+
       <style>{`@media (prefers-reduced-motion: reduce) { .noctua-ticker-text { transition: none !important; opacity: 1 !important; transform: none !important; } }`}</style>
-    </div>
+    </>
   )
 }
