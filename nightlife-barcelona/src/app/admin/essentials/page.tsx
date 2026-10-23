@@ -191,13 +191,22 @@ export default function AdminEssentialsPage() {
     if (error) return
     setEssentials((prev) => prev.map((e) => e.id === item.id ? { ...e, hidden: newValue } : e))
   }
+  // Antes "Mostrar todos" / "Ocultar todos" actuaban al instante, sin preguntar: un toque sin
+  // querer escondía (o publicaba) todos los esenciales de golpe. Ahora: ocultar todo pide escribir OCULTAR, y
+  // mostrar todo avisa de lo que se publicaría sin revisar.
+  const confirmHideAll = () =>
+    (window.prompt(`Vas a OCULTAR todos los esenciales de la web (${essentials.length}). Nadie podrá verlos hasta que los vuelvas a mostrar.\n\nEscribe OCULTAR para confirmar.`) || "").trim().toUpperCase() === "OCULTAR"
+  const confirmShowAll = () =>
+    window.confirm(`Vas a PUBLICAR todos los esenciales (${essentials.length}), también los que están ocultos a propósito.\n\n¿Seguro?`)
   const showAll = async () => {
+    if (!confirmShowAll()) return
     const { error } = await supabase.from("essentials").update({ hidden: false }).neq("id", 0)
     if (error) return
     setEssentials((prev) => prev.map((e) => ({ ...e, hidden: false })))
   }
 
   const hideAll = async () => {
+    if (!confirmHideAll()) return
     const { error } = await supabase.from("essentials").update({ hidden: true }).neq("id", 0)
     if (error) return
     setEssentials((prev) => prev.map((e) => ({ ...e, hidden: true })))
@@ -210,7 +219,7 @@ export default function AdminEssentialsPage() {
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm text-zinc-400">Loading admin...</p>
+        <p className="text-sm text-zinc-400">Cargando…</p>
       </main>
     )
   }

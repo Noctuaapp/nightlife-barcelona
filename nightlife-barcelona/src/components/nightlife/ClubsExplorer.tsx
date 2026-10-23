@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import ClubCard from "./ClubCard"
 import { useLanguage } from "../../context/LanguageContext"
 import { SearchIcon, CloseIcon, LocationIcon, FlameIcon, SlidersIcon, ChevronDownIcon } from "../ui/FilterIcons"
+import { areasForPostalCode } from "../../lib/postalCodes"
 
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T>(null)
@@ -187,11 +188,16 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
       const matchesAge = selectedAges.size === 0 || Array.from(selectedAges).some((age) => ageMatch(club, age))
       const matchesNeighborhood = selectedNeighborhoods.size === 0 || selectedNeighborhoods.has(club.neighborhood)
 
+      // Si lo escrito es un código postal de Barcelona (o de L'Hospitalet, Badalona o El Prat),
+      // se busca también por las zonas que le corresponden, además del texto tal cual — así
+      // "08012" encuentra los clubs de Gràcia aunque nadie haya escrito "08012" en ningún sitio.
+      const postalAreas = areasForPostalCode(search)
       const matchesSearch =
         search === "" ||
         club.name?.toLowerCase().includes(search.toLowerCase()) ||
         club.neighborhood?.toLowerCase().includes(search.toLowerCase()) ||
-        club.music?.toLowerCase().includes(search.toLowerCase())
+        club.music?.toLowerCase().includes(search.toLowerCase()) ||
+        (!!postalAreas && postalAreas.some((area) => club.neighborhood?.toLowerCase().includes(area.toLowerCase())))
 
       const matchesOpenNow = !openNow || isOpenNow(club.hours)
 

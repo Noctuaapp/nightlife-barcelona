@@ -229,13 +229,13 @@ export default function AdminClubEventsPage() {
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm text-zinc-400">Loading admin...</p>
+        <p className="text-sm text-zinc-400">Cargando…</p>
       </main>
     )
   }
 
   return (
-    <AdminShell title="Club nights control" subtitle="Create, edit and manage nights inside each club.">
+    <AdminShell title="Noches de club" subtitle="Crea, edita y gestiona las noches concretas de cada club (con fecha).">
       <>
         <section className="mx-auto max-w-7xl">
           <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">

@@ -206,9 +206,14 @@ export async function GET(req: Request) {
           (isSpaceOnly(data?.types) ? [] : data.photos || []).slice(0, PHOTOS_PER_EVENT).map(async (p: any) => {
             try {
               const photoRes = await googleFetch(counter, `https://places.googleapis.com/v1/${p.name}/media?maxWidthPx=1000&key=${apiKey}`)
+              // Mismo fallo que en refresh-google-data (clubs): sin este chequeo, un error de
+              // Google se subía igual a Storage como si fuera una foto de verdad, y luego se
+              // veía como icono roto en la galería.
+              if (!photoRes.ok) return null
               const buffer = await photoRes.arrayBuffer()
               const fileName = `${ev.id}/${p.name.split("/").pop()}.jpg`
-              await supabase.storage.from("event-photos").upload(fileName, Buffer.from(buffer), { contentType: "image/jpeg", upsert: true })
+              const { error: uploadError } = await supabase.storage.from("event-photos").upload(fileName, Buffer.from(buffer), { contentType: "image/jpeg", upsert: true })
+              if (uploadError) return null
               const { data: pub } = supabase.storage.from("event-photos").getPublicUrl(fileName)
               return pub.publicUrl
             } catch {

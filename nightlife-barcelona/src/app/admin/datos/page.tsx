@@ -269,7 +269,7 @@ export default function AdminDatosPage() {
   const bench = sel ? benchmark(sel.zone, sel.venue_type, sel.id) : null
 
   return (
-    <AdminShell title="Datos" subtitle="Métricas agregadas para clubs, managers y compradores de datos.">
+    <AdminShell title="Datos de negocio" subtitle="Métricas agregadas para clubs, managers y compradores de datos.">
       <section className="mx-auto max-w-7xl px-4 pb-16">
         {/* Rango de fechas */}
         <div className="mb-6 flex flex-wrap items-center gap-2">

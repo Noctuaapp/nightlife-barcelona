@@ -13,10 +13,11 @@ import { createSlug } from "../../lib/slug"
 import { useLanguage } from "../../context/LanguageContext"
 import ArrowIcon from "../../components/ui/ArrowIcon"
 import { zoneOf, zonesPresent } from "../../lib/zones"
-import { categoryRank, categoryNameKey } from "../../lib/essentialCategories"
+import { categoryRank, categoryNameKey, categoryInfo } from "../../lib/essentialCategories"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { Disc3, CalendarDays, MapPin, Footprints, X, List, LocateFixed, Search, type LucideIcon } from "lucide-react"
 import { logError } from "../../lib/log"
+import { renderToStaticMarkup } from "react-dom/server"
 
 // "Taxi" y "Transport" ya no son categorías de esenciales (ver essentialCategories.ts y
 // ClubTransport.tsx): no informaban de nada útil como sitio al que ir a pie (Taxi solo oficinas
@@ -428,6 +429,7 @@ export default function MapPage() {
       const label = "name" in item ? item.name : item.title
       const image = getImage(item)
       const initials = getInitials(label)
+      const isEssential = "category" in item
 
       const el = document.createElement("div")
       el.style.cssText = `width: 34px; height: 34px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.5); cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center; background: ${color}; font-size: 11px; font-weight: 800; color: #fff; font-family: inherit;`
@@ -437,6 +439,14 @@ export default function MapPage() {
         img.alt = label || ""
         img.style.cssText = "width: 100%; height: 100%; object-fit: cover;"
         el.appendChild(img)
+      } else if (isEssential) {
+        // Un esencial (farmacia, cajero, metro...) casi nunca tiene foto, así que antes esto era
+        // lo que se veía casi siempre: las iniciales del nombre sobre un círculo lila, que no
+        // decían nada de qué tipo de sitio era. Ahora usa el mismo icono de categoría que ya se
+        // ve en /essentials (essentialCategories.ts) — de un vistazo se distingue una farmacia
+        // de un cajero o una parada de metro.
+        const Icon = categoryInfo((item as Essential).category).icon
+        el.innerHTML = renderToStaticMarkup(<Icon size={17} color="#fff" strokeWidth={2.25} />)
       } else {
         el.textContent = initials
       }

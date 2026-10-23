@@ -33,6 +33,7 @@ type Club = {
   sold_out: boolean
   lgtbi_friendly: boolean
   swinger_friendly?: boolean
+  swinger_rules?: string | null
   verified?: boolean
   vip_tables?: boolean
   venue_type?: string
@@ -74,6 +75,7 @@ type ClubFormData = {
   table_booking: boolean
   lgtbi_friendly: boolean
   swinger_friendly: boolean
+  swinger_rules: string
   verified: boolean
   vip_tables: boolean
   trending: boolean
@@ -109,6 +111,7 @@ const emptyForm: ClubFormData = {
   table_booking: false,
   lgtbi_friendly: false,
   swinger_friendly: false,
+  swinger_rules: "",
   verified: false,
   vip_tables: false,
   trending: false,
@@ -144,6 +147,7 @@ const clubToForm = (club: Club): ClubFormData => ({
   table_booking: !!club.table_booking,
   lgtbi_friendly: !!club.lgtbi_friendly,
   swinger_friendly: !!club.swinger_friendly,
+  swinger_rules: club.swinger_rules || "",
   verified: !!club.verified,
   vip_tables: !!club.vip_tables,
   trending: !!club.trending,
@@ -203,22 +207,47 @@ export default function AdminPage() {
     const { error } = await supabase.from("clubs").update({ [field]: newValue }).eq("id", club.id)
     if (error) return
     setClubs((prev) => prev.map((c) => c.id === club.id ? { ...c, [field]: newValue } : c))
+    // Mismo motivo que en deleteClub de abajo: si no se avisa a Next, el listado público sigue
+    // sirviendo la versión cacheada (p. ej. si esto esconde/muestra el club) hasta que caduque.
+    touchCache(clubPaths(club.slug))
   }
 
   const deleteClub = async (id: number) => {
     if (!confirm("¿Seguro que quieres eliminar este club?")) return
-    await supabase.from("clubs").delete().eq("id", id)
+    // El slug hace falta para avisar a Next qué ficha pública invalidar — una vez borrado el club
+    // ya no se puede volver a pedir, así que se guarda antes de borrar.
+    const slug = clubs.find((c) => c.id === id)?.slug
+    const { error } = await supabase.from("clubs").delete().eq("id", id)
+    if (error) {
+      toast("Error al eliminar: " + error.message)
+      return
+    }
     setClubs((prev) => prev.filter((c) => c.id !== id))
+    // Antes esto faltaba aquí (sí estaba al crear/editar un club): sin avisar a Next, el listado
+    // público de /clubs seguía sirviendo la versión en caché con el club todavía dentro hasta que
+    // caducaba por su cuenta (hasta 1 hora) — exactamente el "lo borro y me vuelve a aparecer".
+    touchCache(clubPaths(slug))
   }
 
+  // Antes "Mostrar todos" / "Ocultar todos" actuaban al instante, sin preguntar: un toque sin
+  // querer escondía (o publicaba) todos los clubs de golpe. Ahora: ocultar todo pide escribir OCULTAR, y
+  // mostrar todo avisa de lo que se publicaría sin revisar.
+  const confirmHideAll = () =>
+    (window.prompt(`Vas a OCULTAR todos los clubs de la web (${clubs.length}). Nadie podrá verlos hasta que los vuelvas a mostrar.\n\nEscribe OCULTAR para confirmar.`) || "").trim().toUpperCase() === "OCULTAR"
+  const confirmShowAll = () =>
+    window.confirm(`Vas a PUBLICAR todos los clubs (${clubs.length}), también los que están ocultos a propósito. Por ejemplo, los locales importados de OpenStreetMap que entran ocultos para revisarlos antes.\n\n¿Seguro?`)
   const showAll = async () => {
+    if (!confirmShowAll()) return
     await supabase.from("clubs").update({ hidden: false }).neq("id", 0)
     setClubs((prev) => prev.map((c) => ({ ...c, hidden: false })))
+    touchCache(clubPaths())
   }
 
   const hideAll = async () => {
+    if (!confirmHideAll()) return
     await supabase.from("clubs").update({ hidden: true }).neq("id", 0)
     setClubs((prev) => prev.map((c) => ({ ...c, hidden: true })))
+    touchCache(clubPaths())
   }
 
   const formToPayload = (form: ClubFormData) => ({
@@ -238,6 +267,7 @@ export default function AdminPage() {
     table_booking: form.table_booking,
     lgtbi_friendly: form.lgtbi_friendly,
     swinger_friendly: form.swinger_friendly,
+    swinger_rules: form.swinger_rules.trim() || null,
     verified: form.verified,
     vip_tables: form.vip_tables,
     trending: form.trending,
@@ -622,6 +652,18 @@ export default function AdminPage() {
           </button>
         ))}
       </div>
+      {form.swinger_friendly && (
+        <div className="md:col-span-2">
+          <label className={labelClass}>Normas del club swinger (vacío = no se enseña nada en la ficha)</label>
+          <textarea
+            value={form.swinger_rules}
+            onChange={(e) => setForm({ ...form, swinger_rules: e.target.value })}
+            placeholder="Solo parejas y mujeres solas. Código de vestimenta obligatorio tras las 00:00. Prohibido fotografiar o grabar."
+            rows={4}
+            className={`${inputClass} resize-y`}
+          />
+        </div>
+      )}
     </div>
   )
 

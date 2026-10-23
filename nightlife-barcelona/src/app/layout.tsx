@@ -6,6 +6,7 @@ import { LanguageProvider } from "../context/LanguageContext"
 import MaintenanceGate from "../components/system/MaintenanceGate"
 import TrafficSource from "../components/system/TrafficSource"
 import ToastHost from "../components/ui/Toast"
+import PartyPollPopup from "../components/fun/PartyPollPopup"
 import "./globals.css"
 
 // Antes toda la app caía en Arial/Helvetica (la fuente por defecto del sistema, sin declarar
@@ -83,7 +84,11 @@ export default function RootLayout({
       <body>
         <LanguageProvider>
           <FavoritesProvider>
-            <MaintenanceGate>{children}</MaintenanceGate>
+            <MaintenanceGate>
+              {children}
+              {/* Juego "¿Qué prefieres?" — popup ocasional, solo con sesión (ver el componente) */}
+              <PartyPollPopup />
+            </MaintenanceGate>
           </FavoritesProvider>
         </LanguageProvider>
         <TrafficSource />

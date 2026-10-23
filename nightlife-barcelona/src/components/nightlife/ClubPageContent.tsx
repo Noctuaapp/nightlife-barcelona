@@ -291,6 +291,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
     { key: "smoking", label: t("clubPage.fSmoking"), icon: "cigarette", active: !!club.smoking_area },
     { key: "booking", label: t("clubPage.fBooking"), icon: "clipboard", active: !!club.table_booking },
     { key: "lgtbi", label: t("clubPage.fLgtbi"), icon: "pride", active: !!club.lgtbi_friendly },
+    { key: "swinger", label: t("clubPage.fSwinger"), icon: "shield", active: !!club.swinger_friendly },
     { key: "dresscode", label: `${t("clubPage.fDresscode")}: ${club.dresscode}`, icon: "shirt", active: !!club.dresscode },
     { key: "capacity", label: t("clubPage.fCapacity").replace("{n}", String(capacity)), icon: "users", active: !!capacity },
   ].filter((f) => f.active)
@@ -603,6 +604,19 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                         </li>
                       ))}
                     </ul>
+                  </Panel>
+                )}
+
+                {/* Normas swinger: solo si el club está marcado como tal Y tiene texto puesto desde
+                    /admin (campo swinger_rules). Si está marcado pero sin normas escritas, no se
+                    enseña ningún bloque vacío. */}
+                {!!club.swinger_friendly && !!club.swinger_rules && (
+                  <Panel className="border-brand/30 bg-brand/[0.05]">
+                    <div className="flex items-center gap-3">
+                      <Icon name="shield" className="h-5 w-5 shrink-0 text-brand-soft" />
+                      <PanelTitle>{t("clubPage.swingerRulesTitle")}</PanelTitle>
+                    </div>
+                    <p className="whitespace-pre-line text-sm leading-relaxed text-zinc-200">{club.swinger_rules}</p>
                   </Panel>
                 )}
 

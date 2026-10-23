@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { ADMIN_EMAIL } from "../../../lib/admin"
+import { SEASONAL_THEMES, type SeasonalOverride } from "../../../lib/nocSeasonal"
 
 // Herramientas de mantenimiento. Antes se lanzaban visitando una URL con la clave de admin
 // pegada (?secret=...), que quedaba en el historial y en los registros. Ahora cada botón llama al
@@ -88,6 +89,24 @@ export default function AdminToolsPage() {
   const [osmReal, setOsmReal] = useState(false)
   const stopRef = useRef<Record<string, boolean>>({})
 
+  // Interruptor de Club Noctua (pedido el 23/10/2026): mientras está en false, nadie gana XP por
+  // check-in/racha/login/misiones (solo invitar amigos sigue dando algo) y nadie salvo tú ve
+  // misiones, insignias ni la lista de niveles en /club-noctua. Ver supabase/18_pausar_club_noctua.sql.
+  const [noctuaEnabled, setNoctuaEnabled] = useState<boolean | null>(null)
+  const [savingToggle, setSavingToggle] = useState(false)
+
+  // Temporada de Noc (pedido el 23/10/2026): "auto" es el valor normal, de verdad — Noc decide
+  // por la fecha sin que haga falta tocar nada aquí. Esto es solo para forzar una temporada antes
+  // de que llegue (probarla) o apagarlas todas, sin esperar al calendario. Ver
+  // supabase/20_noc_estacional.sql y src/lib/nocSeasonal.ts.
+  const [nocMode, setNocMode] = useState<SeasonalOverride | null>(null)
+  const [savingNocMode, setSavingNocMode] = useState(false)
+
+  // Modo mantenimiento: antes era lo primero del Resumen (el botón más peligroso del admin en el
+  // sitio más visible). Ahora vive aquí, con los otros interruptores de la web.
+  const [maintenance, setMaintenance] = useState<boolean | null>(null)
+  const [savingMaintenance, setSavingMaintenance] = useState(false)
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user.email !== ADMIN_EMAIL) {
@@ -97,6 +116,72 @@ export default function AdminToolsPage() {
       setCheckingAdmin(false)
     })
   }, [])
+
+  useEffect(() => {
+    if (checkingAdmin) return
+    supabase
+      .from("club_noctua_settings")
+      .select("enabled")
+      .eq("id", 1)
+      .maybeSingle()
+      .then(({ data }) => setNoctuaEnabled(data?.enabled === true))
+    supabase
+      .from("noc_seasonal_settings")
+      .select("mode")
+      .eq("id", 1)
+      .maybeSingle()
+      .then(({ data }) => setNocMode(((data?.mode as SeasonalOverride) || "auto")))
+    supabase
+      .from("app_settings")
+      .select("maintenance_mode")
+      .eq("id", true)
+      .maybeSingle()
+      .then(({ data }) => setMaintenance(!!data?.maintenance_mode))
+  }, [checkingAdmin])
+
+  const toggleMaintenance = async () => {
+    if (maintenance === null) return
+    const next = !maintenance
+    if (next && !window.confirm("¿Activar el modo mantenimiento? Nadie excepto tú podrá usar la web hasta que lo desactives.")) return
+    setSavingMaintenance(true)
+    const { error } = await supabase.from("app_settings").update({ maintenance_mode: next }).eq("id", true)
+    setSavingMaintenance(false)
+    if (error) {
+      window.alert("No se pudo cambiar el modo mantenimiento: " + error.message)
+      return
+    }
+    setMaintenance(next)
+  }
+
+  const toggleClubNoctua = async () => {
+    if (noctuaEnabled === null) return
+    setSavingToggle(true)
+    const next = !noctuaEnabled
+    const { error } = await supabase
+      .from("club_noctua_settings")
+      .update({ enabled: next, updated_at: new Date().toISOString() })
+      .eq("id", 1)
+    setSavingToggle(false)
+    if (error) {
+      window.alert("No se pudo cambiar: " + error.message)
+      return
+    }
+    setNoctuaEnabled(next)
+  }
+
+  const changeNocMode = async (next: SeasonalOverride) => {
+    setSavingNocMode(true)
+    const { error } = await supabase
+      .from("noc_seasonal_settings")
+      .update({ mode: next, updated_at: new Date().toISOString() })
+      .eq("id", 1)
+    setSavingNocMode(false)
+    if (error) {
+      window.alert("No se pudo cambiar: " + error.message)
+      return
+    }
+    setNocMode(next)
+  }
 
   const EMPTY: RunState = { running: false, rounds: 0, result: null, error: null }
   const update = (key: string, patch: Partial<RunState>) =>
@@ -138,7 +223,7 @@ export default function AdminToolsPage() {
 
   if (checkingAdmin) {
     return (
-      <AdminShell title="Herramientas">
+      <AdminShell title="Ajustes y herramientas">
         <p className="text-sm text-zinc-400">Comprobando acceso…</p>
       </AdminShell>
     )
@@ -146,9 +231,83 @@ export default function AdminToolsPage() {
 
   return (
     <AdminShell
-      title="Herramientas"
-      subtitle="Tareas de mantenimiento de datos. Las automáticas ya se ejecutan solas cada noche: aquí puedes lanzarlas a mano."
+      title="Ajustes y herramientas"
+      subtitle="Los interruptores de la web y las tareas de mantenimiento de datos (las automáticas ya se ejecutan solas cada noche; aquí puedes lanzarlas a mano)."
     >
+      <div className={`mb-6 rounded-2xl border p-5 ${maintenance ? "border-red-500/40 bg-red-500/[0.07]" : "border-white/10 bg-white/[0.03]"}`}>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-black">Modo mantenimiento</h2>
+            <p className="mt-1 text-sm text-zinc-400">
+              {maintenance
+                ? "Activo: la web está cerrada para todos menos para ti."
+                : "Apagado: la web funciona con normalidad para todo el mundo."}
+            </p>
+          </div>
+          <button
+            onClick={toggleMaintenance}
+            disabled={maintenance === null || savingMaintenance}
+            className={`shrink-0 rounded-xl px-5 py-2.5 text-sm font-bold transition disabled:opacity-50 ${
+              maintenance ? "bg-white text-black hover:bg-zinc-200" : "border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20"
+            }`}
+          >
+            {maintenance === null ? "Cargando…" : savingMaintenance ? "Guardando…" : maintenance ? "Desactivar" : "Activar mantenimiento"}
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-6 rounded-2xl border border-purple-500/30 bg-purple-500/[0.06] p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-black">Club Noctua</h2>
+            <p className="mt-1 text-sm text-zinc-400">
+              {noctuaEnabled
+                ? "Activo: todo el mundo gana XP y ve misiones, insignias y niveles."
+                : "En pausa: solo se gana XP invitando amigos. Nadie ve misiones, insignias ni niveles salvo tú."}
+            </p>
+          </div>
+          <button
+            onClick={toggleClubNoctua}
+            disabled={noctuaEnabled === null || savingToggle}
+            className={`shrink-0 rounded-xl px-5 py-2.5 text-sm font-bold transition disabled:opacity-50 ${
+              noctuaEnabled ? "bg-white text-black hover:bg-zinc-200" : "bg-purple-500 text-white hover:bg-purple-400"
+            }`}
+          >
+            {noctuaEnabled === null ? "Cargando…" : savingToggle ? "Guardando…" : noctuaEnabled ? "Pausar" : "Activar"}
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-6 rounded-2xl border border-purple-500/30 bg-purple-500/[0.06] p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-base font-black">Temporada de Noc</h2>
+            <p className="mt-1 text-sm text-zinc-400">
+              {nocMode === "auto" || nocMode === null
+                ? "Automático: Noc se pone el accesorio que toque según la fecha, sin tocar nada."
+                : nocMode === "none"
+                ? "Apagado: Noc se ve siempre normal, sin accesorios de temporada."
+                : `Forzado a mano: ${SEASONAL_THEMES.find((s) => s.key === nocMode)?.label || nocMode}, aunque no sea la fecha.`}
+            </p>
+          </div>
+          <select
+            value={nocMode ?? "auto"}
+            disabled={nocMode === null || savingNocMode}
+            onChange={(e) => changeNocMode(e.target.value as SeasonalOverride)}
+            className="shrink-0 rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm font-semibold text-white outline-none disabled:opacity-50"
+            style={{ colorScheme: "dark" }}
+          >
+            <option value="auto">🗓️ Automático (según la fecha)</option>
+            <option value="none">🙈 Ninguno (Noc normal)</option>
+            {SEASONAL_THEMES.map((s) => (
+              <option key={s.key} value={s.key}>
+                {s.label} — {s.dateHint}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-2">
         {TOOLS.map((tool) => {
           const st = state[tool.key]

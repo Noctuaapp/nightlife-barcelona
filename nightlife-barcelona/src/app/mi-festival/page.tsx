@@ -342,11 +342,11 @@ export default function MiFestivalPage() {
       </div>
       <div>
         <label className={labelClass}>Fecha de inicio</label>
-        <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={inputClass} />
+        <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
       </div>
       <div>
         <label className={labelClass}>Fecha de fin (si dura varios días)</label>
-        <input type="date" value={form.date_end} onChange={(e) => setForm({ ...form, date_end: e.target.value })} className={inputClass} />
+        <input type="date" value={form.date_end} onChange={(e) => setForm({ ...form, date_end: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
       </div>
       <div>
         <label className={labelClass}>Hora de inicio</label>
@@ -413,7 +413,7 @@ export default function MiFestivalPage() {
           {festivalSessions.map((s) => (
             editingSessionId === s.id ? (
               <div key={s.id} className="grid gap-2 rounded-xl border border-purple-500/30 bg-purple-500/[0.04] p-3 sm:grid-cols-3">
-                <input type="date" value={editSessionForm.date} onChange={(e) => setEditSessionForm({ ...editSessionForm, date: e.target.value })} className={inputClass} />
+                <input type="date" value={editSessionForm.date} onChange={(e) => setEditSessionForm({ ...editSessionForm, date: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
                 <input value={editSessionForm.title} onChange={(e) => setEditSessionForm({ ...editSessionForm, title: e.target.value })} placeholder="Título de la sesión" className={inputClass} />
                 <input value={editSessionForm.artist} onChange={(e) => setEditSessionForm({ ...editSessionForm, artist: e.target.value })} placeholder="DJ / artista" className={inputClass} />
                 <input value={editSessionForm.stage} onChange={(e) => setEditSessionForm({ ...editSessionForm, stage: e.target.value })} placeholder="Escenario (opcional)" className={inputClass} />
@@ -444,7 +444,7 @@ export default function MiFestivalPage() {
         </div>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          <input type="date" value={newSessionForm.date} onChange={(e) => setNewSessionForm({ ...newSessionForm, date: e.target.value })} className={inputClass} />
+          <input type="date" value={newSessionForm.date} onChange={(e) => setNewSessionForm({ ...newSessionForm, date: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
           <input value={newSessionForm.title} onChange={(e) => setNewSessionForm({ ...newSessionForm, title: e.target.value })} placeholder="Título de la sesión" className={inputClass} />
           <input value={newSessionForm.artist} onChange={(e) => setNewSessionForm({ ...newSessionForm, artist: e.target.value })} placeholder="DJ / artista" className={inputClass} />
           <input value={newSessionForm.stage} onChange={(e) => setNewSessionForm({ ...newSessionForm, stage: e.target.value })} placeholder="Escenario (opcional)" className={inputClass} />

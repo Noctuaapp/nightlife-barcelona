@@ -6,6 +6,9 @@ import { supabase } from "../../../lib/supabase"
 import { getSortedCountries } from "../../../lib/countries"
 import CountrySelect from "../../../components/ui/CountrySelect"
 import { BLOCK_REASONS, BLOCK_DURATIONS, computeBlockedUntil, isBlockActive, type BlockDuration } from "../../../lib/blockReasons"
+import { getLevelStatus } from "../../../lib/xp"
+import { ADMIN_EMAIL } from "../../../lib/admin"
+import Link from "next/link"
 
 // El admin es una herramienta interna en español, así que aquí no depende del idioma del
 // visitante — siempre se muestra (y se guarda) en español, con bandera.
@@ -23,6 +26,9 @@ type User = {
   block_reason?: string | null
   block_note?: string | null
   blocked_until?: string | null
+  xp: number | null
+  level_key: string | null
+  level_since: string | null
 }
 
 type OwnableClub = { id: number; name: string; owner_user_id: string | null }
@@ -36,6 +42,9 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [search, setSearch] = useState("")
+  // Filtro y orden de la lista (antes solo había búsqueda por texto y el orden era fijo).
+  const [listFilter, setListFilter] = useState<"all" | "new" | "active" | "blocked" | "owners">("all")
+  const [sortBy, setSortBy] = useState<"created" | "last" | "xp">("created")
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editUsername, setEditUsername] = useState("")
@@ -141,7 +150,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     const checkAdmin = async () => {
       const { data } = await supabase.auth.getSession()
-      if (data.session?.user.email !== "info@noctuaapp.com") {
+      if (data.session?.user.email !== ADMIN_EMAIL) {
         window.location.href = "/login"
         return
       }
@@ -160,15 +169,20 @@ export default function AdminUsersPage() {
 
     // country se pide aparte de users_view (igual que is_blocked) porque la vista de Supabase
     // no incluía esta columna hasta ahora: así no hace falta tocar la vista para que aparezca.
+    // xp/level_key/level_since igual: antes no se pedían aquí y por eso no se veía ni el nivel
+    // ni el XP de cada usuario en esta página (sí se calculaban, pero solo en /club-noctua).
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, is_blocked, country, block_reason, block_note, blocked_until")
+      .select("id, is_blocked, country, block_reason, block_note, blocked_until, xp, level_key, level_since")
     if (profilesError) console.log("PROFILES ERROR:", profilesError)
 
     const blockedMap = new Map((profiles || []).map((p) => [p.id, !!p.is_blocked]))
     const reasonMap = new Map((profiles || []).map((p) => [p.id, { r: p.block_reason as string | null, n: p.block_note as string | null }]))
     const countryMap = new Map((profiles || []).map((p) => [p.id, p.country as string | null]))
     const untilMap = new Map((profiles || []).map((p) => [p.id, (p as any).blocked_until as string | null]))
+    const xpMap = new Map((profiles || []).map((p) => [p.id, (p as any).xp as number | null]))
+    const levelKeyMap = new Map((profiles || []).map((p) => [p.id, (p as any).level_key as string | null]))
+    const levelSinceMap = new Map((profiles || []).map((p) => [p.id, (p as any).level_since as string | null]))
 
     if (data) {
       setUsers(
@@ -179,6 +193,9 @@ export default function AdminUsersPage() {
           block_note: reasonMap.get(u.id)?.n ?? null,
           blocked_until: untilMap.get(u.id) ?? null,
           country: u.country ?? countryMap.get(u.id) ?? null,
+          xp: xpMap.get(u.id) ?? null,
+          level_key: levelKeyMap.get(u.id) ?? null,
+          level_since: levelSinceMap.get(u.id) ?? null,
         }))
       )
     }
@@ -189,11 +206,38 @@ export default function AdminUsersPage() {
     if (!checkingAdmin) fetchUsers()
   }, [checkingAdmin])
 
-  const filteredUsers = users.filter((u) => {
-    if (!search.trim()) return true
-    const q = search.toLowerCase()
-    return u.email?.toLowerCase().includes(q) || u.username?.toLowerCase().includes(q)
-  })
+  // Quién tiene un club o un festival vinculado, para el filtro "Dueños de club/festival".
+  const [ownerIds, setOwnerIds] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    if (checkingAdmin) return
+    Promise.all([
+      supabase.from("clubs").select("owner_user_id").not("owner_user_id", "is", null),
+      supabase.from("events").select("owner_user_id").not("owner_user_id", "is", null),
+    ]).then(([c, e]) => {
+      const ids = new Set<string>()
+      for (const r of [...(c.data || []), ...(e.data || [])] as { owner_user_id: string | null }[]) {
+        if (r.owner_user_id) ids.add(r.owner_user_id)
+      }
+      setOwnerIds(ids)
+    })
+  }, [checkingAdmin])
+
+  const weekAgo = Date.now() - 7 * 86400000
+  const filteredUsers = users
+    .filter((u) => {
+      if (listFilter === "new" && new Date(u.created_at).getTime() < weekAgo) return false
+      if (listFilter === "active" && !(u.last_sign_in_at && new Date(u.last_sign_in_at).getTime() >= weekAgo)) return false
+      if (listFilter === "blocked" && !u.is_blocked) return false
+      if (listFilter === "owners" && !ownerIds.has(u.id)) return false
+      if (!search.trim()) return true
+      const q = search.toLowerCase()
+      return u.email?.toLowerCase().includes(q) || u.username?.toLowerCase().includes(q)
+    })
+    .sort((a, b) => {
+      if (sortBy === "last") return (b.last_sign_in_at || "").localeCompare(a.last_sign_in_at || "")
+      if (sortBy === "xp") return (b.xp || 0) - (a.xp || 0)
+      return b.created_at.localeCompare(a.created_at)
+    })
 
   const startEditing = (user: User) => {
     setEditingId(user.id)
@@ -316,21 +360,54 @@ export default function AdminUsersPage() {
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm text-zinc-400">Loading admin...</p>
+        <p className="text-sm text-zinc-400">Cargando…</p>
       </main>
     )
   }
 
   return (
-    <AdminShell title="Users" subtitle={`${users.length} usuarios registrados en Noctua.`}>
+    <AdminShell title="Usuarios" subtitle={`${users.length} usuarios registrados en Noctua.`}>
       <>
         <section className="mx-auto max-w-7xl">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por email o username..."
-            className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5 outline-none mb-6"
+            className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5 outline-none mb-4"
           />
+
+          <div className="mb-6 flex flex-wrap items-center gap-2">
+            {([
+              ["all", "Todos"],
+              ["new", "Nuevos (7 días)"],
+              ["active", "Activos (7 días)"],
+              ["owners", "Dueños de club/festival"],
+              ["blocked", "Bloqueados"],
+            ] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setListFilter(key)}
+                className={`rounded-full px-4 py-2 text-xs font-bold transition ${listFilter === key ? "bg-white text-black" : "border border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"}`}
+              >
+                {label}
+              </button>
+            ))}
+            <label className="ml-auto flex items-center gap-2 text-xs text-zinc-400">
+              Ordenar por
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                style={{ colorScheme: "dark" }}
+                className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white"
+              >
+                <option value="created">Registro más reciente</option>
+                <option value="last">Último acceso</option>
+                <option value="xp">Más XP</option>
+              </select>
+            </label>
+            <p className="w-full text-xs text-zinc-500">{filteredUsers.length} de {users.length}</p>
+          </div>
 
           {loading ? (
             <p className="text-zinc-400 text-sm text-center py-20">Cargando usuarios...</p>
@@ -381,6 +458,24 @@ export default function AdminUsersPage() {
                           🕒 Último acceso: {new Date(user.last_sign_in_at).toLocaleDateString("es-ES")}
                         </span>
                       )}
+                      {(() => {
+                        // Antes esta página no pedía xp/level_key/level_since, así que no había
+                        // forma de ver el nivel ni el XP de nadie aquí (sí se veía, pero solo
+                        // dentro de la propia ficha de /club-noctua de cada usuario).
+                        const status = getLevelStatus(user.xp ?? 0, user.level_key, user.level_since)
+                        return (
+                          <span
+                            className="rounded-full border px-3 py-1 font-semibold"
+                            style={{
+                              borderColor: `${status.current.color}4d`,
+                              background: `${status.current.color}1a`,
+                              color: status.current.color,
+                            }}
+                          >
+                            {status.current.icon} {status.current.name} · {user.xp ?? 0} XP
+                          </span>
+                        )
+                      })()}
                     </div>
                   </div>
 
@@ -524,6 +619,12 @@ export default function AdminUsersPage() {
                       >
                         ✏️ Editar
                       </button>
+                      <Link
+                        href={`/admin/actividad?user=${user.id}`}
+                        className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/10"
+                      >
+                        📈 Actividad
+                      </Link>
                       <button
                         onClick={() => startMessaging(user.id)}
                         className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/10"

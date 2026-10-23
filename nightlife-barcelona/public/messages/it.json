@@ -101,7 +101,7 @@
   "clubs": {
     "title": "Club",
     "subtitle": "I migliori club di Barcellona",
-    "search": "Cerca club, quartieri o musica...",
+    "search": "Cerca club, quartieri, codice postale o musica...",
     "lgtbi": "LGTBI+",
     "explore": "Esplora tutti i club →"
   },
@@ -777,7 +777,9 @@
     "noteReportedShort": "Segnalata",
     "notesHide": "Nascondi note",
     "loginToVote": "Accedi per valutare o segnalare le note.",
-    "followInstagram": "Segui su Instagram"
+    "followInstagram": "Segui su Instagram",
+    "fSwinger": "Swinger friendly",
+    "swingerRulesTitle": "Regole della serata swinger"
   },
   "eventPage": {
     "dateTbc": "Data da confermare"
@@ -1302,7 +1304,8 @@
     "perkSoon_platino": "Sconti in una selezione di club partner",
     "perkSoon_zafiro": "Inviti a prevendite VIP ed estrazioni",
     "perkSoon_diamante": "Lista ospiti in eventi selezionati",
-    "perkSoon_elite": "Vantaggi esclusivi per i membri più fedeli"
+    "perkSoon_elite": "Vantaggi esclusivi per i membri più fedeli",
+    "pausedBody": "Stiamo ancora preparando le missioni e i vantaggi del Club Noctua. Torna a trovarci presto."
   },
   "miMes": {
     "title": "Il tuo mese su Noctua",

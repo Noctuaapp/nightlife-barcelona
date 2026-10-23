@@ -41,6 +41,11 @@ export default function AdminMessagesPage() {
   const [broadcastOk, setBroadcastOk] = useState(false)
   const [broadcastError, setBroadcastError] = useState("")
 
+  // Selección múltiple para borrar/marcar spam de varios a la vez (pedido el 23/10/2026): un
+  // Set de ids, separado de selectedId (que es el mensaje abierto a la derecha, no cambia).
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [bulkWorking, setBulkWorking] = useState(false)
+
   useEffect(() => {
     const checkAdmin = async () => {
       const { data, error } = await supabase.auth.getSession()
@@ -140,6 +145,64 @@ export default function AdminMessagesPage() {
     await supabase.from("notifications").delete().in("related_message_id", ids)
     setMessages((prev) => prev.filter((m) => !m.is_spam))
     if (selectedId && ids.includes(selectedId)) setSelectedId(null)
+  }
+
+  const toggleSelected = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  // "esta página" = los mensajes visibles con el filtro/búsqueda actual; "todo el buzón" = todos
+  // los mensajes que existen, sin importar en qué pestaña estés mirando ahora.
+  const selectAllVisible = () => setSelectedIds(new Set(filteredMessages.map((m) => m.id)))
+  const selectAllInbox = () => setSelectedIds(new Set(messages.map((m) => m.id)))
+  const clearSelection = () => setSelectedIds(new Set())
+
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    const ids = Array.from(selectedIds)
+    const confirmed = window.confirm(
+      `¿Eliminar ${ids.length} mensaje${ids.length === 1 ? "" : "s"}? No se puede deshacer.`
+    )
+    if (!confirmed) return
+
+    setBulkWorking(true)
+    const { error } = await supabase.from("contact_messages").delete().in("id", ids)
+    if (error) {
+      logError("BULK DELETE ERROR:", error)
+      toast("No se pudieron eliminar los mensajes")
+      setBulkWorking(false)
+      return
+    }
+
+    await supabase.from("notifications").delete().in("related_message_id", ids)
+    setMessages((prev) => prev.filter((m) => !selectedIds.has(m.id)))
+    if (selectedId && selectedIds.has(selectedId)) setSelectedId(null)
+    setSelectedIds(new Set())
+    setBulkWorking(false)
+  }
+
+  const bulkSetSpam = async (isSpam: boolean) => {
+    if (selectedIds.size === 0) return
+    const ids = Array.from(selectedIds)
+    const patch = isSpam ? { is_spam: true, status: "closed" as const } : { is_spam: false, status: "reviewed" as const }
+
+    setBulkWorking(true)
+    const { error } = await supabase.from("contact_messages").update(patch).in("id", ids)
+    if (error) {
+      logError("BULK SPAM ERROR:", error)
+      toast("No se pudo actualizar los mensajes")
+      setBulkWorking(false)
+      return
+    }
+
+    setMessages((prev) => prev.map((m) => (selectedIds.has(m.id) ? { ...m, is_spam: isSpam, status: patch.status } : m)))
+    setSelectedIds(new Set())
+    setBulkWorking(false)
   }
 
   const openMessage = (message: ContactMessage) => {
@@ -271,13 +334,13 @@ export default function AdminMessagesPage() {
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm text-zinc-400">Loading messages...</p>
+        <p className="text-sm text-zinc-400">Cargando mensajes…</p>
       </main>
     )
   }
 
   return (
-    <AdminShell title="Contact inbox" subtitle="Review user support, reports, venue suggestions and partnership requests.">
+    <AdminShell title="Mensajes" subtitle="Soporte, reportes de datos incorrectos, sugerencias de locales y propuestas de colaboración.">
       <>
         <section className="mx-auto max-w-7xl">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -379,44 +442,95 @@ export default function AdminMessagesPage() {
                   Vaciar spam ({stats.spam})
                 </button>
               )}
+
+              {/* Selección múltiple: dos "seleccionar todos" (esta vista filtrada / todo el
+                  buzón entero) más borrar/spam en bloque sobre lo que esté marcado. */}
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-black/20 p-3 text-xs">
+                <button onClick={selectAllVisible} className="font-bold text-zinc-300 hover:text-white">
+                  Seleccionar esta página ({filteredMessages.length})
+                </button>
+                <span className="text-zinc-600">·</span>
+                <button onClick={selectAllInbox} className="font-bold text-zinc-300 hover:text-white">
+                  Seleccionar todo el buzón ({messages.length})
+                </button>
+                {selectedIds.size > 0 && (
+                  <>
+                    <span className="text-zinc-600">·</span>
+                    <button onClick={clearSelection} className="font-bold text-zinc-300 hover:text-white">
+                      Quitar selección
+                    </button>
+                    <span className="ml-auto flex items-center gap-2">
+                      <span className="font-bold text-purple-300">{selectedIds.size} seleccionados</span>
+                      <button
+                        onClick={() => bulkSetSpam(true)}
+                        disabled={bulkWorking}
+                        className="rounded-xl border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 font-bold text-orange-300 transition hover:bg-orange-500 hover:text-black disabled:opacity-40"
+                      >
+                        Marcar spam
+                      </button>
+                      <button
+                        onClick={bulkDelete}
+                        disabled={bulkWorking}
+                        className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 font-bold text-red-400 transition hover:bg-red-500 hover:text-white disabled:opacity-40"
+                      >
+                        {bulkWorking ? "..." : "Eliminar"}
+                      </button>
+                    </span>
+                  </>
+                )}
+              </div>
+
               {filteredMessages.length === 0 ? (
                 <p className="p-6 text-center text-zinc-400">No hay mensajes en este filtro.</p>
               ) : (
                 filteredMessages.map((message) => (
-                  <button
+                  <div
                     key={message.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => openMessage(message)}
-                    className={`rounded-2xl border p-4 text-left transition ${
+                    onKeyDown={(e) => e.key === "Enter" && openMessage(message)}
+                    className={`flex cursor-pointer gap-3 rounded-2xl border p-4 text-left transition ${
                       selectedId === message.id
                         ? "border-white bg-white text-black"
                         : "border-white/10 bg-white/[0.03] text-white hover:border-white/30"
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-bold">{message.name || message.email || "Anónimo"}</span>
-                      <span
-                        className={`shrink-0 rounded-xl px-2 py-1 text-xs font-bold uppercase ${
-                          selectedId === message.id ? "bg-black/10 text-black" : statusClass(message.status)
-                        }`}
-                      >
-                        {message.status}
-                      </span>
-                    </div>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(message.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => toggleSelected(message.id)}
+                      className="mt-1 h-4 w-4 shrink-0 accent-purple-500"
+                      aria-label="Seleccionar mensaje"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-bold">{message.name || message.email || "Anónimo"}</span>
+                        <span
+                          className={`shrink-0 rounded-xl px-2 py-1 text-xs font-bold uppercase ${
+                            selectedId === message.id ? "bg-black/10 text-black" : statusClass(message.status)
+                          }`}
+                        >
+                          {message.status}
+                        </span>
+                      </div>
 
-                    <p className={`mt-1 truncate text-sm font-semibold ${selectedId === message.id ? "text-black" : "text-zinc-200"}`}>
-                      {message.subject || formatType(message.type)}
-                    </p>
-
-                    <p className={`mt-1 line-clamp-2 text-xs ${selectedId === message.id ? "text-black/70" : "text-zinc-400"}`}>
-                      {message.message}
-                    </p>
-
-                    {message.created_at && (
-                      <p className={`mt-2 text-xs ${selectedId === message.id ? "text-black/60" : "text-zinc-400"}`}>
-                        {new Date(message.created_at).toLocaleString()}
+                      <p className={`mt-1 truncate text-sm font-semibold ${selectedId === message.id ? "text-black" : "text-zinc-200"}`}>
+                        {message.subject || formatType(message.type)}
                       </p>
-                    )}
-                  </button>
+
+                      <p className={`mt-1 line-clamp-2 text-xs ${selectedId === message.id ? "text-black/70" : "text-zinc-400"}`}>
+                        {message.message}
+                      </p>
+
+                      {message.created_at && (
+                        <p className={`mt-2 text-xs ${selectedId === message.id ? "text-black/60" : "text-zinc-400"}`}>
+                          {new Date(message.created_at).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 ))
               )}
             </div>

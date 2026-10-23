@@ -220,7 +220,7 @@ export default function AdminClubSessionsPage() {
   )
 
   return (
-    <AdminShell title="Sesiones" subtitle="Noches temáticas semanales de cada club (ej. viernes techno, sábado reggaetón).">
+    <AdminShell title="Sesiones semanales" subtitle="Noches temáticas semanales de cada club (ej. viernes techno, sábado reggaetón).">
       <>
         <section className="mx-auto max-w-7xl">
           <div className="rounded-card border border-purple-500/30 bg-purple-500/[0.04] p-6">

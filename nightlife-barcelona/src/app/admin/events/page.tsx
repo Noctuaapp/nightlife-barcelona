@@ -437,13 +437,22 @@ export default function AdminEventsPage() {
     setEvents((prev) => prev.map((item) => (item.id === event.id ? { ...item, recurring: newValue } : item)))
   }
 
+  // Antes "Mostrar todos" / "Ocultar todos" actuaban al instante, sin preguntar: un toque sin
+  // querer escondía (o publicaba) todos los eventos de golpe. Ahora: ocultar todo pide escribir OCULTAR, y
+  // mostrar todo avisa de lo que se publicaría sin revisar.
+  const confirmHideAll = () =>
+    (window.prompt(`Vas a OCULTAR todos los eventos de la web (${events.length}). Nadie podrá verlos hasta que los vuelvas a mostrar.\n\nEscribe OCULTAR para confirmar.`) || "").trim().toUpperCase() === "OCULTAR"
+  const confirmShowAll = () =>
+    window.confirm(`Vas a PUBLICAR todos los eventos (${events.length}), también los que están ocultos a propósito. Eso incluye eventos que ya pasaron y las ediciones nuevas de eventos anuales que el sistema deja ocultas para que las revises.\n\n¿Seguro?`)
   const showAll = async () => {
+    if (!confirmShowAll()) return
     const { error } = await supabase.from("events").update({ hidden: false }).neq("id", 0)
     if (error) return
     setEvents((prev) => prev.map((e) => ({ ...e, hidden: false })))
   }
 
   const hideAll = async () => {
+    if (!confirmHideAll()) return
     const { error } = await supabase.from("events").update({ hidden: true }).neq("id", 0)
     if (error) return
     setEvents((prev) => prev.map((e) => ({ ...e, hidden: true })))
@@ -460,7 +469,7 @@ export default function AdminEventsPage() {
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm text-zinc-400">Loading admin...</p>
+        <p className="text-sm text-zinc-400">Cargando…</p>
       </main>
     )
   }
@@ -498,7 +507,7 @@ export default function AdminEventsPage() {
   )
 
   return (
-    <AdminShell title="Eventos" subtitle="Crea, edita y gestiona los eventos y festivales.">
+    <AdminShell title="Eventos y festivales" subtitle="Crea, edita y gestiona los eventos y festivales.">
       <>
         <section className="mx-auto max-w-7xl">
           <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">

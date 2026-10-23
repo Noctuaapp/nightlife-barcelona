@@ -123,10 +123,49 @@ export function InlineEditText({
     },
   }
 
+  // Botones explícitos de guardar/cancelar, visibles siempre (no solo al pasar el ratón por
+  // encima): en móvil no hay ratón que active ":hover", y el guardado al perder el foco
+  // (onBlur) es poco fiable al tocar fuera del campo en Safari/Chrome de iOS y Android — a veces
+  // el toque siguiente no cuenta como "perder el foco" hasta que ya se ha navegado a otro sitio,
+  // así que la edición se perdía sin aviso. Con un botón que se toca directamente, el guardado ya
+  // no depende de ese evento: se llama a save() al momento, igual en móvil que en escritorio.
+  // onMouseDown con preventDefault evita que el toque en el botón dispare primero un onBlur del
+  // campo (que ya llamaría a save) justo antes del click, lo que duplicaría la llamada.
+  const controls = (
+    <span className="ml-1 inline-flex shrink-0 gap-1 align-middle">
+      <button
+        type="button"
+        aria-label="Guardar"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={save}
+        disabled={saving}
+        className="flex h-7 w-7 items-center justify-center rounded-md bg-purple-500/90 text-xs font-bold text-white active:bg-purple-500"
+      >
+        ✓
+      </button>
+      <button
+        type="button"
+        aria-label="Cancelar"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={cancel}
+        disabled={saving}
+        className="flex h-7 w-7 items-center justify-center rounded-md bg-white/10 text-xs font-bold text-zinc-200 active:bg-white/20"
+      >
+        ✕
+      </button>
+    </span>
+  )
+
   return multiline ? (
-    <textarea ref={ref as React.RefObject<HTMLTextAreaElement>} rows={4} {...shared} />
+    <span className="inline-flex w-full items-start gap-1">
+      <textarea ref={ref as React.RefObject<HTMLTextAreaElement>} rows={4} {...shared} />
+      {controls}
+    </span>
   ) : (
-    <input ref={ref as React.RefObject<HTMLInputElement>} type="text" {...shared} />
+    <span className="inline-flex w-full items-center gap-1">
+      <input ref={ref as React.RefObject<HTMLInputElement>} type="text" {...shared} />
+      {controls}
+    </span>
   )
 }
 

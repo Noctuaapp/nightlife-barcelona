@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { useLanguage } from "../../context/LanguageContext"
 import { supabase } from "../../lib/supabase"
 import { LEVELS, getLevelStatus } from "../../lib/xp"
+import { useClubNoctuaEnabled } from "../../lib/appSettings"
+import { useIsAdmin } from "../../lib/useIsAdmin"
 import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"
 import BottomNav from "@/components/layout/BottomNav"
@@ -36,6 +38,8 @@ function badgeTier(count: number): { key: string; icon: typeof Compass } {
 
 export default function ClubNoctuaPage() {
   const { t, locale } = useLanguage()
+  const enabled = useClubNoctuaEnabled()
+  const isAdmin = useIsAdmin()
   const [xp, setXp] = useState<number | null>(null)
   const [levelKey, setLevelKey] = useState<string | null>(null)
   const [levelSince, setLevelSince] = useState<string | null>(null)
@@ -92,27 +96,46 @@ export default function ClubNoctuaPage() {
   const status = xp !== null ? getLevelStatus(xp, levelKey, levelSince) : null
   const currentKey = status?.current.key ?? null
 
+  // Pedido el 23/10/2026: mientras no lo actives desde /admin/herramientas, nadie salvo tú debe
+  // ver misiones, insignias de barrio ni la lista de niveles — solo la invitación a amigos
+  // (/invitar) sigue dando XP. `enabled === null` es "todavía comprobando", para no enseñar un
+  // parpadeo del contenido real antes de saber si toca ocultarlo.
+  const showFullPage = enabled === true || isAdmin
+
   return (
     <div className="flex min-h-screen flex-col bg-night text-ink">
       <Header />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-16 pt-8 sm:pt-12">
-        <div className="mb-10">
-          <div className="flex items-center gap-4">
-            {status && <NocOwl size={56} levelColor={status.current.color} mood="wink" />}
-            <h1 className="font-display text-[2.1rem] leading-[1.06] sm:text-5xl">Club Noctua</h1>
+        {enabled === null ? null : !showFullPage ? (
+          <div className="py-16 text-center">
+            <div className="mx-auto w-fit"><NocOwl size={64} mood="wink" /></div>
+            <h1 className="font-display mt-4 text-[2.1rem] leading-[1.06] sm:text-5xl">Club Noctua</h1>
+            <p className="mx-auto mt-4 max-w-sm text-base leading-relaxed text-zinc-300">{t("clubNoctua.pausedBody")}</p>
           </div>
-          <p className="mt-4 max-w-xl text-base leading-relaxed text-zinc-300">{t("clubNoctua.intro")}</p>
-          {xp !== null && (
-            <p className="mt-3 text-sm text-zinc-400">{t("clubNoctua.youHave").replace("{n}", String(xp))}</p>
-          )}
-          {status?.unlocksAt && (
-            <p className="mt-2 text-sm font-semibold text-brand-soft">
-              {t("levels.waitingUntil").replace("{date}", status.unlocksAt.toLocaleDateString(toDateLocale(locale), { day: "numeric", month: "short" }))}
-            </p>
-          )}
-        </div>
+        ) : (
+          <>
+            {!enabled && isAdmin && (
+              <p className="mb-6 rounded-card border border-dashed border-amber-400/30 bg-amber-400/10 px-4 py-3 text-xs font-semibold text-amber-300">
+                Solo tú ves esto: Club Noctua está en pausa para el resto de usuarios. Actívalo en /admin/herramientas cuando quieras.
+              </p>
+            )}
+            <div className="mb-10">
+              <div className="flex items-center gap-4">
+                {status && <NocOwl size={56} levelColor={status.current.color} mood="wink" />}
+                <h1 className="font-display text-[2.1rem] leading-[1.06] sm:text-5xl">Club Noctua</h1>
+              </div>
+              <p className="mt-4 max-w-xl text-base leading-relaxed text-zinc-300">{t("clubNoctua.intro")}</p>
+              {xp !== null && (
+                <p className="mt-3 text-sm text-zinc-400">{t("clubNoctua.youHave").replace("{n}", String(xp))}</p>
+              )}
+              {status?.unlocksAt && (
+                <p className="mt-2 text-sm font-semibold text-brand-soft">
+                  {t("levels.waitingUntil").replace("{date}", status.unlocksAt.toLocaleDateString(toDateLocale(locale), { day: "numeric", month: "short" }))}
+                </p>
+              )}
+            </div>
 
-        <BadgesAndChallenges />
+            <BadgesAndChallenges />
 
         {neighborhoodBadges.length > 0 && (
           <section className="mb-10">
@@ -176,6 +199,8 @@ export default function ClubNoctuaPage() {
             })}
           </ul>
         </section>
+          </>
+        )}
       </main>
       <Footer />
       <BottomNav />

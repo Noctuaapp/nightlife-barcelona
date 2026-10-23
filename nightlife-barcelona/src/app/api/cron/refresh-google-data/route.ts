@@ -208,11 +208,19 @@ export async function GET(req: Request) {
                 counter,
                 `https://places.googleapis.com/v1/${p.name}/media?maxWidthPx=1000&key=${apiKey}`
               )
+              // Antes no se comprobaba esto: si Google devolvía un error (referencia de foto
+              // caducada, límite de la clave...) el cuerpo de la respuesta no era una imagen de
+              // verdad, pero se subía igual a Storage y se guardaba su URL como si nada — de ahí
+              // las fotos "rotas" (icono de imagen caída) que se veían en la galería del admin.
+              if (!photoRes.ok) return null
               const buffer = await photoRes.arrayBuffer()
               const fileName = `${club.id}/${p.name.split("/").pop()}.jpg`
-              await supabase.storage
+              const { error: uploadError } = await supabase.storage
                 .from("club-photos")
                 .upload(fileName, Buffer.from(buffer), { contentType: "image/jpeg", upsert: true })
+              // Y esto tampoco: si Storage rechazaba la subida (política, cuota...), el error se
+              // ignoraba y se guardaba igualmente la URL de un archivo que nunca llegó a existir.
+              if (uploadError) return null
               const { data: pub } = supabase.storage.from("club-photos").getPublicUrl(fileName)
               return pub.publicUrl
             } catch {
