@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
-import { useIsAdmin } from "../../lib/useIsAdmin"
+import { useCanEdit } from "./EditAccess"
 import { toast } from "../ui/Toast"
+import { touchCache } from "../../lib/touchCache"
+import { ownerFolder, prepareImageForUpload, uploadFileName } from "../../lib/compressImage"
 
 // Edición in situ: para el admin, cualquier texto envuelto aquí se puede tocar y editar sin salir
 // de la ficha pública (antes había que ir al formulario de /admin). Para cualquier otra persona es
@@ -35,7 +37,7 @@ export function InlineEditText({
   emptyLabel = "añadir",
   className = "",
 }: InlineEditTextProps) {
-  const isAdmin = useIsAdmin()
+  const isAdmin = useCanEdit() // admin, o el dueño de esta ficha
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value || "")
@@ -78,6 +80,7 @@ export function InlineEditText({
       return
     }
     setSaved(next)
+    touchCache(["/", "/clubs", "/events", "/map", window.location.pathname])
     router.refresh()
   }
 
@@ -95,8 +98,10 @@ export function InlineEditText({
         onKeyDown={(e) => {
           if (e.key === "Enter") startEditing()
         }}
-        className={`cursor-text rounded px-0.5 -mx-0.5 transition hover:bg-purple-400/15 ${className}`}
-        title="Click para editar"
+        // Subrayado discontinuo siempre visible: en el móvil no hay "pasar el ratón por encima",
+        // así que antes no había forma de saber qué textos se podían tocar para editarlos.
+        className={`cursor-text rounded px-0.5 -mx-0.5 underline decoration-purple-400/50 decoration-dashed decoration-1 underline-offset-4 transition hover:bg-purple-400/15 active:bg-purple-400/20 ${className}`}
+        title="Toca para editar"
       >
         {shown || <span className="italic text-purple-300/70">+ {emptyLabel}</span>}
       </span>
@@ -107,8 +112,10 @@ export function InlineEditText({
     value: draft,
     disabled: saving,
     placeholder,
-    style: { font: "inherit", color: "inherit", lineHeight: "inherit" } as React.CSSProperties,
-    className: `w-full min-w-[8ch] rounded-md border border-purple-400 bg-black/50 px-2 py-0.5 outline-none ${className}`,
+    // Mínimo 16 px: con menos, el iPhone hace zoom de golpe al tocar el campo y descoloca toda la
+    // ficha (y no vuelve solo). Los títulos grandes siguen con su tamaño.
+    style: { font: "inherit", fontSize: "max(16px, 1em)", color: "inherit", lineHeight: "inherit" } as React.CSSProperties,
+    className: `min-w-0 flex-1 basis-[9ch] rounded-md border border-purple-400 bg-black/50 px-2 py-1 outline-none ${className}`,
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setDraft(e.target.value),
     onBlur: save,
     onKeyDown: (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -132,14 +139,14 @@ export function InlineEditText({
   // onMouseDown con preventDefault evita que el toque en el botón dispare primero un onBlur del
   // campo (que ya llamaría a save) justo antes del click, lo que duplicaría la llamada.
   const controls = (
-    <span className="ml-1 inline-flex shrink-0 gap-1 align-middle">
+    <span className="inline-flex shrink-0 gap-1 align-middle">
       <button
         type="button"
         aria-label="Guardar"
         onMouseDown={(e) => e.preventDefault()}
         onClick={save}
         disabled={saving}
-        className="flex h-7 w-7 items-center justify-center rounded-md bg-purple-500/90 text-xs font-bold text-white active:bg-purple-500"
+        className="flex h-10 w-10 items-center justify-center rounded-md bg-purple-500/90 text-sm font-bold text-white active:bg-purple-500 sm:h-7 sm:w-7 sm:text-xs"
       >
         ✓
       </button>
@@ -149,7 +156,7 @@ export function InlineEditText({
         onMouseDown={(e) => e.preventDefault()}
         onClick={cancel}
         disabled={saving}
-        className="flex h-7 w-7 items-center justify-center rounded-md bg-white/10 text-xs font-bold text-zinc-200 active:bg-white/20"
+        className="flex h-10 w-10 items-center justify-center rounded-md bg-white/10 text-sm font-bold text-zinc-200 active:bg-white/20 sm:h-7 sm:w-7 sm:text-xs"
       >
         ✕
       </button>
@@ -157,12 +164,15 @@ export function InlineEditText({
   )
 
   return multiline ? (
-    <span className="inline-flex w-full items-start gap-1">
-      <textarea ref={ref as React.RefObject<HTMLTextAreaElement>} rows={4} {...shared} />
+    // En el móvil los botones van debajo del texto (a la derecha ocupaban media pantalla).
+    <span className="flex w-full flex-col items-end gap-1.5 sm:flex-row sm:items-start">
+      <textarea ref={ref as React.RefObject<HTMLTextAreaElement>} rows={5} {...shared} className={`${shared.className} w-full`} />
       {controls}
     </span>
   ) : (
-    <span className="inline-flex w-full items-center gap-1">
+    // flex-wrap: en huecos estrechos (los datos prácticos van de dos en dos en el móvil) los
+    // botones bajan a la línea de abajo en vez de dejar el campo en 3 letras.
+    <span className="inline-flex w-full flex-wrap items-center justify-end gap-1">
       <input ref={ref as React.RefObject<HTMLInputElement>} type="text" {...shared} />
       {controls}
     </span>
@@ -179,10 +189,14 @@ type InlineEditImageProps = {
   bucket: string
   label?: string
   className?: string
+  // "hero" = portada de la ficha (la foto entera sobre fondo desenfocado, como HeroImage);
+  // "thumb" = miniatura pequeña (foto recortada al hueco).
+  variant?: "hero" | "thumb"
 }
 
-export function InlineEditImage({ table, id, field, bucket, label = "Cambiar imagen", className = "" }: InlineEditImageProps) {
-  const isAdmin = useIsAdmin()
+export function InlineEditImage({ table, id, field, bucket, label = "Cambiar imagen", className = "", variant }: InlineEditImageProps) {
+  const kind = variant || "hero"
+  const isAdmin = useCanEdit() // admin, o el dueño de esta ficha
   const router = useRouter()
   const [uploading, setUploading] = useState(false)
   // Igual que en el texto: no esperamos a que la ISR de la página traiga la imagen nueva, se
@@ -190,7 +204,7 @@ export function InlineEditImage({ table, id, field, bucket, label = "Cambiar ima
   const [savedUrl, setSavedUrl] = useState<string | null>(null)
   const inputId = `inline-img-${table}-${id}-${field}`
 
-  if (!isAdmin) return savedUrl ? <SavedImageOverlay src={savedUrl} /> : null
+  if (!isAdmin) return savedUrl ? <SavedImageOverlay src={savedUrl} variant={kind} /> : null
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -201,9 +215,11 @@ export function InlineEditImage({ table, id, field, bucket, label = "Cambiar ima
     // error normal) sin try/catch alrededor, "uploading" se quedaba en true para siempre y el
     // overlay quedaba inservible sin ningún aviso — exactamente "le doy y no pasa nada".
     try {
-      const ext = file.name.split(".").pop()
-      const fileName = `inline-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-      const { error: uploadError } = await supabase.storage.from(bucket).upload(fileName, file)
+      const prepared = await prepareImageForUpload(file)
+      const fileName = `${ownerFolder(table, id)}/${uploadFileName("inline", prepared.ext)}`
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, prepared.blob, { contentType: prepared.contentType, cacheControl: "31536000" })
       if (uploadError) {
         toast("Error al subir la imagen: " + uploadError.message, 6000)
         return
@@ -215,7 +231,9 @@ export function InlineEditImage({ table, id, field, bucket, label = "Cambiar ima
         return
       }
       setSavedUrl(data.publicUrl)
+      touchCache(["/", "/clubs", "/events", "/map", window.location.pathname])
       router.refresh()
+      toast("Foto cambiada")
     } catch (err) {
       toast("Error al subir la imagen: " + (err instanceof Error ? err.message : String(err)), 6000)
     } finally {
@@ -223,15 +241,21 @@ export function InlineEditImage({ table, id, field, bucket, label = "Cambiar ima
     }
   }
 
+  // Antes era una capa invisible que tapaba TODA la foto y solo aparecía al pasar el ratón. En el
+  // móvil no se veía nada, y como la capa también cubría la parte de arriba del título, al tocar
+  // el nombre del club para editarlo se abría el selector de fotos. Ahora es un botón visible y
+  // pequeño: en la portada, arriba a la derecha; en las miniaturas, una franja abajo.
+  const buttonClass =
+    kind === "hero"
+      ? "absolute right-3 top-20 z-20 flex items-center gap-2 rounded-full bg-black/75 px-4 py-2.5 text-sm font-bold text-white shadow-lg ring-1 ring-white/20 backdrop-blur active:scale-95 sm:top-24"
+      : "absolute inset-x-0 bottom-0 z-20 flex items-center justify-center bg-black/75 py-1.5 text-[11px] font-bold text-white"
+
   return (
     <>
-      {savedUrl && <SavedImageOverlay src={savedUrl} />}
-      <label
-        htmlFor={inputId}
-        className={`absolute inset-0 z-10 flex cursor-pointer items-center justify-center bg-black/0 text-center text-sm font-bold text-white opacity-0 transition hover:bg-black/50 hover:opacity-100 ${className}`}
-      >
-        {uploading ? "Subiendo…" : `📁 ${label}`}
-        <input id={inputId} type="file" accept="image/*" className="hidden" disabled={uploading} onChange={handleFile} />
+      {savedUrl && <SavedImageOverlay src={savedUrl} variant={kind} />}
+      <label htmlFor={inputId} className={`cursor-pointer ${buttonClass} ${uploading ? "opacity-80" : ""} ${className}`}>
+        {uploading ? "Subiendo…" : `📷 ${label}`}
+        <input id={inputId} type="file" accept="image/*" className="sr-only" disabled={uploading} onChange={handleFile} />
       </label>
     </>
   )
@@ -240,9 +264,21 @@ export function InlineEditImage({ table, id, field, bucket, label = "Cambiar ima
 // Tapa la imagen vieja (la que vino del servidor) con la recién subida mientras la ISR de la
 // página se pone al día. Usa <img> normal, no next/image, porque esto vive fuera de su control de
 // tamaños y solo necesita cubrir el mismo hueco que la imagen original.
-function SavedImageOverlay({ src }: { src: string }) {
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="" className="absolute inset-0 z-[5] h-full w-full object-cover" />
+function SavedImageOverlay({ src, variant }: { src: string; variant: "hero" | "thumb" }) {
+  if (variant === "thumb") {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt="" className="absolute inset-0 z-[5] h-full w-full object-cover" />
+  }
+  // Igual que HeroImage: la foto entera y nítida en el centro, con ella misma desenfocada detrás.
+  return (
+    <div className="absolute inset-0 overflow-hidden bg-night">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-60 blur-2xl" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt="" className="absolute inset-0 h-full w-full object-contain" />
+      <div className="absolute inset-0 bg-gradient-to-t from-night via-night/40 to-transparent" />
+    </div>
+  )
 }
 
 // Tarifas combinadas de un festival (packs de varios días, abonos...), guardadas como una lista
@@ -252,7 +288,7 @@ function SavedImageOverlay({ src }: { src: string }) {
 type Tier = { label: string; price: string }
 
 export function InlineEditTiers({ table, id, value }: { table: string; id: number; value: Tier[] | null }) {
-  const isAdmin = useIsAdmin()
+  const isAdmin = useCanEdit() // admin, o el dueño de esta ficha
   const router = useRouter()
   const [tiers, setTiers] = useState<Tier[]>(() => (Array.isArray(value) ? value : []))
   const [saving, setSaving] = useState(false)
@@ -277,7 +313,10 @@ export function InlineEditTiers({ table, id, value }: { table: string; id: numbe
     const { error } = await supabase.from(table).update({ price_tiers: next.length > 0 ? next : null }).eq("id", id)
     setSaving(false)
     if (error) toast("No se pudo guardar: " + error.message)
-    else router.refresh()
+    else {
+      touchCache(["/", "/clubs", "/events", "/map", window.location.pathname])
+      router.refresh()
+    }
   }
 
   const update = (i: number, patch: Partial<Tier>) => setTiers((prev) => prev.map((t, idx) => (idx === i ? { ...t, ...patch } : t)))

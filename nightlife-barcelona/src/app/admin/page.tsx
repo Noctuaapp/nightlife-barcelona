@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { supabase } from "../../lib/supabase"
+import { EXTRA_FEATURES, extrasFromRow } from "../../lib/extraFeatures"
 import AdminShell from "../../components/admin/AdminShell"
 import { ADMIN_EMAIL } from "../../lib/admin"
 import { toast } from "../../components/ui/Toast"
@@ -55,7 +56,7 @@ type Club = {
 // actualizaron, así que campos como el tipo de local, los días que abre, el metro/bus cercano,
 // el futbolín/billar y los descuentos/entrada gratis nunca tuvieron un sitio desde el que
 // editarse aunque ya se usaran en la web (ficha de club, filtros de "Planifica tu noche", etc.).
-const VENUE_TYPE_OPTIONS = ["Discoteca", "Pub", "Bar musical"]
+const VENUE_TYPE_OPTIONS = ["Discoteca", "Pub", "Bar musical", "Coctelería", "Karaoke", "Bar de billar"]
 const DAY_OPTIONS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
 
 type ClubFormData = {
@@ -86,12 +87,22 @@ type ClubFormData = {
   metro_lines: string
   night_buses: string
   has_foosball: boolean
+  // Máquina de tabaco, dardos, karaoke... (lib/extraFeatures.ts)
+  extras: Record<string, boolean>
   discount_info: string
   free_entry_info: string
   gallery: string[]
   latitude: string
   longitude: string
   description: string
+}
+
+// Mismo criterio que el importador de OpenStreetMap y que supabase/28_locales_repetidos.sql.
+const NAME_STOP_WORDS = ["bar", "pub", "club", "discoteca", "cafe", "restaurant", "restaurante", "bcn", "barcelona", "the", "el", "la", "los", "las", "de", "del", "i", "y", "and"]
+function normalizeVenueName(name: string | null | undefined): string {
+  const base = (name || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, " ")
+  const words = base.split(/\s+/).filter((w) => w && !NAME_STOP_WORDS.includes(w))
+  return (words.length ? words : base.split(/\s+/).filter(Boolean)).join("")
 }
 
 const emptyForm: ClubFormData = {
@@ -122,6 +133,7 @@ const emptyForm: ClubFormData = {
   metro_lines: "",
   night_buses: "",
   has_foosball: false,
+  extras: {},
   discount_info: "",
   free_entry_info: "",
   gallery: [],
@@ -158,6 +170,7 @@ const clubToForm = (club: Club): ClubFormData => ({
   metro_lines: club.metro_lines || "",
   night_buses: club.night_buses || "",
   has_foosball: !!club.has_foosball,
+  extras: extrasFromRow(club as unknown as Record<string, unknown>),
   discount_info: club.discount_info || "",
   free_entry_info: club.free_entry_info || "",
   gallery: Array.isArray(club.gallery) ? club.gallery : [],
@@ -209,14 +222,15 @@ export default function AdminPage() {
     setClubs((prev) => prev.map((c) => c.id === club.id ? { ...c, [field]: newValue } : c))
     // Mismo motivo que en deleteClub de abajo: si no se avisa a Next, el listado público sigue
     // sirviendo la versión cacheada (p. ej. si esto esconde/muestra el club) hasta que caduque.
-    touchCache(clubPaths(club.slug))
+    touchCache(clubPaths(club.slug || createSlug(club.name)))
   }
 
   const deleteClub = async (id: number) => {
     if (!confirm("¿Seguro que quieres eliminar este club?")) return
     // El slug hace falta para avisar a Next qué ficha pública invalidar — una vez borrado el club
     // ya no se puede volver a pedir, así que se guarda antes de borrar.
-    const slug = clubs.find((c) => c.id === id)?.slug
+    const gone = clubs.find((c) => c.id === id)
+    const slug = gone?.slug || (gone ? createSlug(gone.name) : null)
     const { error } = await supabase.from("clubs").delete().eq("id", id)
     if (error) {
       toast("Error al eliminar: " + error.message)
@@ -278,6 +292,7 @@ export default function AdminPage() {
     metro_lines: form.metro_lines.trim(),
     night_buses: form.night_buses.trim(),
     has_foosball: form.has_foosball,
+    ...form.extras,
     discount_info: form.discount_info.trim(),
     free_entry_info: form.free_entry_info.trim(),
     gallery: form.gallery.length > 0 ? form.gallery : null,
@@ -295,6 +310,11 @@ export default function AdminPage() {
       toast("El nombre del club es obligatorio")
       return
     }
+    // Evita volver a crear locales repetidos: si ya hay uno con el mismo nombre (sin contar
+    // tildes, mayúsculas ni palabras como "bar", "club", "BCN"...), avisa antes de guardar.
+    const norm = normalizeVenueName(newClub.name)
+    const twin = clubs.find((c) => norm && normalizeVenueName(c.name) === norm)
+    if (twin && !confirm(`Ya existe "${twin.name}"${twin.hidden ? " (oculto)" : ""}. ¿Seguro que quieres crear otro local con ese nombre?`)) return
     setSaving(true)
     const { data, error } = await supabase.from("clubs").insert([formToPayload(newClub)]).select()
     setSaving(false)
@@ -304,7 +324,7 @@ export default function AdminPage() {
     }
     if (data && data[0]) {
       setClubs((prev) => [...prev, data[0] as Club].sort((a, b) => a.name.localeCompare(b.name)))
-      touchCache(clubPaths((data[0] as { slug?: string | null }).slug))
+      touchCache(clubPaths((data[0] as { slug?: string | null }).slug || createSlug((data[0] as { name?: string }).name)))
     }
     setNewClub(emptyForm)
     setShowAddForm(false)
@@ -440,7 +460,7 @@ export default function AdminPage() {
     }
     if (data && data[0]) {
       setClubs((prev) => prev.map((c) => c.id === id ? (data[0] as Club) : c))
-      touchCache(clubPaths((data[0] as { slug?: string | null }).slug))
+      touchCache(clubPaths((data[0] as { slug?: string | null }).slug || createSlug((data[0] as { name?: string }).name)))
     }
     setEditingId(null)
   }
@@ -651,6 +671,17 @@ export default function AdminPage() {
             {opt.label}
           </button>
         ))}
+      </div>
+      <div className="md:col-span-2 flex flex-wrap gap-2">
+        {EXTRA_FEATURES.map((f) => {
+          const on = !!form.extras[f.field]
+          return (
+            <button key={f.field} type="button" onClick={() => setForm({ ...form, extras: { ...form.extras, [f.field]: !on } })}
+              className={`rounded-full px-4 py-2 text-xs font-bold transition ${on ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
+              {f.emoji} {f.label}
+            </button>
+          )
+        })}
       </div>
       {form.swinger_friendly && (
         <div className="md:col-span-2">

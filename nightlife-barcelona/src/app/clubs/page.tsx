@@ -3,6 +3,7 @@ import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import ClubsExplorer from "../../components/nightlife/ClubsExplorer"
 import ExploreLinks from "../../components/nightlife/ExploreLinks"
+import ClubsDirectory from "../../components/nightlife/ClubsDirectory"
 import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../../lib/clubQueries"
 import { MIN_INDEXABLE, neighborhoodsOf, stylesOf } from "../../lib/areas"
 
@@ -51,6 +52,7 @@ export default async function ClubsPage() {
     <>
       <Header />
       <ClubsExplorer initialClubs={clubs} />
+      <ClubsDirectory clubs={clubs} />
       <ExploreLinks
         neighborhoods={neighborhoodsOf(clubs).filter((n) => n.count >= MIN_INDEXABLE)}
         styles={stylesOf(clubs).filter((n) => n.count >= MIN_INDEXABLE)}

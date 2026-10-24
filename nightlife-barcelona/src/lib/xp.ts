@@ -103,7 +103,7 @@ export function getLevelInfo(xp: number): LevelInfo {
 // más paga, y lo pasivo (abrir la app) paga poco: el freno real al farmeo en ráfaga lo pone el
 // gate de tiempo de LEVEL_GATE_DAYS, no estos importes.
 export const XP_AMOUNTS = {
-  checkin: 20, // check-in geolocalizado en el club — la acción más valorada, por ser la única verificada in situ
+  checkin: 5, // check-in geolocalizado en el club (bajado de 20 a 5 el 24/10/2026; ver supabase/27_checkin_5xp.sql)
   streak: 15, // racha semanal (>=3 días distintos de actividad en los últimos 7 días)
   dailyLogin: 2, // entrar en la app un día más seguido del anterior (racha diaria de inicios de sesión)
 }

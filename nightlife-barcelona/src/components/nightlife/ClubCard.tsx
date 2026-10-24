@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
+import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
 import Icon from "../ui/Icon"
 import { createSlug } from "../../lib/slug"
 import { clubOpenNow } from "../../lib/clubHours"

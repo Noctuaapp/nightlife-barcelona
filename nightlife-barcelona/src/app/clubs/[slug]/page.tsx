@@ -4,9 +4,13 @@ import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import AdminEditButton from "../../../components/admin/AdminEditButton"
 import ClubPageContent from "../../../components/nightlife/ClubPageContent"
+import { EditAccessProvider } from "../../../components/admin/EditAccess"
 import { notFound, permanentRedirect } from "next/navigation"
 import { supabase } from "../../../lib/supabase"
 import { findBySlug } from "../../../lib/slugLookup"
+import { createSlug } from "../../../lib/slug"
+import { clubMetaDescription, clubSummary, venueKind } from "../../../lib/clubSummary"
+import type { DbRow } from "../../../lib/clubQueries"
 
 // ISR: la ficha se genera la primera vez que alguien la pide y se sirve ya hecha durante 5 min
 // (antes se generaba de cero en cada visita, consultando la base de datos cada vez). Los cambios
@@ -26,6 +30,34 @@ type ClubPageProps = {
 // los clubs: ver src/lib/slugLookup.ts. Los clubs ocultos desde el admin no se encuentran.
 const getClub = cache(async (slug: string) => findBySlug("club", slug))
 
+function venueKindLabel(venueType: string | null | undefined): string {
+  return venueKind(venueType).label
+}
+
+// Locales parecidos (mismo barrio y estilo, buena nota), calculados en el servidor: antes se
+// pedían en el navegador después de cargar, así que en el HTML que recibe Google no había ningún
+// enlace a otros clubs. Ahora salen como enlaces normales desde el primer byte, y siempre los
+// mismos para un club dado (Google ve una red de enlaces estable entre fichas).
+async function relatedClubs(club: DbRow): Promise<DbRow[]> {
+  const { data } = await supabase
+    .from("clubs")
+    .select("id, name, slug, image, neighborhood, music, rating, google_rating")
+    .eq("hidden", false)
+    .neq("id", club.id)
+  if (!data) return []
+  const myMusic = String(club.music || "").toLowerCase().split(/[,/·]/).map((m) => m.trim()).filter(Boolean)
+  const score = (r: DbRow) => {
+    const rating = Number(r.google_rating || r.rating || 0)
+    let points = rating >= 4 ? rating : rating >= 3.5 ? rating / 2 : 0
+    if (club.neighborhood && r.neighborhood === club.neighborhood) points += 3
+    const theirMusic = String(r.music || "").toLowerCase()
+    if (myMusic.some((m) => theirMusic.includes(m))) points += 2
+    if (r.image) points += 1
+    return points
+  }
+  return [...(data as DbRow[])].sort((a, b) => score(b) - score(a) || a.id - b.id).slice(0, 6)
+}
+
 export async function generateMetadata({ params }: ClubPageProps): Promise<Metadata> {
   const { slug } = await params
   const match = await getClub(slug)
@@ -35,11 +67,11 @@ export async function generateMetadata({ params }: ClubPageProps): Promise<Metad
   }
   const club = match.row
 
-  const title = `${club.name} — Discoteca en ${club.neighborhood || "Barcelona"} | Noctua`
-  const description = (
-    club.description ||
-    `Toda la información de ${club.name}: horarios, precio de entrada, estilo musical y cómo llegar. Descúbrelo en Noctua.`
-  ).slice(0, 160)
+  // Antes todas las fichas decían "Discoteca", también bares y pubs: el título ahora usa el tipo
+  // de local real (lo que la gente busca: "bar de copas en Gràcia", "pub en el Born"...).
+  const kind = venueKindLabel(club.venue_type)
+  const title = `${club.name} — ${kind} en ${club.neighborhood || "Barcelona"} | Noctua`
+  const description = clubMetaDescription(club)
   const url = `https://www.noctuaapp.com/clubs/${match.canonicalSlug}`
 
   return {
@@ -53,7 +85,7 @@ export async function generateMetadata({ params }: ClubPageProps): Promise<Metad
       siteName: "Noctua",
       locale: "es_ES",
       type: "website",
-      images: club.image ? [{ url: club.image }] : undefined,
+      images: club.image ? [{ url: club.image, alt: club.name }] : [{ url: "https://www.noctuaapp.com/hero/skyline_barcelona.jpeg", alt: "Noctua" }],
     },
     twitter: {
       card: "summary_large_image",
@@ -76,18 +108,22 @@ export default async function ClubPage({ params }: ClubPageProps) {
   const club = match.row
 
   // En paralelo (antes iban una detrás de otra y sumaban sus tiempos).
-  const [{ data: clubEvents }, { data: clubSessions }] = await Promise.all([
+  const [{ data: clubEvents }, { data: clubSessions }, related] = await Promise.all([
     supabase.from("club_events").select("*").eq("club_id", club.id).order("date", { ascending: true }),
     supabase.from("club_sessions").select("*").eq("club_id", club.id).order("sort_order", { ascending: true }),
+    relatedClubs(club),
   ])
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NightClub",
     name: club.name,
-    description: club.description || undefined,
-    image: club.image || undefined,
+    description: club.description || clubSummary(club),
+    // Todas las fotos (portada + galería), no solo la portada: más posibilidades de salir en
+    // Google Imágenes y en los resultados con foto.
+    image: [club.image, ...(Array.isArray(club.gallery) ? club.gallery : [])].filter(Boolean).slice(0, 6),
     url: `https://www.noctuaapp.com/clubs/${match.canonicalSlug}`,
+    ...(club.website ? { sameAs: [club.website, club.instagram].filter(Boolean) } : {}),
     address: {
       "@type": "PostalAddress",
       streetAddress: club.address || undefined,
@@ -103,13 +139,31 @@ export default async function ClubPage({ params }: ClubPageProps) {
     // penalización manual de los resultados enriquecidos).
   }
 
+  // Migas de pan para Google (Noctua › Clubs › Barrio › Club): ayudan a entender la estructura
+  // del sitio y salen en el resultado de búsqueda en vez de la URL pelada.
+  const crumbs = [
+    { name: "Noctua", url: "https://www.noctuaapp.com" },
+    { name: "Clubs", url: "https://www.noctuaapp.com/clubs" },
+    ...(club.neighborhood ? [{ name: club.neighborhood, url: `https://www.noctuaapp.com/barrio/${createSlug(club.neighborhood)}` }] : []),
+    { name: club.name, url: `https://www.noctuaapp.com/clubs/${match.canonicalSlug}` },
+  ]
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: crumbs.map((c, i) => ({ "@type": "ListItem", position: i + 1, name: c.name, item: c.url })),
+  }
+
   return (
     <>
       <Header />
-      <ClubPageContent club={club} clubEvents={clubEvents || []} clubSessions={clubSessions || []} />
+      {/* El dueño vinculado puede editar su ficha aquí mismo, igual que el admin. */}
+      <EditAccessProvider ownerUserId={club.owner_user_id}>
+        <ClubPageContent club={club} clubEvents={clubEvents || []} clubSessions={clubSessions || []} initialRelated={related} />
+      </EditAccessProvider>
       <AdminEditButton kind="club" id={club.id} />
       <BottomNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
     </>
   )
 }

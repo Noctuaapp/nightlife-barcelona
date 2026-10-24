@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Image from "next/image"
+import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
+import HeroImage from "../ui/HeroImage"
 import { track } from "../../lib/track"
 import FavoriteButton from "../favorites/FavoriteButton"
 import AttendanceButton from "../gamification/AttendanceButton"
@@ -18,7 +19,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { InlineEditText, InlineEditImage, InlineEditTiers } from "../admin/InlineEdit"
-import { useIsAdmin } from "../../lib/useIsAdmin"
+import { useCanEdit } from "../admin/EditAccess"
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
@@ -47,7 +48,7 @@ function Panel({ children, className = "" }: { children: React.ReactNode; classN
 
 export default function EventPageContent({ event, tickets, sessions }: { event: any; tickets: any[]; sessions: any[] }) {
   const { t, locale } = useLanguage()
-  const isAdmin = useIsAdmin()
+  const isAdmin = useCanEdit() // admin, o el dueño de esta ficha (ver admin/EditAccess)
   // La fecha depende del día en que se mira: se calcula tras montar (HTML de servidor y navegador iguales).
   const [past, setPast] = useState(false)
   useEffect(() => setPast(isEventPast(event.date, event.date_end)), [event.date, event.date_end])
@@ -124,9 +125,9 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
     <main className="relative min-h-screen bg-night pb-40 text-ink lg:pb-16">
       <section className="relative">
         <div className="relative h-[46vh] max-h-[560px] min-h-[320px] w-full overflow-hidden">
-          <Image src={event.image || FALLBACK_IMAGE} alt={event.title} fill priority sizes="100vw" unoptimized={!event.image} className="object-cover" />
+          <HeroImage src={event.image} alt={event.title} fallback={FALLBACK_IMAGE} />
           <div className="absolute inset-0 bg-gradient-to-t from-night via-night/40 to-transparent" />
-          <InlineEditImage table="events" id={event.id} field="image" bucket="event-images" label="Cambiar foto principal" />
+          <InlineEditImage table="events" id={event.id} field="image" bucket="event-images" label="Cambiar foto" />
         </div>
 
         <div className="relative -mt-28 px-4 sm:-mt-36 sm:px-6">

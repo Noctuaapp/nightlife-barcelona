@@ -2,12 +2,14 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
+import Image from "../../ui/SafeImage" // <Image> que nunca deja una foto rota
 import Icon from "../../ui/Icon"
 import { useLanguage } from "../../../context/LanguageContext"
-import { useIsAdmin } from "../../../lib/useIsAdmin"
+import { useCanEdit } from "../../admin/EditAccess"
 import { supabase } from "../../../lib/supabase"
 import { toast } from "../../ui/Toast"
+import { touchCache } from "../../../lib/touchCache"
+import { ownerFolder, prepareImageForUpload, uploadFileName } from "../../../lib/compressImage"
 
 // Galería de fotos de la ficha: mosaico en escritorio, carrusel en móvil y visor a pantalla
 // completa. Todas las fotos pasan por next/image (tamaño adaptado a la pantalla y formato moderno).
@@ -21,7 +23,7 @@ type GalleryEdit = { table: string; id: number; bucket: string; gallery: string[
 
 export default function ClubGallery({ images, name, edit }: { images: string[]; name: string; edit?: GalleryEdit }) {
   const { t } = useLanguage()
-  const isAdmin = useIsAdmin()
+  const isAdmin = useCanEdit() // admin, o el dueño de esta ficha
   const router = useRouter()
   const [open, setOpen] = useState<number | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -59,6 +61,8 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
       return
     }
     setPhotosOverride(next)
+    // Sin esto, la ficha pública seguía enseñando las fotos viejas hasta 5 minutos.
+    touchCache(["/", "/clubs", "/events", "/map", window.location.pathname])
     router.refresh()
   }
 
@@ -86,9 +90,13 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
     // siempre se reactiva.
     try {
       for (const file of files) {
-        const ext = file.name.split(".").pop()
-        const fileName = `inline-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-        const { error } = await supabase.storage.from(edit.bucket).upload(fileName, file)
+        // Redimensionada y enderezada antes de subir (ver lib/compressImage): las fotos del móvil
+        // pesaban varios MB y la galería tardaba una eternidad en cargar con datos.
+        const prepared = await prepareImageForUpload(file)
+        const fileName = `${ownerFolder(edit.table, edit.id)}/${uploadFileName("inline", prepared.ext)}`
+        const { error } = await supabase.storage
+          .from(edit.bucket)
+          .upload(fileName, prepared.blob, { contentType: prepared.contentType, cacheControl: "31536000" })
         if (error) {
           if (!firstError) firstError = error.message
           continue
@@ -190,7 +198,7 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
 
       {canManage && (
         <div className={displayImages.length >= 2 ? "mt-5" : ""}>
-          <p className="mb-2 text-xs font-semibold text-zinc-400">Todas las fotos (solo tú lo ves) — arrastra para reordenar; la primera es la portada</p>
+          <p className="mb-2 text-xs font-semibold text-zinc-400">Todas las fotos (solo tú lo ves). Arrastra para reordenar; la primera es la portada. ✕ para quitar.</p>
           <div className="flex flex-wrap gap-3">
             {displayImages.map((url, i) => (
               <div
@@ -212,7 +220,7 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
                 {displayImages.length > 1 && (
                   <button
                     onClick={() => removePhoto(url)}
-                    className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition group-hover:opacity-100"
+                    className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-white transition sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100"
                     aria-label="Quitar foto"
                   >
                     <Icon name="close" className="h-3.5 w-3.5" />
@@ -221,8 +229,8 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
               </div>
             ))}
             <label className="flex h-20 w-20 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-white/20 text-center text-xs font-bold text-zinc-400 transition hover:border-purple-400/50 hover:text-white">
-              {uploading ? "Subiendo…" : "+ Añadir"}
-              <input type="file" accept="image/*" multiple className="hidden" disabled={uploading} onChange={addPhotos} />
+              {uploading ? "Subiendo…" : "📷 Añadir"}
+              <input type="file" accept="image/*" multiple className="sr-only" disabled={uploading} onChange={addPhotos} />
             </label>
           </div>
         </div>

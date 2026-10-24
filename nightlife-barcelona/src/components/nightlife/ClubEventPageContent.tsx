@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
+import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
+import HeroImage from "../ui/HeroImage"
 import FavoriteButton from "../favorites/FavoriteButton"
 import AttendanceButton from "../gamification/AttendanceButton"
 import ClubMap from "../map/ClubMap"
@@ -14,7 +15,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { InlineEditText, InlineEditImage } from "../admin/InlineEdit"
-import { useIsAdmin } from "../../lib/useIsAdmin"
+import { useCanEdit } from "../admin/EditAccess"
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
@@ -74,7 +75,7 @@ export default function ClubEventPageContent({
   clubSlug: string
 }) {
   const { t, locale } = useLanguage()
-  const isAdmin = useIsAdmin()
+  const isAdmin = useCanEdit() // admin, o el dueño de esta ficha (ver admin/EditAccess)
   const [past, setPast] = useState(false)
   useEffect(() => {
     if (!clubEvent.date) return
@@ -140,9 +141,9 @@ export default function ClubEventPageContent({
     <main className="relative min-h-screen bg-night pb-40 text-ink lg:pb-16">
       <section className="relative">
         <div className="relative h-[40vh] max-h-[480px] min-h-[280px] w-full overflow-hidden">
-          <Image src={image || FALLBACK_IMAGE} alt={clubEvent.title} fill priority sizes="100vw" unoptimized={!image} className="object-cover" />
+          <HeroImage src={image} alt={clubEvent.title} fallback={FALLBACK_IMAGE} />
           <div className="absolute inset-0 bg-gradient-to-t from-night via-night/40 to-transparent" />
-          <InlineEditImage table="club_events" id={clubEvent.id} field="image" bucket="event-images" label="Cambiar foto principal" />
+          <InlineEditImage table="club_events" id={clubEvent.id} field="image" bucket="event-images" label="Cambiar foto" />
         </div>
 
         <div className="relative -mt-24 px-4 sm:-mt-32 sm:px-6">

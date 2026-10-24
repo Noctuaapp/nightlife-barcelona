@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
+import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
 import Header from "../layout/Header"
 import BottomNav from "../layout/BottomNav"
 import Footer from "../layout/Footer"
@@ -18,6 +18,7 @@ import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { clubOpenNow } from "../../lib/clubHours"
+import { matchesQuery, matchScore } from "../../lib/textSearch"
 
 // Portada. Rediseñada tras la auditoría de octubre 2026:
 // - Antes el titular, un subtítulo de 7 líneas, tres cifras y una cinta animada ocupaban la
@@ -108,12 +109,17 @@ export default function HomeClient({
   eventsCount?: number
   essentialsCount?: number
 }) {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const clubs = initialClubs
   const geo = useGeolocation()
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]["key"]>("all")
   const [search, setSearch] = useState("")
+  // Sugerencias en directo mientras se escribe (antes no pasaba nada hasta pulsar Enter, y al
+  // pulsarlo el listado de /clubs ni siquiera filtraba por lo escrito).
+  const [suggestOpen, setSuggestOpen] = useState(false)
+  const [activeIdx, setActiveIdx] = useState(-1)
+  const searchBoxRef = useRef<HTMLDivElement>(null)
   // Estado "abierto" calculado tras montar: depende de la hora y así el HTML coincide con el servidor.
   const [openMap, setOpenMap] = useState<Record<string, boolean | null>>({})
 
@@ -171,10 +177,66 @@ export default function HomeClient({
     if (key === "near" && !geo.pos && !geo.locating) geo.request()
   }
 
+  const matches = useMemo(() => {
+    const q = search.trim()
+    if (!q) return []
+    return clubs
+      .filter((c) => matchesQuery(q, [c.name, c.neighborhood, c.music, c.address, c.city]))
+      .sort((a, b) => matchScore(q, b.name) - matchScore(q, a.name) || quality(b) - quality(a))
+  }, [search, clubs])
+  const suggestions = matches.slice(0, 6)
+
+  useEffect(() => setActiveIdx(-1), [search])
+
+  useEffect(() => {
+    if (!suggestOpen) return
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) setSuggestOpen(false)
+    }
+    document.addEventListener("mousedown", onDown)
+    document.addEventListener("touchstart", onDown)
+    return () => {
+      document.removeEventListener("mousedown", onDown)
+      document.removeEventListener("touchstart", onDown)
+    }
+  }, [suggestOpen])
+
+  const clubHref = (c: Club) => `/clubs/${c.slug || createSlug(c.name)}`
+  const allResultsHref = `/clubs${search.trim() ? `?search=${encodeURIComponent(search.trim())}` : ""}`
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    window.location.href = `/clubs${search.trim() ? `?search=${encodeURIComponent(search.trim())}` : ""}`
+    // Enter con una sugerencia marcada (flechas) abre ese club; si no, el listado ya filtrado.
+    // Si lo escrito solo coincide con un club, se va directo a su ficha.
+    if (activeIdx >= 0 && suggestions[activeIdx]) {
+      window.location.href = clubHref(suggestions[activeIdx])
+      return
+    }
+    if (matches.length === 1) {
+      window.location.href = clubHref(matches[0])
+      return
+    }
+    window.location.href = allResultsHref
   }
+
+  const onSearchKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown" && suggestions.length) {
+      e.preventDefault()
+      setSuggestOpen(true)
+      setActiveIdx((i) => (i + 1) % suggestions.length)
+    } else if (e.key === "ArrowUp" && suggestions.length) {
+      e.preventDefault()
+      setActiveIdx((i) => (i <= 0 ? suggestions.length - 1 : i - 1))
+    } else if (e.key === "Escape") {
+      setSuggestOpen(false)
+    }
+  }
+
+  const sx = locale === "ca"
+    ? { none: "Cap local coincideix amb", all: "Veure tots els resultats", one: "resultat", many: "resultats" }
+    : locale === "es"
+    ? { none: "Ningún local coincide con", all: "Ver todos los resultados", one: "resultado", many: "resultados" }
+    : { none: "No venues match", all: "See all results", one: "result", many: "results" }
 
   const quickLinks = [
     { href: "/map", icon: "map", label: t("home.quickMap") },
@@ -191,7 +253,7 @@ export default function HomeClient({
         {/* PORTADA: Barcelona de noche a sangre (la foto del skyline con los mismos violetas y azules
             del header), un indicador en directo con los locales abiertos ahora, el titular grande
             con la segunda línea en el degradado de neón de la marca, y el buscador en cristal. */}
-        <section className="relative isolate overflow-hidden">
+        <section className="relative z-10 isolate overflow-x-clip">
           <Image
             src="/hero/skyline_barcelona.jpeg"
             alt={t("home.heroImageAlt")}
@@ -233,7 +295,8 @@ export default function HomeClient({
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-zinc-200 sm:text-lg">{t("home.subtitle")}</p>
 
-            <form onSubmit={handleSearch} role="search" className="mt-7 max-w-2xl">
+            <form onSubmit={handleSearch} role="search" className="relative z-20 mt-7 max-w-2xl">
+              <div ref={searchBoxRef}>
               <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 p-1.5 pl-5 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.8)] backdrop-blur-xl transition focus-within:border-cyan-300/60 focus-within:bg-white/[0.14]">
                 <Icon name="search" className="h-5 w-5 shrink-0 text-white/70" />
                 <label htmlFor="home-search" className="sr-only">
@@ -242,7 +305,17 @@ export default function HomeClient({
                 <input
                   id="home-search"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => { setSearch(e.target.value); setSuggestOpen(true) }}
+                  onFocus={() => setSuggestOpen(true)}
+                  onKeyDown={onSearchKey}
+                  role="combobox"
+                  aria-expanded={suggestOpen && search.trim().length > 0}
+                  aria-controls="home-search-suggestions"
+                  aria-autocomplete="list"
+                  aria-activedescendant={activeIdx >= 0 ? `home-sugg-${activeIdx}` : undefined}
+                  autoComplete="off"
+                  enterKeyHint="search"
+                  style={{ outline: "none" }}
                   placeholder={t("home.searchPlaceholder")}
                   className="min-w-0 flex-1 bg-transparent py-2.5 text-base text-white outline-none focus-visible:outline-none placeholder:text-white/60"
                 />
@@ -253,6 +326,51 @@ export default function HomeClient({
                 >
                   {t("home.search")}
                 </button>
+              </div>
+
+              {suggestOpen && search.trim() && (
+                <div
+                  id="home-search-suggestions"
+                  role="listbox"
+                  className="absolute inset-x-0 top-full mt-2 overflow-hidden rounded-card border border-white/10 bg-surface/95 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.85)] backdrop-blur-xl"
+                >
+                  {suggestions.length === 0 ? (
+                    <p className="px-5 py-4 text-sm text-zinc-400">
+                      {sx.none} «{search.trim()}»
+                    </p>
+                  ) : (
+                    <>
+                      <ul>
+                        {suggestions.map((c, i) => (
+                          <li key={c.id} id={`home-sugg-${i}`} role="option" aria-selected={i === activeIdx}>
+                            <Link
+                              href={clubHref(c)}
+                              onMouseEnter={() => setActiveIdx(i)}
+                              className={`flex items-center gap-3 px-3 py-2.5 transition ${i === activeIdx ? "bg-white/[0.08]" : "hover:bg-white/[0.05]"}`}
+                            >
+                              <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-ctl bg-white/5">
+                                <Image src={c.image || FALLBACK_IMAGE} alt="" fill sizes="44px" unoptimized={!c.image} className="object-cover" />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-semibold text-ink">{c.name}</span>
+                                <span className="block truncate text-xs text-zinc-400">{[c.neighborhood || "Barcelona", c.music].filter(Boolean).join(" · ")}</span>
+                              </span>
+                              {openMap[c.id] && <span className="shrink-0 text-xs font-semibold text-open">{t("clubPage.openNow")}</span>}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                      <Link
+                        href={allResultsHref}
+                        className="flex items-center justify-between border-t border-white/[0.08] px-5 py-3 text-sm font-semibold text-brand-soft hover:bg-white/[0.05]"
+                      >
+                        <span>{sx.all}</span>
+                        <span className="text-xs font-normal text-zinc-400">{matches.length} {matches.length === 1 ? sx.one : sx.many}</span>
+                      </Link>
+                    </>
+                  )}
+                </div>
+              )}
               </div>
             </form>
 

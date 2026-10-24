@@ -11,6 +11,23 @@ export default function Footer() {
     <footer className="mt-20 border-t border-white/10 bg-night px-4 pb-28 pt-14 text-ink md:pb-14">
       <div className="mx-auto max-w-7xl">
 
+        {/* Para locales: antes era un recuadro gris más, fácil de pasar por alto. Ahora es una banda
+            destacada con el color de la marca, título, una frase de qué ganan y un botón claro. */}
+        <a
+          href="/para-locales"
+          className="group mb-14 flex flex-col gap-5 overflow-hidden rounded-card border border-brand/40 p-6 transition hover:border-brand/70 sm:flex-row sm:items-center sm:justify-between sm:p-8"
+          style={{ background: "linear-gradient(120deg, rgba(124,92,255,0.28) 0%, rgba(124,92,255,0.10) 55%, rgba(236,72,153,0.14) 100%)" }}
+        >
+          <div className="min-w-0">
+            <p className="font-display text-xl leading-tight text-ink sm:text-2xl">{t("footer.venueTitle")}</p>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-200">{t("footer.venueText")}</p>
+          </div>
+          <span className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(124,92,255,0.9)] transition group-hover:bg-brand-strong sm:self-auto">
+            {t("footer.venueButton")}
+            <span aria-hidden="true" className="transition group-hover:translate-x-0.5">→</span>
+          </span>
+        </a>
+
         {/* Top row */}
         <div className="grid gap-12 md:grid-cols-3">
 
@@ -20,12 +37,6 @@ export default function Footer() {
             <p className="mt-3 text-sm leading-relaxed text-zinc-400">
               {t("footer.tagline")}
             </p>
-            <a
-              href="/para-locales"
-              className="mt-5 inline-block rounded-ctl border border-white/15 px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-white/5"
-            >
-              {t("footer.venue_cta")}
-            </a>
           </div>
 
           {/* Links */}

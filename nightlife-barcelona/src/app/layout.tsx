@@ -91,6 +91,35 @@ export default function RootLayout({
             </MaintenanceGate>
           </FavoritesProvider>
         </LanguageProvider>
+        {/* Quién es Noctua para Google: nombre, logo y web oficial (ficha de marca en los
+            resultados). */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  "@id": "https://www.noctuaapp.com/#org",
+                  name: "Noctua",
+                  url: "https://www.noctuaapp.com",
+                  logo: "https://www.noctuaapp.com/noctua_logo.png",
+                  email: "info@noctuaapp.com",
+                  areaServed: "Barcelona",
+                },
+                {
+                  "@type": "WebSite",
+                  "@id": "https://www.noctuaapp.com/#website",
+                  name: "Noctua",
+                  url: "https://www.noctuaapp.com",
+                  inLanguage: "es-ES",
+                  publisher: { "@id": "https://www.noctuaapp.com/#org" },
+                },
+              ],
+            }),
+          }}
+        />
         <TrafficSource />
         <ToastHost />
         <Analytics />

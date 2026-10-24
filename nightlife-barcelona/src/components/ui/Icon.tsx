@@ -3,6 +3,16 @@
 export default function Icon({ name, className = "h-5 w-5", style }: { name: string; className?: string; style?: React.CSSProperties }) {
   const p = { className, style, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const }
   switch (name) {
+    case "billiards": return <svg {...p}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="10" r="3.2" /><path d="M10.6 9.2h2.8M12 8.6v2.8" /></svg>
+    case "vending": return <svg {...p}><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h5M8 10h5M8 13h5M16 7v6M8 17h8" /></svg>
+    case "target": return <svg {...p}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.3" /><path d="M13 11l7-7M17 4h3v3" /></svg>
+    case "mic": return <svg {...p}><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0014 0M12 18v3M8.5 21h7" /></svg>
+    case "guitar": return <svg {...p}><path d="M14 10l6-6M18 2l4 4" /><path d="M11.5 8.5c-2-1-4.5-.5-5.5 1.5-.6 1.2-.3 2-1.5 3S2 15 3 18s4 3 6 2 1.6-2.4 2.8-3 1.8-.9 3-1.5c2-1 2.5-3.5 1.5-5.5" /><circle cx="10" cy="14" r="1.5" /></svg>
+    case "disco": return <svg {...p}><path d="M12 2v3" /><circle cx="12" cy="12" r="7" /><path d="M5 12h14M12 5v14M7 7.5c3 2 7 2 10 0M7 16.5c3-2 7-2 10 0" /></svg>
+    case "hanger": return <svg {...p}><path d="M12 7a2 2 0 112-2c0 1.2-2 1.6-2 3l-9 7.5a1 1 0 00.6 1.8h16.8a1 1 0 00.6-1.8L12 8" /></svg>
+    case "food": return <svg {...p}><path d="M7 3v8M5 3v5a2 2 0 004 0V3M7 11v10M17 21V3c-2 1-3 4-3 8h3" /></svg>
+    case "shisha": return <svg {...p}><path d="M10 3h4M11 3v4h2V3M9 7h6l-1 5h-4zM12 12v2" /><path d="M8 21c-1-3 0-7 4-7s5 4 4 7z" /><path d="M16 15c3 0 4 2 5 5" /></svg>
+    case "wheelchair": return <svg {...p}><circle cx="11" cy="4" r="1.6" /><path d="M11 7v6h6l2 5M11 10h5" /><path d="M8 11.5a5 5 0 105.6 7.3" /></svg>
     case "leaf": return <svg {...p}><path d="M5 20c8 0 14-6 14-14 0 0-13-2-14 9-.3 3 0 5 0 5z" /><path d="M5 20c1-4 4-8 9-11" /></svg>
     case "sofa": return <svg {...p}><path d="M4 12v5a1 1 0 001 1h1v2M18 18h1a1 1 0 001-1v-5M4 12a2 2 0 012-2h12a2 2 0 012 2M4 12v3h16v-3M17 18v2" /></svg>
     case "cigarette": return <svg {...p}><rect x="2" y="10" width="16" height="4" rx="1" /><path d="M8 10v4M18 8c1 1 1 2 0 3M20 7c1.5 1.5 1.5 3.5 0 5" /></svg>

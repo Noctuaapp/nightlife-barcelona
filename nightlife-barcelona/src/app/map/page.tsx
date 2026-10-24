@@ -17,6 +17,7 @@ import { categoryRank, categoryNameKey, categoryInfo } from "../../lib/essential
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { Disc3, CalendarDays, MapPin, Footprints, X, List, LocateFixed, Search, type LucideIcon } from "lucide-react"
 import { logError } from "../../lib/log"
+import { getOpenStatus } from "../../lib/openStatus"
 import { renderToStaticMarkup } from "react-dom/server"
 
 // "Taxi" y "Transport" ya no son categorías de esenciales (ver essentialCategories.ts y
@@ -64,6 +65,9 @@ type Essential = {
 }
 
 type Filter = "clubs" | "events" | "essentials"
+
+// Semáforo de los esenciales en el mapa.
+const STATUS_COLORS = { open: "#16a34a", soon: "#eab308", closed: "#dc2626" }
 
 const COLORS: Record<Filter, string> = {
   clubs: "#7c5cff",
@@ -431,8 +435,17 @@ export default function MapPage() {
       const initials = getInitials(label)
       const isEssential = "category" in item
 
+      // Esenciales: el color del pin dice si está abierto (verde), cierra en menos de una hora
+      // (amarillo) o ya está cerrado (rojo). Sin horario conocido (metro, Nitbus...), lila.
+      let pinColor = color
+      let ring = "#fff"
+      if (isEssential) {
+        const st = getOpenStatus((item as Essential).open_hours)
+        const sc = st.state === "open" ? (st.soon ? STATUS_COLORS.soon : STATUS_COLORS.open) : st.state === "closed" ? STATUS_COLORS.closed : null
+        if (sc) { pinColor = sc; ring = sc }
+      }
       const el = document.createElement("div")
-      el.style.cssText = `width: 34px; height: 34px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.5); cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center; background: ${color}; font-size: 11px; font-weight: 800; color: #fff; font-family: inherit;`
+      el.style.cssText = `width: 34px; height: 34px; border-radius: 50%; border: 2.5px solid ${image ? ring : "#fff"}; box-shadow: 0 2px 10px rgba(0,0,0,0.5); cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center; background: ${pinColor}; font-size: 11px; font-weight: 800; color: #fff; font-family: inherit;`
       if (image) {
         const img = document.createElement("img")
         img.src = image
@@ -748,6 +761,19 @@ export default function MapPage() {
 
         <div style={{ flex: 1, position: "relative", minWidth: 0, minHeight: 0 }}>
           <div ref={mapContainer} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
+          {filter === "essentials" && (
+            <div
+              aria-label="Leyenda"
+              style={{ position: "absolute", left: "12px", bottom: "96px", zIndex: 10, display: "flex", gap: "10px", padding: "7px 11px", borderRadius: "999px", background: "rgba(10,9,16,0.85)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(8px)", fontSize: "11px", fontWeight: 600, color: "#d4d4d8" }}
+            >
+              {([["open", t("map.legendOpen")], ["soon", t("map.legendSoon")], ["closed", t("map.legendClosed")]] as const).map(([k, label]) => (
+                <span key={k} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                  <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: STATUS_COLORS[k] }} />
+                  {label}
+                </span>
+              ))}
+            </div>
+          )}
           <button className="lg:hidden" onClick={() => setShowList(!showList)}
             style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", padding: "9px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)" }}>
             <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>{showList ? <X size={14} /> : <List size={14} />} {showList ? t("map.close") : t("map.list")}</span>

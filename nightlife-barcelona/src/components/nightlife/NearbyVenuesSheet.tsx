@@ -307,7 +307,7 @@ export default function NearbyVenuesSheet({
                       <Link href={`/clubs/${slug}`} onClick={() => setOpen(false)} className="flex flex-1 items-center gap-4 overflow-hidden">
                         <div className="h-16 w-16 shrink-0 overflow-hidden rounded-ctl bg-white/5">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={v.image || FALLBACK_IMAGE} alt="" className="h-full w-full object-cover" />
+                          <img src={v.image || FALLBACK_IMAGE} alt="" className="h-full w-full object-cover" onError={(e) => { if (!e.currentTarget.src.startsWith("data:")) e.currentTarget.src = FALLBACK_IMAGE }} />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">

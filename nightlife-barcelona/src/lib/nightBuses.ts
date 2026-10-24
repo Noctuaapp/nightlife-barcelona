@@ -3,7 +3,7 @@
 // Nitbus) para poder mostrar a qué zona lleva cada línea, no solo su número. No incluye el
 // recorrido parada a parada (eso solo está publicado como mapa en imagen): para la parada
 // exacta más cercana remitimos al buscador oficial. Si en algún momento aparece una línea que
-// no está en esta lista (p.ej. una línea nueva como N22-N28, añadidas después de este plano),
+// no está en esta lista (p.ej. una línea nueva que aún no esté aquí),
 // se muestra solo el código y un enlace al buscador oficial en vez de inventar un recorrido.
 export type NightBusLine = {
   code: string
@@ -17,8 +17,9 @@ export const NIGHT_BUS_LINES: Record<string, NightBusLine> = {
   N0: { code: "N0", route: "Circular por el centro (Pl. Portal de la Pau)", catalunya: false },
   N1: { code: "N1", route: "Zona Franca ↔ Trinitat Nova", catalunya: true },
   N2: { code: "N2", route: "L'Hospitalet de Ll. ↔ Badalona (vía Aragó)", catalunya: true },
-  N3: { code: "N3", route: "Collblanc ↔ Montcada i Reixac", catalunya: true },
-  N4: { code: "N4", route: "Carmel / Gran Vista (vía Favència)", catalunya: true },
+  // N3 y N4 cambiaron en abril de 2025, al crearse la N23 y la N24.
+  N3: { code: "N3", route: "Collblanc ↔ Can Cuiàs / Ciutat Meridiana", catalunya: true },
+  N4: { code: "N4", route: "Carmel / Horta ↔ Estació Marítima (WTC) (vía Paral·lel)", catalunya: true },
   N5: { code: "N5", route: "Carmel / Gran Vista", catalunya: true },
   N6: { code: "N6", route: "Roquetes ↔ Santa Coloma de Gramenet (Les Oliveres)", catalunya: true },
   N7: { code: "N7", route: "Fòrum ↔ Pedralbes", catalunya: true },
@@ -30,6 +31,15 @@ export const NIGHT_BUS_LINES: Record<string, NightBusLine> = {
   N14: { code: "N14", route: "Castelldefels (Centre Vila)", catalunya: true },
   N15: { code: "N15", route: "Sant Joan Despí (Torreblanca)", catalunya: true },
   N16: { code: "N16", route: "Castelldefels (Platges)", catalunya: true },
+  // Añadidas el 24/10/2026 (faltaban: Jordi encontró un local con la N24 y la N28 que la web no
+  // reconocía). Fuentes: AMB / Ajuntament de Barcelona (cambios del 30/04/2025) y RedTransporte.
+  N17: { code: "N17", route: "Pl. Catalunya ↔ Aeroport T1", catalunya: true },
+  N18: { code: "N18", route: "Pl. Catalunya ↔ Aeroport T1-T2 (vía El Prat)", catalunya: true },
+  N19: { code: "N19", route: "Castelldefels ↔ Aeroport T1-T2", catalunya: false },
+  N20: { code: "N20", route: "Sant Pere ↔ Sant Boi de Ll. (vía Sepúlveda)", catalunya: false },
+  N23: { code: "N23", route: "Estació de Sants ↔ Montcada i Reixac (vía Meridiana)", catalunya: false },
+  N24: { code: "N24", route: "Barceloneta ↔ Roquetes (vía Gràcia y Canyelles)", catalunya: true },
+  N28: { code: "N28", route: "Fòrum (Diagonal Mar) ↔ Collblanc / Can Serra (vía Port Olímpic y Sants)", catalunya: true },
 }
 
 export function getNightBusLine(raw: string): NightBusLine | null {

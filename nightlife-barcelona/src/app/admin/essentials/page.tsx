@@ -51,9 +51,9 @@ const categories = ESSENTIAL_CATEGORIES.map((c) => c.key)
 const SUBCATEGORY_HINTS: Record<string, string[]> = {
   ATM: ["CaixaBank", "Santander", "BBVA", "Banco Sabadell", "ING", "Bankinter", "Unicaja", "Abanca"],
   Food: ["Pizza", "Kebab", "Hamburguesas", "Bocadillos", "Döner", "Asiática", "Churrería", "24h"],
-  // Código de línea Nitbus (N0-N16): con esto la ficha pública ya sabe mostrar el recorrido real
+  // Código de línea Nitbus (N0-N28): con esto la ficha pública ya sabe mostrar el recorrido real
   // de la línea (ver src/lib/nightBuses.ts) en vez de solo el nombre de la parada.
-  Nitbus: ["N0", "N1", "N2", "N3", "N4", "N5", "N6", "N7", "N8", "N9", "N11", "N12", "N13", "N14", "N15", "N16"],
+  Nitbus: ["N0", "N1", "N2", "N3", "N4", "N5", "N6", "N7", "N8", "N9", "N11", "N12", "N13", "N14", "N15", "N16", "N17", "N18", "N19", "N20", "N23", "N24", "N28"],
   // Línea(s) de metro/FGC que paran aquí (p. ej. "L3" o "L3, L5" si es un intercambiador).
   Metro: ["L1", "L2", "L3", "L4", "L5", "L9N", "L9S", "L10N", "L10S", "L11", "L6", "L7", "L8", "L12"],
 }

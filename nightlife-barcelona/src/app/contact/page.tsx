@@ -6,6 +6,7 @@ import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
+import NocOwl from "../../components/mascot/NocOwl"
 
 function parseContactTypes(text: string) {
   return text
@@ -28,6 +29,9 @@ export default function ContactPage() {
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")
   const [success, setSuccess] = useState("")
+  // Qué tipo de mensaje se acaba de enviar, para el agradecimiento (un reporte de datos
+  // incorrectos merece un "gracias" de verdad, no solo "mensaje enviado").
+  const [sentType, setSentType] = useState<string | null>(null)
   const [error, setError] = useState("")
   const [sending, setSending] = useState(false)
   // Solo se puede escribir con sesión iniciada: antes cualquiera podía enviar un mensaje con un
@@ -98,7 +102,9 @@ export default function ContactPage() {
     setSending(false)
     if (insertError) { setError(insertError.message); return }
     setSuccess(t("contact.successMessage"))
+    setSentType(type)
     setType("user_support"); setSubject(""); setMessage("")
+    window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
   const contactTypes = parseContactTypes(t("contact.types"))
@@ -160,6 +166,32 @@ export default function ContactPage() {
                       <a href={`/signup?next=${encodeURIComponent("/contact" + (typeof window !== "undefined" ? window.location.search : ""))}`} className="rounded-ctl border border-white/15 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/5">
                         {t("nav.signup")}
                       </a>
+                    </div>
+                  </div>
+                ) : sentType ? (
+                  <div className="py-6 text-center" role="status" aria-live="polite">
+                    <div className="mx-auto w-fit"><NocOwl size={88} mood="party" /></div>
+                    <p className="mt-5 font-display text-2xl text-ink">
+                      {sentType === "report_issue" ? t("contact.thanksReportTitle") : t("contact.thanksTitle")}
+                    </p>
+                    <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-zinc-300">
+                      {sentType === "report_issue" ? t("contact.thanksReportBody") : t("contact.thanksBody")}
+                    </p>
+                    <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => (window.history.length > 1 ? window.history.back() : (window.location.href = "/"))}
+                        className="rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong"
+                      >
+                        {t("contact.back")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setSentType(null); setSuccess("") }}
+                        className="rounded-ctl border border-white/15 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
+                      >
+                        {t("contact.sendAnother")}
+                      </button>
                     </div>
                   </div>
                 ) : !authChecked ? (

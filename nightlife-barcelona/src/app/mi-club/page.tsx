@@ -7,8 +7,10 @@ import { Upload, X, Pencil, Trash2, Check } from "lucide-react"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
+import { EXTRA_FEATURES, extrasFromRow } from "../../lib/extraFeatures"
 import { useLanguage } from "../../context/LanguageContext"
 import { toast } from "../../components/ui/Toast"
+import { createSlug } from "../../lib/slug"
 import { touchCache, clubPaths, clubEventPaths } from "../../lib/touchCache"
 
 // Portal para que un club verificado edite su propia ficha sin pasar por Jordi. Un club queda
@@ -65,6 +67,9 @@ const VENUE_TYPE_OPTIONS = [
   { value: "Discoteca", key: "planPage.venueClub" },
   { value: "Pub", key: "planPage.venuePub" },
   { value: "Bar musical", key: "planPage.venueMusicBar" },
+  { value: "Coctelería", key: "planPage.venueCocktail" },
+  { value: "Karaoke", key: "planPage.venueKaraoke" },
+  { value: "Bar de billar", key: "planPage.venuePool" },
 ]
 const DAY_OPTIONS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
 
@@ -93,6 +98,8 @@ type ClubFormData = {
   metro_lines: string
   night_buses: string
   has_foosball: boolean
+  // Máquina de tabaco, dardos, karaoke... (lib/extraFeatures.ts)
+  extras: Record<string, boolean>
   discount_info: string
   free_entry_info: string
   gallery: string[]
@@ -123,6 +130,7 @@ const clubToForm = (club: Club): ClubFormData => ({
   metro_lines: club.metro_lines || "",
   night_buses: club.night_buses || "",
   has_foosball: !!club.has_foosball,
+  extras: extrasFromRow(club as unknown as Record<string, unknown>),
   discount_info: club.discount_info || "",
   free_entry_info: club.free_entry_info || "",
   gallery: Array.isArray(club.gallery) ? club.gallery : [],
@@ -152,6 +160,7 @@ const formToPayload = (form: ClubFormData) => ({
   metro_lines: form.metro_lines.trim(),
   night_buses: form.night_buses.trim(),
   has_foosball: form.has_foosball,
+  ...form.extras,
   discount_info: form.discount_info.trim(),
   free_entry_info: form.free_entry_info.trim(),
   gallery: form.gallery.length > 0 ? form.gallery : null,
@@ -281,7 +290,7 @@ export default function MiClubPage() {
     setUploadingEventImage(true)
     try {
       const fileExt = file.name.split(".").pop()
-      const fileName = `owner-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+      const fileName = `club/${club?.id}/owner-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
       const { error } = await supabase.storage.from("event-photos").upload(fileName, file)
       if (error) { fail("ownerPortal.errUpload", error.message); return null }
       const { data } = supabase.storage.from("event-photos").getPublicUrl(fileName)
@@ -373,7 +382,7 @@ export default function MiClubPage() {
     if (data) {
       setClub(data as Club)
       setForm(clubToForm(data as Club))
-      touchCache(clubPaths((data as { slug?: string | null }).slug))
+      touchCache(clubPaths((data as { slug?: string | null }).slug || createSlug((data as { name?: string }).name)))
     }
     setSavedFlash(true)
     setTimeout(() => setSavedFlash(false), 3000)
@@ -388,7 +397,7 @@ export default function MiClubPage() {
     setUpdatingStatus(false)
     if (error) { fail("ownerPortal.errStatus", error.message); return }
     setClub((data as Club) || { ...club, live_status: status, live_status_updated_at: nowIso })
-    touchCache(clubPaths((club as unknown as { slug?: string | null }).slug))
+    touchCache(clubPaths((club as unknown as { slug?: string | null }).slug || createSlug((club as unknown as { name?: string }).name)))
   }
 
   const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -403,7 +412,7 @@ export default function MiClubPage() {
     // fallo se muestra y el botón siempre se reactiva.
     try {
       const fileExt = file.name.split(".").pop()
-      const fileName = `club-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+      const fileName = `club/${club?.id}/club-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
       const { error: uploadError } = await supabase.storage.from("club-images").upload(fileName, file)
       if (uploadError) {
         fail("ownerPortal.errUpload", uploadError.message)
@@ -431,7 +440,7 @@ export default function MiClubPage() {
     try {
       for (const file of Array.from(files)) {
         const fileExt = file.name.split(".").pop()
-        const fileName = `owner/manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+        const fileName = `club/${club?.id}/manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
         const { error } = await supabase.storage.from("club-photos").upload(fileName, file)
         if (error) {
           if (!firstError) firstError = error.message
@@ -768,6 +777,20 @@ export default function MiClubPage() {
                     {opt.label}
                   </button>
                 ))}
+                {EXTRA_FEATURES.map((f) => {
+                  const on = !!form.extras[f.field]
+                  return (
+                    <button
+                      key={f.field}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setForm({ ...form, extras: { ...form.extras, [f.field]: !on } })}
+                      className={toggle(on)}
+                    >
+                      {t(f.labelKey)}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>

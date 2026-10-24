@@ -44,6 +44,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Se usa el slug guardado en la base de datos (la URL canónica). Si la columna aún no existe,
   // la consulta falla y se vuelve a pedir solo el nombre, como antes.
   const load = async (table: "clubs" | "events", nameField: "name" | "title") => {
+    // También la foto: así Google indexa las imágenes de cada ficha (sitemap de imágenes).
+    const withImage = await supabase.from(table).select(`${nameField}, slug, image`).eq("hidden", false)
+    if (!withImage.error) return (withImage.data || []) as unknown as DbRow[]
     const withSlug = await supabase.from(table).select(`${nameField}, slug`).eq("hidden", false)
     if (!withSlug.error) return (withSlug.data || []) as unknown as DbRow[]
     const plain = await supabase.from(table).select(nameField).eq("hidden", false)
@@ -76,6 +79,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .filter((c) => c.slug || c.name)
     .map((c) => ({
       url: `${BASE_URL}/clubs/${c.slug || createSlug(c.name)}`,
+      ...(typeof c.image === "string" && c.image.startsWith("http") ? { images: [c.image] } : {}),
       changeFrequency: "weekly" as const,
       priority: 0.7,
     }))
@@ -84,6 +88,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .filter((e) => e.slug || e.title)
     .map((e) => ({
       url: `${BASE_URL}/event/${e.slug || createSlug(e.title)}`,
+      ...(typeof e.image === "string" && e.image.startsWith("http") ? { images: [e.image] } : {}),
       changeFrequency: "daily" as const,
       priority: 0.7,
     }))

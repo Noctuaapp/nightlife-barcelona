@@ -398,7 +398,9 @@ export default function NocOwl({
         </>
       )}
 
-      {/* calabaza de Halloween (24 oct – 2 nov) */}
+      {/* calabaza y gorro de bruja de Halloween (24 oct – 2 nov). El gorro: ala ancha apoyada
+          en la cabeza entre las orejas, cono de lados rectos con la punta doblada, cinta naranja
+          con hebilla — el sombrero de bruja de toda la vida. */}
       {theme === "halloween" && (
         <>
           <defs>
@@ -406,7 +408,15 @@ export default function NocOwl({
               <stop offset="0%" stopColor="#fb923c" />
               <stop offset="100%" stopColor={darken("#f97316", 35)} />
             </linearGradient>
+            <linearGradient id={`witch-${uid}`} gradientUnits="userSpaceOnUse" x1="60" y1="-24" x2="60" y2="30">
+              <stop offset="0%" stopColor="#4c2a85" />
+              <stop offset="100%" stopColor="#241238" />
+            </linearGradient>
           </defs>
+          <ellipse cx="60" cy="30" rx="37" ry="7" fill="#1a0f2b" />
+          <path d="M40 29 L56 -10 L74 -20 L64 -6 L80 29 Z" fill={`url(#witch-${uid})`} />
+          <path d="M43.5 21 L76.5 21 L79 28 L41 28 Z" fill="#f97316" />
+          <rect x="56" y="20.5" width="8" height="8" rx="1" fill="none" stroke="#fde68a" strokeWidth="1.8" />
           <ellipse cx="100" cy="106" rx="13" ry="3" fill="#000" opacity="0.2" />
           <ellipse cx="100" cy="104" rx="14" ry="11" fill={`url(#pk-${uid})`} />
           <path d="M93 97 Q100 93 107 97" stroke="#c2410c" strokeWidth="1.5" fill="none" opacity="0.5" />

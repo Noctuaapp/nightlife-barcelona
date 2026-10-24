@@ -5,6 +5,7 @@ import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import AdminEditButton from "../../../components/admin/AdminEditButton"
 import ClubEventPageContent from "../../../components/nightlife/ClubEventPageContent"
+import { EditAccessProvider } from "../../../components/admin/EditAccess"
 import { supabase } from "../../../lib/supabase"
 import { createSlug } from "../../../lib/slug"
 import { EVENT_IMAGE_FALLBACK, parsePriceEUR } from "../../../lib/structuredData"
@@ -31,7 +32,7 @@ const getData = cache(async (rawId: string) => {
   if (clubEvent.club_id) {
     const { data } = await supabase
       .from("clubs")
-      .select("id, name, slug, image, address, neighborhood, latitude, longitude, hidden")
+      .select("id, name, slug, image, address, neighborhood, latitude, longitude, hidden, owner_user_id")
       .eq("id", clubEvent.club_id)
       .maybeSingle()
     if (data && !data.hidden) club = data
@@ -137,7 +138,10 @@ export default async function ClubEventPage({ params }: ClubEventPageProps) {
   return (
     <>
       <Header />
-      <ClubEventPageContent clubEvent={clubEvent} club={club} clubName={clubName} tickets={tickets || []} clubSlug={clubSlug} />
+      {/* La noche es del dueño del club: puede editarla aquí igual que el admin. */}
+      <EditAccessProvider ownerUserId={club?.owner_user_id}>
+        <ClubEventPageContent clubEvent={clubEvent} club={club} clubName={clubName} tickets={tickets || []} clubSlug={clubSlug} />
+      </EditAccessProvider>
       <AdminEditButton kind="clubEvent" id={clubEvent.id} />
       <BottomNav />
       {clubEvent.date && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}

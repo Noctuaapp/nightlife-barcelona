@@ -5,6 +5,7 @@ import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import AdminEditButton from "../../../components/admin/AdminEditButton"
 import EventPageContent from "../../../components/nightlife/EventPageContent"
+import { EditAccessProvider } from "../../../components/admin/EditAccess"
 import { supabase } from "../../../lib/supabase"
 import { findBySlug } from "../../../lib/slugLookup"
 import { EVENT_IMAGE_FALLBACK, parsePriceEUR } from "../../../lib/structuredData"
@@ -125,7 +126,9 @@ export default async function EventPage({ params }: EventPageProps) {
   return (
     <>
       <Header />
-      <EventPageContent event={event} tickets={tickets || []} sessions={sessions || []} />
+      <EditAccessProvider ownerUserId={event.owner_user_id}>
+        <EventPageContent event={event} tickets={tickets || []} sessions={sessions || []} />
+      </EditAccessProvider>
       <AdminEditButton kind="event" id={event.id} />
       <BottomNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />

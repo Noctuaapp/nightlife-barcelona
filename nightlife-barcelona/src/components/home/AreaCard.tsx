@@ -1,4 +1,4 @@
-import Image from "next/image"
+import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
 
 interface AreaCardProps {
 

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
+import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
+import HeroImage from "../ui/HeroImage"
 import { useLanguage } from "../../context/LanguageContext"
 import { track } from "../../lib/track"
 import FavoriteButton from "../favorites/FavoriteButton"
@@ -15,16 +16,18 @@ import NearbyEssentials from "../nightlife/NearbyEssentials"
 import ClubTransport from "./club/ClubTransport"
 import ClubGallery from "./club/ClubGallery"
 import ClubReviews from "./club/ClubReviews"
+import ClubFeatures, { activeFeatureCount } from "./club/ClubFeatures"
 import Stars from "./club/Stars"
 import Icon from "../ui/Icon"
 import { toast } from "../ui/Toast"
 import { supabase } from "../../lib/supabase"
 import { InlineEditText, InlineEditImage } from "../admin/InlineEdit"
-import { useIsAdmin } from "../../lib/useIsAdmin"
+import { useCanEdit } from "../admin/EditAccess"
 import { FALLBACK_IMAGE as FALLBACK_CLUB_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
 import { clubOpenNow, clubOpensOn, madridClock } from "../../lib/clubHours"
 import { toDateLocale } from "../../lib/dateLocale"
+import { clubSummary } from "../../lib/clubSummary"
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
@@ -53,11 +56,12 @@ function PanelTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="mb-5 text-lg font-semibold text-ink">{children}</h2>
 }
 
-export default function ClubPageContent({ club, clubEvents, clubSessions = [] }: { club: any; clubEvents: any[]; clubSessions?: any[] }) {
+export default function ClubPageContent({ club, clubEvents, clubSessions = [], initialRelated }: { club: any; clubEvents: any[]; clubSessions?: any[]; initialRelated?: any[] }) {
   const { t, locale } = useLanguage()
-  const isAdmin = useIsAdmin()
+  const isAdmin = useCanEdit() // admin, o el dueño de esta ficha (ver admin/EditAccess)
   const [activeTab, setActiveTab] = useState<Tab>("about")
-  const [related, setRelated] = useState<any[]>([])
+  // Vienen ya del servidor (enlaces en el HTML para Google); si no, se piden aquí como antes.
+  const [related, setRelated] = useState<any[]>(() => (initialRelated || []).slice(0, 3))
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [liveCheckins, setLiveCheckins] = useState(0)
   const [userId, setUserId] = useState<string | null>(null)
@@ -174,7 +178,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
     supabase.rpc("club_live_checkins", { p_club_id: club.id }).then(({ data }) => {
       if (typeof data === "number") setLiveCheckins(data)
     })
-    loadRelated()
+    if (!initialRelated) loadRelated()
     loadUser().then(loadLiveNotes)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club.id])
@@ -285,16 +289,9 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
   const hasNights = clubEvents && clubEvents.length > 0
   const hasSessions = clubSessions && clubSessions.length > 0
 
-  const features = [
-    { key: "terrace", label: t("clubPage.fTerrace"), icon: "leaf", active: !!club.terrace },
-    { key: "vip", label: t("clubPage.fVip"), icon: "sofa", active: !!club.vip_tables },
-    { key: "smoking", label: t("clubPage.fSmoking"), icon: "cigarette", active: !!club.smoking_area },
-    { key: "booking", label: t("clubPage.fBooking"), icon: "clipboard", active: !!club.table_booking },
-    { key: "lgtbi", label: t("clubPage.fLgtbi"), icon: "pride", active: !!club.lgtbi_friendly },
-    { key: "swinger", label: t("clubPage.fSwinger"), icon: "shield", active: !!club.swinger_friendly },
-    { key: "dresscode", label: `${t("clubPage.fDresscode")}: ${club.dresscode}`, icon: "shirt", active: !!club.dresscode },
-    { key: "capacity", label: t("clubPage.fCapacity").replace("{n}", String(capacity)), icon: "users", active: !!capacity },
-  ].filter((f) => f.active)
+  // Características: ver club/ClubFeatures (incluye el futbolín/billar, que antes no salía, y los
+  // interruptores para editarlas desde aquí si eres admin).
+  const featureCount = activeFeatureCount(club, capacity)
 
   // Antes esta lista repetía, como pregunta/respuesta, exactamente los mismos datos que ya se ven
   // arriba en "Datos prácticos" (precio, horario, edad, aforo) y en las características (dress
@@ -345,17 +342,9 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
       {/* PORTADA */}
       <section className="relative">
         <div className="relative h-[46vh] max-h-[560px] min-h-[320px] w-full overflow-hidden">
-          <Image
-            src={club.image || FALLBACK_CLUB_IMAGE}
-            alt={club.name}
-            fill
-            priority
-            sizes="100vw"
-            unoptimized={!club.image}
-            className="object-cover"
-          />
+          <HeroImage src={club.image} alt={club.name} fallback={FALLBACK_CLUB_IMAGE} />
           <div className="absolute inset-0 bg-gradient-to-t from-night via-night/40 to-transparent" />
-          <InlineEditImage table="clubs" id={club.id} field="image" bucket="club-images" label="Cambiar foto principal" />
+          <InlineEditImage table="clubs" id={club.id} field="image" bucket="club-images" label="Cambiar foto" />
         </div>
 
         <div className="relative -mt-28 px-4 sm:-mt-36 sm:px-6">
@@ -566,14 +555,22 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
           {/* COLUMNA PRINCIPAL — en móvil va primero; las acciones (guardar, asistiré, check-in)
               quedan debajo, en una fila compacta, para no cortar la información */}
           <div className="min-w-0 space-y-6 lg:col-span-2">
-            {(club.description || isAdmin) && (
-              <Panel>
-                <PanelTitle>{t("clubPage.about").replace("{name}", club.name)}</PanelTitle>
-                <p className="text-base leading-relaxed text-zinc-200">
+            {/* Sin descripción escrita: un resumen con los datos reales del local (ver lib/clubSummary),
+                para que la ficha tenga texto propio en el HTML que lee Google. Está en español,
+                el idioma del sitio para Google; el admin sigue viendo el campo para escribir una. */}
+            <Panel>
+              <PanelTitle>{t("clubPage.about").replace("{name}", club.name)}</PanelTitle>
+              <p className="text-base leading-relaxed text-zinc-200">
+                {club.description || isAdmin ? (
                   <InlineEditText table="clubs" id={club.id} field="description" value={club.description} multiline emptyLabel="añadir descripción" />
-                </p>
-              </Panel>
-            )}
+                ) : (
+                  clubSummary(club)
+                )}
+              </p>
+              {!club.description && isAdmin && (
+                <p className="mt-3 text-xs leading-relaxed text-zinc-500">Sin descripción, el público ve: {clubSummary(club)}</p>
+              )}
+            </Panel>
 
             <div role="tablist" className="scrollbar-none sticky top-[72px] z-20 sm:top-20 -mx-4 flex gap-2 overflow-x-auto bg-night/95 px-4 py-3 backdrop-blur sm:mx-0 sm:px-0">
               {tabs.map((tab) => (
@@ -593,17 +590,10 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
 
             {activeTab === "about" && (
               <div className="space-y-6">
-                {features.length > 0 && (
+                {(featureCount > 0 || isAdmin) && (
                   <Panel>
                     <PanelTitle>{t("clubPage.features")}</PanelTitle>
-                    <ul className="grid gap-3 sm:grid-cols-2">
-                      {features.map((f) => (
-                        <li key={f.key} className="flex items-center gap-3 rounded-ctl border border-white/10 px-4 py-3">
-                          <Icon name={f.icon} className="h-4 w-4 shrink-0 text-brand-soft" />
-                          <span className="text-sm font-semibold text-ink">{f.label}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <ClubFeatures club={club} capacity={capacity} isAdmin={isAdmin} />
                   </Panel>
                 )}
 
@@ -669,7 +659,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [] }:
                             <Icon name="calendar" className="h-8 w-8 text-muted" />
                           </div>
                         )}
-                        <InlineEditImage table="club_sessions" id={session.id} field="image" bucket="club-images" label="Cambiar" />
+                        <InlineEditImage table="club_sessions" id={session.id} field="image" bucket="club-images" label="Cambiar" variant="thumb" />
                       </div>
                       <div className="min-w-0 flex-1">
                         {(session.day_of_week || isAdmin) && (

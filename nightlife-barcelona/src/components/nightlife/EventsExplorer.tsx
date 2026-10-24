@@ -3,7 +3,7 @@
 import { zoneOf, zonesPresent } from "../../lib/zones"
 import { useEffect, useMemo, useState } from "react"
 import { track } from "../../lib/track"
-import Image from "next/image"
+import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
 import Link from "next/link"
 import { useLanguage } from "../../context/LanguageContext"
 import { createSlug } from "../../lib/slug"

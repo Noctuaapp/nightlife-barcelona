@@ -140,7 +140,7 @@ export default function MiFestivalPage() {
     // aviso — "como si no reaccionase". Ahora cualquier fallo se muestra y el botón se reactiva.
     try {
       const fileExt = file.name.split(".").pop()
-      const fileName = `owner-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+      const fileName = `organizer/${userId}/owner-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}` // carpeta propia del organizador (supabase/30)
       const { error } = await supabase.storage.from("event-photos").upload(fileName, file)
       if (error) { alert("Error al subir la imagen: " + error.message); return null }
       const { data } = supabase.storage.from("event-photos").getPublicUrl(fileName)
@@ -162,7 +162,7 @@ export default function MiFestivalPage() {
     try {
       for (const file of Array.from(files)) {
         const fileExt = file.name.split(".").pop()
-        const fileName = `owner-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`
+        const fileName = `organizer/${userId}/owner-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}` // carpeta propia del organizador (supabase/30)
         const { error } = await supabase.storage.from("event-photos").upload(fileName, file)
         if (error) {
           if (!firstError) firstError = error.message

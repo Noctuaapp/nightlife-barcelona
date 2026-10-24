@@ -10,6 +10,8 @@ import { nearestMetroStations } from "../../../lib/metroStations"
 import { getMetroTonight } from "../../../lib/transitHours"
 import { distanceInMeters, formatDistance, walkingMinutes, walkingDirectionsUrl } from "../../../lib/geo"
 import { MetroLineBadge, NitbusRouteRow } from "../../ui/TransitBadge"
+import { InlineEditText } from "../../admin/InlineEdit"
+import { useCanEdit } from "../../admin/EditAccess"
 
 // Cómo llegar y, sobre todo, cómo volver: metro (con su horario de esta noche), NitBus y taxi.
 const PLACA_CATALUNYA = { lat: 41.3869, lon: 2.1701 }
@@ -17,10 +19,14 @@ const PLACA_CATALUNYA = { lat: 41.3869, lon: 2.1701 }
 // paradas a las que tenga sentido ir andando a buscar un taxi.
 const NOT_A_RANK = /cabify|uber|bolt|free\s?now|oficina|office|headquarter/i
 const MAX_RANK_METERS = 600
+// Paradas de Nitbus (esenciales, con la línea en "subcategoría") a menos de esta distancia del
+// club: sus líneas se añaden solas a la ficha, aunque nadie las haya escrito a mano en el club.
+const MAX_NITBUS_STOP_METERS = 400
 
 type Rank = { name: string; address: string | null; latitude: number; longitude: number; distanceMeters: number }
 
 type ClubLike = {
+  id?: number
   name: string
   address?: string | null
   latitude?: number | string | null
@@ -49,6 +55,8 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
   const lat = Number(club.latitude)
   const lng = Number(club.longitude)
   const [rank, setRank] = useState<Rank | null>(null)
+  const [nearbyBusCodes, setNearbyBusCodes] = useState<string[]>([])
+  const isAdmin = useCanEdit() // admin, o el dueño de esta ficha
   const [metroTonight, setMetroTonight] = useState<ReturnType<typeof getMetroTonight> | null>(null)
 
   useEffect(() => {
@@ -74,10 +82,30 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
           .sort((a, b) => a.distanceMeters - b.distanceMeters)[0]
         if (best && best.distanceMeters <= MAX_RANK_METERS) setRank(best)
       })
+    supabase
+      .from("essentials")
+      .select("subcategory, latitude, longitude")
+      .eq("category", "Nitbus")
+      .eq("hidden", false)
+      .then(({ data }) => {
+        if (cancelled || !data) return
+        const codes = new Set<string>()
+        for (const e of data as Record<string, unknown>[]) {
+          if (!e.latitude || !e.longitude || !e.subcategory) continue
+          if (distanceInMeters(lat, lng, Number(e.latitude), Number(e.longitude)) > MAX_NITBUS_STOP_METERS) continue
+          for (const c of splitNightBusCodes(String(e.subcategory))) codes.add(c.toUpperCase())
+        }
+        setNearbyBusCodes(Array.from(codes))
+      })
     return () => {
       cancelled = true
     }
   }, [hasCoords, lat, lng])
+
+  // Líneas escritas en la ficha + las de las paradas de Nitbus cercanas (sin repetir).
+  const busCodes = Array.from(
+    new Set([...(club.night_buses ? splitNightBusCodes(club.night_buses).map((c) => c.toUpperCase()) : []), ...nearbyBusCodes])
+  ).sort((a, b) => Number(a.replace(/\D/g, "")) - Number(b.replace(/\D/g, "")))
 
   const metro = hasCoords ? nearestMetroStations(lat, lng) : []
   const distCatalunya = hasCoords ? distanceInMeters(lat, lng, PLACA_CATALUNYA.lat, PLACA_CATALUNYA.lon) : null
@@ -145,8 +173,7 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
           <Icon name="bus" className="h-4 w-4 text-muted" /> {t("club.night_buses")}
         </p>
         <div className="mt-3 flex flex-col gap-2.5">
-          {club.night_buses &&
-            splitNightBusCodes(club.night_buses).map((raw) => (
+          {busCodes.map((raw) => (
               <div key={raw} className="rounded-ctl border border-white/10 bg-white/[0.02] px-3 py-2.5">
                 <NitbusRouteRow
                   code={raw}
@@ -156,6 +183,12 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
                 />
               </div>
             ))}
+          {isAdmin && club.id && (
+            <p className="rounded-ctl border border-dashed border-purple-400/40 px-3 py-2 text-xs text-purple-200">
+              Líneas de este club (solo tú lo ves, separa con comas):{" "}
+              <InlineEditText table="clubs" id={club.id} field="night_buses" value={club.night_buses} placeholder="N24, N28" emptyLabel="añadir líneas" />
+            </p>
+          )}
           <Row tone="bus" badge={<Icon name="map" className="h-3.5 w-3.5" />}>
             <a href={nitbusNearby} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-200 underline underline-offset-2">
               {t("clubPage.nitbusNearby")}

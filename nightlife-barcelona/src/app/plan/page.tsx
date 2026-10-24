@@ -68,7 +68,7 @@ function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): num
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-const EARLY_VENUE_TYPES = new Set(["Pub", "Bar musical"])
+const EARLY_VENUE_TYPES = new Set(["Pub", "Bar musical", "Coctelería", "Karaoke", "Bar de billar"])
 const LATE_VENUE_TYPES = new Set(["Discoteca"])
 const DEFAULT_MAX_PAIR_KM = 2.5
 const EXPANDED_MAX_PAIR_KM = 5
@@ -301,6 +301,9 @@ const VENUE_TYPE_OPTIONS = [
   { value: "Discoteca", key: "venueClub" },
   { value: "Pub", key: "venuePub" },
   { value: "Bar musical", key: "venueMusicBar" },
+  { value: "Coctelería", key: "venueCocktail" },
+  { value: "Karaoke", key: "venueKaraoke" },
+  { value: "Bar de billar", key: "venuePool" },
 ]
 const MUSIC_OPTIONS = STYLES.filter((s) => s.slug !== "electronica").map((s) => s.slug)
 const DRESSCODE_OPTIONS = ["any", "Casual", "Smart casual", "Elegante", "Dark casual"]
@@ -1113,7 +1116,7 @@ export default function PlanPage() {
                             <Link key={club.id} href={`/clubs/${club.slug || createSlug(club.name)}`} className="w-48 shrink-0 overflow-hidden rounded-card border border-white/10 bg-surface transition hover:border-white/25">
                               <div className="h-28 overflow-hidden">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={club.image || FALLBACK_IMAGE} alt="" className="h-full w-full object-cover" />
+                                <img src={club.image || FALLBACK_IMAGE} alt="" className="h-full w-full object-cover" onError={(e) => { if (!e.currentTarget.src.startsWith("data:")) e.currentTarget.src = FALLBACK_IMAGE }} />
                               </div>
                               <div className="p-3">
                                 <p className="truncate text-sm font-semibold text-ink">{club.name}</p>
@@ -1133,7 +1136,7 @@ export default function PlanPage() {
                             <Link key={event.id} href={`/event/${event.slug || createSlug(event.title)}`} className="flex items-center gap-4 rounded-card border border-white/10 bg-surface p-3 transition hover:border-white/25">
                               <div className="h-16 w-16 shrink-0 overflow-hidden rounded-ctl">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={event.image || FALLBACK_IMAGE} alt="" className="h-full w-full object-cover" />
+                                <img src={event.image || FALLBACK_IMAGE} alt="" className="h-full w-full object-cover" onError={(e) => { if (!e.currentTarget.src.startsWith("data:")) e.currentTarget.src = FALLBACK_IMAGE }} />
                               </div>
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-semibold text-ink">{event.title}</p>

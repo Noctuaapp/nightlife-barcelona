@@ -5,6 +5,7 @@ import Link from "next/link"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
+import { isAdminEmail } from "../../lib/admin"
 import { useFavorites } from "../../context/FavoritesContext"
 import { useLanguage } from "../../context/LanguageContext"
 import { getLevelStatus } from "../../lib/xp"
@@ -141,7 +142,8 @@ export default function ProfilePage() {
         setUsername(profile.username || "")
         setNewUsername(profile.username || "")
         setUsernameUpdatedAt(profile.username_updated_at || null)
-        setAvatarUrl(profile.avatar_url || null)
+        // La cuenta oficial de Noctua lleva el logo como foto si no se ha subido otra.
+        setAvatarUrl(profile.avatar_url || (isAdminEmail(data.user.email) ? "/noctua_logo.png" : null))
         setXp(profile.xp || 0)
         setBirthYear(profile.birth_year ? String(profile.birth_year) : "")
         setLoginStreakDays(profile.login_streak_days || 0)
