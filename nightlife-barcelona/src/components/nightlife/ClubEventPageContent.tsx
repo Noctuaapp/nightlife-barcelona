@@ -7,6 +7,7 @@ import HeroImage from "../ui/HeroImage"
 import FavoriteButton from "../favorites/FavoriteButton"
 import AttendanceButton from "../gamification/AttendanceButton"
 import ClubMap from "../map/ClubMap"
+import NitbusNearby from "./NitbusNearby"
 import RideButtons from "./club/RideButtons"
 import Icon from "../ui/Icon"
 import { toast } from "../ui/Toast"
@@ -271,6 +272,11 @@ export default function ClubEventPageContent({
                   </div>
                 )}
                 {club?.address && <p className="mt-4 text-sm text-zinc-300">{club.address}</p>}
+                {hasCoords && (
+                  <div className="mt-5">
+                    <NitbusNearby lat={lat as number} lng={lng as number} />
+                  </div>
+                )}
                 {directionsUrl && (
                   <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${primaryBtn} mt-4 w-full`}>
                     <Icon name="map" className="h-4 w-4" /> {t("clubPage.openRoute")}

@@ -8,6 +8,7 @@ import FavoriteButton from "../favorites/FavoriteButton"
 import AttendanceButton from "../gamification/AttendanceButton"
 import NearbyVenuesSheet from "../nightlife/NearbyVenuesSheet"
 import ClubMap from "../map/ClubMap"
+import NitbusNearby from "./NitbusNearby"
 import EventSessionsCalendar from "../nightlife/EventSessionsCalendar"
 import ClubGallery from "./club/ClubGallery"
 import ClubReviews from "./club/ClubReviews"
@@ -255,6 +256,11 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                   </div>
                 )}
                 {event.address && <p className="mt-4 text-sm text-zinc-300">{event.address}</p>}
+                {hasCoords && (
+                  <div className="mt-5">
+                    <NitbusNearby lat={Number(event.latitude)} lng={Number(event.longitude)} />
+                  </div>
+                )}
                 {directionsUrl && (
                   <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${primaryBtn} mt-4 w-full`}>
                     <Icon name="map" className="h-4 w-4" /> {t("clubPage.openRoute")}

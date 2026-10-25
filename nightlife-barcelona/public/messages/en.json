@@ -805,7 +805,8 @@
     "fCloakroom": "Cloakroom",
     "fFood": "Food / kitchen",
     "fShisha": "Shisha",
-    "fAccessible": "Wheelchair accessible"
+    "fAccessible": "Wheelchair accessible",
+    "stopAt": "Stop: {name}"
   },
   "eventPage": {
     "dateTbc": "Date to be confirmed"

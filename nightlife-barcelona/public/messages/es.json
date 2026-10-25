@@ -818,7 +818,8 @@
     "fCloakroom": "Guardarropa",
     "fFood": "Comida / cocina",
     "fShisha": "Shisha",
-    "fAccessible": "Accesible en silla de ruedas"
+    "fAccessible": "Accesible en silla de ruedas",
+    "stopAt": "Parada {name}"
   },
   "eventPage": {
     "dateTbc": "Fecha por confirmar"

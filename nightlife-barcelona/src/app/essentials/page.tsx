@@ -305,7 +305,7 @@ export default function EssentialsPage() {
                     const info = categoryInfo(item.category)
                     const CatIcon = info.icon
                     return (
-                      <Link key={item.id} href={`/essentials/${info.slug}`} className="w-56 shrink-0 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25">
+                      <Link key={item.id} href={`/essentials/${info.slug}?id=${item.id}`} className="w-56 shrink-0 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25">
                         <span className="flex items-center gap-2 text-xs font-semibold text-brand-soft">
                           <CatIcon size={14} /> {formatDistance(item._dist)}
                           {item._dist <= 2500 ? ` · ${t("essentialsPage.walkMin").replace("{n}", String(walkingMinutes(item._dist)))}` : ""}

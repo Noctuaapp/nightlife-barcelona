@@ -38,12 +38,15 @@ export function NitbusRouteRow({
   seeStopsLabel,
   unknownLabel,
   onLinkClick,
+  onSelectLine,
   near,
 }: {
   code: string
   seeStopsLabel: string
   unknownLabel: string
   onLinkClick?: (e: React.MouseEvent) => void
+  // En la propia página de Nitbus: en vez de navegar, filtra el mapa por esta línea.
+  onSelectLine?: (code: string) => void
   // Coordenadas del sitio desde el que se mira esto (un club, p.ej.), para que "ver paradas"
   // busque alrededor de ahí en vez de a ciegas por toda España. Opcional: sin ubicación concreta
   // se ancla al centro de Barcelona (ver nightBusStopsUrl).
@@ -77,9 +80,13 @@ export function NitbusRouteRow({
           {note && <>{note} · </>}
           <a
             href={stopsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={onLinkClick}
+            onClick={(e) => {
+              onLinkClick?.(e)
+              if (onSelectLine) {
+                e.preventDefault()
+                onSelectLine(line.code)
+              }
+            }}
             className="font-semibold text-sky-300 underline underline-offset-2"
           >
             {seeStopsLabel}

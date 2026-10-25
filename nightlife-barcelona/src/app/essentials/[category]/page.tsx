@@ -125,6 +125,37 @@ export default function EssentialCategoryPage() {
   }, [mobileView])
   const didInitialFit = useRef(false)
 
+  // Enlaces que llegan a esta página apuntando a algo concreto (25/10/2026). Antes, al tocar una
+  // parada en "Cerca de ti" o "Ver paradas" en la ficha de un club, se llegaba a la lista general
+  // sin nada seleccionado. Ahora:
+  //   ?id=123              → abre ese sitio en el mapa
+  //   ?line=N24            → filtra por esa línea (Nitbus o metro)
+  //   ?line=N24&lat=..&lon=.. → además, abre la parada de esa línea más cercana a ese punto
+  const focusRef = useRef<{ id: string | null; line: string | null; lat: number | null; lon: number | null } | null>(null)
+  const focusDone = useRef(false)
+  const linesSectionRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    const lat = Number(p.get("lat"))
+    const lon = Number(p.get("lon"))
+    const line = (p.get("line") || "").trim().toUpperCase() || null
+    focusRef.current = {
+      id: p.get("id"),
+      line,
+      lat: p.get("lat") && isFinite(lat) ? lat : null,
+      lon: p.get("lon") && isFinite(lon) ? lon : null,
+    }
+    if (line && (category === "metro" || category === "nitbus")) setSelectedMetroLine(line)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // En la propia página de Nitbus, "Ver paradas" de una línea filtra el mapa sin recargar.
+  const showLine = (code: string) => {
+    setSelectedMetroLine(code)
+    setSelected(null)
+    setTimeout(() => linesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50)
+  }
+
   // Encuadra el mapa a un conjunto de puntos. Si el mapa está oculto (móvil, vista lista) no
   // tiene tamaño y Mapbox calcularía mal el encuadre: se guarda y se aplica al mostrar el mapa.
   const fitMapTo = (points: [number, number][]) => {
@@ -334,6 +365,27 @@ export default function EssentialCategoryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady, essentials])
 
+  // Abrir lo que pedía el enlace (ver focusRef arriba), una sola vez, cuando ya hay datos y mapa.
+  useEffect(() => {
+    const f = focusRef.current
+    if (!mapReady || essentials.length === 0 || !f || focusDone.current) return
+    focusDone.current = true
+    let target: Essential | undefined
+    if (f.id) target = essentials.find((e) => String(e.id) === f.id)
+    if (!target && f.line && f.lat !== null && f.lon !== null) {
+      target = essentials
+        .filter((e) => e.latitude && e.longitude && (e.subcategory || "").split(",").some((l) => l.trim().toUpperCase() === f.line))
+        .map((e) => ({ e, d: distanceInMeters(f.lat!, f.lon!, Number(e.latitude), Number(e.longitude)) }))
+        .sort((a, b) => a.d - b.d)[0]?.e
+    }
+    if (!target || !target.latitude || !target.longitude) return
+    didInitialFit.current = true
+    setSelected(target)
+    setMobileView("map")
+    fitMapTo([[Number(target.longitude), Number(target.latitude)]])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapReady, essentials])
+
   // Al localizar al usuario: marcador morado y encuadre con los 5 más cercanos.
   useEffect(() => {
     if (!mapReady || !map.current || !userLocation) return
@@ -490,7 +542,7 @@ export default function EssentialCategoryPage() {
       return (
         <div className="mt-2 space-y-2 border-t border-white/10 pt-2">
           {codes.map((code) => (
-            <NitbusRouteRow key={code} code={code} seeStopsLabel={t("clubPage.seeStops")} unknownLabel={t("clubPage.lineUnknown")} onLinkClick={stopPropagation} />
+            <NitbusRouteRow key={code} code={code} seeStopsLabel={t("clubPage.seeStops")} unknownLabel={t("clubPage.lineUnknown")} onLinkClick={stopPropagation} onSelectLine={essentials.length > 0 ? showLine : undefined} />
           ))}
         </div>
       )
@@ -662,7 +714,7 @@ export default function EssentialCategoryPage() {
                 </summary>
                 <div className="mt-4 grid gap-x-5 gap-y-3 sm:grid-cols-2">
                   {Object.values(NIGHT_BUS_LINES).map((line) => (
-                    <NitbusRouteRow key={line.code} code={line.code} seeStopsLabel={t("clubPage.seeStops")} unknownLabel={t("clubPage.lineUnknown")} />
+                    <NitbusRouteRow key={line.code} code={line.code} seeStopsLabel={t("clubPage.seeStops")} unknownLabel={t("clubPage.lineUnknown")} onSelectLine={essentials.length > 0 ? showLine : undefined} />
                   ))}
                 </div>
                 <p className="mt-4 text-xs text-zinc-400">{t("essentialsPage.nitbusBody")}</p>
@@ -673,7 +725,7 @@ export default function EssentialCategoryPage() {
 
         {/* Nitbus con paradas: buscar parada y filtrar por línea, igual que el metro. */}
         {category === "nitbus" && essentials.length > 0 && (
-          <section className="mx-auto mt-6 max-w-7xl px-4">
+          <section ref={linesSectionRef} className="mx-auto mt-6 max-w-7xl scroll-mt-24 px-4">
             <div className="relative">
               <Icon name="search" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
               <input

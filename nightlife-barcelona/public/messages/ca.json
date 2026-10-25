@@ -805,7 +805,8 @@
     "fCloakroom": "Guarda-roba",
     "fFood": "Menjar / cuina",
     "fShisha": "Xixa",
-    "fAccessible": "Accessible amb cadira de rodes"
+    "fAccessible": "Accessible amb cadira de rodes",
+    "stopAt": "Parada {name}"
   },
   "eventPage": {
     "dateTbc": "Data per confirmar"
