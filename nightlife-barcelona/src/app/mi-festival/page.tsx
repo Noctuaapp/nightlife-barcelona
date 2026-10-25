@@ -6,6 +6,7 @@ import Link from "next/link"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
+import OwnerStats from "../../components/owner/OwnerStats"
 
 // Portal para que el organizador de un festival gestione sus propios festivales y las sesiones
 // de DJ de cada uno, sin pasar por Jordi. Un festival queda "vinculado" cuando su fila en
@@ -501,32 +502,8 @@ export default function MiFestivalPage() {
             </div>
           )}
 
-          {/* Solo organizadores que Noctua ya ha vinculado a algún festival pueden crear otro (la base
-              de datos también lo impide: supabase/31_solo_admin_y_vinculados.sql). */}
-          {festivals.length > 0 && (
-          <div className="mt-8">
-            <button
-              onClick={() => { setShowAddForm((v) => !v); setEditingId(null) }}
-              className={`w-full rounded-2xl px-6 py-4 text-sm font-black transition md:w-auto ${showAddForm ? "bg-white text-black" : "bg-purple-500 text-white hover:bg-purple-400"}`}
-            >
-              {showAddForm ? "✕ Cerrar formulario" : "+ Nuevo festival"}
-            </button>
-            {showAddForm && (
-              <div className="mt-4 rounded-card border border-purple-500/30 bg-purple-500/[0.04] p-6">
-                <h3 className="mb-4 text-lg font-black">Nuevo festival</h3>
-                {renderForm(newForm, setNewForm, newGallery, setNewGallery, newPriceTiersRaw, setNewPriceTiersRaw, handleNewImageUpload, handleNewGalleryUpload)}
-                <div className="mt-5 flex gap-3">
-                  <button onClick={addFestival} disabled={saving} className="rounded-full bg-purple-500 px-6 py-3 text-sm font-black text-white transition hover:bg-purple-400 disabled:opacity-50">
-                    {saving ? "Guardando..." : "Crear festival"}
-                  </button>
-                  <button onClick={() => { setShowAddForm(false); setNewForm(emptyForm); setNewGallery([]); setNewPriceTiersRaw("") }} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10">
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-          )}
+          {/* Crear festivales nuevos lo hace solo Noctua (supabase/35): aquí el organizador
+              edita los suyos y sus días/line-up, y ve sus estadísticas. */}
 
           {festivals.length > 0 && (
             <div className="mt-8 grid gap-6">
@@ -555,7 +532,7 @@ export default function MiFestivalPage() {
                       </div>
                       <div className="flex flex-wrap gap-3">
                         <button onClick={() => startEdit(festival)} className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black">✏️ Editar</button>
-                        <button onClick={() => deleteFestival(festival.id)} className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500 hover:text-white">🗑️ Borrar</button>
+
                       </div>
                     </div>
                   )}
@@ -568,6 +545,11 @@ export default function MiFestivalPage() {
                         {expandedLineupId === festival.id ? "Ocultar line-up" : `🎧 Gestionar line-up (${(sessions[festival.id] || []).length})`}
                       </button>
                       {expandedLineupId === festival.id && renderLineup(festival)}
+                    </div>
+                  )}
+                  {editingId !== festival.id && (
+                    <div className="mt-6">
+                      <OwnerStats type="event" id={festival.id} name={festival.title} />
                     </div>
                   )}
                 </div>

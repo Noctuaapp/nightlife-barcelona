@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import Link from "next/link"
 import { supabase } from "../../lib/supabase"
+import { getDeniedClubIds, rememberDenied } from "../../lib/deniedVenues"
 import { createSlug } from "../../lib/slug"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
@@ -145,7 +146,7 @@ export default function NearbyVenuesSheet({
             return
           }
           setReasonSaved(true)
-          setTimeout(() => setReasonSaved(false), 3000)
+          if (venueType === "club") rememberDenied(venueId)
         })
     } else {
       setReasonSaved(false)
@@ -169,7 +170,9 @@ export default function NearbyVenuesSheet({
 
     const { data } = await query
 
-    const rows = (data || []) as ClubRow[]
+    // Sin los locales donde a esta persona ya no le dejaron entrar (últimos 90 días).
+    const denied = await getDeniedClubIds()
+    const rows = ((data || []) as ClubRow[]).filter((r) => !denied.has(Number(r.id)))
     rowsRef.current = rows
     setVenues(sortVenues(rows, latitude as number, longitude as number, reason))
     setLoading(false)
@@ -244,6 +247,8 @@ export default function NearbyVenuesSheet({
                 horizontal que en desktop (sin trackpad) no se puede accionar sin una barra
                 visible. Así siempre se ven los 4 sin gestos raros. */}
             <div className="border-b border-white/5 p-4">
+              {/* Para qué sirve decir el motivo, ANTES de elegirlo (25/10/2026). */}
+              <p className="mb-3 text-xs leading-relaxed text-zinc-400">{t("nearby.reasonWhy")}</p>
               <div className="flex flex-wrap gap-2">
                 {reasons.map((r) => (
                   <button
@@ -266,8 +271,8 @@ export default function NearbyVenuesSheet({
                 ))}
               </div>
               {reasonSaved && (
-                <p className="mt-2.5 text-xs font-semibold text-open">
-                  {t("nearby.reasonSaved")}
+                <p className="mt-2.5 text-xs font-semibold leading-relaxed text-open">
+                  {t("nearby.reasonSaved").replace("{name}", name)}
                 </p>
               )}
             </div>

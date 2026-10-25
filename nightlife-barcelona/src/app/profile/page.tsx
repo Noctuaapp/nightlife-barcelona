@@ -15,6 +15,7 @@ import { createSlug } from "../../lib/slug"
 import { toDateLocale } from "../../lib/dateLocale"
 import { ADMIN_EMAIL } from "../../lib/admin"
 import NocOwl from "../../components/mascot/NocOwl"
+import DeniedVenuesCard from "../../components/profile/DeniedVenuesCard"
 
 // Perfil. Rehecho tras la auditoría de octubre 2026: fuera las cifras de relleno ("BCN · Ciudad",
 // "🌙 Night owl", "Noctua Member") y los emojis como iconos; arriba, el acceso a todo lo de "tu
@@ -738,6 +739,9 @@ export default function ProfilePage() {
               </ul>
             )}
           </div>
+
+          {/* Locales donde no le dejaron entrar: no se le recomiendan hasta que los vuelva a mostrar. */}
+          <DeniedVenuesCard cardClass={card} titleClass={h2} />
 
           <div className={card}>
             <h2 className={`${h2} mb-5`}>{t("profilePage.settings")}</h2>

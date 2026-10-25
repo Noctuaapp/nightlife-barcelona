@@ -373,14 +373,15 @@
     "reasonFull": "🚪 At capacity",
     "reasonGroup": "👥 Big group",
     "reasonOther": "🤷 Other reason",
-    "reasonSaved": "✓ Reason saved, thanks",
+    "reasonSaved": "✓ Thanks for telling us. We'll use it to improve Noctua and won't recommend {name} to you again. If you change your mind, you can bring it back from your profile.",
     "nearVenue": "Venues near {name} to keep the party going",
     "nearYou": "Venues near you to keep the party going",
     "empty": "We couldn't find any more venues nearby right now. Try the map to see all of Barcelona.",
     "viewMap": "View map",
     "directions": "Directions",
     "moreNearby": "more venues near you",
-    "unlockAll": "See all"
+    "unlockAll": "See all",
+    "reasonWhy": "Tell us what happened: it helps us improve Noctua and stop recommending this venue to you. Meanwhile, here are places nearby to keep the night going."
   },
   "clubCard": {
     "vipTable": "VIP Table",
@@ -1100,7 +1101,13 @@
     "pending": "Pending",
     "replyFromNoctua": "Reply from Noctua",
     "settings": "Account",
-    "birthYear": "Year of birth"
+    "birthYear": "Year of birth",
+    "deniedTitle": "Venues we no longer suggest",
+    "deniedIntro": "You told us they didn't let you in here, so we don't suggest them in Surprise me or nearby venues. You can bring them back any time.",
+    "deniedRestore": "Show it again",
+    "deniedRestored": "{name} is back in your suggestions",
+    "deniedError": "Couldn't change it. Please try again.",
+    "deniedTimes": "{n} times"
   },
   "badges": {
     "title": "Exploration badges",

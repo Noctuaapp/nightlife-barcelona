@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
+import OwnerStatsAccess from "../../../components/admin/OwnerStatsAccess"
 import { supabase } from "../../../lib/supabase"
 import { getSortedCountries } from "../../../lib/countries"
 import CountrySelect from "../../../components/ui/CountrySelect"
@@ -368,6 +369,7 @@ export default function AdminUsersPage() {
   return (
     <AdminShell title="Usuarios" subtitle={`${users.length} usuarios registrados en Noctua.`}>
       <>
+        <OwnerStatsAccess />
         <section className="mx-auto max-w-7xl">
           <input
             value={search}

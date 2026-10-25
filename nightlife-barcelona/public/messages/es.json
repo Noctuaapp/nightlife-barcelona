@@ -374,14 +374,15 @@
     "reasonFull": "🚪 Aforo lleno",
     "reasonGroup": "👥 Somos muchos",
     "reasonOther": "🤷 Otro motivo",
-    "reasonSaved": "✓ Motivo guardado, gracias",
+    "reasonSaved": "✓ Gracias por contárnoslo. Lo usaremos para mejorar Noctua y no volveremos a recomendarte {name}. Si cambias de idea, lo puedes volver a mostrar desde tu perfil.",
     "nearVenue": "Locales cerca de {name} para seguir la fiesta",
     "nearYou": "Locales cerca de ti para seguir la fiesta",
     "empty": "No hemos encontrado más locales cerca ahora mismo. Prueba el mapa para ver toda Barcelona.",
     "viewMap": "Ver mapa",
     "directions": "Cómo llegar",
     "moreNearby": "locales más cerca de ti",
-    "unlockAll": "Ver todos"
+    "unlockAll": "Ver todos",
+    "reasonWhy": "Dinos qué ha pasado: nos sirve para mejorar Noctua y para no volver a recomendarte este local. Mientras, aquí tienes sitios cerca para seguir la fiesta."
   },
   "clubCard": {
     "vipTable": "Mesa VIP",
@@ -1113,7 +1114,13 @@
     "pending": "Pendiente",
     "replyFromNoctua": "Respuesta de Noctua",
     "settings": "Cuenta",
-    "birthYear": "Año de nacimiento"
+    "birthYear": "Año de nacimiento",
+    "deniedTitle": "Locales que no te recomendamos",
+    "deniedIntro": "Nos contaste que aquí no te dejaron entrar, así que no te los proponemos en Sorpréndeme ni en los locales cercanos. Puedes volver a verlos cuando quieras.",
+    "deniedRestore": "Volver a mostrarlo",
+    "deniedRestored": "{name} vuelve a salirte en las recomendaciones",
+    "deniedError": "No se ha podido cambiar. Inténtalo de nuevo.",
+    "deniedTimes": "{n} veces"
   },
   "badges": {
     "title": "Insignias de exploración",

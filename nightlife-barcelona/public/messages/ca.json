@@ -373,14 +373,15 @@
     "reasonFull": "🚪 Aforament complet",
     "reasonGroup": "👥 Som molts",
     "reasonOther": "🤷 Un altre motiu",
-    "reasonSaved": "✓ Motiu desat, gràcies",
+    "reasonSaved": "✓ Gràcies per explicar-nos-ho. Ho farem servir per millorar Noctua i no et tornarem a recomanar {name}. Si canvies d'idea, el pots tornar a mostrar des del teu perfil.",
     "nearVenue": "Locals a prop de {name} per seguir la festa",
     "nearYou": "Locals a prop teu per seguir la festa",
     "empty": "No hem trobat més locals a prop ara mateix. Prova el mapa per veure tota Barcelona.",
     "viewMap": "Veure mapa",
     "directions": "Com arribar-hi",
     "moreNearby": "locals més a prop teu",
-    "unlockAll": "Veure'ls tots"
+    "unlockAll": "Veure'ls tots",
+    "reasonWhy": "Explica'ns què ha passat: ens serveix per millorar Noctua i per no tornar-te a recomanar aquest local. Mentrestant, aquí tens llocs a prop per seguir la festa."
   },
   "clubCard": {
     "vipTable": "Taula VIP",
@@ -1100,7 +1101,13 @@
     "pending": "Pendent",
     "replyFromNoctua": "Resposta de Noctua",
     "settings": "Compte",
-    "birthYear": "Any de naixement"
+    "birthYear": "Any de naixement",
+    "deniedTitle": "Locals que no et recomanem",
+    "deniedIntro": "Ens vas explicar que aquí no et van deixar entrar, així que no te'ls proposem a Sorprèn-me ni als locals propers. Pots tornar-los a veure quan vulguis.",
+    "deniedRestore": "Tornar a mostrar-lo",
+    "deniedRestored": "{name} torna a sortir a les recomanacions",
+    "deniedError": "No s'ha pogut canviar. Torna-ho a provar.",
+    "deniedTimes": "{n} vegades"
   },
   "badges": {
     "title": "Insígnies d'exploració",

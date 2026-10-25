@@ -7,6 +7,7 @@ import { Upload, X, Pencil, Trash2, Check } from "lucide-react"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
+import OwnerStats from "../../components/owner/OwnerStats"
 import { EXTRA_FEATURES, extrasFromRow } from "../../lib/extraFeatures"
 import { useLanguage } from "../../context/LanguageContext"
 import { toast } from "../../components/ui/Toast"
@@ -594,7 +595,7 @@ export default function MiClubPage() {
     { key: "has_foosball", label: t("explorer.attr_games") },
     { key: "lgtbi_friendly", label: "LGTBI+" },
     { key: "sold_out", label: t("ownerPortal.fSoldOutToday") },
-    { key: "hidden", label: t("ownerPortal.fHide") },
+    // "Ocultar ficha" ya no está: ocultar o publicar lo decide solo Noctua (supabase/35).
   ]
 
   return (
@@ -632,6 +633,11 @@ export default function MiClubPage() {
                 {t("ownerPortal.markedAs")} <strong className="text-zinc-200">{t(LIVE_STATUS_OPTIONS.find((o) => o.key === club.live_status)?.label || "")}</strong> · {timeAgo(club.live_status_updated_at)}
               </p>
             )}
+          </div>
+
+          {/* Estadísticas de su ficha (visitas, clics, de dónde llegan). */}
+          <div className="mt-6">
+            <OwnerStats type="club" id={club.id} name={club.name} />
           </div>
 
           <h2 className="mt-10 text-lg font-semibold">{t("ownerPortal.listingTitle")}</h2>

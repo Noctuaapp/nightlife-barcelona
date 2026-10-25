@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
+import { DataExport, SystemStatus } from "../../../components/admin/SystemStatus"
 import { supabase } from "../../../lib/supabase"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { SEASONAL_THEMES, type SeasonalOverride } from "../../../lib/nocSeasonal"
@@ -247,6 +248,8 @@ export default function AdminToolsPage() {
       title="Ajustes y herramientas"
       subtitle="Los interruptores de la web y las tareas de mantenimiento de datos (las automáticas ya se ejecutan solas cada noche; aquí puedes lanzarlas a mano)."
     >
+      <SystemStatus />
+
       <div className={`mb-6 rounded-2xl border p-5 ${maintenance ? "border-red-500/40 bg-red-500/[0.07]" : "border-white/10 bg-white/[0.03]"}`}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -403,6 +406,8 @@ export default function AdminToolsPage() {
           )
         })}
       </div>
+
+      <DataExport />
     </AdminShell>
   )
 }

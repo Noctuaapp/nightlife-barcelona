@@ -24,7 +24,7 @@ const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n
 const daysAhead = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return isoDay(d) }
 
 type Overview = { sessions: number; page_views: number; tickets: number; daily: { d: string; sessions: number; views: number }[] }
-type Pending = { messages: number; reports: number; denials: number; eventsToReview: number }
+type Pending = { messages: number; reports: number; denials: number; eventsToReview: number; ownerChanges: number }
 type System = { maintenance: boolean | null; clubNoctua: boolean | null; season: string | null }
 type Upcoming = { id: number; title: string; date: string; kind: "Evento" | "Noche de club"; href: string }
 type Signup = { id: string; email: string; username: string | null; created_at: string; last_sign_in_at: string | null }
@@ -78,7 +78,7 @@ export default function AdminDashboardPage() {
         msgs, reports, denials, review,
         ov, ovPrev, list,
         maint, club, season,
-        clubsRows, events30, nights7, nextEvents, nextNights,
+        clubsRows, events30, nights7, nextEvents, nextNights, ownerChanges,
       ] = await Promise.all([
         supabase.from("contact_messages").select("id", { count: "exact", head: true }).eq("status", "new").or("is_spam.is.null,is_spam.eq.false"),
         supabase.from("club_checkin_reports").select("id", { count: "exact", head: true }).is("reviewed_at", null),
@@ -97,6 +97,8 @@ export default function AdminDashboardPage() {
         supabase.from("club_events").select("id", { count: "exact", head: true }).gte("date", today).lte("date", daysAhead(7)),
         supabase.from("events").select("id, title, date").eq("hidden", false).gte("date", today).lte("date", daysAhead(7)).order("date").limit(6),
         supabase.from("club_events").select("id, title, date").gte("date", today).lte("date", daysAhead(7)).order("date").limit(6),
+        // Cambios hechos por dueños y organizadores en su ficha esta semana (supabase/34).
+        supabase.from("admin_audit_log").select("id", { count: "exact", head: true }).gte("at", weekAgoIso).neq("user_email", ADMIN_EMAIL),
       ])
 
       setPending({
@@ -104,6 +106,7 @@ export default function AdminDashboardPage() {
         reports: reports.count || 0,
         denials: denials.count || 0,
         eventsToReview: review.count || 0,
+        ownerChanges: ownerChanges.error ? 0 : ownerChanges.count || 0,
       })
       setWeek((ov.data as Overview) || null)
       setPrevWeek((ovPrev.data as Overview) || null)
@@ -154,6 +157,7 @@ export default function AdminDashboardPage() {
         { n: pending.reports, label: "notas denunciadas por revisar", href: "/admin/notas" },
         { n: pending.eventsToReview, label: "ediciones nuevas de eventos anuales por revisar y publicar", href: "/admin/events" },
         { n: pending.denials, label: "avisos de \"no me dejan entrar\" esta semana", href: "/admin/entry-denials" },
+        { n: pending.ownerChanges, label: "cambios de dueños u organizadores en sus fichas esta semana", href: "/admin/cambios" },
       ].filter((q) => q.n > 0)
     : []
 

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, BarChart3, Disc3, BadgeCheck, CalendarDays, Headphones, MapPin, Users,
-  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, type LucideIcon,
+  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, History, type LucideIcon,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
@@ -57,7 +57,10 @@ const ADMIN_NAV: NavGroup[] = [
   },
   {
     label: "Sistema",
-    items: [{ href: "/admin/herramientas", label: "Ajustes y herramientas", icon: Wrench }],
+    items: [
+      { href: "/admin/herramientas", label: "Ajustes y herramientas", icon: Wrench },
+      { href: "/admin/cambios", label: "Registro de cambios", icon: History },
+    ],
   },
 ]
 

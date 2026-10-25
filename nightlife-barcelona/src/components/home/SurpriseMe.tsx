@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { getDeniedClubIds } from "../../lib/deniedVenues"
 import Link from "next/link"
 import { createPortal } from "react-dom"
 import NocOwl from "../mascot/NocOwl"
@@ -58,6 +59,10 @@ export default function SurpriseMe({ clubs }: { clubs: any[] }) {
   }, [open])
 
   const [locating, setLocating] = useState(false)
+  const [denied, setDenied] = useState<Set<number>>(() => new Set())
+  useEffect(() => {
+    getDeniedClubIds().then(setDenied)
+  }, [])
   const toggleNear = () => {
     if (locating) return
     if (near) { setNear(false); return }
@@ -80,7 +85,8 @@ export default function SurpriseMe({ clubs }: { clubs: any[] }) {
 
   const draw = () => {
     const zoned = zoneSel ? clubs.filter((c) => c && c.name && zoneOf(c) === zoneSel) : clubs
-    const usable = (zoned.length > 0 ? zoned : clubs).filter((c) => c && c.name)
+    // Nunca un local donde a esta persona no le dejaron entrar (lib/deniedVenues).
+    const usable = (zoned.length > 0 ? zoned : clubs).filter((c) => c && c.name && !denied.has(Number(c.id)))
     if (usable.length === 0) return
     const words = MOODS.find((m) => m.id === mood)?.words || []
     const matches = (c: any) => words.length === 0 || words.some((w) => `${c.music || ""} ${c.category || ""}`.toLowerCase().includes(w))
