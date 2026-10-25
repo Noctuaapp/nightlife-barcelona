@@ -6,6 +6,7 @@ export default function Icon({ name, className = "h-5 w-5", style }: { name: str
     case "billiards": return <svg {...p}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="10" r="3.2" /><path d="M10.6 9.2h2.8M12 8.6v2.8" /></svg>
     case "vending": return <svg {...p}><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h5M8 10h5M8 13h5M16 7v6M8 17h8" /></svg>
     case "target": return <svg {...p}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.3" /><path d="M13 11l7-7M17 4h3v3" /></svg>
+    case "tv": return <svg {...p}><rect x="3" y="5" width="18" height="12" rx="2" /><path d="M8 21h8M12 17v4M9 2l3 3 3-3" /></svg>
     case "mic": return <svg {...p}><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0014 0M12 18v3M8.5 21h7" /></svg>
     case "guitar": return <svg {...p}><path d="M14 10l6-6M18 2l4 4" /><path d="M11.5 8.5c-2-1-4.5-.5-5.5 1.5-.6 1.2-.3 2-1.5 3S2 15 3 18s4 3 6 2 1.6-2.4 2.8-3 1.8-.9 3-1.5c2-1 2.5-3.5 1.5-5.5" /><circle cx="10" cy="14" r="1.5" /></svg>
     case "disco": return <svg {...p}><path d="M12 2v3" /><circle cx="12" cy="12" r="7" /><path d="M5 12h14M12 5v14M7 7.5c3 2 7 2 10 0M7 16.5c3-2 7-2 10 0" /></svg>
@@ -34,6 +35,7 @@ export default function Icon({ name, className = "h-5 w-5", style }: { name: str
     case "heart": return <svg {...p}><path d="M12 20s-7-4.6-9.5-9.2C1 7.3 3 4 6.5 4 9 4 11 6 12 7c1-1 3-3 5.5-3C21 4 23 7.3 21.5 10.8 19 15.4 12 20 12 20z" /></svg>
     case "back": return <svg {...p}><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
     case "close": return <svg {...p}><path d="M6 6l12 12M18 6L6 18" /></svg>
+    case "tiktok": return <svg {...p}><path d="M14 3v11.5a3.5 3.5 0 11-3.5-3.5" /><path d="M14 3c.5 2.6 2.4 4.4 5 4.6" /></svg>
     case "instagram": return <svg {...p}><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.2" cy="6.8" r="0.6" fill="currentColor" stroke="none" /></svg>
     case "users": return <svg {...p}><circle cx="9" cy="8" r="3" /><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6" /><circle cx="17" cy="9" r="2.4" /><path d="M20.5 20c-.2-2.4-1.5-4.2-3.5-5" /></svg>
     case "id": return <svg {...p}><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="12" r="2" /><path d="M6 16c.5-1.5 1.5-2 2.5-2s2 .5 2.5 2M14 9h4M14 12h4M14 15h2" /></svg>

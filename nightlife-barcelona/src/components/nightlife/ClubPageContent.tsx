@@ -15,7 +15,9 @@ import ClubNightsCalendar from "../nightlife/ClubNightsCalendar"
 import NearbyEssentials from "../nightlife/NearbyEssentials"
 import ClubTransport from "./club/ClubTransport"
 import ClubGallery from "./club/ClubGallery"
-import ClubReviews from "./club/ClubReviews"
+import ClubReviews, { googleMapsReviewsUrl } from "./club/ClubReviews"
+import VenueReviews from "./club/VenueReviews"
+import SocialLinks, { socialUrl } from "./club/SocialLinks"
 import ClubFeatures, { activeFeatureCount } from "./club/ClubFeatures"
 import Stars from "./club/Stars"
 import Icon from "../ui/Icon"
@@ -42,7 +44,7 @@ const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 // directo, un nivel de ambiente inventado y efectos (paralaje, foco que sigue al ratón,
 // contadores animados) que no ayudaban a decidir nada.
 
-type Tab = "about" | "nights" | "sessions" | "location"
+type Tab = "about" | "nights" | "sessions" | "location" | "reviews"
 
 const LIVE_STATUS_MAX_AGE_MS = 4 * 60 * 60 * 1000
 const CHECKINS_MIN_FOR_LIVE = 3
@@ -60,6 +62,11 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
   const { t, locale } = useLanguage()
   const isAdmin = useCanEdit() // admin, o el dueño de esta ficha (ver admin/EditAccess)
   const [activeTab, setActiveTab] = useState<Tab>("about")
+  // ?tab=reviews (enlaces de los avisos del admin, "ver opiniones"...) abre directamente esa pestaña.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("tab")
+    if (wanted === "reviews" || wanted === "location") setActiveTab(wanted)
+  }, [])
   // Vienen ya del servidor (enlaces en el HTML para Google); si no, se piden aquí como antes.
   const [related, setRelated] = useState<any[]>(() => (initialRelated || []).slice(0, 3))
   const [openFaq, setOpenFaq] = useState<number | null>(null)
@@ -78,7 +85,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
   // Solo enlaces de venta de entradas. Antes caía a la web oficial y "Comprar entradas" salía en
   // locales que no venden nada.
   const ticketUrl: string | null = club.tickets_url || club.ticket_url || club.entradas_url || null
-  const website: string | null = club.website || null
+  const website: string | null = socialUrl("website", club.website)
   const instagram: string | null = club.instagram || club.instagram_url || null
   const displayRating: number | null = club.google_rating || club.rating || null
   const reviewCount: number | null = club.google_review_count || club.review_count || club.reviews_count || null
@@ -321,6 +328,8 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
     ...(hasSessions ? [{ key: "sessions" as Tab, label: t("clubPage.tabSessions") }] : []),
     ...(hasNights ? [{ key: "nights" as Tab, label: t("clubPage.tabNights") }] : []),
     { key: "location", label: t("clubPage.tabLocation") },
+    // Opiniones (25/10/2026): las de Noctua y, debajo, las de Google (antes al final de la página).
+    { key: "reviews", label: t("clubPage.tabReviews") },
   ]
 
   const goToTab = (tab: Tab) => {
@@ -388,11 +397,11 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                 )}
               </span>
               {displayRating && (
-                <span className="flex items-center gap-1.5 text-zinc-300">
+                <button type="button" onClick={() => goToTab("reviews")} className="flex items-center gap-1.5 text-zinc-300 hover:underline">
                   <Stars rating={displayRating} />
                   <span className="font-semibold text-ink">{Number(displayRating).toFixed(1)}</span>
                   {reviewCount ? <span className="text-zinc-400">({reviewCount.toLocaleString("es-ES")})</span> : null}
-                </span>
+                </button>
               )}
               {openNow !== null && (
                 <span className={`flex items-center gap-1.5 font-semibold ${openNow ? "text-open" : "text-zinc-400"}`}>
@@ -724,6 +733,21 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                 )}
               </Panel>
             )}
+
+            {activeTab === "reviews" && (
+              <Panel className="space-y-10">
+                <VenueReviews venueType="club" venueId={club.id} isOwner={!!userId && club.owner_user_id === userId} />
+                <div className="border-t border-white/10 pt-8">
+                  <ClubReviews
+                    clubId={club.id}
+                    rating={displayRating}
+                    count={reviewCount}
+                    embedded
+                    mapsUrl={googleMapsReviewsUrl(club.name, club.address, club.google_place_id)}
+                  />
+                </div>
+              </Panel>
+            )}
           </div>
 
           {/* ACCIONES */}
@@ -754,17 +778,15 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                 latitude={club.latitude}
                 longitude={club.longitude}
               />
-              {instagram && (
-                <a
-                  href={instagram}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => trackClick("instagram_click")}
-                  className={`${secondaryBtn} mt-3 w-full`}
-                >
-                  <Icon name="instagram" className="h-4 w-4" /> {t("clubPage.followInstagram")}
-                </a>
-              )}
+              <SocialLinks
+                table="clubs"
+                id={club.id}
+                instagram={instagram}
+                tiktok={club.tiktok}
+                website={club.website}
+                onClick={(k) => trackClick(k)}
+                className="mt-4"
+              />
               <a
                 href={"/contact?type=report_issue&subject=" + encodeURIComponent("Reporte: " + club.name)}
                 className="mt-4 flex items-center justify-center gap-2 text-xs font-semibold text-zinc-400 transition hover:text-ink"
@@ -796,7 +818,6 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
           name={club.name}
           edit={{ table: "clubs", id: club.id, bucket: "club-photos", gallery: Array.isArray(club.gallery) ? club.gallery : [] }}
         />
-        <ClubReviews clubId={club.id} rating={displayRating} count={reviewCount} />
       </div>
 
       {related.length > 0 && (

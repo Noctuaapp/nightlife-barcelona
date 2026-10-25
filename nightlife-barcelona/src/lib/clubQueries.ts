@@ -12,7 +12,7 @@ export const HOME_CLUB_FIELDS =
   "id, name, slug, image, neighborhood, city, address, music, price, rating, google_rating, trending, verified, hours, open_days, latitude, longitude, lgtbi_friendly"
 
 export const LIST_CLUB_FIELDS =
-  "id, name, slug, image, neighborhood, city, address, music, price, hours, open_days, rating, google_rating, people, badges, terrace, vip_tables, smoking_area, table_booking, dresscode, lgtbi_friendly, swinger_friendly, verified, has_foosball, discount_info, free_entry_info, live_status, live_status_updated_at, latitude, longitude, trending, queue, age_min, audience, venue_type, cigarette_machine, darts, karaoke, live_music, dance_floor, cloakroom, food, shisha, wheelchair_accessible"
+  "id, name, slug, image, neighborhood, city, address, music, price, hours, open_days, rating, google_rating, people, badges, terrace, vip_tables, smoking_area, table_booking, dresscode, lgtbi_friendly, swinger_friendly, verified, has_foosball, discount_info, free_entry_info, live_status, live_status_updated_at, latitude, longitude, trending, queue, age_min, audience, venue_type, cigarette_machine, darts, karaoke, live_music, dance_floor, cloakroom, food, shisha, wheelchair_accessible, sports_tv, hot_shows"
 
 // Columnas de las listas que no existen en la base de datos. Se recuerdan mientras el servidor
 // está vivo para no volver a pedirlas en cada visita.

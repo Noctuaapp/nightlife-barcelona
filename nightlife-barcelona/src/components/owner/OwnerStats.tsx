@@ -32,6 +32,7 @@ const CLICK_LABELS: Record<string, string> = {
   directions_click: "Cómo llegar",
   website_click: "Web",
   instagram_click: "Instagram",
+  tiktok_click: "TikTok",
   share_click: "Compartir",
   ride_click: "Taxi / VTC",
   favorite_click: "Guardar",

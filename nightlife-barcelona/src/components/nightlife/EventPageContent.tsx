@@ -11,7 +11,9 @@ import ClubMap from "../map/ClubMap"
 import NitbusNearby from "./NitbusNearby"
 import EventSessionsCalendar from "../nightlife/EventSessionsCalendar"
 import ClubGallery from "./club/ClubGallery"
-import ClubReviews from "./club/ClubReviews"
+import ClubReviews, { googleMapsReviewsUrl } from "./club/ClubReviews"
+import VenueReviews from "./club/VenueReviews"
+import SocialLinks from "./club/SocialLinks"
 import RideButtons from "./club/RideButtons"
 import Stars from "./club/Stars"
 import Icon from "../ui/Icon"
@@ -343,6 +345,15 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                 )}
 
                 <FavoriteButton itemType="event" itemId={event.id} />
+                <SocialLinks
+                  table="events"
+                  id={event.id}
+                  instagram={event.instagram || event.instagram_url}
+                  tiktok={event.tiktok}
+                  website={event.website}
+                  showWebsite
+                  onClick={(k) => trackClick(k)}
+                />
                 {!past && <AttendanceButton itemType="event" itemId={event.id} />}
                 {!past && hasCoords && (
                   <NearbyVenuesSheet venueType="event" venueId={event.id} name={event.title} latitude={event.latitude} longitude={event.longitude} />
@@ -366,8 +377,25 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
           name={event.title}
           edit={{ table: "events", id: event.id, bucket: "event-photos", gallery: Array.isArray(event.gallery) ? event.gallery : [] }}
         />
-        <ClubReviews clubId={event.id} rating={displayRating} count={reviewCount} table="event_reviews" column="event_id" />
       </div>
+
+      {/* Opiniones (25/10/2026): las de Noctua y debajo las de Google, en un solo bloque. */}
+      <section id="opiniones" className="mx-auto mb-16 max-w-6xl px-4 sm:px-6">
+        <div className="space-y-10 rounded-card border border-white/10 bg-surface p-6 sm:p-7">
+          <VenueReviews venueType="event" venueId={event.id} />
+          <div className="border-t border-white/10 pt-8">
+            <ClubReviews
+              clubId={event.id}
+              rating={displayRating}
+              count={reviewCount}
+              table="event_reviews"
+              column="event_id"
+              embedded
+              mapsUrl={event.google_place_id ? googleMapsReviewsUrl(event.title, event.location || event.address, event.google_place_id) : null}
+            />
+          </div>
+        </div>
+      </section>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-night/95 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-md items-center gap-2">
