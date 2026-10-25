@@ -57,34 +57,53 @@ function cleanName(name: string): string {
   return name.replace(/\s+/g, " ").replace(/^(parada|stop)\s*[:\-]?\s*/i, "").trim()
 }
 
+// Se pregunta a los tres servidores A LA VEZ y vale la primera respuesta buena. Antes se probaban
+// uno detrás de otro con 25 s cada uno: si el primero iba lento, se pasaba del minuto que Vercel
+// deja a cada petición y salía "Respuesta no válida (504)".
 async function runQuery(query: string, errors: string[]): Promise<OsmElement[] | null> {
-  for (const url of MIRRORS) {
+  const controllers = MIRRORS.map(() => new AbortController())
+  const attempt = async (url: string, i: number): Promise<OsmElement[]> => {
+    const timer = setTimeout(() => controllers[i].abort(), 40000)
     try {
-      const ctrl = new AbortController()
-      const timer = setTimeout(() => ctrl.abort(), 25000)
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "NoctuaApp/1.0 (info@noctuaapp.com)" },
         body: "data=" + encodeURIComponent(query),
-        signal: ctrl.signal,
+        signal: controllers[i].signal,
       })
-      clearTimeout(timer)
-      if (!res.ok) {
-        errors.push(`${new URL(url).host}: ${res.status}`)
-        continue
-      }
+      if (!res.ok) throw new Error(`${new URL(url).host}: ${res.status}`)
       const json = await res.json()
       if (json.remark && /runtime error|timed out|out of memory/i.test(String(json.remark))) {
-        errors.push(`${new URL(url).host}: ${String(json.remark).slice(0, 120)}`)
-        continue
+        throw new Error(`${new URL(url).host}: ${String(json.remark).slice(0, 120)}`)
       }
       return (json.elements || []) as OsmElement[]
     } catch (e: unknown) {
       const err = e as { name?: string; message?: string }
-      errors.push(`${new URL(url).host}: ${err.name === "AbortError" ? "tiempo agotado" : err.message}`)
+      const msg = err.name === "AbortError" ? `${new URL(url).host}: tiempo agotado` : String(err.message)
+      errors.push(msg)
+      throw e
+    } finally {
+      clearTimeout(timer)
     }
   }
-  return null
+  // La primera que responda bien gana; si fallan las tres, null.
+  return new Promise<OsmElement[] | null>((resolve) => {
+    let pending = MIRRORS.length
+    let done = false
+    MIRRORS.forEach((url, i) => {
+      attempt(url, i)
+        .then((els) => {
+          if (done) return
+          done = true
+          controllers.forEach((c, j) => j !== i && c.abort()) // las otras ya no hacen falta
+          resolve(els)
+        })
+        .catch(() => {
+          pending -= 1
+          if (pending === 0 && !done) resolve(null)
+        })
+    })
+  })
 }
 
 export async function GET(req: Request) {
@@ -94,11 +113,12 @@ export async function GET(req: Request) {
   const dry = new URL(req.url).searchParams.get("dry") !== "0"
 
   // Las líneas (relaciones de ruta) con sus miembros, y los nodos de esas líneas.
-  const query = `[out:json][timeout:25];
+  // "out;" (no "out tags;") en los nodos: sin eso OpenStreetMap no manda las coordenadas.
+  const query = `[out:json][timeout:35];
 rel["type"="route"]["route"~"^(bus|night_bus)$"]["ref"~"^N[0-9]{1,2}$"](${BBOX})->.lines;
 .lines out body;
 node(r.lines);
-out tags;`
+out;`
 
   const errors: string[] = []
   const elements = await runQuery(query, errors)
