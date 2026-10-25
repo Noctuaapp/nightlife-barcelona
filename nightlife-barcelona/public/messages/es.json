@@ -56,7 +56,10 @@
     "heroImageAlt": "Barcelona de noche, con la Sagrada Família y la Torre Glòries iluminadas",
     "statsClubs": "clubs en Barcelona",
     "statsEvents": "eventos activos",
-    "statsEssentials": "esenciales cerca de ti"
+    "statsEssentials": "esenciales cerca de ti",
+    "picksKicker": "Elegidos por Noctua",
+    "picksTonight": "Nuestro top 3 para esta noche",
+    "picksWeek": "Nuestro top 3 de la semana"
   },
   "filters": {
     "all": "Todos"
@@ -922,7 +925,10 @@
     "nitbusLinesCount": "{n} líneas nocturnas",
     "nitbusHours": "Cada noche, de 22:20 a 06:00",
     "nitbusHoursNote": "La frecuencia y el último bus exacto varían según la línea — toca \"ver paradas\" en cualquier línea para el horario detallado.",
-    "allCategories": "Todas las categorías"
+    "allCategories": "Todas las categorías",
+    "nitbusStops": "paradas",
+    "nitbusAllLines": "Ver todas las líneas y a dónde van",
+    "nitbusSearchPlaceholder": "Busca una parada (p. ej. Pl. Catalunya)"
   },
   "areas": {
     "titleBarrio": "Discotecas en {name}",

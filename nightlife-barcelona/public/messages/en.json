@@ -56,7 +56,10 @@
     "heroImageAlt": "Barcelona at night, with the Sagrada Família and Torre Glòries lit up",
     "statsClubs": "clubs in Barcelona",
     "statsEvents": "active events",
-    "statsEssentials": "essentials nearby"
+    "statsEssentials": "essentials nearby",
+    "picksKicker": "Picked by Noctua",
+    "picksTonight": "Our top 3 for tonight",
+    "picksWeek": "Our top 3 this week"
   },
   "filters": {
     "all": "All"
@@ -909,7 +912,10 @@
     "nitbusLinesCount": "{n} night lines",
     "nitbusHours": "Every night, 10:20 pm – 6:00 am",
     "nitbusHoursNote": "Frequency and the exact last bus vary by line — tap \"see stops\" on any line for the detailed timetable.",
-    "allCategories": "All categories"
+    "allCategories": "All categories",
+    "nitbusStops": "stops",
+    "nitbusAllLines": "See all lines and where they go",
+    "nitbusSearchPlaceholder": "Search a stop (e.g. Pl. Catalunya)"
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",

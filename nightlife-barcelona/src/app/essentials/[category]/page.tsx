@@ -11,6 +11,7 @@ import "mapbox-gl/dist/mapbox-gl.css"
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import { supabase } from "../../../lib/supabase"
+import { fetchAllPages } from "../../../lib/fetchAll"
 import { useLanguage } from "../../../context/LanguageContext"
 import ArrowIcon from "../../../components/ui/ArrowIcon"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../../lib/geo"
@@ -21,7 +22,7 @@ import Icon from "../../../components/ui/Icon"
 import { ESSENTIAL_CATEGORIES, categoryNameKey } from "../../../lib/essentialCategories"
 import { NIGHT_BUS_LINES } from "../../../lib/nightBuses"
 import { METRO_STATIONS } from "../../../lib/metroStations"
-import { MetroLineBadge, NitbusRouteRow } from "../../../components/ui/TransitBadge"
+import { MetroLineBadge, NitbusBadge, NitbusRouteRow } from "../../../components/ui/TransitBadge"
 import { MapPin } from "lucide-react"
 
 // Un solo color (el de la marca) para todas las categorías; antes eran doce colores y emojis.
@@ -101,6 +102,8 @@ export default function EssentialCategoryPage() {
   // puede filtrar por línea (como en el plano real) o buscar por nombre.
   const [selectedMetroLine, setSelectedMetroLine] = useState("All")
   const [metroSearch, setMetroSearch] = useState("")
+  // Metro y Nitbus se filtran igual: por línea y buscando la estación/parada por nombre.
+  const isLineCategory = category === "metro" || category === "nitbus"
   const [loading, setLoading] = useState(true)
   const [mapReady, setMapReady] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -166,19 +169,18 @@ export default function EssentialCategoryPage() {
 
   useEffect(() => {
     const fetchEssentials = async () => {
-      // Nitbus ya no tiene lista ni mapa (ver más abajo): el roster de líneas es toda la
-      // información, así que no hace falta pedir nada a Supabase para esta categoría.
-      if (category === "nitbus") {
-        setEssentials([])
-        setLoading(false)
-        return
-      }
+      // Nitbus: desde el 25/10/2026 tiene paradas de verdad (importadas de OpenStreetMap desde
+      // Ajustes y herramientas, con sus líneas), así que se piden como cualquier otra categoría.
+      // Si aún no se han cargado, la página sigue enseñando solo la lista de líneas.
       // .eq("hidden", false) igual que en el listado — si no, un esencial oculto desde el admin
       // seguía siendo visitable por enlace directo.
       // El slug de la URL no es el valor real de la columna `category` cuando lleva más de una
       // palabra ("gas-station" en la URL, pero "Gas Station" en la base) — usar el slug tal cual
       // en el ilike no encontraba ninguna fila. Hay que usar la "key" real de la categoría.
-      const { data } = await supabase.from("essentials").select("*").ilike("category", info?.key || category).eq("hidden", false).order("name")
+      // Por páginas: Nitbus tiene más de 1.000 paradas y Supabase corta en 1.000 filas.
+      const data = await fetchAllPages((from, to) =>
+        supabase.from("essentials").select("*").ilike("category", info?.key || category).eq("hidden", false).order("name").order("id").range(from, to)
+      )
       let rows: Essential[] = data ? data.map(cleanEssential) : []
 
       // Metro: con 155 estaciones sería inviable pedirte que las cargues una a una en el admin, así
@@ -357,7 +359,7 @@ export default function EssentialCategoryPage() {
   // Al elegir una línea de metro: encuadrar el mapa a solo esas estaciones, para que la línea se
   // vea entera de un vistazo en vez de perderse entre las otras 140 chinchetas.
   useEffect(() => {
-    if (!mapReady || category !== "metro" || selectedMetroLine === "All") return
+    if (!mapReady || (category !== "metro" && category !== "nitbus") || selectedMetroLine === "All") return
     const pts = essentials
       .filter((e) => e.latitude && e.longitude && (e.subcategory || "").split(",").some((l) => l.trim().toUpperCase() === selectedMetroLine.toUpperCase()))
       .map((e) => [Number(e.longitude), Number(e.latitude)] as [number, number])
@@ -374,8 +376,8 @@ export default function EssentialCategoryPage() {
     essentials
       .filter((e) => e.latitude && e.longitude)
       .filter((e) => category !== "taxi" || !NOT_A_RANK.test(e.name || ""))
-      .filter((e) => category !== "metro" || selectedMetroLine === "All" || (e.subcategory || "").split(",").some((l) => l.trim().toUpperCase() === selectedMetroLine.toUpperCase()))
-      .filter((e) => category !== "metro" || !metroSearch.trim() || e.name.toLowerCase().includes(metroSearch.trim().toLowerCase()))
+      .filter((e) => !isLineCategory || selectedMetroLine === "All" || (e.subcategory || "").split(",").some((l) => l.trim().toUpperCase() === selectedMetroLine.toUpperCase()))
+      .filter((e) => !isLineCategory || !metroSearch.trim() || e.name.toLowerCase().includes(metroSearch.trim().toLowerCase()))
       .forEach((item) => {
         // Marcador redondo con la foto del sitio (como en el mapa de clubs); si no hay foto o falla,
         // el icono de la categoría. No se le pone transform propio: Mapbox lo usa para posicionarlo.
@@ -392,6 +394,11 @@ export default function EssentialCategoryPage() {
             el.textContent = initial
           }
           el.appendChild(img)
+        } else if (category === "nitbus" && item.subcategory) {
+          // Parada de Nitbus: la primera línea en vez de la inicial del nombre.
+          el.textContent = item.subcategory.split(",")[0].trim()
+          el.style.fontSize = "12px"
+          el.style.fontWeight = "800"
         } else {
           el.textContent = initial
         }
@@ -420,6 +427,13 @@ export default function EssentialCategoryPage() {
     formatDistance(d) + (d <= 2500 ? " · " + t("essentialsPage.walkMin").replace("{n}", String(walkingMinutes(d))) : "")
 
   const availableZones = zonesPresent(essentials)
+  // Líneas N que tienen alguna parada cargada, en orden (N0, N1, ... N28).
+  const nitbusCodesPresent =
+    category === "nitbus"
+      ? Array.from(
+          new Set(essentials.flatMap((e) => (e.subcategory || "").split(",").map((c) => c.trim().toUpperCase()).filter((c) => /^N\d+$/.test(c))))
+        ).sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)))
+      : []
   const neighborhoods = [
     "All",
     ...Array.from(
@@ -453,8 +467,8 @@ export default function EssentialCategoryPage() {
 
   const filteredEssentials = essentials
     .filter((e) => (category !== "taxi" ? true : !NOT_A_RANK.test(e.name || "")))
-    .filter((e) => (category !== "metro" || selectedMetroLine === "All" ? true : metroHasLine(e, selectedMetroLine)))
-    .filter((e) => (category !== "metro" || !metroSearch.trim() ? true : e.name.toLowerCase().includes(metroSearch.trim().toLowerCase())))
+    .filter((e) => (!isLineCategory || selectedMetroLine === "All" ? true : metroHasLine(e, selectedMetroLine)))
+    .filter((e) => (!isLineCategory || !metroSearch.trim() ? true : e.name.toLowerCase().includes(metroSearch.trim().toLowerCase())))
     .filter((e) => (selectedZone === "All" ? true : zoneOf(e) === selectedZone))
     .filter((e) => (selectedNeighborhood === "All" ? true : e.neighborhood === selectedNeighborhood))
     .filter((e) => (selectedSubcategory === "All" ? true : subcategoryKey(e.subcategory || "") === subcategoryKey(selectedSubcategory)))
@@ -532,7 +546,7 @@ export default function EssentialCategoryPage() {
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold leading-snug text-ink">{item.name}</h3>
           {item.highFee && <span className="mt-1 inline-block rounded-full bg-warn/15 px-2.5 py-0.5 text-xs font-semibold text-warn">{t("essentialsPage.highFee")}</span>}
-          {category !== "metro" && (
+          {!isLineCategory && (
             <p className="mt-0.5 truncate text-sm text-zinc-400">{[item.neighborhood, item.address].filter(Boolean).join(" · ")}</p>
           )}
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold">
@@ -577,7 +591,8 @@ export default function EssentialCategoryPage() {
               <h1 className="font-display text-[1.9rem] leading-tight sm:text-5xl">{label}</h1>
               <p className="mt-1 text-sm text-zinc-400">
                 {category === "nitbus"
-                  ? t("essentialsPage.nitbusLinesCount").replace("{n}", String(Object.keys(NIGHT_BUS_LINES).length))
+                  ? t("essentialsPage.nitbusLinesCount").replace("{n}", String(Object.keys(NIGHT_BUS_LINES).length)) +
+                    (essentials.length > 0 ? ` · ${essentials.length} ${t("essentialsPage.nitbusStops")}` : "")
                   : loading
                   ? t("essentialsPage.loading")
                   : `${filteredEssentials.length} ${filteredEssentials.length !== 1 ? t("essentials.locations_plural") : t("essentials.locations")}`}
@@ -639,12 +654,54 @@ export default function EssentialCategoryPage() {
               <p className="mb-2 text-sm font-semibold text-ink">{t("essentialsPage.nitbusLine")}</p>
               <p className="text-lg font-semibold text-ink">{t("essentialsPage.nitbusHours")}</p>
               <p className="mt-1 text-xs text-zinc-400">{t("essentialsPage.nitbusHoursNote")}</p>
-              <div className="mt-4 grid gap-x-5 gap-y-3 sm:grid-cols-2">
-                {Object.values(NIGHT_BUS_LINES).map((line) => (
-                  <NitbusRouteRow key={line.code} code={line.code} seeStopsLabel={t("clubPage.seeStops")} unknownLabel={t("clubPage.lineUnknown")} />
-                ))}
-              </div>
-              <p className="mt-4 text-xs text-zinc-400">{t("essentialsPage.nitbusBody")}</p>
+              {/* Con paradas cargadas, lo importante es el buscador y el mapa de abajo: la lista de
+                  las 23 líneas queda plegada para no empujarlos fuera de la pantalla. */}
+              <details open={essentials.length === 0} className="group mt-4">
+                <summary className="cursor-pointer list-none text-sm font-semibold text-brand-soft">
+                  {t("essentialsPage.nitbusAllLines")} <span className="inline-block transition group-open:rotate-90">›</span>
+                </summary>
+                <div className="mt-4 grid gap-x-5 gap-y-3 sm:grid-cols-2">
+                  {Object.values(NIGHT_BUS_LINES).map((line) => (
+                    <NitbusRouteRow key={line.code} code={line.code} seeStopsLabel={t("clubPage.seeStops")} unknownLabel={t("clubPage.lineUnknown")} />
+                  ))}
+                </div>
+                <p className="mt-4 text-xs text-zinc-400">{t("essentialsPage.nitbusBody")}</p>
+              </details>
+            </div>
+          </section>
+        )}
+
+        {/* Nitbus con paradas: buscar parada y filtrar por línea, igual que el metro. */}
+        {category === "nitbus" && essentials.length > 0 && (
+          <section className="mx-auto mt-6 max-w-7xl px-4">
+            <div className="relative">
+              <Icon name="search" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+              <input
+                value={metroSearch}
+                onChange={(e) => setMetroSearch(e.target.value)}
+                placeholder={t("essentialsPage.nitbusSearchPlaceholder")}
+                className="w-full rounded-ctl border border-white/10 bg-surface py-3 pl-11 pr-4 text-sm text-ink placeholder:text-zinc-500 outline-none focus:border-brand/50"
+              />
+            </div>
+            <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <button
+                onClick={() => setSelectedMetroLine("All")}
+                className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  selectedMetroLine === "All" ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
+                }`}
+              >
+                {t("essentialsPage.allLines")}
+              </button>
+              {nitbusCodesPresent.map((code) => (
+                <button
+                  key={code}
+                  onClick={() => setSelectedMetroLine(code)}
+                  aria-label={code}
+                  className={`shrink-0 rounded-lg p-0.5 transition ${selectedMetroLine === code ? "ring-2 ring-white" : "opacity-70 hover:opacity-100"}`}
+                >
+                  <NitbusBadge code={code} size="md" />
+                </button>
+              ))}
             </div>
           </section>
         )}
@@ -689,14 +746,14 @@ export default function EssentialCategoryPage() {
         {/* Filters — en Nitbus no hay nada que filtrar: el roster de arriba ya es toda la
             información, así que esta sección entera (y la de abajo) no se enseña para esa
             categoría, en vez de enseñar filtros y un mapa vacíos de paradas sueltas sin sentido. */}
-        {category !== "nitbus" && (
+        {(category !== "nitbus" || essentials.length > 0) && (
         <section className="mx-auto mt-6 max-w-7xl px-4">
           <div className="flex flex-wrap items-center gap-3">
             {/* En Metro el barrio/zona de cada estación no es un dato útil para filtrar: la red
                 cubre toda Barcelona y el filtro no "lleva a nada" (deja la lista casi vacía o
                 igual, porque las estaciones del catálogo no tienen barrio asignado). Para eso ya
                 está el filtro por línea de arriba. */}
-            {category !== "metro" && availableZones.length > 1 && (
+            {!isLineCategory && availableZones.length > 1 && (
               <div className="flex w-full gap-2.5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {["All", ...availableZones].map((z) => (
                   <button
@@ -714,7 +771,7 @@ export default function EssentialCategoryPage() {
                 ))}
               </div>
             )}
-            {category !== "metro" && neighborhoods.length > 2 && (
+            {!isLineCategory && neighborhoods.length > 2 && (
               <div className="flex w-full gap-2.5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {neighborhoods.map((n) => {
                   const isActive = selectedNeighborhood === n
@@ -792,7 +849,7 @@ export default function EssentialCategoryPage() {
 
         {/* Content: lista + mapa lado a lado en escritorio — tampoco se enseña para Nitbus (ver
             arriba). */}
-        {category !== "nitbus" && (
+        {(category !== "nitbus" || essentials.length > 0) && (
         <section className="mx-auto mt-6 max-w-7xl px-4">
           <div className="grid gap-6 md:grid-cols-12">
             <div className={`md:col-span-5 ${mobileView === "map" ? "hidden md:block" : ""}`}>

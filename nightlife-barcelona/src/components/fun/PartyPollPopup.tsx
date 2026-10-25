@@ -5,6 +5,7 @@ import { createPortal } from "react-dom"
 import { usePathname } from "next/navigation"
 import { X } from "lucide-react"
 import NocOwl from "../mascot/NocOwl"
+import { useOwnLevelColor } from "../mascot/NocSays"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import { madridDayNumber, pollOfTheDay, pollText, type PartyPoll } from "../../lib/partyPolls"
@@ -21,15 +22,18 @@ import { track } from "../../lib/track"
 //     para todo el mundo ese día — ver pollOfTheDay() en lib/partyPolls.ts. Si ya votó hoy (día
 //     de Barcelona), no sale más hasta mañana. Si cierra sin votar, vuelve a salir en su próxima
 //     visita de ese mismo día.
-//   - Como mucho una vez por carga de la web, unos segundos después de entrar, nunca en admin /
-//     login / registro.
+//   - Unos segundos después de entrar, nunca en admin / login / registro. Se vuelve a comprobar
+//     cuando cambia el día, al volver a la pestaña o a la app (móvil en segundo plano toda la
+//     noche) y al iniciar sesión. Antes solo se miraba una vez por carga de la web: con la app
+//     abierta desde el día anterior no salía hasta cerrar sesión y volver a entrar (25/10/2026).
 //   - Tras votar ve los porcentajes de todo el mundo. Nada de "Otra": mañana, la siguiente.
 
 const EXCLUDED_PREFIXES = ["/admin", "/login", "/signup", "/confirm-age", "/blocked", "/profile/change-password"]
 const SHOW_DELAY_MS = 6000
 
-// Una vez por carga de la web (en memoria): navegar entre páginas no lo vuelve a disparar.
-let triedThisLoad = false
+// Día (de Barcelona) en que ya se comprobó, en memoria: navegar entre páginas el mismo día no lo
+// vuelve a disparar, pero al día siguiente sí.
+let checkedDay: number | null = null
 
 const UI = {
   es: { title: "¿Qué prefieres?", or: "o", close: "Cerrar", votes: "votos", vote: "voto", yours: "Tu elección", fun: "La encuesta de hoy. Nadie ve lo que votas, solo el total.", tomorrow: "Mañana, otra." },
@@ -52,13 +56,36 @@ export default function PartyPollPopup() {
   const [sending, setSending] = useState(false)
   const [mounted, setMounted] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
+  // Noc con el color del nivel de Club Noctua de quien juega (antes salía siempre gris).
+  const levelColor = useOwnLevelColor()
+  // Sube cada vez que hay que volver a mirar (pestaña visible otra vez, sesión iniciada).
+  const [recheck, setRecheck] = useState(0)
+
+  useEffect(() => {
+    const bump = () => {
+      if (document.visibilityState === "visible" && checkedDay !== madridDayNumber()) setRecheck((n) => n + 1)
+    }
+    document.addEventListener("visibilitychange", bump)
+    window.addEventListener("focus", bump)
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") {
+        checkedDay = null
+        setRecheck((n) => n + 1)
+      }
+    })
+    return () => {
+      document.removeEventListener("visibilitychange", bump)
+      window.removeEventListener("focus", bump)
+      sub.subscription.unsubscribe()
+    }
+  }, [])
 
   useEffect(() => setMounted(true), [])
 
   useEffect(() => {
-    if (triedThisLoad) return
+    if (open) return
+    if (checkedDay === madridDayNumber()) return
     if (EXCLUDED_PREFIXES.some((p) => pathname.startsWith(p))) return
-    triedThisLoad = true
 
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -66,6 +93,7 @@ export default function PartyPollPopup() {
       const { data: sessionData } = await supabase.auth.getSession()
       const uid = sessionData.session?.user.id
       if (!uid || cancelled) return
+      checkedDay = madridDayNumber()
       const { data: mine, error } = await supabase
         .from("party_poll_votes")
         .select("poll_id, created_at")
@@ -80,6 +108,8 @@ export default function PartyPollPopup() {
       if (!todays) return
       setUserId(uid)
       setPoll(todays)
+      setChoice(null)
+      setResults(null)
       timer = setTimeout(() => {
         if (!cancelled) setOpen(true)
       }, SHOW_DELAY_MS)
@@ -89,7 +119,8 @@ export default function PartyPollPopup() {
       cancelled = true
       if (timer) clearTimeout(timer)
     }
-  }, [pathname])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, recheck])
 
   const close = useCallback(() => setOpen(false), [])
 
@@ -179,7 +210,7 @@ export default function PartyPollPopup() {
         </button>
 
         <div className="flex items-center gap-3">
-          <NocOwl size={56} mood={results ? "wow" : "party"} />
+          <NocOwl size={56} mood={results ? "wow" : "party"} levelColor={levelColor} />
           <h2 id="party-poll-title" className="font-display text-2xl text-ink">{ui.title}</h2>
         </div>
 

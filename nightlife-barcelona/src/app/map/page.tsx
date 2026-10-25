@@ -409,7 +409,8 @@ export default function MapPage() {
       const [{ data: clubsData }, { data: eventsData }, { data: essentialsData }] = await Promise.all([
         supabase.from("clubs").select("id, name, slug, neighborhood, music, hours, price, latitude, longitude, address, image").eq("hidden", false),
         supabase.from("events").select("id, title, slug, date, price, image, latitude, longitude, address").eq("hidden", false),
-        supabase.from("essentials").select("id, name, category, neighborhood, open_hours, latitude, longitude, address").eq("hidden", false),
+        // Sin las paradas de Nitbus (más de mil chinchetas): tienen su propio mapa en Esenciales › Nitbus.
+        supabase.from("essentials").select("id, name, category, neighborhood, open_hours, latitude, longitude, address").eq("hidden", false).neq("category", "Nitbus").limit(5000),
       ])
       if (clubsData) setClubs(clubsData)
       if (eventsData) setEvents(eventsData)

@@ -1,6 +1,7 @@
 import { fetchVisibleClubs, HOME_CLUB_FIELDS } from "../lib/clubQueries"
 import { supabase } from "../lib/supabase"
 import HomeClient from "../components/home/HomeClient"
+import { getActivePicks } from "../lib/picks"
 
 // Antes esta página empezaba con "use client" y pedía los clubs a Supabase dentro de un
 // useEffect, es decir, después de que el navegador descargase y ejecutase el JS. El HTML inicial
@@ -20,11 +21,12 @@ async function countVisible(table: "events" | "essentials"): Promise<number> {
 }
 
 export default async function Home() {
-  const [clubs, eventsCount, essentialsCount] = await Promise.all([
+  const [clubs, eventsCount, essentialsCount, picks] = await Promise.all([
     fetchVisibleClubs(HOME_CLUB_FIELDS),
     countVisible("events"),
     countVisible("essentials"),
+    getActivePicks(),
   ])
 
-  return <HomeClient initialClubs={clubs} eventsCount={eventsCount} essentialsCount={essentialsCount} />
+  return <HomeClient initialClubs={clubs} eventsCount={eventsCount} essentialsCount={essentialsCount} picks={picks} />
 }

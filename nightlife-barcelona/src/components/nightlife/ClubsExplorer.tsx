@@ -79,6 +79,19 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   const [userLng, setUserLng] = useState<number | null>(null)
   const [sortBy, setSortBy] = useState<"recommended" | "rating" | "name" | "distance">("recommended")
   const [filtersOpen, setFiltersOpen] = useState(false)
+  // "Ver N clubs": cierra los filtros y baja a los resultados (25/10/2026: al elegir un filtro el
+  // panel se quedaba abierto y había que bajar mucho para ver qué había salido).
+  const resultsRef = useRef<HTMLElement>(null)
+  const showResults = () => {
+    setFiltersOpen(false)
+    // Tras cerrar el panel (animación de 300 ms), para que la posición ya sea la buena.
+    setTimeout(() => {
+      const el = resultsRef.current
+      if (!el) return
+      const top = el.getBoundingClientRect().top + window.scrollY - 140
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" })
+    }, 320)
+  }
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const { t } = useLanguage()
 
@@ -440,7 +453,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
             no es un efecto suelto. */}
         <section
           className={`mx-auto grid max-w-7xl px-4 transition-[grid-template-rows,opacity] duration-300 ease-out ${
-            filtersOpen ? "grid-rows-[1fr] pt-6 opacity-100" : "grid-rows-[0fr] opacity-0"
+            filtersOpen ? "grid-rows-[1fr] pb-20 pt-6 opacity-100" : "grid-rows-[0fr] opacity-0"
           }`}
         >
           <div className="overflow-hidden">
@@ -473,8 +486,22 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
           </div>
         </section>
 
+        {/* Botón flotante mientras los filtros están abiertos: se ve siempre, sin tener que bajar. */}
+        {filtersOpen && (
+          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(92px+env(safe-area-inset-bottom))] z-40 flex justify-center px-4 md:bottom-8">
+            <button
+              type="button"
+              onClick={showResults}
+              className="pointer-events-auto rounded-full px-7 py-3.5 text-sm font-bold text-white shadow-[0_10px_30px_-6px_rgba(168,85,247,0.7)] transition active:scale-95"
+              style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+            >
+              Ver {sortedClubs.length} {sortedClubs.length === 1 ? "club" : "clubs"}
+            </button>
+          </div>
+        )}
+
         {/* Results count */}
-        <section className="mx-auto max-w-7xl px-4 pt-8">
+        <section ref={resultsRef} className="mx-auto max-w-7xl px-4 pt-8">
           <p className="text-sm text-zinc-500">
             {sortedClubs.length} {sortedClubs.length === 1 ? "club encontrado" : "clubs encontrados"}
           </p>

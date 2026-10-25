@@ -10,6 +10,8 @@ import EventsSection from "./EventsSection"
 import SurpriseMe from "./SurpriseMe"
 import FeatureTicker from "./FeatureTicker"
 import ReferralBanner from "./ReferralBanner"
+import TopPicks from "./TopPicks"
+import type { ActivePicks } from "../../lib/picks"
 import AreasSection from "./AreasSection"
 import Icon from "../ui/Icon"
 import { useLanguage } from "../../context/LanguageContext"
@@ -104,10 +106,12 @@ export default function HomeClient({
   initialClubs,
   eventsCount = 0,
   essentialsCount = 0,
+  picks = null,
 }: {
   initialClubs: Club[]
   eventsCount?: number
   essentialsCount?: number
+  picks?: ActivePicks | null
 }) {
   const { t, locale } = useLanguage()
   const clubs = initialClubs
@@ -401,6 +405,9 @@ export default function HomeClient({
             </nav>
           </div>
         </section>
+
+        {/* TOP 3 DE NOCTUA: solo si lo habéis puesto desde /admin/recomendados */}
+        <TopPicks data={picks} />
 
         {/* ESTA NOCHE: carrusel en la primera pantalla */}
         <section className="mx-auto max-w-7xl px-4 pt-2 sm:px-6" aria-labelledby="tonight-title">

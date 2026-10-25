@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
+import { fetchAllPages } from "../../../lib/fetchAll"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { logError } from "../../../lib/log"
 import { toast } from "../../../components/ui/Toast"
@@ -82,7 +83,7 @@ export default function AdminEssentialsPage() {
   useEffect(() => { fetchEssentials() }, [])
 
   const fetchEssentials = async () => {
-    const { data } = await supabase.from("essentials").select("*").order("category").order("name")
+    const data = await fetchAllPages((from, to) => supabase.from("essentials").select("*").order("category").order("name").order("id").range(from, to))
     if (data) setEssentials(data)
   }
 

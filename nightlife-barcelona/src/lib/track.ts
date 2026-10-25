@@ -1,4 +1,5 @@
 import { supabase } from "./supabase"
+import { isAdminEmail } from "./admin"
 
 // Analítica propia de Noctua. Todo se guarda en la tabla `analytics`. No se guarda nada personal
 // aparte de user_id (si hay sesión). El session_id es un valor aleatorio que vive solo en memoria
@@ -68,6 +69,28 @@ function isAutomated(): boolean {
   }
 }
 
+// Lo que hace Jordi (el admin) no cuenta en las métricas (25/10/2026): ni búsquedas, ni clicks, ni
+// visitas. Si hay sesión de admin no se registra nada, y además ese navegador queda marcado para
+// que tampoco cuente cuando entra sin sesión (por ejemplo para ver la web "como un usuario").
+// La marca es solo una exclusión de la analítica, no identifica a nadie.
+const ADMIN_DEVICE_KEY = "noctua_no_analytics"
+
+function isAdminDevice(): boolean {
+  try {
+    return window.localStorage.getItem(ADMIN_DEVICE_KEY) === "1"
+  } catch {
+    return false
+  }
+}
+
+function markAdminDevice() {
+  try {
+    window.localStorage.setItem(ADMIN_DEVICE_KEY, "1")
+  } catch {
+    /* modo privado: da igual, con sesión ya se excluye */
+  }
+}
+
 type TrackOptions = {
   itemType?: string | null
   itemId?: number | string | null
@@ -79,10 +102,14 @@ type TrackOptions = {
 // Registra un evento. Nunca lanza error ni bloquea la interfaz: si falla, se ignora.
 export async function track(eventType: string, opts: TrackOptions = {}) {
   try {
-    if (typeof window === "undefined" || isAutomated()) return
+    if (typeof window === "undefined" || isAutomated() || isAdminDevice()) return
     // getSession lee la sesión guardada en el navegador; getUser hacía una llamada de red extra a
     // Supabase por cada evento registrado.
     const { data } = await supabase.auth.getSession()
+    if (isAdminEmail(data.session?.user.email)) {
+      markAdminDevice()
+      return
+    }
     await supabase.from("analytics").insert({
       event_type: eventType,
       item_type: opts.itemType ?? null,

@@ -4,12 +4,13 @@ import { useEffect, useState } from "react"
 import Icon from "../../ui/Icon"
 import RideButtons from "./RideButtons"
 import { supabase } from "../../../lib/supabase"
+import { fetchAllPages } from "../../../lib/fetchAll"
 import { useLanguage } from "../../../context/LanguageContext"
 import { splitNightBusCodes } from "../../../lib/nightBuses"
 import { nearestMetroStations } from "../../../lib/metroStations"
 import { getMetroTonight } from "../../../lib/transitHours"
 import { distanceInMeters, formatDistance, walkingMinutes, walkingDirectionsUrl } from "../../../lib/geo"
-import { MetroLineBadge, NitbusRouteRow } from "../../ui/TransitBadge"
+import { MetroLineBadge, NitbusBadge, NitbusRouteRow } from "../../ui/TransitBadge"
 import { InlineEditText } from "../../admin/InlineEdit"
 import { useCanEdit } from "../../admin/EditAccess"
 
@@ -22,6 +23,7 @@ const MAX_RANK_METERS = 600
 // Paradas de Nitbus (esenciales, con la línea en "subcategoría") a menos de esta distancia del
 // club: sus líneas se añaden solas a la ficha, aunque nadie las haya escrito a mano en el club.
 const MAX_NITBUS_STOP_METERS = 400
+const MAX_NEAR_STOP_METERS = 700 // paradas que se enseñan con nombre y distancia
 
 type Rank = { name: string; address: string | null; latitude: number; longitude: number; distanceMeters: number }
 
@@ -56,6 +58,8 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
   const lng = Number(club.longitude)
   const [rank, setRank] = useState<Rank | null>(null)
   const [nearbyBusCodes, setNearbyBusCodes] = useState<string[]>([])
+  // Las 3 paradas de Nitbus más cercanas (si hay paradas cargadas en Esenciales).
+  const [nearStops, setNearStops] = useState<{ name: string; lines: string[]; lat: number; lon: number; d: number }[]>([])
   const isAdmin = useCanEdit() // admin, o el dueño de esta ficha
   const [metroTonight, setMetroTonight] = useState<ReturnType<typeof getMetroTonight> | null>(null)
 
@@ -82,12 +86,9 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
           .sort((a, b) => a.distanceMeters - b.distanceMeters)[0]
         if (best && best.distanceMeters <= MAX_RANK_METERS) setRank(best)
       })
-    supabase
-      .from("essentials")
-      .select("subcategory, latitude, longitude")
-      .eq("category", "Nitbus")
-      .eq("hidden", false)
-      .then(({ data }) => {
+    fetchAllPages((from, to) =>
+      supabase.from("essentials").select("name, subcategory, latitude, longitude").eq("category", "Nitbus").eq("hidden", false).order("id").range(from, to)
+    ).then((data) => {
         if (cancelled || !data) return
         const codes = new Set<string>()
         for (const e of data as Record<string, unknown>[]) {
@@ -96,6 +97,19 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
           for (const c of splitNightBusCodes(String(e.subcategory))) codes.add(c.toUpperCase())
         }
         setNearbyBusCodes(Array.from(codes))
+        const closest = (data as Record<string, unknown>[])
+          .filter((e) => e.latitude && e.longitude && e.subcategory)
+          .map((e) => ({
+            name: String(e.name || ""),
+            lines: splitNightBusCodes(String(e.subcategory)).map((c) => c.toUpperCase()),
+            lat: Number(e.latitude),
+            lon: Number(e.longitude),
+            d: distanceInMeters(lat, lng, Number(e.latitude), Number(e.longitude)),
+          }))
+          .filter((s) => s.d <= MAX_NEAR_STOP_METERS)
+          .sort((a, b) => a.d - b.d)
+          .slice(0, 3)
+        setNearStops(closest)
       })
     return () => {
       cancelled = true
@@ -173,6 +187,28 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
           <Icon name="bus" className="h-4 w-4 text-muted" /> {t("club.night_buses")}
         </p>
         <div className="mt-3 flex flex-col gap-2.5">
+          {/* Paradas reales más cercanas: dónde coger el bus, con sus líneas y cuánto se tarda andando. */}
+          {nearStops.map((s) => (
+            <div key={`${s.lat},${s.lon}`} className="flex items-center gap-3 rounded-ctl border border-white/10 bg-white/[0.02] px-3 py-2.5">
+              <div className="flex max-w-[45%] shrink-0 flex-wrap gap-1">
+                {s.lines.map((l) => (
+                  <NitbusBadge key={l} code={l} />
+                ))}
+              </div>
+              <div className="min-w-0 flex-1 text-sm leading-snug">
+                <p className="truncate font-semibold text-ink">{s.name}</p>
+                <p className="text-xs text-zinc-400">{formatDistance(s.d)} · {walkingMinutes(s.d)} min</p>
+              </div>
+              <a
+                href={walkingDirectionsUrl(lat, lng, s.lat, s.lon)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 text-xs font-semibold text-sky-200 underline underline-offset-2"
+              >
+                {t("clubPage.walk")}
+              </a>
+            </div>
+          ))}
           {busCodes.map((raw) => (
               <div key={raw} className="rounded-ctl border border-white/10 bg-white/[0.02] px-3 py-2.5">
                 <NitbusRouteRow
@@ -189,11 +225,13 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
               <InlineEditText table="clubs" id={club.id} field="night_buses" value={club.night_buses} placeholder="N24, N28" emptyLabel="añadir líneas" />
             </p>
           )}
-          <Row tone="bus" badge={<Icon name="map" className="h-3.5 w-3.5" />}>
-            <a href={nitbusNearby} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-200 underline underline-offset-2">
-              {t("clubPage.nitbusNearby")}
-            </a>
-          </Row>
+          {nearStops.length === 0 && (
+            <Row tone="bus" badge={<Icon name="map" className="h-3.5 w-3.5" />}>
+              <a href={nitbusNearby} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-200 underline underline-offset-2">
+                {t("clubPage.nitbusNearby")}
+              </a>
+            </Row>
+          )}
           {/* Antes esto salía como una fila más, del mismo tamaño que las paradas reales — y "Plaça
               Catalunya" acababa pareciendo la parada principal del club. Es solo una nota aparte
               (casi todas las líneas de NitBus de la ciudad pasan por allí, no solo las de este

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, BarChart3, Disc3, BadgeCheck, CalendarDays, Headphones, MapPin, Users,
-  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, type LucideIcon,
+  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, type LucideIcon,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
@@ -30,6 +30,7 @@ const ADMIN_NAV: NavGroup[] = [
     label: "Contenido",
     items: [
       { href: "/admin", label: "Clubs", icon: Disc3 },
+      { href: "/admin/recomendados", label: "Top 3 de Noctua", icon: Trophy },
       { href: "/admin/club-sessions", label: "Sesiones semanales", icon: Repeat },
       { href: "/admin/club-events", label: "Noches de club", icon: Headphones },
       { href: "/admin/events", label: "Eventos y festivales", icon: CalendarDays },

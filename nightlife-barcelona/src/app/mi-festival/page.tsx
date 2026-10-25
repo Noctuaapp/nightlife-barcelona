@@ -495,12 +495,15 @@ export default function MiFestivalPage() {
             <div className="mt-10 rounded-card border border-white/10 bg-white/[0.03] p-10 text-center">
               <p className="text-zinc-400">Todavía no tienes ningún festival vinculado a tu cuenta.</p>
               <p className="mt-2 text-sm text-zinc-400">
-                Si crees que debería haber alguno, o quieres añadir el primero,{" "}
+                Si organizas un festival y quieres gestionarlo en Noctua,{" "}
                 <Link href="/contact?type=owner_access&subject=No%20veo%20mi%20festival%20en%20mi-festival" className="text-purple-300 underline">escríbenos</Link>.
               </p>
             </div>
           )}
 
+          {/* Solo organizadores que Noctua ya ha vinculado a algún festival pueden crear otro (la base
+              de datos también lo impide: supabase/31_solo_admin_y_vinculados.sql). */}
+          {festivals.length > 0 && (
           <div className="mt-8">
             <button
               onClick={() => { setShowAddForm((v) => !v); setEditingId(null) }}
@@ -523,6 +526,7 @@ export default function MiFestivalPage() {
               </div>
             )}
           </div>
+          )}
 
           {festivals.length > 0 && (
             <div className="mt-8 grid gap-6">

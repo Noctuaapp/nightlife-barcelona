@@ -8,6 +8,7 @@ import BottomNav from "../../components/layout/BottomNav"
 import ExploreSwitch from "../../components/nightlife/ExploreSwitch"
 import EssentialPhoto from "../../components/essentials/EssentialPhoto"
 import { supabase } from "../../lib/supabase"
+import { fetchAllPages } from "../../lib/fetchAll"
 import { cleanEssential } from "../../lib/essentials"
 import { useLanguage } from "../../context/LanguageContext"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../lib/geo"
@@ -37,14 +38,11 @@ export default function EssentialsPage() {
   const { t, locale } = useLanguage()
 
   useEffect(() => {
-    supabase
-      .from("essentials")
-      .select("*")
-      .eq("hidden", false)
-      .then(({ data }) => {
-        if (data) setEssentials(data.map(cleanEssential))
-        setLoading(false)
-      })
+    // Por páginas: con las paradas de Nitbus hay más de 1.000 esenciales (ver lib/fetchAll).
+    fetchAllPages((from, to) => supabase.from("essentials").select("*").eq("hidden", false).order("id").range(from, to)).then((data) => {
+      setEssentials(data.map(cleanEssential))
+      setLoading(false)
+    })
 
     // Solo se usa la ubicación sin preguntar si el usuario ya la había permitido antes.
     if (navigator.geolocation && navigator.permissions) {

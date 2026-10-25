@@ -17,6 +17,7 @@ type Tool = {
   description: string
   batch?: boolean // devuelve "remaining": se puede repetir hasta que llegue a 0
   osm?: boolean
+  nitbus?: boolean // vista previa / importar de verdad, sin zona
 }
 
 const TOOLS: Tool[] = [
@@ -75,6 +76,13 @@ const TOOLS: Tool[] = [
     description: "Todo entra oculto para revisarlo antes de publicar. Sin marcar «Importar de verdad» solo es una vista previa.",
     osm: true,
   },
+  {
+    key: "import-nitbus",
+    path: "/api/admin/import-nitbus-stops",
+    title: "Cargar paradas de Nitbus (OpenStreetMap)",
+    description: "Todas las paradas de las líneas N con sus líneas, para el mapa de Nitbus y las fichas de club. Reemplaza las que se cargaron antes desde aquí (las tuyas a mano no se tocan). Sin marcar «Importar de verdad» solo es una vista previa.",
+    nitbus: true,
+  },
 ]
 
 const MAX_ROUNDS = 40
@@ -87,6 +95,7 @@ export default function AdminToolsPage() {
   const [state, setState] = useState<Record<string, RunState>>({})
   const [osmArea, setOsmArea] = useState("barcelona")
   const [osmReal, setOsmReal] = useState(false)
+  const [nitbusReal, setNitbusReal] = useState(false)
   const stopRef = useRef<Record<string, boolean>>({})
 
   // Interruptor de Club Noctua (pedido el 23/10/2026): mientras está en false, nadie gana XP por
@@ -191,7 +200,11 @@ export default function AdminToolsPage() {
     const { data } = await supabase.auth.getSession()
     const token = data.session?.access_token
     if (!token) throw new Error("Sesión caducada: vuelve a iniciar sesión.")
-    const url = tool.osm ? `${tool.path}?area=${osmArea}${osmReal ? "&dry=0" : ""}` : tool.path
+    const url = tool.osm
+      ? `${tool.path}?area=${osmArea}${osmReal ? "&dry=0" : ""}`
+      : tool.nitbus
+      ? `${tool.path}${nitbusReal ? "?dry=0" : ""}`
+      : tool.path
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
     const json: ToolResult = await res.json().catch(() => ({ error: `Respuesta no válida (${res.status})` }))
     if (!res.ok) throw new Error(json?.error || `Error ${res.status}`)
@@ -334,6 +347,13 @@ export default function AdminToolsPage() {
                     Importar de verdad
                   </label>
                 </div>
+              )}
+
+              {tool.nitbus && (
+                <label className="mt-4 flex items-center gap-2 text-sm text-zinc-300">
+                  <input type="checkbox" checked={nitbusReal} onChange={(e) => setNitbusReal(e.target.checked)} />
+                  Importar de verdad
+                </label>
               )}
 
               <div className="mt-4 flex flex-wrap gap-2">
