@@ -8,10 +8,10 @@ import { useLanguage } from "../../../context/LanguageContext"
 import { nearestMetroStations } from "../../../lib/metroStations"
 import { getMetroTonight } from "../../../lib/transitHours"
 import { distanceInMeters, formatDistance, walkingMinutes, walkingDirectionsUrl } from "../../../lib/geo"
-import { MetroLineBadge } from "../../ui/TransitBadge"
+import { MetroLineBadge, NitbusBadge } from "../../ui/TransitBadge"
 import { InlineEditText } from "../../admin/InlineEdit"
 import { useCanEdit } from "../../admin/EditAccess"
-import NitbusNearby from "../NitbusNearby"
+import NitbusNearby, { type NitbusSummary } from "../NitbusNearby"
 
 // Cómo llegar y, sobre todo, cómo volver: metro (con su horario de esta noche), NitBus y taxi.
 const PLACA_CATALUNYA = { lat: 41.3869, lon: 2.1701 }
@@ -56,6 +56,8 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
   const [rank, setRank] = useState<Rank | null>(null)
   const isAdmin = useCanEdit() // admin, o el dueño de esta ficha
   const [metroTonight, setMetroTonight] = useState<ReturnType<typeof getMetroTonight> | null>(null)
+  // Resumen de buses nocturnos para la cabecera plegada (lo calcula NitbusNearby).
+  const [busSummary, setBusSummary] = useState<NitbusSummary | null>(null)
 
   useEffect(() => {
     setMetroTonight(getMetroTonight())
@@ -100,18 +102,32 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
     : t("clubPage.metroUntil").replace("{time}", metroTonight.closes)
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-4">
+      {/* Metro y buses nocturnos plegados (25/10/2026): de un vistazo se ve lo más cercano y, al
+          tocar, la lista entera — antes salían todas las estaciones y líneas de golpe. */}
       {(club.metro_lines || metro.length > 0) && (
-        <div>
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="flex items-center gap-2 text-sm font-semibold text-ink">
-              <Icon name="train" className="h-4 w-4 text-muted" /> {t("club.metro")}
-            </p>
-            {metroLabel && (
-              <p className={`text-xs font-semibold ${metroTonight?.state === "closed" ? "text-zinc-400" : "text-open"}`}>{metroLabel}</p>
+        <details className="group rounded-ctl border border-white/10 bg-white/[0.02]">
+          <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-3 [&::-webkit-details-marker]:hidden">
+            <Icon name="train" className="h-4 w-4 shrink-0 text-muted" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-ink">{t("club.metro")}</p>
+              <p className="truncate text-xs text-zinc-400">
+                {metro[0] && !club.metro_lines
+                  ? `${metro[0].name} · ${formatDistance(metro[0].distanceMeters)} · ${walkingMinutes(metro[0].distanceMeters)} min`
+                  : club.metro_lines || ""}
+                {metroLabel ? ` · ${metroLabel}` : ""}
+              </p>
+            </div>
+            {metro[0]?.lines && !club.metro_lines && (
+              <div className="flex shrink-0 gap-1">
+                {metro[0].lines.slice(0, 3).map((l) => (
+                  <MetroLineBadge key={l} code={l} />
+                ))}
+              </div>
             )}
-          </div>
-          <div className="mt-3 flex flex-col gap-2.5">
+            <Icon name="arrow" className="h-4 w-4 shrink-0 rotate-90 text-zinc-500 transition group-open:-rotate-90" />
+          </summary>
+          <div className="flex flex-col gap-2.5 px-3 pb-3">
             {club.metro_lines
               ? club.metro_lines.split(",").map((l) => l.trim()).filter(Boolean).map((code) => (
                   <div key={code} className="flex items-center gap-2.5 rounded-ctl border border-white/10 bg-white/[0.02] px-3 py-2.5">
@@ -143,14 +159,31 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
                   </div>
                 ))}
           </div>
-        </div>
+        </details>
       )}
 
-      <div>
-        <p className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <Icon name="bus" className="h-4 w-4 text-muted" /> {t("club.night_buses")}
-        </p>
-        <div className="mt-3 flex flex-col gap-2.5">
+      <details className="group rounded-ctl border border-white/10 bg-white/[0.02]">
+        <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-3 [&::-webkit-details-marker]:hidden">
+          <Icon name="bus" className="h-4 w-4 shrink-0 text-muted" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-ink">{t("club.night_buses")}</p>
+            <p className="truncate text-xs text-zinc-400">
+              {busSummary?.first
+                ? `${busSummary.first.stop} · ${formatDistance(busSummary.first.d)} · ${walkingMinutes(busSummary.first.d)} min`
+                : t("clubPage.nitbusNearby")}
+            </p>
+          </div>
+          {busSummary && busSummary.codes.length > 0 && (
+            <div className="flex shrink-0 gap-1">
+              {busSummary.codes.slice(0, 3).map((c) => (
+                <NitbusBadge key={c} code={c} />
+              ))}
+              {busSummary.codes.length > 3 && <span className="self-center text-xs text-zinc-500">+{busSummary.codes.length - 3}</span>}
+            </div>
+          )}
+          <Icon name="arrow" className="h-4 w-4 shrink-0 rotate-90 text-zinc-500 transition group-open:-rotate-90" />
+        </summary>
+        <div className="flex flex-col gap-2.5 px-3 pb-3">
           {/* Una fila por línea: a dónde va, en qué parada cogerla y cuánto se tarda andando
               (ver NitbusNearby). Sin paradas cerca, el enlace de búsqueda de siempre. */}
           {hasCoords ? (
@@ -160,6 +193,7 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
               manualLines={club.night_buses}
               canEdit={isAdmin}
               showTitle={false}
+              onSummary={setBusSummary}
               emptyFallback={
                 <Row tone="bus" badge={<Icon name="map" className="h-3.5 w-3.5" />}>
                   <a href={nitbusNearby} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-200 underline underline-offset-2">
@@ -200,7 +234,7 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
             </p>
           )}
         </div>
-      </div>
+      </details>
 
       <div>
         <p className="flex items-center gap-2 text-sm font-semibold text-ink">

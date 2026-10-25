@@ -25,6 +25,9 @@ const NEAR_METERS = 700
 const MAX_STOP_FOR_LINE_METERS = 1500
 const MAX_LINES = 6
 
+// Resumen para una cabecera plegada: las líneas cercanas y la parada más próxima.
+export type NitbusSummary = { codes: string[]; first: { stop: string; d: number } | null }
+
 type StopRow = { name: string; lines: string[]; lat: number; lon: number }
 type LineRow = { code: string; stop: (StopRow & { d: number }) | null }
 
@@ -53,6 +56,7 @@ export default function NitbusNearby({
   canEdit = false,
   showTitle = true,
   emptyFallback,
+  onSummary,
 }: {
   lat: number
   lng: number
@@ -60,6 +64,7 @@ export default function NitbusNearby({
   canEdit?: boolean
   showTitle?: boolean
   emptyFallback?: React.ReactNode // qué enseñar si no hay ninguna línea (p. ej. un enlace de búsqueda)
+  onSummary?: (s: NitbusSummary) => void
 }) {
   const { t } = useLanguage()
   const [rows, setRows] = useState<LineRow[] | null>(null)
@@ -88,10 +93,13 @@ export default function NitbusNearby({
         .slice(0, MAX_LINES)
       setRows(list)
       setUnknown(bad)
+      const firstWithStop = list.find((r) => r.stop)
+      onSummary?.({ codes: list.map((r) => r.code), first: firstWithStop?.stop ? { stop: firstWithStop.stop.name, d: firstWithStop.stop.d } : null })
     })
     return () => {
       cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng, manualLines])
 
   if (!rows) return null

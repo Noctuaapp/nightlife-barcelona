@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, BarChart3, Disc3, BadgeCheck, CalendarDays, Headphones, MapPin, Users,
-  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, History, type LucideIcon,
+  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, History, Bell, type LucideIcon,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
@@ -18,13 +18,17 @@ import { supabase } from "../../lib/supabase"
 //   - Barra lateral fija en ordenador; en móvil, un botón "Menú" que abre la lista completa.
 //   - Contadores de lo que pide atención (mensajes nuevos, notas denunciadas sin revisar)
 //     directamente en el menú, visibles desde cualquier pantalla del admin.
-type NavItem = { href: string; label: string; icon: LucideIcon; badge?: "messages" | "reports" }
+//   - (25/10/2026) Avisos: bandeja con todo lo importante que pasa (campana arriba en el móvil).
+type NavItem = { href: string; label: string; icon: LucideIcon; badge?: "messages" | "reports" | "notices" }
 type NavGroup = { label: string; items: NavItem[] }
 
 const ADMIN_NAV: NavGroup[] = [
   {
     label: "General",
-    items: [{ href: "/admin/dashboard", label: "Resumen", icon: LayoutDashboard }],
+    items: [
+      { href: "/admin/dashboard", label: "Resumen", icon: LayoutDashboard },
+      { href: "/admin/avisos", label: "Avisos", icon: Bell, badge: "notices" },
+    ],
   },
   {
     label: "Contenido",
@@ -64,7 +68,7 @@ const ADMIN_NAV: NavGroup[] = [
   },
 ]
 
-type Badges = { messages: number; reports: number }
+type Badges = { messages: number; reports: number; notices: number }
 
 // Contadores del menú. Dos consultas que solo cuentan filas (no traen datos), compartidas entre
 // todas las pantallas durante un minuto para no repetirlas en cada cambio de sección.
@@ -73,11 +77,13 @@ const BADGE_TTL_MS = 60_000
 
 async function loadBadges(): Promise<Badges> {
   if (badgeCache && Date.now() - badgeCache.at < BADGE_TTL_MS) return badgeCache.value
-  const [msgs, reports] = await Promise.all([
+  const [msgs, reports, notices] = await Promise.all([
     supabase.from("contact_messages").select("id", { count: "exact", head: true }).eq("status", "new").or("is_spam.is.null,is_spam.eq.false"),
     supabase.from("club_checkin_reports").select("id", { count: "exact", head: true }).is("reviewed_at", null),
+    // Avisos sin leer (supabase/38). Si la tabla aún no existe, cuenta 0.
+    supabase.from("admin_notifications").select("id", { count: "exact", head: true }).is("read_at", null),
   ])
-  const value = { messages: msgs.count || 0, reports: reports.count || 0 }
+  const value = { messages: msgs.count || 0, reports: reports.count || 0, notices: notices.count || 0 }
   badgeCache = { at: Date.now(), value }
   return value
 }
@@ -140,7 +146,7 @@ export default function AdminShell({
   children: React.ReactNode
 }) {
   const pathname = usePathname() || ""
-  const [badges, setBadges] = useState<Badges>(badgeCache?.value || { messages: 0, reports: 0 })
+  const [badges, setBadges] = useState<Badges>(badgeCache?.value || { messages: 0, reports: 0, notices: 0 })
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -148,6 +154,16 @@ export default function AdminShell({
     loadBadges().then((b) => { if (alive) setBadges(b) }).catch(() => {})
     return () => { alive = false }
   }, [pathname])
+
+  // Con el admin abierto, los contadores (y la campana de avisos) se refrescan solos cada minuto.
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return
+      badgeCache = null
+      loadBadges().then(setBadges).catch(() => {})
+    }, BADGE_TTL_MS)
+    return () => window.clearInterval(t)
+  }, [])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -194,6 +210,19 @@ export default function AdminShell({
         {/* Barra superior (móvil y tablet) */}
         <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-white/[0.06] bg-night/90 px-4 py-3 backdrop-blur-xl lg:hidden">
           {brand}
+          <div className="flex items-center gap-2">
+          <Link
+            href="/admin/avisos"
+            aria-label={badges.notices > 0 ? `Avisos: ${badges.notices} sin leer` : "Avisos"}
+            className="relative flex h-10 w-10 items-center justify-center rounded-ctl border border-white/10 bg-white/[0.04] text-ink"
+          >
+            <Bell size={18} aria-hidden="true" />
+            {badges.notices > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 min-w-[20px] rounded-full bg-brand px-1 py-0.5 text-center text-[11px] font-bold leading-none text-white">
+                {badges.notices > 99 ? "99+" : badges.notices}
+              </span>
+            )}
+          </Link>
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
@@ -207,6 +236,7 @@ export default function AdminShell({
               </span>
             )}
           </button>
+          </div>
         </header>
 
         {menuOpen && (

@@ -23,7 +23,7 @@ const weatherCodes: Record<number, string> = {
   75: "🌨", 80: "🌦", 81: "🌧", 82: "⛈", 95: "⛈",
 }
 
-type WeatherHour = { label: string; icon: string; temp: number; code: number | null }
+type WeatherHour = { label: string; icon: string; temp: number; code: number | null; wind?: number | null }
 
 type NotificationRow = {
   id: number
@@ -59,7 +59,7 @@ function oncePerSession(key: string): boolean {
 }
 
 // El tiempo se guarda 30 min por pestaña (antes se pedía a open-meteo en cada página).
-const WEATHER_CACHE_KEY = "noctua_weather_v4"
+const WEATHER_CACHE_KEY = "noctua_weather_v5" // v5: también el viento por hora
 const WEATHER_TTL_MS = 30 * 60 * 1000
 
 export default function Header() {
@@ -264,7 +264,7 @@ export default function Header() {
           /* caché ilegible: se vuelve a pedir */
         }
         const res = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${selectedCity.lat}&longitude=${selectedCity.lng}&current=temperature_2m,weathercode&hourly=temperature_2m,weathercode&timezone=Europe/Madrid&forecast_days=2`
+          `https://api.open-meteo.com/v1/forecast?latitude=${selectedCity.lat}&longitude=${selectedCity.lng}&current=temperature_2m,weathercode&hourly=temperature_2m,weathercode,windspeed_10m&timezone=Europe/Madrid&forecast_days=2`
         )
         const data = await res.json()
         const currentTemp = Math.round(data.current.temperature_2m)
@@ -307,9 +307,10 @@ export default function Header() {
           const idx = data.hourly.time.indexOf(iso)
           const temp = idx !== -1 ? Math.round(data.hourly.temperature_2m[idx]) : null
           const code = idx !== -1 ? data.hourly.weathercode[idx] : null
+          const wind = idx !== -1 && data.hourly.windspeed_10m ? Math.round(data.hourly.windspeed_10m[idx]) : null
           const icon = code !== null ? (weatherCodes[code] || "🌡") : "🌡"
           const label = `${pad(hour)}:00`
-          return { label, icon, temp: temp ?? 0, code }
+          return { label, icon, temp: temp ?? 0, code, wind }
         })
 
         const fresh = { temp: currentTemp, icon: currentIcon, code: currentCode, nightHours }
@@ -497,17 +498,46 @@ export default function Header() {
   // por la noche iba a llover, salía "buena noche para salir" aunque fuera a llover a la hora de
   // salir. Ahora se mira la previsión de las horas de la franja nocturna (23h-06h), que es la que
   // importa para decidir si salir.
+  // Mensaje del tiempo de esta noche (25/10/2026: "¿tiene en cuenta la temperatura? ¿si refresca
+  // o hará calor? que sea más divertido a la par que informativo"). Ahora mira la previsión de la
+  // franja de salir (23h-06h): tormenta, lluvia (y a qué hora empieza), viento fuerte, calor,
+  // noche perfecta, fresquito o frío — siempre con los grados de verdad (al salir y a la vuelta).
+  // Cada tipo tiene varias frases y cada día sale una distinta, para que no sea siempre la misma.
   const RAIN_CODES = new Set([51, 53, 55, 61, 63, 65, 71, 73, 75, 80, 81, 82, 95])
-  const weatherTip: { icon: string; textKey: string } | null = (() => {
+  const STORM_CODES = new Set([82, 95, 96, 99])
+  const weatherTip: { icon: string; text: string } | null = (() => {
     if (!weather || weather.nightHours.length === 0) return null
-    const anyRain = weather.nightHours.some((h) => h.code !== null && RAIN_CODES.has(h.code))
-    if (anyRain) return { icon: "☔️", textKey: "weatherTip.rain" }
-    const nightTemps = weather.nightHours.map((h) => h.temp)
-    const minNightTemp = Math.min(...nightTemps)
-    const maxNightTemp = Math.max(...nightTemps)
-    if (minNightTemp <= 12) return { icon: "🧥", textKey: "weatherTip.cold" }
-    if (maxNightTemp >= 17) return { icon: "🌙", textKey: "weatherTip.nice" }
-    return null
+    const hours = weather.nightHours
+    const temps = hours.map((h) => h.temp)
+    const first = temps[0]
+    const min = Math.min(...temps)
+    const max = Math.max(...temps)
+    const winds = hours.map((h) => h.wind ?? 0)
+    const maxWind = Math.max(...winds)
+    const rainHour = hours.find((h) => h.code !== null && RAIN_CODES.has(h.code))
+    const storm = hours.some((h) => h.code !== null && STORM_CODES.has(h.code))
+
+    let kind: string
+    let icon: string
+    if (storm) { kind = "storm"; icon = "⛈️" }
+    else if (rainHour) { kind = "rain"; icon = "☔️" }
+    else if (maxWind >= 40) { kind = "wind"; icon = "💨" }
+    else if (first >= 24) { kind = "hot"; icon = "🥵" }
+    else if (min >= 16) { kind = "nice"; icon = "🌙" }
+    else if (min >= 12) { kind = "fresh"; icon = "🧥" }
+    else { kind = "cold"; icon = "🥶" }
+
+    // Tres frases por tipo; cambia cada día (todo el mundo ve la misma ese día).
+    const day = Math.floor(Date.now() / 86400000)
+    const variant = (day % 3) + 1
+    const text = t(`weatherTip.${kind}${variant}`)
+      .replace("{first}", String(first))
+      .replace("{min}", String(min))
+      .replace("{max}", String(max))
+      .replace("{hour}", rainHour ? rainHour.label : "")
+      .replace("{wind}", String(maxWind))
+      .replace("{firsth}", hours[0].label)
+    return { icon, text }
   })()
 
   const isUnread = (n: NotificationRow) =>
@@ -732,7 +762,7 @@ export default function Header() {
         >
           <div className="mx-auto flex max-w-5xl items-center gap-2.5 px-4 py-2 sm:px-6">
             <span aria-hidden="true" className="text-sm">{weatherTip.icon}</span>
-            <p className="min-w-0 flex-1 truncate text-xs text-zinc-300 sm:text-sm">{t(weatherTip.textKey)}</p>
+            <p className="line-clamp-2 min-w-0 flex-1 text-xs leading-snug text-zinc-300 sm:text-sm">{weatherTip.text}</p>
             <button
               onClick={dismissWeatherTip}
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-500 transition hover:text-white"
