@@ -8,6 +8,7 @@ import TrafficSource from "../components/system/TrafficSource"
 import ToastHost from "../components/ui/Toast"
 import PartyPollPopup from "../components/fun/PartyPollPopup"
 import "./globals.css"
+import { safeJsonLd } from "../lib/structuredData"
 
 // Antes toda la app caía en Arial/Helvetica (la fuente por defecto del sistema, sin declarar
 // ninguna propia) — probablemente lo que más "delata" que una app no tiene identidad propia.
@@ -96,7 +97,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: safeJsonLd({
               "@context": "https://schema.org",
               "@graph": [
                 {

@@ -17,6 +17,7 @@ import { toDateLocale } from "../../lib/dateLocale"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { InlineEditText, InlineEditImage } from "../admin/InlineEdit"
 import { useCanEdit } from "../admin/EditAccess"
+import { safeUrl } from "../../lib/safeUrl"
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
@@ -98,7 +99,7 @@ export default function ClubEventPageContent({
   const lng = club?.longitude ? Number(club.longitude) : null
   const hasCoords = !!lat && !!lng
   const firstTicket = tickets.find((tk) => tk.external_url)
-  const ticketUrl = !past && !clubEvent.sold_out ? firstTicket?.external_url || clubEvent.ticket_url || null : null
+  const ticketUrl = !past && !clubEvent.sold_out ? safeUrl(firstTicket?.external_url || clubEvent.ticket_url) : null
   const directionsUrl = hasCoords
     ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
     : club?.address
@@ -333,7 +334,7 @@ export default function ClubEventPageContent({
                           {ticket.price ? <p className="shrink-0 text-sm font-semibold text-ink">{`${ticket.price} ${ticket.currency || "EUR"}`}</p> : null}
                         </div>
                         {ticket.external_url && !clubEvent.sold_out && !past && (
-                          <a href={ticket.external_url} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} mt-3 w-full py-3`}>
+                          <a href={safeUrl(ticket.external_url) || undefined} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} mt-3 w-full py-3`}>
                             <Icon name="ticket" className="h-4 w-4" /> {t("clubEvent.buyTicket")}
                           </a>
                         )}

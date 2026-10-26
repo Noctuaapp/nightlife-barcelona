@@ -26,6 +26,7 @@ type Review = {
   hidden: boolean
   created_at: string
   updated_at: string
+  thanks_count?: number
 }
 
 const MAX_LEN = 800
@@ -45,6 +46,9 @@ export default function VenueReviews({
   const [missing, setMissing] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [reported, setReported] = useState<Set<number>>(new Set())
+  // «Gracias» (supabase/41): las opiniones a las que ya he dado las gracias.
+  const [thanked, setThanked] = useState<Set<number>>(new Set())
+  const [thanksReady, setThanksReady] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draftRating, setDraftRating] = useState(0)
   const [draftBody, setDraftBody] = useState("")
@@ -56,13 +60,14 @@ export default function VenueReviews({
     ;(async () => {
       const { data: s } = await supabase.auth.getSession()
       const uid = s.session?.user.id ?? null
-      const { data, error } = await supabase
-        .from("venue_reviews")
-        .select("id, user_id, rating, body, author_name, author_level, hidden, created_at, updated_at")
-        .eq("venue_type", venueType)
-        .eq("venue_id", venueId)
-        .order("created_at", { ascending: false })
-        .limit(200)
+      const base = "id, user_id, rating, body, author_name, author_level, hidden, created_at, updated_at"
+      const query = (cols: string) =>
+        supabase.from("venue_reviews").select(cols).eq("venue_type", venueType).eq("venue_id", venueId).order("created_at", { ascending: false }).limit(200)
+      // Con el SQL 41 ya ejecutado viene también el recuento de «Gracias»; si no, sin él.
+      let res = await query(`${base}, thanks_count`)
+      const withThanks = !res.error
+      if (res.error) res = await query(base)
+      const { data, error } = res
       if (!alive) return
       setUserId(uid)
       if (error) {
@@ -70,10 +75,15 @@ export default function VenueReviews({
         setReviews([])
         return
       }
-      setReviews((data || []) as Review[])
+      setReviews((data || []) as unknown as Review[])
+      if (alive) setThanksReady(withThanks)
       if (uid && data && data.length) {
         const { data: reps } = await supabase.from("venue_review_reports").select("review_id").eq("reporter_id", uid)
         if (alive && reps) setReported(new Set(reps.map((r: { review_id: number }) => r.review_id)))
+        if (withThanks) {
+          const { data: th } = await supabase.from("venue_review_thanks").select("review_id").eq("user_id", uid)
+          if (alive && th) setThanked(new Set(th.map((r: { review_id: number }) => r.review_id)))
+        }
       }
     })()
     return () => {
@@ -128,6 +138,35 @@ export default function VenueReviews({
   const toggleHidden = async (r: Review) => {
     const { error } = await supabase.from("venue_reviews").update({ hidden: !r.hidden }).eq("id", r.id)
     if (!error) setReviews((prev) => (prev || []).map((x) => (x.id === r.id ? { ...x, hidden: !r.hidden } : x)))
+  }
+
+  const toggleThanks = async (r: Review) => {
+    if (!userId) {
+      toast(t("reviews.loginToThank"))
+      return
+    }
+    const had = thanked.has(r.id)
+    const bump = (d: number) =>
+      setReviews((prev) => (prev || []).map((x) => (x.id === r.id ? { ...x, thanks_count: Math.max(0, (x.thanks_count || 0) + d) } : x)))
+    setThanked((prev) => {
+      const next = new Set(prev)
+      if (had) next.delete(r.id)
+      else next.add(r.id)
+      return next
+    })
+    bump(had ? -1 : 1)
+    const { error } = had
+      ? await supabase.from("venue_review_thanks").delete().eq("review_id", r.id).eq("user_id", userId)
+      : await supabase.from("venue_review_thanks").insert({ review_id: r.id })
+    if (error) {
+      setThanked((prev) => {
+        const next = new Set(prev)
+        if (had) next.add(r.id)
+        else next.delete(r.id)
+        return next
+      })
+      bump(had ? 1 : -1)
+    }
   }
 
   const report = async (r: Review) => {
@@ -288,6 +327,27 @@ export default function VenueReviews({
                 </div>
                 {r.body && <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-zinc-300">{r.body}</p>}
                 {r.hidden && <p className="mt-2 text-xs font-semibold text-warn">{t("reviews.hiddenNote")}</p>}
+                {thanksReady && !r.hidden && (
+                  isMine ? (
+                    (r.thanks_count || 0) > 0 && (
+                      <p className="mt-3 text-xs font-semibold text-brand-soft">
+                        🙏 {(r.thanks_count || 0) === 1 ? t("reviews.thankedYouOne") : t("reviews.thankedYouMany").replace("{n}", String(r.thanks_count))}
+                      </p>
+                    )
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => toggleThanks(r)}
+                      aria-pressed={thanked.has(r.id)}
+                      className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition active:scale-95 ${
+                        thanked.has(r.id) ? "border-brand/60 bg-brand/20 text-ink" : "border-white/15 text-zinc-300 hover:bg-white/5"
+                      }`}
+                    >
+                      <span aria-hidden="true">🙏</span> {thanked.has(r.id) ? t("reviews.thanked") : t("reviews.thank")}
+                      {(r.thanks_count || 0) > 0 && <span className="tabular-nums text-zinc-400">· {r.thanks_count}</span>}
+                    </button>
+                  )
+                )}
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
                   {isMine && !editing && (
                     <button type="button" onClick={startEdit} className="text-zinc-300 hover:text-ink">

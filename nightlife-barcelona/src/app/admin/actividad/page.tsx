@@ -22,6 +22,8 @@ const ADMIN_COUNTRIES = getSortedCountries("es")
 
 const EVENT_LABELS: Record<string, string> = {
   session_start: "Entra en la web",
+  page_nav: "Va a otra página",
+  tiktok_click: "Abre TikTok",
   page_view: "Ve la ficha",
   tickets_click: "Pulsa entradas",
   directions_click: "Pulsa cómo llegar",

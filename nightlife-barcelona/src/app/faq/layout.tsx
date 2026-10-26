@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import es from "../../../public/messages/es.json"
+import { safeJsonLd } from "../../lib/structuredData"
 
 // Título propio + datos estructurados FAQPage: con ellos Google puede mostrar las preguntas
 // desplegables directamente en los resultados de búsqueda. Se generan en el servidor a partir del
@@ -33,7 +34,7 @@ export default function FaqLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
     </>
   )
 }

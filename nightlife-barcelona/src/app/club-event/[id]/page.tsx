@@ -8,7 +8,7 @@ import ClubEventPageContent from "../../../components/nightlife/ClubEventPageCon
 import { EditAccessProvider } from "../../../components/admin/EditAccess"
 import { supabase } from "../../../lib/supabase"
 import { createSlug } from "../../../lib/slug"
-import { EVENT_IMAGE_FALLBACK, parsePriceEUR } from "../../../lib/structuredData"
+import { EVENT_IMAGE_FALLBACK, parsePriceEUR, safeJsonLd } from "../../../lib/structuredData"
 
 type ClubEventPageProps = {
   params: Promise<{ id: string }>
@@ -144,7 +144,7 @@ export default async function ClubEventPage({ params }: ClubEventPageProps) {
       </EditAccessProvider>
       <AdminEditButton kind="clubEvent" id={clubEvent.id} />
       <BottomNav />
-      {clubEvent.date && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
+      {clubEvent.date && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />}
     </>
   )
 }

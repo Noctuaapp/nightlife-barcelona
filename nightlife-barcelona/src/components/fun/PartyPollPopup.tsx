@@ -28,7 +28,7 @@ import { track } from "../../lib/track"
 //     abierta desde el día anterior no salía hasta cerrar sesión y volver a entrar (25/10/2026).
 //   - Tras votar ve los porcentajes de todo el mundo. Nada de "Otra": mañana, la siguiente.
 
-const EXCLUDED_PREFIXES = ["/admin", "/login", "/signup", "/confirm-age", "/blocked", "/profile/change-password"]
+const EXCLUDED_PREFIXES = ["/admin", "/login", "/signup", "/confirm-age", "/blocked", "/profile/change-password", "/recuperar"]
 const SHOW_DELAY_MS = 6000
 
 // Día (de Barcelona) en que ya se comprobó, en memoria: navegar entre páginas el mismo día no lo

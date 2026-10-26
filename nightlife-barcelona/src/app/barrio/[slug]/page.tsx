@@ -7,6 +7,7 @@ import AreaListing from "../../../components/nightlife/AreaListing"
 import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../../../lib/clubQueries"
 import { MIN_INDEXABLE, neighborhoodsOf, rankClubs, stylesOf } from "../../../lib/areas"
 import { createSlug } from "../../../lib/slug"
+import { safeJsonLd } from "../../../lib/structuredData"
 
 // /barrio/el-born, /barrio/poblenou… Una página por barrio con sus discotecas (ver src/lib/areas.ts).
 export const revalidate = 3600
@@ -77,7 +78,7 @@ export default async function BarrioPage({ params }: Props) {
       <Header />
       <AreaListing kind="barrio" slug={area.slug} name={area.name} clubs={clubs} neighborhoods={neighborhoods} styles={styles} />
       <BottomNav />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
     </>
   )
 }

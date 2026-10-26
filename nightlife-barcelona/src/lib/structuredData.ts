@@ -24,3 +24,11 @@ export function parsePriceEUR(raw: string | null | undefined): string | null {
   if (!match) return null
   return match[0].replace(",", ".")
 }
+
+// JSON-LD seguro para meter dentro de <script> (26/10/2026, revisión de seguridad). JSON.stringify
+// no escapa "<", así que un nombre o una descripción con "</script>" (los dueños ya pueden editar
+// su ficha) cerraría la etiqueta y permitiría inyectar código en la página. Con < > & escapados
+// como \u003c... el JSON sigue siendo idéntico para Google y ya no se puede salir del <script>.
+export function safeJsonLd(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026")
+}

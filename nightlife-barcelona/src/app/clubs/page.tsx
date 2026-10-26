@@ -6,6 +6,7 @@ import ExploreLinks from "../../components/nightlife/ExploreLinks"
 import ClubsDirectory from "../../components/nightlife/ClubsDirectory"
 import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../../lib/clubQueries"
 import { MIN_INDEXABLE, neighborhoodsOf, stylesOf } from "../../lib/areas"
+import { safeJsonLd } from "../../lib/structuredData"
 
 export const revalidate = 3600
 
@@ -58,7 +59,7 @@ export default async function ClubsPage() {
         styles={stylesOf(clubs).filter((n) => n.count >= MIN_INDEXABLE)}
       />
       <BottomNav />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
     </>
   )
 }

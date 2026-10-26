@@ -1,0 +1,315 @@
+"use client"
+
+import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
+import { Smartphone, Monitor, ChevronDown, User } from "lucide-react"
+import AdminShell from "../../../components/admin/AdminShell"
+import { supabase } from "../../../lib/supabase"
+import { isAdminEmail } from "../../../lib/admin"
+
+// Visitas (26/10/2026): «de las 84 sesiones, ¿dónde han entrado y qué han hecho?». Cada visita
+// con su origen, dispositivo, página de entrada y el recorrido completo en orden; más las páginas
+// por las que más se entra y las más vistas. Incluye a quien no tiene cuenta (sin datos
+// personales: solo rutas y clics). Datos: admin_sessions() en supabase/44_recorridos_de_visitas.sql.
+
+type Ev = { t: string; type: string; path: string | null; name: string | null; item_type: string | null; results: number | null }
+type Session = {
+  id: string
+  started_at: string
+  minutes: number
+  source: string | null
+  device: string | null
+  username: string | null
+  user_id: string | null
+  landing: string | null
+  pages: number
+  actions: number
+  events: Ev[] | null
+}
+type Data = {
+  total_sessions: number
+  with_account: number
+  bounced: number
+  avg_pages: number | null
+  landings: { path: string; n: number }[]
+  top_pages: { path: string; name: string | null; n: number }[]
+  sessions: Session[]
+}
+
+const SOURCE_LABELS: Record<string, string> = {
+  search: "Google",
+  direct: "Directo",
+  instagram: "Instagram",
+  tiktok: "TikTok",
+  social: "Redes",
+  messaging: "WhatsApp / Telegram",
+  invite: "Invitación",
+}
+const sourceLabel = (s: string | null) => (s ? SOURCE_LABELS[s] || s.replace(/^other:/, "") : "—")
+
+const EVENT_LABELS: Record<string, string> = {
+  session_start: "Entra en",
+  page_nav: "Va a",
+  page_view: "Ve la ficha",
+  tickets_click: "Pulsa entradas",
+  directions_click: "Pulsa cómo llegar",
+  website_click: "Abre la web del local",
+  instagram_click: "Abre Instagram",
+  tiktok_click: "Abre TikTok",
+  share_click: "Comparte",
+  favorite_click: "Guarda en favoritos",
+  ride_click: "Pide taxi / VTC",
+  search: "Busca",
+  filter_used: "Usa filtros",
+  party_poll_vote: "Vota la encuesta",
+  top_pick_click: "Pulsa el Top 3",
+}
+
+function unslug(s: string) {
+  const t = decodeURIComponent(s).replace(/-/g, " ")
+  return t.charAt(0).toUpperCase() + t.slice(1)
+}
+
+// Nombre legible de cada ruta.
+function pageLabel(path: string | null, names: Map<string, string>): string {
+  if (!path) return "—"
+  if (names.has(path)) return names.get(path)!
+  const p = path.replace(/\/+$/, "") || "/"
+  const fixed: Record<string, string> = {
+    "/": "Portada", "/clubs": "Lista de clubs", "/events": "Eventos", "/map": "Mapa", "/plan": "Planifica tu noche",
+    "/essentials": "Esenciales", "/favorites": "Favoritos", "/profile": "Perfil", "/login": "Iniciar sesión",
+    "/signup": "Registro", "/contact": "Contacto", "/faq": "Preguntas frecuentes", "/club-noctua": "Club Noctua",
+    "/opinion": "Opinión de la web", "/privacy": "Privacidad", "/terms": "Términos", "/invitar": "Invitar amigos",
+    "/recuperar": "Recuperar contraseña", "/confirm-age": "Confirmar edad",
+  }
+  if (fixed[p]) return fixed[p]
+  const m = p.match(/^\/(clubs|event|club-event|barrio|musica|essentials|plan)\/(.+)$/)
+  if (m) {
+    const kind = { clubs: "Club", event: "Evento", "club-event": "Noche de club", barrio: "Barrio", musica: "Música", essentials: "Esenciales", plan: "Plan compartido" }[m[1]]
+    return m[1] === "club-event" || m[1] === "plan" ? `${kind} ${m[2]}` : `${kind}: ${unslug(m[2])}`
+  }
+  return p
+}
+
+const PERIODS = [
+  { key: 1, label: "Hoy" },
+  { key: 7, label: "7 días" },
+  { key: 30, label: "30 días" },
+]
+
+const madridDay = (offset: number) => new Date(Date.now() - offset * 86400000).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" })
+
+export default function AdminVisitsPage() {
+  const [checking, setChecking] = useState(true)
+  const [days, setDays] = useState(7)
+  const [data, setData] = useState<Data | null>(null)
+  const [error, setError] = useState(false)
+  const [open, setOpen] = useState<string | null>(null)
+  const [onlyActive, setOnlyActive] = useState(false)
+  const [source, setSource] = useState("all")
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (!isAdminEmail(data.session?.user.email)) {
+        window.location.href = "/"
+        return
+      }
+      setChecking(false)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (checking) return
+    setData(null)
+    setError(false)
+    supabase.rpc("admin_sessions", { p_from: madridDay(days - 1), p_to: madridDay(0), p_limit: 400 }).then(({ data, error }) => {
+      if (error) setError(true)
+      else setData(data as Data)
+    })
+  }, [checking, days])
+
+  // Nombres reales de las fichas (vienen en los eventos page_view).
+  const names = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const s of data?.sessions || []) for (const e of s.events || []) if (e.type === "page_view" && e.path && e.name) m.set(e.path, e.name)
+    for (const p of data?.top_pages || []) if (p.name) m.set(p.path, p.name)
+    return m
+  }, [data])
+
+  const sources = useMemo(() => Array.from(new Set((data?.sessions || []).map((s) => s.source || "direct"))), [data])
+  const list = (data?.sessions || []).filter(
+    (s) => (!onlyActive || s.pages > 1 || s.actions > 0) && (source === "all" || (s.source || "direct") === source)
+  )
+
+  if (checking) {
+    return (
+      <AdminShell title="Visitas">
+        <p className="text-sm text-zinc-400">Comprobando acceso…</p>
+      </AdminShell>
+    )
+  }
+
+  const chip = (active: boolean) =>
+    `rounded-full px-3.5 py-1.5 text-xs font-bold transition ${active ? "bg-white text-black" : "border border-white/10 text-zinc-300 hover:bg-white/5"}`
+  const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0)
+
+  return (
+    <AdminShell title="Visitas" subtitle="Cada visita a la web, con o sin cuenta: de dónde llega, por qué página entra y qué hace después.">
+      <div className="mb-6 flex flex-wrap gap-2">
+        {PERIODS.map((p) => (
+          <button key={p.key} type="button" className={chip(days === p.key)} onClick={() => setDays(p.key)}>
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {error && (
+        <div className="mb-6 rounded-2xl border border-warn/40 bg-warn/10 p-5 text-sm text-warn">
+          Falta ejecutar supabase/44_recorridos_de_visitas.sql en Supabase.
+        </div>
+      )}
+
+      {!data && !error ? (
+        <div className="h-64 animate-pulse rounded-2xl bg-white/[0.03]" />
+      ) : data ? (
+        <>
+          <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Kpi label="Visitas" value={String(data.total_sessions)} />
+            <Kpi label="Con cuenta" value={`${data.with_account}`} sub={`${pct(data.with_account, data.total_sessions)} % de las visitas`} />
+            <Kpi label="Se van sin hacer nada" value={`${pct(data.bounced, data.total_sessions)} %`} sub={`${data.bounced} visitas de una sola página`} />
+            <Kpi label="Páginas por visita" value={data.avg_pages ? String(data.avg_pages).replace(".", ",") : "—"} />
+          </dl>
+          <p className="mt-2 text-xs text-zinc-500">
+            El recorrido página a página se guarda desde el 26/10/2026: las visitas anteriores solo muestran la página de entrada, las fichas vistas y los clics.
+          </p>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            <TopList title="Por dónde entran" rows={data.landings.map((l) => ({ label: pageLabel(l.path, names), n: l.n }))} total={data.total_sessions} />
+            <TopList title="Páginas más vistas (visitas que pasan por ellas)" rows={data.top_pages.map((p) => ({ label: pageLabel(p.path, names), n: p.n }))} total={data.total_sessions} />
+          </div>
+
+          <div className="mb-3 mt-8 flex flex-wrap items-center gap-2">
+            <h2 className="mr-2 text-base font-black">Visita a visita</h2>
+            <button type="button" className={chip(source === "all")} onClick={() => setSource("all")}>
+              Todas
+            </button>
+            {sources.map((s) => (
+              <button key={s} type="button" className={chip(source === s)} onClick={() => setSource(s)}>
+                {sourceLabel(s)}
+              </button>
+            ))}
+            <label className="ml-auto flex cursor-pointer items-center gap-2 text-xs font-semibold text-zinc-300">
+              <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(e.target.checked)} className="accent-[#8b5cf6]" />
+              Solo las que hacen algo
+            </label>
+          </div>
+
+          {list.length === 0 ? (
+            <p className="rounded-2xl border border-white/10 p-8 text-center text-sm text-zinc-400">No hay visitas con estos filtros.</p>
+          ) : (
+            <ul className="divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/10">
+              {list.map((s) => {
+                const isOpen = open === s.id + s.started_at
+                const Dev = s.device === "mobile" ? Smartphone : Monitor
+                return (
+                  <li key={s.id + s.started_at}>
+                    <button
+                      type="button"
+                      onClick={() => setOpen(isOpen ? null : s.id + s.started_at)}
+                      aria-expanded={isOpen}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-white/[0.03]"
+                    >
+                      <span className="w-14 shrink-0 text-xs tabular-nums text-zinc-500">
+                        {new Date(s.started_at).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" })}
+                        {days > 1 && (
+                          <span className="block">
+                            {new Date(s.started_at).toLocaleDateString("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "short" })}
+                          </span>
+                        )}
+                      </span>
+                      <Dev size={16} className="shrink-0 text-zinc-400" aria-label={s.device === "mobile" ? "Móvil" : "Ordenador"} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-ink">{pageLabel(s.landing, names)}</span>
+                        <span className="block truncate text-xs text-zinc-400">
+                          {sourceLabel(s.source)} · {s.pages} {s.pages === 1 ? "página" : "páginas"}
+                          {s.actions > 0 && ` · ${s.actions} ${s.actions === 1 ? "acción" : "acciones"}`}
+                          {s.minutes >= 1 && ` · ${Math.round(s.minutes)} min`}
+                          {s.username && ` · @${s.username}`}
+                        </span>
+                      </span>
+                      <ChevronDown size={16} className={`shrink-0 text-zinc-500 transition ${isOpen ? "rotate-180" : ""}`} />
+                    </button>
+                    {isOpen && (
+                      <div className="bg-black/20 px-4 pb-4 pt-1">
+                        {s.user_id && (
+                          <Link href={`/admin/actividad?user=${s.user_id}`} className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-soft hover:underline">
+                            <User size={13} /> Ver toda la actividad de @{s.username || "este usuario"}
+                          </Link>
+                        )}
+                        <ol className="relative ml-2 space-y-2 border-l border-white/10 pl-4">
+                          {(s.events || []).map((e, i) => (
+                            <li key={i} className="text-xs">
+                              <span className="absolute -left-[4.5px] mt-1.5 h-2 w-2 rounded-full bg-brand/70" aria-hidden="true" />
+                              <span className="tabular-nums text-zinc-500">
+                                {new Date(e.t).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                              </span>{" "}
+                              <span className="text-zinc-300">{EVENT_LABELS[e.type] || e.type}</span>{" "}
+                              <span className="font-semibold text-ink">
+                                {e.type === "search" || e.type === "filter_used"
+                                  ? e.name
+                                    ? `«${e.name}»${e.results !== null ? ` (${e.results} resultados)` : ""}`
+                                    : ""
+                                  : e.type.endsWith("_click") || e.type === "page_view"
+                                    ? e.name || pageLabel(e.path, names)
+                                    : pageLabel(e.path, names)}
+                              </span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </>
+      ) : null}
+    </AdminShell>
+  )
+}
+
+function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+      <dt className="text-xs text-zinc-400">{label}</dt>
+      <dd className="mt-1 font-display text-2xl tabular-nums text-ink">{value}</dd>
+      {sub && <p className="mt-0.5 text-[11px] text-zinc-500">{sub}</p>}
+    </div>
+  )
+}
+
+function TopList({ title, rows, total }: { title: string; rows: { label: string; n: number }[]; total: number }) {
+  return (
+    <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+      <h2 className="text-sm font-black">{title}</h2>
+      {rows.length === 0 ? (
+        <p className="mt-3 text-sm text-zinc-500">Todavía nada.</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {rows.slice(0, 10).map((r, i) => (
+            <li key={r.label + i}>
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="truncate text-zinc-200">{r.label}</span>
+                <span className="shrink-0 tabular-nums text-zinc-400">{r.n}</span>
+              </div>
+              <div className="mt-1 h-1.5 rounded-full bg-white/10">
+                <div className="h-full rounded-full bg-purple-400/70" style={{ width: `${total ? Math.max(3, (r.n / total) * 100) : 0}%` }} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}

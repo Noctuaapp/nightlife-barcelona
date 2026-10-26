@@ -106,11 +106,15 @@ export default function PrivacyPage() {
             <p className="mt-3">{renderWithLinks(t("privacy.s10_closing"), links)}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">11. {t("privacy.s11_title")}</h2>
+            <h2 className="text-white font-semibold text-base mb-3">11. {t("privacy.s13_title")}</h2>
+            <p>{t("privacy.s13_body")}</p>
+          </section>
+          <section>
+            <h2 className="text-white font-semibold text-base mb-3">12. {t("privacy.s11_title")}</h2>
             <p>{t("privacy.s11_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">12. {t("privacy.s12_title")}</h2>
+            <h2 className="text-white font-semibold text-base mb-3">13. {t("privacy.s12_title")}</h2>
             <p>{renderWithLinks(t("privacy.s12_body"), links)}</p>
           </section>
         </div>

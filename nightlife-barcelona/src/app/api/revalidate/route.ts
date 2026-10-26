@@ -24,7 +24,9 @@ export async function POST(request: NextRequest) {
     (p): p is string => typeof p === "string" && p.length < 1024 && ALLOWED_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix))
   )
 
-  for (const path of valid) revalidatePath(path)
+  // Como mucho 20 rutas por llamada (el admin nunca manda más): evita que alguien la use para
+  // forzar regeneraciones masivas.
+  for (const path of valid.slice(0, 20)) revalidatePath(path)
 
   return Response.json({ revalidated: true, paths: valid })
 }

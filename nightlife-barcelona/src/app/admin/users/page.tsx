@@ -30,6 +30,8 @@ type User = {
   xp: number | null
   level_key: string | null
   level_since: string | null
+  birth_year?: number | null
+  terms_accepted_at?: string | null
 }
 
 type OwnableClub = { id: number; name: string; owner_user_id: string | null }
@@ -174,7 +176,7 @@ export default function AdminUsersPage() {
     // ni el XP de cada usuario en esta página (sí se calculaban, pero solo en /club-noctua).
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, is_blocked, country, block_reason, block_note, blocked_until, xp, level_key, level_since")
+      .select("*")
     if (profilesError) console.log("PROFILES ERROR:", profilesError)
 
     const blockedMap = new Map((profiles || []).map((p) => [p.id, !!p.is_blocked]))
@@ -184,6 +186,9 @@ export default function AdminUsersPage() {
     const xpMap = new Map((profiles || []).map((p) => [p.id, (p as any).xp as number | null]))
     const levelKeyMap = new Map((profiles || []).map((p) => [p.id, (p as any).level_key as string | null]))
     const levelSinceMap = new Map((profiles || []).map((p) => [p.id, (p as any).level_since as string | null]))
+    // Edad (26/10/2026): solo se guarda el año de nacimiento, no la fecha completa.
+    const birthMap = new Map((profiles || []).map((p) => [p.id, (p as any).birth_year as number | null]))
+    const termsMap = new Map((profiles || []).map((p) => [p.id, (p as any).terms_accepted_at as string | null]))
 
     if (data) {
       setUsers(
@@ -197,6 +202,8 @@ export default function AdminUsersPage() {
           xp: xpMap.get(u.id) ?? null,
           level_key: levelKeyMap.get(u.id) ?? null,
           level_since: levelSinceMap.get(u.id) ?? null,
+          birth_year: birthMap.get(u.id) ?? null,
+          terms_accepted_at: termsMap.get(u.id) ?? null,
         }))
       )
     }
@@ -451,6 +458,18 @@ export default function AdminUsersPage() {
                         <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
                           {ADMIN_COUNTRIES.find((c) => c.es === user.country)?.flag || "🌍"} {user.country}
                         </span>
+                      )}
+                      {user.birth_year ? (
+                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1" title={`Nacido/a en ${user.birth_year}`}>
+                          🎂 {new Date().getFullYear() - user.birth_year - 1}–{new Date().getFullYear() - user.birth_year} años
+                        </span>
+                      ) : (
+                        <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-amber-200" title="No ha pasado por la confirmación de edad">
+                          ⚠️ Edad sin confirmar
+                        </span>
+                      )}
+                      {!user.terms_accepted_at && (
+                        <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-amber-200">⚠️ Sin aceptar términos</span>
                       )}
                       <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
                         📅 Registrado: {new Date(user.created_at).toLocaleDateString("es-ES")}

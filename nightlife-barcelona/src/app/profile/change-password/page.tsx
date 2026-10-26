@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 
 import Header from "../../../components/layout/Header"
@@ -16,6 +16,27 @@ export default function ChangePasswordPage() {
   const [success, setSuccess] = useState("")
   const [error, setError] = useState("")
   const [saving, setSaving] = useState(false)
+  // Llegada desde el email de «He olvidado mi contraseña» (/recuperar): ?recovery=1. Supabase
+  // abre la sesión solo con el enlace; si ha caducado o ya se usó, no hay sesión y se avisa.
+  const [recovery, setRecovery] = useState(false)
+  const [hasSession, setHasSession] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    const fromEmail = new URLSearchParams(window.location.search).get("recovery") === "1"
+    setRecovery(fromEmail)
+    const check = () =>
+      supabase.auth.getSession().then(({ data }) => setHasSession((prev) => prev === true || !!data.session))
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") setRecovery(true)
+      if (session) setHasSession(true)
+    })
+    // Dejamos un momento para que Supabase procese el enlace del email antes de decidir.
+    const timer = window.setTimeout(check, fromEmail ? 1500 : 0)
+    return () => {
+      sub.subscription.unsubscribe()
+      window.clearTimeout(timer)
+    }
+  }, [])
 
   const changePassword = async () => {
     setSuccess("")
@@ -26,7 +47,7 @@ export default function ChangePasswordPage() {
       return
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       setError(t("changePassword.errorMinLength"))
       return
     }
@@ -45,11 +66,12 @@ export default function ChangePasswordPage() {
     setSaving(false)
 
     if (error) {
-      setError(error.message)
+      setError(/different from the old/i.test(error.message) ? t("changePassword.errorSame") : error.message)
       return
     }
 
     setSuccess(t("changePassword.success"))
+    if (recovery) window.setTimeout(() => (window.location.href = "/"), 1500)
     setPassword("")
     setConfirmPassword("")
   }
@@ -69,10 +91,19 @@ export default function ChangePasswordPage() {
           </h1>
 
           <p className="mt-6 text-lg leading-relaxed text-zinc-400">
-            {t("changePassword.subtitle")}
+            {recovery ? t("changePassword.recoverySubtitle") : t("changePassword.subtitle")}
           </p>
 
-          <div className="mt-10 rounded-card border border-white/10 bg-white/[0.03] p-8">
+          {hasSession === false && (
+            <div className="mt-10 rounded-card border border-warn/40 bg-warn/10 p-6 text-sm text-warn">
+              <p className="font-semibold">{recovery ? t("changePassword.linkExpired") : t("changePassword.needLogin")}</p>
+              <Link href={recovery ? "/recuperar" : "/login?next=/profile/change-password"} className="mt-3 inline-block font-bold text-ink underline underline-offset-4">
+                {recovery ? t("changePassword.requestNew") : t("login.signin")}
+              </Link>
+            </div>
+          )}
+
+          <div className={`mt-10 rounded-card border border-white/10 bg-white/[0.03] p-8 ${hasSession === false ? "hidden" : ""}`}>
             <input
               value={password}
               onChange={(e) => setPassword(e.target.value)}

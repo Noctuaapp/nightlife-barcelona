@@ -11,6 +11,7 @@ import { findBySlug } from "../../../lib/slugLookup"
 import { createSlug } from "../../../lib/slug"
 import { clubMetaDescription, clubSummary, venueKind } from "../../../lib/clubSummary"
 import type { DbRow } from "../../../lib/clubQueries"
+import { safeJsonLd } from "../../../lib/structuredData"
 
 // ISR: la ficha se genera la primera vez que alguien la pide y se sirve ya hecha durante 5 min
 // (antes se generaba de cero en cada visita, consultando la base de datos cada vez). Los cambios
@@ -162,8 +163,8 @@ export default async function ClubPage({ params }: ClubPageProps) {
       </EditAccessProvider>
       <AdminEditButton kind="club" id={club.id} />
       <BottomNav />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumb) }} />
     </>
   )
 }

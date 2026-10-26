@@ -8,7 +8,7 @@ import EventPageContent from "../../../components/nightlife/EventPageContent"
 import { EditAccessProvider } from "../../../components/admin/EditAccess"
 import { supabase } from "../../../lib/supabase"
 import { findBySlug } from "../../../lib/slugLookup"
-import { EVENT_IMAGE_FALLBACK, parsePriceEUR } from "../../../lib/structuredData"
+import { EVENT_IMAGE_FALLBACK, parsePriceEUR, safeJsonLd } from "../../../lib/structuredData"
 
 // ISR: la ficha se genera la primera vez que alguien la pide y se sirve ya hecha durante 5 min
 // (antes se generaba de cero en cada visita, consultando la base de datos cada vez). Los cambios
@@ -131,7 +131,7 @@ export default async function EventPage({ params }: EventPageProps) {
       </EditAccessProvider>
       <AdminEditButton kind="event" id={event.id} />
       <BottomNav />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
     </>
   )
 }

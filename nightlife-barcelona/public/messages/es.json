@@ -80,7 +80,11 @@
     "password": "Contraseña",
     "signin": "Iniciar sesión",
     "signing_in": "Iniciando sesión...",
-    "new": "¿Nuevo en Noctua? Crear cuenta"
+    "new": "¿Nuevo en Noctua? Crear cuenta",
+    "forgot": "¿Has olvidado tu contraseña?",
+    "errorCredentials": "Email o contraseña incorrectos.",
+    "errorNotConfirmed": "Confirma tu email: te enviamos un enlace al registrarte.",
+    "errorTooMany": "Demasiados intentos. Espera un momento y vuelve a probar."
   },
   "signup": {
     "title": "Crear cuenta",
@@ -255,21 +259,21 @@
   "privacy": {
     "title": "Política de Privacidad",
     "subtitle": "Cómo Noctua recopila, usa y protege tu información.",
-    "last_updated": "Última actualización: octubre 2026",
+    "last_updated": "Última actualización: 26 de octubre de 2026",
     "s1_title": "Quiénes somos",
     "s1_body": "Noctua (\"nosotros\", \"nuestro\") es una plataforma de descubrimiento de vida nocturna centrada en Barcelona. Operamos el sitio web y la aplicación disponibles en noctuaapp.com. Para cualquier consulta relacionada con privacidad, contáctanos en {email}.",
     "s2_title": "Datos que recopilamos",
     "s2_intro": "Recopilamos las siguientes categorías de datos:",
-    "s2_items": "Datos de cuenta::Dirección de correo electrónico, contraseña cifrada, nombre de usuario, género y año de nacimiento. Al registrarte te pedimos la fecha de nacimiento completa solo para comprobar que eres mayor de 18 años; de ella guardamos únicamente el año.\nFoto de perfil::La imagen que subas voluntariamente como avatar de tu cuenta.\nDatos de uso::Páginas visitadas, clubs y eventos vistos, botones pulsados (por ejemplo, entradas, cómo llegar o compartir), búsquedas realizadas y cuántos resultados dieron, y el origen de la visita (por ejemplo, buscador, red social o enlace de invitación). Se asocian a un identificador de sesión aleatorio que desaparece al cerrar la pestaña y, si has iniciado sesión, a tu cuenta.\nFavoritos::Clubs, eventos y noches de club que decidas guardar, junto con las listas y notas personales que crees para organizarlos.\nActividad y puntos (XP)::Si marcas que asistirás a un evento o a un club en una noche concreta, haces check-in en un club o ganas puntos de experiencia, guardamos esa actividad (incluida la fecha) para mostrarte tu progreso y nivel dentro de la app y para elaborar estadísticas agregadas.\nUbicación precisa (solo para check-in)::Cuando decides hacer check-in en la ficha de un club, accedemos una única vez a tu ubicación GPS para comprobar que estás cerca del local. No guardamos tus coordenadas: solo se registra en qué club y qué día hiciste check-in.\nMensajes de contacto::Cualquier mensaje que nos envíes a través de la página de Contacto, incluidas solicitudes para gestionar la ficha de tu club o festival.\nCuentas de locales y festivales verificados::Si eres responsable de un club o festival y te damos acceso para editar su ficha, vinculamos tu cuenta a ese local o evento. Solo tú y el equipo de Noctua podéis gestionar esa ficha desde ahí.\nNotificaciones dentro de la app::Los avisos que te enviamos dentro de Noctua (por ejemplo, confirmaciones o mensajes del equipo) y si los has leído.\nDatos del dispositivo y analítica::Tipo de navegador, tipo de dispositivo y ubicación aproximada (a nivel de país/ciudad) para análisis de uso, mediante Vercel Analytics.",
+    "s2_items": "Datos de cuenta::Dirección de correo electrónico, contraseña cifrada, nombre de usuario, género y año de nacimiento. Al registrarte te pedimos la fecha de nacimiento completa solo para comprobar que eres mayor de 18 años; de ella guardamos únicamente el año.\nFoto de perfil::La imagen que subas voluntariamente como avatar de tu cuenta.\nDatos de uso::Páginas visitadas, clubs y eventos vistos, botones pulsados (por ejemplo, entradas, cómo llegar o compartir), búsquedas realizadas y cuántos resultados dieron, y el origen de la visita (por ejemplo, buscador, red social o enlace de invitación). Se asocian a un identificador de sesión aleatorio que desaparece al cerrar la pestaña y, si has iniciado sesión, a tu cuenta.\nFavoritos::Clubs, eventos y noches de club que decidas guardar, junto con las listas y notas personales que crees para organizarlos.\nActividad y puntos (XP)::Si marcas que asistirás a un evento o a un club en una noche concreta, haces check-in en un club o ganas puntos de experiencia, guardamos esa actividad (incluida la fecha) para mostrarte tu progreso y nivel dentro de la app y para elaborar estadísticas agregadas.\nUbicación precisa (solo para check-in)::Cuando decides hacer check-in en la ficha de un club, accedemos una única vez a tu ubicación GPS para comprobar que estás cerca del local. No guardamos tus coordenadas: solo se registra en qué club y qué día hiciste check-in.\nMensajes de contacto::Cualquier mensaje que nos envíes a través de la página de Contacto, incluidas solicitudes para gestionar la ficha de tu club o festival.\nCuentas de locales y festivales verificados::Si eres responsable de un club o festival y te damos acceso para editar su ficha, vinculamos tu cuenta a ese local o evento. Solo tú y el equipo de Noctua podéis gestionar esa ficha desde ahí.\nNotificaciones dentro de la app::Los avisos que te enviamos dentro de Noctua (por ejemplo, confirmaciones o mensajes del equipo) y si los has leído.\nDatos del dispositivo y analítica::Tipo de navegador, tipo de dispositivo y ubicación aproximada (a nivel de país/ciudad) para análisis de uso, mediante Vercel Analytics.\nOpiniones y «Gracias»::Las opiniones que publiques sobre locales y eventos (estrellas y texto) son públicas junto a tu nombre de usuario y tu nivel. Guardamos también a qué opiniones has dado las gracias (nunca se muestra quién) y las denuncias que hagas, que son confidenciales.\nAvisos de «no me dejan entrar»::Si nos dices que no te dejaron entrar en un local, guardamos el local, el motivo y la fecha para dejar de recomendártelo y mejorar la información de la web. El local nunca recibe tu identidad, y puedes volver a verlo desde tu perfil.\nEncuestas::Tus respuestas a las encuestas rápidas de la app y a la valoración de la web.",
     "s3_title": "Cómo usamos tus datos",
     "s3_intro": "Usamos los datos que recopilamos para:",
-    "s3_items": "Proporcionar y operar la plataforma Noctua.\nGuardar y mostrar tus clubs, eventos y noches de club favoritos.\nCalcular tu progreso y nivel dentro del sistema de puntos (XP) de Noctua.\nVerificar tu ubicación en el momento del check-in en un club (nunca la almacenamos, solo el resultado).\nResponder a mensajes y solicitudes de soporte, incluidos mensajes que el equipo de Noctua te envíe directamente.\nDar acceso de gestión a los responsables verificados de un club o festival sobre su propia ficha, manteniendo siempre el equipo de Noctua la capacidad de revisar, corregir o revocar ese acceso.\nMejorar la plataforma en base a patrones de uso.\nMejorar tus búsquedas y recomendaciones usando tu año de nacimiento (por ejemplo, sugerirte locales con un ambiente acorde a tu edad).\nElaborar estadísticas agregadas y anónimas sobre el uso de la plataforma y la afluencia a locales y eventos (por ejemplo, rangos de edad, procedencia o horarios de las visitas), que podemos compartir con locales, organizadores de eventos y otros terceros, incluso a cambio de una contraprestación económica.\nEnviar comunicaciones importantes del servicio (sin marketing sin tu consentimiento).",
+    "s3_items": "Proporcionar y operar la plataforma Noctua.\nGuardar y mostrar tus clubs, eventos y noches de club favoritos.\nCalcular tu progreso y nivel dentro del sistema de puntos (XP) de Noctua.\nVerificar tu ubicación en el momento del check-in en un club (nunca la almacenamos, solo el resultado).\nResponder a mensajes y solicitudes de soporte, incluidos mensajes que el equipo de Noctua te envíe directamente.\nDar acceso de gestión a los responsables verificados de un club o festival sobre su propia ficha, manteniendo siempre el equipo de Noctua la capacidad de revisar, corregir o revocar ese acceso.\nMejorar la plataforma en base a patrones de uso.\nMejorar tus búsquedas y recomendaciones usando tu año de nacimiento (por ejemplo, sugerirte locales con un ambiente acorde a tu edad).\nElaborar estadísticas agregadas y anónimas sobre el uso de la plataforma y la afluencia a locales y eventos (por ejemplo, rangos de edad, procedencia o horarios de las visitas), que podemos compartir con locales, organizadores de eventos y otros terceros, incluso a cambio de una contraprestación económica.\nEnviar comunicaciones importantes del servicio (sin marketing sin tu consentimiento).\nMostrar a los responsables verificados de un local, si Noctua se lo activa, estadísticas agregadas de su propia ficha (visitas, clics, procedencia y horas), sin ningún dato que te identifique.\nModerar opiniones y contenido denunciado y proteger la plataforma frente a abusos (por ejemplo, con límites de publicaciones diarias).",
     "s4_title": "Base legal (RGPD)",
     "s4_body": "Procesamos tus datos bajo las siguientes bases legales definidas por el Reglamento General de Protección de Datos (RGPD): ejecución de contrato (para prestarte el servicio al que te suscribiste y personalizar tus búsquedas), interés legítimo (para mejorar y proteger la plataforma y para elaborar estadísticas agregadas y anonimizadas) y consentimiento (para comunicaciones opcionales y el acceso a tu ubicación en el check-in). Puedes retirar tu consentimiento u oponerte al tratamiento basado en interés legítimo en cualquier momento.",
     "s5_title": "Almacenamiento y seguridad de los datos",
     "s5_body": "Tus datos se almacenan de forma segura mediante Supabase, que ofrece cifrado de nivel profesional tanto en reposo como en tránsito. No vendemos ni cedemos tus datos personales a terceros. Lo que sí podemos compartir o vender son estadísticas agregadas y anónimas (por ejemplo, \"el 60 % de los visitantes de un local tiene entre 25 y 34 años\"). Esas estadísticas nunca identifican a personas concretas y no se publican grupos de menos de 5 personas. El acceso a los datos personales está restringido únicamente a personal autorizado.",
     "s6_title": "Conservación de datos",
-    "s6_body": "Conservamos los datos de tu cuenta mientras esta permanezca activa. Si eliminas tu cuenta, todos los datos personales asociados se eliminarán de forma permanente en un plazo de 30 días. Los mensajes de contacto se conservan hasta 12 meses con fines de soporte. Las estadísticas agregadas y anónimas ya elaboradas no contienen datos personales y pueden conservarse.",
+    "s6_body": "Conservamos los datos de tu cuenta mientras esta permanezca activa. Si eliminas tu cuenta, todos los datos personales asociados se eliminarán de forma permanente en un plazo de 30 días. Los mensajes de contacto se conservan hasta 12 meses con fines de soporte. Las estadísticas agregadas y anónimas ya elaboradas no contienen datos personales y pueden conservarse. Tus opiniones siguen publicadas hasta que las borres o elimines tu cuenta. El detalle de uso (páginas vistas y clics) se borra automáticamente a los 13 meses.",
     "s7_title": "Tus derechos",
     "s7_intro": "Bajo el RGPD, tienes derecho a:",
     "s7_items": "Acceder a los datos personales que tenemos sobre ti.\nSolicitar la corrección de datos inexactos.\nSolicitar la eliminación de tus datos ('derecho al olvido').\nOponerte o restringir el tratamiento de tus datos.\nRecibir una copia de tus datos en un formato portable.\nPresentar una reclamación ante tu autoridad local de protección de datos.",
@@ -278,8 +282,8 @@
     "s8_body": "Usamos cookies esenciales necesarias para la autenticación y la gestión de sesión, además de almacenamiento local del navegador (localStorage) para recordar preferencias como qué avisos ya has leído. Usamos también Vercel Analytics, una herramienta de analítica que no utiliza cookies de seguimiento ni identifica individualmente a los usuarios, para entender de forma agregada cómo se usa la Plataforma. No usamos cookies publicitarias ni de seguimiento entre webs. Además, Noctua registra su propia analítica de uso con un identificador de sesión aleatorio guardado en el almacenamiento de sesión de tu navegador (sessionStorage), que se borra al cerrar la pestaña; no es una cookie ni te sigue entre sitios. Ninguna red publicitaria de terceros tiene acceso a tus datos.",
     "s9_title": "Servicios de terceros",
     "s9_intro": "Trabajamos con los siguientes proveedores para operar la Plataforma, cada uno procesando datos únicamente en la medida necesaria para prestar su servicio:",
-    "s9_items": "Supabase::Autenticación, base de datos y almacenamiento de imágenes. Procesa los datos de acuerdo con el RGPD.\nVercel::Alojamiento de la aplicación y analítica de uso agregada y anónima.\nMapbox::Renderizado de los mapas dentro de la app. Al cargar un mapa, Mapbox puede recibir tu dirección IP y la información técnica necesaria para mostrarlo.\nGoogle Places::Fuente de datos públicos (nombre, valoración, reseñas y fotos) de clubs, festivales y servicios esenciales que mostramos en sus fichas. No enviamos tus datos personales a Google a través de esta integración.",
-    "s9_closing": "No compartimos tus datos personales con ningún otro tercero salvo que la ley lo exija.",
+    "s9_items": "Supabase::Autenticación, base de datos, almacenamiento de imágenes y envío de los emails de acceso (confirmación de cuenta y recuperación de contraseña). Procesa los datos de acuerdo con el RGPD.\nVercel::Alojamiento de la aplicación y analítica de uso agregada y anónima.\nMapbox::Renderizado de los mapas dentro de la app. Al cargar un mapa, Mapbox puede recibir tu dirección IP y la información técnica necesaria para mostrarlo.\nGoogle Places::Fuente de datos públicos (nombre, valoración, reseñas y fotos) de clubs, festivales y servicios esenciales que mostramos en sus fichas. No enviamos tus datos personales a Google a través de esta integración.",
+    "s9_closing": "No compartimos tus datos personales con ningún otro tercero salvo que la ley lo exija. Algunos proveedores (Vercel, Mapbox o Google) pueden tratar datos fuera del Espacio Económico Europeo; en ese caso lo hacen con las garantías que exige el RGPD (cláusulas contractuales tipo de la Comisión Europea o el Marco de Privacidad de Datos UE-EE. UU.).",
     "s10_title": "Inicio de sesión con Google",
     "s10_intro": "Noctua permite a los usuarios iniciar sesión con su cuenta de Google mediante Google OAuth 2.0. Cuando eliges iniciar sesión con Google, recibimos la siguiente información de Google:",
     "s10_items": "Nombre::Tu nombre de perfil registrado en Google.\nCorreo electrónico::Usado para crear e identificar tu cuenta de Noctua.\nFoto de perfil::Mostrada opcionalmente en tu perfil de Noctua.",
@@ -287,11 +291,13 @@
     "s11_title": "Cambios en esta política",
     "s11_body": "Podemos actualizar esta Política de Privacidad de vez en cuando. Cuando lo hagamos, actualizaremos la fecha en la parte superior de esta página. El uso continuado de Noctua tras los cambios constituye la aceptación de la política actualizada.",
     "s12_title": "Contacto",
-    "s12_body": "Para cualquier pregunta sobre esta Política de Privacidad, contáctanos en {email}."
+    "s12_body": "Para cualquier pregunta sobre esta Política de Privacidad, contáctanos en {email}.",
+    "s13_title": "Menores de edad",
+    "s13_body": "Noctua es solo para mayores de 18 años: no recopilamos a sabiendas datos de menores y, si detectamos una cuenta de un menor, la eliminamos."
   },
   "terms": {
     "title": "Términos de Servicio",
-    "last_updated": "Última actualización: octubre 2026",
+    "last_updated": "Última actualización: 26 de octubre de 2026",
     "s1_title": "Aceptación de los términos",
     "s1_body": "Al acceder o usar Noctua (\"la Plataforma\"), aceptas quedar vinculado por estos Términos de Servicio. Si no estás de acuerdo con estos términos, por favor no uses la Plataforma. Nos reservamos el derecho de actualizar estos términos en cualquier momento; el uso continuado constituye la aceptación de cualquier cambio.",
     "s2_title": "Descripción del servicio",
@@ -302,10 +308,10 @@
     "s3_closing": "Debes tener al menos 18 años para crear una cuenta en Noctua, acorde a la naturaleza del contenido de ocio nocturno. Al registrarte te pedimos tu fecha de nacimiento para comprobarlo; no se permite el registro a menores de 18 años, y podemos suspender o eliminar cualquier cuenta que incumpla este requisito.",
     "s4_title": "Uso aceptable",
     "s4_intro": "Aceptas no:",
-    "s4_items": "Usar la Plataforma con fines ilícitos.\nExtraer, copiar o reproducir contenido sin permiso.\nIntentar acceder sin autorización a cualquier parte de la Plataforma.\nEnviar información falsa, engañosa o difamatoria.\nInterferir o interrumpir el funcionamiento de la Plataforma.\nUsar la Plataforma para enviar comunicaciones comerciales no solicitadas.\nPublicar notas, reportes u otros contenidos ofensivos, ilegales o que vulneren derechos de terceros; Noctua puede retirarlos en cualquier momento.",
+    "s4_items": "Usar la Plataforma con fines ilícitos.\nExtraer, copiar o reproducir contenido sin permiso.\nIntentar acceder sin autorización a cualquier parte de la Plataforma.\nEnviar información falsa, engañosa o difamatoria.\nInterferir o interrumpir el funcionamiento de la Plataforma.\nUsar la Plataforma para enviar comunicaciones comerciales no solicitadas.\nPublicar notas, reportes u otros contenidos ofensivos, ilegales o que vulneren derechos de terceros; Noctua puede retirarlos en cualquier momento.\nPublicar opiniones falsas, pagadas o a cambio de algo, sobre tu propio local o para perjudicar a la competencia, o que contengan insultos o datos personales de otras personas.",
     "s5_title": "Cuentas de locales y festivales verificados",
     "s5_intro": "Si eres el responsable de un club o festival, tras contactarnos y verificar tu identidad podemos vincular tu cuenta a la ficha correspondiente, dándote acceso para editarla directamente. Al hacer uso de este acceso, aceptas que:",
-    "s5_items": "La información que publiques (horarios, precios, fotos, noches o sesiones) sea veraz y esté actualizada.\nSolo publiques contenido del que tengas los derechos necesarios.\nNoctua puede revisar, corregir o retirar en cualquier momento contenido que incumpla estos Términos.\nNoctua se reserva el derecho de revocar tu acceso de gestión sobre una ficha en cualquier momento, por ejemplo si deja de acreditarse tu relación con el local.",
+    "s5_items": "La información que publiques (horarios, precios, fotos, noches o sesiones) sea veraz y esté actualizada.\nSolo publiques contenido del que tengas los derechos necesarios.\nNoctua puede revisar, corregir o retirar en cualquier momento contenido que incumpla estos Términos.\nNoctua se reserva el derecho de revocar tu acceso de gestión sobre una ficha en cualquier momento, por ejemplo si deja de acreditarse tu relación con el local.\nSi Noctua te activa las estadísticas de tu ficha, son datos agregados y anónimos: no puedes usarlos para intentar identificar a ninguna persona.",
     "s6_title": "Exactitud del contenido",
     "s6_body": "Nos esforzamos por mantener toda la información de locales y eventos precisa y actualizada. Sin embargo, no podemos garantizar la exactitud, integridad o vigencia de la información en la Plataforma — incluida la publicada directamente por responsables de locales o festivales verificados. Verifica siempre los detalles directamente con el local antes de asistir. Las políticas de acceso de cada local (vestimenta, aforo, edad mínima u otras condiciones de entrada) son responsabilidad exclusiva del local; Noctua no garantiza la entrada a ningún club, evento o festival. El estado en directo de un local (por ejemplo, \"Animado\" o \"Lleno\") procede del propio local, de check-ins de usuarios o de estimaciones, y es meramente orientativo.",
     "s7_title": "Propiedad intelectual",
@@ -317,13 +323,15 @@
     "s10_title": "Exclusión de garantías",
     "s10_body": "La Plataforma se ofrece \"tal cual\" y \"según disponibilidad\", sin garantías de ningún tipo, expresas o implícitas. No garantizamos que la Plataforma esté libre de interrupciones o errores.",
     "s11_title": "Programa de puntos (XP)",
-    "s11_body": "Noctua ofrece un sistema opcional de puntos de experiencia (XP) y niveles que premia ciertas acciones dentro de la app (marcar asistencia, hacer check-in en un local, rachas de uso, etc.). Los puntos de XP no tienen valor monetario, no son transferibles ni canjeables por dinero, y no constituyen una moneda ni un producto financiero. Nos reservamos el derecho de modificar, reiniciar o discontinuar el programa de puntos, así como de ajustar la forma en que se otorgan, en cualquier momento.",
+    "s11_body": "Noctua ofrece un sistema opcional de puntos de experiencia (XP) y niveles que premia ciertas acciones dentro de la app (marcar asistencia, hacer check-in en un local, rachas de uso, etc.). Los puntos de XP no tienen valor monetario, no son transferibles ni canjeables por dinero, y no constituyen una moneda ni un producto financiero. Nos reservamos el derecho de modificar, reiniciar o discontinuar el programa de puntos, así como de ajustar la forma en que se otorgan, en cualquier momento. Mientras el programa de puntos esté en pausa, no se otorgan puntos por ninguna acción salvo las que se indiquen expresamente.",
     "s12_title": "Cancelación de cuenta",
     "s12_body": "Nos reservamos el derecho de suspender o cancelar tu cuenta a nuestra discreción si incumples estos Términos de Servicio. Puedes eliminar tu cuenta en cualquier momento desde tu página de Perfil.",
     "s13_title": "Ley aplicable",
     "s13_body": "Estos Términos de Servicio se rigen por las leyes de España. Cualquier disputa quedará sujeta a la jurisdicción exclusiva de los tribunales de Barcelona, España.",
     "s14_title": "Contacto",
-    "s14_body": "Para cualquier pregunta sobre estos Términos de Servicio, contáctanos en {email}."
+    "s14_body": "Para cualquier pregunta sobre estos Términos de Servicio, contáctanos en {email}.",
+    "s15_title": "Opiniones de usuarios",
+    "s15_body": "Puedes publicar una opinión por local o evento, y editarla o borrarla cuando quieras. Las opiniones expresan el parecer de quien las escribe, no el de Noctua. Al publicarlas nos autorizas a mostrarlas en la Plataforma junto a tu nombre de usuario. Los responsables de un local no pueden opinar sobre el suyo. Noctua puede ocultar o retirar opiniones que incumplan estos Términos; una opinión que reciba varias denuncias se oculta automáticamente hasta que la revisemos. Los «Gracias» que reciban tus opiniones pueden darte puntos (XP) cuando el programa de puntos esté activo, con un límite diario."
   },
   "faq": {
     "title": "Preguntas frecuentes",
@@ -689,12 +697,17 @@
     "newPassword": "Nueva contraseña",
     "confirmPassword": "Confirmar nueva contraseña",
     "errorFillBoth": "Por favor rellena ambos campos de contraseña.",
-    "errorMinLength": "La contraseña debe tener al menos 6 caracteres.",
+    "errorMinLength": "La contraseña debe tener al menos 8 caracteres.",
     "errorMismatch": "Las contraseñas no coinciden.",
     "success": "Contraseña actualizada correctamente.",
     "updating": "Actualizando...",
     "update": "Actualizar contraseña",
-    "back": "Volver al perfil"
+    "back": "Volver al perfil",
+    "recoverySubtitle": "Elige una nueva contraseña para tu cuenta.",
+    "linkExpired": "El enlace ha caducado o ya se ha usado.",
+    "needLogin": "Inicia sesión para cambiar tu contraseña.",
+    "requestNew": "Pedir un enlace nuevo",
+    "errorSame": "La nueva contraseña tiene que ser distinta de la anterior."
   },
   "weather": {
     "tonightTitle": "Barcelona esta noche"
@@ -1492,6 +1505,24 @@
     "updated": "Opinión actualizada",
     "errorOwner": "No puedes opinar de tu propio local.",
     "errorLimit": "Has llegado al máximo de opiniones por hoy.",
-    "errorSave": "No se ha podido guardar. Inténtalo de nuevo."
+    "errorSave": "No se ha podido guardar. Inténtalo de nuevo.",
+    "thank": "Gracias",
+    "thanked": "Le has dado las gracias",
+    "thankedYouOne": "1 persona te da las gracias",
+    "thankedYouMany": "{n} personas te dan las gracias",
+    "loginToThank": "Inicia sesión para dar las gracias."
+  },
+  "recover": {
+    "title": "Recuperar contraseña",
+    "subtitle": "Te enviamos un enlace por email para que elijas una nueva.",
+    "invalidEmail": "Escribe un email válido.",
+    "tooMany": "Has pedido varios enlaces seguidos. Espera un minuto e inténtalo de nuevo.",
+    "sentTitle": "Revisa tu correo",
+    "sentBody": "Si hay una cuenta con {email}, te acabamos de enviar un enlace para elegir una nueva contraseña. Mira también en spam.",
+    "tryAgain": "¿No te llega? Volver a enviar",
+    "send": "Enviar enlace",
+    "sending": "Enviando…",
+    "googleNote": "¿Entraste con Google? Entonces no necesitas contraseña: usa «Continuar con Google».",
+    "back": "Volver a iniciar sesión"
   }
 }

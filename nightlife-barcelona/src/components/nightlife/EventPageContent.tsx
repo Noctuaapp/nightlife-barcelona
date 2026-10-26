@@ -23,6 +23,7 @@ import { toDateLocale } from "../../lib/dateLocale"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { InlineEditText, InlineEditImage, InlineEditTiers } from "../admin/InlineEdit"
 import { useCanEdit } from "../admin/EditAccess"
+import { safeUrl } from "../../lib/safeUrl"
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
@@ -57,7 +58,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
   useEffect(() => setPast(isEventPast(event.date, event.date_end)), [event.date, event.date_end])
 
   const firstOpenTicket = (tickets || []).find((tk) => tk.external_url)
-  const ticketUrl: string | null = !past && !event.sold_out ? firstOpenTicket?.external_url || event.ticket_url || null : null
+  const ticketUrl: string | null = !past && !event.sold_out ? safeUrl(firstOpenTicket?.external_url || event.ticket_url) : null
   const displayRating: number | null = event.google_rating || null
   const reviewCount: number | null = event.google_review_count || null
   const venue = event.club_name || event.address || "Barcelona"
@@ -322,7 +323,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                         </div>
                         {ticket.external_url && !event.sold_out && !past && (
                           <a
-                            href={ticket.external_url}
+                            href={safeUrl(ticket.external_url) || undefined}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => trackClick("tickets_click")}

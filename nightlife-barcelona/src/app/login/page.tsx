@@ -20,7 +20,18 @@ export default function LoginPage() {
     setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
-    if (error) { setError(error.message); return }
+    if (error) {
+      // Los mensajes de Supabase vienen en inglés ("Invalid login credentials"...): se traducen
+      // los habituales y se deja el original solo para lo raro.
+      const m = error.message || ""
+      setError(
+        /invalid login credentials/i.test(m) ? t("login.errorCredentials")
+        : /email not confirmed/i.test(m) ? t("login.errorNotConfirmed")
+        : /rate|too many/i.test(m) ? t("login.errorTooMany")
+        : m
+      )
+      return
+    }
     // Antes, el admin siempre aterrizaba en /admin al entrar, aunque viniera a usar la web como
     // cualquier otra persona. Ahora entra igual que todo el mundo: a la portada (o a donde
     // estuviera antes de que le pidiera iniciar sesión, vía ?next=). El acceso a /admin sigue
@@ -85,6 +96,12 @@ export default function LoginPage() {
                 placeholder={t("login.password")}
               />
             </div>
+
+            <p className="mt-3 text-right">
+              <Link href="/recuperar" className="text-sm font-semibold text-zinc-400 underline-offset-4 hover:text-ink hover:underline">
+                {t("login.forgot")}
+              </Link>
+            </p>
 
             {error && <p className="mt-4 text-sm font-semibold text-red-300">{error}</p>}
 

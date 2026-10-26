@@ -7,6 +7,7 @@ import AreaListing from "../../../components/nightlife/AreaListing"
 import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../../../lib/clubQueries"
 import { MIN_INDEXABLE, STYLES, clubsForStyle, neighborhoodsOf, rankClubs, styleBySlug, stylesOf } from "../../../lib/areas"
 import { createSlug } from "../../../lib/slug"
+import { safeJsonLd } from "../../../lib/structuredData"
 
 // /musica/techno, /musica/reggaeton… Una página por estilo con los locales que lo pinchan.
 export const revalidate = 3600
@@ -77,7 +78,7 @@ export default async function MusicaPage({ params }: Props) {
       <Header />
       <AreaListing kind="musica" slug={style.slug} name={style.label} clubs={clubs} neighborhoods={neighborhoods} styles={styles} />
       <BottomNav />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
     </>
   )
 }

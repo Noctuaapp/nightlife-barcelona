@@ -30,6 +30,7 @@ import { createSlug } from "../../lib/slug"
 import { clubOpenNow, clubOpensOn, madridClock } from "../../lib/clubHours"
 import { toDateLocale } from "../../lib/dateLocale"
 import { clubSummary } from "../../lib/clubSummary"
+import { safeUrl } from "../../lib/safeUrl"
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
@@ -84,7 +85,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
 
   // Solo enlaces de venta de entradas. Antes caía a la web oficial y "Comprar entradas" salía en
   // locales que no venden nada.
-  const ticketUrl: string | null = club.tickets_url || club.ticket_url || club.entradas_url || null
+  const ticketUrl: string | null = safeUrl(club.tickets_url || club.ticket_url || club.entradas_url)
   const website: string | null = socialUrl("website", club.website)
   const instagram: string | null = club.instagram || club.instagram_url || null
   const displayRating: number | null = club.google_rating || club.rating || null

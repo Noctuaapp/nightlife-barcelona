@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, BarChart3, Disc3, BadgeCheck, CalendarDays, Headphones, MapPin, Users,
-  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, History, Bell, type LucideIcon,
+  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, History, Bell, Footprints, type LucideIcon,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
@@ -55,6 +55,7 @@ const ADMIN_NAV: NavGroup[] = [
   {
     label: "Datos",
     items: [
+      { href: "/admin/visitas", label: "Visitas", icon: Footprints },
       { href: "/admin/datos", label: "Datos de negocio", icon: BarChart3 },
       { href: "/admin/actividad", label: "Actividad por usuario", icon: Activity },
     ],

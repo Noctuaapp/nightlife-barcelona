@@ -79,7 +79,11 @@
     "password": "Password",
     "signin": "Log in",
     "signing_in": "Logging in...",
-    "new": "New to Noctua? Sign up"
+    "new": "New to Noctua? Sign up",
+    "forgot": "Forgot your password?",
+    "errorCredentials": "Wrong email or password.",
+    "errorNotConfirmed": "Confirm your email: we sent you a link when you signed up.",
+    "errorTooMany": "Too many attempts. Wait a moment and try again."
   },
   "signup": {
     "title": "Sign up",
@@ -254,21 +258,21 @@
   "privacy": {
     "title": "Privacy Policy",
     "subtitle": "How Noctua collects, uses and protects your information.",
-    "last_updated": "Last updated: October 2026",
+    "last_updated": "Last updated: 26 October 2026",
     "s1_title": "Who we are",
     "s1_body": "Noctua (\"we\", \"our\") is a nightlife discovery platform focused on Barcelona. We operate the website and app available at noctuaapp.com. For any privacy-related question, contact us at {email}.",
     "s2_title": "Data we collect",
     "s2_intro": "We collect the following categories of data:",
-    "s2_items": "Account data::Email address, encrypted password, username, gender and year of birth. When you sign up we ask for your full date of birth only to check that you are over 18; we store the year only.\nProfile photo::The image you voluntarily upload as your account avatar.\nUsage data::Pages visited, clubs and events viewed, buttons clicked (for example tickets, directions or share), searches performed and how many results they returned, and where the visit came from (for example search engine, social network or invite link). They are linked to a random session identifier that disappears when you close the tab and, if you are logged in, to your account.\nFavorites::Clubs, events and club nights you choose to save, along with the lists and personal notes you create to organize them.\nActivity and points (XP)::If you mark that you'll attend an event or a club on a given night, check in at a club, or earn experience points, we store that activity (including the date) to show your progress and level within the app and to produce aggregated statistics.\nPrecise location (check-in only)::When you choose to check in on a club's page, we access your GPS location once to confirm you're near the venue. We don't store your coordinates — only which club and on which day you checked in.\nContact messages::Any message you send us through the Contact page, including requests to manage your club's or festival's listing.\nVerified venue and festival accounts::If you're responsible for a club or festival and we grant you access to edit its listing, we link your account to that venue or event. Only you and the Noctua team can manage that listing from there.\nIn-app notifications::The notices we send you within Noctua (for example, confirmations or messages from the team) and whether you've read them.\nDevice data and analytics::Browser type, device type and approximate location (at country/city level) for usage analysis, via Vercel Analytics.",
+    "s2_items": "Account data::Email address, encrypted password, username, gender and year of birth. When you sign up we ask for your full date of birth only to check that you are over 18; we store the year only.\nProfile photo::The image you voluntarily upload as your account avatar.\nUsage data::Pages visited, clubs and events viewed, buttons clicked (for example tickets, directions or share), searches performed and how many results they returned, and where the visit came from (for example search engine, social network or invite link). They are linked to a random session identifier that disappears when you close the tab and, if you are logged in, to your account.\nFavorites::Clubs, events and club nights you choose to save, along with the lists and personal notes you create to organize them.\nActivity and points (XP)::If you mark that you'll attend an event or a club on a given night, check in at a club, or earn experience points, we store that activity (including the date) to show your progress and level within the app and to produce aggregated statistics.\nPrecise location (check-in only)::When you choose to check in on a club's page, we access your GPS location once to confirm you're near the venue. We don't store your coordinates — only which club and on which day you checked in.\nContact messages::Any message you send us through the Contact page, including requests to manage your club's or festival's listing.\nVerified venue and festival accounts::If you're responsible for a club or festival and we grant you access to edit its listing, we link your account to that venue or event. Only you and the Noctua team can manage that listing from there.\nIn-app notifications::The notices we send you within Noctua (for example, confirmations or messages from the team) and whether you've read them.\nDevice data and analytics::Browser type, device type and approximate location (at country/city level) for usage analysis, via Vercel Analytics.\nReviews and “Thanks”::The reviews you post about venues and events (stars and text) are public together with your username and level. We also store which reviews you have thanked (who thanked is never shown) and any reports you make, which are confidential.\n“They won't let me in” reports::If you tell us you were refused entry at a venue, we store the venue, the reason and the date so we stop recommending it to you and can improve the site. The venue never receives your identity, and you can show it again from your profile.\nPolls::Your answers to the app's quick polls and to the site rating.",
     "s3_title": "How we use your data",
     "s3_intro": "We use the data we collect to:",
-    "s3_items": "Provide and operate the Noctua platform.\nSave and display your favorite clubs, events and club nights.\nCalculate your progress and level within Noctua's points (XP) system.\nVerify your location at the moment of check-in at a club (we never store it, only the result).\nRespond to messages and support requests, including messages the Noctua team sends you directly.\nGrant management access to verified venue or festival managers over their own listing, while Noctua's team always retains the ability to review, correct or revoke that access.\nImprove the platform based on usage patterns.\nImprove your searches and recommendations using your year of birth (for example, suggesting venues with an atmosphere suited to your age).\nProduce aggregated, anonymous statistics about platform use and attendance at venues and events (for example age ranges, origin or timing of visits), which we may share with venues, event organizers and other third parties, including in exchange for payment.\nSend important service communications (no marketing without your consent).",
+    "s3_items": "Provide and operate the Noctua platform.\nSave and display your favorite clubs, events and club nights.\nCalculate your progress and level within Noctua's points (XP) system.\nVerify your location at the moment of check-in at a club (we never store it, only the result).\nRespond to messages and support requests, including messages the Noctua team sends you directly.\nGrant management access to verified venue or festival managers over their own listing, while Noctua's team always retains the ability to review, correct or revoke that access.\nImprove the platform based on usage patterns.\nImprove your searches and recommendations using your year of birth (for example, suggesting venues with an atmosphere suited to your age).\nProduce aggregated, anonymous statistics about platform use and attendance at venues and events (for example age ranges, origin or timing of visits), which we may share with venues, event organizers and other third parties, including in exchange for payment.\nSend important service communications (no marketing without your consent).\nShowing verified venue managers, if Noctua enables it, aggregated statistics about their own listing (views, clicks, traffic sources and hours), without any data that identifies you.\nModerating reviews and reported content and protecting the platform from abuse (for example, with daily posting limits).",
     "s4_title": "Legal basis (GDPR)",
     "s4_body": "We process your data under the following legal bases defined by the General Data Protection Regulation (GDPR): performance of a contract (to provide the service you signed up for and personalize your searches), legitimate interest (to improve and protect the platform and to produce aggregated, anonymized statistics) and consent (for optional communications and access to your location when checking in). You can withdraw your consent or object to processing based on legitimate interest at any time.",
     "s5_title": "Data storage and security",
     "s5_body": "Your data is stored securely using Supabase, which offers professional-grade encryption both at rest and in transit. We do not sell or hand over your personal data to third parties. What we may share or sell are aggregated, anonymous statistics (for example, \"60% of a venue's visitors are aged 25 to 34\"). These statistics never identify individual people and groups of fewer than 5 people are not published. Access to personal data is restricted to authorized personnel only.",
     "s6_title": "Data retention",
-    "s6_body": "We retain your account data for as long as your account remains active. If you delete your account, all associated personal data will be permanently deleted within 30 days. Contact messages are retained for up to 12 months for support purposes. Aggregated, anonymous statistics already produced contain no personal data and may be retained.",
+    "s6_body": "We retain your account data for as long as your account remains active. If you delete your account, all associated personal data will be permanently deleted within 30 days. Contact messages are retained for up to 12 months for support purposes. Aggregated, anonymous statistics already produced contain no personal data and may be retained. Your reviews stay published until you delete them or your account. Detailed usage data (page views and clicks) is automatically deleted after 13 months.",
     "s7_title": "Your rights",
     "s7_intro": "Under the GDPR, you have the right to:",
     "s7_items": "Access the personal data we hold about you.\nRequest correction of inaccurate data.\nRequest deletion of your data ('right to be forgotten').\nObject to or restrict the processing of your data.\nReceive a copy of your data in a portable format.\nFile a complaint with your local data protection authority.",
@@ -277,8 +281,8 @@
     "s8_body": "We use essential cookies necessary for authentication and session management, plus local browser storage (localStorage) to remember preferences such as which notices you've already read. We also use Vercel Analytics, an analytics tool that doesn't use tracking cookies or individually identify users, to understand in aggregate how the Platform is used. We don't use advertising or cross-site tracking cookies. In addition, Noctua records its own usage analytics using a random session identifier stored in your browser's session storage (sessionStorage), which is deleted when you close the tab; it is not a cookie and does not follow you across sites. No third-party ad network has access to your data.",
     "s9_title": "Third-party services",
     "s9_intro": "We work with the following providers to operate the Platform, each processing data only to the extent necessary to provide their service:",
-    "s9_items": "Supabase::Authentication, database and image storage. Processes data in accordance with the GDPR.\nVercel::Application hosting and aggregated, anonymous usage analytics.\nMapbox::Renders the maps within the app. When a map loads, Mapbox may receive your IP address and the technical information needed to display it.\nGoogle Places::Source of public data (name, rating, reviews and photos) for clubs, festivals and essential services shown on their listings. We do not send your personal data to Google through this integration.",
-    "s9_closing": "We do not share your personal data with any other third party unless required by law.",
+    "s9_items": "Supabase::Authentication, database, image storage and sending sign-in emails (account confirmation and password recovery). Processes data in accordance with the GDPR.\nVercel::Application hosting and aggregated, anonymous usage analytics.\nMapbox::Renders the maps within the app. When a map loads, Mapbox may receive your IP address and the technical information needed to display it.\nGoogle Places::Source of public data (name, rating, reviews and photos) for clubs, festivals and essential services shown on their listings. We do not send your personal data to Google through this integration.",
+    "s9_closing": "We do not share your personal data with any other third party unless required by law. Some providers (Vercel, Mapbox or Google) may process data outside the European Economic Area; when they do, it is with the safeguards required by the GDPR (European Commission standard contractual clauses or the EU-US Data Privacy Framework).",
     "s10_title": "Sign in with Google",
     "s10_intro": "Noctua allows users to sign in with their Google account via Google OAuth 2.0. When you choose to sign in with Google, we receive the following information from Google:",
     "s10_items": "Name::Your profile name registered with Google.\nEmail::Used to create and identify your Noctua account.\nProfile photo::Optionally displayed on your Noctua profile.",
@@ -286,11 +290,13 @@
     "s11_title": "Changes to this policy",
     "s11_body": "We may update this Privacy Policy from time to time. When we do, we'll update the date at the top of this page. Continued use of Noctua after changes constitutes acceptance of the updated policy.",
     "s12_title": "Contact",
-    "s12_body": "For any questions about this Privacy Policy, contact us at {email}."
+    "s12_body": "For any questions about this Privacy Policy, contact us at {email}.",
+    "s13_title": "Minors",
+    "s13_body": "Noctua is for adults (18+) only: we do not knowingly collect data from minors and, if we detect an account belonging to a minor, we delete it."
   },
   "terms": {
     "title": "Terms of Service",
-    "last_updated": "Last updated: October 2026",
+    "last_updated": "Last updated: 26 October 2026",
     "s1_title": "Acceptance of terms",
     "s1_body": "By accessing or using Noctua (\"the Platform\"), you agree to be bound by these Terms of Service. If you don't agree to these terms, please don't use the Platform. We reserve the right to update these terms at any time; continued use constitutes acceptance of any changes.",
     "s2_title": "Description of service",
@@ -301,10 +307,10 @@
     "s3_closing": "You must be at least 18 years old to create an account on Noctua, in line with the nature of nightlife content. When you sign up we ask for your date of birth to check this; registration by anyone under 18 is not permitted, and we may suspend or delete any account that does not meet this requirement.",
     "s4_title": "Acceptable use",
     "s4_intro": "You agree not to:",
-    "s4_items": "Use the Platform for unlawful purposes.\nExtract, copy or reproduce content without permission.\nAttempt unauthorized access to any part of the Platform.\nSubmit false, misleading or defamatory information.\nInterfere with or disrupt the operation of the Platform.\nUse the Platform to send unsolicited commercial communications.\nPost notes, reports or other content that is offensive, illegal or infringes third-party rights; Noctua may remove it at any time.",
+    "s4_items": "Use the Platform for unlawful purposes.\nExtract, copy or reproduce content without permission.\nAttempt unauthorized access to any part of the Platform.\nSubmit false, misleading or defamatory information.\nInterfere with or disrupt the operation of the Platform.\nUse the Platform to send unsolicited commercial communications.\nPost notes, reports or other content that is offensive, illegal or infringes third-party rights; Noctua may remove it at any time.\nPost fake or paid reviews, reviews in exchange for anything, reviews of your own venue or meant to harm competitors, or reviews containing insults or other people's personal data.",
     "s5_title": "Verified venue and festival accounts",
     "s5_intro": "If you're responsible for a club or festival, after contacting us and verifying your identity we may link your account to the corresponding listing, giving you access to edit it directly. By using this access, you agree that:",
-    "s5_items": "The information you publish (hours, prices, photos, nights or sessions) is accurate and up to date.\nYou only publish content you hold the necessary rights to.\nNoctua may review, correct or remove content that breaches these Terms at any time.\nNoctua reserves the right to revoke your management access to a listing at any time, for example if your relationship with the venue can no longer be verified.",
+    "s5_items": "The information you publish (hours, prices, photos, nights or sessions) is accurate and up to date.\nYou only publish content you hold the necessary rights to.\nNoctua may review, correct or remove content that breaches these Terms at any time.\nNoctua reserves the right to revoke your management access to a listing at any time, for example if your relationship with the venue can no longer be verified.\nIf Noctua enables statistics for your listing, they are aggregated and anonymous: you may not use them to try to identify anyone.",
     "s6_title": "Accuracy of content",
     "s6_body": "We strive to keep all venue and event information accurate and up to date. However, we cannot guarantee the accuracy, completeness or currency of information on the Platform — including content published directly by verified venue or festival managers. Always verify details directly with the venue before attending. Each venue's entry policies (dress code, capacity, minimum age or other entry conditions) are the venue's sole responsibility; Noctua does not guarantee entry to any club, event or festival. A venue's live status (for example, \"Lively\" or \"Packed\") comes from the venue itself, from user check-ins or from estimates, and is indicative only.",
     "s7_title": "Intellectual property",
@@ -316,13 +322,15 @@
     "s10_title": "Disclaimer of warranties",
     "s10_body": "The Platform is provided \"as is\" and \"as available\", without warranties of any kind, express or implied. We do not guarantee that the Platform will be free of interruptions or errors.",
     "s11_title": "Points program (XP)",
-    "s11_body": "Noctua offers an optional experience points (XP) and levels system that rewards certain in-app actions (marking attendance, checking in at a venue, usage streaks, etc.). XP points have no monetary value, are not transferable or redeemable for cash, and do not constitute a currency or financial product. We reserve the right to modify, reset or discontinue the points program, as well as adjust how points are awarded, at any time.",
+    "s11_body": "Noctua offers an optional experience points (XP) and levels system that rewards certain in-app actions (marking attendance, checking in at a venue, usage streaks, etc.). XP points have no monetary value, are not transferable or redeemable for cash, and do not constitute a currency or financial product. We reserve the right to modify, reset or discontinue the points program, as well as adjust how points are awarded, at any time. While the points program is paused, no points are awarded for any action except those expressly indicated.",
     "s12_title": "Account cancellation",
     "s12_body": "We reserve the right to suspend or cancel your account at our discretion if you breach these Terms of Service. You can delete your account at any time from your Profile page.",
     "s13_title": "Governing law",
     "s13_body": "These Terms of Service are governed by the laws of Spain. Any dispute will be subject to the exclusive jurisdiction of the courts of Barcelona, Spain.",
     "s14_title": "Contact",
-    "s14_body": "For any questions about these Terms of Service, contact us at {email}."
+    "s14_body": "For any questions about these Terms of Service, contact us at {email}.",
+    "s15_title": "User reviews",
+    "s15_body": "You can post one review per venue or event, and edit or delete it whenever you like. Reviews express the opinion of their author, not Noctua's. By posting them you allow us to display them on the Platform together with your username. Venue managers cannot review their own venue. Noctua may hide or remove reviews that breach these Terms; a review that receives several reports is hidden automatically until we review it. The “Thanks” your reviews receive may earn you points (XP) when the points program is active, up to a daily limit."
   },
   "faq": {
     "title": "Frequently asked questions",
@@ -676,12 +684,17 @@
     "newPassword": "New password",
     "confirmPassword": "Confirm new password",
     "errorFillBoth": "Please fill in both password fields.",
-    "errorMinLength": "Password must be at least 6 characters.",
+    "errorMinLength": "Password must be at least 8 characters.",
     "errorMismatch": "Passwords do not match.",
     "success": "Password updated successfully.",
     "updating": "Updating...",
     "update": "Update password",
-    "back": "Back to profile"
+    "back": "Back to profile",
+    "recoverySubtitle": "Choose a new password for your account.",
+    "linkExpired": "This link has expired or was already used.",
+    "needLogin": "Log in to change your password.",
+    "requestNew": "Request a new link",
+    "errorSame": "The new password must be different from the old one."
   },
   "weather": {
     "tonightTitle": "Barcelona tonight"
@@ -1479,6 +1492,24 @@
     "updated": "Review updated",
     "errorOwner": "You can’t review your own venue.",
     "errorLimit": "You’ve reached today’s review limit.",
-    "errorSave": "Couldn’t save. Please try again."
+    "errorSave": "Couldn’t save. Please try again.",
+    "thank": "Thanks",
+    "thanked": "You thanked this",
+    "thankedYouOne": "1 person thanks you",
+    "thankedYouMany": "{n} people thank you",
+    "loginToThank": "Log in to say thanks."
+  },
+  "recover": {
+    "title": "Reset password",
+    "subtitle": "We’ll email you a link to choose a new one.",
+    "invalidEmail": "Enter a valid email.",
+    "tooMany": "You’ve requested several links in a row. Wait a minute and try again.",
+    "sentTitle": "Check your inbox",
+    "sentBody": "If there’s an account for {email}, we’ve just sent you a link to choose a new password. Check spam too.",
+    "tryAgain": "Didn’t get it? Send again",
+    "send": "Send link",
+    "sending": "Sending…",
+    "googleNote": "Signed up with Google? Then you don’t need a password: use “Continue with Google”.",
+    "back": "Back to log in"
   }
 }

@@ -3,6 +3,7 @@ import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import EventsExplorer from "../../components/nightlife/EventsExplorer"
 import { supabase } from "../../lib/supabase"
+import { safeJsonLd } from "../../lib/structuredData"
 
 export const revalidate = 3600
 
@@ -56,7 +57,7 @@ export default async function EventsPage() {
       <Header />
       <EventsExplorer initialEvents={events || []} />
       <BottomNav />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
     </>
   )
 }

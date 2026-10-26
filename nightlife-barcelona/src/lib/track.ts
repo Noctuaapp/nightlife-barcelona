@@ -99,10 +99,21 @@ type TrackOptions = {
   meta?: Record<string, unknown> | null
 }
 
+// Solo cuenta la web publicada (26/10/2026). Antes también se registraba lo que se hacía en el
+// ordenador de desarrollo (npm run dev, localhost) y en las versiones de prueba de Vercel
+// (*.vercel.app), porque usan la misma base de datos: todo eso eran visitas de Jordi.
+function isProductionSite(): boolean {
+  try {
+    return /(^|\.)noctuaapp\.com$/i.test(window.location.hostname)
+  } catch {
+    return false
+  }
+}
+
 // Registra un evento. Nunca lanza error ni bloquea la interfaz: si falla, se ignora.
 export async function track(eventType: string, opts: TrackOptions = {}) {
   try {
-    if (typeof window === "undefined" || isAutomated() || isAdminDevice()) return
+    if (typeof window === "undefined" || !isProductionSite() || isAutomated() || isAdminDevice()) return
     // getSession lee la sesión guardada en el navegador; getUser hacía una llamada de red extra a
     // Supabase por cada evento registrado.
     const { data } = await supabase.auth.getSession()

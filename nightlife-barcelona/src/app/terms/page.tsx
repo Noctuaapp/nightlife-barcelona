@@ -82,15 +82,19 @@ export default function TermsPage() {
             <p>{t("terms.s11_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">12. {t("terms.s12_title")}</h2>
+            <h2 className="text-white font-semibold text-base mb-3">12. {t("terms.s15_title")}</h2>
+            <p>{t("terms.s15_body")}</p>
+          </section>
+          <section>
+            <h2 className="text-white font-semibold text-base mb-3">13. {t("terms.s12_title")}</h2>
             <p>{t("terms.s12_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">13. {t("terms.s13_title")}</h2>
+            <h2 className="text-white font-semibold text-base mb-3">14. {t("terms.s13_title")}</h2>
             <p>{t("terms.s13_body")}</p>
           </section>
           <section>
-            <h2 className="text-white font-semibold text-base mb-3">14. {t("terms.s14_title")}</h2>
+            <h2 className="text-white font-semibold text-base mb-3">15. {t("terms.s14_title")}</h2>
             <p>{renderWithLinks(t("terms.s14_body"), EMAIL_LINK)}</p>
           </section>
         </div>
