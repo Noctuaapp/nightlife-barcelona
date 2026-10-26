@@ -113,10 +113,11 @@ export default function Header() {
       if (window.location.pathname === "/confirm-age" || window.location.pathname === "/blocked") return
       const { data: profile } = await supabase
         .from("profiles")
-        .select("terms_accepted_at")
+        .select("terms_accepted_at, birth_year")
         .eq("id", userId)
         .maybeSingle()
-      if (!profile?.terms_accepted_at) {
+      // También sin año de nacimiento (26/10/2026): cuentas de antes de que se guardara la edad.
+      if (!profile?.terms_accepted_at || !profile?.birth_year) {
         router.push("/confirm-age")
       }
     }

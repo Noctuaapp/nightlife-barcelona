@@ -37,7 +37,7 @@ export default function ConfirmAgePage() {
       const user = data.session.user
       const { data: profile } = await supabase
         .from("profiles")
-        .select("terms_accepted_at, username, gender, country")
+        .select("terms_accepted_at, birth_year, username, gender, country")
         .eq("id", user.id)
         .maybeSingle()
 
@@ -57,7 +57,9 @@ export default function ConfirmAgePage() {
         finalUsername = meta.username
       }
 
-      if (profile?.terms_accepted_at) {
+      // Solo se salta esta pantalla si ya aceptó los términos Y tiene la edad guardada (las cuentas
+      // antiguas sin año de nacimiento pasan por aquí una vez para confirmarla).
+      if (profile?.terms_accepted_at && profile?.birth_year) {
         router.replace("/")
         return
       }
