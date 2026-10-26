@@ -825,7 +825,10 @@
     "tabReviews": "Opinions",
     "reviewsOnGoogle": "Veure-les totes a Google Maps",
     "fHotShows": "Ambient hot (+18)",
-    "followThem": "Segueix-los"
+    "followThem": "Segueix-los",
+    "nearbyTitle": "A prop d'aquí",
+    "nearbyClosedTitle": "Ara està tancat · oberts a prop",
+    "nearbySeeMap": "Veure al mapa"
   },
   "eventPage": {
     "dateTbc": "Data per confirmar"

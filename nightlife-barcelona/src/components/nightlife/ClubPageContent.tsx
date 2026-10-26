@@ -17,6 +17,7 @@ import ClubTransport from "./club/ClubTransport"
 import ClubGallery from "./club/ClubGallery"
 import ClubReviews, { googleMapsReviewsUrl } from "./club/ClubReviews"
 import VenueReviews from "./club/VenueReviews"
+import NearbyStrip from "./club/NearbyStrip"
 import SocialLinks, { socialUrl } from "./club/SocialLinks"
 import ClubFeatures, { activeFeatureCount } from "./club/ClubFeatures"
 import Stars from "./club/Stars"
@@ -333,8 +334,14 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
     { key: "reviews", label: t("clubPage.tabReviews") },
   ]
 
-  const goToTab = (tab: Tab) => {
+  // Qué pestañas abre la gente (26/10/2026): se ve en Admin › Visitas, en el recorrido de cada visita.
+  const openTab = (tab: Tab) => {
     setActiveTab(tab)
+    if (tab !== activeTab) track("tab_open", { itemType: "club", itemId: club.id, itemName: club.name, meta: { tab } })
+  }
+
+  const goToTab = (tab: Tab) => {
+    openTab(tab)
     document.getElementById("club-content")?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
@@ -466,6 +473,13 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
         </section>
       )}
 
+      {/* CERCA DE AQUÍ: para que quien llega desde Google siga la noche en Noctua */}
+      <NearbyStrip
+        club={club}
+        openNow={openNow}
+        onPick={(to) => track("nearby_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { to } })}
+      />
+
       {/* ESTA NOCHE: solo con datos reales (el local o check-ins de las últimas 3 h) */}
       {(vibe || liveNotes.length > 0) && (
         <section className="mx-auto mt-6 max-w-6xl px-4 sm:px-6">
@@ -588,7 +602,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                   key={tab.key}
                   role="tab"
                   aria-selected={activeTab === tab.key}
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => openTab(tab.key)}
                   className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition ${
                     activeTab === tab.key ? "bg-ink text-night" : "border border-white/10 text-zinc-300 hover:bg-white/5"
                   }`}
@@ -831,6 +845,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                 <Link
                   key={r.id}
                   href={`/clubs/${r.slug || createSlug(r.name)}`}
+                  onClick={() => track("related_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { to: r.name } })}
                   className="group overflow-hidden rounded-card border border-white/10 bg-surface transition hover:border-white/25"
                 >
                   <div className="relative h-40">

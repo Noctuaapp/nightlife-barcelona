@@ -45,7 +45,7 @@ begin
            coalesce((array_agg(path order by created_at) filter (where event_type = 'session_start'))[1],
                     (array_agg(path order by created_at))[1]) as landing,
            1 + count(*) filter (where event_type = 'page_nav') as pages,
-           count(*) filter (where event_type like '%\_click' or event_type in ('search', 'filter_used', 'party_poll_vote')) as actions
+           count(*) filter (where event_type like '%\_click' or event_type in ('search', 'filter_used', 'party_poll_vote', 'tab_open')) as actions
     from ev group by session_id
   ),
   recent as (
@@ -75,7 +75,7 @@ begin
         'actions', r.actions,
         'events', (select jsonb_agg(jsonb_build_object(
                       't', e.created_at, 'type', e.event_type, 'path', e.path, 'name', e.item_name,
-                      'item_type', e.item_type, 'results', e.results_count) order by e.created_at)
+                      'item_type', e.item_type, 'results', e.results_count, 'meta', e.meta) order by e.created_at)
                    from ev e where e.session_id = r.session_id)
       ) order by r.started_at desc) from recent r), '[]'::jsonb)
   ) into result;

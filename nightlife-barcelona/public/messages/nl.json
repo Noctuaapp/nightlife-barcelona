@@ -797,7 +797,10 @@
     "tabReviews": "Reviews",
     "reviewsOnGoogle": "Alles bekijken op Google Maps",
     "fHotShows": "Hot sfeer (18+)",
-    "followThem": "Volg ze"
+    "followThem": "Volg ze",
+    "nearbyTitle": "In de buurt",
+    "nearbyClosedTitle": "Nu gesloten · open in de buurt",
+    "nearbySeeMap": "Bekijk op de kaart"
   },
   "eventPage": {
     "dateTbc": "Datum nog niet bekend"

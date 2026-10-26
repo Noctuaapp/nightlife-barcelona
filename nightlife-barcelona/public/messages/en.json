@@ -825,7 +825,10 @@
     "tabReviews": "Reviews",
     "reviewsOnGoogle": "See all on Google Maps",
     "fHotShows": "Hot vibe (18+)",
-    "followThem": "Follow them"
+    "followThem": "Follow them",
+    "nearbyTitle": "Nearby",
+    "nearbyClosedTitle": "Closed right now · open nearby",
+    "nearbySeeMap": "See on the map"
   },
   "eventPage": {
     "dateTbc": "Date to be confirmed"

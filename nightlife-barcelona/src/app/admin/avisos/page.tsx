@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import {
-  Bell, MessageSquare, Flag, UserPlus, Ban, Star, AlertTriangle, PencilLine, CheckCheck, MessageSquareQuote, type LucideIcon,
+  Bell, MessageSquare, Flag, UserPlus, Ban, Star, AlertTriangle, PencilLine, CheckCheck, MessageSquareQuote, Mail, type LucideIcon,
 } from "lucide-react"
 import AdminShell, { invalidateAdminBadges } from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
@@ -12,7 +12,8 @@ import { isAdminEmail } from "../../../lib/admin"
 // Avisos del admin (25/10/2026): la bandeja donde llega, en el momento, todo lo que merece tu
 // atención — mensajes de Contáctanos, notas denunciadas, usuarios nuevos, "no me dejan entrar"
 // (con alerta si un local acumula varios), opiniones de la web y ediciones de dueños.
-// Los crean disparadores en la base de datos: supabase/38_avisos_admin.sql.
+// Los crean disparadores en la base de datos: supabase/38_avisos_admin.sql. Los urgentes te llegan
+// además por email al momento, y el resto en un resumen cada mañana (supabase/46 + lib/adminEmail.ts).
 
 type Notice = {
   id: number
@@ -60,6 +61,7 @@ export default function AdminNoticesPage() {
   const [missing, setMissing] = useState(false)
   const [kind, setKind] = useState("all")
   const [onlyUnread, setOnlyUnread] = useState(false)
+  const [testState, setTestState] = useState<"idle" | "sending" | "ok">("idle")
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -100,6 +102,28 @@ export default function AdminNoticesPage() {
     invalidateAdminBadges()
   }
 
+  // Prueba de los emails (supabase/46 + Resend): manda un aviso de ejemplo a tu correo.
+  const sendTestEmail = async () => {
+    setTestState("sending")
+    const { data } = await supabase.auth.getSession()
+    try {
+      const res = await fetch("/api/admin/notify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.session?.access_token || ""}` },
+        body: JSON.stringify({ test: true }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (res.ok) setTestState("ok")
+      else {
+        setTestState("idle")
+        window.alert("No se ha podido enviar: " + (json.error || res.status))
+      }
+    } catch {
+      setTestState("idle")
+      window.alert("No se ha podido enviar el email de prueba.")
+    }
+  }
+
   if (checking) {
     return (
       <AdminShell title="Avisos">
@@ -125,15 +149,26 @@ export default function AdminNoticesPage() {
       title="Avisos"
       subtitle="Lo que ha pasado en Noctua y merece tu atención, en el momento en que pasa."
       actions={
-        unread.length > 0 ? (
+        <>
           <button
             type="button"
-            onClick={() => markRead(unread.map((r) => r.id))}
-            className="flex items-center gap-2 rounded-ctl border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-ink transition hover:bg-white/10"
+            onClick={sendTestEmail}
+            disabled={testState === "sending"}
+            className="flex items-center gap-2 rounded-ctl border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-ink transition hover:bg-white/10 disabled:opacity-50"
           >
-            <CheckCheck size={16} aria-hidden="true" /> Marcar todo como leído
+            <Mail size={16} aria-hidden="true" />
+            {testState === "sending" ? "Enviando…" : testState === "ok" ? "Enviado: mira tu correo" : "Enviar email de prueba"}
           </button>
-        ) : undefined
+          {unread.length > 0 && (
+            <button
+              type="button"
+              onClick={() => markRead(unread.map((r) => r.id))}
+              className="flex items-center gap-2 rounded-ctl border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-ink transition hover:bg-white/10"
+            >
+              <CheckCheck size={16} aria-hidden="true" /> Marcar todo como leído
+            </button>
+          )}
+        </>
       }
     >
       {missing && (

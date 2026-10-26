@@ -810,7 +810,10 @@
     "tabReviews": "Opiniões",
     "reviewsOnGoogle": "Ver todas no Google Maps",
     "fHotShows": "Ambiente hot (+18)",
-    "followThem": "Siga-os"
+    "followThem": "Siga-os",
+    "nearbyTitle": "Aqui perto",
+    "nearbyClosedTitle": "Fechado agora · abertos aqui perto",
+    "nearbySeeMap": "Ver no mapa"
   },
   "eventPage": {
     "dateTbc": "Data a confirmar"

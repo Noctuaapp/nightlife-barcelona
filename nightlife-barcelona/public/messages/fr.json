@@ -797,7 +797,10 @@
     "tabReviews": "Avis",
     "reviewsOnGoogle": "Tout voir sur Google Maps",
     "fHotShows": "Ambiance hot (18+)",
-    "followThem": "Suivez-les"
+    "followThem": "Suivez-les",
+    "nearbyTitle": "À proximité",
+    "nearbyClosedTitle": "Fermé en ce moment · ouverts à proximité",
+    "nearbySeeMap": "Voir sur la carte"
   },
   "eventPage": {
     "dateTbc": "Date à confirmer"

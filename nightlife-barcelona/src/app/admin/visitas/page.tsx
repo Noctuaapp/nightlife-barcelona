@@ -12,7 +12,7 @@ import { isAdminEmail } from "../../../lib/admin"
 // por las que más se entra y las más vistas. Incluye a quien no tiene cuenta (sin datos
 // personales: solo rutas y clics). Datos: admin_sessions() en supabase/44_recorridos_de_visitas.sql.
 
-type Ev = { t: string; type: string; path: string | null; name: string | null; item_type: string | null; results: number | null }
+type Ev = { t: string; type: string; path: string | null; name: string | null; item_type: string | null; results: number | null; meta?: Record<string, unknown> | null }
 type Session = {
   id: string
   started_at: string
@@ -63,7 +63,11 @@ const EVENT_LABELS: Record<string, string> = {
   filter_used: "Usa filtros",
   party_poll_vote: "Vota la encuesta",
   top_pick_click: "Pulsa el Top 3",
+  tab_open: "Abre la pestaña",
+  nearby_click: "Va a un sitio cercano:",
+  related_click: "Va a un local parecido:",
 }
+const TAB_LABELS: Record<string, string> = { about: "Información", nights: "Noches", sessions: "Sesiones", location: "Ubicación", reviews: "Opiniones" }
 
 function unslug(s: string) {
   const t = decodeURIComponent(s).replace(/-/g, " ")
@@ -255,7 +259,11 @@ export default function AdminVisitsPage() {
                               </span>{" "}
                               <span className="text-zinc-300">{EVENT_LABELS[e.type] || e.type}</span>{" "}
                               <span className="font-semibold text-ink">
-                                {e.type === "search" || e.type === "filter_used"
+                                {e.type === "tab_open"
+                                  ? `${TAB_LABELS[String(e.meta?.tab)] || String(e.meta?.tab || "")} (${e.name || ""})`
+                                  : (e.type === "nearby_click" || e.type === "related_click") && e.meta?.to
+                                    ? String(e.meta.to) === "map" ? "el mapa" : String(e.meta.to)
+                                    : e.type === "search" || e.type === "filter_used"
                                   ? e.name
                                     ? `«${e.name}»${e.results !== null ? ` (${e.results} resultados)` : ""}`
                                     : ""
