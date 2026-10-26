@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isAuthorizedCronRequest } from "@/lib/adminAuth"
-import { isOverBudget, recordGoogleCalls, createCounter, googleFetch, fetchRichData } from "@/lib/googlePlacesBudget"
+import { startJobBudget, recordGoogleCalls, googleFetch, fetchRichData } from "@/lib/googlePlacesBudget"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -72,16 +72,17 @@ export async function GET(req: Request) {
   // Con las fotos activadas cada club cuesta 1 consulta + hasta 5 descargas = 6 llamadas;
   // 3 clubs por ejecución (18 llamadas) caben en el tope diario de 20.
   const PHOTOS_PER_CLUB = 5
-  const BATCH_SIZE = fetchRichData() ? 3 : 4
+  // Con fotos: 2 clubs por noche (2 × 6 = 12 llamadas, su parte del tope diario).
+  const BATCH_SIZE = fetchRichData() ? 2 : 4
 
   // Freno de seguridad: si hoy ya se ha llegado al límite diario compartido entre los 3 crons
   // (GOOGLE_PLACES_DAILY_LIMIT, ver src/lib/googlePlacesBudget.ts), no se hace ninguna llamada
   // de pago a Google en este ciclo — se reintenta al día siguiente.
-  const budget = await isOverBudget(supabase)
+  const budget = await startJobBudget(supabase, "clubs")
   if (budget.over) {
     return NextResponse.json({ skipped: true, reason: "daily_budget_reached", usedToday: budget.used })
   }
-  const counter = createCounter()
+  const counter = budget.counter
 
   // Paso 0: si hay clubs nuevos sin google_place_id (los añadiste después de la carga inicial),
   // les asignamos uno automáticamente aquí mismo, así nunca hace falta volver a tocar esto a mano.
@@ -202,11 +203,11 @@ export async function GET(req: Request) {
         // Descargamos las fotos y las guardamos en tu propio Storage (NUNCA guardar la URL
         // directa de Google: si no, cada visita a la web sería una llamada de pago a Google).
         const photoResults = await Promise.all(
-          (data.photos || []).slice(0, PHOTOS_PER_CLUB).map(async (p: any) => {
+          (data.photos || []).slice(0, PHOTOS_PER_CLUB).map(async (p: any, i: number) => {
             try {
               const photoRes = await googleFetch(
                 counter,
-                `https://places.googleapis.com/v1/${p.name}/media?maxWidthPx=1000&key=${apiKey}`
+                `https://places.googleapis.com/v1/${p.name}/media?maxWidthPx=800&key=${apiKey}`
               )
               // Antes no se comprobaba esto: si Google devolvía un error (referencia de foto
               // caducada, límite de la clave...) el cuerpo de la respuesta no era una imagen de
@@ -214,7 +215,9 @@ export async function GET(req: Request) {
               // las fotos "rotas" (icono de imagen caída) que se veían en la galería del admin.
               if (!photoRes.ok) return null
               const buffer = await photoRes.arrayBuffer()
-              const fileName = `${club.id}/${p.name.split("/").pop()}.jpg`
+              // Nombre fijo por posición (26/10/2026): antes cada descarga creaba un archivo nuevo
+              // y los anteriores se quedaban ocupando espacio sin usarse.
+              const fileName = `${club.id}/${i}.jpg`
               const { error: uploadError } = await supabase.storage
                 .from("club-photos")
                 .upload(fileName, Buffer.from(buffer), { contentType: "image/jpeg", upsert: true })
@@ -222,7 +225,7 @@ export async function GET(req: Request) {
               // ignoraba y se guardaba igualmente la URL de un archivo que nunca llegó a existir.
               if (uploadError) return null
               const { data: pub } = supabase.storage.from("club-photos").getPublicUrl(fileName)
-              return pub.publicUrl
+              return `${pub.publicUrl}?v=${Date.now()}`
             } catch {
               return null
             }

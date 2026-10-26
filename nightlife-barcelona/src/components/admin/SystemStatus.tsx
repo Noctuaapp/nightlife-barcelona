@@ -61,6 +61,86 @@ function Meter({ label, used, limit, unit }: { label: string; used: number; limi
   )
 }
 
+const BUCKET_LABELS: Record<string, string> = {
+  "club-photos": "Fotos de clubs (Google y galería)",
+  "club-images": "Portadas de clubs subidas a mano",
+  "event-photos": "Fotos de eventos (Google)",
+  "event-images": "Portadas de eventos subidas a mano",
+  "essential-photos": "Fotos de esenciales (Google)",
+  avatars: "Fotos de perfil",
+}
+
+// «Liberar espacio» (26/10/2026): borra las fotos que ya no usa ninguna ficha (copias que dejaban
+// las tareas de cada noche al volver a descargar fotos de Google). Primero enseña cuánto se libera.
+function StorageCleaner() {
+  const [preview, setPreview] = useState<{ count: number; mb: number } | null>(null)
+  const [state, setState] = useState<"idle" | "loading" | "cleaning" | "done" | "error">("idle")
+  const [msg, setMsg] = useState("")
+
+  const call = async (method: "GET" | "POST") => {
+    const { data } = await supabase.auth.getSession()
+    const res = await fetch("/api/admin/clean-storage", { method, headers: { Authorization: `Bearer ${data.session?.access_token || ""}` } })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(json.error || String(res.status))
+    return json
+  }
+
+  const check = async () => {
+    setState("loading")
+    try {
+      const j = await call("GET")
+      const buckets = (j.buckets || []) as { count: number; mb: number }[]
+      setPreview({ count: buckets.reduce((a, b) => a + b.count, 0), mb: Math.round(buckets.reduce((a, b) => a + Number(b.mb), 0)) })
+      setState("idle")
+    } catch (e) {
+      setMsg((e as Error).message.includes("admin_storage_orphans") ? "Falta ejecutar supabase/47_fotos_sin_usar.sql" : (e as Error).message)
+      setState("error")
+    }
+  }
+
+  const clean = async () => {
+    setState("cleaning")
+    try {
+      const j = await call("POST")
+      setMsg(`Borradas ${j.deleted} fotos sin usar${j.remaining ? ` (quedan ${j.remaining}: vuelve a pulsar)` : ""}. El total de arriba se actualiza al recargar.`)
+      setPreview(null)
+      setState("done")
+    } catch (e) {
+      setMsg((e as Error).message)
+      setState("error")
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-xs">
+      {preview ? (
+        preview.count === 0 ? (
+          <p className="text-emerald-300">No hay fotos sin usar. Todo lo que ocupa espacio se está usando.</p>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-zinc-300">
+              {preview.count.toLocaleString("es-ES")} fotos sin usar · <b className="text-ink">{preview.mb} MB</b> que se pueden liberar
+            </span>
+            <button
+              type="button"
+              onClick={clean}
+              disabled={state === "cleaning"}
+              className="rounded-lg bg-amber-400 px-3 py-1.5 font-bold text-black disabled:opacity-50"
+            >
+              {state === "cleaning" ? "Borrando…" : "Liberar espacio"}
+            </button>
+          </div>
+        )
+      ) : (
+        <button type="button" onClick={check} disabled={state === "loading"} className="font-bold text-zinc-200 underline-offset-4 hover:underline disabled:opacity-50">
+          {state === "loading" ? "Buscando fotos sin usar…" : "Buscar fotos sin usar"}
+        </button>
+      )}
+      {msg && <p className={`mt-2 ${state === "error" ? "text-amber-300" : "text-emerald-300"}`}>{msg}</p>}
+    </div>
+  )
+}
+
 export function SystemStatus() {
   const [s, setS] = useState<Status | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -100,6 +180,17 @@ export function SystemStatus() {
         <div className="space-y-4">
           <Meter label="Base de datos" used={Number(s.db_mb || 0)} limit={DB_LIMIT_MB} unit="MB" />
           <Meter label="Fotos y archivos" used={Math.round(storageMb)} limit={STORAGE_LIMIT_MB} unit="MB" />
+          {(s.storage || []).length > 0 && (
+            <ul className="space-y-1 text-xs text-zinc-400">
+              {(s.storage || []).slice(0, 6).map((b) => (
+                <li key={b.bucket} className="flex justify-between gap-2">
+                  <span className="truncate">{BUCKET_LABELS[b.bucket] || b.bucket}</span>
+                  <span className="shrink-0 tabular-nums">{Number(b.mb).toLocaleString("es-ES")} MB · {b.files.toLocaleString("es-ES")} fotos</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <StorageCleaner />
           <p className="text-xs text-zinc-500">Límites del plan gratuito de Supabase. Por encima del 85 %, toca limpiar o pasar a un plan de pago.</p>
         </div>
 

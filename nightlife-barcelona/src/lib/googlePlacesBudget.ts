@@ -33,7 +33,7 @@ export async function getTodayUsage(supabase: SupabaseClient): Promise<number> {
 
 // Compueba el gasto de hoy ANTES de arrancar el cron. Si ya se pasó del límite,
 // el cron no hace ninguna llamada a Google en este ciclo (lo reintenta al día siguiente).
-export async function isOverBudget(supabase: SupabaseClient, limit = DEFAULT_DAILY_LIMIT): Promise<{ over: boolean; used: number }> {
+export async function isOverBudget(supabase: SupabaseClient, limit = dailyLimit()): Promise<{ over: boolean; used: number }> {
   const used = await getTodayUsage(supabase)
   return { over: used >= limit, used }
 }
@@ -46,13 +46,40 @@ export async function recordGoogleCalls(supabase: SupabaseClient, n: number): Pr
 
 // Contador simple + fetch envuelto: cada llamada a googleFetch() suma 1 al contador,
 // para poder registrar al final exactamente cuántas llamadas de pago se han hecho.
-export type GoogleCallCounter = { count: number }
+export type GoogleCallCounter = { count: number; max?: number }
 
-export function createCounter(): GoogleCallCounter {
-  return { count: 0 }
+export function createCounter(max?: number): GoogleCallCounter {
+  return { count: 0, max }
 }
 
+// Si el contador tiene tope (ver startJobBudget), al llegar a él ya no se hace la llamada: se lanza
+// un error que cada cron recoge como "pendiente para mañana". Así nunca se pasa del tope diario.
 export async function googleFetch(counter: GoogleCallCounter, url: string, init?: RequestInit): Promise<Response> {
+  if (counter.max !== undefined && counter.count >= counter.max) {
+    throw new Error("Tope diario de llamadas a Google alcanzado (se sigue mañana)")
+  }
   counter.count++
   return fetch(url, init)
+}
+
+// Reparto del tope diario entre las 3 tareas de cada noche (26/10/2026). Antes las tres compartían
+// el mismo bote y la de clubs (la primera, a las 4:00) se lo gastaba entero —e incluso se pasaba:
+// 23 de 20—, así que eventos y esenciales llevaban días sin poder actualizarse.
+//   clubs 60 % · eventos 20 % · esenciales: lo que quede (al menos su 20 %).
+export function dailyLimit(): number {
+  const v = Number(process.env.GOOGLE_PLACES_DAILY_LIMIT)
+  return Number.isFinite(v) && v > 0 ? v : DEFAULT_DAILY_LIMIT
+}
+
+const JOB_SHARE = { clubs: 0.6, events: 0.2, essentials: 1 } as const
+
+export async function startJobBudget(
+  supabase: SupabaseClient,
+  job: keyof typeof JOB_SHARE
+): Promise<{ over: boolean; used: number; counter: GoogleCallCounter }> {
+  const limit = dailyLimit()
+  const used = await getTodayUsage(supabase)
+  const left = Math.max(0, limit - used)
+  const max = Math.min(left, Math.floor(limit * JOB_SHARE[job]))
+  return { over: max <= 0, used, counter: createCounter(max) }
 }

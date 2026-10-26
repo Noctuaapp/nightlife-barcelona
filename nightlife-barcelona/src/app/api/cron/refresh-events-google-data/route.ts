@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isAuthorizedCronRequest } from "@/lib/adminAuth"
-import { isOverBudget, recordGoogleCalls, createCounter, googleFetch, fetchRichData } from "@/lib/googlePlacesBudget"
+import { startJobBudget, recordGoogleCalls, googleFetch, fetchRichData } from "@/lib/googlePlacesBudget"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -96,11 +96,11 @@ export async function GET(req: Request) {
   // Freno de seguridad: si hoy ya se ha llegado al límite diario compartido entre los 3 crons
   // (GOOGLE_PLACES_DAILY_LIMIT, ver src/lib/googlePlacesBudget.ts), no se hace ninguna llamada
   // de pago a Google en este ciclo — se reintenta al día siguiente.
-  const budget = await isOverBudget(supabase)
+  const budget = await startJobBudget(supabase, "events")
   if (budget.over) {
     return NextResponse.json({ skipped: true, reason: "daily_budget_reached", usedToday: budget.used })
   }
-  const counter = createCounter()
+  const counter = budget.counter
 
   // Paso 0: eventos nuevos sin google_place_id -> se lo asignamos aquí, comprobando que el
   // nombre se parece de verdad Y que no sea un país/región/localidad entera.
@@ -148,7 +148,7 @@ export async function GET(req: Request) {
   // automático nunca los toca (ni fotos ni place_id), para no pisar lo que hayas subido.
   const { data: evs, error } = await supabase
     .from("events")
-    .select("id, title, address, image, google_place_id")
+    .select("id, title, address, image, gallery, google_place_id")
     .not("google_place_id", "is", null)
     .or("manual_photos.is.null,manual_photos.eq.false")
     .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
@@ -176,7 +176,10 @@ export async function GET(req: Request) {
         // castellano — sin esto, Google devuelve las reseñas en inglés por defecto.
         // reviews/photos solo se piden si GOOGLE_PLACES_FETCH_RICH_DATA está activado: ese
         // fieldmask cae en el tier "Enterprise + Atmosphere" (mucho más caro) en vez del básico.
-        const fields = fetchRichData() ? "displayName,types,rating,userRatingCount,photos" : "displayName,types,rating,userRatingCount"
+        // Fotos solo si el evento aún no tiene galería (26/10/2026): antes se volvían a descargar
+        // en cada actualización, gastando llamadas de pago y llenando el almacenamiento de copias.
+        const needsPhotos = fetchRichData() && !(Array.isArray(ev.gallery) && ev.gallery.length > 0)
+        const fields = needsPhotos ? "displayName,types,rating,userRatingCount,photos" : "displayName,types,rating,userRatingCount"
         const detailsRes = await googleFetch(counter, `https://places.googleapis.com/v1/places/${ev.google_place_id}?languageCode=es`, {
           headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": fields },
         })
@@ -203,19 +206,21 @@ export async function GET(req: Request) {
         }
 
         const photoResults = await Promise.all(
-          (isSpaceOnly(data?.types) ? [] : data.photos || []).slice(0, PHOTOS_PER_EVENT).map(async (p: any) => {
+          (!needsPhotos || isSpaceOnly(data?.types) ? [] : data.photos || []).slice(0, PHOTOS_PER_EVENT).map(async (p: any, i: number) => {
             try {
-              const photoRes = await googleFetch(counter, `https://places.googleapis.com/v1/${p.name}/media?maxWidthPx=1000&key=${apiKey}`)
+              const photoRes = await googleFetch(counter, `https://places.googleapis.com/v1/${p.name}/media?maxWidthPx=800&key=${apiKey}`)
               // Mismo fallo que en refresh-google-data (clubs): sin este chequeo, un error de
               // Google se subía igual a Storage como si fuera una foto de verdad, y luego se
               // veía como icono roto en la galería.
               if (!photoRes.ok) return null
               const buffer = await photoRes.arrayBuffer()
-              const fileName = `${ev.id}/${p.name.split("/").pop()}.jpg`
+              // Nombre fijo por posición: si se vuelve a descargar, sustituye a la anterior en vez de
+              // dejar la vieja olvidada ocupando espacio.
+              const fileName = `${ev.id}/${i}.jpg`
               const { error: uploadError } = await supabase.storage.from("event-photos").upload(fileName, Buffer.from(buffer), { contentType: "image/jpeg", upsert: true })
               if (uploadError) return null
               const { data: pub } = supabase.storage.from("event-photos").getPublicUrl(fileName)
-              return pub.publicUrl
+              return `${pub.publicUrl}?v=${Date.now()}`
             } catch {
               return null
             }

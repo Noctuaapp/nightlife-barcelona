@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { isOverBudget, recordGoogleCalls, createCounter, googleFetch, fetchRichData } from "@/lib/googlePlacesBudget"
+import { startJobBudget, recordGoogleCalls, googleFetch, fetchRichData, type GoogleCallCounter } from "@/lib/googlePlacesBudget"
 import { isAuthorizedCronRequest } from "@/lib/cronAuth"
 
 export const dynamic = "force-dynamic"
@@ -77,7 +77,9 @@ function isPlaceholderImage(image: string | null | undefined): boolean {
   return !image || image.trim() === ""
 }
 
-async function textSearch(counter: ReturnType<typeof createCounter>, query: string) {
+async function textSearch(counter: GoogleCallCounter, query: string) {
+  // try/catch: al llegar al tope diario googleFetch lanza un error; sin esto se caía toda la tarea.
+  try {
   const res = await googleFetch(counter, "https://places.googleapis.com/v1/places:searchText", {
     method: "POST",
     headers: {
@@ -90,14 +92,18 @@ async function textSearch(counter: ReturnType<typeof createCounter>, query: stri
   if (!res.ok) return null
   const data = await res.json()
   return data.places?.[0] || null
+  } catch {
+    return null
+  }
 }
 
-async function placeDetails(counter: ReturnType<typeof createCounter>, placeId: string) {
+async function placeDetails(counter: GoogleCallCounter, placeId: string, withPhotos = true) {
+  try {
   // languageCode=es hace que Google traduzca automáticamente el texto de las reseñas al
   // castellano — sin esto, Google devuelve las reseñas en inglés por defecto.
   // reviews/photos solo se piden si GOOGLE_PLACES_FETCH_RICH_DATA está activado: ese fieldmask
   // cae en el tier "Enterprise + Atmosphere" (mucho más caro) en vez del básico.
-  const fields = fetchRichData() ? "displayName,types,rating,userRatingCount,photos" : "displayName,types,rating,userRatingCount"
+  const fields = fetchRichData() && withPhotos ? "displayName,types,rating,userRatingCount,photos" : "displayName,types,rating,userRatingCount"
   const res = await googleFetch(counter, `https://places.googleapis.com/v1/places/${placeId}?languageCode=es`, {
     headers: {
       "X-Goog-Api-Key": GOOGLE_KEY,
@@ -105,23 +111,33 @@ async function placeDetails(counter: ReturnType<typeof createCounter>, placeId: 
     },
   })
   if (!res.ok) return null
-  return res.json()
+  return await res.json()
+  } catch {
+    return null
+  }
 }
 
 async function cachePhoto(
   supabase: any,
-  counter: ReturnType<typeof createCounter>,
+  counter: GoogleCallCounter,
   photoName: string,
   essentialId: number,
   index: number
 ): Promise<string | null> {
-  const url = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=1000&key=${GOOGLE_KEY}`
-  const res = await googleFetch(counter, url)
+  const url = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=800&key=${GOOGLE_KEY}`
+  let res: Response
+  try {
+    res = await googleFetch(counter, url)
+  } catch {
+    return null
+  }
   if (!res.ok) return null
   const buffer = Buffer.from(await res.arrayBuffer())
   const contentType = res.headers.get("content-type") || "image/jpeg"
   const ext = contentType.includes("png") ? "png" : "jpg"
-  const filePath = `essentials/${essentialId}/${index}-${Date.now()}.${ext}`
+  // Nombre fijo por posición (26/10/2026): antes llevaba la hora, así que cada actualización
+  // creaba 4 archivos nuevos y los anteriores se quedaban ocupando espacio para siempre.
+  const filePath = `essentials/${essentialId}/${index}.${ext}`
 
   const { error } = await supabase.storage.from("essential-photos").upload(filePath, buffer, {
     contentType,
@@ -130,7 +146,7 @@ async function cachePhoto(
   if (error) return null
 
   const { data } = supabase.storage.from("essential-photos").getPublicUrl(filePath)
-  return data.publicUrl
+  return `${data.publicUrl}?v=${Date.now()}`
 }
 
 // IMPORTANTE: cada ciclo comprueba primero cuánto se ha gastado hoy (tabla api_call_budget) y,
@@ -146,13 +162,12 @@ export async function GET(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const DAILY_LIMIT = Number(process.env.GOOGLE_PLACES_DAILY_LIMIT) || undefined
-  const budget = await isOverBudget(supabase, DAILY_LIMIT)
+  const budget = await startJobBudget(supabase, "essentials")
   if (budget.over) {
     return NextResponse.json({ skipped: true, reason: "daily_budget_reached", usedToday: budget.used })
   }
 
-  const counter = createCounter()
+  const counter = budget.counter
   const results: any[] = []
 
   // Paso 0: asignar google_place_id a los esenciales que todavía no lo tienen
@@ -170,6 +185,11 @@ export async function GET(req: Request) {
   if (unassigned && unassigned.length > 0) {
     await Promise.all(
       unassigned.map(async (item) => {
+        // Sin llamadas disponibles hoy: se deja para mañana (sin marcarlo como "no encontrado").
+        if (counter.max !== undefined && counter.count >= counter.max) {
+          newlyAssigned.push({ essential: item.name, status: "pending_budget" })
+          return
+        }
         const query = [item.name, item.address || item.neighborhood || "Barcelona"].filter(Boolean).join(" ")
         const found = await textSearch(counter, query)
 
@@ -201,7 +221,7 @@ export async function GET(req: Request) {
   // (auto-corrección) y se cachean hasta 4 fotos + reviews.
   const { data: toRefresh, error } = await supabase
     .from("essentials")
-    .select("id, name, address, neighborhood, category, image, google_place_id")
+    .select("id, name, address, neighborhood, category, image, gallery, google_place_id")
     .not("google_place_id", "is", null)
     .or("manual_photos.is.null,manual_photos.eq.false")
     .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
@@ -214,7 +234,19 @@ export async function GET(req: Request) {
   if (toRefresh && toRefresh.length > 0) {
     await Promise.all(
       toRefresh.map(async (item) => {
-        const data = await placeDetails(counter, item.google_place_id as string)
+        // Fotos solo si aún no tiene galería: antes se descargaban 4 fotos nuevas en cada vuelta.
+        const needsPhotos = !(Array.isArray(item.gallery) && item.gallery.length > 0)
+        if (counter.max !== undefined && counter.count >= counter.max) {
+          results.push({ essential: item.name, status: "pending_budget" })
+          return
+        }
+        const data = await placeDetails(counter, item.google_place_id as string, needsPhotos)
+        // Sin respuesta de Google (error o tope): no se toca nada. Antes se tomaba como "no
+        // coincide" y se borraba el emparejamiento del esencial.
+        if (!data) {
+          results.push({ essential: item.name, status: "skipped" })
+          return
+        }
         const googleName = data?.displayName?.text
 
         const hasMatch =
@@ -238,7 +270,7 @@ export async function GET(req: Request) {
           return
         }
 
-        const photos = (data?.photos || []).slice(0, MAX_PHOTOS)
+        const photos = needsPhotos ? (data?.photos || []).slice(0, MAX_PHOTOS) : []
         const cached = await Promise.all(photos.map((p: any, i: number) => cachePhoto(supabase, counter, p.name, item.id, i)))
         const cachedUrls = cached.filter((u): u is string => Boolean(u))
 
@@ -259,7 +291,7 @@ export async function GET(req: Request) {
         const { error: updateError } = await supabase
           .from("essentials")
           .update({
-            gallery: cachedUrls.length > 0 ? cachedUrls : null,
+            ...(needsPhotos ? { gallery: cachedUrls.length > 0 ? cachedUrls : null } : {}),
             ...(cachedUrls.length > 0 && isPlaceholderImage(item.image) ? { image: cachedUrls[0] } : {}),
             google_rating: data?.rating || null,
             google_review_count: data?.userRatingCount || null,
