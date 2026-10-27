@@ -121,3 +121,51 @@ export function clubOpensOn(hours: string | null | undefined, openDays: string[]
   }
   return withDays ? match : null
 }
+
+// Horario en el formato de Google (schema.org OpeningHoursSpecification) para los datos
+// estructurados de la ficha (27/10/2026). Parte de los mismos datos y formatos que clubOpenNow; si
+// no se puede interpretar no devuelve nada (mejor sin horario que con uno inventado).
+//   · Con días en el texto ("V/S 23:00-06:00") se usan esos días.
+//   · Sin días y con open_days del admin se usan esos; un horario que empieza de madrugada
+//     ("00:00-05:00") cuenta como la noche anterior, como en clubOpenNow, así que se pasa al día
+//     siguiente.
+//   · Si cruza la medianoche, "closes" es una hora menor que "opens" (así lo entiende Google).
+const SCHEMA_DAY: Record<string, string> = {
+  L: "Monday", M: "Tuesday", X: "Wednesday", J: "Thursday", V: "Friday", S: "Saturday", D: "Sunday",
+}
+
+export function clubOpeningHoursSpec(
+  hours: string | null | undefined,
+  openDays?: string[] | null
+): { "@type": "OpeningHoursSpecification"; dayOfWeek: string[]; opens: string; closes: string }[] {
+  if (!hours || !hours.trim()) return []
+  const openLetters = openDaysToLetters(openDays)
+  const hhmm = (h: string, m: string) => `${h.padStart(2, "0")}:${m}`
+  const out: { "@type": "OpeningHoursSpecification"; dayOfWeek: string[]; opens: string; closes: string }[] = []
+
+  for (const raw of hours.split(/[,|;]/)) {
+    const m = raw.trim().match(/^(?:([LMXJVSD/\-]+)\s+)?(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})$/)
+    if (!m) continue
+    const startMin = parseInt(m[2], 10) * 60 + parseInt(m[3], 10)
+    const endMin = parseInt(m[4], 10) * 60 + parseInt(m[5], 10)
+    if (parseInt(m[2], 10) > 23 || parseInt(m[4], 10) > 23 || parseInt(m[3], 10) > 59 || parseInt(m[5], 10) > 59) continue
+    if (startMin === endMin) continue
+
+    let letters: string[]
+    if (m[1]) letters = expandDays(m[1])
+    else if (openLetters) {
+      const overnight = endMin <= startMin
+      const shift = !overnight && startMin < 6 * 60 // empieza de madrugada → es ya el día siguiente
+      letters = shift ? openLetters.map((l) => WEEK_ORDER[(WEEK_ORDER.indexOf(l) + 1) % 7]) : openLetters
+    } else letters = WEEK_ORDER
+    if (letters.length === 0) continue
+
+    out.push({
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: WEEK_ORDER.filter((l) => letters.includes(l)).map((l) => SCHEMA_DAY[l]),
+      opens: hhmm(m[2], m[3]),
+      closes: hhmm(m[4], m[5]),
+    })
+  }
+  return out
+}

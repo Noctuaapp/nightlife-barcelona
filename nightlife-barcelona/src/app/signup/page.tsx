@@ -1,13 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 import { safeNextPath } from "../../lib/nextPath"
+import { track } from "../../lib/track"
+import CountrySelect from "../../components/ui/CountrySelect"
 import { useLanguage } from "../../context/LanguageContext"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
-import CountrySelect from "../../components/ui/CountrySelect"
 
 // Dominios de correo temporal/desechable más usados (10 minutos, buzones de un solo uso, etc.).
 // Confirmar el correo ya filtra direcciones inventadas o mal escritas (el enlace nunca llega),
@@ -75,24 +76,38 @@ export default function SignupPage() {
   // explicación pidiéndole iniciar sesión otra vez. Ahora se detecta y se muestra un aviso claro.
   const [checkEmail, setCheckEmail] = useState(false)
 
+  // Embudo de registro (27/10/2026): cuánta gente abre el formulario, cuántos lo envían, cuántos lo
+  // completan y en qué paso se quedan (Admin › Visitas). Solo se anota un código del motivo, nunca
+  // lo que la persona ha escrito.
+  useEffect(() => {
+    track("signup_view", { meta: { next: safeNextPath() } })
+  }, [])
+
+  const fail = (reason: string, message: string) => {
+    setError(message)
+    track("signup_error", { meta: { step: "form", reason } })
+  }
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
-    if (!email || !password || !username || !gender) {
-      setError(t("signup.error_fill_all"))
+    // País y género son opcionales (27/10/2026): no se exigen. También se pueden indicar o cambiar
+    // después en Perfil.
+    if (!email || !password || !username) {
+      fail("fill_all", t("signup.error_fill_all"))
       return
     }
     if (isDisposableEmail(email)) {
-      setError("No se admiten correos temporales ni desechables. Usa un correo real al que tengas acceso.")
+      fail("disposable_email", "No se admiten correos temporales ni desechables. Usa un correo real al que tengas acceso.")
       return
     }
     if (isWeakPassword(password, email, username)) {
-      setError("Esa contraseña es demasiado fácil de adivinar (o está entre las más usadas/filtradas). Usa una distinta, de al menos 8 caracteres, que no sea solo números ni tu usuario o correo.")
+      fail("weak_password", "Esa contraseña es demasiado fácil de adivinar (o está entre las más usadas/filtradas). Usa una distinta, de al menos 8 caracteres, que no sea solo números ni tu usuario o correo.")
       return
     }
     if (!birthDate) {
-      setError("Indica tu fecha de nacimiento.")
+      fail("birth_date", "Indica tu fecha de nacimiento.")
       return
     }
     // Edad exacta a partir de la fecha completa (con solo el año no se puede saber si alguien de
@@ -102,18 +117,19 @@ export default function SignupPage() {
     let age = today.getFullYear() - bd.getFullYear()
     if (today.getMonth() < bd.getMonth() || (today.getMonth() === bd.getMonth() && today.getDate() < bd.getDate())) age--
     if (isNaN(age) || age < 18) {
-      setError("Noctua es solo para mayores de 18 años. No puedes registrarte.")
+      fail("under_18", "Noctua es solo para mayores de 18 años. No puedes registrarte.")
       return
     }
     if (!acceptedTerms) {
-      setError(t("signup.error_terms"))
+      fail("terms", t("signup.error_terms"))
       return
     }
     if (!confirmedAge) {
-      setError(t("signup.error_age"))
+      fail("age_check", t("signup.error_age"))
       return
     }
 
+    track("signup_submit")
     setLoading(true)
 
     const { data, error: signUpError } = await supabase.auth.signUp({
@@ -122,7 +138,7 @@ export default function SignupPage() {
       options: {
         // Se guarda también en los metadatos de auth (no solo en profiles) porque, si Supabase
         // exige confirmar el correo, el upsert a profiles de más abajo no llega a ejecutarse
-        // (no hay sesión todavía) — así el username/género/país no se pierden: confirm-age los
+        // (no hay sesión todavía) — así el username/país/género no se pierden: confirm-age los
         // recupera de aquí la primera vez que la persona entra tras confirmar.
         data: { username, country, gender },
       },
@@ -130,6 +146,7 @@ export default function SignupPage() {
 
     if (signUpError) {
       setError(signUpError.message)
+      track("signup_error", { meta: { step: "auth", reason: signUpError.message.slice(0, 80) } })
       setLoading(false)
       return
     }
@@ -141,19 +158,20 @@ export default function SignupPage() {
     // perdía para quien tuviera que confirmar el correo. Ahora, si no hay sesión, se avisa de que
     // hay que revisar el correo en vez de seguir como si nada.
     if (!data.session) {
+      track("signup_ok", { meta: { confirm_email: true } })
       setLoading(false)
       setCheckEmail(true)
       return
     }
+    track("signup_ok", { meta: { confirm_email: false } })
 
     if (data.user) {
       await supabase.from("profiles").upsert({
         id: data.user.id,
         username: username.toLowerCase().trim(),
         gender: gender || null,
-        // Antes el país solo se guardaba en los metadatos de auth (options.data), que el admin
-        // no puede consultar cómodamente. Ahora también se guarda en profiles, para que la ficha
-        // de usuario en /admin/users pueda mostrarlo.
+        // Se guarda también en profiles (no solo en los metadatos de auth) para que la ficha de
+        // usuario en /admin/users pueda mostrarlo.
         country: country || null,
         // Se pide la fecha completa para comprobar la mayoría de edad, pero solo se guarda el año.
         birth_year: bd.getFullYear(),
@@ -165,6 +183,7 @@ export default function SignupPage() {
   }
 
   const handleGoogle = async () => {
+    track("google_click", { meta: { from: "signup" } })
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}${safeNextPath()}` },
@@ -252,21 +271,17 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
               />
-              <CountrySelect value={country} onChange={setCountry} locale={locale} placeholder={t("signup.country")} />
-              {/* Antes había una opción vacía seleccionable ("Género") que dejaba enviar el
-                  formulario sin elegir nada — de ahí que pareciera opcional aunque no lo fuera
-                  de verdad. Ahora esa opción es solo un placeholder (disabled + hidden): se ve
-                  al abrir el desplegable la primera vez, pero no se puede volver a seleccionar,
-                  y el formulario no se envía hasta elegir una de las tres reales. */}
+              <CountrySelect value={country} onChange={setCountry} locale={locale} placeholder={`${t("signup.country")} (${t("signup.optional")})`} />
+              {/* País y género son opcionales (27/10/2026): se pueden dejar vacíos, y la primera opción
+                  (vacía) permite volver a quitarlos. */}
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
-                required
                 style={{ colorScheme: "dark" }}
                 className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition text-zinc-300"
               >
-                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="" disabled hidden>
-                  {t("signup.gender")}
+                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">
+                  {`${t("signup.gender")} (${t("signup.optional")})`}
                 </option>
                 <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">
                   {t("signup.gender_male")}

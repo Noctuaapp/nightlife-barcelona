@@ -11,7 +11,7 @@ import { COUNTRIES, getSortedCountries, type CountryLocale } from "../../lib/cou
 // bandera — es una limitación de fuente del sistema, no algo que se pueda arreglar con CSS. Un
 // <select> nativo tampoco puede mostrar una <img> dentro de sus opciones en ningún navegador, así
 // que la única forma de tener banderas reales y consistentes en todos los sistemas es dibujar el
-// desplegable nosotros mismos, con una imagen de bandera por país (desde flagcdn.com).
+// desplegable nosotros mismos, con una imagen de bandera por país (archivos propios en public/flags).
 type Props = {
   value: string
   onChange: (esName: string) => void
@@ -20,7 +20,10 @@ type Props = {
   size?: "lg" | "sm"
 }
 
-const flagUrl = (code: string) => `https://flagcdn.com/24x18/${code.toLowerCase()}.png`
+// Las banderas se sirven desde la propia web (public/flags/xx.png, 48x36 px, una por país) en
+// vez de desde flagcdn.com (27/10/2026): al depender de un servicio externo, a quien tuviera ese
+// dominio bloqueado (antivirus, bloqueador de anuncios, red de empresa) no le salía ninguna.
+const flagUrl = (code: string) => `/flags/${code.toLowerCase()}.png`
 
 export default function CountrySelect({ value, onChange, locale, placeholder, size = "lg" }: Props) {
   const { t } = useLanguage()
@@ -113,7 +116,7 @@ export default function CountrySelect({ value, onChange, locale, placeholder, si
                   c.es === value ? "bg-purple-500/15 text-white" : "text-zinc-300"
                 }`}
               >
-                <img src={flagUrl(c.code)} alt="" width={20} height={15} style={{ borderRadius: "2px", flexShrink: 0, boxShadow: "0 0 0 1px rgba(255,255,255,0.15)" }} />
+                <img src={flagUrl(c.code)} alt="" width={20} height={15} loading="lazy" style={{ borderRadius: "2px", flexShrink: 0, boxShadow: "0 0 0 1px rgba(255,255,255,0.15)" }} />
                 <span className="truncate">{c[locale]}</span>
               </button>
             ))}

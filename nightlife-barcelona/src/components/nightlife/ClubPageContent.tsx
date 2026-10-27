@@ -19,6 +19,8 @@ import ClubReviews, { googleMapsReviewsUrl } from "./club/ClubReviews"
 import VenueReviews from "./club/VenueReviews"
 import NearbyStrip from "./club/NearbyStrip"
 import JoinNoctuaCard from "./JoinNoctuaCard"
+import WelcomeChallenge from "./WelcomeChallenge"
+import NextStepsRow from "./NextStepsRow"
 import SocialLinks, { socialUrl } from "./club/SocialLinks"
 import ClubFeatures, { activeFeatureCount } from "./club/ClubFeatures"
 import Stars from "./club/Stars"
@@ -474,8 +476,13 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
         </section>
       )}
 
-      {/* REGISTRO (versión compacta, arriba): solo lo ve quien no tiene sesión. La grande va al final. */}
-      <JoinNoctuaCard variant="banner" kind="club" itemId={club.id} name={club.name} />
+      {/* REGISTRO: solo lo ve quien no tiene sesión (ver JoinNoctuaCard). En su mismo hueco, quien
+          acaba de crear la cuenta ve el primer reto (ver WelcomeChallenge). */}
+      <JoinNoctuaCard kind="club" itemId={club.id} name={club.name} />
+      <WelcomeChallenge />
+
+      {/* SIGUE LA NOCHE: WhatsApp al grupo, más del barrio y del estilo, plan (ver NextStepsRow) */}
+      <NextStepsRow kind="club" itemId={club.id} name={club.name} neighborhood={club.neighborhood} music={club.music} />
 
       {/* CERCA DE AQUÍ: para que quien llega desde Google siga la noche en Noctua */}
       <NearbyStrip
@@ -767,9 +774,6 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                 </div>
               </Panel>
             )}
-
-            {/* Registro: solo lo ve quien no tiene sesión (ver JoinNoctuaCard) */}
-            <JoinNoctuaCard kind="club" itemId={club.id} name={club.name} />
           </div>
 
           {/* ACCIONES */}

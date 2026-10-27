@@ -10,6 +10,7 @@ import EventsSection from "./EventsSection"
 import SurpriseMe from "./SurpriseMe"
 import FeatureTicker from "./FeatureTicker"
 import ReferralBanner from "./ReferralBanner"
+import WelcomeChallenge from "../nightlife/WelcomeChallenge"
 import TopPicks from "./TopPicks"
 import type { ActivePicks } from "../../lib/picks"
 import AreasSection from "./AreasSection"
@@ -409,6 +410,9 @@ export default function HomeClient({
             </nav>
           </div>
         </section>
+
+        {/* PRIMER RETO: solo para quien acaba de crear la cuenta y aún tiene pocos sitios guardados */}
+        <WelcomeChallenge wide />
 
         {/* TOP 3 DE NOCTUA: solo si lo habéis puesto desde /admin/recomendados */}
         <TopPicks data={picks} />

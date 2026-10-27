@@ -1,10 +1,11 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Unbounded, Plus_Jakarta_Sans } from "next/font/google"
 import { Analytics } from "@vercel/analytics/react"
 import { FavoritesProvider } from "../context/FavoritesContext"
 import { LanguageProvider } from "../context/LanguageContext"
 import MaintenanceGate from "../components/system/MaintenanceGate"
 import TrafficSource from "../components/system/TrafficSource"
+import InstallCapture from "../components/system/InstallCapture"
 import ToastHost from "../components/ui/Toast"
 import PartyPollPopup from "../components/fun/PartyPollPopup"
 import "./globals.css"
@@ -35,6 +36,12 @@ const plusJakarta = Plus_Jakarta_Sans({
 // usan español ("es_ES") — una inconsistencia que confunde a Google sobre en qué idioma está
 // realmente el sitio, justo cuando el público objetivo (Barcelona) busca en español. Ahora todo
 // el sitio declara el mismo idioma.
+// Color de la barra del navegador y de la app instalada (el fondo de la web, "night"). La web ya se
+// puede instalar como app: ver app/manifest.ts.
+export const viewport: Viewport = {
+  themeColor: "#0a0910",
+}
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.noctuaapp.com"),
   title: "Noctua — Vida nocturna en Barcelona",
@@ -70,6 +77,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  // Al "Añadir a pantalla de inicio" en iPhone se abre como app, con su nombre (el icono es
+  // app/apple-icon.png).
+  appleWebApp: { capable: true, title: "Noctua", statusBarStyle: "black" },
 }
 
 export default function RootLayout({
@@ -122,6 +132,7 @@ export default function RootLayout({
           }}
         />
         <TrafficSource />
+        <InstallCapture />
         <ToastHost />
         <Analytics />
       </body>

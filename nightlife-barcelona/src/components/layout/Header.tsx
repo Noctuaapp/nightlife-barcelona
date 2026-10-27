@@ -36,14 +36,14 @@ type NotificationRow = {
 }
 
 const languages = [
-  { code: "es", flag: "https://flagcdn.com/w40/es.png", name: "Español" },
-  { code: "en", flag: "https://flagcdn.com/w40/gb.png", name: "English" },
+  { code: "es", flag: "/flags/es.png", name: "Español" },
+  { code: "en", flag: "/flags/gb.png", name: "English" },
   { code: "ca", flag: "/flags/catalunya.png", name: "Català" },
-  { code: "fr", flag: "https://flagcdn.com/w40/fr.png", name: "Français" },
-  { code: "de", flag: "https://flagcdn.com/w40/de.png", name: "Deutsch" },
-  { code: "it", flag: "https://flagcdn.com/w40/it.png", name: "Italiano" },
-  { code: "nl", flag: "https://flagcdn.com/w40/nl.png", name: "Nederlands" },
-  { code: "pt", flag: "https://flagcdn.com/w40/pt.png", name: "Português" },
+  { code: "fr", flag: "/flags/fr.png", name: "Français" },
+  { code: "de", flag: "/flags/de.png", name: "Deutsch" },
+  { code: "it", flag: "/flags/it.png", name: "Italiano" },
+  { code: "nl", flag: "/flags/nl.png", name: "Nederlands" },
+  { code: "pt", flag: "/flags/pt.png", name: "Português" },
 ]
 
 // El Header se monta de nuevo en cada página: la racha semanal y los recordatorios solo hace falta

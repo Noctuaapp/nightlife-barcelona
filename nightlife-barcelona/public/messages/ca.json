@@ -103,7 +103,8 @@
     "error_fill_all": "Omple tots els camps, si us plau.",
     "error_terms": "Has d'acceptar els termes i condicions per continuar.",
     "error_age": "Has de confirmar que ets major de 18 anys per continuar.",
-    "gender_unspecified": "Prefereixo no dir-ho"
+    "gender_unspecified": "Prefereixo no dir-ho",
+    "optional": "opcional"
   },
   "clubs": {
     "title": "Clubs",
@@ -1130,7 +1131,9 @@
     "deniedRestore": "Tornar a mostrar-lo",
     "deniedRestored": "{name} torna a sortir a les recomanacions",
     "deniedError": "No s'ha pogut canviar. Torna-ho a provar.",
-    "deniedTimes": "{n} vegades"
+    "deniedTimes": "{n} vegades",
+    "aboutYou": "Sobre tu (opcional)",
+    "aboutYouHelp": "Ens ajuda a conèixer millor qui fa servir Noctua. Pots deixar-ho buit."
   },
   "badges": {
     "title": "Insígnies d'exploració",
@@ -1524,17 +1527,31 @@
     "sub": "Crea el teu compte gratis i Noctua passa de guia a copilot de les teves sortides.",
     "p1tClub": "Desa els teus llocs",
     "p1tEvent": "Que no se't passi",
-    "p1bClub": "Desa {name} i torna-hi d'un toc. Adéu a «com es deia aquell bar?».",
-    "p1bEvent": "Desa aquest esdeveniment i t'avisem abans que comenci.",
     "p2t": "Munta el pla",
-    "p2b": "Arma la nit amb els teus llocs i passa-la al grup. S'ha acabat el «i on anem?».",
     "p3t": "Explica com està",
-    "p3b": "Fes check-in i deixa una nota per a qui arribi després: cua, ambient, el que sigui.",
     "p4t": "El teu mes a Noctua",
-    "p4b": "Un resum de les teves nits, barris i estils per presumir a les stories.",
     "fine": "És gratis i sense targeta.",
     "cta": "Crear compte gratis",
-    "login": "Ja tinc compte",
-    "explore": "O segueix explorant"
+    "login": "Ja tinc compte"
+  },
+  "nextSteps": {
+    "whatsapp": "Envia-ho al grup",
+    "moreInHood": "Més a {name}",
+    "moreStyle": "Més {style}"
+  },
+  "welcome": {
+    "title": "El teu primer repte",
+    "sub": "Desa 3 llocs i tindràs els teus plans a un toc.",
+    "progress": "{n} de 3 desats",
+    "cta": "Cercar llocs",
+    "foot": "Quan surtis, fes check-in i Noctua et prepara «El teu mes a Noctua».",
+    "footLink": "Veure el meu mes",
+    "doneTitle": "Repte superat!",
+    "doneBody": "Ja tens la teva base. Quan surtis, fes check-in i Noctua et prepara «El teu mes a Noctua».",
+    "doneCta": "Veure el meu mes",
+    "dismiss": "Ara no",
+    "installTitle": "Instal·la Noctua al mòbil",
+    "installBtn": "Instal·lar",
+    "installIos": "A Safari: toca Compartir i després «Afegir a la pantalla d'inici»."
   }
 }

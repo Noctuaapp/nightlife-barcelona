@@ -17,6 +17,8 @@ import SocialLinks from "./club/SocialLinks"
 import NearbyStrip from "./club/NearbyStrip"
 import MoreEventsStrip from "./club/MoreEventsStrip"
 import JoinNoctuaCard from "./JoinNoctuaCard"
+import WelcomeChallenge from "./WelcomeChallenge"
+import NextStepsRow from "./NextStepsRow"
 import RideButtons from "./club/RideButtons"
 import Stars from "./club/Stars"
 import Icon from "../ui/Icon"
@@ -226,8 +228,13 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
         </section>
       )}
 
-      {/* REGISTRO (versión compacta, arriba): solo lo ve quien no tiene sesión. La grande va al final. */}
-      <JoinNoctuaCard variant="banner" kind="event" itemId={event.id} name={event.title} />
+      {/* REGISTRO: solo lo ve quien no tiene sesión (ver JoinNoctuaCard). En su mismo hueco, quien
+          acaba de crear la cuenta ve el primer reto (ver WelcomeChallenge). */}
+      <JoinNoctuaCard kind="event" itemId={event.id} name={event.title} />
+      <WelcomeChallenge />
+
+      {/* SIGUE LA NOCHE: WhatsApp al grupo, más del estilo, plan y eventos (ver NextStepsRow) */}
+      <NextStepsRow kind="event" itemId={event.id} name={event.title} music={event.music} />
 
       <section className="mx-auto max-w-6xl px-4 pt-10 sm:px-6">
         <div className="grid gap-8 lg:grid-cols-3">
@@ -287,9 +294,6 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                 </div>
               </Panel>
             )}
-
-            {/* Registro: solo lo ve quien no tiene sesión (ver JoinNoctuaCard) */}
-            <JoinNoctuaCard kind="event" itemId={event.id} name={event.title} />
           </div>
 
           <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">

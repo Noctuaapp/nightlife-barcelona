@@ -103,7 +103,8 @@
     "error_fill_all": "Please fill in all fields.",
     "error_terms": "You must accept the terms and conditions to continue.",
     "error_age": "You must confirm you are over 18 to continue.",
-    "gender_unspecified": "Prefer not to say"
+    "gender_unspecified": "Prefer not to say",
+    "optional": "optional"
   },
   "clubs": {
     "title": "Clubs",
@@ -1130,7 +1131,9 @@
     "deniedRestore": "Show it again",
     "deniedRestored": "{name} is back in your suggestions",
     "deniedError": "Couldn't change it. Please try again.",
-    "deniedTimes": "{n} times"
+    "deniedTimes": "{n} times",
+    "aboutYou": "About you (optional)",
+    "aboutYouHelp": "Helps us understand who uses Noctua. You can leave it empty."
   },
   "badges": {
     "title": "Exploration badges",
@@ -1524,17 +1527,31 @@
     "sub": "Create a free account and Noctua goes from guide to copilot for your nights out.",
     "p1tClub": "Save your spots",
     "p1tEvent": "Don't miss it",
-    "p1bClub": "Save {name} and come back in one tap. No more “what was that bar called?”.",
-    "p1bEvent": "Save this event and we'll remind you before it starts.",
     "p2t": "Build the plan",
-    "p2b": "Line up your night and send it to the group. No more “so where are we going?”.",
     "p3t": "Say how it is",
-    "p3b": "Check in and leave a note for whoever arrives next: queue, vibe, anything.",
     "p4t": "Your month in Noctua",
-    "p4b": "A recap of your nights, neighbourhoods and styles, made for stories.",
     "fine": "It's free, no card needed.",
     "cta": "Create free account",
-    "login": "I already have an account",
-    "explore": "Or keep exploring"
+    "login": "I already have an account"
+  },
+  "nextSteps": {
+    "whatsapp": "Send to my group",
+    "moreInHood": "More in {name}",
+    "moreStyle": "More {style}"
+  },
+  "welcome": {
+    "title": "Your first challenge",
+    "sub": "Save 3 spots and your plans are one tap away.",
+    "progress": "{n} of 3 saved",
+    "cta": "Find spots",
+    "foot": "When you go out, check in and Noctua builds “Your month in Noctua”.",
+    "footLink": "See my month",
+    "doneTitle": "Challenge complete!",
+    "doneBody": "That's your base. When you go out, check in and Noctua builds “Your month in Noctua”.",
+    "doneCta": "See my month",
+    "dismiss": "Not now",
+    "installTitle": "Install Noctua on your phone",
+    "installBtn": "Install",
+    "installIos": "In Safari: tap Share, then “Add to Home Screen”."
   }
 }

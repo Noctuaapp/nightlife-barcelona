@@ -104,7 +104,8 @@
     "error_fill_all": "Por favor rellena todos los campos.",
     "error_terms": "Debes aceptar los términos y condiciones para continuar.",
     "error_age": "Debes confirmar que eres mayor de 18 años para continuar.",
-    "gender_unspecified": "Prefiero no decirlo"
+    "gender_unspecified": "Prefiero no decirlo",
+    "optional": "opcional"
   },
   "clubs": {
     "title": "Clubs",
@@ -1143,7 +1144,9 @@
     "deniedRestore": "Volver a mostrarlo",
     "deniedRestored": "{name} vuelve a salirte en las recomendaciones",
     "deniedError": "No se ha podido cambiar. Inténtalo de nuevo.",
-    "deniedTimes": "{n} veces"
+    "deniedTimes": "{n} veces",
+    "aboutYou": "Sobre ti (opcional)",
+    "aboutYouHelp": "Nos ayuda a conocer mejor a quien usa Noctua. Puedes dejarlo vacío."
   },
   "badges": {
     "title": "Insignias de exploración",
@@ -1537,17 +1540,31 @@
     "sub": "Crea tu cuenta gratis y Noctua pasa de guía a copiloto de tus salidas.",
     "p1tClub": "Guarda tus sitios",
     "p1tEvent": "Que no se te pase",
-    "p1bClub": "Guarda {name} y vuelve en un toque. Adiós a «¿cómo se llamaba aquel bar?».",
-    "p1bEvent": "Guarda este evento y te avisamos antes de que empiece.",
     "p2t": "Monta el plan",
-    "p2b": "Arma la noche con tus sitios y pásasela al grupo. Se acabó el «¿y dónde vamos?».",
     "p3t": "Cuenta cómo está",
-    "p3b": "Haz check-in y deja una nota para quien llegue después: cola, ambiente, lo que sea.",
     "p4t": "Tu mes en Noctua",
-    "p4b": "Un resumen de tus noches, barrios y estilos para presumir en stories.",
     "fine": "Es gratis y sin tarjeta.",
     "cta": "Crear cuenta gratis",
-    "login": "Ya tengo cuenta",
-    "explore": "O sigue explorando"
+    "login": "Ya tengo cuenta"
+  },
+  "nextSteps": {
+    "whatsapp": "Mandar a mi grupo",
+    "moreInHood": "Más en {name}",
+    "moreStyle": "Más {style}"
+  },
+  "welcome": {
+    "title": "Tu primer reto",
+    "sub": "Guarda 3 sitios y tendrás tus planes a un toque.",
+    "progress": "{n} de 3 guardados",
+    "cta": "Buscar sitios",
+    "foot": "Cuando salgas, haz check-in y Noctua te prepara «Tu mes en Noctua».",
+    "footLink": "Ver mi mes",
+    "doneTitle": "¡Reto superado!",
+    "doneBody": "Ya tienes tu base. Cuando salgas, haz check-in y Noctua te prepara «Tu mes en Noctua».",
+    "doneCta": "Ver mi mes",
+    "dismiss": "Ahora no",
+    "installTitle": "Instala Noctua en tu móvil",
+    "installBtn": "Instalar",
+    "installIos": "En Safari: toca Compartir y luego «Añadir a pantalla de inicio»."
   }
 }

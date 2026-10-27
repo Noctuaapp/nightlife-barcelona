@@ -100,7 +100,8 @@
     "error_fill_all": "Merci de remplir tous les champs.",
     "error_terms": "Tu dois accepter les conditions générales pour continuer.",
     "error_age": "Tu dois confirmer que tu as plus de 18 ans pour continuer.",
-    "gender_unspecified": "Je préfère ne pas le dire"
+    "gender_unspecified": "Je préfère ne pas le dire",
+    "optional": "facultatif"
   },
   "clubs": {
     "title": "Clubs",
@@ -1093,7 +1094,9 @@
     "pending": "En attente",
     "replyFromNoctua": "Réponse de Noctua",
     "settings": "Compte",
-    "birthYear": "Année de naissance"
+    "birthYear": "Année de naissance",
+    "aboutYou": "À propos de toi (facultatif)",
+    "aboutYouHelp": "Ça nous aide à mieux connaître qui utilise Noctua. Tu peux laisser vide."
   },
   "badges": {
     "title": "Badges d'exploration",
@@ -1466,17 +1469,31 @@
     "sub": "Crée ton compte gratuit et Noctua passe de guide à copilote de tes sorties.",
     "p1tClub": "Garde tes adresses",
     "p1tEvent": "Ne le rate pas",
-    "p1bClub": "Enregistre {name} et retrouve-le d'un geste. Fini le « c'était quoi, ce bar ? ».",
-    "p1bEvent": "Enregistre cet événement et on te prévient avant le début.",
     "p2t": "Monte ton plan",
-    "p2b": "Organise ta soirée avec tes adresses et envoie-la au groupe. Fini le « on va où ? ».",
     "p3t": "Dis comment c'est",
-    "p3b": "Fais un check-in et laisse un mot à ceux qui arrivent après : file d'attente, ambiance, tout.",
     "p4t": "Ton mois sur Noctua",
-    "p4b": "Un récap de tes soirées, quartiers et styles à poster en story.",
     "fine": "C'est gratuit, sans carte bancaire.",
     "cta": "Créer un compte gratuit",
-    "login": "J'ai déjà un compte",
-    "explore": "Ou continue d'explorer"
+    "login": "J'ai déjà un compte"
+  },
+  "nextSteps": {
+    "whatsapp": "Envoyer au groupe",
+    "moreInHood": "Plus à {name}",
+    "moreStyle": "Plus de {style}"
+  },
+  "welcome": {
+    "title": "Ton premier défi",
+    "sub": "Enregistre 3 adresses et tes plans sont à portée de main.",
+    "progress": "{n} sur 3 enregistrées",
+    "cta": "Chercher des adresses",
+    "foot": "Quand tu sors, fais un check-in et Noctua te prépare « Ton mois sur Noctua ».",
+    "footLink": "Voir mon mois",
+    "doneTitle": "Défi relevé !",
+    "doneBody": "Tu as ta base. Quand tu sors, fais un check-in et Noctua te prépare « Ton mois sur Noctua ».",
+    "doneCta": "Voir mon mois",
+    "dismiss": "Plus tard",
+    "installTitle": "Installe Noctua sur ton téléphone",
+    "installBtn": "Installer",
+    "installIos": "Dans Safari : touche Partager puis « Sur l'écran d'accueil »."
   }
 }

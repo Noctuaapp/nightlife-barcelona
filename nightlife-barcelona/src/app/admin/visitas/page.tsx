@@ -67,10 +67,42 @@ const EVENT_LABELS: Record<string, string> = {
   nearby_click: "Va a un sitio cercano:",
   related_click: "Va a un local parecido:",
   join_click: "Bloque de registro, pulsa:",
+  join_view: "Ve el bloque de registro",
+  signup_view: "Abre el registro",
+  signup_submit: "Envía el registro",
+  signup_ok: "Registro completado",
+  signup_error: "Error en el registro:",
+  google_click: "Pulsa Continuar con Google",
+  confirm_age_view: "Ve la confirmación de edad",
+  confirm_age_done: "Confirma su edad",
+  next_click: "Sigue la noche:",
+  welcome_click: "Reto de bienvenida:",
+  install_click: "Pulsa instalar la app",
 }
 const JOIN_TO: Record<string, string> = {
   signup: "Crear cuenta", login: "Ya tengo cuenta", open: "Abierto ahora", map: "Mapa", plan: "Planifica tu noche", events: "Eventos",
 }
+const NEXT_TO: Record<string, string> = { hood: "más locales del barrio", style: "más locales del estilo", plan: "Planifica tu noche", events: "todos los eventos" }
+const WELCOME_TO: Record<string, string> = { search: "Buscar sitios", month: "Ver mi mes", dismiss: "Ahora no" }
+const SIGNUP_REASONS: Record<string, string> = {
+  fill_all: "faltan campos", disposable_email: "correo temporal", weak_password: "contraseña débil",
+  birth_date: "sin fecha de nacimiento", under_18: "menor de 18", terms: "no acepta los términos", age_check: "no confirma +18",
+}
+
+// Detalle de los eventos nuevos del embudo de registro y de la ficha (null = lo resuelve la cadena de abajo).
+function extraDetail(e: Ev): string | null {
+  const to = String(e.meta?.to ?? "")
+  const reason = String(e.meta?.reason ?? "")
+  if (e.type === "next_click") return NEXT_TO[to] || to
+  if (e.type === "welcome_click") return WELCOME_TO[to] || to
+  if (e.type === "signup_error") return e.meta?.step === "auth" ? `el servidor dice «${reason}»` : SIGNUP_REASONS[reason] || reason
+  if (e.type === "signup_ok") return e.meta?.confirm_email ? "(debe confirmar el correo)" : "(ya con sesión)"
+  if (e.type === "google_click") return e.meta?.from === "login" ? "(en Iniciar sesión)" : "(en Crear cuenta)"
+  if (e.type === "share_click" && e.meta?.via === "whatsapp") return "por WhatsApp"
+  if (e.type.startsWith("signup_") || e.type.startsWith("confirm_age_") || e.type === "join_view" || e.type === "install_click") return ""
+  return null
+}
+
 const TAB_LABELS: Record<string, string> = { about: "Información", nights: "Noches", sessions: "Sesiones", location: "Ubicación", reviews: "Opiniones" }
 
 function unslug(s: string) {
@@ -144,6 +176,35 @@ export default function AdminVisitsPage() {
     return m
   }, [data])
 
+  // Embudo de registro (27/10/2026): en cuántas visitas ocurre cada paso, sacado de los eventos de
+  // cada visita (no hace falta SQL nuevo). Un paso no incluye al anterior: p. ej. se puede abrir el
+  // registro sin haber visto el bloque (enlace directo, menú, Google).
+  const funnel = useMemo(() => {
+    const sessions = data?.sessions || []
+    const has = (s: Session, type: string, pred?: (e: Ev) => boolean) => (s.events || []).some((e) => e.type === type && (!pred || pred(e)))
+    const count = (type: string, pred?: (e: Ev) => boolean) => sessions.filter((s) => has(s, type, pred)).length
+    const errors = new Map<string, number>()
+    for (const s of sessions)
+      for (const e of s.events || []) {
+        if (e.type !== "signup_error") continue
+        const reason = String(e.meta?.reason ?? "")
+        const label = e.meta?.step === "auth" ? `Servidor: ${reason}` : SIGNUP_REASONS[reason] || reason
+        errors.set(label, (errors.get(label) || 0) + 1)
+      }
+    return {
+      rows: [
+        { label: "Ven el bloque de registro", n: count("join_view") },
+        { label: "Pulsan «Crear cuenta gratis»", n: count("join_click", (e) => e.meta?.to === "signup") },
+        { label: "Abren el formulario de registro", n: count("signup_view") },
+        { label: "Pulsan «Continuar con Google»", n: count("google_click") },
+        { label: "Envían el formulario", n: count("signup_submit") },
+        { label: "Registro completado", n: count("signup_ok") },
+        { label: "Confirman la edad (tras el correo o Google)", n: count("confirm_age_done") },
+      ],
+      errors: Array.from(errors, ([label, n]) => ({ label, n })).sort((a, b) => b.n - a.n),
+    }
+  }, [data])
+
   const sources = useMemo(() => Array.from(new Set((data?.sessions || []).map((s) => s.source || "direct"))), [data])
   const list = (data?.sessions || []).filter(
     (s) => (!onlyActive || s.pages > 1 || s.actions > 0) && (source === "all" || (s.source || "direct") === source)
@@ -195,6 +256,14 @@ export default function AdminVisitsPage() {
             <TopList title="Por dónde entran" rows={data.landings.map((l) => ({ label: pageLabel(l.path, names), n: l.n }))} total={data.total_sessions} />
             <TopList title="Páginas más vistas (visitas que pasan por ellas)" rows={data.top_pages.map((p) => ({ label: pageLabel(p.path, names), n: p.n }))} total={data.total_sessions} />
           </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <TopList title="Registro: dónde se cae la gente (visitas)" rows={funnel.rows} total={data.total_sessions} />
+            <TopList title="Por qué fallan los registros" rows={funnel.errors} total={Math.max(1, ...funnel.errors.map((r) => r.n))} />
+          </div>
+          {data.total_sessions > data.sessions.length && (
+            <p className="mt-2 text-xs text-zinc-500">El embudo cuenta las {data.sessions.length} visitas más recientes de las {data.total_sessions}.</p>
+          )}
 
           <div className="mb-3 mt-8 flex flex-wrap items-center gap-2">
             <h2 className="mr-2 text-base font-black">Visita a visita</h2>
@@ -263,10 +332,10 @@ export default function AdminVisitsPage() {
                               </span>{" "}
                               <span className="text-zinc-300">{EVENT_LABELS[e.type] || e.type}</span>{" "}
                               <span className="font-semibold text-ink">
-                                {e.type === "tab_open"
+                                {extraDetail(e) ?? (e.type === "tab_open"
                                   ? `${TAB_LABELS[String(e.meta?.tab)] || String(e.meta?.tab || "")} (${e.name || ""})`
                                   : e.type === "join_click" && e.meta?.to
-                                    ? `${JOIN_TO[String(e.meta.to)] || String(e.meta.to)}${e.meta.pos ? (e.meta.pos === "top" ? " (bloque de arriba)" : " (bloque del final)") : ""}`
+                                    ? JOIN_TO[String(e.meta.to)] || String(e.meta.to)
                                   : (e.type === "nearby_click" || e.type === "related_click") && e.meta?.to
                                     ? String(e.meta.to) === "map" ? "el mapa" : String(e.meta.to) === "events" ? "todos los eventos" : String(e.meta.to)
                                     : e.type === "search" || e.type === "filter_used"
@@ -275,7 +344,7 @@ export default function AdminVisitsPage() {
                                     : ""
                                   : e.type.endsWith("_click") || e.type === "page_view"
                                     ? e.name || pageLabel(e.path, names)
-                                    : pageLabel(e.path, names)}
+                                    : pageLabel(e.path, names))}
                               </span>
                             </li>
                           ))}

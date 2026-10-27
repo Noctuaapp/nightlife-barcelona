@@ -100,7 +100,8 @@
     "error_fill_all": "Bitte fülle alle Felder aus.",
     "error_terms": "Du musst die AGB akzeptieren, um fortzufahren.",
     "error_age": "Du musst bestätigen, dass du über 18 bist, um fortzufahren.",
-    "gender_unspecified": "Keine Angabe"
+    "gender_unspecified": "Keine Angabe",
+    "optional": "optional"
   },
   "clubs": {
     "title": "Clubs",
@@ -1093,7 +1094,9 @@
     "pending": "Ausstehend",
     "replyFromNoctua": "Antwort von Noctua",
     "settings": "Konto",
-    "birthYear": "Geburtsjahr"
+    "birthYear": "Geburtsjahr",
+    "aboutYou": "Über dich (optional)",
+    "aboutYouHelp": "Hilft uns zu verstehen, wer Noctua nutzt. Du kannst es leer lassen."
   },
   "badges": {
     "title": "Entdecker-Abzeichen",
@@ -1466,17 +1469,31 @@
     "sub": "Erstelle ein kostenloses Konto und Noctua wird vom Guide zum Co-Piloten für deine Nächte.",
     "p1tClub": "Speichere deine Spots",
     "p1tEvent": "Verpass es nicht",
-    "p1bClub": "Speichere {name} und finde es mit einem Tipp wieder. Schluss mit „Wie hieß noch mal diese Bar?“.",
-    "p1bEvent": "Speichere dieses Event und wir erinnern dich, bevor es losgeht.",
     "p2t": "Bau deinen Plan",
-    "p2b": "Stell deine Nacht zusammen und schick sie an die Gruppe. Schluss mit „Und wohin gehen wir?“.",
     "p3t": "Erzähl, wie es ist",
-    "p3b": "Check dich ein und hinterlasse eine Notiz für alle, die nach dir kommen: Schlange, Stimmung, was auch immer.",
     "p4t": "Dein Monat in Noctua",
-    "p4b": "Eine Zusammenfassung deiner Nächte, Viertel und Stile, gemacht für Stories.",
     "fine": "Kostenlos und ohne Kreditkarte.",
     "cta": "Kostenloses Konto erstellen",
-    "login": "Ich habe schon ein Konto",
-    "explore": "Oder stöber weiter"
+    "login": "Ich habe schon ein Konto"
+  },
+  "nextSteps": {
+    "whatsapp": "An meine Gruppe schicken",
+    "moreInHood": "Mehr in {name}",
+    "moreStyle": "Mehr {style}"
+  },
+  "welcome": {
+    "title": "Deine erste Challenge",
+    "sub": "Speichere 3 Spots und deine Pläne sind nur einen Tipp entfernt.",
+    "progress": "{n} von 3 gespeichert",
+    "cta": "Spots finden",
+    "foot": "Wenn du ausgehst, check dich ein und Noctua erstellt „Dein Monat in Noctua“.",
+    "footLink": "Meinen Monat ansehen",
+    "doneTitle": "Challenge geschafft!",
+    "doneBody": "Damit hast du deine Basis. Wenn du ausgehst, check dich ein und Noctua erstellt „Dein Monat in Noctua“.",
+    "doneCta": "Meinen Monat ansehen",
+    "dismiss": "Später",
+    "installTitle": "Installiere Noctua auf deinem Handy",
+    "installBtn": "Installieren",
+    "installIos": "In Safari: Tippe auf Teilen und dann auf „Zum Home-Bildschirm“."
   }
 }

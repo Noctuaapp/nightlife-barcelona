@@ -11,6 +11,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { getLevelStatus } from "../../lib/xp"
 import { Heart, Trophy, CalendarDays, Gift, Building2, Music2, Camera, Pin, Trash2, MessageSquare, Megaphone, AlarmClock, Bell, ChevronRight } from "lucide-react"
 import BirthYearSelect from "../../components/ui/BirthYearSelect"
+import CountrySelect from "../../components/ui/CountrySelect"
 import { createSlug } from "../../lib/slug"
 import { toDateLocale } from "../../lib/dateLocale"
 import { ADMIN_EMAIL } from "../../lib/admin"
@@ -96,6 +97,10 @@ export default function ProfilePage() {
   const [newUsername, setNewUsername] = useState("")
   const [birthYear, setBirthYear] = useState("")
   const [birthYearMsg, setBirthYearMsg] = useState("")
+  // «Sobre ti» (27/10/2026): género y país, opcionales. Ya no se piden al registrarse.
+  const [gender, setGender] = useState("")
+  const [country, setCountry] = useState("")
+  const [aboutMsg, setAboutMsg] = useState("")
   const [usernameUpdatedAt, setUsernameUpdatedAt] = useState<string | null>(null)
   const [usernameError, setUsernameError] = useState("")
   const [usernameSuccess, setUsernameSuccess] = useState("")
@@ -138,7 +143,7 @@ export default function ProfilePage() {
       setUserId(data.user.id)
       setEmail(data.user.email || "")
 
-      const { data: profile } = await supabase.from("profiles").select("username, username_updated_at, avatar_url, xp, birth_year, login_streak_days").eq("id", data.user.id).single()
+      const { data: profile } = await supabase.from("profiles").select("username, username_updated_at, avatar_url, xp, birth_year, login_streak_days, gender, country").eq("id", data.user.id).single()
       if (profile) {
         setUsername(profile.username || "")
         setNewUsername(profile.username || "")
@@ -147,6 +152,8 @@ export default function ProfilePage() {
         setAvatarUrl(profile.avatar_url || (isAdminEmail(data.user.email) ? "/noctua_logo.png" : null))
         setXp(profile.xp || 0)
         setBirthYear(profile.birth_year ? String(profile.birth_year) : "")
+        setGender(profile.gender || "")
+        setCountry(profile.country || "")
         setLoginStreakDays(profile.login_streak_days || 0)
       }
 
@@ -291,6 +298,15 @@ export default function ProfilePage() {
     if (!userId) return
     const { error } = await supabase.from("profiles").update({ birth_year: v ? Number(v) : null }).eq("id", userId)
     setBirthYearMsg(error ? t("profilePage.saveError") : t("profilePage.saved"))
+  }
+
+  const saveAbout = async (field: "gender" | "country", value: string) => {
+    if (field === "gender") setGender(value)
+    else setCountry(value)
+    setAboutMsg("")
+    if (!userId) return
+    const { error } = await supabase.from("profiles").update({ [field]: value || null }).eq("id", userId)
+    setAboutMsg(error ? t("profilePage.saveError") : t("profilePage.saved"))
   }
 
   const saveUsername = async () => {
@@ -787,6 +803,35 @@ export default function ProfilePage() {
               <p className="mb-2 text-sm text-zinc-400">{t("profilePage.birthYear")}</p>
               <BirthYearSelect value={birthYear} onChange={saveBirthYear} />
               {birthYearMsg && <p className="mt-2 text-sm text-open">{birthYearMsg}</p>}
+            </div>
+
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <p className="text-sm text-zinc-400">{t("profilePage.aboutYou")}</p>
+              <p className="mb-3 mt-0.5 text-xs text-zinc-500">{t("profilePage.aboutYouHelp")}</p>
+              <div className="space-y-3">
+                <CountrySelect value={country} onChange={(v) => saveAbout("country", v)} locale={locale} placeholder={t("signup.country")} />
+                <select
+                  value={gender}
+                  onChange={(e) => saveAbout("gender", e.target.value)}
+                  aria-label={t("signup.gender")}
+                  style={{ colorScheme: "dark" }}
+                  className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-zinc-300 outline-none transition focus:border-brand"
+                >
+                  <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">
+                    {t("signup.gender")}
+                  </option>
+                  <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">
+                    {t("signup.gender_male")}
+                  </option>
+                  <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Mujer">
+                    {t("signup.gender_female")}
+                  </option>
+                  <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Prefiero no decirlo">
+                    {t("signup.gender_unspecified")}
+                  </option>
+                </select>
+              </div>
+              {aboutMsg && <p className="mt-2 text-sm text-open">{aboutMsg}</p>}
             </div>
 
             <div className="mt-6 flex flex-wrap gap-2 border-t border-white/10 pt-5">

@@ -6,6 +6,7 @@ import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { safeNextPath } from "../../lib/nextPath"
+import { track } from "../../lib/track"
 import { useLanguage } from "../../context/LanguageContext"
 
 export default function LoginPage() {
@@ -40,6 +41,7 @@ export default function LoginPage() {
   }
 
   const loginWithGoogle = async () => {
+    track("google_click", { meta: { from: "login" } })
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}${safeNextPath()}` },

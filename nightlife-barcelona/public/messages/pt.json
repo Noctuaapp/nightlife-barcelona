@@ -101,7 +101,8 @@
     "error_fill_all": "Por favor preenche todos os campos.",
     "error_terms": "Tens de aceitar os termos e condições para continuar.",
     "error_age": "Tens de confirmar que és maior de 18 anos para continuar.",
-    "gender_unspecified": "Prefiro não dizer"
+    "gender_unspecified": "Prefiro não dizer",
+    "optional": "opcional"
   },
   "clubs": {
     "title": "Clubs",
@@ -1106,7 +1107,9 @@
     "pending": "Pendente",
     "replyFromNoctua": "Resposta do Noctua",
     "settings": "Conta",
-    "birthYear": "Ano de nascimento"
+    "birthYear": "Ano de nascimento",
+    "aboutYou": "Sobre ti (opcional)",
+    "aboutYouHelp": "Ajuda-nos a conhecer melhor quem usa o Noctua. Podes deixar em branco."
   },
   "badges": {
     "title": "Insígnias de exploração",
@@ -1479,17 +1482,31 @@
     "sub": "Cria a tua conta grátis e o Noctua passa de guia a copiloto das tuas saídas.",
     "p1tClub": "Guarda os teus sítios",
     "p1tEvent": "Não deixes passar",
-    "p1bClub": "Guarda {name} e volta num toque. Chega de «como é que se chamava aquele bar?».",
-    "p1bEvent": "Guarda este evento e avisamos-te antes de começar.",
     "p2t": "Monta o plano",
-    "p2b": "Organiza a noite com os teus sítios e envia ao grupo. Acabou o «e onde vamos?».",
     "p3t": "Conta como está",
-    "p3b": "Faz check-in e deixa uma nota a quem chegar depois: fila, ambiente, o que for.",
     "p4t": "O teu mês no Noctua",
-    "p4b": "Um resumo das tuas noites, bairros e estilos para as stories.",
     "fine": "É grátis e sem cartão.",
     "cta": "Criar conta grátis",
-    "login": "Já tenho conta",
-    "explore": "Ou continua a explorar"
+    "login": "Já tenho conta"
+  },
+  "nextSteps": {
+    "whatsapp": "Enviar ao grupo",
+    "moreInHood": "Mais em {name}",
+    "moreStyle": "Mais {style}"
+  },
+  "welcome": {
+    "title": "O teu primeiro desafio",
+    "sub": "Guarda 3 sítios e tens os teus planos a um toque.",
+    "progress": "{n} de 3 guardados",
+    "cta": "Procurar sítios",
+    "foot": "Quando saíres, faz check-in e o Noctua prepara «O teu mês no Noctua».",
+    "footLink": "Ver o meu mês",
+    "doneTitle": "Desafio superado!",
+    "doneBody": "Já tens a tua base. Quando saíres, faz check-in e o Noctua prepara «O teu mês no Noctua».",
+    "doneCta": "Ver o meu mês",
+    "dismiss": "Agora não",
+    "installTitle": "Instala o Noctua no telemóvel",
+    "installBtn": "Instalar",
+    "installIos": "No Safari: toca em Partilhar e depois em «Adicionar ao ecrã principal»."
   }
 }

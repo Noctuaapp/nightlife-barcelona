@@ -12,6 +12,7 @@ import { createSlug } from "../../../lib/slug"
 import { clubMetaDescription, clubSummary, venueKind } from "../../../lib/clubSummary"
 import type { DbRow } from "../../../lib/clubQueries"
 import { safeJsonLd } from "../../../lib/structuredData"
+import { clubOpeningHoursSpec } from "../../../lib/clubHours"
 
 // ISR: la ficha se genera la primera vez que alguien la pide y se sirve ya hecha durante 5 min
 // (antes se generaba de cero en cada visita, consultando la base de datos cada vez). Los cambios
@@ -115,6 +116,8 @@ export default async function ClubPage({ params }: ClubPageProps) {
     relatedClubs(club),
   ])
 
+  const openingHours = clubOpeningHoursSpec(club.hours, club.open_days)
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NightClub",
@@ -135,6 +138,8 @@ export default async function ClubPage({ params }: ClubPageProps) {
       ? { geo: { "@type": "GeoCoordinates", latitude: club.latitude, longitude: club.longitude } }
       : {}),
     priceRange: club.price || undefined,
+    // Horario (27/10/2026): solo si se puede interpretar el campo "hours" (ver clubOpeningHoursSpec).
+    ...(openingHours.length > 0 ? { openingHoursSpecification: openingHours } : {}),
     // Sin aggregateRating a propósito: las valoraciones son de Google, no de usuarios de Noctua, y
     // las directrices de Google prohíben marcar como propias reseñas de terceros (riesgo de
     // penalización manual de los resultados enriquecidos).

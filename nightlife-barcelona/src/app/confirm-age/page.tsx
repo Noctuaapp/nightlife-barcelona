@@ -7,6 +7,7 @@ import ArrowIcon from "../../components/ui/ArrowIcon"
 import TermsText from "../../components/ui/TermsText"
 import CountrySelect from "../../components/ui/CountrySelect"
 import { useLanguage } from "../../context/LanguageContext"
+import { track } from "../../lib/track"
 
 export default function ConfirmAgePage() {
   const router = useRouter()
@@ -20,8 +21,8 @@ export default function ConfirmAgePage() {
   const [saving, setSaving] = useState(false)
   // Quien entra con Google nunca pasa por el formulario de registro (Google no da usuario,
   // género ni país), así que esos campos se quedaban vacíos para siempre. Ahora, si al llegar
-  // aquí el perfil todavía no tiene usuario, se piden en esta misma pantalla — igual de
-  // obligatorio que la fecha de nacimiento, sea cual sea el método con el que se ha entrado.
+  // aquí el perfil todavía no tiene usuario, se piden en esta misma pantalla: el usuario es tan
+  // obligatorio como la fecha de nacimiento; género y país son opcionales (27/10/2026).
   const [needsProfile, setNeedsProfile] = useState(false)
   const [username, setUsername] = useState("")
   const [gender, setGender] = useState("")
@@ -72,13 +73,14 @@ export default function ConfirmAgePage() {
       }
       setUserId(user.id)
       setChecking(false)
+      track("confirm_age_view")
     }
     check()
   }, [router])
 
   const handleConfirm = async () => {
     setError("")
-    if (needsProfile && (!username.trim() || !gender)) {
+    if (needsProfile && !username.trim()) {
       setError(t("signup.error_fill_all"))
       return
     }
@@ -113,6 +115,7 @@ export default function ConfirmAgePage() {
       setError(upsertError.message)
       return
     }
+    track("confirm_age_done")
     router.replace("/")
   }
 
@@ -139,16 +142,15 @@ export default function ConfirmAgePage() {
               onChange={(e) => setUsername(e.target.value)}
               className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand transition"
             />
-            <CountrySelect value={country} onChange={setCountry} locale={locale} placeholder={t("signup.country")} />
+            <CountrySelect value={country} onChange={setCountry} locale={locale} placeholder={`${t("signup.country")} (${t("signup.optional")})`} />
             <select
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              required
               style={{ colorScheme: "dark" }}
               className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-zinc-300 outline-none focus:border-brand transition"
             >
-              <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="" disabled hidden>
-                {t("signup.gender")}
+              <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">
+                {`${t("signup.gender")} (${t("signup.optional")})`}
               </option>
               <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">
                 {t("signup.gender_male")}

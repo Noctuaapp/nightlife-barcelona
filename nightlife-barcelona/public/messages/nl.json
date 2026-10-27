@@ -100,7 +100,8 @@
     "error_fill_all": "Vul alle velden in.",
     "error_terms": "Je moet de algemene voorwaarden accepteren om door te gaan.",
     "error_age": "Je moet bevestigen dat je ouder dan 18 bent om door te gaan.",
-    "gender_unspecified": "Zeg ik liever niet"
+    "gender_unspecified": "Zeg ik liever niet",
+    "optional": "optioneel"
   },
   "clubs": {
     "title": "Clubs",
@@ -1093,7 +1094,9 @@
     "pending": "In behandeling",
     "replyFromNoctua": "Antwoord van Noctua",
     "settings": "Account",
-    "birthYear": "Geboortejaar"
+    "birthYear": "Geboortejaar",
+    "aboutYou": "Over jou (optioneel)",
+    "aboutYouHelp": "Helpt ons te begrijpen wie Noctua gebruikt. Je mag het leeg laten."
   },
   "badges": {
     "title": "Ontdekkingsbadges",
@@ -1466,17 +1469,31 @@
     "sub": "Maak een gratis account en Noctua wordt van gids je copiloot voor je avondjes uit.",
     "p1tClub": "Bewaar je plekken",
     "p1tEvent": "Mis het niet",
-    "p1bClub": "Bewaar {name} en vind het met één tik terug. Nooit meer «hoe heette die bar ook alweer?».",
-    "p1bEvent": "Bewaar dit evenement en we waarschuwen je voordat het begint.",
     "p2t": "Maak het plan",
-    "p2b": "Stel je avond samen en stuur hem naar de groep. Nooit meer «en waar gaan we heen?».",
     "p3t": "Vertel hoe het is",
-    "p3b": "Check in en laat een notitie achter voor wie na jou komt: rij, sfeer, wat dan ook.",
     "p4t": "Jouw maand in Noctua",
-    "p4b": "Een terugblik op je avonden, wijken en stijlen, gemaakt voor stories.",
     "fine": "Gratis en zonder bankpas.",
     "cta": "Gratis account maken",
-    "login": "Ik heb al een account",
-    "explore": "Of ga verder met verkennen"
+    "login": "Ik heb al een account"
+  },
+  "nextSteps": {
+    "whatsapp": "Stuur naar mijn groep",
+    "moreInHood": "Meer in {name}",
+    "moreStyle": "Meer {style}"
+  },
+  "welcome": {
+    "title": "Je eerste uitdaging",
+    "sub": "Bewaar 3 plekken en je plannen zijn één tik weg.",
+    "progress": "{n} van 3 bewaard",
+    "cta": "Plekken zoeken",
+    "foot": "Als je uitgaat, check in en Noctua maakt «Jouw maand in Noctua».",
+    "footLink": "Mijn maand bekijken",
+    "doneTitle": "Uitdaging volbracht!",
+    "doneBody": "Dat is je basis. Als je uitgaat, check in en Noctua maakt «Jouw maand in Noctua».",
+    "doneCta": "Mijn maand bekijken",
+    "dismiss": "Nu niet",
+    "installTitle": "Installeer Noctua op je telefoon",
+    "installBtn": "Installeren",
+    "installIos": "In Safari: tik op Delen en dan op «Zet op beginscherm»."
   }
 }
