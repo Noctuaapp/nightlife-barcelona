@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
 import Icon from "../ui/Icon"
 import { useLanguage } from "../../context/LanguageContext"
 import { createSlug } from "../../lib/slug"
@@ -11,13 +10,10 @@ import { track } from "../../lib/track"
 // «Sigue la noche» (27/10/2026): fila de accesos en la ficha de un club o evento. Casi todas las
 // visitas llegan desde Google a una ficha, ven el dato y se van; esta fila les da una segunda
 // página a un toque, sin pedir cuenta:
-//  · Mandar a mi grupo por WhatsApp: salir se decide en grupo, y cada envío trae una visita nueva
-//    que ya viene con ganas de ir.
 //  · Más locales del mismo barrio y del mismo estilo (también refuerzan los enlaces internos).
 //  · Planifica tu noche (/plan) y, en un evento, todos los eventos.
-// Cada pulsación se anota (Admin › Visitas): WhatsApp como "share_click", el resto como "next_click".
-
-const SITE = "https://www.noctuaapp.com"
+// Cada pulsación se anota en Admin › Visitas como "next_click".
+// (El botón de compartir ya existe en la cabecera de la ficha y en la barra fija: no se repite aquí.)
 
 type Props = {
   kind: "club" | "event"
@@ -29,7 +25,6 @@ type Props = {
 
 export default function NextStepsRow({ kind, itemId, name, neighborhood, music }: Props) {
   const { t } = useLanguage()
-  const pathname = usePathname() || "/"
 
   const hoodSlug = neighborhood ? createSlug(neighborhood) : ""
   // El estilo más concreto primero (techno antes que "música electrónica"): el orden de STYLES.
@@ -37,26 +32,12 @@ export default function NextStepsRow({ kind, itemId, name, neighborhood, music }
 
   const track_ = (to: string) => track("next_click", { itemType: kind, itemId, itemName: name, meta: { to } })
 
-  const whatsappText = `${t("clubPage.shareText").replace("{name}", name)} ${SITE}${pathname}`
-  const whatsappHref = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`
-
   const pill =
     "flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] px-3.5 py-2 text-xs font-semibold text-ink transition hover:border-cyan-300/50 hover:bg-white/10"
 
   return (
     <section className="mx-auto mt-6 max-w-6xl px-4 sm:px-6" aria-label={t("home.quickTitle")}>
       <ul className="flex flex-wrap gap-2">
-        <li>
-          <a
-            href={whatsappHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => track("share_click", { itemType: kind, itemId, itemName: name, meta: { via: "whatsapp" } })}
-            className="flex items-center gap-2 rounded-full border border-emerald-400/35 bg-emerald-400/10 px-3.5 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20"
-          >
-            <Icon name="share" className="h-3.5 w-3.5 text-emerald-300" /> {t("nextSteps.whatsapp")}
-          </a>
-        </li>
         {hoodSlug && neighborhood && (
           <li>
             <Link href={`/barrio/${hoodSlug}`} onClick={() => track_("hood")} className={pill}>
