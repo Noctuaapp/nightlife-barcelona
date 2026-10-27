@@ -1495,5 +1495,8 @@
     "installTitle": "Installa Noctua sul telefono",
     "installBtn": "Installa",
     "installIos": "In Safari: tocca Condividi e poi «Aggiungi alla schermata Home»."
+  },
+  "install": {
+    "body": "Aprila dalla schermata Home, a schermo intero e senza cercarla nel browser."
   }
 }

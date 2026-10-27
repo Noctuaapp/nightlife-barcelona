@@ -1566,5 +1566,8 @@
     "installTitle": "Instala Noctua en tu móvil",
     "installBtn": "Instalar",
     "installIos": "En Safari: toca Compartir y luego «Añadir a pantalla de inicio»."
+  },
+  "install": {
+    "body": "Ábrela desde tu pantalla de inicio, a pantalla completa y sin buscarla en el navegador."
   }
 }

@@ -159,7 +159,7 @@ export default function WelcomeChallenge({ wide = false }: { wide?: boolean }) {
               <button
                 type="button"
                 onClick={() => {
-                  track("install_click")
+                  track("install_click", { meta: { from: "welcome" } })
                   install.install()
                 }}
                 className="shrink-0 rounded-ctl bg-white px-4 py-2 text-xs font-bold text-night transition hover:opacity-90"

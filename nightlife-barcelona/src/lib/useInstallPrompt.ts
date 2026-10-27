@@ -18,16 +18,20 @@ declare global {
 export const INSTALL_EVENT = "noctua-install-ready"
 
 export function useInstallPrompt() {
-  const [state, setState] = useState({ canPrompt: false, isIos: false, installed: false })
+  const [state, setState] = useState({ canPrompt: false, isIos: false, isMobile: false, installed: false })
 
   useEffect(() => {
     const read = () => {
       const standalone =
         (typeof window.matchMedia === "function" && window.matchMedia("(display-mode: standalone)").matches) ||
         (navigator as Navigator & { standalone?: boolean }).standalone === true
+      const ua = navigator.userAgent
+      // Los iPad modernos se presentan como un Mac: se distinguen por la pantalla táctil.
+      const isIos = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)
       setState({
         canPrompt: !!window.__noctuaInstall,
-        isIos: /iphone|ipad|ipod/i.test(navigator.userAgent),
+        isIos,
+        isMobile: isIos || /android/i.test(ua),
         installed: standalone,
       })
     }

@@ -99,6 +99,7 @@ function extraDetail(e: Ev): string | null {
   if (e.type === "signup_ok") return e.meta?.confirm_email ? "(debe confirmar el correo)" : "(ya con sesión)"
   if (e.type === "google_click") return e.meta?.from === "login" ? "(en Iniciar sesión)" : "(en Crear cuenta)"
   if (e.type === "share_click" && e.meta?.via === "whatsapp") return "por WhatsApp"
+  if (e.type === "install_click") return ({ menu: "(desde el menú ☰)", profile: "(desde Perfil)", welcome: "(desde «Tu primer reto»)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? ""
   if (e.type.startsWith("signup_") || e.type.startsWith("confirm_age_") || e.type === "join_view" || e.type === "install_click") return ""
   return null
 }

@@ -1495,5 +1495,8 @@
     "installTitle": "Installeer Noctua op je telefoon",
     "installBtn": "Installeren",
     "installIos": "In Safari: tik op Delen en dan op «Zet op beginscherm»."
+  },
+  "install": {
+    "body": "Open Noctua vanaf je beginscherm, op volledig scherm en zonder te zoeken in de browser."
   }
 }

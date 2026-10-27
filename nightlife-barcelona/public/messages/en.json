@@ -1553,5 +1553,8 @@
     "installTitle": "Install Noctua on your phone",
     "installBtn": "Install",
     "installIos": "In Safari: tap Share, then “Add to Home Screen”."
+  },
+  "install": {
+    "body": "Open it from your home screen, full screen, without hunting for it in the browser."
   }
 }

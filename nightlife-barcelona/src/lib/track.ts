@@ -6,10 +6,17 @@ import { isAdminEmail } from "./admin"
 // mientras la página está abierta: antes se guardaba en sessionStorage, y guardar un identificador
 // de analítica en el navegador exige consentimiento previo (LSSI, art. 22.2). En memoria no se
 // almacena nada en el dispositivo. Dura mientras se navega por la web; una recarga empieza otra.
+//
+// Desde el 27/10/2026 también acaba tras 30 minutos sin actividad: una web instalada como app en
+// el móvil puede quedar horas o días en segundo plano SIN recargarse, y sin este corte todo ese
+// tiempo contaba como una sola visita (duraciones larguísimas, falsas). Ahora, el primer evento
+// después de un parón largo abre una visita nueva, con su propio "session_start".
 
 let sessionId: string | null = null
 let trafficSource: string | null = null
 let sessionStarted = false
+let lastActivity = 0
+const SESSION_IDLE_MS = 30 * 60 * 1000
 
 export function getSessionId(): string | null {
   if (typeof window === "undefined") return null
@@ -26,7 +33,9 @@ export function markSessionStart(): boolean {
 
 // Clasifica de dónde llega la visita: enlace de invitación (?ref=), campaña (utm_source),
 // buscador, red social o directo. Se calcula una vez por carga de página (en memoria).
-export function getTrafficSource(): string {
+// ignoreReferrer: tras un parón largo el referrer sigue siendo el de la primera carga (p. ej. Google),
+// que ya no dice de dónde viene la persona ahora: solo cuentan los parámetros de la dirección.
+export function getTrafficSource(ignoreReferrer = false): string {
   if (typeof window === "undefined") return "direct"
   if (trafficSource) return trafficSource
 
@@ -35,7 +44,7 @@ export function getTrafficSource(): string {
   const utm = params.get("utm_source")
   if (params.get("ref")) source = "invite"
   else if (utm) source = utm.toLowerCase().slice(0, 40)
-  else if (document.referrer) {
+  else if (document.referrer && !ignoreReferrer) {
     try {
       const host = new URL(document.referrer).hostname.replace(/^www\./, "")
       if (host.endsWith("noctuaapp.com")) source = "direct"
@@ -121,20 +130,32 @@ export async function track(eventType: string, opts: TrackOptions = {}) {
       markAdminDevice()
       return
     }
-    await supabase.from("analytics").insert({
-      event_type: eventType,
-      item_type: opts.itemType ?? null,
-      item_id: opts.itemId ?? null,
-      item_name: opts.itemName ?? null,
-      user_id: data.session?.user.id || null,
-      session_id: getSessionId(),
-      source: getTrafficSource(),
-      device: deviceType(),
-      locale: (document.documentElement.lang || navigator.language || "").slice(0, 8),
-      path: window.location.pathname.slice(0, 120),
-      results_count: opts.resultsCount ?? null,
-      meta: opts.meta ?? null,
-    })
+    // Parón de más de 30 minutos: visita nueva (ver arriba). Se anota su entrada antes del evento.
+    const now = Date.now()
+    const resumed = lastActivity !== 0 && now - lastActivity > SESSION_IDLE_MS
+    lastActivity = now
+    if (resumed) {
+      sessionId = null
+      trafficSource = null
+      getTrafficSource(true)
+    }
+    const write = (type: string, o: TrackOptions) =>
+      supabase.from("analytics").insert({
+        event_type: type,
+        item_type: o.itemType ?? null,
+        item_id: o.itemId ?? null,
+        item_name: o.itemName ?? null,
+        user_id: data.session?.user.id || null,
+        session_id: getSessionId(),
+        source: getTrafficSource(),
+        device: deviceType(),
+        locale: (document.documentElement.lang || navigator.language || "").slice(0, 8),
+        path: window.location.pathname.slice(0, 120),
+        results_count: o.resultsCount ?? null,
+        meta: o.meta ?? null,
+      })
+    if (resumed && eventType !== "session_start") await write("session_start", { itemType: "site" })
+    await write(eventType, opts)
   } catch {
     /* la analítica nunca debe romper la página */
   }

@@ -10,6 +10,7 @@ import { awardXp, XP_AMOUNTS, currentIsoWeek, madridDateStr, dayBefore, checkLev
 import { ADMIN_EMAIL } from "../../lib/admin"
 import { logError } from "../../lib/log"
 import LevelUpModal from "../mascot/LevelUpModal"
+import InstallAppButton from "../system/InstallAppButton"
 import { Bell, ChevronLeft, User, Map, Sparkles, Heart, MessageCircle, ShieldCheck, Globe, X, Check } from "lucide-react"
 
 const cities = [
@@ -830,6 +831,8 @@ export default function Header() {
           <Link href="/favorites" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">
             <Heart size={19} strokeWidth={1.7} className="text-purple-300" aria-hidden="true" />{t("nav.favorites")}
           </Link>
+          {/* «Instalar Noctua en tu móvil»: solo en móvil y si aún no está instalada. */}
+          <InstallAppButton from="menu" variant="menu" onDone={() => setMenuOpen(false)} />
           {/* Antes no había ninguna forma de contactar con soporte desde el menú — solo se
               llegaba a /contact si alguien encontraba el enlace en el footer. */}
           <Link href="/contact" onClick={() => setMenuOpen(false)} className="flex items-center gap-4 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition hover:bg-white/10">

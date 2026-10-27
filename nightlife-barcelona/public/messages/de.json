@@ -1495,5 +1495,8 @@
     "installTitle": "Installiere Noctua auf deinem Handy",
     "installBtn": "Installieren",
     "installIos": "In Safari: Tippe auf Teilen und dann auf „Zum Home-Bildschirm“."
+  },
+  "install": {
+    "body": "Öffne sie direkt vom Startbildschirm, im Vollbild und ohne Umweg über den Browser."
   }
 }
