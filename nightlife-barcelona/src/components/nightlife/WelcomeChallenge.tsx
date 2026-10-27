@@ -77,7 +77,8 @@ export default function WelcomeChallenge({ wide = false }: { wide?: boolean }) {
     setDismissed(true)
   }
 
-  const showInstall = !install.installed && (install.canPrompt || install.isIos)
+  // Solo en móvil: el texto habla de «tu móvil», y en ordenador Chrome ya enseña su propio icono de instalar.
+  const showInstall = !install.installed && install.isMobile && (install.canPrompt || install.isIos)
 
   return (
     <section className={`mx-auto mt-6 px-4 sm:px-6 ${wide ? "max-w-7xl" : "max-w-6xl"}`} aria-labelledby="welcome-challenge-title">

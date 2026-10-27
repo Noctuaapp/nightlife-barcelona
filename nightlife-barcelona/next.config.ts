@@ -15,6 +15,15 @@ const nextConfig: NextConfig = {
   //   - siempre por HTTPS.
   async headers() {
     return [
+      // El service worker (public/sw.js) no debe quedarse en la caché del navegador ni de Vercel:
+      // si algún día cambia, tiene que actualizarse en cuanto se abra la web.
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+        ],
+      },
       {
         source: "/:path*",
         headers: [
