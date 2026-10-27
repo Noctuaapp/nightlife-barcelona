@@ -1513,6 +1513,7 @@
     "installIos": "No Safari: toca em Partilhar e depois em «Adicionar ao ecrã principal»."
   },
   "install": {
-    "body": "Abre-o a partir do ecrã principal, em ecrã inteiro e sem o procurar no navegador."
+    "body": "Abre-o a partir do ecrã principal, em ecrã inteiro e sem o procurar no navegador.",
+    "androidSteps": "No Chrome: toca no menu ⋮ e escolhe «Instalar aplicação» (ou «Adicionar ao ecrã principal»)."
   }
 }

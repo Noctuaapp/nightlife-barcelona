@@ -1500,6 +1500,7 @@
     "installIos": "Dans Safari : touche Partager puis « Sur l'écran d'accueil »."
   },
   "install": {
-    "body": "Ouvre-la depuis ton écran d'accueil, en plein écran, sans la chercher dans le navigateur."
+    "body": "Ouvre-la depuis ton écran d'accueil, en plein écran, sans la chercher dans le navigateur.",
+    "androidSteps": "Dans Chrome : touche le menu ⋮ puis « Installer l'application » (ou « Ajouter à l'écran d'accueil »)."
   }
 }

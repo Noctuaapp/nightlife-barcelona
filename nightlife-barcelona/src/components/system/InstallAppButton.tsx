@@ -11,8 +11,10 @@ import { track } from "../../lib/track"
 // sabía que se podía instalar. Este botón vive en el menú ☰ y en Perfil:
 //  · Android/Chrome: abre directamente el cuadro de instalación del navegador.
 //  · iPhone/iPad (Safari no tiene ese cuadro): despliega los dos pasos a mano.
+//  · Android donde Chrome todavía no ha dado el aviso de instalar (decide él cuándo): despliega
+//    los pasos a mano del menú ⋮ — así el botón sale siempre en móvil y nunca "desaparece".
 // Solo se pinta en móvil y mientras la app no esté ya instalada. Cada pulsación se anota como
-// "install_click" con de dónde vino (menu | profile | join).
+// "install_click" con de dónde vino (menu | profile | join) y si abrió el cuadro o los pasos.
 
 type Props = {
   from: "menu" | "profile" | "join"
@@ -28,10 +30,12 @@ export default function InstallAppButton({ from, variant, onDone, cardClass = ""
   const install = useInstallPrompt()
   const [showSteps, setShowSteps] = useState(false)
 
-  if (install.installed || !install.isMobile || !(install.canPrompt || install.isIos)) return null
+  if (install.installed || !install.isMobile) return null
+
+  const stepsText = install.isIos ? t("welcome.installIos") : t("install.androidSteps")
 
   const press = () => {
-    track("install_click", { meta: { from } })
+    track("install_click", { meta: { from, mode: install.canPrompt ? "prompt" : "steps" } })
     if (install.canPrompt) {
       install.install(from)
       onDone?.()
@@ -61,7 +65,7 @@ export default function InstallAppButton({ from, variant, onDone, cardClass = ""
           <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-night">{t("welcome.installBtn")}</span>
         </button>
         {showSteps && (
-          <p className="mx-2 mb-2 rounded-xl bg-white/5 px-4 py-3 text-xs leading-snug text-zinc-300">{t("welcome.installIos")}</p>
+          <p className="mx-2 mb-2 rounded-xl bg-white/5 px-4 py-3 text-xs leading-snug text-zinc-300">{stepsText}</p>
         )}
       </>
     )
@@ -87,7 +91,7 @@ export default function InstallAppButton({ from, variant, onDone, cardClass = ""
           </span>
         </button>
         {showSteps && (
-          <p className="mt-2 rounded-xl bg-white/5 px-4 py-3 text-xs leading-snug text-zinc-300">{t("welcome.installIos")}</p>
+          <p className="mt-2 rounded-xl bg-white/5 px-4 py-3 text-xs leading-snug text-zinc-300">{stepsText}</p>
         )}
       </div>
     )
@@ -115,7 +119,7 @@ export default function InstallAppButton({ from, variant, onDone, cardClass = ""
               {t("welcome.installBtn")}
             </button>
           ) : (
-            <p className="mt-3 rounded-ctl bg-white/5 px-3.5 py-3 text-xs leading-snug text-zinc-300">{t("welcome.installIos")}</p>
+            <p className="mt-3 rounded-ctl bg-white/5 px-3.5 py-3 text-xs leading-snug text-zinc-300">{stepsText}</p>
           )}
         </div>
       </div>

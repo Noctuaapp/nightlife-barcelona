@@ -28,10 +28,11 @@ export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; ite
   const [anon, setAnon] = useState(false)
   const ref = useRef<HTMLElement | null>(null)
   const install = useInstallPrompt()
-  // En móvil (con el aviso de instalar disponible o iPhone) sale el botón de instalar de verdad, en
-  // cian y de contorno para no competir con «Crear cuenta gratis». En el resto (ordenador) solo
-  // queda la etiqueta que cuenta que se puede instalar. Si ya está instalada, no sale ninguna.
-  const canInstall = !install.installed && install.isMobile && (install.canPrompt || install.isIos)
+  // En móvil sale siempre el botón de instalar, en cian y de contorno para no competir con «Crear
+  // cuenta gratis» (con el aviso de Chrome abre el cuadro de instalar; sin él, enseña los pasos del
+  // menú ⋮). En ordenador no se puede instalar desde aquí: solo queda la etiqueta, también en cian.
+  // Si la app ya está instalada, no sale nada.
+  const canInstall = !install.installed && install.isMobile
 
   useEffect(() => {
     let alive = true
@@ -71,13 +72,13 @@ export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; ite
   // Tras registrarse o entrar, vuelve a la ficha en la que estaba.
   const next = pathname ? `?next=${encodeURIComponent(pathname)}` : ""
 
-  const perks = [
+  const perks: { icon: string; title: string; accent?: boolean }[] = [
     { icon: kind === "event" ? "bell" : "heart", title: t(kind === "event" ? "joinCard.p1tEvent" : "joinCard.p1tClub") },
     { icon: "calendar", title: t("joinCard.p2t") },
     { icon: "note", title: t("joinCard.p3t") },
     { icon: "sparkle", title: t("joinCard.p4t") },
     // Que se puede instalar en el móvil (en móvil lo sustituye el botón de instalar de debajo).
-    ...(canInstall || install.installed ? [] : [{ icon: "smartphone", title: t("joinCard.p5t") }]),
+    ...(canInstall || install.installed ? [] : [{ icon: "smartphone", title: t("joinCard.p5t"), accent: true }]),
   ]
 
   return (
@@ -125,9 +126,11 @@ export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; ite
           {perks.map((p) => (
             <li
               key={p.title}
-              className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] py-1.5 pl-2 pr-3 text-xs font-semibold text-ink"
+              className={`flex shrink-0 items-center gap-1.5 rounded-full border py-1.5 pl-2 pr-3 text-xs font-semibold text-ink ${
+                p.accent ? "border-cyan-300/40 bg-cyan-400/10" : "border-white/10 bg-white/[0.05]"
+              }`}
             >
-              <Icon name={p.icon} className="h-3.5 w-3.5 text-brand-soft" /> {p.title}
+              <Icon name={p.icon} className={`h-3.5 w-3.5 ${p.accent ? "text-cyan-300" : "text-brand-soft"}`} /> {p.title}
             </li>
           ))}
         </ul>

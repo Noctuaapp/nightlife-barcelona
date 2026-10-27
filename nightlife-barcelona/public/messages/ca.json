@@ -1558,6 +1558,7 @@
     "installIos": "A Safari: toca Compartir i després «Afegir a la pantalla d'inici»."
   },
   "install": {
-    "body": "Obre-la des de la pantalla d'inici, a pantalla completa i sense buscar-la al navegador."
+    "body": "Obre-la des de la pantalla d'inici, a pantalla completa i sense buscar-la al navegador.",
+    "androidSteps": "A Chrome: toca el menú ⋮ i tria «Instal·la l'aplicació» (o «Afegir a la pantalla d'inici»)."
   }
 }

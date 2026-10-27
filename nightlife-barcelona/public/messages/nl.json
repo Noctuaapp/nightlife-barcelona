@@ -1500,6 +1500,7 @@
     "installIos": "In Safari: tik op Delen en dan op «Zet op beginscherm»."
   },
   "install": {
-    "body": "Open Noctua vanaf je beginscherm, op volledig scherm en zonder te zoeken in de browser."
+    "body": "Open Noctua vanaf je beginscherm, op volledig scherm en zonder te zoeken in de browser.",
+    "androidSteps": "In Chrome: tik op het menu ⋮ en kies «App installeren» (of «Toevoegen aan startscherm»)."
   }
 }

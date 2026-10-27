@@ -1558,6 +1558,7 @@
     "installIos": "In Safari: tap Share, then “Add to Home Screen”."
   },
   "install": {
-    "body": "Open it from your home screen, full screen, without hunting for it in the browser."
+    "body": "Open it from your home screen, full screen, without hunting for it in the browser.",
+    "androidSteps": "In Chrome: tap the ⋮ menu, then “Install app” (or “Add to Home screen”)."
   }
 }

@@ -1500,6 +1500,7 @@
     "installIos": "In Safari: tocca Condividi e poi «Aggiungi alla schermata Home»."
   },
   "install": {
-    "body": "Aprila dalla schermata Home, a schermo intero e senza cercarla nel browser."
+    "body": "Aprila dalla schermata Home, a schermo intero e senza cercarla nel browser.",
+    "androidSteps": "In Chrome: tocca il menu ⋮ e scegli «Installa app» (o «Aggiungi a schermata Home»)."
   }
 }
