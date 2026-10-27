@@ -39,6 +39,8 @@ const EVENT_LABELS: Record<string, string> = {
   next_click: "Sigue la noche desde la ficha",
   welcome_click: "Pulsa el reto de bienvenida",
   install_click: "Pulsa instalar la app",
+  install_choice: "Responde al aviso de instalar",
+  app_installed: "Instala la app (confirmado)",
   page_view: "Ve la ficha",
   tickets_click: "Pulsa entradas",
   directions_click: "Pulsa cómo llegar",
@@ -59,6 +61,7 @@ const SOURCE_LABELS: Record<string, string> = {
   messaging: "WhatsApp / Telegram",
   invite: "Enlace de invitación",
   direct: "Directo",
+  pwa: "App instalada",
 }
 const ITEM_LABELS: Record<string, string> = { club: "Club", event: "Evento", club_event: "Noche de club" }
 

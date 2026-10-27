@@ -1460,7 +1460,9 @@
     "msg6": "We'll remind you before an event you follow starts",
     "msg7": "Every venue with hours, price and how to get there",
     "msg8": "Check tonight's weather before you head out",
-    "msg9": "See on the map what's open near you"
+    "msg9": "See on the map what's open near you",
+    "msg10": "Install Noctua on your phone and open it like an app",
+    "msg11": "Noctua is a work in progress: some photos are missing"
   },
   "reviews": {
     "title": "Noctua reviews",
@@ -1530,6 +1532,7 @@
     "p2t": "Build the plan",
     "p3t": "Say how it is",
     "p4t": "Your month in Noctua",
+    "p5t": "Install it on your phone",
     "fine": "It's free, no card needed.",
     "cta": "Create free account",
     "login": "I already have an account"

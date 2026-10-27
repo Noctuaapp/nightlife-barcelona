@@ -1460,7 +1460,9 @@
     "msg6": "T'avisem abans que comenci l'esdeveniment que segueixes",
     "msg7": "Cada local amb el seu horari, preu i com arribar-hi",
     "msg8": "Consulta el temps d'aquesta nit abans de sortir",
-    "msg9": "Mira al mapa què tens obert a prop teu"
+    "msg9": "Mira al mapa què tens obert a prop teu",
+    "msg10": "Instal·la Noctua al mòbil i obre-la com una app",
+    "msg11": "Noctua és en construcció: encara falten algunes fotos"
   },
   "reviews": {
     "title": "Opinions de Noctua",
@@ -1530,6 +1532,7 @@
     "p2t": "Munta el pla",
     "p3t": "Explica com està",
     "p4t": "El teu mes a Noctua",
+    "p5t": "Instal·la-la al mòbil",
     "fine": "És gratis i sense targeta.",
     "cta": "Crear compte gratis",
     "login": "Ja tinc compte"

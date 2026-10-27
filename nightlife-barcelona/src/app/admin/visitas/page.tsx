@@ -44,6 +44,7 @@ const SOURCE_LABELS: Record<string, string> = {
   social: "Redes",
   messaging: "WhatsApp / Telegram",
   invite: "Invitación",
+  pwa: "App instalada",
 }
 const sourceLabel = (s: string | null) => (s ? SOURCE_LABELS[s] || s.replace(/^other:/, "") : "—")
 
@@ -78,6 +79,8 @@ const EVENT_LABELS: Record<string, string> = {
   next_click: "Sigue la noche:",
   welcome_click: "Reto de bienvenida:",
   install_click: "Pulsa instalar la app",
+  install_choice: "Aviso de instalar:",
+  app_installed: "Instala la app (confirmado)",
 }
 const JOIN_TO: Record<string, string> = {
   signup: "Crear cuenta", login: "Ya tengo cuenta", open: "Abierto ahora", map: "Mapa", plan: "Planifica tu noche", events: "Eventos",
@@ -99,7 +102,8 @@ function extraDetail(e: Ev): string | null {
   if (e.type === "signup_ok") return e.meta?.confirm_email ? "(debe confirmar el correo)" : "(ya con sesión)"
   if (e.type === "google_click") return e.meta?.from === "login" ? "(en Iniciar sesión)" : "(en Crear cuenta)"
   if (e.type === "share_click" && e.meta?.via === "whatsapp") return "por WhatsApp"
-  if (e.type === "install_click") return ({ menu: "(desde el menú ☰)", profile: "(desde Perfil)", welcome: "(desde «Tu primer reto»)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? ""
+  if (e.type === "install_choice") return e.meta?.outcome === "accepted" ? "lo acepta" : "lo rechaza"
+  if (e.type === "install_click") return ({ menu: "(desde el menú ☰)", profile: "(desde Perfil)", welcome: "(desde «Tu primer reto»)", join: "(desde «¿Aún no estás dentro?»)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? ""
   if (e.type.startsWith("signup_") || e.type.startsWith("confirm_age_") || e.type === "join_view" || e.type === "install_click") return ""
   return null
 }
@@ -192,7 +196,17 @@ export default function AdminVisitsPage() {
         const label = e.meta?.step === "auth" ? `Servidor: ${reason}` : SIGNUP_REASONS[reason] || reason
         errors.set(label, (errors.get(label) || 0) + 1)
       }
+    // Instalar la app (27/10/2026). Android da el recuento real ("appinstalled"); iPhone no avisa, solo
+    // se ve cuando alguien abre la web desde el icono (origen "pwa").
+    const install = [
+      { label: "Pulsan «Instalar»", n: count("install_click") },
+      { label: "Aceptan el aviso del navegador", n: count("install_choice", (e) => e.meta?.outcome === "accepted") },
+      { label: "Rechazan el aviso", n: count("install_choice", (e) => e.meta?.outcome === "dismissed") },
+      { label: "App instalada (lo confirma el móvil)", n: count("app_installed") },
+      { label: "Abren la web desde el icono de la app", n: sessions.filter((s) => s.source === "pwa").length },
+    ]
     return {
+      install,
       rows: [
         { label: "Ven el bloque de registro", n: count("join_view") },
         { label: "Pulsan «Crear cuenta gratis»", n: count("join_click", (e) => e.meta?.to === "signup") },
@@ -261,6 +275,13 @@ export default function AdminVisitsPage() {
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <TopList title="Registro: dónde se cae la gente (visitas)" rows={funnel.rows} total={data.total_sessions} />
             <TopList title="Por qué fallan los registros" rows={funnel.errors} total={Math.max(1, ...funnel.errors.map((r) => r.n))} />
+          </div>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <TopList title="Instalar la app (visitas)" rows={funnel.install} total={data.total_sessions} />
+            <p className="self-center text-xs leading-relaxed text-zinc-500">
+              Android avisa cuando alguien instala la app ("App instalada"). iPhone no avisa de nada: allí solo se ve cuando la persona abre la web desde el
+              icono. Cuenta desde que se publica este cambio (27/10/2026) y no incluye tus propias visitas.
+            </p>
           </div>
           {data.total_sessions > data.sessions.length && (
             <p className="mt-2 text-xs text-zinc-500">El embudo cuenta las {data.sessions.length} visitas más recientes de las {data.total_sessions}.</p>

@@ -8,6 +8,8 @@ import NocOwl from "../mascot/NocOwl"
 import { useLanguage } from "../../context/LanguageContext"
 import { supabase } from "../../lib/supabase"
 import { track } from "../../lib/track"
+import { useInstallPrompt } from "../../lib/useInstallPrompt"
+import InstallAppButton from "../system/InstallAppButton"
 
 // Bloque de registro de las fichas de club y de evento (27/10/2026). Casi todas las visitas
 // llegan desde Google directamente a una ficha, miran el dato que buscaban y se van sin ver nada
@@ -25,6 +27,11 @@ export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; ite
   const pathname = usePathname()
   const [anon, setAnon] = useState(false)
   const ref = useRef<HTMLElement | null>(null)
+  const install = useInstallPrompt()
+  // En móvil (con el aviso de instalar disponible o iPhone) sale el botón de instalar de verdad, en
+  // cian y de contorno para no competir con «Crear cuenta gratis». En el resto (ordenador) solo
+  // queda la etiqueta que cuenta que se puede instalar. Si ya está instalada, no sale ninguna.
+  const canInstall = !install.installed && install.isMobile && (install.canPrompt || install.isIos)
 
   useEffect(() => {
     let alive = true
@@ -69,6 +76,8 @@ export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; ite
     { icon: "calendar", title: t("joinCard.p2t") },
     { icon: "note", title: t("joinCard.p3t") },
     { icon: "sparkle", title: t("joinCard.p4t") },
+    // Que se puede instalar en el móvil (en móvil lo sustituye el botón de instalar de debajo).
+    ...(canInstall || install.installed ? [] : [{ icon: "smartphone", title: t("joinCard.p5t") }]),
   ]
 
   return (
@@ -122,6 +131,8 @@ export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; ite
             </li>
           ))}
         </ul>
+
+        <InstallAppButton from="join" variant="inline" />
       </div>
     </section>
   )

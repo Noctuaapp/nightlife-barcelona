@@ -543,7 +543,17 @@ export default function PlanPage() {
     const jitter = () => Math.random() * 8
     const dow = planDate.getDay()
 
-    const baseClubFilters = (c: any) => !c.sold_out && clubOpensOn(c.hours, c.open_days, dow) !== false
+    // Sin marcar «Priorizar ambiente LGTBI+» (27/10/2026), el plan no propone locales de ambiente
+    // LGTBI+ ni eventos suyos: antes esa casilla solo SUMABA puntos al marcarla, y sin marcar un bar o
+    // discoteca gay entraba igual en el sorteo como uno más. Marcada, se comporta como siempre.
+    const hideLgtbi = !prefs.lgtbi
+    const normName = (s: unknown) => String(s ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
+    const lgtbiVenueNames = new Set(clubs.filter((c) => c.lgtbi_friendly === true).map((c) => normName(c.name)))
+    const isLgtbiEvent = (e: any) =>
+      lgtbiVenueNames.has(normName(e.club_name)) || /\b(lgtb|lgbt|gay|queer|orgullo|pride)/i.test(String(e.title ?? ""))
+
+    const baseClubFilters = (c: any) =>
+      !c.sold_out && clubOpensOn(c.hours, c.open_days, dow) !== false && !(hideLgtbi && c.lgtbi_friendly === true)
 
     // Si la zona elegida no tiene ningún club que cumpla el resto de filtros, en vez de dejar
     // el plan vacío, se suelta el filtro de zona y se busca en toda la ciudad (lo más parecido
@@ -573,14 +583,14 @@ export default function PlanPage() {
     }
 
     let scoredEvents = events
-      .filter((e) => !e.sold_out)
+      .filter((e) => !e.sold_out && !(hideLgtbi && isLgtbiEvent(e)))
       .filter((e) => !zoneSel || zoneOf(e) === zoneSel)
       .map((e) => ({ ...e, ...scoreEvent(e, prefs, todayStr, t) }))
       .sort((a, b) => b.score - a.score)
 
     if (usedZoneFallback) {
       scoredEvents = events
-        .filter((e) => !e.sold_out)
+        .filter((e) => !e.sold_out && !(hideLgtbi && isLgtbiEvent(e)))
         .map((e) => ({ ...e, ...scoreEvent(e, prefs, todayStr, t) }))
         .sort((a, b) => b.score - a.score)
     }

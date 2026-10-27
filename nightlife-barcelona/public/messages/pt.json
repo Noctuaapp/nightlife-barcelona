@@ -1415,7 +1415,9 @@
     "msg6": "Avisamos-te antes de começar um evento que segues",
     "msg7": "Cada local com horário, preço e como chegar ou voltar",
     "msg8": "Vê o tempo desta noite antes de saíres",
-    "msg9": "Vê no mapa o que está aberto perto de ti"
+    "msg9": "Vê no mapa o que está aberto perto de ti",
+    "msg10": "Instala o Noctua no telemóvel e abre-o como uma app",
+    "msg11": "O Noctua está em construção: ainda faltam algumas fotos"
   },
   "reviews": {
     "title": "Opiniões da Noctua",
@@ -1485,6 +1487,7 @@
     "p2t": "Monta o plano",
     "p3t": "Conta como está",
     "p4t": "O teu mês no Noctua",
+    "p5t": "Instala-o no telemóvel",
     "fine": "É grátis e sem cartão.",
     "cta": "Criar conta grátis",
     "login": "Já tenho conta"

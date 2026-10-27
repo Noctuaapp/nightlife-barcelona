@@ -33,6 +33,17 @@ export function markSessionStart(): boolean {
 
 // Clasifica de dónde llega la visita: enlace de invitación (?ref=), campaña (utm_source),
 // buscador, red social o directo. Se calcula una vez por carga de página (en memoria).
+function isStandalone(): boolean {
+  try {
+    return (
+      (typeof window.matchMedia === "function" && window.matchMedia("(display-mode: standalone)").matches) ||
+      (navigator as Navigator & { standalone?: boolean }).standalone === true
+    )
+  } catch {
+    return false
+  }
+}
+
 // ignoreReferrer: tras un parón largo el referrer sigue siendo el de la primera carga (p. ej. Google),
 // que ya no dice de dónde viene la persona ahora: solo cuentan los parámetros de la dirección.
 export function getTrafficSource(ignoreReferrer = false): string {
@@ -44,6 +55,9 @@ export function getTrafficSource(ignoreReferrer = false): string {
   const utm = params.get("utm_source")
   if (params.get("ref")) source = "invite"
   else if (utm) source = utm.toLowerCase().slice(0, 40)
+  // Abierta desde el icono de la app instalada (también cuando se reanuda tras un parón y la
+  // dirección ya no lleva ?utm_source=pwa).
+  else if (isStandalone()) source = "pwa"
   else if (document.referrer && !ignoreReferrer) {
     try {
       const host = new URL(document.referrer).hostname.replace(/^www\./, "")

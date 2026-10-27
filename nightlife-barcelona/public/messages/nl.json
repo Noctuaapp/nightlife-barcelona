@@ -1402,7 +1402,9 @@
     "msg6": "We herinneren je voordat een gevolgd evenement begint",
     "msg7": "Elke plek met openingstijden, prijs en route",
     "msg8": "Check het weer van vanavond voordat je weggaat",
-    "msg9": "Bekijk op de kaart wat er dichtbij open is"
+    "msg9": "Bekijk op de kaart wat er dichtbij open is",
+    "msg10": "Installeer Noctua op je telefoon als een app",
+    "msg11": "Noctua is in aanbouw: er ontbreken nog enkele foto's"
   },
   "reviews": {
     "title": "Noctua-reviews",
@@ -1472,6 +1474,7 @@
     "p2t": "Maak het plan",
     "p3t": "Vertel hoe het is",
     "p4t": "Jouw maand in Noctua",
+    "p5t": "Installeer op je telefoon",
     "fine": "Gratis en zonder bankpas.",
     "cta": "Gratis account maken",
     "login": "Ik heb al een account"

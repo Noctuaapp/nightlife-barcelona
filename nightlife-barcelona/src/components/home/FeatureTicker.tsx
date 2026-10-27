@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Icon from "../ui/Icon"
 import { useLanguage } from "../../context/LanguageContext"
+import { useInstallPrompt } from "../../lib/useInstallPrompt"
 
 // Va rotando frases cortas sobre cosas que la app ya hace y que mucha gente no descubre sola
 // (niveles, notas de check-in, planificar, favoritos, el mapa...). Es publicidad de la propia
@@ -24,24 +25,35 @@ const MESSAGES: { icon: string; key: string }[] = [
   { icon: "map", key: "homeTicker.msg9" },
 ]
 
+// 27/10/2026: dos frases más. «Instala Noctua en tu móvil» (se salta si ya la tienes instalada) y un
+// aviso honesto de que la web sigue en construcción y todavía faltan fotos de locales.
+const INSTALL_MESSAGE = { icon: "smartphone", key: "homeTicker.msg10" }
+const PHOTOS_MESSAGE = { icon: "camera", key: "homeTicker.msg11" }
+
 export default function FeatureTicker() {
   const { t } = useLanguage()
+  const install = useInstallPrompt()
   const [index, setIndex] = useState(0)
   const [visible, setVisible] = useState(true)
+
+  const messages = useMemo(
+    () => (install.installed ? [...MESSAGES, PHOTOS_MESSAGE] : [...MESSAGES, INSTALL_MESSAGE, PHOTOS_MESSAGE]),
+    [install.installed]
+  )
 
   useEffect(() => {
     const id = setInterval(() => {
       // Un pelín de fundido antes de cambiar el texto, no un corte seco.
       setVisible(false)
       setTimeout(() => {
-        setIndex((i) => (i + 1) % MESSAGES.length)
+        setIndex((i) => (i + 1) % messages.length)
         setVisible(true)
       }, 220)
     }, 4200)
     return () => clearInterval(id)
-  }, [])
+  }, [messages.length])
 
-  const current = MESSAGES[index]
+  const current = messages[index % messages.length]
   const textCls = "noctua-ticker-text transition-all duration-200"
   const textStyle = { opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(-3px)" } as const
 
