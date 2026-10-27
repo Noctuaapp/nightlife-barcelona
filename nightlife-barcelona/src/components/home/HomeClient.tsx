@@ -384,9 +384,13 @@ export default function HomeClient({
               <span>
                 <strong className="font-display text-base text-white">{roughly(clubs.length)}+</strong> {t("home.statsClubs")}
               </span>
-              <span>
-                <strong className="font-display text-base text-white">{roughly(eventsCount)}+</strong> {t("home.statsEvents")}
-              </span>
+              {/* Solo eventos que aún no han pasado, y la cifra exacta mientras sean pocos (con
+                  "+90" se prometía mucho más de lo que había). Sin eventos, no se enseña. */}
+              {eventsCount > 0 && (
+                <span>
+                  <strong className="font-display text-base text-white">{eventsCount < 20 ? eventsCount : `${roughly(eventsCount)}+`}</strong> {t("home.statsEvents")}
+                </span>
+              )}
               <span>
                 <strong className="font-display text-base text-white">{roughly(essentialsCount)}+</strong> {t("home.statsEssentials")}
               </span>

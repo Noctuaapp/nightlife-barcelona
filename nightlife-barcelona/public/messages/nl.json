@@ -55,7 +55,7 @@
     "liveTonight": "Vanavond in Barcelona",
     "heroImageAlt": "Barcelona bij nacht, met de verlichte Sagrada Família en Torre Glòries",
     "statsClubs": "clubs in Barcelona",
-    "statsEvents": "actieve evenementen",
+    "statsEvents": "aankomende evenementen",
     "statsEssentials": "essentials in de buurt"
   },
   "filters": {
@@ -800,10 +800,12 @@
     "followThem": "Volg ze",
     "nearbyTitle": "In de buurt",
     "nearbyClosedTitle": "Nu gesloten · open in de buurt",
-    "nearbySeeMap": "Bekijk op de kaart"
+    "nearbySeeMap": "Bekijk op de kaart",
+    "fCocktails": "Cocktails"
   },
   "eventPage": {
-    "dateTbc": "Datum nog niet bekend"
+    "dateTbc": "Datum nog niet bekend",
+    "moreEvents": "Meer evenementen op komst"
   },
   "header": {
     "notifications": "Meldingen",
@@ -1456,5 +1458,25 @@
     "sending": "Versturen…",
     "googleNote": "Aangemeld met Google? Dan heb je geen wachtwoord nodig: gebruik ‘Doorgaan met Google’.",
     "back": "Terug naar inloggen"
+  },
+  "joinCard": {
+    "kicker": "Nog niet binnen?",
+    "titleClub": "Dit is maar één plek. Noctua heeft de hele nacht.",
+    "titleEvent": "Dit is maar één plan. Noctua heeft de hele nacht.",
+    "sub": "Maak een gratis account en Noctua wordt van gids je copiloot voor je avondjes uit.",
+    "p1tClub": "Bewaar je plekken",
+    "p1tEvent": "Mis het niet",
+    "p1bClub": "Bewaar {name} en vind het met één tik terug. Nooit meer «hoe heette die bar ook alweer?».",
+    "p1bEvent": "Bewaar dit evenement en we waarschuwen je voordat het begint.",
+    "p2t": "Maak het plan",
+    "p2b": "Stel je avond samen en stuur hem naar de groep. Nooit meer «en waar gaan we heen?».",
+    "p3t": "Vertel hoe het is",
+    "p3b": "Check in en laat een notitie achter voor wie na jou komt: rij, sfeer, wat dan ook.",
+    "p4t": "Jouw maand in Noctua",
+    "p4b": "Een terugblik op je avonden, wijken en stijlen, gemaakt voor stories.",
+    "fine": "Gratis en zonder bankpas.",
+    "cta": "Gratis account maken",
+    "login": "Ik heb al een account",
+    "explore": "Of ga verder met verkennen"
   }
 }

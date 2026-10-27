@@ -55,7 +55,7 @@
     "liveTonight": "Ce soir à Barcelone",
     "heroImageAlt": "Barcelone la nuit, avec la Sagrada Família et la Torre Glòries illuminées",
     "statsClubs": "clubs à Barcelone",
-    "statsEvents": "événements actifs",
+    "statsEvents": "événements à venir",
     "statsEssentials": "essentiels à proximité"
   },
   "filters": {
@@ -800,10 +800,12 @@
     "followThem": "Suivez-les",
     "nearbyTitle": "À proximité",
     "nearbyClosedTitle": "Fermé en ce moment · ouverts à proximité",
-    "nearbySeeMap": "Voir sur la carte"
+    "nearbySeeMap": "Voir sur la carte",
+    "fCocktails": "Cocktails"
   },
   "eventPage": {
-    "dateTbc": "Date à confirmer"
+    "dateTbc": "Date à confirmer",
+    "moreEvents": "D'autres événements à venir"
   },
   "header": {
     "notifications": "Notifications",
@@ -1456,5 +1458,25 @@
     "sending": "Envoi…",
     "googleNote": "Inscrit avec Google ? Pas besoin de mot de passe : utilisez « Continuer avec Google ».",
     "back": "Retour à la connexion"
+  },
+  "joinCard": {
+    "kicker": "Pas encore dedans ?",
+    "titleClub": "Ce n'est qu'un lieu. Noctua, c'est toute la nuit.",
+    "titleEvent": "Ce n'est qu'un plan. Noctua, c'est toute la nuit.",
+    "sub": "Crée ton compte gratuit et Noctua passe de guide à copilote de tes sorties.",
+    "p1tClub": "Garde tes adresses",
+    "p1tEvent": "Ne le rate pas",
+    "p1bClub": "Enregistre {name} et retrouve-le d'un geste. Fini le « c'était quoi, ce bar ? ».",
+    "p1bEvent": "Enregistre cet événement et on te prévient avant le début.",
+    "p2t": "Monte ton plan",
+    "p2b": "Organise ta soirée avec tes adresses et envoie-la au groupe. Fini le « on va où ? ».",
+    "p3t": "Dis comment c'est",
+    "p3b": "Fais un check-in et laisse un mot à ceux qui arrivent après : file d'attente, ambiance, tout.",
+    "p4t": "Ton mois sur Noctua",
+    "p4b": "Un récap de tes soirées, quartiers et styles à poster en story.",
+    "fine": "C'est gratuit, sans carte bancaire.",
+    "cta": "Créer un compte gratuit",
+    "login": "J'ai déjà un compte",
+    "explore": "Ou continue d'explorer"
   }
 }

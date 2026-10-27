@@ -55,7 +55,7 @@
     "liveTonight": "Esta noche en Barcelona",
     "heroImageAlt": "Barcelona de noche, con la Sagrada Família y la Torre Glòries iluminadas",
     "statsClubs": "clubs en Barcelona",
-    "statsEvents": "eventos activos",
+    "statsEvents": "próximos eventos",
     "statsEssentials": "esenciales cerca de ti",
     "picksKicker": "Elegidos por Noctua",
     "picksTonight": "Nuestro top 3 para esta noche",
@@ -841,10 +841,12 @@
     "followThem": "Síguelos",
     "nearbyTitle": "Cerca de aquí",
     "nearbyClosedTitle": "Cerrado ahora · abiertos cerca",
-    "nearbySeeMap": "Ver en el mapa"
+    "nearbySeeMap": "Ver en el mapa",
+    "fCocktails": "Cócteles"
   },
   "eventPage": {
-    "dateTbc": "Fecha por confirmar"
+    "dateTbc": "Fecha por confirmar",
+    "moreEvents": "Más eventos que vienen"
   },
   "header": {
     "notifications": "Notificaciones",
@@ -1527,5 +1529,25 @@
     "sending": "Enviando…",
     "googleNote": "¿Entraste con Google? Entonces no necesitas contraseña: usa «Continuar con Google».",
     "back": "Volver a iniciar sesión"
+  },
+  "joinCard": {
+    "kicker": "¿Aún no estás dentro?",
+    "titleClub": "Esto es solo un local. Noctua tiene toda la noche.",
+    "titleEvent": "Esto es solo un plan. Noctua tiene toda la noche.",
+    "sub": "Crea tu cuenta gratis y Noctua pasa de guía a copiloto de tus salidas.",
+    "p1tClub": "Guarda tus sitios",
+    "p1tEvent": "Que no se te pase",
+    "p1bClub": "Guarda {name} y vuelve en un toque. Adiós a «¿cómo se llamaba aquel bar?».",
+    "p1bEvent": "Guarda este evento y te avisamos antes de que empiece.",
+    "p2t": "Monta el plan",
+    "p2b": "Arma la noche con tus sitios y pásasela al grupo. Se acabó el «¿y dónde vamos?».",
+    "p3t": "Cuenta cómo está",
+    "p3b": "Haz check-in y deja una nota para quien llegue después: cola, ambiente, lo que sea.",
+    "p4t": "Tu mes en Noctua",
+    "p4b": "Un resumen de tus noches, barrios y estilos para presumir en stories.",
+    "fine": "Es gratis y sin tarjeta.",
+    "cta": "Crear cuenta gratis",
+    "login": "Ya tengo cuenta",
+    "explore": "O sigue explorando"
   }
 }

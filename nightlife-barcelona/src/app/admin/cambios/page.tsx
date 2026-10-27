@@ -46,7 +46,7 @@ const FIELDS: Record<string, string> = {
   sold_out: "Agotado", discount_info: "Descuento", free_entry_info: "Entrada gratis", live_status: "Estado en directo",
   cigarette_machine: "Máquina de tabaco", darts: "Dardos", karaoke: "Karaoke", live_music: "Música en directo",
   dance_floor: "Pista de baile", cloakroom: "Guardarropa", food: "Comida", shisha: "Shisha",
-  wheelchair_accessible: "Accesible", sports_tv: "Partidos en TV", hot_shows: "Ambiente hot", tiktok: "TikTok", subcategory: "Subcategoría / líneas", category: "Categoría", day_of_week: "Día",
+  wheelchair_accessible: "Accesible", sports_tv: "Partidos en TV", hot_shows: "Ambiente hot", cocktails: "Cócteles", tiktok: "TikTok", subcategory: "Subcategoría / líneas", category: "Categoría", day_of_week: "Día",
   rank: "Puesto", note: "Nota", artist: "Artista", featured: "Destacado", price_tiers: "Tarifas", duplicate_of: "Repetido de",
 }
 

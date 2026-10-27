@@ -55,7 +55,7 @@
     "liveTonight": "Heute Nacht in Barcelona",
     "heroImageAlt": "Barcelona bei Nacht mit beleuchteter Sagrada Família und Torre Glòries",
     "statsClubs": "Clubs in Barcelona",
-    "statsEvents": "aktive Events",
+    "statsEvents": "kommende Events",
     "statsEssentials": "Essentials in der Nähe"
   },
   "filters": {
@@ -800,10 +800,12 @@
     "followThem": "Folge ihnen",
     "nearbyTitle": "In der Nähe",
     "nearbyClosedTitle": "Gerade geschlossen · geöffnet in der Nähe",
-    "nearbySeeMap": "Auf der Karte ansehen"
+    "nearbySeeMap": "Auf der Karte ansehen",
+    "fCocktails": "Cocktails"
   },
   "eventPage": {
-    "dateTbc": "Datum folgt"
+    "dateTbc": "Datum folgt",
+    "moreEvents": "Weitere kommende Events"
   },
   "header": {
     "notifications": "Benachrichtigungen",
@@ -1456,5 +1458,25 @@
     "sending": "Wird gesendet…",
     "googleNote": "Mit Google registriert? Dann brauchst du kein Passwort: nutze „Weiter mit Google“.",
     "back": "Zurück zur Anmeldung"
+  },
+  "joinCard": {
+    "kicker": "Noch nicht dabei?",
+    "titleClub": "Das ist nur ein Lokal. Noctua hat die ganze Nacht.",
+    "titleEvent": "Das ist nur ein Plan. Noctua hat die ganze Nacht.",
+    "sub": "Erstelle ein kostenloses Konto und Noctua wird vom Guide zum Co-Piloten für deine Nächte.",
+    "p1tClub": "Speichere deine Spots",
+    "p1tEvent": "Verpass es nicht",
+    "p1bClub": "Speichere {name} und finde es mit einem Tipp wieder. Schluss mit „Wie hieß noch mal diese Bar?“.",
+    "p1bEvent": "Speichere dieses Event und wir erinnern dich, bevor es losgeht.",
+    "p2t": "Bau deinen Plan",
+    "p2b": "Stell deine Nacht zusammen und schick sie an die Gruppe. Schluss mit „Und wohin gehen wir?“.",
+    "p3t": "Erzähl, wie es ist",
+    "p3b": "Check dich ein und hinterlasse eine Notiz für alle, die nach dir kommen: Schlange, Stimmung, was auch immer.",
+    "p4t": "Dein Monat in Noctua",
+    "p4b": "Eine Zusammenfassung deiner Nächte, Viertel und Stile, gemacht für Stories.",
+    "fine": "Kostenlos und ohne Kreditkarte.",
+    "cta": "Kostenloses Konto erstellen",
+    "login": "Ich habe schon ein Konto",
+    "explore": "Oder stöber weiter"
   }
 }

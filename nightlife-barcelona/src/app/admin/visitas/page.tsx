@@ -66,6 +66,10 @@ const EVENT_LABELS: Record<string, string> = {
   tab_open: "Abre la pestaña",
   nearby_click: "Va a un sitio cercano:",
   related_click: "Va a un local parecido:",
+  join_click: "Bloque de registro, pulsa:",
+}
+const JOIN_TO: Record<string, string> = {
+  signup: "Crear cuenta", login: "Ya tengo cuenta", open: "Abierto ahora", map: "Mapa", plan: "Planifica tu noche", events: "Eventos",
 }
 const TAB_LABELS: Record<string, string> = { about: "Información", nights: "Noches", sessions: "Sesiones", location: "Ubicación", reviews: "Opiniones" }
 
@@ -261,8 +265,10 @@ export default function AdminVisitsPage() {
                               <span className="font-semibold text-ink">
                                 {e.type === "tab_open"
                                   ? `${TAB_LABELS[String(e.meta?.tab)] || String(e.meta?.tab || "")} (${e.name || ""})`
+                                  : e.type === "join_click" && e.meta?.to
+                                    ? JOIN_TO[String(e.meta.to)] || String(e.meta.to)
                                   : (e.type === "nearby_click" || e.type === "related_click") && e.meta?.to
-                                    ? String(e.meta.to) === "map" ? "el mapa" : String(e.meta.to)
+                                    ? String(e.meta.to) === "map" ? "el mapa" : String(e.meta.to) === "events" ? "todos los eventos" : String(e.meta.to)
                                     : e.type === "search" || e.type === "filter_used"
                                   ? e.name
                                     ? `«${e.name}»${e.results !== null ? ` (${e.results} resultados)` : ""}`

@@ -27,6 +27,7 @@ const EVENT_LABELS: Record<string, string> = {
   tab_open: "Abre una pestaña de la ficha",
   nearby_click: "Va a un sitio cercano",
   related_click: "Va a un local parecido",
+  join_click: "Pulsa en el bloque de registro",
   page_view: "Ve la ficha",
   tickets_click: "Pulsa entradas",
   directions_click: "Pulsa cómo llegar",

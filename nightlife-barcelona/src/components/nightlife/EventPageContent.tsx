@@ -14,6 +14,9 @@ import ClubGallery from "./club/ClubGallery"
 import ClubReviews, { googleMapsReviewsUrl } from "./club/ClubReviews"
 import VenueReviews from "./club/VenueReviews"
 import SocialLinks from "./club/SocialLinks"
+import NearbyStrip from "./club/NearbyStrip"
+import MoreEventsStrip from "./club/MoreEventsStrip"
+import JoinNoctuaCard from "./JoinNoctuaCard"
 import RideButtons from "./club/RideButtons"
 import Stars from "./club/Stars"
 import Icon from "../ui/Icon"
@@ -281,6 +284,9 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                 </div>
               </Panel>
             )}
+
+            {/* Registro: solo lo ve quien no tiene sesión (ver JoinNoctuaCard) */}
+            <JoinNoctuaCard kind="event" itemId={event.id} name={event.title} />
           </div>
 
           <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
@@ -371,6 +377,17 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
           </aside>
         </div>
       </section>
+
+      {/* Para que quien llega desde Google siga dentro de Noctua (27/10/2026): otros eventos que
+          vienen y locales cerca de este. */}
+      <MoreEventsStrip eventId={event.id} eventName={event.title} />
+      {hasCoords && (
+        <NearbyStrip
+          club={{ id: -1, name: event.title, latitude: event.latitude, longitude: event.longitude, music: event.music }}
+          openNow={null}
+          onPick={(to) => trackClick("nearby_click", { to })}
+        />
+      )}
 
       <div className="mt-16">
         <ClubGallery

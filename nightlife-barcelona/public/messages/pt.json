@@ -55,7 +55,7 @@
     "liveTonight": "Esta noite em Barcelona",
     "heroImageAlt": "Barcelona à noite, com a Sagrada Família e a Torre Glòries iluminadas",
     "statsClubs": "clubs em Barcelona",
-    "statsEvents": "eventos ativos",
+    "statsEvents": "próximos eventos",
     "statsEssentials": "essenciais perto de ti"
   },
   "filters": {
@@ -813,10 +813,12 @@
     "followThem": "Siga-os",
     "nearbyTitle": "Aqui perto",
     "nearbyClosedTitle": "Fechado agora · abertos aqui perto",
-    "nearbySeeMap": "Ver no mapa"
+    "nearbySeeMap": "Ver no mapa",
+    "fCocktails": "Cocktails"
   },
   "eventPage": {
-    "dateTbc": "Data a confirmar"
+    "dateTbc": "Data a confirmar",
+    "moreEvents": "Mais eventos a caminho"
   },
   "header": {
     "notifications": "Notificações",
@@ -1469,5 +1471,25 @@
     "sending": "A enviar…",
     "googleNote": "Entraste com o Google? Então não precisas de palavra-passe: usa «Continuar com o Google».",
     "back": "Voltar ao início de sessão"
+  },
+  "joinCard": {
+    "kicker": "Ainda não estás dentro?",
+    "titleClub": "Isto é só um local. O Noctua tem a noite toda.",
+    "titleEvent": "Isto é só um plano. O Noctua tem a noite toda.",
+    "sub": "Cria a tua conta grátis e o Noctua passa de guia a copiloto das tuas saídas.",
+    "p1tClub": "Guarda os teus sítios",
+    "p1tEvent": "Não deixes passar",
+    "p1bClub": "Guarda {name} e volta num toque. Chega de «como é que se chamava aquele bar?».",
+    "p1bEvent": "Guarda este evento e avisamos-te antes de começar.",
+    "p2t": "Monta o plano",
+    "p2b": "Organiza a noite com os teus sítios e envia ao grupo. Acabou o «e onde vamos?».",
+    "p3t": "Conta como está",
+    "p3b": "Faz check-in e deixa uma nota a quem chegar depois: fila, ambiente, o que for.",
+    "p4t": "O teu mês no Noctua",
+    "p4b": "Um resumo das tuas noites, bairros e estilos para as stories.",
+    "fine": "É grátis e sem cartão.",
+    "cta": "Criar conta grátis",
+    "login": "Já tenho conta",
+    "explore": "Ou continua a explorar"
   }
 }

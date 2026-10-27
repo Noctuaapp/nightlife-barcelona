@@ -18,6 +18,7 @@ import ClubGallery from "./club/ClubGallery"
 import ClubReviews, { googleMapsReviewsUrl } from "./club/ClubReviews"
 import VenueReviews from "./club/VenueReviews"
 import NearbyStrip from "./club/NearbyStrip"
+import JoinNoctuaCard from "./JoinNoctuaCard"
 import SocialLinks, { socialUrl } from "./club/SocialLinks"
 import ClubFeatures, { activeFeatureCount } from "./club/ClubFeatures"
 import Stars from "./club/Stars"
@@ -763,6 +764,9 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                 </div>
               </Panel>
             )}
+
+            {/* Registro: solo lo ve quien no tiene sesión (ver JoinNoctuaCard) */}
+            <JoinNoctuaCard kind="club" itemId={club.id} name={club.name} />
           </div>
 
           {/* ACCIONES */}

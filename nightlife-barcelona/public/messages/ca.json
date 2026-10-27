@@ -55,7 +55,7 @@
     "liveTonight": "Aquesta nit a Barcelona",
     "heroImageAlt": "Barcelona de nit, amb la Sagrada Família i la Torre Glòries il·luminades",
     "statsClubs": "clubs a Barcelona",
-    "statsEvents": "esdeveniments actius",
+    "statsEvents": "pròxims esdeveniments",
     "statsEssentials": "essencials a prop teu",
     "picksKicker": "Triats per Noctua",
     "picksTonight": "El nostre top 3 per aquesta nit",
@@ -828,10 +828,12 @@
     "followThem": "Segueix-los",
     "nearbyTitle": "A prop d'aquí",
     "nearbyClosedTitle": "Ara està tancat · oberts a prop",
-    "nearbySeeMap": "Veure al mapa"
+    "nearbySeeMap": "Veure al mapa",
+    "fCocktails": "Còctels"
   },
   "eventPage": {
-    "dateTbc": "Data per confirmar"
+    "dateTbc": "Data per confirmar",
+    "moreEvents": "Més esdeveniments que vénen"
   },
   "header": {
     "notifications": "Notificacions",
@@ -1514,5 +1516,25 @@
     "sending": "Enviant…",
     "googleNote": "Vas entrar amb Google? Llavors no necessites contrasenya: fes servir «Continua amb Google».",
     "back": "Tornar a iniciar sessió"
+  },
+  "joinCard": {
+    "kicker": "Encara no ets dins?",
+    "titleClub": "Això és només un local. Noctua té tota la nit.",
+    "titleEvent": "Això és només un pla. Noctua té tota la nit.",
+    "sub": "Crea el teu compte gratis i Noctua passa de guia a copilot de les teves sortides.",
+    "p1tClub": "Desa els teus llocs",
+    "p1tEvent": "Que no se't passi",
+    "p1bClub": "Desa {name} i torna-hi d'un toc. Adéu a «com es deia aquell bar?».",
+    "p1bEvent": "Desa aquest esdeveniment i t'avisem abans que comenci.",
+    "p2t": "Munta el pla",
+    "p2b": "Arma la nit amb els teus llocs i passa-la al grup. S'ha acabat el «i on anem?».",
+    "p3t": "Explica com està",
+    "p3b": "Fes check-in i deixa una nota per a qui arribi després: cua, ambient, el que sigui.",
+    "p4t": "El teu mes a Noctua",
+    "p4b": "Un resum de les teves nits, barris i estils per presumir a les stories.",
+    "fine": "És gratis i sense targeta.",
+    "cta": "Crear compte gratis",
+    "login": "Ja tinc compte",
+    "explore": "O segueix explorant"
   }
 }

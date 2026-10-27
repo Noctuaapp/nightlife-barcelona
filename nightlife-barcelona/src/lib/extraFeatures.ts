@@ -17,6 +17,7 @@ export const EXTRA_FEATURES: ExtraFeature[] = [
   { field: "karaoke", labelKey: "clubPage.fKaraoke", label: "Karaoke", emoji: "🎤", icon: "mic", summary: "karaoke" },
   { field: "sports_tv", labelKey: "clubPage.fSportsTv", label: "Deportes en TV (partidos)", emoji: "📺", icon: "tv", summary: "pantallas para ver partidos", filter: "Partidos en TV" },
   { field: "hot_shows", labelKey: "clubPage.fHotShows", label: "Ambiente hot (striptease, shows +18)", emoji: "🔥", icon: "flame", summary: "ambiente hot con shows para adultos", filter: "Ambiente hot" },
+  { field: "cocktails", labelKey: "clubPage.fCocktails", label: "Cócteles", emoji: "🍸", icon: "cocktail", summary: "carta de cócteles", filter: "Cócteles" },
   { field: "live_music", labelKey: "clubPage.fLiveMusic", label: "Música en directo", emoji: "🎸", icon: "guitar", summary: "música en directo", filter: "Música en directo" },
   { field: "dance_floor", labelKey: "clubPage.fDanceFloor", label: "Pista de baile", emoji: "🪩", icon: "disco", summary: "pista de baile", filter: "Pista de baile" },
   { field: "cloakroom", labelKey: "clubPage.fCloakroom", label: "Guardarropa", emoji: "🧥", icon: "hanger", summary: "guardarropa" },

@@ -347,8 +347,12 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
           </div>
         </section>
 
-        {/* STICKY SEARCH + QUICK ACTIONS */}
-        <div className="sticky top-0 z-30 mt-8 border-y border-white/10 bg-black/70 py-4 backdrop-blur-xl">
+        {/* BUSCADOR + ACCIONES RÁPIDAS. Solo se queda fijo al hacer scroll en pantallas grandes
+            (lg+), donde ocupa una sola fila y se pega justo debajo de la cabecera (que mide 72 px
+            en móvil y 80 px desde sm). En el móvil se partía en 4 o 5 filas y, al ir fijo, tapaba
+            un tercio de la pantalla mientras se miraban los resultados (27/10/2026): ahora se va
+            con el scroll como el resto de la página. */}
+        <div className="relative z-30 mt-8 border-y border-white/10 bg-black/70 py-4 backdrop-blur-xl lg:sticky lg:top-20">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4">
             <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3.5 backdrop-blur-xl transition focus-within:border-purple-400/50 focus-within:bg-white/[0.08]">
               <SearchIcon className="h-4 w-4 shrink-0 text-zinc-500 transition group-focus-within:text-purple-300" />

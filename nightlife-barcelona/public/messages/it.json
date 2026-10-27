@@ -55,7 +55,7 @@
     "liveTonight": "Stasera a Barcellona",
     "heroImageAlt": "Barcellona di notte, con la Sagrada Família e la Torre Glòries illuminate",
     "statsClubs": "club a Barcellona",
-    "statsEvents": "eventi attivi",
+    "statsEvents": "prossimi eventi",
     "statsEssentials": "essenziali nelle vicinanze"
   },
   "filters": {
@@ -800,10 +800,12 @@
     "followThem": "Seguili",
     "nearbyTitle": "Qui vicino",
     "nearbyClosedTitle": "Ora è chiuso · aperti qui vicino",
-    "nearbySeeMap": "Vedi sulla mappa"
+    "nearbySeeMap": "Vedi sulla mappa",
+    "fCocktails": "Cocktail"
   },
   "eventPage": {
-    "dateTbc": "Data da confermare"
+    "dateTbc": "Data da confermare",
+    "moreEvents": "Altri eventi in arrivo"
   },
   "header": {
     "notifications": "Notifiche",
@@ -1456,5 +1458,25 @@
     "sending": "Invio…",
     "googleNote": "Ti sei registrato con Google? Allora non ti serve una password: usa «Continua con Google».",
     "back": "Torna all’accesso"
+  },
+  "joinCard": {
+    "kicker": "Non sei ancora dentro?",
+    "titleClub": "Questo è solo un locale. Noctua ha tutta la notte.",
+    "titleEvent": "Questo è solo un evento. Noctua ha tutta la notte.",
+    "sub": "Crea il tuo account gratuito e Noctua passa da guida a copilota delle tue uscite.",
+    "p1tClub": "Salva i tuoi posti",
+    "p1tEvent": "Non perdertelo",
+    "p1bClub": "Salva {name} e ritrovalo con un tocco. Addio al «come si chiamava quel bar?».",
+    "p1bEvent": "Salva questo evento e ti avvisiamo prima che inizi.",
+    "p2t": "Costruisci il piano",
+    "p2b": "Organizza la serata con i tuoi posti e mandala al gruppo. Basta con «e dove andiamo?».",
+    "p3t": "Racconta com'è",
+    "p3b": "Fai check-in e lascia una nota per chi arriva dopo: coda, atmosfera, quello che vuoi.",
+    "p4t": "Il tuo mese su Noctua",
+    "p4b": "Un riepilogo delle tue serate, quartieri e stili da mettere nelle storie.",
+    "fine": "È gratis e senza carta.",
+    "cta": "Crea account gratuito",
+    "login": "Ho già un account",
+    "explore": "Oppure continua a esplorare"
   }
 }
