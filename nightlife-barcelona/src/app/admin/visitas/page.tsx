@@ -266,7 +266,7 @@ export default function AdminVisitsPage() {
                                 {e.type === "tab_open"
                                   ? `${TAB_LABELS[String(e.meta?.tab)] || String(e.meta?.tab || "")} (${e.name || ""})`
                                   : e.type === "join_click" && e.meta?.to
-                                    ? JOIN_TO[String(e.meta.to)] || String(e.meta.to)
+                                    ? `${JOIN_TO[String(e.meta.to)] || String(e.meta.to)}${e.meta.pos ? (e.meta.pos === "top" ? " (bloque de arriba)" : " (bloque del final)") : ""}`
                                   : (e.type === "nearby_click" || e.type === "related_click") && e.meta?.to
                                     ? String(e.meta.to) === "map" ? "el mapa" : String(e.meta.to) === "events" ? "todos los eventos" : String(e.meta.to)
                                     : e.type === "search" || e.type === "filter_used"

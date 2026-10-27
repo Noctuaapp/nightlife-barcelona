@@ -474,6 +474,9 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
         </section>
       )}
 
+      {/* REGISTRO (versión compacta, arriba): solo lo ve quien no tiene sesión. La grande va al final. */}
+      <JoinNoctuaCard variant="banner" kind="club" itemId={club.id} name={club.name} />
+
       {/* CERCA DE AQUÍ: para que quien llega desde Google siga la noche en Noctua */}
       <NearbyStrip
         club={club}

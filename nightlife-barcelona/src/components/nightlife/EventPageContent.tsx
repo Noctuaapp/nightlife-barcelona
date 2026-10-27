@@ -226,6 +226,9 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
         </section>
       )}
 
+      {/* REGISTRO (versión compacta, arriba): solo lo ve quien no tiene sesión. La grande va al final. */}
+      <JoinNoctuaCard variant="banner" kind="event" itemId={event.id} name={event.title} />
+
       <section className="mx-auto max-w-6xl px-4 pt-10 sm:px-6">
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="order-last min-w-0 space-y-6 lg:order-none lg:col-span-2">
