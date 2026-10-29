@@ -16,7 +16,7 @@ with
 sensitive(t) as (values
   ('profiles'), ('contact_messages'), ('entry_denials'), ('analytics'), ('attendances'), ('favorites'),
   ('notifications'), ('club_checkin_reports'), ('venue_review_reports'), ('venue_review_thanks'),
-  ('admin_notifications'), ('admin_audit_log'), ('site_feedback'), ('party_poll_votes'), ('xp_events')
+  ('admin_notifications'), ('admin_audit_log'), ('site_feedback'), ('party_poll_votes'), ('party_poll_anon_votes'), ('xp_events')
 ),
 a as (
   select 'A · Tabla sin RLS' as revision, c.relname::text as objeto, 'Activa RLS o bórrala si no se usa' as detalle
@@ -31,7 +31,7 @@ b as (
     and p.cmd in ('INSERT', 'UPDATE', 'DELETE', 'ALL')
     and (coalesce(p.with_check, p.qual, 'true') = 'true')
     and (p.roles && array['public', 'anon', 'authenticated']::name[])
-    and p.tablename not in ('site_feedback', 'analytics') -- abiertas a propósito (opinión anónima y contador de visitas)
+    and p.tablename not in ('site_feedback', 'analytics', 'party_poll_anon_votes') -- abiertas a propósito (opinión anónima, contador de visitas y votos de la encuesta sin cuenta)
 ),
 c as (
   select 'C · Lectura abierta de datos personales', p.tablename || ' · ' || p.policyname,

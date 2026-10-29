@@ -5,6 +5,11 @@
 //   - NO cambies el id de una pregunta que ya existe (sus votos quedarían huérfanos);
 //   - si cambias el texto de una opción, mantén el mismo orden (a = primera, b = segunda).
 // Textos en es / ca / en. El resto de idiomas de la web usan el inglés.
+//
+// ALCOHOL (30/10/2026): las preguntas que hablan de bebida (cubatas, chupitos, resaca, barra libre...)
+// solo se enseñan a quien tiene cuenta, porque al registrarse confirma que es mayor de edad. Quien
+// juega sin cuenta solo recibe las demás. Al AÑADIR una pregunta que hable de alcohol, apunta su id
+// en ALCOHOL_POLL_IDS (más abajo); el test src/lib/__tests__/partyPolls.test.ts avisa si se olvida.
 
 export type PollText = { a: string; b: string }
 export type PartyPoll = { id: string; es: PollText; ca: PollText; en: PollText }
@@ -372,8 +377,116 @@ const MORE: PollRow[] = [
   ["fiesta-cumple-propio", "Celebrar tu cumple a lo grande", "Que nadie se acuerde y salir igual", "Celebrar el teu aniversari a lo gran", "Que ningú se'n recordi i sortir igual", "Celebrate your birthday big", "Nobody remembers, go out anyway"],
 ]
 
-for (const [id, esA, esB, caA, caB, enA, enB] of MORE) {
+// ── Tanda 3 (30/10/2026): situaciones de fiesta y «qué preferirías» locos. Las últimas 11 hablan de
+// bebida y están marcadas en ALCOHOL_POLL_IDS.
+const MORE_3: PollRow[] = [
+  ["foco-dj", "Que el DJ te señale y tengas que bailar solo 30 segundos", "Salir en la pantalla gigante con cara de susto", "Que el DJ t'assenyali i hagis de ballar sol 30 segons", "Sortir a la pantalla gegant amb cara d'ensurt", "The DJ points at you and you must dance solo for 30 seconds", "Appear on the giant screen looking terrified"],
+  ["abrigo-cambiado", "Que en el ropero te den tu abrigo, pero dos tallas más grande", "Recuperar el tuyo con un chicle pegado dentro", "Que al guarda-roba et donin la teva jaqueta, dues talles més gran", "Recuperar la teva amb un xiclet enganxat a dins", "The cloakroom hands you the same coat, two sizes too big", "Get yours back with chewing gum stuck inside"],
+  ["bano-sin-luz", "Un baño de club sin luz", "Un baño de club sin papel", "Un lavabo de club sense llum", "Un lavabo de club sense paper", "A club toilet with no light", "A club toilet with no paper"],
+  ["codazos-canto", "Que te den un codazo cada vez que levantas los brazos", "Que te canten al oído toda la noche", "Que et donin un cop de colze cada cop que alces els braços", "Que et cantin a cau d'orella tota la nit", "Get elbowed every time you raise your arms", "Have someone sing in your ear all night"],
+  ["hombros-concierto", "Llevar a un amigo a hombros todo el concierto", "Ir tú a hombros todo el concierto", "Portar un amic a coll tot el concert", "Anar tu a coll tot el concert", "Carry a friend on your shoulders through the whole gig", "Be carried on someone's shoulders through the whole gig"],
+  ["dedicatoria-ex", "Cantarle una balada a tu ex delante de todos", "Que tu ex te dedique una canción por el micro", "Cantar-li una balada al teu ex davant de tothom", "Que el teu ex et dediqui una cançó pel micro", "Sing a ballad to your ex in front of everyone", "Have your ex dedicate a song to you on the mic"],
+  ["guardian-grupo", "Ser quien guarda los abrigos y las llaves de todo el grupo", "Ser quien lleva el cargador del móvil de todo el grupo", "Ser qui guarda les jaquetes i les claus de tot el grup", "Ser qui porta el carregador del mòbil de tot el grup", "Be the one holding everyone's coats and keys", "Be the one carrying everyone's phone charger"],
+  ["fotografo-ojos", "Ser el fotógrafo oficial del grupo y no salir en ninguna foto", "Salir en todas las fotos, pero siempre con los ojos cerrados", "Ser el fotògraf oficial del grup i no sortir a cap foto", "Sortir a totes les fotos, però sempre amb els ulls tancats", "Be the group's photographer and appear in no photos", "Be in every photo, always with your eyes closed"],
+  ["pulsera-sello", "Una pulsera de entrada que no se quita en una semana", "Un sello en la mano que dura un mes", "Una polsera d'entrada que no es treu en una setmana", "Un segell a la mà que dura un mes", "A wristband that won't come off for a week", "A hand stamp that lasts a month"],
+  ["luces-corte", "Que enciendan las luces a las 5 y se vea todo", "Que corten la música justo en el estribillo", "Que encenguin els llums a les 5 i es vegi tot", "Que tallin la música just a la tornada", "The lights come on at 5am and you see everything", "The music cuts out right at the chorus"],
+  ["selfie-idolo", "Un selfie perfecto con alguien famoso que no conoces", "Un selfie movido con tu mayor ídolo", "Una selfie perfecta amb algú famós que no coneixes", "Una selfie moguda amb el teu màxim ídol", "A perfect selfie with a celebrity you don't know", "A blurry selfie with your biggest idol"],
+  ["baile-viral", "Que tu peor baile se haga viral con un millón de vistas", "Que tu mejor baile lo vean solo tres personas", "Que el teu pitjor ball es faci viral, amb un milió de vistes", "Que el teu millor ball el vegin només tres persones", "Your worst dance goes viral with a million views", "Your best dance is seen by only three people"],
+  ["hora-seguida", "Una hora seguida de bachata", "Una hora seguida de hardstyle", "Una hora seguida de bachata", "Una hora seguida de hardstyle", "An hour of non-stop bachata", "An hour of non-stop hardstyle"],
+  ["cumple-club", "Que todo el club te cante el cumpleaños feliz", "Que el DJ pare la música para felicitarte", "Que tot el club et canti el Per molts anys", "Que el DJ aturi la música per felicitar-te", "The whole club sings happy birthday to you", "The DJ stops the music to wish you happy birthday"],
+  ["tarta-cubo", "Una tarta en la cara", "Un cubo de agua fría por la cabeza", "Un pastís a la cara", "Un cubell d'aigua freda pel cap", "A cake smashed in your face", "A bucket of cold water over your head"],
+  ["taxi-patinete", "Compartir taxi con cuatro desconocidos", "Volver en patinete eléctrico bajo la lluvia", "Compartir taxi amb quatre desconeguts", "Tornar amb patinet elèctric sota la pluja", "Share a taxi with four strangers", "Ride home on an e-scooter in the rain"],
+  ["sala-secreta", "Descubrir una sala secreta con 10 personas y música increíble", "Quedarte en la pista principal, llena hasta los topes", "Descobrir una sala secreta amb 10 persones i música increïble", "Quedar-te a la pista principal, plena de gom a gom", "Find a secret room with 10 people and incredible music", "Stay on the main floor, packed to the walls"],
+  ["dj-botones", "Poder saltar 5 canciones en toda la noche", "Poder pedir una canción que sí o sí suena", "Poder saltar 5 cançons en tota la nit", "Poder demanar una cançó que sí o sí sona", "Skip any 5 songs all night", "Request one song that is guaranteed to play"],
+  ["musica-gente", "Una fiesta con la mejor música pero casi vacía", "Una fiesta llenísima con música regular", "Una festa amb la millor música però gairebé buida", "Una festa pleníssima amb música regular", "The best music, but almost empty", "Packed to the brim, but so-so music"],
+  ["amigo-desastre", "Salir con el amigo que lo pierde todo", "Salir con el que se duerme en cualquier sitio", "Sortir amb l'amic que ho perd tot", "Sortir amb el que s'adorm a qualsevol lloc", "Go out with the friend who loses everything", "Go out with the friend who falls asleep anywhere"],
+  ["amigo-cinco-min", "Salir con el que siempre dice «cinco minutos más»", "Salir con el que se va a casa a las 12 sin avisar", "Sortir amb el que sempre diu «cinc minuts més»", "Sortir amb el que se'n va a casa a les 12 sense avisar", "Go out with the friend who always says «five more minutes»", "Go out with the friend who vanishes home at midnight"],
+  ["espuma-holi", "Fiesta de espuma", "Fiesta de polvos de colores", "Festa d'escuma", "Festa de pols de colors", "Foam party", "Colour-powder party"],
+  ["fiesta-transporte", "Fiesta en un tren en marcha", "Fiesta en un autobús turístico de dos pisos", "Festa en un tren en marxa", "Festa en un autobús turístic de dos pisos", "Party on a moving train", "Party on a double-decker tour bus"],
+  ["ano-fiesta", "Un año de fiesta solo con tus amigos de siempre", "Un año conociendo gente nueva cada noche", "Un any de festa només amb els teus amics de sempre", "Un any coneixent gent nova cada nit", "A year of partying only with your usual friends", "A year meeting new people every night"],
+  ["remix-raros", "Que el DJ solo ponga remixes de canciones infantiles", "Que el DJ solo ponga remixes de sintonías de anuncios", "Que el DJ només posi remixos de cançons infantils", "Que el DJ només posi remixos de sintonies d'anuncis", "The DJ plays only remixes of nursery rhymes", "The DJ plays only remixes of advert jingles"],
+  ["flashmob", "Una coreografía con 300 personas a la vez", "Un baile libre y caótico, cada uno a lo suyo", "Una coreografia amb 300 persones alhora", "Un ball lliure i caòtic, cadascú per la seva", "A 300-person synchronised dance", "A free-for-all chaotic dance floor"],
+  ["entrada-secreta", "Entrar a un club por una puerta secreta con contraseña", "Entrar a un club por la cocina de un restaurante", "Entrar a un club per una porta secreta amb contrasenya", "Entrar a un club per la cuina d'un restaurant", "Enter a club through a secret door with a password", "Enter a club through a restaurant kitchen"],
+  ["fiesta-cueva", "Fiesta en una cueva", "Fiesta en un faro", "Festa en una cova", "Festa en un far", "Party in a cave", "Party in a lighthouse"],
+  ["sitio-altavoz", "Que te toque siempre el sitio pegado al altavoz", "Que te toque siempre el sitio más lejos de todo", "Que et toqui sempre el lloc enganxat a l'altaveu", "Que et toqui sempre el lloc més lluny de tot", "Always end up right next to the speaker", "Always end up the furthest from everything"],
+  ["disfraz-hinchable", "Ir a la fiesta con un disfraz hinchable de dinosaurio", "Ir a la fiesta disfrazado de porción de pizza gigante", "Anar a la festa amb una disfressa inflable de dinosaure", "Anar a la festa disfressat de porció de pizza gegant", "Go to the party in an inflatable dinosaur costume", "Go to the party dressed as a giant pizza slice"],
+  ["acompanante-abuela", "Salir de fiesta con tu abuela", "Salir de fiesta con tu profesor favorito", "Sortir de festa amb la teva àvia", "Sortir de festa amb el teu professor preferit", "Go out partying with your grandma", "Go out partying with your favourite teacher"],
+  ["padres-fiesta", "Que tus padres elijan la música de tu cumple", "Que tus padres se queden toda la noche en tu fiesta", "Que els teus pares triïn la música del teu aniversari", "Que els teus pares es quedin tota la nit a la teva festa", "Your parents pick the music for your birthday", "Your parents stay all night at your party"],
+  ["playa-altavoz", "Que se quede sin batería el altavoz en plena fiesta en la playa", "Que se levante viento y se lleve la sombrilla y la comida", "Que es quedi sense bateria l'altaveu en plena festa a la platja", "Que s'aixequi vent i s'emporti el para-sol i el menjar", "The speaker dies mid-party on the beach", "The wind blows away the parasol and all the food"],
+  ["rima-opera", "Hablar solo en rimas todo el día", "Hablar solo cantando ópera todo el día", "Parlar només en rimes tot el dia", "Parlar només cantant òpera tot el dia", "Speak only in rhymes all day", "Speak only in opera singing all day"],
+  ["superpoder-inutil", "Volar, pero solo a un metro del suelo", "Ser invisible, pero solo cuando nadie te mira", "Volar, però només a un metre del terra", "Ser invisible, però només quan ningú et mira", "Fly, but only one metre off the ground", "Be invisible, but only when nobody's looking"],
+  ["banda-comentarista", "Que una banda de mariachis te siga a todas partes", "Que un narrador de documental comente todo lo que haces", "Que una banda de mariachis et segueixi a tot arreu", "Que un narrador de documental comenti tot el que fas", "A mariachi band follows you everywhere", "A nature-documentary narrator comments on everything you do"],
+  ["vivir-sitio", "Vivir dentro de una discoteca", "Vivir dentro de un centro comercial", "Viure dins d'una discoteca", "Viure dins d'un centre comercial", "Live inside a nightclub", "Live inside a shopping mall"],
+  ["estornudo-confeti", "Estornudar confeti", "Tener hipo con sonido de bocina", "Esternudar confeti", "Tenir singlot amb so de botzina", "Sneeze confetti", "Hiccup with a honking horn sound"],
+  ["entender-animales", "Entender a los perros, pero que sean muy cotillas", "Entender a los gatos, pero que solo te insulten", "Entendre els gossos, però que siguin molt xafarders", "Entendre els gats, però que només t'insultin", "Understand dogs, but they're massive gossips", "Understand cats, but they only insult you"],
+  ["pizza-kebab-vida", "Comer solo pizza el resto de tu vida", "Comer solo kebab el resto de tu vida", "Menjar només pizza la resta de la teva vida", "Menjar només kebab la resta de la teva vida", "Eat only pizza for the rest of your life", "Eat only kebab for the rest of your life"],
+  ["mentira-bocina", "Que suene una bocina cada vez que mientes", "Que suenen aplausos cada vez que dices la verdad", "Que soni una botzina cada cop que menteixes", "Que sonin aplaudiments cada cop que dius la veritat", "A horn sounds every time you lie", "Applause plays every time you tell the truth"],
+  ["teletransporte", "Teletransportarte a casa cuando estés cansado", "Teletransportarte a cualquier club del mundo una vez al mes", "Teletransportar-te a casa quan estiguis cansat", "Teletransportar-te a qualsevol club del món un cop al mes", "Teleport home whenever you're tired", "Teleport to any club in the world once a month"],
+  ["lista-vergonzosa", "Que todos vean tu lista de reproducción más vergonzosa", "Que todos vean tu galería de fotos de los últimos 3 meses", "Que tothom vegi la teva llista de reproducció més vergonyosa", "Que tothom vegi la teva galeria de fotos dels últims 3 mesos", "Everyone sees your most embarrassing playlist", "Everyone sees your camera roll from the last 3 months"],
+  ["entrada-luchador", "Que suene música épica de luchador cada vez que entras", "Que suenen risas enlatadas cada vez que dices algo", "Que soni música èpica de lluitador cada cop que entres", "Que sonin rialles enllaunades cada cop que dius alguna cosa", "Epic wrestler entrance music plays every time you walk in", "A laugh track plays every time you speak"],
+  ["mascota-tamano", "Un hámster del tamaño de un perro como mascota", "Un perro del tamaño de un hámster como mascota", "Un hàmster de la mida d'un gos com a mascota", "Un gos de la mida d'un hàmster com a mascota", "A dog-sized hamster as a pet", "A hamster-sized dog as a pet"],
+  ["baile-involuntario", "Bailar sin querer cada vez que suena música en el súper", "Cantar sin querer cada vez que oyes una canción en el metro", "Ballar sense voler cada cop que sona música al súper", "Cantar sense voler cada cop que sents una cançó al metro", "Dance involuntarily whenever music plays in the supermarket", "Sing involuntarily whenever you hear a song on the metro"],
+  ["tono-vergonzoso", "Que tu móvil suene con una canción vergonzosa en una entrevista", "Que te suene la alarma en mitad del cine", "Que el teu mòbil soni amb una cançó vergonyosa en una entrevista", "Que et soni l'alarma enmig del cinema", "Your phone blasts an embarrassing song in a job interview", "Your alarm goes off in the middle of the cinema"],
+  ["saber-cancion", "Saber siempre qué canción va a poner el DJ", "Saber siempre quién te va a escribir", "Saber sempre quina cançó posarà el DJ", "Saber sempre qui t'escriurà", "Always know the DJ's next song", "Always know who's about to text you"],
+  ["semana-sin", "Una semana sin música", "Una semana sin salir de casa", "Una setmana sense música", "Una setmana sense sortir de casa", "A week without music", "A week without leaving the house"],
+  ["fama-rara", "Ser famoso en todo el mundo por un baile malísimo", "Ser el mejor del mundo en algo, pero que nadie lo sepa", "Ser famós a tot el món per un ball dolentíssim", "Ser el millor del món en alguna cosa, però que ningú ho sàpiga", "Be world-famous for a terrible dance", "Be the best in the world at something, but nobody knows"],
+  ["entrada-musica", "Entrar gratis a todos los clubs, pero sin elegir la música", "Pagar siempre 30 €, pero elegir tú la música", "Entrar gratis a tots els clubs, però sense triar la música", "Pagar sempre 30 €, però triar tu la música", "Free entry to every club, but no say in the music", "Always pay €30, but you pick the music"],
+  ["disfraz-animal", "Fiesta donde todo el mundo va disfrazado de animal", "Fiesta donde todo el mundo va de personaje histórico", "Festa on tothom va disfressat d'animal", "Festa on tothom va de personatge històric", "A party where everyone dresses as an animal", "A party where everyone dresses as a historical figure"],
+  ["ciudad-noche", "Vivir en una ciudad donde siempre es de noche", "Vivir en una ciudad donde nunca anochece", "Viure en una ciutat on sempre és de nit", "Viure en una ciutat on mai es fa de nit", "Live in a city where it's always night", "Live in a city where it never gets dark"],
+  ["despertar-fiesta", "Despertarte cada mañana con tu canción favorita a todo volumen", "Despertarte cada mañana con la voz de tu madre", "Despertar-te cada matí amb la teva cançó preferida a tot volum", "Despertar-te cada matí amb la veu de la teva mare", "Wake up every morning to your favourite song at full volume", "Wake up every morning to your mum's voice"],
+  ["pausa-rebobinar", "Un botón de pausa de 10 segundos al día", "Un botón de rebobinar 10 segundos al día", "Un botó de pausa de 10 segons al dia", "Un botó de rebobinar 10 segons al dia", "A 10-second pause button once a day", "A 10-second rewind button once a day"],
+  ["vuelta-mundo", "Dar la vuelta al mundo solo yendo a clubs", "Dar la vuelta al mundo solo yendo a festivales", "Fer la volta al món només anant a clubs", "Fer la volta al món només anant a festivals", "Travel the world visiting only clubs", "Travel the world visiting only festivals"],
+  ["guardaespaldas", "Un guardaespaldas que baila a tu lado toda la noche", "Un mayordomo que lleva tu abrigo y tu móvil", "Un guardaespatlles que balla al teu costat tota la nit", "Un majordom que porta la teva jaqueta i el teu mòbil", "A bodyguard who dances beside you all night", "A butler who carries your coat and phone"],
+  ["perfil-madre", "Que tu madre escriba tu perfil de una app de citas", "Que lo escriba tu mejor amigo", "Que la teva mare escrigui el teu perfil d'una app de cites", "Que l'escrigui el teu millor amic", "Your mum writes your dating profile", "Your best friend writes your dating profile"],
+  ["casa-loca", "Una piscina de bolas en el salón", "Un tobogán de tu cama al baño", "Una piscina de boles al menjador", "Un tobogan del teu llit al lavabo", "A ball pit in your living room", "A slide from your bed to the bathroom"],
+  ["llueve-confeti", "Que llueva confeti en vez de agua", "Que nieve espuma en invierno", "Que plogui confeti en lloc d'aigua", "Que nevi escuma a l'hivern", "Confetti rain instead of water", "Foam snow every winter"],
+  ["chasquido-pista", "Convertir cualquier sitio en pista de baile con un chasquido", "Hacer que cualquier cola avance al doble de velocidad", "Convertir qualsevol lloc en pista de ball amb un cop de dits", "Fer que qualsevol cua avanci al doble de velocitat", "Turn anywhere into a dance floor with a snap", "Make any queue move twice as fast"],
+  ["risa-relincho", "Soltar un relincho de caballo cada vez que te ríes", "Soltar un canto de gallo cada vez que estornudas", "Deixar anar un renill de cavall cada cop que rius", "Deixar anar un cant de gall cada cop que esternudes", "Whinny like a horse whenever you laugh", "Crow like a rooster whenever you sneeze"],
+  ["intercambio-ropa", "Intercambiar toda la ropa con tu mejor amigo por una noche", "Intercambiar los móviles con tu mejor amigo por una noche", "Intercanviar tota la roba amb el teu millor amic per una nit", "Intercanviar els mòbils amb el teu millor amic per una nit", "Swap outfits with your best friend for a night", "Swap phones with your best friend for a night"],
+  ["loro-chismoso", "Un loro que repite todo lo que dices a todas horas", "Un loro que cuenta tus secretos a las visitas", "Un lloro que repeteix tot el que dius a totes hores", "Un lloro que explica els teus secrets a les visites", "A parrot that repeats everything you say, all day", "A parrot that tells your secrets to guests"],
+  ["voz-dibujo", "Que tu voz suene siempre como un dibujo animado", "Que tu risa suene siempre como un pato de goma", "Que la teva veu soni sempre com un dibuix animat", "Que el teu riure soni sempre com un ànec de goma", "Your voice always sounds like a cartoon", "Your laugh always sounds like a rubber duck"],
+  ["puntualidad", "Llegar siempre 2 horas antes a todo", "Llegar siempre 2 horas tarde a todo", "Arribar sempre 2 hores abans a tot", "Arribar sempre 2 hores tard a tot", "Always arrive 2 hours early to everything", "Always arrive 2 hours late to everything"],
+  ["amigo-chiste", "Un amigo graciosísimo que repite siempre el mismo chiste", "Un amigo serio que siempre invita a todo", "Un amic graciosíssim que repeteix sempre el mateix acudit", "Un amic seriós que sempre convida a tot", "A hilarious friend who always repeats the same joke", "A serious friend who always pays for everything"],
+  ["dormir-tres", "Dormir solo 3 horas por noche y estar siempre fresco", "Dormir 12 horas, pero no poder salir nunca de noche", "Dormir només 3 hores per nit i estar sempre fresc", "Dormir 12 hores, però no poder sortir mai de nit", "Sleep only 3 hours a night and always feel fresh", "Sleep 12 hours but never go out at night"],
+  ["mascota-famosa", "Que tu gato tenga un millón de seguidores", "Que tu perro sea la mascota oficial de un club", "Que el teu gat tingui un milió de seguidors", "Que el teu gos sigui la mascota oficial d'un club", "Your cat has a million followers", "Your dog is a club's official mascot"],
+  // — con alcohol (solo con cuenta) —
+  ["barra-cola-libre", "Barra libre, pero con una hora de cola", "Un cubata caro, pero sin esperar", "Barra lliure, però amb una hora de cua", "Un cubata car, però sense esperar", "Open bar, but an hour's wait", "A pricey drink, but served instantly"],
+  ["resaca-noche", "Una noche épica y dos días de resaca", "Una noche normal y cero resaca", "Una nit èpica i dos dies de ressaca", "Una nit normal i zero ressaca", "An epic night and two days of hangover", "An ordinary night and zero hangover"],
+  ["camarero-error", "Que el camarero te ponga lo que no has pedido", "Que el camarero te cobre el doble sin que te des cuenta", "Que el cambrer et posi el que no has demanat", "Que el cambrer et cobri el doble sense que te n'adonis", "The bartender serves you something you didn't order", "The bartender charges you double without you noticing"],
+  ["hielo-carga", "Cubata con mucho hielo y poco alcohol", "Cubata muy cargado y sin hielo", "Cubata amb molt de gel i poc alcohol", "Cubata molt carregat i sense gel", "A mixed drink with loads of ice and little booze", "A very strong mixed drink with no ice"],
+  ["playa-lujo-bebida", "Cerveza en vaso de plástico en la playa", "Copa de cristal en un chiringuito de lujo", "Cervesa en got de plàstic a la platja", "Copa de cristall en un xiringuito de luxe", "Beer in a plastic cup on the beach", "A crystal glass at a posh beach bar"],
+  ["dos-por-uno", "Dos copas por una hasta la medianoche", "Una copa gratis a las 5 de la mañana", "Dues copes per una fins a mitjanit", "Una copa gratis a les 5 de la matinada", "Two-for-one drinks until midnight", "One free drink at 5am"],
+  ["camarero-fijo", "Que el camarero se acuerde de tu nombre y de lo que pides", "Que te sirva siempre el primero, sin cola", "Que el cambrer recordi el teu nom i què demanes", "Que et serveixi sempre el primer, sense cua", "The bartender remembers your name and your order", "Always get served first, no queue"],
+  ["litro-playa", "Sangría de litro en la playa", "Cerveza bien fría en un chiringuito", "Sangria de litre a la platja", "Cervesa ben freda en un xiringuito", "A litre of sangria on the beach", "An ice-cold beer at a beach bar"],
+  ["brindis-grupo", "Brindar con 20 personas y que todos hagan un discurso", "Brindar solo con tu mejor amigo, en silencio", "Brindar amb 20 persones i que tothom faci un discurs", "Brindar només amb el teu millor amic, en silenci", "Toast with 20 people, each giving a speech", "Toast with just your best friend, in silence"],
+  ["carta-chupitos", "Una carta con 50 chupitos distintos", "Un solo cubata, pero perfecto", "Una carta amb 50 xupitos diferents", "Un sol cubata, però perfecte", "A menu of 50 different shots", "One single perfect mixed drink"],
+  ["coctel-show", "Un cóctel que cambia de color", "Un cóctel que sale echando humo", "Un còctel que canvia de color", "Un còctel que surt traient fum", "A cocktail that changes colour", "A cocktail that arrives smoking"],
+]
+
+for (const [id, esA, esB, caA, caB, enA, enB] of [...MORE, ...MORE_3]) {
   PARTY_POLLS.push({ id, es: { a: esA, b: esB }, ca: { a: caA, b: caB }, en: { a: enA, b: enB } })
+}
+
+// Preguntas que hablan de alcohol: solo se enseñan a quien tiene cuenta (mayores de edad confirmados).
+export const ALCOHOL_POLL_IDS: ReadonlySet<string> = new Set([
+  "cubata-golpe", "chupito", "rondas-chofer", "bueno-garrafon",
+  "agua-bailar", "botellon-vip", "vermut-ultimo", "chupito-misterio",
+  "resaca-videos", "cerveza-gin", "ronda-cola", "mojito-margarita",
+  "cumple-boda", "shot-sorpresa", "cerveza-vino", "gintonic-cubalibre",
+  "previa-larga", "entrada-gratis", "vaso-plastico", "tinto-sangria",
+  "cava-champagne", "chupito-limon", "uvas-cava", "bebida-nueva",
+  "agua-copa", "paella-domingo", "ruta-bares", "happy-hour",
+  "olor-humo", "chupitos-ruleta", "borracho-sobrio", "fiesta-oficina",
+  "fiesta-lunes-resaca", "cerveza-marca", "vermut-cava", "boliche-bolera",
+  "copa-balcon", "bebida-cara", "boda-baile", "chupito-fuego",
+  "copa-pajita", "previa-parque", "camarero-amigo", "mesa-barra",
+  "barra-cola-libre", "resaca-noche", "camarero-error", "hielo-carga",
+  "playa-lujo-bebida", "dos-por-uno", "camarero-fijo", "litro-playa",
+  "brindis-grupo", "carta-chupitos", "coctel-show",
+])
+
+export function isAlcoholPoll(poll: PartyPoll): boolean {
+  return ALCOHOL_POLL_IDS.has(poll.id)
 }
 
 // Día de hoy en Barcelona como número (días desde 1970): la encuesta cambia a medianoche de aquí,
@@ -384,14 +497,25 @@ export function madridDayNumber(d: Date = new Date()): number {
 }
 
 // "La encuesta del día": la misma para todo el mundo ese día (así los porcentajes se comparan con
-// los de los demás). Con ~200 preguntas da para más de medio año sin repetir. Si alguien ya votó
-// la de hoy en una vuelta anterior, se le da la siguiente que aún no haya votado.
+// los de los demás). Hay unas 280 preguntas: más de medio año sin repetir. Si alguien ya votó la de
+// hoy en una vuelta anterior, se le da la siguiente que aún no haya votado.
+// Sin `allowAlcohol` (por defecto, es decir, sin cuenta) se saltan las de alcohol y se da la siguiente
+// que no lo sea: los días en que toca una de alcohol, quien no tiene cuenta ve otra distinta, y el resto
+// de días ve la misma que quien sí la tiene (así los porcentajes suman votos de todos).
 // Ojo: añadir preguntas nuevas cambia cuál toca cada día a partir de ese momento (no pasa nada).
-export function pollOfTheDay(voted: Set<string>, day: number = madridDayNumber()): PartyPoll | null {
+export function pollOfTheDay(
+  voted: Set<string>,
+  day: number = madridDayNumber(),
+  opts: { allowAlcohol?: boolean } = {}
+): PartyPoll | null {
+  const allowAlcohol = opts.allowAlcohol === true
   const n = PARTY_POLLS.length
+  const start = ((day % n) + n) % n
   for (let k = 0; k < n; k++) {
-    const poll = PARTY_POLLS[(day + k) % n]
-    if (!voted.has(poll.id)) return poll
+    const poll = PARTY_POLLS[(start + k) % n]
+    if (voted.has(poll.id)) continue
+    if (!allowAlcohol && ALCOHOL_POLL_IDS.has(poll.id)) continue
+    return poll
   }
   return null
 }

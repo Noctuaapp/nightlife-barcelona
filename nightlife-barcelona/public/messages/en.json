@@ -266,7 +266,8 @@
     "venueTitle": "Do you run a club, an event or a nightlife business?",
     "venueText": "Get listed on Noctua, manage your page and reach more people every night.",
     "venueButton": "Contact us",
-    "link_feedback": "Rate us"
+    "link_feedback": "Rate us",
+    "link_cookies": "Cookie settings"
   },
   "privacy": {
     "title": "Privacy Policy",
@@ -291,7 +292,7 @@
     "s7_items": "Access the personal data we hold about you.\nRequest correction of inaccurate data.\nRequest deletion of your data ('right to be forgotten').\nObject to or restrict the processing of your data.\nReceive a copy of your data in a portable format.\nFile a complaint with your local data protection authority.",
     "s7_closing": "To exercise any of these rights, contact us at {email}.",
     "s8_title": "Cookies and analytics",
-    "s8_body": "We use essential cookies necessary for authentication and session management, plus local browser storage (localStorage) to remember preferences such as which notices you've already read. We also use Vercel Analytics, an analytics tool that doesn't use tracking cookies or individually identify users, to understand in aggregate how the Platform is used. We don't use advertising or cross-site tracking cookies. In addition, Noctua records its own usage analytics using a random session identifier that only exists in the page's memory while it is open: nothing is stored on your device for this analytics. To tell whether several visits on the same day come from the same person, our server computes an anonymous code from your IP address and browser, mixed with a secret key that changes every day and is deleted the next day; your IP address is not stored in the analytics, the code cannot be reversed, and it does not let us recognise you from one day to the next. No third-party ad network has access to your data.",
+    "s8_body": "We use essential cookies necessary for authentication and session management, plus local browser storage (localStorage) to remember preferences such as which notices you've already read. We also use Vercel Analytics, an analytics tool that doesn't use tracking cookies or individually identify users, to understand in aggregate how the Platform is used. We don't use advertising or cross-site tracking cookies. In addition, Noctua records its own usage analytics using a random session identifier that only exists in the page's memory while it is open: nothing is stored on your device for this analytics. To tell whether several visits on the same day come from the same person, our server computes an anonymous code from your IP address and browser, mixed with a secret key that changes every day and is deleted the next day; your IP address is not stored in the analytics, the code cannot be reversed, and it does not let us recognise you from one day to the next. No third-party ad network has access to your data. With your permission (cookie banner) we also store a marker on your device that remembers what you voted in the daily poll, so it isn't shown again. If you decline, nothing is stored and, without an account, the poll isn't shown to you. The marker doesn't identify you and never leaves your device, and votes cast without an account are anonymous. You can change your decision at any time via “Cookie settings” in the footer.",
     "s9_title": "Third-party services",
     "s9_intro": "We work with the following providers to operate the Platform, each processing data only to the extent necessary to provide their service:",
     "s9_items": "Supabase::Authentication, database, image storage and sending sign-in emails (account confirmation and password recovery). Processes data in accordance with the GDPR.\nVercel::Application hosting and aggregated, anonymous usage analytics.\nMapbox::Renders the maps within the app. When a map loads, Mapbox may receive your IP address and the technical information needed to display it.\nGoogle Places::Source of public data (name, rating, reviews and photos) for clubs, festivals and essential services shown on their listings. We do not send your personal data to Google through this integration.",
@@ -901,8 +902,15 @@
     "planTitle": "Tonight's plan",
     "another": "Another option"
   },
+  "cookieBanner": {
+    "title": "Cookies",
+    "text": "To keep the site working we only use what's essential (your session and your language). If you accept, we also save a small marker on your device to remember your vote in the daily poll so it doesn't ask you again. If you decline, the site works the same; you just won't see the daily poll without an account.",
+    "more": "More info",
+    "accept": "Accept",
+    "reject": "Decline"
+  },
   "homeEvents": {
-    "empty": "No upcoming events match this filter.",
+    "empty": "No events today or in the next 2 days match this filter.",
     "onMap": "See on map",
     "seeAll": "See all events"
   },

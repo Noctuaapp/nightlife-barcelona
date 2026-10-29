@@ -263,7 +263,8 @@
     "venueTitle": "Tu as un club, un événement ou un commerce de nuit ?",
     "venueText": "Apparais sur Noctua, gère ta fiche et touche plus de monde chaque soir.",
     "venueButton": "Contacte-nous",
-    "link_feedback": "Note-nous"
+    "link_feedback": "Note-nous",
+    "link_cookies": "Préférences de cookies"
   },
   "privacy": {
     "title": "Politique de Confidentialité",
@@ -288,7 +289,7 @@
     "s7_items": "Accéder aux données personnelles que nous détenons sur vous.\nDemander la correction de données inexactes.\nDemander la suppression de vos données ('droit à l'oubli').\nVous opposer au traitement de vos données ou le restreindre.\nRecevoir une copie de vos données dans un format portable.\nDéposer une plainte auprès de votre autorité locale de protection des données.",
     "s7_closing": "Pour exercer l'un de ces droits, contactez-nous à {email}.",
     "s8_title": "Cookies et analytique",
-    "s8_body": "Nous utilisons des cookies essentiels nécessaires à l'authentification et à la gestion de session, ainsi que le stockage local du navigateur (localStorage) pour mémoriser des préférences comme les avis déjà lus. Nous utilisons également Vercel Analytics, un outil d'analyse qui n'utilise pas de cookies de suivi ni n'identifie individuellement les utilisateurs, pour comprendre de manière agrégée l'utilisation de la Plateforme. Nous n'utilisons pas de cookies publicitaires ni de suivi entre sites. Par ailleurs, Noctua enregistre sa propre analyse d'utilisation à l'aide d'un identifiant de session aléatoire qui n'existe que dans la mémoire de la page tant qu'elle est ouverte : pour cette analyse, rien n'est stocké sur votre appareil. Pour savoir si plusieurs visites le même jour proviennent de la même personne, le serveur calcule un code anonyme à partir de votre adresse IP et de votre navigateur, mélangés à une clé secrète qui change chaque jour et est supprimée le lendemain ; votre adresse IP n'est pas conservée dans l'analyse, le code est irréversible et ne permet pas de vous reconnaître d'un jour à l'autre. Aucun réseau publicitaire tiers n'a accès à vos données.",
+    "s8_body": "Nous utilisons des cookies essentiels nécessaires à l'authentification et à la gestion de session, ainsi que le stockage local du navigateur (localStorage) pour mémoriser des préférences comme les avis déjà lus. Nous utilisons également Vercel Analytics, un outil d'analyse qui n'utilise pas de cookies de suivi ni n'identifie individuellement les utilisateurs, pour comprendre de manière agrégée l'utilisation de la Plateforme. Nous n'utilisons pas de cookies publicitaires ni de suivi entre sites. Par ailleurs, Noctua enregistre sa propre analyse d'utilisation à l'aide d'un identifiant de session aléatoire qui n'existe que dans la mémoire de la page tant qu'elle est ouverte : pour cette analyse, rien n'est stocké sur votre appareil. Pour savoir si plusieurs visites le même jour proviennent de la même personne, le serveur calcule un code anonyme à partir de votre adresse IP et de votre navigateur, mélangés à une clé secrète qui change chaque jour et est supprimée le lendemain ; votre adresse IP n'est pas conservée dans l'analyse, le code est irréversible et ne permet pas de vous reconnaître d'un jour à l'autre. Aucun réseau publicitaire tiers n'a accès à vos données. Avec votre autorisation (bandeau de cookies), nous enregistrons aussi sur votre appareil une marque qui retient ce que vous avez voté au sondage du jour, afin de ne pas vous le reproposer. Si vous refusez, rien n'est enregistré et, sans compte, le sondage ne vous est pas affiché. Cette marque ne vous identifie pas et ne quitte pas votre appareil, et les votes sans compte sont anonymes. Vous pouvez modifier votre choix à tout moment via « Préférences de cookies », en bas de page.",
     "s9_title": "Services tiers",
     "s9_intro": "Nous travaillons avec les fournisseurs suivants pour exploiter la Plateforme, chacun ne traitant les données que dans la mesure nécessaire à la fourniture de son service :",
     "s9_items": "Supabase::Authentification, base de données, stockage d'images et envoi des e-mails d'accès (confirmation du compte et récupération du mot de passe). Traite les données conformément au RGPD.\nVercel::Hébergement de l'application et analyse d'utilisation agrégée et anonyme.\nMapbox::Affichage des cartes dans l'application. Lors du chargement d'une carte, Mapbox peut recevoir votre adresse IP et les informations techniques nécessaires à son affichage.\nGoogle Places::Source de données publiques (nom, note, avis et photos) des clubs, festivals et services essentiels affichés sur leurs fiches. Nous n'envoyons pas vos données personnelles à Google via cette intégration.",
@@ -873,8 +874,15 @@
     "planTitle": "Plan de la soirée",
     "another": "Autre option"
   },
+  "cookieBanner": {
+    "title": "Cookies",
+    "text": "Pour que le site fonctionne, nous n'utilisons que l'essentiel (votre session et votre langue). Si vous acceptez, nous enregistrons aussi sur votre appareil une marque pour retenir votre vote au sondage du jour et ne pas vous le reproposer. Si vous refusez, le site fonctionne pareil ; seulement, sans compte, vous ne verrez pas le sondage du jour.",
+    "more": "En savoir plus",
+    "accept": "Accepter",
+    "reject": "Refuser"
+  },
   "homeEvents": {
-    "empty": "Aucun événement à venir avec ce filtre.",
+    "empty": "Aucun événement aujourd'hui ni dans les 2 prochains jours avec ce filtre.",
     "onMap": "Voir sur la carte",
     "seeAll": "Voir tous les événements"
   },

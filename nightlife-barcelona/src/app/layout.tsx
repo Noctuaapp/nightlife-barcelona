@@ -8,6 +8,7 @@ import TrafficSource from "../components/system/TrafficSource"
 import InstallCapture from "../components/system/InstallCapture"
 import ToastHost from "../components/ui/Toast"
 import PartyPollPopup from "../components/fun/PartyPollPopup"
+import CookieBanner from "../components/system/CookieBanner"
 import "./globals.css"
 import { safeJsonLd } from "../lib/structuredData"
 
@@ -97,8 +98,10 @@ export default function RootLayout({
           <FavoritesProvider>
             <MaintenanceGate>
               {children}
-              {/* Juego "¿Qué prefieres?" — popup ocasional, solo con sesión (ver el componente) */}
+              {/* Juego "¿Qué prefieres?" — popup diario para todos; sin cuenta, solo con permiso de cookies (ver el componente) */}
               <PartyPollPopup />
+              {/* Permiso para lo opcional que se guarda en el dispositivo (ver lib/consent.ts) */}
+              <CookieBanner />
             </MaintenanceGate>
           </FavoritesProvider>
         </LanguageProvider>

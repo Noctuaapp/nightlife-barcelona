@@ -89,7 +89,7 @@ export default function PrivacyPage() {
             <SimpleList text={t("privacy.s7_items")} />
             <p className="mt-3">{renderWithLinks(t("privacy.s7_closing"), links)}</p>
           </section>
-          <section>
+          <section id="cookies">
             <h2 className="text-white font-semibold text-base mb-3">8. {t("privacy.s8_title")}</h2>
             <p>{t("privacy.s8_body")}</p>
           </section>

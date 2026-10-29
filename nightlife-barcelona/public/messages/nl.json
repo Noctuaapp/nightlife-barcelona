@@ -263,7 +263,8 @@
     "venueTitle": "Heb je een club, een evenement of een nachtzaak?",
     "venueText": "Kom op Noctua, beheer je pagina en bereik elke avond meer mensen.",
     "venueButton": "Neem contact op",
-    "link_feedback": "Beoordeel ons"
+    "link_feedback": "Beoordeel ons",
+    "link_cookies": "Cookie-instellingen"
   },
   "privacy": {
     "title": "Privacybeleid",
@@ -288,7 +289,7 @@
     "s7_items": "Toegang te krijgen tot de persoonsgegevens die we over je hebben.\nCorrectie van onjuiste gegevens te vragen.\nVerwijdering van je gegevens te vragen ('recht op vergetelheid').\nBezwaar te maken tegen of de verwerking van je gegevens te beperken.\nEen kopie van je gegevens in een overdraagbaar formaat te ontvangen.\nEen klacht in te dienen bij jouw lokale gegevensbeschermingsautoriteit.",
     "s7_closing": "Om een van deze rechten uit te oefenen, neem contact met ons op via {email}.",
     "s8_title": "Cookies en analyse",
-    "s8_body": "We gebruiken essentiële cookies die nodig zijn voor authenticatie en sessiebeheer, plus lokale browseropslag (localStorage) om voorkeuren te onthouden, zoals welke meldingen je al hebt gelezen. We gebruiken ook Vercel Analytics, een analysetool die geen trackingcookies gebruikt en gebruikers niet individueel identificeert, om op geaggregeerd niveau te begrijpen hoe het Platform wordt gebruikt. We gebruiken geen advertentie- of cross-site trackingcookies. Daarnaast registreert Noctua een eigen gebruiksanalyse met een willekeurige sessie-ID die alleen in het geheugen van de pagina bestaat zolang die openstaat: voor deze analyse wordt niets op je apparaat opgeslagen. Om te zien of meerdere bezoeken op dezelfde dag van dezelfde persoon zijn, berekent de server een anonieme code op basis van je IP-adres en je browser, gemengd met een geheime sleutel die elke dag verandert en de volgende dag wordt verwijderd; je IP-adres wordt niet in de analyse opgeslagen, de code is niet terug te rekenen en laat ons je niet van de ene dag op de andere herkennen. Geen enkel advertentienetwerk van derden heeft toegang tot jouw gegevens.",
+    "s8_body": "We gebruiken essentiële cookies die nodig zijn voor authenticatie en sessiebeheer, plus lokale browseropslag (localStorage) om voorkeuren te onthouden, zoals welke meldingen je al hebt gelezen. We gebruiken ook Vercel Analytics, een analysetool die geen trackingcookies gebruikt en gebruikers niet individueel identificeert, om op geaggregeerd niveau te begrijpen hoe het Platform wordt gebruikt. We gebruiken geen advertentie- of cross-site trackingcookies. Daarnaast registreert Noctua een eigen gebruiksanalyse met een willekeurige sessie-ID die alleen in het geheugen van de pagina bestaat zolang die openstaat: voor deze analyse wordt niets op je apparaat opgeslagen. Om te zien of meerdere bezoeken op dezelfde dag van dezelfde persoon zijn, berekent de server een anonieme code op basis van je IP-adres en je browser, gemengd met een geheime sleutel die elke dag verandert en de volgende dag wordt verwijderd; je IP-adres wordt niet in de analyse opgeslagen, de code is niet terug te rekenen en laat ons je niet van de ene dag op de andere herkennen. Geen enkel advertentienetwerk van derden heeft toegang tot jouw gegevens. Met je toestemming (cookiebanner) bewaren we daarnaast een markering op je apparaat die onthoudt wat je in de poll van de dag hebt gestemd, zodat je hem niet opnieuw ziet. Als je weigert, wordt er niets bewaard en zie je zonder account de poll niet. De markering identificeert je niet en verlaat je apparaat niet, en stemmen zonder account zijn anoniem. Je kunt je keuze altijd wijzigen via ‘Cookie-instellingen’ onderaan de pagina.",
     "s9_title": "Diensten van derden",
     "s9_intro": "We werken samen met de volgende aanbieders om het Platform te beheren, waarbij elk gegevens alleen verwerkt voor zover nodig om hun dienst te leveren:",
     "s9_items": "Supabase::Authenticatie, database, opslag van afbeeldingen en het versturen van toegangsmails (accountbevestiging en wachtwoordherstel). Verwerkt gegevens volgens de AVG.\nVercel::Hosting van de applicatie en geaggregeerde, anonieme gebruiksanalyse.\nMapbox::Weergave van de kaarten binnen de app. Bij het laden van een kaart kan Mapbox je IP-adres en de technische informatie ontvangen die nodig is om deze weer te geven.\nGoogle Places::Bron van openbare gegevens (naam, beoordeling, recensies en foto's) van clubs, festivals en essentiële diensten die op hun vermeldingen worden getoond. We sturen je persoonsgegevens niet naar Google via deze integratie.",
@@ -873,8 +874,15 @@
     "planTitle": "Avondplan",
     "another": "Andere optie"
   },
+  "cookieBanner": {
+    "title": "Cookies",
+    "text": "Om de site te laten werken gebruiken we alleen het hoogstnodige (je sessie en je taal). Als je accepteert, bewaren we ook een markering op je apparaat om je stem in de poll van de dag te onthouden, zodat je hem niet nog eens ziet. Als je weigert, werkt de site gewoon; alleen zie je zonder account de poll van de dag niet.",
+    "more": "Meer info",
+    "accept": "Accepteren",
+    "reject": "Weigeren"
+  },
   "homeEvents": {
-    "empty": "Geen komende evenementen met dit filter.",
+    "empty": "Geen evenementen vandaag of de komende 2 dagen met dit filter.",
     "onMap": "Bekijk op de kaart",
     "seeAll": "Alle evenementen bekijken"
   },

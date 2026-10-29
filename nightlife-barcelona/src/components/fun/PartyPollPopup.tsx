@@ -10,14 +10,22 @@ import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import { madridDayNumber, pollOfTheDay, pollText, type PartyPoll } from "../../lib/partyPolls"
 import { track } from "../../lib/track"
+import { useConsent } from "../../lib/useConsent"
+import { hasOptionalConsent } from "../../lib/consent"
+import { readLocalVotes, recordLocalVote, votedOnDay } from "../../lib/partyPollLocal"
 
 // Juego "¿Qué prefieres?" (pedido por Jordi: "encuestas rollo el juego que preferirías... ambiente
 // fiesta y cachondeo"). Decisiones: sale como popup al entrar y NO da XP, es solo por diversión.
 //
 // Cuándo aparece:
-//   - Solo a gente con sesión: el contenido habla de bebida y quien se registra ya confirmó que
-//     es mayor de edad. Además así los votos van a su cuenta y no hace falta guardar nada en el
-//     navegador (sin cookies ni localStorage, igual que la analítica de lib/track.ts).
+//   - A todo el mundo (30/10/2026; antes solo con sesión). Con cuenta, los votos van a su cuenta
+//     (party_poll_votes) y no se guarda nada en el navegador. Sin cuenta, el voto es anónimo
+//     (party_poll_anon_votes) y para no repetirle la pregunta se guarda en el dispositivo una marca
+//     de qué votó — eso solo se hace si ha aceptado el banner de cookies (lib/consent.ts). Sin ese
+//     permiso, a quien no tiene cuenta no se le enseña la encuesta.
+//   - Quien juega sin cuenta no ha confirmado que es mayor de edad, así que NO recibe las preguntas
+//     que hablan de alcohol (ALCOHOL_POLL_IDS en lib/partyPolls.ts, pedido por Jordi el 30/10/2026):
+//     esas solo salen con cuenta.
 //   - UNA encuesta al día (pedido por Jordi: "quiero que salga una encuesta al día"), la misma
 //     para todo el mundo ese día — ver pollOfTheDay() en lib/partyPolls.ts. Si ya votó hoy (día
 //     de Barcelona), no sale más hasta mañana. Si cierra sin votar, vuelve a salir en su próxima
@@ -43,6 +51,14 @@ const UI = {
 
 type Results = { a: number; b: number }
 
+function localStore(): Storage | null {
+  try {
+    return window.localStorage
+  } catch {
+    return null
+  }
+}
+
 export default function PartyPollPopup() {
   const pathname = usePathname() || ""
   const { locale } = useLanguage()
@@ -51,6 +67,9 @@ export default function PartyPollPopup() {
   const [open, setOpen] = useState(false)
   const [poll, setPoll] = useState<PartyPoll | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
+  // true = juega sin cuenta (voto anónimo, con permiso de cookies para recordarlo).
+  const [anon, setAnon] = useState(false)
+  const consent = useConsent()
   const [choice, setChoice] = useState<0 | 1 | null>(null)
   const [results, setResults] = useState<Results | null>(null)
   const [sending, setSending] = useState(false)
@@ -89,11 +108,47 @@ export default function PartyPollPopup() {
 
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | undefined
+    // El día solo se da por comprobado cuando la encuesta ya salió o no hay nada que enseñar. Si se
+    // marcara al preparar, cambiar de página antes de que pasen los segundos de espera cancelaba el
+    // aviso y ya no volvía a salir ese día (corregido el 30/10/2026).
+    const schedule = (todays: PartyPoll, today: number) => {
+      setPoll(todays)
+      setChoice(null)
+      setResults(null)
+      timer = setTimeout(() => {
+        if (cancelled) return
+        checkedDay = today
+        setOpen(true)
+      }, SHOW_DELAY_MS)
+    }
+
     const prepare = async () => {
       const { data: sessionData } = await supabase.auth.getSession()
-      const uid = sessionData.session?.user.id
-      if (!uid || cancelled) return
-      checkedDay = madridDayNumber()
+      const uid = sessionData.session?.user.id ?? null
+      if (cancelled) return
+      const today = madridDayNumber()
+
+      // Sin cuenta: solo con permiso de cookies, porque hay que recordar en el dispositivo qué se
+      // votó. Sin permiso (o sin haber contestado aún al banner) no se enseña nada y se vuelve a
+      // mirar en cuanto cambie la decisión.
+      if (!uid) {
+        if (!consent.ready || !consent.optional) return
+        const local = readLocalVotes(localStore())
+        if (votedOnDay(local, today)) {
+          checkedDay = today
+          return
+        }
+        const todays = pollOfTheDay(new Set(Object.keys(local)), today, { allowAlcohol: false })
+        if (!todays) {
+          checkedDay = today
+          return
+        }
+        setUserId(null)
+        setAnon(true)
+        schedule(todays, today)
+        return
+      }
+
       const { data: mine, error } = await supabase
         .from("party_poll_votes")
         .select("poll_id, created_at")
@@ -102,17 +157,27 @@ export default function PartyPollPopup() {
       if (error || cancelled) return
       const rows = (mine || []) as { poll_id: string; created_at: string }[]
       const voted = new Set(rows.map((v) => v.poll_id))
-      const today = madridDayNumber()
-      if (rows.some((v) => madridDayNumber(new Date(v.created_at)) === today)) return
-      const todays = pollOfTheDay(voted, today)
-      if (!todays) return
+      if (rows.some((v) => madridDayNumber(new Date(v.created_at)) === today)) {
+        checkedDay = today
+        return
+      }
+      // Lo votado antes en este dispositivo sin cuenta (si dio permiso) tampoco se repite.
+      if (consent.optional) {
+        const local = readLocalVotes(localStore())
+        if (votedOnDay(local, today)) {
+          checkedDay = today
+          return
+        }
+        Object.keys(local).forEach((id) => voted.add(id))
+      }
+      const todays = pollOfTheDay(voted, today, { allowAlcohol: true })
+      if (!todays) {
+        checkedDay = today
+        return
+      }
       setUserId(uid)
-      setPoll(todays)
-      setChoice(null)
-      setResults(null)
-      timer = setTimeout(() => {
-        if (!cancelled) setOpen(true)
-      }, SHOW_DELAY_MS)
+      setAnon(false)
+      schedule(todays, today)
     }
     prepare()
     return () => {
@@ -120,7 +185,12 @@ export default function PartyPollPopup() {
       if (timer) clearTimeout(timer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, recheck])
+  }, [pathname, recheck, consent.ready, consent.optional])
+
+  // Si quien juega sin cuenta retira el permiso con la encuesta abierta, se cierra.
+  useEffect(() => {
+    if (anon && consent.ready && !consent.optional) setOpen(false)
+  }, [anon, consent.ready, consent.optional])
 
   const close = useCallback(() => setOpen(false), [])
 
@@ -135,10 +205,15 @@ export default function PartyPollPopup() {
   }, [open, close])
 
   const vote = async (picked: 0 | 1) => {
-    if (!poll || !userId || choice !== null || sending) return
+    if (!poll || choice !== null || sending) return
+    if (!anon && !userId) return
     setSending(true)
     setChoice(picked)
-    await supabase.from("party_poll_votes").insert({ poll_id: poll.id, choice: picked, user_id: userId })
+    const { error } = anon
+      ? await supabase.from("party_poll_anon_votes").insert({ poll_id: poll.id, choice: picked })
+      : await supabase.from("party_poll_votes").insert({ poll_id: poll.id, choice: picked, user_id: userId })
+    // Se recuerda en este dispositivo solo si el voto se guardó y hay permiso de cookies.
+    if (!error && hasOptionalConsent()) recordLocalVote(localStore(), poll.id, madridDayNumber())
     track("party_poll_vote", { itemType: "poll", itemName: poll.id, meta: { choice: picked } })
     const { data } = await supabase.rpc("party_poll_results", { p_poll_id: poll.id })
     const row = Array.isArray(data) ? data[0] : data

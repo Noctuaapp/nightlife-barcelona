@@ -266,7 +266,8 @@
     "venueTitle": "Tens un club, un esdeveniment o un negoci nocturn?",
     "venueText": "Apareix a Noctua, gestiona la teva fitxa i arriba a més gent cada nit.",
     "venueButton": "Contacta'ns",
-    "link_feedback": "Valora'ns"
+    "link_feedback": "Valora'ns",
+    "link_cookies": "Preferències de galetes"
   },
   "privacy": {
     "title": "Política de Privacitat",
@@ -291,7 +292,7 @@
     "s7_items": "Accedir a les dades personals que tenim sobre tu.\nSol·licitar la correcció de dades inexactes.\nSol·licitar l'eliminació de les teves dades ('dret a l'oblit').\nOposar-te o restringir el tractament de les teves dades.\nRebre una còpia de les teves dades en un format portable.\nPresentar una reclamació davant la teva autoritat local de protecció de dades.",
     "s7_closing": "Per exercir qualsevol d'aquests drets, contacta'ns a {email}.",
     "s8_title": "Cookies i analítica",
-    "s8_body": "Utilitzem cookies essencials necessàries per a l'autenticació i la gestió de sessió, a més d'emmagatzematge local del navegador (localStorage) per recordar preferències com quins avisos ja has llegit. Utilitzem també Vercel Analytics, una eina d'analítica que no utilitza cookies de seguiment ni identifica individualment els usuaris, per entendre de forma agregada com s'utilitza la Plataforma. No utilitzem cookies publicitàries ni de seguiment entre webs. A més, Noctua registra la seva pròpia analítica d'ús amb un identificador de sessió aleatori que només existeix a la memòria de la pàgina mentre la tens oberta: per a aquesta analítica no es desa res al teu dispositiu. Per saber si diverses visites del mateix dia són de la mateixa persona, el servidor calcula un codi anònim a partir de la teva adreça IP i el teu navegador, barrejats amb una clau secreta que canvia cada dia i s'esborra l'endemà; la teva IP no es desa a l'analítica, el codi no es pot desfer i no permet reconèixer-te d'un dia per l'altre. Cap xarxa publicitària de tercers té accés a les teves dades.",
+    "s8_body": "Utilitzem cookies essencials necessàries per a l'autenticació i la gestió de sessió, a més d'emmagatzematge local del navegador (localStorage) per recordar preferències com quins avisos ja has llegit. Utilitzem també Vercel Analytics, una eina d'analítica que no utilitza cookies de seguiment ni identifica individualment els usuaris, per entendre de forma agregada com s'utilitza la Plataforma. No utilitzem cookies publicitàries ni de seguiment entre webs. A més, Noctua registra la seva pròpia analítica d'ús amb un identificador de sessió aleatori que només existeix a la memòria de la pàgina mentre la tens oberta: per a aquesta analítica no es desa res al teu dispositiu. Per saber si diverses visites del mateix dia són de la mateixa persona, el servidor calcula un codi anònim a partir de la teva adreça IP i el teu navegador, barrejats amb una clau secreta que canvia cada dia i s'esborra l'endemà; la teva IP no es desa a l'analítica, el codi no es pot desfer i no permet reconèixer-te d'un dia per l'altre. Cap xarxa publicitària de tercers té accés a les teves dades. Amb el teu permís (bàner de galetes) desem també al teu dispositiu una marca que recorda què has votat a l'enquesta del dia, per no tornar-te-la a mostrar. Si ho rebutges no es desa res i, si no tens compte, no se't mostra l'enquesta. La marca no t'identifica ni surt del teu dispositiu, i els vots sense compte són anònims. Pots canviar la teva decisió quan vulguis a «Preferències de galetes», al peu de la pàgina.",
     "s9_title": "Serveis de tercers",
     "s9_intro": "Treballem amb els següents proveïdors per operar la Plataforma, cadascun processant dades únicament en la mesura necessària per prestar el seu servei:",
     "s9_items": "Supabase::Autenticació, base de dades, emmagatzematge d'imatges i enviament dels correus d'accés (confirmació del compte i recuperació de la contrasenya). Processa les dades d'acord amb el RGPD.\nVercel::Allotjament de l'aplicació i analítica d'ús agregada i anònima.\nMapbox::Renderitzat dels mapes dins l'app. En carregar un mapa, Mapbox pot rebre la teva adreça IP i la informació tècnica necessària per mostrar-lo.\nGoogle Places::Font de dades públiques (nom, valoració, ressenyes i fotos) de clubs, festivals i serveis essencials que mostrem a les seves fitxes. No enviem les teves dades personals a Google mitjançant aquesta integració.",
@@ -901,8 +902,15 @@
     "planTitle": "Pla de la nit",
     "another": "Una altra opció"
   },
+  "cookieBanner": {
+    "title": "Galetes",
+    "text": "Perquè la web funcioni només fem servir l'imprescindible (la teva sessió i l'idioma). Si acceptes, també desem al teu dispositiu una marca per recordar què vas votar a l'enquesta del dia i no tornar-te-la a mostrar. Si ho rebutges, la web funciona igual; només que sense compte no veuràs l'enquesta del dia.",
+    "more": "Més informació",
+    "accept": "Accepta",
+    "reject": "Rebutja"
+  },
   "homeEvents": {
-    "empty": "No hi ha esdeveniments propers amb aquest filtre.",
+    "empty": "No hi ha esdeveniments avui ni els propers 2 dies amb aquest filtre.",
     "onMap": "Veure al mapa",
     "seeAll": "Veure tots els esdeveniments"
   },

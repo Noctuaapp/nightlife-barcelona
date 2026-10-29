@@ -3,6 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useLanguage } from "../../context/LanguageContext"
+import { OPEN_CONSENT_EVENT } from "../../lib/consent"
 
 export default function Footer() {
   const { t } = useLanguage()
@@ -60,6 +61,14 @@ export default function Footer() {
               <Link href="/contact" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_contact")}</Link>
               <Link href="/faq" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_faq")}</Link>
               <Link href="/opinion" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_feedback")}</Link>
+              {/* Vuelve a abrir el banner de cookies para cambiar la decisión */}
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event(OPEN_CONSENT_EVENT))}
+                className="text-left text-sm text-zinc-400 transition hover:text-ink"
+              >
+                {t("footer.link_cookies")}
+              </button>
             </div>
           </div>
         </div>

@@ -263,7 +263,8 @@
     "venueTitle": "Du hast einen Club, ein Event oder ein Nachtgeschäft?",
     "venueText": "Erscheine auf Noctua, verwalte dein Profil und erreiche jede Nacht mehr Leute.",
     "venueButton": "Kontaktiere uns",
-    "link_feedback": "Bewerte uns"
+    "link_feedback": "Bewerte uns",
+    "link_cookies": "Cookie-Einstellungen"
   },
   "privacy": {
     "title": "Datenschutzerklärung",
@@ -288,7 +289,7 @@
     "s7_items": "Zugriff auf die personenbezogenen Daten, die wir über dich gespeichert haben.\nBerichtigung ungenauer Daten.\nLöschung deiner Daten ('Recht auf Vergessenwerden').\nWiderspruch gegen oder Einschränkung der Verarbeitung deiner Daten.\nErhalt einer Kopie deiner Daten in einem übertragbaren Format.\nEinreichung einer Beschwerde bei deiner örtlichen Datenschutzbehörde.",
     "s7_closing": "Um eines dieser Rechte auszuüben, kontaktiere uns unter {email}.",
     "s8_title": "Cookies und Analyse",
-    "s8_body": "Wir verwenden essenzielle Cookies, die für die Authentifizierung und Sitzungsverwaltung notwendig sind, sowie lokalen Browserspeicher (localStorage), um Einstellungen wie bereits gelesene Hinweise zu speichern. Wir nutzen außerdem Vercel Analytics, ein Analysetool, das keine Tracking-Cookies verwendet und Nutzer nicht individuell identifiziert, um die Nutzung der Plattform aggregiert zu verstehen. Wir verwenden keine Werbe- oder seitenübergreifenden Tracking-Cookies. Außerdem erfasst Noctua eine eigene Nutzungsanalyse mit einer zufälligen Sitzungskennung, die nur im Arbeitsspeicher der Seite existiert, solange sie geöffnet ist: Für diese Analyse wird nichts auf deinem Gerät gespeichert. Um zu erkennen, ob mehrere Besuche am selben Tag von derselben Person stammen, berechnet der Server einen anonymen Code aus deiner IP-Adresse und deinem Browser, gemischt mit einem geheimen Schlüssel, der sich täglich ändert und am nächsten Tag gelöscht wird; deine IP-Adresse wird in der Analyse nicht gespeichert, der Code ist nicht umkehrbar und erlaubt es nicht, dich von einem Tag zum anderen wiederzuerkennen. Kein Werbenetzwerk Dritter hat Zugriff auf deine Daten.",
+    "s8_body": "Wir verwenden essenzielle Cookies, die für die Authentifizierung und Sitzungsverwaltung notwendig sind, sowie lokalen Browserspeicher (localStorage), um Einstellungen wie bereits gelesene Hinweise zu speichern. Wir nutzen außerdem Vercel Analytics, ein Analysetool, das keine Tracking-Cookies verwendet und Nutzer nicht individuell identifiziert, um die Nutzung der Plattform aggregiert zu verstehen. Wir verwenden keine Werbe- oder seitenübergreifenden Tracking-Cookies. Außerdem erfasst Noctua eine eigene Nutzungsanalyse mit einer zufälligen Sitzungskennung, die nur im Arbeitsspeicher der Seite existiert, solange sie geöffnet ist: Für diese Analyse wird nichts auf deinem Gerät gespeichert. Um zu erkennen, ob mehrere Besuche am selben Tag von derselben Person stammen, berechnet der Server einen anonymen Code aus deiner IP-Adresse und deinem Browser, gemischt mit einem geheimen Schlüssel, der sich täglich ändert und am nächsten Tag gelöscht wird; deine IP-Adresse wird in der Analyse nicht gespeichert, der Code ist nicht umkehrbar und erlaubt es nicht, dich von einem Tag zum anderen wiederzuerkennen. Kein Werbenetzwerk Dritter hat Zugriff auf deine Daten. Mit deiner Erlaubnis (Cookie-Banner) speichern wir zusätzlich eine Markierung auf deinem Gerät, die sich merkt, was du bei der Tagesumfrage gewählt hast, damit sie dir nicht erneut angezeigt wird. Lehnst du ab, wird nichts gespeichert und ohne Konto wird dir die Umfrage nicht angezeigt. Die Markierung identifiziert dich nicht und verlässt dein Gerät nicht; Stimmen ohne Konto sind anonym. Du kannst deine Entscheidung jederzeit unter „Cookie-Einstellungen“ im Seitenfuß ändern.",
     "s9_title": "Dienste von Drittanbietern",
     "s9_intro": "Wir arbeiten mit folgenden Anbietern zusammen, um die Plattform zu betreiben, wobei jeder Daten nur in dem für seinen Dienst erforderlichen Umfang verarbeitet:",
     "s9_items": "Supabase::Authentifizierung, Datenbank, Bildspeicher und Versand der Zugangs-E-Mails (Kontobestätigung und Passwort-Wiederherstellung). Verarbeitet Daten gemäß der DSGVO.\nVercel::Hosting der Anwendung und aggregierte, anonyme Nutzungsanalyse.\nMapbox::Darstellung der Karten in der App. Beim Laden einer Karte kann Mapbox deine IP-Adresse sowie die für die Anzeige notwendigen technischen Informationen erhalten.\nGoogle Places::Quelle öffentlicher Daten (Name, Bewertung, Rezensionen und Fotos) von Clubs, Festivals und essenziellen Diensten, die auf deren Einträgen angezeigt werden. Wir senden deine personenbezogenen Daten nicht über diese Integration an Google.",
@@ -873,8 +874,15 @@
     "planTitle": "Plan für die Nacht",
     "another": "Andere Option"
   },
+  "cookieBanner": {
+    "title": "Cookies",
+    "text": "Damit die Website funktioniert, verwenden wir nur das Notwendige (deine Sitzung und deine Sprache). Wenn du zustimmst, speichern wir zusätzlich eine Markierung auf deinem Gerät, damit wir uns deine Stimme bei der Tagesumfrage merken und sie dir nicht erneut zeigen. Wenn du ablehnst, funktioniert die Website genauso; ohne Konto siehst du nur die Tagesumfrage nicht.",
+    "more": "Mehr erfahren",
+    "accept": "Akzeptieren",
+    "reject": "Ablehnen"
+  },
   "homeEvents": {
-    "empty": "Keine kommenden Events mit diesem Filter.",
+    "empty": "Keine Events heute oder in den nächsten 2 Tagen mit diesem Filter.",
     "onMap": "Auf der Karte ansehen",
     "seeAll": "Alle Events ansehen"
   },

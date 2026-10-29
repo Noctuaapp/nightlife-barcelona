@@ -11,6 +11,7 @@ import { createSlug } from "../../lib/slug"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import Icon from "../ui/Icon"
+import { eventHappensOn, eventInHomeWindow, nightDateMadrid } from "../../lib/homeEvents"
 
 type Event = {
   id: number
@@ -20,6 +21,8 @@ type Event = {
   artist: string | null
   music: string | null
   date: string | null
+  // Solo la tabla events lo tiene (eventos de varios días); club_events no.
+  date_end?: string | null
   start_time: string | null
   end_time: string | null
   price: string | null
@@ -83,8 +86,9 @@ export default function EventsSection() {
     fetchEvents()
   }, [])
 
-  // Fecha de hoy en Madrid (antes era la fecha UTC, que entre las 00:00 y las 02:00 aún es "ayer").
-  const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" })
+  // La noche en curso en Madrid (antes era la fecha UTC, que entre las 00:00 y las 02:00 aún es "ayer").
+  // Hasta las 6:00 sigue siendo la noche de ayer: a las 2:00 del sábado la fiesta del viernes sigue.
+  const today = nightDateMadrid()
   // "2026-11-14" → "sáb, 14 nov" en el idioma activo (antes se mostraba la fecha en bruto).
   const formatEventDate = (date: string | null) => {
     if (!date) return ""
@@ -95,7 +99,7 @@ export default function EventsSection() {
   // Antes esta insignia "● Eventos en directo" se mostraba siempre, aunque no hubiera ningún
   // evento esta noche — dando a entender que algo está pasando ahora mismo cuando no es así.
   // Ahora solo aparece cuando de verdad hay un evento con fecha de hoy.
-  const hasLiveTonight = events.some((event) => event.date === today)
+  const hasLiveTonight = events.some((event) => eventHappensOn(event.date, event.date_end, today))
 
   const distTo = (e: Event): number | null =>
     geo.pos && e.latitude && e.longitude ? distanceInMeters(geo.pos.lat, geo.pos.lng, Number(e.latitude), Number(e.longitude)) : null
@@ -105,32 +109,28 @@ export default function EventsSection() {
     if (key === "Near" && !geo.pos && !geo.locating) geo.request()
   }
 
+  // «Qué está pasando» enseña solo lo de hoy y los 2 días siguientes (30/10/2026). Antes eran todos
+  // los eventos de hoy en adelante: salía un festival de dentro de un mes bajo «Qué está pasando».
+  // Un evento de varios días entra mientras alguno de sus días caiga en esa ventana; sin fecha no
+  // entra (no se puede saber si está pasando). Los eventos vienen ya ordenados por fecha.
   const filteredEvents = (() => {
-    const upcoming = (e: Event) => !e.date || e.date >= today
+    const soon = events.filter((e) => eventInHomeWindow(e.date, e.date_end, today))
     if (selectedCategory === "Near") {
-      // Los próximos eventos, del más cercano al más lejano. Sin ubicación aún, por fecha.
-      const list = events.filter(upcoming)
-      if (!geo.pos) return list.slice(0, 3)
-      return list
+      // Del más cercano al más lejano. Sin ubicación aún, por fecha.
+      if (!geo.pos) return soon.slice(0, 3)
+      return soon
         .filter((e) => distTo(e) !== null)
         .sort((a, b) => (distTo(a) as number) - (distTo(b) as number))
         .slice(0, 3)
     }
-    // "Todos": antes eran los destacados aunque ya hubieran pasado o no tuvieran fecha (en octubre
-    // salían Sant Joan y un festival de julio bajo "Qué está pasando"). Ahora solo eventos con
-    // fecha de hoy en adelante: primero los destacados y después los más cercanos en el tiempo.
-    if (selectedCategory === "All") {
-      const next = events.filter((e) => !!e.date && e.date >= today)
-      return [...next.filter((e) => e.featured), ...next.filter((e) => !e.featured)].slice(0, 3)
-    }
-    if (selectedCategory === "Upcoming") {
-      // Cronológico puro (sin priorizar destacados) — los eventos vienen ya ordenados por fecha.
-      return events.filter((e) => !!e.date && e.date >= today).slice(0, 3)
-    }
-    return events
+    // "Todos": primero los destacados y después los más cercanos en el tiempo.
+    if (selectedCategory === "All") return [...soon.filter((e) => e.featured), ...soon.filter((e) => !e.featured)].slice(0, 3)
+    // "Próximos": cronológico puro (sin priorizar destacados).
+    if (selectedCategory === "Upcoming") return soon.slice(0, 3)
+    return soon
       .filter((event) => {
-        if (selectedCategory === "Featured") return event.featured === true && upcoming(event)
-        if (selectedCategory === "Free") return upcoming(event) && (event.price || "").toLowerCase().includes("gratis")
+        if (selectedCategory === "Featured") return event.featured === true
+        if (selectedCategory === "Free") return (event.price || "").toLowerCase().includes("gratis")
         return true
       })
       .slice(0, 3)
@@ -192,8 +192,8 @@ export default function EventsSection() {
                 <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
                 <div className="absolute left-3 top-3 flex flex-wrap gap-2">
                   {event.date && (
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${event.date === today ? "bg-open text-night" : "bg-night/80 text-ink"}`}>
-                      {event.date === today ? t("events.tonight") : formatEventDate(event.date)}
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${eventHappensOn(event.date, event.date_end, today) ? "bg-open text-night" : "bg-night/80 text-ink"}`}>
+                      {eventHappensOn(event.date, event.date_end, today) ? t("events.tonight") : formatEventDate(event.date)}
                     </span>
                   )}
                   {event.sold_out && <span className="rounded-full bg-red-400/90 px-3 py-1 text-xs font-semibold text-night">{t("events.sold_out")}</span>}
