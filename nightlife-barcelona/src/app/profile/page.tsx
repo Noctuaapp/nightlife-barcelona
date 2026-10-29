@@ -19,7 +19,7 @@ import NocOwl from "../../components/mascot/NocOwl"
 import DeniedVenuesCard from "../../components/profile/DeniedVenuesCard"
 import InstallAppButton from "../../components/system/InstallAppButton"
 import LoginWall from "../../components/ui/LoginWall"
-import PageLoader from "../../components/ui/PageLoader"
+import Image from "next/image"
 
 // Perfil. Rehecho tras la auditoría de octubre 2026: fuera las cifras de relleno ("BCN · Ciudad",
 // "🌙 Night owl", "Noctua Member") y los emojis como iconos; arriba, el acceso a todo lo de "tu
@@ -893,14 +893,17 @@ function ProfileInner() {
 // Zona privada (29/10/2026): sin sesión ya no se redirige de golpe a /login; se enseña la puerta con
 // «Continuar con Google», crear cuenta con email e iniciar sesión, y se vuelve aquí al terminar.
 export default function ProfilePage() {
+  const { t } = useLanguage()
   const [state, setState] = useState<"checking" | "in" | "out">("checking")
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setState(data.session ? "in" : "out"))
   }, [])
   if (state === "checking") {
+    // Pantalla de carga con el logo (autocontenida: no depende de ningún componente aparte).
     return (
-      <main className="flex min-h-screen flex-col bg-night">
-        <PageLoader />
+      <main className="flex min-h-screen flex-col items-center justify-center bg-night">
+        <Image src="/noctua_logo.png" alt="Noctua" width={88} height={54} className="h-12 w-auto object-contain" />
+        <p className="mt-5 text-xs text-zinc-500">{t("common.loading")}</p>
       </main>
     )
   }
