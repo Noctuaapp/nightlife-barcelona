@@ -13,7 +13,7 @@ import { track } from "../../lib/track"
 // Aviso de registro de las fichas de club y de evento (29/10/2026).
 //
 // Antes era una banda fija dentro de la ficha («Esto es solo un local…», con «Crear cuenta gratis»).
-// Ahora es un aviso emergente: aparece abajo, sin tapar la pantalla (no hay fondo oscuro ni
+// Ahora es un aviso emergente: aparece abajo y centrado (también en ordenador), sin tapar la pantalla (no hay fondo oscuro ni
 // bloquea nada), con «Continuar con Google» como botón principal y una cruz para quitarlo.
 //
 // Para no molestar —y para no parecer un «intersticial intrusivo», que Google penaliza en las
@@ -148,7 +148,7 @@ export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; ite
       role="dialog"
       aria-modal="false"
       aria-labelledby="join-noctua-title"
-      className={`fixed inset-x-3 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[60] mx-auto max-w-md transition duration-300 ease-out lg:inset-x-auto lg:bottom-6 lg:right-6 lg:mx-0 lg:w-[390px] ${
+      className={`fixed inset-x-3 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[60] mx-auto max-w-md transition duration-300 ease-out ${
         visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
       }`}
     >
@@ -178,8 +178,7 @@ export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; ite
 
         <div className="relative mt-3.5">
           <GoogleButton from="join" next={back} onBeforeGo={() => click("google")} />
-          <p className="mt-2 text-center text-[11px] text-zinc-400">{t("joinCard.fine")}</p>
-          <div className="mt-2 flex items-center justify-center gap-4 text-[13px]">
+          <div className="mt-3 flex items-center justify-center gap-4 text-[13px]">
             <Link href={`/signup${next}`} onClick={() => click("signup")} className="font-semibold text-ink underline-offset-4 hover:underline">
               {t("authGate.ctaEmail")}
             </Link>
