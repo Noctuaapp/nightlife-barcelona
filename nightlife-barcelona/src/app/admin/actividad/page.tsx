@@ -30,6 +30,7 @@ const EVENT_LABELS: Record<string, string> = {
   join_click: "Pulsa en el bloque de registro",
   join_view: "Ve el bloque de registro",
   signup_view: "Abre el registro",
+  signup_email_open: "Elige registrarse con email",
   signup_submit: "Envía el registro",
   signup_ok: "Registro completado",
   signup_error: "Error en el registro",

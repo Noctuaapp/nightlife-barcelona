@@ -103,6 +103,27 @@ export function clubOpenNow(hours: string | null | undefined, openDays?: string[
   }
 }
 
+// ¿Alguna franja del horario sigue abierta pasada cierta hora de la madrugada? (por defecto, las 02:30:
+// 150 minutos desde la medianoche). Sirve para el filtro «Bar/pub abierto tras las 2:30» del listado.
+// Cuenta el cierre de madrugada de cada franja ("23:00-06:00", "18:00-03:00", "00:00-05:00"); los
+// horarios que cierran antes de ese límite ("19:00-02:00") o de día no cuentan. null = no se puede
+// interpretar el horario (mejor no decir nada que decir algo falso).
+export function clubStaysOpenPast(hours: string | null | undefined, limitMinutes = 150): boolean | null {
+  if (!hours || !hours.trim()) return null
+  let parsed = false
+  for (const raw of hours.split(/[,|;]/)) {
+    const m = raw.trim().match(/^(?:[LMXJVSD/\-]+\s+)?(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})$/)
+    if (!m) continue
+    parsed = true
+    const start = parseInt(m[1], 10) * 60 + parseInt(m[2], 10)
+    const end = parseInt(m[3], 10) * 60 + parseInt(m[4], 10)
+    const overnight = end <= start
+    // Cierra de madrugada si cruza la medianoche, o si el horario ya empieza de madrugada (00:00-05:00).
+    if ((overnight || start < 6 * 60) && end > limitMinutes && end <= 12 * 60) return true
+  }
+  return parsed ? false : null
+}
+
 // ¿Abre el club la noche de ese día de la semana (0 = domingo)? false solo si se sabe que no
 // (por open_days o por los días del horario); null si no hay datos para saberlo.
 export function clubOpensOn(hours: string | null | undefined, openDays: string[] | null | undefined, dow: number): boolean | null {

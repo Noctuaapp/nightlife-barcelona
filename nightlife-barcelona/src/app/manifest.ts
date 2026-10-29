@@ -17,6 +17,10 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#0a0910",
     theme_color: "#0a0910",
     categories: ["lifestyle", "entertainment", "travel"],
+    // Permite a Chrome (Android) contestar «¿está instalada?» desde una pestaña normal
+    // (getInstalledRelatedApps), para no enseñar el botón de instalar a quien ya la tiene.
+    related_applications: [{ platform: "webapp", url: "https://www.noctuaapp.com/manifest.webmanifest" }],
+    prefer_related_applications: false,
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },

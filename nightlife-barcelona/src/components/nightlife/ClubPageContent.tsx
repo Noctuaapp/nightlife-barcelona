@@ -35,6 +35,7 @@ import { clubOpenNow, clubOpensOn, madridClock } from "../../lib/clubHours"
 import { toDateLocale } from "../../lib/dateLocale"
 import { clubSummary } from "../../lib/clubSummary"
 import { safeUrl } from "../../lib/safeUrl"
+import { factCellClass, factsGridClass } from "../../lib/factsGrid"
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
@@ -453,9 +454,9 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
       {/* DATOS PRÁCTICOS */}
       {quickFacts.length > 0 && (
         <section className="mx-auto mt-8 max-w-6xl px-4 sm:px-6">
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-white/10 bg-white/10 sm:grid-cols-4">
-            {quickFacts.map((f) => (
-              <div key={f.key} className="flex items-start gap-3 bg-surface p-4">
+          <dl className={factsGridClass(quickFacts.length)}>
+            {quickFacts.map((f, i) => (
+              <div key={f.key} className={`flex items-start gap-3 bg-surface p-4 ${factCellClass(i, quickFacts.length)}`}>
                 <Icon name={f.icon} className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" />
                 <div className="min-w-0">
                   <dt className="text-xs text-zinc-400">{f.label}</dt>
@@ -475,6 +476,15 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
           </dl>
         </section>
       )}
+
+      {/* FOTOS (29/10/2026): antes estaban al final de la ficha, tras el mapa y las opiniones; casi
+          nadie llegaba. Ahora van justo bajo los datos prácticos (sin fotos extra, no se pinta nada). */}
+      <ClubGallery
+        compact
+        images={allImages}
+        name={club.name}
+        edit={{ table: "clubs", id: club.id, bucket: "club-photos", gallery: Array.isArray(club.gallery) ? club.gallery : [] }}
+      />
 
       {/* REGISTRO: solo lo ve quien no tiene sesión (ver JoinNoctuaCard). En su mismo hueco, quien
           acaba de crear la cuenta ve el primer reto (ver WelcomeChallenge). */}
@@ -838,13 +848,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
         </div>
       </section>
 
-      <div className="mt-16">
-        <ClubGallery
-          images={allImages}
-          name={club.name}
-          edit={{ table: "clubs", id: club.id, bucket: "club-photos", gallery: Array.isArray(club.gallery) ? club.gallery : [] }}
-        />
-      </div>
+      <div className="mt-16" aria-hidden="true" />
 
       {related.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">

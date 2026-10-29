@@ -7,6 +7,12 @@ import { isAdminEmail } from "./admin"
 // de analítica en el navegador exige consentimiento previo (LSSI, art. 22.2). En memoria no se
 // almacena nada en el dispositivo. Dura mientras se navega por la web; una recarga empieza otra.
 //
+// Unir visitas de la misma persona (29/10/2026): como el session_id no sobrevive a una recarga, quien
+// llega de Google, mira un local, vuelve atrás y abre otro salía como dos personas. Eso NO se arregla
+// aquí, en el navegador (no se guarda nada), sino en la base de datos: un trigger de `analytics`
+// rellena `visitor_id` = huella(clave secreta del día + IP + navegador), sin guardar la IP. Ver
+// supabase/50_visitante_anonimo.sql y Admin › Visitas.
+//
 // Desde el 27/10/2026 también acaba tras 30 minutos sin actividad: una web instalada como app en
 // el móvil puede quedar horas o días en segundo plano SIN recargarse, y sin este corte todo ese
 // tiempo contaba como una sola visita (duraciones larguísimas, falsas). Ahora, el primer evento

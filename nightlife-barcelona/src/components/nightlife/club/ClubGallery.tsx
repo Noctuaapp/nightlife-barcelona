@@ -21,7 +21,8 @@ import { ownerFolder, prepareImageForUpload, uploadFileName } from "../../../lib
 // una foto al principio la convierte de verdad en la portada (la antigua pasa a la galería).
 type GalleryEdit = { table: string; id: number; bucket: string; gallery: string[]; heroField?: string }
 
-export default function ClubGallery({ images, name, edit }: { images: string[]; name: string; edit?: GalleryEdit }) {
+// compact: la galería sube justo bajo los datos prácticos de la ficha (menos margen inferior).
+export default function ClubGallery({ images, name, edit, compact = false }: { images: string[]; name: string; edit?: GalleryEdit; compact?: boolean }) {
   const { t } = useLanguage()
   const isAdmin = useCanEdit() // admin, o el dueño de esta ficha
   const router = useRouter()
@@ -158,7 +159,7 @@ export default function ClubGallery({ images, name, edit }: { images: string[]; 
   }
 
   return (
-    <section className="mx-auto mb-16 max-w-6xl px-4 sm:px-6" aria-label={t("clubPage.gallery")}>
+    <section className={`mx-auto max-w-6xl px-4 sm:px-6 ${compact ? "mt-8" : "mb-16"}`} aria-label={t("clubPage.gallery")}>
       <h2 className="mb-4 text-lg font-semibold text-ink">{t("clubPage.gallery")}</h2>
 
       {displayImages.length >= 2 && (

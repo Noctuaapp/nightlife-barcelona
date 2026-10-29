@@ -18,6 +18,8 @@ import { ADMIN_EMAIL } from "../../lib/admin"
 import NocOwl from "../../components/mascot/NocOwl"
 import DeniedVenuesCard from "../../components/profile/DeniedVenuesCard"
 import InstallAppButton from "../../components/system/InstallAppButton"
+import LoginWall from "../../components/ui/LoginWall"
+import PageLoader from "../../components/ui/PageLoader"
 
 // Perfil. Rehecho tras la auditoría de octubre 2026: fuera las cifras de relleno ("BCN · Ciudad",
 // "🌙 Night owl", "Noctua Member") y los emojis como iconos; arriba, el acceso a todo lo de "tu
@@ -81,7 +83,7 @@ const sortByPinned = <T extends { pinned?: boolean | null; created_at?: string |
     return (b.created_at || "").localeCompare(a.created_at || "")
   })
 
-export default function ProfilePage() {
+function ProfileInner() {
   const { favorites } = useFavorites()
   const { t, locale } = useLanguage()
   const ago = (iso: string | null) => timeAgo(iso, t, locale)
@@ -886,4 +888,30 @@ export default function ProfilePage() {
       <BottomNav />
     </>
   )
+}
+
+// Zona privada (29/10/2026): sin sesión ya no se redirige de golpe a /login; se enseña la puerta con
+// «Continuar con Google», crear cuenta con email e iniciar sesión, y se vuelve aquí al terminar.
+export default function ProfilePage() {
+  const [state, setState] = useState<"checking" | "in" | "out">("checking")
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setState(data.session ? "in" : "out"))
+  }, [])
+  if (state === "checking") {
+    return (
+      <main className="flex min-h-screen flex-col bg-night">
+        <PageLoader />
+      </main>
+    )
+  }
+  if (state === "out") {
+    return (
+      <>
+        <Header />
+        <LoginWall titleKey="profilePage.gateTitle" subtitleKey="profilePage.gateSubtitle" next="/profile" />
+        <BottomNav />
+      </>
+    )
+  }
+  return <ProfileInner />
 }

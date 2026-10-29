@@ -18,6 +18,7 @@ import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { InlineEditText, InlineEditImage } from "../admin/InlineEdit"
 import { useCanEdit } from "../admin/EditAccess"
 import { safeUrl } from "../../lib/safeUrl"
+import { factCellClass, factsGridClass } from "../../lib/factsGrid"
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
@@ -227,9 +228,9 @@ export default function ClubEventPageContent({
 
       {facts.length > 0 && (
         <section className="mx-auto mt-8 max-w-6xl px-4 sm:px-6">
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-white/10 bg-white/10 sm:grid-cols-4">
-            {facts.map((f) => (
-              <div key={f.key} className="flex items-start gap-3 bg-surface p-4">
+          <dl className={factsGridClass(facts.length)}>
+            {facts.map((f, i) => (
+              <div key={f.key} className={`flex items-start gap-3 bg-surface p-4 ${factCellClass(i, facts.length)}`}>
                 <Icon name={f.icon} className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" />
                 <div className="min-w-0">
                   <dt className="text-xs text-zinc-400">{f.label}</dt>

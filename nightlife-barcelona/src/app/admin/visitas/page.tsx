@@ -15,6 +15,8 @@ import { isAdminEmail } from "../../../lib/admin"
 type Ev = { t: string; type: string; path: string | null; name: string | null; item_type: string | null; results: number | null; meta?: Record<string, unknown> | null }
 type Session = {
   id: string
+  /** Código anónimo del día (IP + navegador, ver supabase/50_visitante_anonimo.sql). Null en visitas anteriores. */
+  visitor?: string | null
   started_at: string
   minutes: number
   source: string | null
@@ -28,6 +30,9 @@ type Session = {
 }
 type Data = {
   total_sessions: number
+  /** Personas distintas (visitas unidas por el código anónimo). Ausente si falta ejecutar el SQL 50. */
+  visitors?: number
+  returning?: number
   with_account: number
   bounced: number
   avg_pages: number | null
@@ -70,6 +75,7 @@ const EVENT_LABELS: Record<string, string> = {
   join_click: "Bloque de registro, pulsa:",
   join_view: "Ve el bloque de registro",
   signup_view: "Abre el registro",
+  signup_email_open: "Elige registrarse con email",
   signup_submit: "Envía el registro",
   signup_ok: "Registro completado",
   signup_error: "Error en el registro:",
@@ -100,7 +106,7 @@ function extraDetail(e: Ev): string | null {
   if (e.type === "welcome_click") return WELCOME_TO[to] || to
   if (e.type === "signup_error") return e.meta?.step === "auth" ? `el servidor dice «${reason}»` : SIGNUP_REASONS[reason] || reason
   if (e.type === "signup_ok") return e.meta?.confirm_email ? "(debe confirmar el correo)" : "(ya con sesión)"
-  if (e.type === "google_click") return e.meta?.from === "login" ? "(en Iniciar sesión)" : "(en Crear cuenta)"
+  if (e.type === "google_click") return ({ login: "(en Iniciar sesión)", wall: "(en una zona privada)", modal: "(en el aviso de registro)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? "(en Crear cuenta)"
   if (e.type === "share_click" && e.meta?.via === "whatsapp") return "por WhatsApp"
   if (e.type === "install_choice") return e.meta?.outcome === "accepted" ? "lo acepta" : "lo rechaza"
   if (e.type === "install_click") return ({ menu: "(desde el menú ☰)", profile: "(desde Perfil)", welcome: "(desde «Tu primer reto»)", join: "(desde «¿Aún no estás dentro?»)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? ""
@@ -212,6 +218,7 @@ export default function AdminVisitsPage() {
         { label: "Pulsan «Crear cuenta gratis»", n: count("join_click", (e) => e.meta?.to === "signup") },
         { label: "Abren el formulario de registro", n: count("signup_view") },
         { label: "Pulsan «Continuar con Google»", n: count("google_click") },
+        { label: "Eligen registrarse con email", n: count("signup_email_open") },
         { label: "Envían el formulario", n: count("signup_submit") },
         { label: "Registro completado", n: count("signup_ok") },
         { label: "Confirman la edad (tras el correo o Google)", n: count("confirm_age_done") },
@@ -224,6 +231,17 @@ export default function AdminVisitsPage() {
   const list = (data?.sessions || []).filter(
     (s) => (!onlyActive || s.pages > 1 || s.actions > 0) && (source === "all" || (s.source || "direct") === source)
   )
+
+  // Visitas de la misma persona (mismo código anónimo del día) en una sola fila. El orden es el de la
+  // visita más reciente de cada persona; dentro de cada grupo, de la más antigua a la más reciente.
+  const byKey = new Map<string, Session[]>()
+  for (const s of list) {
+    const key = s.visitor || `solo:${s.id}:${s.started_at}`
+    const g = byKey.get(key)
+    if (g) g.push(s)
+    else byKey.set(key, [s])
+  }
+  const groups = Array.from(byKey.values()).map((g) => [...g].reverse())
 
   if (checking) {
     return (
@@ -258,12 +276,19 @@ export default function AdminVisitsPage() {
       ) : data ? (
         <>
           <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Kpi label="Visitas" value={String(data.total_sessions)} />
+            {data.visitors !== undefined ? (
+              <Kpi label="Personas distintas" value={String(data.visitors)} sub={`${data.total_sessions} visitas · ${data.returning ?? 0} con varias visitas`} />
+            ) : (
+              <Kpi label="Visitas" value={String(data.total_sessions)} />
+            )}
             <Kpi label="Con cuenta" value={`${data.with_account}`} sub={`${pct(data.with_account, data.total_sessions)} % de las visitas`} />
             <Kpi label="Se van sin hacer nada" value={`${pct(data.bounced, data.total_sessions)} %`} sub={`${data.bounced} visitas de una sola página`} />
             <Kpi label="Páginas por visita" value={data.avg_pages ? String(data.avg_pages).replace(".", ",") : "—"} />
           </dl>
           <p className="mt-2 text-xs text-zinc-500">
+            {data.visitors !== undefined
+              ? "«Persona» = visitas unidas por un código anónimo del día (IP + navegador, sin guardar nada en el móvil de nadie). Si alguien cambia de wifi a datos cuenta como otra; si dos personas comparten IP y navegador, como una. Las visitas anteriores al 29/10/2026 no tienen código y cuentan una a una. "
+              : "Para unir las visitas de la misma persona falta ejecutar supabase/50_visitante_anonimo.sql en Supabase. "}
             El recorrido página a página se guarda desde el 26/10/2026: las visitas anteriores solo muestran la página de entrada, las fichas vistas y los clics.
           </p>
 
@@ -307,80 +332,155 @@ export default function AdminVisitsPage() {
             <p className="rounded-2xl border border-white/10 p-8 text-center text-sm text-zinc-400">No hay visitas con estos filtros.</p>
           ) : (
             <ul className="divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/10">
-              {list.map((s) => {
-                const isOpen = open === s.id + s.started_at
-                const Dev = s.device === "mobile" ? Smartphone : Monitor
-                return (
-                  <li key={s.id + s.started_at}>
-                    <button
-                      type="button"
-                      onClick={() => setOpen(isOpen ? null : s.id + s.started_at)}
-                      aria-expanded={isOpen}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-white/[0.03]"
-                    >
-                      <span className="w-14 shrink-0 text-xs tabular-nums text-zinc-500">
-                        {new Date(s.started_at).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" })}
-                        {days > 1 && (
-                          <span className="block">
-                            {new Date(s.started_at).toLocaleDateString("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "short" })}
-                          </span>
-                        )}
-                      </span>
-                      <Dev size={16} className="shrink-0 text-zinc-400" aria-label={s.device === "mobile" ? "Móvil" : "Ordenador"} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-ink">{pageLabel(s.landing, names)}</span>
-                        <span className="block truncate text-xs text-zinc-400">
-                          {sourceLabel(s.source)} · {s.pages} {s.pages === 1 ? "página" : "páginas"}
-                          {s.actions > 0 && ` · ${s.actions} ${s.actions === 1 ? "acción" : "acciones"}`}
-                          {s.minutes >= 1 && ` · ${Math.round(s.minutes)} min`}
-                          {s.username && ` · @${s.username}`}
-                        </span>
-                      </span>
-                      <ChevronDown size={16} className={`shrink-0 text-zinc-500 transition ${isOpen ? "rotate-180" : ""}`} />
-                    </button>
-                    {isOpen && (
-                      <div className="bg-black/20 px-4 pb-4 pt-1">
-                        {s.user_id && (
-                          <Link href={`/admin/actividad?user=${s.user_id}`} className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-soft hover:underline">
-                            <User size={13} /> Ver toda la actividad de @{s.username || "este usuario"}
-                          </Link>
-                        )}
-                        <ol className="relative ml-2 space-y-2 border-l border-white/10 pl-4">
-                          {(s.events || []).map((e, i) => (
-                            <li key={i} className="text-xs">
-                              <span className="absolute -left-[4.5px] mt-1.5 h-2 w-2 rounded-full bg-brand/70" aria-hidden="true" />
-                              <span className="tabular-nums text-zinc-500">
-                                {new Date(e.t).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                              </span>{" "}
-                              <span className="text-zinc-300">{EVENT_LABELS[e.type] || e.type}</span>{" "}
-                              <span className="font-semibold text-ink">
-                                {extraDetail(e) ?? (e.type === "tab_open"
-                                  ? `${TAB_LABELS[String(e.meta?.tab)] || String(e.meta?.tab || "")} (${e.name || ""})`
-                                  : e.type === "join_click" && e.meta?.to
-                                    ? JOIN_TO[String(e.meta.to)] || String(e.meta.to)
-                                  : (e.type === "nearby_click" || e.type === "related_click") && e.meta?.to
-                                    ? String(e.meta.to) === "map" ? "el mapa" : String(e.meta.to) === "events" ? "todos los eventos" : String(e.meta.to)
-                                    : e.type === "search" || e.type === "filter_used"
-                                  ? e.name
-                                    ? `«${e.name}»${e.results !== null ? ` (${e.results} resultados)` : ""}`
-                                    : ""
-                                  : e.type.endsWith("_click") || e.type === "page_view"
-                                    ? e.name || pageLabel(e.path, names)
-                                    : pageLabel(e.path, names))}
-                              </span>
-                            </li>
-                          ))}
-                        </ol>
-                      </div>
-                    )}
-                  </li>
-                )
-              })}
+              {groups.map((g) => (
+                <VisitRow key={g[0].id + g[0].started_at} sessions={g} days={days} names={names} open={open} setOpen={setOpen} />
+              ))}
             </ul>
           )}
         </>
       ) : null}
     </AdminShell>
+  )
+}
+
+const hhmm = (iso: string) => new Date(iso).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" })
+const dayShort = (iso: string) => new Date(iso).toLocaleDateString("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "short" })
+
+// Recorrido de una visita: qué hizo, en orden.
+function Timeline({ s, names }: { s: Session; names: Map<string, string> }) {
+  return (
+    <>
+      {s.user_id && (
+        <Link href={`/admin/actividad?user=${s.user_id}`} className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-soft hover:underline">
+          <User size={13} /> Ver toda la actividad de @{s.username || "este usuario"}
+        </Link>
+      )}
+      <ol className="relative ml-2 space-y-2 border-l border-white/10 pl-4">
+        {(s.events || []).map((e, i) => (
+          <li key={i} className="text-xs">
+            <span className="absolute -left-[4.5px] mt-1.5 h-2 w-2 rounded-full bg-brand/70" aria-hidden="true" />
+            <span className="tabular-nums text-zinc-500">
+              {new Date(e.t).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            </span>{" "}
+            <span className="text-zinc-300">{EVENT_LABELS[e.type] || e.type}</span>{" "}
+            <span className="font-semibold text-ink">
+              {extraDetail(e) ?? (e.type === "tab_open"
+                ? `${TAB_LABELS[String(e.meta?.tab)] || String(e.meta?.tab || "")} (${e.name || ""})`
+                : e.type === "join_click" && e.meta?.to
+                  ? JOIN_TO[String(e.meta.to)] || String(e.meta.to)
+                : (e.type === "nearby_click" || e.type === "related_click") && e.meta?.to
+                  ? String(e.meta.to) === "map" ? "el mapa" : String(e.meta.to) === "events" ? "todos los eventos" : String(e.meta.to)
+                  : e.type === "search" || e.type === "filter_used"
+                ? e.name
+                  ? `«${e.name}»${e.results !== null ? ` (${e.results} resultados)` : ""}`
+                  : ""
+                : e.type.endsWith("_click") || e.type === "page_view"
+                  ? e.name || pageLabel(e.path, names)
+                  : pageLabel(e.path, names))}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </>
+  )
+}
+
+// Una fila de "Visita a visita": una visita suelta o, si varias comparten el código anónimo del día
+// (la misma persona saltando de un local a otro, volviendo desde Google...), todas juntas.
+function VisitRow({
+  sessions, days, names, open, setOpen,
+}: {
+  sessions: Session[]
+  days: number
+  names: Map<string, string>
+  open: string | null
+  setOpen: (k: string | null) => void
+}) {
+  const first = sessions[0]
+  const last = sessions[sessions.length - 1]
+  const many = sessions.length > 1
+  const key = (many ? "g:" : "") + first.id + first.started_at
+  const isOpen = open === key
+  const Dev = last.device === "mobile" ? Smartphone : Monitor
+  const pages = sessions.reduce((n, x) => n + x.pages, 0)
+  const actions = sessions.reduce((n, x) => n + x.actions, 0)
+  const sourcesTxt = Array.from(new Set(sessions.map((x) => sourceLabel(x.source)))).join(" + ")
+  const username = sessions.find((x) => x.username)?.username
+  const spanMin = (new Date(last.started_at).getTime() - new Date(first.started_at).getTime()) / 60000
+  // «A (×2) → B»: las entradas seguidas a la misma página se juntan.
+  const parts: { n: string; c: number }[] = []
+  for (const x of sessions) {
+    const n = pageLabel(x.landing, names)
+    const prev = parts[parts.length - 1]
+    if (prev && prev.n === n) prev.c++
+    else parts.push({ n, c: 1 })
+  }
+  const title = many ? parts.map((x) => (x.c > 1 ? `${x.n} (×${x.c})` : x.n)).join(" → ") : pageLabel(last.landing, names)
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => setOpen(isOpen ? null : key)}
+        aria-expanded={isOpen}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-white/[0.03]"
+      >
+        <span className="w-14 shrink-0 text-xs tabular-nums text-zinc-500">
+          {hhmm(last.started_at)}
+          {days > 1 && <span className="block">{dayShort(last.started_at)}</span>}
+        </span>
+        <Dev size={16} className="shrink-0 text-zinc-400" aria-label={last.device === "mobile" ? "Móvil" : "Ordenador"} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-ink">{title}</span>
+          <span className="block truncate text-xs text-zinc-400">
+            {many ? (
+              <>
+                {sourcesTxt} · {sessions.length} visitas · {pages} {pages === 1 ? "página" : "páginas"}
+                {actions > 0 && ` · ${actions} ${actions === 1 ? "acción" : "acciones"}`}
+                {spanMin >= 1 ? ` · de ${hhmm(first.started_at)} a ${hhmm(last.started_at)}` : ` · en el mismo minuto`}
+              </>
+            ) : (
+              <>
+                {sourceLabel(last.source)} · {last.pages} {last.pages === 1 ? "página" : "páginas"}
+                {last.actions > 0 && ` · ${last.actions} ${last.actions === 1 ? "acción" : "acciones"}`}
+                {last.minutes >= 1 && ` · ${Math.round(last.minutes)} min`}
+              </>
+            )}
+            {username && ` · @${username}`}
+          </span>
+        </span>
+        {many && (
+          <span className="shrink-0 rounded-full bg-brand/20 px-2 py-0.5 text-[11px] font-bold text-brand-soft" title="Varias visitas de la misma persona">
+            <span className="sm:hidden">×{sessions.length}</span>
+            <span className="hidden sm:inline">Misma persona</span>
+          </span>
+        )}
+        <ChevronDown size={16} className={`shrink-0 text-zinc-500 transition ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+      {isOpen && (
+        <div className="bg-black/20 px-4 pb-4 pt-1">
+          {many ? (
+            <>
+              <p className="pb-1 pt-2 text-[11px] leading-snug text-zinc-500">
+                Mismo código anónimo del día{first.visitor ? ` (${first.visitor.slice(0, 6)})` : ""}: misma IP y mismo navegador. Si cambió de wifi a datos aparecería como otra persona.
+              </p>
+              {sessions.map((x) => (
+                <div key={x.id + x.started_at} className="mt-3 first:mt-1">
+                  <p className="mb-2 text-xs font-bold text-zinc-300">
+                    {hhmm(x.started_at)} · {pageLabel(x.landing, names)}{" "}
+                    <span className="font-normal text-zinc-500">
+                      ({sourceLabel(x.source)}, {x.pages} {x.pages === 1 ? "página" : "páginas"})
+                    </span>
+                  </p>
+                  <Timeline s={x} names={names} />
+                </div>
+              ))}
+            </>
+          ) : (
+            <Timeline s={first} names={names} />
+          )}
+        </div>
+      )}
+    </li>
   )
 }
 

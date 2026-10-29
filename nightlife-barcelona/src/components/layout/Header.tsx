@@ -785,8 +785,11 @@ export default function Header() {
         background: "linear-gradient(180deg, #0f1640 0%, #080a18 45%, #06070f 100%)", borderLeft: "1px solid rgba(255,255,255,0.1)",
         display: "flex", flexDirection: "column",
         transform: menuOpen ? "translateX(0)" : "translateX(100%)",
-        transition: "transform 0.3s ease-in-out",
-        boxShadow: "-20px 0 60px rgba(0,0,0,0.8)",
+        transition: "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+        // Solo con el menú abierto (29/10/2026): con el panel cerrado (fuera de pantalla) su sombra de
+        // 60 px se colaba por el borde derecho y oscurecía el lado de cualquier elemento claro, p. ej.
+        // el botón blanco de «Continuar con Google».
+        boxShadow: menuOpen ? "-20px 0 60px rgba(0,0,0,0.8)" : "none",
         overflowY: "auto",
       }}>
         <div className="flex items-center justify-between px-6 py-6 border-b border-white/10">

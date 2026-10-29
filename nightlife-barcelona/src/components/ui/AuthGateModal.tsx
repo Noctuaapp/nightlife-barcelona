@@ -5,8 +5,9 @@ import { createPortal } from "react-dom"
 import Link from "next/link"
 
 import { useLanguage } from "../../context/LanguageContext"
-import { X } from "lucide-react"
+import { Check, X } from "lucide-react"
 import NocOwl from "../mascot/NocOwl"
+import GoogleButton from "../auth/GoogleButton"
 
 type AuthGateModalProps = {
   open: boolean
@@ -43,7 +44,7 @@ export default function AuthGateModal({ open, onClose, subtitleKey }: AuthGateMo
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-t-card border border-white/10 bg-night p-7 sm:rounded-card"
+        className="max-h-[94dvh] w-full max-w-md overflow-y-auto rounded-t-card border border-white/10 bg-night p-6 sm:rounded-card sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <NocOwl size={44} mood="wink" />
@@ -59,28 +60,40 @@ export default function AuthGateModal({ open, onClose, subtitleKey }: AuthGateMo
         <h2 className="mt-4 text-2xl font-black leading-tight text-white">{t("authGate.title")}</h2>
         {subtitleKey && <p className="mt-2 text-sm text-zinc-400">{t(subtitleKey)}</p>}
 
-        <div className="mt-5 space-y-2.5">
+        <ul className="mt-5 space-y-2.5">
           {benefits.map((b) => (
-            <div key={b} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-zinc-300">
+            <li key={b} className="flex items-start gap-2.5 text-sm text-zinc-300">
+              <span
+                className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+              >
+                <Check size={12} strokeWidth={3} className="text-white" aria-hidden="true" />
+              </span>
               {b}
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
 
+        {/* 29/10/2026: «Continuar con Google» primero y llamativo (un toque, sin formulario); debajo,
+            crear cuenta con email y entrar. Todo vuelve a la página en la que estabas. */}
         <div className="mt-6 flex flex-col gap-3">
+          <GoogleButton from="modal" next={typeof window !== "undefined" ? window.location.pathname + window.location.search : "/"} />
+          <p className="-mt-1 text-center text-xs text-zinc-400">{t("authGate.googleHint")}</p>
           <Link
-            href="/signup"
-            className="rounded-2xl py-4 text-center font-black text-white transition hover:scale-[1.01] hover:opacity-90"
-            style={{ background: "#7c5cff" }}
+            href={`/signup?next=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "/")}`}
+            className="rounded-2xl border border-white/10 bg-white/5 py-3.5 text-center text-sm font-bold text-white transition hover:bg-white/10"
           >
-            {t("authGate.ctaSignup")}
+            {t("authGate.ctaEmail")}
           </Link>
-          <Link
-            href="/login"
-            className="rounded-2xl border border-white/10 bg-white/5 py-4 text-center font-bold text-white transition hover:bg-white/10"
-          >
-            {t("authGate.ctaLogin")}
-          </Link>
+          <p className="text-center text-sm text-zinc-400">
+            {t("authGate.haveAccount")}{" "}
+            <Link
+              href={`/login?next=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "/")}`}
+              className="font-semibold text-white underline-offset-4 hover:underline"
+            >
+              {t("authGate.loginLink")}
+            </Link>
+          </p>
           <button onClick={onClose} className="py-1 text-center text-xs font-semibold text-zinc-400 transition hover:text-zinc-300">
             {t("authGate.maybeLater")}
           </button>

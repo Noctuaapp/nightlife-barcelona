@@ -9,6 +9,7 @@ import CountrySelect from "../../components/ui/CountrySelect"
 import { useLanguage } from "../../context/LanguageContext"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
+import GoogleButton from "../../components/auth/GoogleButton"
 
 // Dominios de correo temporal/desechable más usados (10 minutos, buzones de un solo uso, etc.).
 // Confirmar el correo ya filtra direcciones inventadas o mal escritas (el enlace nunca llega),
@@ -75,6 +76,10 @@ export default function SignupPage() {
   // se redirigía igualmente a la web como si ya hubiera entrado, y la persona se encontraba sin
   // explicación pidiéndole iniciar sesión otra vez. Ahora se detecta y se muestra un aviso claro.
   const [checkEmail, setCheckEmail] = useState(false)
+  // El formulario con email empieza plegado (29/10/2026): lo primero y más llamativo es «Continuar
+  // con Google» (un toque, sin contraseña), porque rellenar nombre, correo, contraseña, fecha y casillas
+  // da pereza y se abandona. Quien prefiere email lo despliega con un toque (se anota signup_email_open).
+  const [showEmail, setShowEmail] = useState(false)
 
   // Embudo de registro (27/10/2026): cuánta gente abre el formulario, cuántos lo envían, cuántos lo
   // completan y en qué paso se quedan (Admin › Visitas). Solo se anota un código del motivo, nunca
@@ -182,14 +187,6 @@ export default function SignupPage() {
     window.location.href = safeNextPath()
   }
 
-  const handleGoogle = async () => {
-    track("google_click", { meta: { from: "signup" } })
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}${safeNextPath()}` },
-    })
-  }
-
   if (checkEmail) {
     return (
       <>
@@ -229,25 +226,30 @@ export default function SignupPage() {
         <section className="mx-auto max-w-md px-4">
           <div className="rounded-card border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
 
-            {/* Google */}
-            <button
-              onClick={handleGoogle}
-              className="w-full flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition hover:bg-white hover:text-black"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-              {t("signup.google")}
-            </button>
+            {/* Google: primero, grande y blanco — el camino con menos pereza */}
+            <GoogleButton from="signup" />
+            <p className="mt-2.5 text-center text-xs text-zinc-400">{t("authGate.googleHint")}</p>
 
-            <div className="my-6 flex items-center gap-4">
-              <div className="h-px flex-1 bg-white/10" />
-              <span className="text-xs text-zinc-400">{t("signup.or")}</span>
-              <div className="h-px flex-1 bg-white/10" />
-            </div>
+            {!showEmail && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmail(true)
+                  track("signup_email_open")
+                }}
+                className="mt-6 w-full rounded-2xl border border-white/10 px-6 py-3.5 text-sm font-semibold text-zinc-300 transition hover:bg-white/5 hover:text-white"
+              >
+                {t("signup.withEmail")}
+              </button>
+            )}
+
+            {showEmail && (
+              <>
+                <div className="my-6 flex items-center gap-4">
+                  <div className="h-px flex-1 bg-white/10" />
+                  <span className="text-xs text-zinc-400">{t("signup.or")}</span>
+                  <div className="h-px flex-1 bg-white/10" />
+                </div>
 
             <form onSubmit={handleSignup} className="space-y-4">
               <input
@@ -344,11 +346,13 @@ export default function SignupPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-2xl bg-white py-4 font-bold text-black transition hover:scale-[1.02] disabled:opacity-50"
+                className="w-full rounded-2xl bg-brand py-4 font-bold text-white transition hover:bg-brand-strong disabled:opacity-50"
               >
                 {loading ? t("signup.creating") : t("signup.create")}
               </button>
             </form>
+              </>
+            )}
 
             <p className="mt-6 text-center text-sm text-zinc-400">
               <Link href="/login" className="text-white hover:text-zinc-300 transition">

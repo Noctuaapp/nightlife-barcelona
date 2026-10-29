@@ -7,6 +7,7 @@ import { matchesQuery } from "../../lib/textSearch"
 import { EXTRA_FEATURES } from "../../lib/extraFeatures"
 import { SearchIcon, CloseIcon, LocationIcon, FlameIcon, SlidersIcon, ChevronDownIcon } from "../ui/FilterIcons"
 import { areasForPostalCode } from "../../lib/postalCodes"
+import { clubStaysOpenPast } from "../../lib/clubHours"
 
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T>(null)
@@ -60,7 +61,10 @@ function toggleInSet(set: Set<string>, value: string): Set<string> {
 }
 
 const GENRE_FILTERS = ["Techno", "Commercial", "Cocktail Bar", "Karaoke"]
-const ATTRIBUTE_FILTERS = ["Trending", "LGTBI+", "Sin cola", "Futbolín/Billar", "Descuento hoy", "Entrada gratis", ...EXTRA_FEATURES.filter((f) => f.filter).map((f) => f.filter as string)]
+// «Bar/pub abierto tras las 2:30» (29/10/2026): los bares y pubs que cierran más tarde de las 2:30,
+// para quien busca dónde seguir cuando ya cierra casi todo pero no quiere ir a una discoteca.
+const LATE_BAR_FILTER = "Bar/pub abierto tras las 2:30"
+const ATTRIBUTE_FILTERS = ["Trending", LATE_BAR_FILTER, "LGTBI+", "Sin cola", "Futbolín/Billar", "Descuento hoy", "Entrada gratis", ...EXTRA_FEATURES.filter((f) => f.filter).map((f) => f.filter as string)]
 // Antes solo había "+18", "+21", "+25": los clubs con edad mínima de 30 (campo age_min = 30, editable
 // desde la ficha del club) no se podían filtrar por aquí, aunque el dato existiera. Se añade "+30".
 const AGE_FILTERS = ["+18", "+21", "+25", "+30"]
@@ -186,6 +190,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
 
   const attributeMatch = (club: any, a: string) => {
     if (a === "Trending") return club.trending === true
+    if (a === LATE_BAR_FILTER) return !!club.venue_type && club.venue_type !== "Discoteca" && clubStaysOpenPast(club.hours) === true
     if (a === "LGTBI+") return club.lgtbi_friendly === true
     if (a === "Sin cola") return club.queue === "No queue" || !club.queue
     if (a === "Futbolín/Billar") return club.has_foosball === true

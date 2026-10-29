@@ -6,6 +6,7 @@ import { Heart } from "lucide-react"
 
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
+import LoginWall from "../../components/ui/LoginWall"
 
 import { supabase } from "../../lib/supabase"
 import { useFavorites } from "../../context/FavoritesContext"
@@ -62,14 +63,12 @@ export default function FavoritesPage() {
   const [events, setEvents] = useState<EventItem[]>([])
   const [clubEvents, setClubEvents] = useState<ClubEvent[]>([])
   const [checkingSession, setCheckingSession] = useState(true)
+  const [loggedIn, setLoggedIn] = useState(false)
 
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession()
-      if (!data.session) {
-        setCheckingSession(false)
-        return
-      }
+      setLoggedIn(!!data.session)
       setCheckingSession(false)
     }
     checkSession()
@@ -135,6 +134,18 @@ export default function FavoritesPage() {
         <main className="flex min-h-screen items-center justify-center bg-night text-ink">
           <p className="text-sm text-zinc-400">{t("favoritesPage.loading")}</p>
         </main>
+      </>
+    )
+  }
+
+  // Sin sesión (29/10/2026): antes salía «aún no tienes favoritos», como si fuera tu lista vacía. Ahora
+  // se explica que es una zona privada y se ofrece entrar con Google, crear cuenta o iniciar sesión.
+  if (!loggedIn) {
+    return (
+      <>
+        <Header />
+        <LoginWall titleKey="favoritesPage.gateTitle" subtitleKey="favoritesPage.gateSubtitle" />
+        <BottomNav />
       </>
     )
   }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { INSTALL_EVENT, type InstallEvent } from "../../lib/useInstallPrompt"
+import { INSTALL_EVENT, markInstalled, type InstallEvent } from "../../lib/useInstallPrompt"
 import { track } from "../../lib/track"
 
 // Guarda el aviso "se puede instalar" del navegador desde el primer momento (ver
@@ -25,6 +25,7 @@ export default function InstallCapture() {
     const onPrompt = (e: Event) => {
       e.preventDefault()
       window.__noctuaInstall = e as InstallEvent
+      markInstalled(false) // si Chrome ofrece instalar, es que no está instalada
       window.dispatchEvent(new Event(INSTALL_EVENT))
     }
     // "appinstalled" lo lanza el navegador cuando la instalación se completa, venga de nuestro botón,
@@ -32,6 +33,7 @@ export default function InstallCapture() {
     // iPhone no avisa de nada: allí solo se ve cuando alguien abre la web desde el icono (origen "pwa").
     const onInstalled = () => {
       track("app_installed")
+      markInstalled(true)
       window.__noctuaInstall = null
       window.dispatchEvent(new Event(INSTALL_EVENT))
     }

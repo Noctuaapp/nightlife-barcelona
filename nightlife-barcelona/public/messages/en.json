@@ -104,7 +104,8 @@
     "error_terms": "You must accept the terms and conditions to continue.",
     "error_age": "You must confirm you are over 18 to continue.",
     "gender_unspecified": "Prefer not to say",
-    "optional": "optional"
+    "optional": "optional",
+    "withEmail": "I'd rather sign up with email"
   },
   "clubs": {
     "title": "Clubs",
@@ -264,7 +265,7 @@
     "s1_body": "Noctua (\"we\", \"our\") is a nightlife discovery platform focused on Barcelona. We operate the website and app available at noctuaapp.com. For any privacy-related question, contact us at {email}.",
     "s2_title": "Data we collect",
     "s2_intro": "We collect the following categories of data:",
-    "s2_items": "Account data::Email address, encrypted password, username, gender and year of birth. When you sign up we ask for your full date of birth only to check that you are over 18; we store the year only.\nProfile photo::The image you voluntarily upload as your account avatar.\nUsage data::Pages visited, clubs and events viewed, buttons clicked (for example tickets, directions or share), searches performed and how many results they returned, and where the visit came from (for example search engine, social network or invite link). They are linked to a random session identifier that disappears when you close the tab and, if you are logged in, to your account.\nFavorites::Clubs, events and club nights you choose to save, along with the lists and personal notes you create to organize them.\nActivity and points (XP)::If you mark that you'll attend an event or a club on a given night, check in at a club, or earn experience points, we store that activity (including the date) to show your progress and level within the app and to produce aggregated statistics.\nPrecise location (check-in only)::When you choose to check in on a club's page, we access your GPS location once to confirm you're near the venue. We don't store your coordinates — only which club and on which day you checked in.\nContact messages::Any message you send us through the Contact page, including requests to manage your club's or festival's listing.\nVerified venue and festival accounts::If you're responsible for a club or festival and we grant you access to edit its listing, we link your account to that venue or event. Only you and the Noctua team can manage that listing from there.\nIn-app notifications::The notices we send you within Noctua (for example, confirmations or messages from the team) and whether you've read them.\nDevice data and analytics::Browser type, device type and approximate location (at country/city level) for usage analysis, via Vercel Analytics.\nReviews and “Thanks”::The reviews you post about venues and events (stars and text) are public together with your username and level. We also store which reviews you have thanked (who thanked is never shown) and any reports you make, which are confidential.\n“They won't let me in” reports::If you tell us you were refused entry at a venue, we store the venue, the reason and the date so we stop recommending it to you and can improve the site. The venue never receives your identity, and you can show it again from your profile.\nPolls::Your answers to the app's quick polls and to the site rating.",
+    "s2_items": "Account data::Email address, encrypted password, username, gender and year of birth. When you sign up we ask for your full date of birth only to check that you are over 18; we store the year only.\nProfile photo::The image you voluntarily upload as your account avatar.\nUsage data::Pages visited, clubs and events viewed, buttons clicked (for example tickets, directions or share), searches performed and how many results they returned, and where the visit came from (for example search engine, social network or invite link). They are linked to a random session identifier that disappears when you close the tab and, if you are logged in, to your account. To group visits by the same person within a single day we also use a daily anonymous code that cannot identify you (more details in the section on cookies and analytics).\nFavorites::Clubs, events and club nights you choose to save, along with the lists and personal notes you create to organize them.\nActivity and points (XP)::If you mark that you'll attend an event or a club on a given night, check in at a club, or earn experience points, we store that activity (including the date) to show your progress and level within the app and to produce aggregated statistics.\nPrecise location (check-in only)::When you choose to check in on a club's page, we access your GPS location once to confirm you're near the venue. We don't store your coordinates — only which club and on which day you checked in.\nContact messages::Any message you send us through the Contact page, including requests to manage your club's or festival's listing.\nVerified venue and festival accounts::If you're responsible for a club or festival and we grant you access to edit its listing, we link your account to that venue or event. Only you and the Noctua team can manage that listing from there.\nIn-app notifications::The notices we send you within Noctua (for example, confirmations or messages from the team) and whether you've read them.\nDevice data and analytics::Browser type, device type and approximate location (at country/city level) for usage analysis, via Vercel Analytics.\nReviews and “Thanks”::The reviews you post about venues and events (stars and text) are public together with your username and level. We also store which reviews you have thanked (who thanked is never shown) and any reports you make, which are confidential.\n“They won't let me in” reports::If you tell us you were refused entry at a venue, we store the venue, the reason and the date so we stop recommending it to you and can improve the site. The venue never receives your identity, and you can show it again from your profile.\nPolls::Your answers to the app's quick polls and to the site rating.",
     "s3_title": "How we use your data",
     "s3_intro": "We use the data we collect to:",
     "s3_items": "Provide and operate the Noctua platform.\nSave and display your favorite clubs, events and club nights.\nCalculate your progress and level within Noctua's points (XP) system.\nVerify your location at the moment of check-in at a club (we never store it, only the result).\nRespond to messages and support requests, including messages the Noctua team sends you directly.\nGrant management access to verified venue or festival managers over their own listing, while Noctua's team always retains the ability to review, correct or revoke that access.\nImprove the platform based on usage patterns.\nImprove your searches and recommendations using your year of birth (for example, suggesting venues with an atmosphere suited to your age).\nProduce aggregated, anonymous statistics about platform use and attendance at venues and events (for example age ranges, origin or timing of visits), which we may share with venues, event organizers and other third parties, including in exchange for payment.\nSend important service communications (no marketing without your consent).\nShowing verified venue managers, if Noctua enables it, aggregated statistics about their own listing (views, clicks, traffic sources and hours), without any data that identifies you.\nModerating reviews and reported content and protecting the platform from abuse (for example, with daily posting limits).",
@@ -279,7 +280,7 @@
     "s7_items": "Access the personal data we hold about you.\nRequest correction of inaccurate data.\nRequest deletion of your data ('right to be forgotten').\nObject to or restrict the processing of your data.\nReceive a copy of your data in a portable format.\nFile a complaint with your local data protection authority.",
     "s7_closing": "To exercise any of these rights, contact us at {email}.",
     "s8_title": "Cookies and analytics",
-    "s8_body": "We use essential cookies necessary for authentication and session management, plus local browser storage (localStorage) to remember preferences such as which notices you've already read. We also use Vercel Analytics, an analytics tool that doesn't use tracking cookies or individually identify users, to understand in aggregate how the Platform is used. We don't use advertising or cross-site tracking cookies. In addition, Noctua records its own usage analytics using a random session identifier stored in your browser's session storage (sessionStorage), which is deleted when you close the tab; it is not a cookie and does not follow you across sites. No third-party ad network has access to your data.",
+    "s8_body": "We use essential cookies necessary for authentication and session management, plus local browser storage (localStorage) to remember preferences such as which notices you've already read. We also use Vercel Analytics, an analytics tool that doesn't use tracking cookies or individually identify users, to understand in aggregate how the Platform is used. We don't use advertising or cross-site tracking cookies. In addition, Noctua records its own usage analytics using a random session identifier that only exists in the page's memory while it is open: nothing is stored on your device for this analytics. To tell whether several visits on the same day come from the same person, our server computes an anonymous code from your IP address and browser, mixed with a secret key that changes every day and is deleted the next day; your IP address is not stored in the analytics, the code cannot be reversed, and it does not let us recognise you from one day to the next. No third-party ad network has access to your data.",
     "s9_title": "Third-party services",
     "s9_intro": "We work with the following providers to operate the Platform, each processing data only to the extent necessary to provide their service:",
     "s9_items": "Supabase::Authentication, database, image storage and sending sign-in emails (account confirmation and password recovery). Processes data in accordance with the GDPR.\nVercel::Application hosting and aggregated, anonymous usage analytics.\nMapbox::Renders the maps within the app. When a map loads, Mapbox may receive your IP address and the technical information needed to display it.\nGoogle Places::Source of public data (name, rating, reviews and photos) for clubs, festivals and essential services shown on their listings. We do not send your personal data to Google through this integration.",
@@ -598,7 +599,9 @@
     "nightsSavedTitle": "Nights",
     "eventsSavedEyebrow": "Saved events",
     "eventsSavedTitle": "Events",
-    "listsExplainer": "Group your favorites into lists (like \"Weekend plans\" or \"With friends\") to find them faster — it's optional, you don't need to use it."
+    "listsExplainer": "Group your favorites into lists (like \"Weekend plans\" or \"With friends\") to find them faster — it's optional, you don't need to use it.",
+    "gateTitle": "Save your favorite spots",
+    "gateSubtitle": "Create a free account and keep the venues and events you don't want to miss at hand."
   },
   "attendance": {
     "willGo": "I'll be there tonight",
@@ -676,7 +679,11 @@
     "ctaLogin": "I already have an account",
     "maybeLater": "Not now",
     "bannerText": "Sign up free: favourites, shareable plans and more",
-    "bannerCta": "Create account"
+    "bannerCta": "Create account",
+    "ctaEmail": "Create account with email",
+    "haveAccount": "Already have an account?",
+    "loginLink": "Log in",
+    "googleHint": "No passwords or long forms"
   },
   "changePassword": {
     "eyebrow": "Account security",
@@ -1133,7 +1140,9 @@
     "deniedError": "Couldn't change it. Please try again.",
     "deniedTimes": "{n} times",
     "aboutYou": "About you (optional)",
-    "aboutYouHelp": "Helps us understand who uses Noctua. You can leave it empty."
+    "aboutYouHelp": "Helps us understand who uses Noctua. You can leave it empty.",
+    "gateTitle": "Your Noctua profile",
+    "gateSubtitle": "Log in or create a free account to see your level, your favorites and your month in Noctua."
   },
   "badges": {
     "title": "Exploration badges",
