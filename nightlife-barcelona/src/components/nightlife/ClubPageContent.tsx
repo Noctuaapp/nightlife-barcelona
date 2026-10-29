@@ -23,6 +23,7 @@ import WelcomeChallenge from "./WelcomeChallenge"
 import NextStepsRow from "./NextStepsRow"
 import SocialLinks, { socialUrl } from "./club/SocialLinks"
 import ClubFeatures, { activeFeatureCount } from "./club/ClubFeatures"
+import ClubInsider from "./club/ClubInsider"
 import Stars from "./club/Stars"
 import Icon from "../ui/Icon"
 import { toast } from "../ui/Toast"
@@ -641,6 +642,10 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
 
             {activeTab === "about" && (
               <div className="space-y-6">
+                {/* Antes de ir (29/10/2026): lo mejor, ojo con esto, hora punta, público y consejo.
+                    Solo sale si alguien ha escrito algo (ver club/ClubInsider). */}
+                <ClubInsider club={club} isAdmin={isAdmin} />
+
                 {(featureCount > 0 || isAdmin) && (
                   <Panel>
                     <PanelTitle>{t("clubPage.features")}</PanelTitle>

@@ -371,12 +371,12 @@ export default function MapPage() {
   }, [showList])
 
   useEffect(() => {
-    // El mapa es solo para usuarios registrados: sin sesión se muestra LoginWall.
-    supabase.auth.getSession().then(({ data }) => {
-      const logged = !!data.session
-      setLoggedIn(logged)
-      setIsLoggedIn(logged)
-    })
+    // El mapa está abierto a todo el mundo (29/10/2026; antes pedía cuenta y sin sesión salía
+    // LoginWall). Las dos banderas se quedan por si algún día se vuelve a cerrar: bastaría con
+    // volver a leer la sesión aquí. Mapbox cuenta cada carga del mapa, así que conviene mirar el
+    // uso en el panel de Mapbox de vez en cuando.
+    setLoggedIn(true)
+    setIsLoggedIn(true)
   }, [])
 
   useEffect(() => {

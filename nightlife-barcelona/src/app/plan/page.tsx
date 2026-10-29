@@ -10,7 +10,6 @@ import {
 } from "lucide-react"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
-import LoginWall from "../../components/ui/LoginWall"
 import { supabase } from "../../lib/supabase"
 import { track } from "../../lib/track"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
@@ -379,15 +378,14 @@ export default function PlanPage() {
   // Clubs ya mostrados en esta sesión: "Rehacer plan" los evita para no devolver siempre lo mismo.
   const [seenClubIds, setSeenClubIds] = useState<Set<string>>(new Set())
 
+  // Planifica tu noche está abierto a todo el mundo (29/10/2026; antes pedía cuenta). Con sesión
+  // solo se añade un extra: se preseleccionan estilo y tipo de local según favoritos y visitas.
   const [userId, setUserId] = useState<string | null>(null)
-  // null = aún comprobando la sesión. Planifica tu noche es solo para usuarios registrados.
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
   const [autoDetected, setAutoDetected] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setUserId(data.session?.user.id || null)
-      setIsLoggedIn(!!data.session)
     })
     Promise.all([
       supabase.from("clubs").select("*").eq("hidden", false),
@@ -721,26 +719,6 @@ export default function PlanPage() {
   const secondaryBtn = "rounded-ctl border border-white/15 bg-white/5 px-6 py-4 text-sm font-semibold text-ink transition hover:bg-white/10"
 
   const selectedVibe = VIBE_PRESETS.find((v) => v.key === vibeKey)
-
-  if (isLoggedIn === null) {
-    return (
-      <>
-        <Header />
-        <main className="min-h-screen bg-night pt-24 text-center text-sm text-zinc-400">{t("common.loading")}</main>
-        <BottomNav />
-      </>
-    )
-  }
-
-  if (!isLoggedIn) {
-    return (
-      <>
-        <Header />
-        <LoginWall titleKey="nav.plan" subtitleKey="planPage.notLoggedInSubtitle" />
-        <BottomNav />
-      </>
-    )
-  }
 
   return (
     <>
