@@ -72,8 +72,9 @@ const EVENT_LABELS: Record<string, string> = {
   tab_open: "Abre la pestaña",
   nearby_click: "Va a un sitio cercano:",
   related_click: "Va a un local parecido:",
-  join_click: "Bloque de registro, pulsa:",
-  join_view: "Ve el bloque de registro",
+  join_click: "Aviso de registro, pulsa:",
+  join_view: "Ve el aviso de registro",
+  join_dismiss: "Cierra el aviso de registro",
   signup_view: "Abre el registro",
   signup_email_open: "Elige registrarse con email",
   signup_submit: "Envía el registro",
@@ -89,7 +90,7 @@ const EVENT_LABELS: Record<string, string> = {
   app_installed: "Instala la app (confirmado)",
 }
 const JOIN_TO: Record<string, string> = {
-  signup: "Crear cuenta", login: "Ya tengo cuenta", open: "Abierto ahora", map: "Mapa", plan: "Planifica tu noche", events: "Eventos",
+  google: "Continuar con Google", signup: "Crear cuenta con email", login: "Ya tengo cuenta", open: "Abierto ahora", map: "Mapa", plan: "Planifica tu noche", events: "Eventos",
 }
 const NEXT_TO: Record<string, string> = { hood: "más locales del barrio", style: "más locales del estilo", plan: "Planifica tu noche", events: "todos los eventos" }
 const WELCOME_TO: Record<string, string> = { search: "Buscar sitios", month: "Ver mi mes", dismiss: "Ahora no" }
@@ -106,11 +107,11 @@ function extraDetail(e: Ev): string | null {
   if (e.type === "welcome_click") return WELCOME_TO[to] || to
   if (e.type === "signup_error") return e.meta?.step === "auth" ? `el servidor dice «${reason}»` : SIGNUP_REASONS[reason] || reason
   if (e.type === "signup_ok") return e.meta?.confirm_email ? "(debe confirmar el correo)" : "(ya con sesión)"
-  if (e.type === "google_click") return ({ login: "(en Iniciar sesión)", wall: "(en una zona privada)", modal: "(en el aviso de registro)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? "(en Crear cuenta)"
+  if (e.type === "google_click") return ({ login: "(en Iniciar sesión)", wall: "(en una zona privada)", modal: "(en el aviso de registro)", join: "(en el aviso de la ficha)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? "(en Crear cuenta)"
   if (e.type === "share_click" && e.meta?.via === "whatsapp") return "por WhatsApp"
   if (e.type === "install_choice") return e.meta?.outcome === "accepted" ? "lo acepta" : "lo rechaza"
   if (e.type === "install_click") return ({ menu: "(desde el menú ☰)", profile: "(desde Perfil)", welcome: "(desde «Tu primer reto»)", join: "(desde «¿Aún no estás dentro?»)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? ""
-  if (e.type.startsWith("signup_") || e.type.startsWith("confirm_age_") || e.type === "join_view" || e.type === "install_click") return ""
+  if (e.type.startsWith("signup_") || e.type.startsWith("confirm_age_") || e.type === "join_view" || e.type === "join_dismiss" || e.type === "install_click") return ""
   return null
 }
 
@@ -214,8 +215,10 @@ export default function AdminVisitsPage() {
     return {
       install,
       rows: [
-        { label: "Ven el bloque de registro", n: count("join_view") },
-        { label: "Pulsan «Crear cuenta gratis»", n: count("join_click", (e) => e.meta?.to === "signup") },
+        { label: "Ven el aviso de registro (ficha)", n: count("join_view") },
+        { label: "Lo cierran (cruz o «Ahora no»)", n: count("join_dismiss") },
+        { label: "Pulsan «Continuar con Google» en el aviso", n: count("join_click", (e) => e.meta?.to === "google") },
+        { label: "Pulsan «Crear cuenta con email» en el aviso", n: count("join_click", (e) => e.meta?.to === "signup") },
         { label: "Abren el formulario de registro", n: count("signup_view") },
         { label: "Pulsan «Continuar con Google»", n: count("google_click") },
         { label: "Eligen registrarse con email", n: count("signup_email_open") },

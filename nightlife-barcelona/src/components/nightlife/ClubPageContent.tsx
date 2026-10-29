@@ -615,6 +615,12 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
               {!club.description && isAdmin && (
                 <p className="mt-3 text-xs leading-relaxed text-zinc-500">Sin descripción, el público ve: {clubSummary(club)}</p>
               )}
+              {/* Descripción de una sola frase (29/10/2026): Google la veía igual que la meta descripción y
+                  la ficha quedaba con muy poco texto propio. Se completa con los datos reales del local
+                  (horario, precio, edad, cómo llegar). Una descripción larga ya se basta sola. */}
+              {club.description && String(club.description).trim().length < 280 && (
+                <p className="mt-3 text-sm leading-relaxed text-zinc-400">{clubSummary(club)}</p>
+              )}
             </Panel>
 
             <div role="tablist" className="scrollbar-none sticky top-[72px] z-20 sm:top-20 -mx-4 flex gap-2 overflow-x-auto bg-night/95 px-4 py-3 backdrop-blur sm:mx-0 sm:px-0">

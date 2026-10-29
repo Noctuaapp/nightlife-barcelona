@@ -8,6 +8,8 @@ import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../../../lib/clubQueries"
 import { MIN_INDEXABLE, STYLES, clubsForStyle, neighborhoodsOf, rankClubs, styleBySlug, stylesOf } from "../../../lib/areas"
 import { createSlug } from "../../../lib/slug"
 import { safeJsonLd } from "../../../lib/structuredData"
+import { computeAreaFacts } from "../../../lib/areaFactsData"
+import { zoneLinks } from "../../../lib/zonePages"
 
 // /musica/techno, /musica/reggaeton… Una página por estilo con los locales que lo pinchan.
 export const revalidate = 3600
@@ -23,7 +25,8 @@ const getData = cache(async (slug: string) => {
   if (!style) return null
   const all = await fetchVisibleClubs(LIST_CLUB_FIELDS)
   const clubs = rankClubs(clubsForStyle(all, style))
-  return { style, clubs, neighborhoods: neighborhoodsOf(all), styles: stylesOf(all) }
+  const facts = await computeAreaFacts(clubs)
+  return { style, clubs, neighborhoods: neighborhoodsOf(all), styles: stylesOf(all), facts, zones: zoneLinks(all, MIN_INDEXABLE) }
 })
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -47,7 +50,7 @@ export default async function MusicaPage({ params }: Props) {
   const { slug } = await params
   const data = await getData(slug)
   if (!data || data.clubs.length === 0) notFound()
-  const { style, clubs, neighborhoods, styles } = data
+  const { style, clubs, neighborhoods, styles, facts, zones } = data
   const url = `https://www.noctuaapp.com/musica/${style.slug}`
 
   const jsonLd = [
@@ -76,7 +79,7 @@ export default async function MusicaPage({ params }: Props) {
   return (
     <>
       <Header />
-      <AreaListing kind="musica" slug={style.slug} name={style.label} clubs={clubs} neighborhoods={neighborhoods} styles={styles} />
+      <AreaListing kind="musica" slug={style.slug} name={style.label} clubs={clubs} neighborhoods={neighborhoods} styles={styles} zones={zones} facts={facts} />
       <BottomNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
     </>

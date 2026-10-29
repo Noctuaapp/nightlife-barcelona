@@ -8,6 +8,8 @@ import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../../../lib/clubQueries"
 import { MIN_INDEXABLE, neighborhoodsOf, rankClubs, stylesOf } from "../../../lib/areas"
 import { createSlug } from "../../../lib/slug"
 import { safeJsonLd } from "../../../lib/structuredData"
+import { computeAreaFacts } from "../../../lib/areaFactsData"
+import { zoneLinks } from "../../../lib/zonePages"
 
 // /barrio/el-born, /barrio/poblenou… Una página por barrio con sus discotecas (ver src/lib/areas.ts).
 export const revalidate = 3600
@@ -23,7 +25,9 @@ const getData = cache(async (slug: string) => {
   const area = neighborhoods.find((n) => n.slug === slug)
   if (!area) return null
   const clubs = rankClubs(all.filter((c) => createSlug(c.neighborhood) === slug))
-  return { area, clubs, neighborhoods, styles: stylesOf(all) }
+  // Datos reales de la zona (entrada, horario, metro, Nitbus...) y enlaces a las zonas de fuera de Barcelona.
+  const facts = await computeAreaFacts(clubs)
+  return { area, clubs, neighborhoods, styles: stylesOf(all), facts, zones: zoneLinks(all, MIN_INDEXABLE) }
 })
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -47,7 +51,7 @@ export default async function BarrioPage({ params }: Props) {
   const { slug } = await params
   const data = await getData(slug)
   if (!data) notFound()
-  const { area, clubs, neighborhoods, styles } = data
+  const { area, clubs, neighborhoods, styles, facts, zones } = data
   const url = `https://www.noctuaapp.com/barrio/${area.slug}`
 
   const jsonLd = [
@@ -76,7 +80,7 @@ export default async function BarrioPage({ params }: Props) {
   return (
     <>
       <Header />
-      <AreaListing kind="barrio" slug={area.slug} name={area.name} clubs={clubs} neighborhoods={neighborhoods} styles={styles} />
+      <AreaListing kind="barrio" slug={area.slug} name={area.name} clubs={clubs} neighborhoods={neighborhoods} styles={styles} zones={zones} facts={facts} />
       <BottomNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
     </>

@@ -1008,6 +1008,22 @@
       "hip-hop": "Hip hop, R&B, trap y música urbana, en clubs y sesiones dedicadas.",
       "rock-indie": "Rock, indie, pop alternativo y clásicos de guitarra, para quien prefiere las canciones al bombo.",
       "jazz": "Jazz, soul, funk y música en directo, a menudo con conciertos antes de la sesión."
+    },
+    "titleZona": "Discotecas y bares en {name}",
+    "genericZona": "Discotecas, bares y locales de ocio nocturno en {name}, con horario, precio, estilo de música y cómo volver a casa.",
+    "otherZones": "Otras zonas",
+    "facts": {
+      "title": "Datos de {name}",
+      "count": "Noctua reúne {n} locales de ocio nocturno en {name}.",
+      "countStyle": "Noctua reúne {n} locales de Barcelona donde suena {name}.",
+      "price": "Entrada: de {min} € a {max} €.",
+      "priceFree": "Entrada: desde gratis hasta {max} €.",
+      "hours": "Horario habitual: de {open} a {close}.",
+      "late": "{n} de {of} locales con horario conocido siguen abiertos pasadas las 02:30.",
+      "styles": "Estilos que más suenan: {list}.",
+      "metro": "Metro más cercano a los locales: {list}.",
+      "nitbus": "Nitbus cerca de los locales: {list}.",
+      "top": "Mejor valorados en Google: {list}."
     }
   },
   "forVenues": {

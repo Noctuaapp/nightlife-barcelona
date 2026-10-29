@@ -94,7 +94,10 @@ export function clubSummary(club: Club): string {
 // Descripción corta para <meta name="description"> (Google corta hacia los 155-160 caracteres).
 export function clubMetaDescription(club: Club): string {
   const own = clean(club.description)
-  const text = own || clubSummary(club)
+  // Una descripción de una frase corta se completa con los datos del local, para que el resultado
+  // en Google no sea de una línea (29/10/2026).
+  const ownEnded = own && !/[.!?…]$/.test(own) ? `${own}.` : own
+  const text = own.length >= 110 ? own : [ownEnded, clubSummary(club)].filter(Boolean).join(" ")
   if (text.length <= 158) return text
   const cut = text.slice(0, 155)
   return cut.slice(0, cut.lastIndexOf(" ")) + "…"

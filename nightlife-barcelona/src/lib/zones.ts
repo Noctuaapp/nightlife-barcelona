@@ -12,6 +12,7 @@ export const ZONES = [
   "Sant Adrià de Besòs",
   "Santa Coloma de Gramenet",
   "Esplugues de Llobregat",
+  "Sant Feliu de Llobregat",
 ] as const
 
 const NAME_PATTERNS: [RegExp, string][] = [
@@ -22,6 +23,7 @@ const NAME_PATTERNS: [RegExp, string][] = [
   [/sant adri/i, "Sant Adrià de Besòs"],
   [/santa coloma/i, "Santa Coloma de Gramenet"],
   [/esplugues/i, "Esplugues de Llobregat"],
+  [/sant feliu de llobregat|sant feliu\b(?!\s+de\s+(?:codines|gu[ií]xols))/i, "Sant Feliu de Llobregat"],
 ]
 
 function fromPostcode(text: string): string | null {
@@ -34,6 +36,7 @@ function fromPostcode(text: string): string | null {
   if (pc === "08930") return "Sant Adrià de Besòs"
   if (pc === "08940") return "Cornellà de Llobregat"
   if (pc === "08950") return "Esplugues de Llobregat"
+  if (pc === "08980") return "Sant Feliu de Llobregat"
   if (/^0892[1-4]$/.test(pc)) return "Santa Coloma de Gramenet"
   return null
 }

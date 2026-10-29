@@ -32,6 +32,9 @@ interface ClubCardProps {
   freeEntryInfo?: string | null
   liveStatus?: string | null
   liveStatusUpdatedAt?: string | null
+  // Páginas de barrio, zona y estilo (29/10/2026): enseñan el horario escrito en la tarjeta, para
+  // que el HTML que lee Google lleve horario y precio de cada local y no solo el nombre.
+  showHours?: boolean
 }
 
 const LIVE_STATUS_MAX_AGE_MS = 4 * 60 * 60 * 1000
@@ -52,6 +55,7 @@ export default function ClubCard({
   freeEntryInfo,
   liveStatus,
   liveStatusUpdatedAt,
+  showHours = false,
 }: ClubCardProps) {
   const { t } = useLanguage()
   const [openNow, setOpenNow] = useState<boolean | null>(null)
@@ -123,6 +127,12 @@ export default function ClubCard({
             </span>
           ))}
         </div>
+        {showHours && hours && (
+          <p className="mt-2.5 flex items-center gap-1.5 text-xs text-zinc-400">
+            <Icon name="clock" className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{hours}</span>
+          </p>
+        )}
       </div>
     </Link>
   )

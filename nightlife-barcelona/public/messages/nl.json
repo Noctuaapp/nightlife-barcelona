@@ -964,6 +964,22 @@
       "hip-hop": "Hiphop, R&B, trap en urban muziek, in clubs en speciale avonden.",
       "rock-indie": "Rock, indie, alternatieve pop en gitaarklassiekers, voor wie liever liedjes hoort dan beats.",
       "jazz": "Jazz, soul, funk en livemuziek, vaak met concerten voor de dj-set."
+    },
+    "titleZona": "Clubs en bars in {name}",
+    "genericZona": "Clubs, bars en uitgaansgelegenheden in {name}, met openingstijden, prijzen, muziekstijl en hoe je thuiskomt.",
+    "otherZones": "Andere zones",
+    "facts": {
+      "title": "{name} in cijfers",
+      "count": "Noctua toont {n} uitgaansgelegenheden in {name}.",
+      "countStyle": "Noctua toont {n} locaties in Barcelona waar {name} wordt gedraaid.",
+      "price": "Entree: van {min} € tot {max} €.",
+      "priceFree": "Entree: van gratis tot {max} €.",
+      "hours": "Gebruikelijke tijden: van {open} tot {close}.",
+      "late": "{n} van de {of} locaties met bekende tijden blijven open na 02:30.",
+      "styles": "Meest gedraaide stijlen: {list}.",
+      "metro": "Dichtstbijzijnde metro bij de locaties: {list}.",
+      "nitbus": "Nachtbus in de buurt: {list}.",
+      "top": "Best beoordeeld op Google: {list}."
     }
   },
   "forVenues": {

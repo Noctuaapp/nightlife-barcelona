@@ -9,7 +9,7 @@ import { useLanguage } from "../../context/LanguageContext"
 // privadas. Es el camino con menos pereza (sin contraseña ni formulario), así que se pinta blanco, con
 // el logo de colores y sombra: lo más llamativo de cada pantalla. Sirve igual para crear la cuenta que
 // para entrar: Google decide. `from` se anota en google_click para ver desde dónde se pulsa
-// (signup | login | wall | modal).
+// (signup | login | wall | modal | join).
 //
 // `next`: a dónde volver al terminar. En /signup y /login se lee de ?next=; en las zonas privadas
 // (mapa, plan, favoritos…) se pasa la ruta actual.
@@ -17,15 +17,19 @@ export default function GoogleButton({
   from,
   next,
   className = "",
+  onBeforeGo,
 }: {
-  from: "signup" | "login" | "wall" | "modal"
+  from: "signup" | "login" | "wall" | "modal" | "join"
   next?: string
   className?: string
+  // Para que quien lo usa anote la pulsación a su manera (p. ej. el aviso de registro de las fichas).
+  onBeforeGo?: () => void
 }) {
   const { t } = useLanguage()
 
   const go = async () => {
     track("google_click", { meta: { from } })
+    onBeforeGo?.()
     const back = next ?? safeNextPath()
     await supabase.auth.signInWithOAuth({
       provider: "google",

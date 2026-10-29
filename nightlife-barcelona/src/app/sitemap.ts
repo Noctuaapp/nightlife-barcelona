@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase"
 import { createSlug } from "../lib/slug"
 import type { DbRow } from "../lib/clubQueries"
 import { MIN_INDEXABLE, neighborhoodsOf, stylesOf } from "../lib/areas"
+import { zoneLinks } from "../lib/zonePages"
 
 const BASE_URL = "https://www.noctuaapp.com"
 
@@ -55,7 +56,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [clubs, events] = await Promise.all([load("clubs", "name"), load("events", "title")])
 
   // Barrios y estilos para las páginas /barrio y /musica (solo los que tienen contenido suficiente).
-  const { data: areaRows } = await supabase.from("clubs").select("neighborhood, music").eq("hidden", false)
+  // Con ciudad y dirección (para saber de qué municipio es cada local); si alguna columna no existe,
+  // se vuelve a pedir solo barrio y música para no perder las páginas de barrio y estilo.
+  const withPlace = await supabase.from("clubs").select("neighborhood, music, city, address").eq("hidden", false)
+  const areaRows = withPlace.error ? (await supabase.from("clubs").select("neighborhood, music").eq("hidden", false)).data : withPlace.data
   const areaClubs = (areaRows || []) as DbRow[]
   const areaRoutes: MetadataRoute.Sitemap = [
     ...neighborhoodsOf(areaClubs)
@@ -64,6 +68,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...stylesOf(areaClubs)
       .filter((s) => s.count >= MIN_INDEXABLE)
       .map((s) => ({ url: `${BASE_URL}/musica/${s.slug}`, changeFrequency: "weekly" as const, priority: 0.6 })),
+    // Municipios fuera de Barcelona (Hospitalet, Badalona, Sant Feliu...) con locales suficientes.
+    ...zoneLinks(areaClubs, MIN_INDEXABLE).map((z) => ({ url: `${BASE_URL}/zona/${z.slug}`, changeFrequency: "weekly" as const, priority: 0.6 })),
   ]
 
   // Noches de club de hoy en adelante (las pasadas llevan noindex).
