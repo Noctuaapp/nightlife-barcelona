@@ -7,7 +7,8 @@ import { matchesQuery } from "../../lib/textSearch"
 import { EXTRA_FEATURES } from "../../lib/extraFeatures"
 import { SearchIcon, CloseIcon, LocationIcon, FlameIcon, SlidersIcon, ChevronDownIcon } from "../ui/FilterIcons"
 import { areasForPostalCode } from "../../lib/postalCodes"
-import { clubStaysOpenPast } from "../../lib/clubHours"
+import { clubStaysOpenPast, madridClock } from "../../lib/clubHours"
+import { WEEK_DOW_ORDER, tonightDow, clubMatchesDay } from "../../lib/clubDays"
 
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T>(null)
@@ -78,6 +79,11 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState("")
   const [openNow, setOpenNow] = useState(false)
+  // «Elige un día» (30/10/2026): null = cualquier día; si no, el número de getDay() (0 = domingo).
+  // `tonight` (la noche de hoy, para marcarla en el filtro) se calcula ya en el navegador, no al
+  // renderizar: la página se guarda en caché y el servidor podría pintar un "hoy" de otro día.
+  const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  const [tonight, setTonight] = useState<number | null>(null)
   const [nearMe, setNearMe] = useState(false)
   const [userLat, setUserLat] = useState<number | null>(null)
   const [userLng, setUserLng] = useState<number | null>(null)
@@ -104,11 +110,13 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("search")
     if (q) setSearch(q)
+    const { dow, minutes } = madridClock()
+    setTonight(tonightDow(dow, minutes))
   }, [])
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
-  }, [selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, search, openNow, nearMe, sortBy])
+  }, [selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, search, openNow, selectedDay, nearMe, sortBy])
 
   const isOpenNow = (hours: string): boolean => {
     if (!hours) return false
@@ -228,6 +236,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         (!!postalAreas && postalAreas.some((area) => matchesQuery(area, [club.neighborhood])))
 
       const matchesOpenNow = !openNow || isOpenNow(club.hours)
+      const matchesDay = clubMatchesDay(club.hours, club.open_days, selectedDay)
 
       const matchesNearMe =
         !nearMe ||
@@ -235,10 +244,10 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         !userLng ||
         (club.latitude && club.longitude && getDistance(userLat, userLng, club.latitude, club.longitude) <= 2)
 
-      return matchesGenre && matchesAttributes && matchesAge && matchesNeighborhood && matchesSearch && matchesOpenNow && matchesNearMe
+      return matchesGenre && matchesAttributes && matchesAge && matchesNeighborhood && matchesSearch && matchesOpenNow && matchesDay && matchesNearMe
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clubs, selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, search, openNow, nearMe, userLat, userLng])
+  }, [clubs, selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, search, openNow, selectedDay, nearMe, userLat, userLng])
 
   const sortedClubs = useMemo(() => {
     const arr = [...filteredClubs]
@@ -263,6 +272,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     ...Array.from(selectedNeighborhoods).map((n) => ({ label: n, onRemove: () => setSelectedNeighborhoods((s) => toggleInSet(s, n)) })),
   ]
   if (openNow) activeFilters.push({ label: "Abierto ahora", onRemove: () => setOpenNow(false) })
+  if (selectedDay !== null) activeFilters.push({ label: `${t("clubs.dayOpens")}: ${t(`clubs.day${selectedDay}`)}`, onRemove: () => setSelectedDay(null) })
   if (nearMe)
     activeFilters.push({
       label: "Cerca de mí",
@@ -280,6 +290,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     setSelectedAges(new Set())
     setSelectedNeighborhoods(new Set())
     setOpenNow(false)
+    setSelectedDay(null)
     setNearMe(false)
     setUserLat(null)
     setUserLng(null)
@@ -295,18 +306,24 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     })
   }
 
-  const activeFilterCount = selectedGenres.size + selectedAttributes.size + selectedAges.size + selectedNeighborhoods.size
+  const activeFilterCount =
+    selectedGenres.size + selectedAttributes.size + selectedAges.size + selectedNeighborhoods.size + (selectedDay !== null ? 1 : 0)
 
+  // labels: texto a enseñar si es distinto del valor (el filtro de día guarda "5" y enseña "Viernes").
   const ChipGroup = ({
     title,
     options,
     selected,
     onToggle,
+    labels,
+    hint,
   }: {
     title: string
     options: string[]
     selected: Set<string>
     onToggle: (value: string) => void
+    labels?: Record<string, string>
+    hint?: string
   }) => (
     <div>
       <p className="mb-3 text-xs uppercase tracking-widest text-zinc-500">{title}</p>
@@ -322,10 +339,11 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
             }`}
             style={selected.has(opt) ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
           >
-            {opt}
+            {labels?.[opt] ?? opt}
           </button>
         ))}
       </div>
+      {hint && <p className="mt-3 text-xs text-zinc-500">{hint}</p>}
     </div>
   )
 
@@ -467,6 +485,17 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         >
           <div className="overflow-hidden">
             <div className="space-y-6 rounded-[28px] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
+              {/* «Elige un día»: un solo día a la vez; pulsar el elegido lo quita. */}
+              <ChipGroup
+                title={t("clubs.dayTitle")}
+                options={WEEK_DOW_ORDER.map(String)}
+                labels={Object.fromEntries(
+                  WEEK_DOW_ORDER.map((d) => [String(d), t(`clubs.day${d}`) + (tonight === d ? ` (${t("clubs.dayToday")})` : "")])
+                )}
+                selected={new Set(selectedDay === null ? [] : [String(selectedDay)])}
+                onToggle={(v) => setSelectedDay((cur) => (cur === Number(v) ? null : Number(v)))}
+                hint={t("clubs.dayHint")}
+              />
               <ChipGroup
                 title="Estilo (elige varios)"
                 options={GENRE_FILTERS}

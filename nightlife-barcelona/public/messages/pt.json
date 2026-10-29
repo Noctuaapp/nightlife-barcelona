@@ -110,6 +110,17 @@
     "subtitle": "Os melhores clubs de Barcelona",
     "search": "Procurar clubes, bairros, código postal ou música...",
     "lgtbi": "LGTBI+",
+    "dayTitle": "Escolher um dia",
+    "dayHint": "Clubes abertos nessa noite. Os que não têm horário conhecido não aparecem.",
+    "dayToday": "hoje",
+    "dayOpens": "Aberto",
+    "day0": "Domingo",
+    "day1": "Segunda",
+    "day2": "Terça",
+    "day3": "Quarta",
+    "day4": "Quinta",
+    "day5": "Sexta",
+    "day6": "Sábado",
     "explore": "Ver todos os clubs →"
   },
   "events": {

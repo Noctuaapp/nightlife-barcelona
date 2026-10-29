@@ -109,6 +109,17 @@
     "subtitle": "De beste clubs in Barcelona",
     "search": "Zoek clubs, buurten, postcode of muziek...",
     "lgtbi": "LGTBI+",
+    "dayTitle": "Kies een dag",
+    "dayHint": "Clubs die die nacht open zijn. Clubs zonder bekende openingstijden ontbreken.",
+    "dayToday": "vandaag",
+    "dayOpens": "Open",
+    "day0": "Zondag",
+    "day1": "Maandag",
+    "day2": "Dinsdag",
+    "day3": "Woensdag",
+    "day4": "Donderdag",
+    "day5": "Vrijdag",
+    "day6": "Zaterdag",
     "explore": "Alle clubs bekijken →"
   },
   "events": {

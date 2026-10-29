@@ -109,6 +109,17 @@
     "subtitle": "Die besten Clubs in Barcelona",
     "search": "Clubs, Viertel, Postleitzahl oder Musik suchen...",
     "lgtbi": "LGTBI+",
+    "dayTitle": "Tag wählen",
+    "dayHint": "Clubs, die in dieser Nacht öffnen. Clubs ohne bekannte Öffnungszeiten fehlen.",
+    "dayToday": "heute",
+    "dayOpens": "Geöffnet",
+    "day0": "Sonntag",
+    "day1": "Montag",
+    "day2": "Dienstag",
+    "day3": "Mittwoch",
+    "day4": "Donnerstag",
+    "day5": "Freitag",
+    "day6": "Samstag",
     "explore": "Alle Clubs entdecken →"
   },
   "events": {

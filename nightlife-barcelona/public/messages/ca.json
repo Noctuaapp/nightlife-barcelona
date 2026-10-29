@@ -112,6 +112,17 @@
     "subtitle": "Els millors clubs de Barcelona",
     "search": "Cerca clubs, barris, codi postal o música...",
     "lgtbi": "LGTBI+",
+    "dayTitle": "Tria un dia",
+    "dayHint": "Clubs que obren aquella nit. Els que no tenen horari no surten.",
+    "dayToday": "avui",
+    "dayOpens": "Obre",
+    "day0": "Diumenge",
+    "day1": "Dilluns",
+    "day2": "Dimarts",
+    "day3": "Dimecres",
+    "day4": "Dijous",
+    "day5": "Divendres",
+    "day6": "Dissabte",
     "explore": "Veure tots els clubs →"
   },
   "events": {

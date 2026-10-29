@@ -112,6 +112,17 @@
     "subtitle": "The best clubs in Barcelona",
     "search": "Search clubs, neighborhoods, postal code or music...",
     "lgtbi": "LGTBI+",
+    "dayTitle": "Pick a day",
+    "dayHint": "Clubs open that night. Clubs without listed hours are left out.",
+    "dayToday": "today",
+    "dayOpens": "Opens",
+    "day0": "Sunday",
+    "day1": "Monday",
+    "day2": "Tuesday",
+    "day3": "Wednesday",
+    "day4": "Thursday",
+    "day5": "Friday",
+    "day6": "Saturday",
     "explore": "Explore all clubs →"
   },
   "events": {
