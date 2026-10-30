@@ -8,6 +8,7 @@ import { supabase } from "../../../lib/supabase"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { getSortedCountries } from "../../../lib/countries"
 import { PARTY_POLLS } from "../../../lib/partyPolls"
+import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
 
 // Actividad por usuario (pedido: panel de analítica "detallado por usuario"). Sustituye a la
 // antigua /admin/analytics, que no salía en el menú y repetía —peor, trayendo 5.000 filas sueltas
@@ -54,6 +55,11 @@ const EVENT_LABELS: Record<string, string> = {
   search: "Busca",
   filter_used: "Usa filtros del plan",
   party_poll_vote: "Vota la encuesta del día",
+  essential_category: "Abre una categoría de esenciales",
+  essential_open: "Abre un esencial",
+  essential_directions: "Pulsa cómo llegar a un esencial",
+  essential_maps: "Abre Google Maps de un esencial",
+  essential_nearby: "Pulsa un esencial cercano (ficha de club)",
 }
 const SOURCE_LABELS: Record<string, string> = {
   search: "Google / buscadores",
@@ -65,7 +71,7 @@ const SOURCE_LABELS: Record<string, string> = {
   direct: "Directo",
   pwa: "App instalada",
 }
-const ITEM_LABELS: Record<string, string> = { club: "Club", event: "Evento", club_event: "Noche de club" }
+const ITEM_LABELS: Record<string, string> = { club: "Club", event: "Evento", club_event: "Noche de club", essential: "Esencial" }
 
 const isoDay = (d: Date) => d.toLocaleDateString("sv-SE")
 const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return isoDay(d) }
@@ -473,6 +479,8 @@ export default function AdminActividadPage() {
                                 <span className="text-xs text-zinc-500">desde {sourceLabel(ev.source)} · {deviceLabel(ev.device)}</span>
                               ) : ev.event_type === "party_poll_vote" ? (
                                 <span className="font-semibold text-ink">{ev.item_name}</span>
+                              ) : ev.event_type === "essential_category" ? (
+                                <span className="font-semibold text-ink">{essentialSlugLabelEs(ev.item_name)}</span>
                               ) : (
                                 ev.item_name && <span className="font-semibold text-ink">{ev.event_type === "search" ? `«${ev.item_name}»` : ev.item_name}</span>
                               )}

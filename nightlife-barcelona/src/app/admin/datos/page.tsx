@@ -5,12 +5,13 @@ import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { zoneOf } from "../../../lib/zones"
 import { ADMIN_EMAIL } from "../../../lib/admin"
+import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
 
 // Panel "Datos": métricas agregadas de Noctua pensadas para enseñar a clubs y managers (y para
 // venderlas). Todo se calcula en Supabase con funciones que solo el admin puede ejecutar y que
 // devuelven números, nunca datos de personas concretas.
 
-type Tab = "resumen" | "clubs" | "eventos" | "busquedas" | "audiencia"
+type Tab = "resumen" | "clubs" | "eventos" | "esenciales" | "busquedas" | "audiencia"
 
 const SOURCE_LABELS: Record<string, string> = {
   search: "Buscadores (Google...)",
@@ -42,14 +43,22 @@ function downloadCsv(filename: string, headers: string[], rows: (string | number
   URL.revokeObjectURL(url)
 }
 
+// Barras. Arreglo del 30/10/2026: las barras no se veían (solo las etiquetas) porque el alto en % de la
+// barra no tenía contra qué calcularse; ahora cada columna ocupa todo el alto y la barra se mide contra
+// su hueco. Con muchas barras (30 días) solo se escribe una etiqueta de cada pocas, en vez de "1..".
 function Bars({ data, color = "#7c5cff" }: { data: { label: string; value: number }[]; color?: string }) {
   const max = Math.max(1, ...data.map((d) => d.value))
+  const step = data.length > 12 ? Math.ceil(data.length / 6) : 1
   return (
-    <div className="flex h-32 items-end gap-1">
-      {data.map((d) => (
-        <div key={d.label} className="group relative flex min-w-0 flex-1 flex-col items-center justify-end" title={`${d.label}: ${d.value}`}>
-          <div className="w-full rounded-t" style={{ height: `${Math.max(2, (d.value / max) * 100)}%`, background: color }} />
-          <span className="mt-1 w-full truncate text-center text-xs text-zinc-400">{d.label}</span>
+    <div className="flex h-32 items-stretch gap-1">
+      {data.map((d, i) => (
+        <div key={d.label} className="group relative flex min-w-0 flex-1 flex-col items-center" title={`${d.label}: ${d.value}`}>
+          <div className="flex min-h-0 w-full flex-1 items-end">
+            <div className="w-full rounded-t" style={{ height: `${Math.max(2, (d.value / max) * 100)}%`, background: color }} />
+          </div>
+          <span className="mt-1 h-4 w-full text-center text-xs leading-4 text-zinc-400">
+            {i % step === 0 ? <span className="whitespace-nowrap">{d.label}</span> : null}
+          </span>
         </div>
       ))}
     </div>
@@ -101,6 +110,10 @@ export default function AdminDatosPage() {
   const [audience, setAudience] = useState<any>(null)
   const [clubsMeta, setClubsMeta] = useState<Record<string, any>>({})
   const [rideClicks, setRideClicks] = useState<{ provider: string; n: number }[]>([])
+  // Esenciales (30/10/2026): se carga aparte para que, si aún no se ha ejecutado el SQL 54, el resto de
+  // pestañas sigan funcionando y solo esta avise.
+  const [essStats, setEssStats] = useState<any>(null)
+  const [essError, setEssError] = useState("")
 
   const [selected, setSelected] = useState<{ type: "club" | "event"; id: number; name: string } | null>(null)
   const [detail, setDetail] = useState<any>(null)
@@ -122,7 +135,7 @@ export default function AdminDatosPage() {
     setLoading(true)
     setError("")
     const range = { p_from: from, p_to: to }
-    const [ov, ci, ei, se, au, clubs, rc] = await Promise.all([
+    const [ov, ci, ei, se, au, clubs, rc, es] = await Promise.all([
       supabase.rpc("admin_data_overview", range),
       supabase.rpc("admin_data_items", { p_type: "club", ...range }),
       supabase.rpc("admin_data_items", { p_type: "event", ...range }),
@@ -130,6 +143,7 @@ export default function AdminDatosPage() {
       supabase.rpc("admin_data_audience", { ...range, p_type: null, p_id: null }),
       supabase.from("clubs").select("id, name, city, neighborhood, address, venue_type"),
       supabase.rpc("admin_ride_clicks", range),
+      supabase.rpc("admin_essentials_stats", range),
     ])
     const firstErr = [ov, ci, ei, se, au].find((r) => r.error)?.error
     if (firstErr) setError(`No se pudieron cargar los datos: ${firstErr.message}. ¿Has ejecutado datos_funciones.sql en Supabase?`)
@@ -139,6 +153,8 @@ export default function AdminDatosPage() {
     setSearches(se.data || [])
     setAudience(au.data)
     setRideClicks(rc.data || [])
+    setEssError(es.error ? es.error.message : "")
+    setEssStats(es.error ? null : es.data)
     const meta: Record<string, any> = {}
     for (const c of clubs.data || []) meta[String(c.id)] = { ...c, zone: zoneOf(c) }
     setClubsMeta(meta)
@@ -203,6 +219,14 @@ export default function AdminDatosPage() {
     downloadCsv(`noctua_eventos_${from}_${to}.csv`,
       ["Evento", "Visitas", "Visitantes", "Clics entradas", "Conversion %", "Como llegar", "Compartir", "Favoritos", "Asistire"],
       eventRows.map((e) => [e.name, e.views, e.visitors, e.tickets, e.conv, e.directions, e.shares, e.favorites, e.attendances]))
+  const exportEssCategoriesCsv = () =>
+    downloadCsv(`noctua_esenciales_categorias_${from}_${to}.csv`,
+      ["Categoria", "Visitas", "Visitantes", "Locales abiertos", "Como llegar", "Google Maps", "Desde fichas de club"],
+      (essStats?.categories || []).map((c: any) => [essentialSlugLabelEs(c.cat), c.views, c.visitors, c.opens, c.directions, c.maps, c.nearby]))
+  const exportEssItemsCsv = () =>
+    downloadCsv(`noctua_esenciales_locales_${from}_${to}.csv`,
+      ["Local", "Categoria", "Abierto", "Visitantes", "Como llegar", "Google Maps", "Llegar / abierto %"],
+      (essStats?.items || []).map((i: any) => [i.name, essentialSlugLabelEs(i.category), i.opens, i.visitors, i.directions, i.maps, pct(i.directions, i.opens)]))
   const exportSearchesCsv = () =>
     downloadCsv(`noctua_busquedas_${from}_${to}.csv`, ["Busqueda", "Veces", "Resultados medios", "Veces sin resultados"],
       searches.map((s) => [s.term, s.n, s.avg_results, s.zero]))
@@ -246,6 +270,7 @@ export default function AdminDatosPage() {
     { key: "resumen", label: "Resumen" },
     { key: "clubs", label: "Clubs" },
     { key: "eventos", label: "Eventos" },
+    { key: "esenciales", label: "Esenciales" },
     { key: "busquedas", label: "Búsquedas" },
     { key: "audiencia", label: "Audiencia" },
   ]
@@ -466,6 +491,109 @@ export default function AdminDatosPage() {
                   <div><p className="mb-2 text-xs text-zinc-400">País</p><ListBars rows={detailAud.countries} /></div>
                 </div>
               </div>
+            )}
+          </div>
+        )}
+
+        {!loading && tab === "esenciales" && (
+          <div className="space-y-6">
+            {essError && (
+              <p className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
+                No se pudieron cargar las estadísticas de esenciales: {essError}. ¿Has ejecutado el SQL 54 (54_estadisticas_esenciales.sql) en Supabase?
+              </p>
+            )}
+            {essStats && (
+              <>
+                <p className="text-xs text-zinc-400">
+                  Cuenta desde que se publicó la web con el registro de esenciales (30/10/2026). No incluye tu actividad de admin, bots ni pruebas, y no guarda datos de personas.
+                </p>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+                  <Stat label="Visitas a categorías" value={essStats.totals?.category_views ?? 0} />
+                  <Stat label="Visitantes distintos" value={essStats.totals?.visitors ?? 0} />
+                  <Stat label="Locales abiertos" value={essStats.totals?.opens ?? 0} sub="tarjeta o chincheta del mapa" />
+                  <Stat label="Cómo llegar" value={essStats.totals?.directions ?? 0} sub={`${pct(essStats.totals?.directions ?? 0, essStats.totals?.opens ?? 0)}% de los abiertos`} />
+                  <Stat label="Google Maps" value={essStats.totals?.maps ?? 0} />
+                  <Stat label="Desde fichas de club" value={essStats.totals?.nearby ?? 0} sub="esenciales cercanos" />
+                </div>
+                <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
+                  <p className="mb-4 text-sm font-bold">Visitas a categorías por día</p>
+                  <Bars data={(essStats.daily || []).map((d: any) => ({ label: d.d.slice(5), value: d.category_views }))} />
+                </div>
+                <div className="rounded-card border border-white/10 bg-white/[0.03] p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-sm font-bold">Por categoría</p>
+                    <button onClick={exportEssCategoriesCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-white/10 text-xs text-zinc-400">
+                          <th className="px-3 py-2 text-left font-semibold">Categoría</th>
+                          <th className="px-3 py-2 text-right font-semibold">Visitas</th>
+                          <th className="px-3 py-2 text-right font-semibold">Visitantes</th>
+                          <th className="px-3 py-2 text-right font-semibold">Abiertos</th>
+                          <th className="px-3 py-2 text-right font-semibold">Llegar</th>
+                          <th className="px-3 py-2 text-right font-semibold">Maps</th>
+                          <th className="px-3 py-2 text-right font-semibold">Desde fichas</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(essStats.categories || []).map((c: any) => (
+                          <tr key={c.cat} className="border-b border-white/5">
+                            <td className="px-3 py-2 font-semibold text-white">{essentialSlugLabelEs(c.cat)}</td>
+                            <td className="px-3 py-2 text-right">{c.views}</td>
+                            <td className="px-3 py-2 text-right">{c.visitors}</td>
+                            <td className="px-3 py-2 text-right">{c.opens}</td>
+                            <td className="px-3 py-2 text-right">{c.directions}</td>
+                            <td className="px-3 py-2 text-right">{c.maps}</td>
+                            <td className="px-3 py-2 text-right">{c.nearby}</td>
+                          </tr>
+                        ))}
+                        {(essStats.categories || []).length === 0 && (
+                          <tr><td colSpan={7} className="px-3 py-8 text-center text-zinc-400">Todavía no hay datos de esenciales en este periodo.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="rounded-card border border-white/10 bg-white/[0.03] p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-sm font-bold">Locales más abiertos</p>
+                    <button onClick={exportEssItemsCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-white/10 text-xs text-zinc-400">
+                          <th className="px-3 py-2 text-left font-semibold">Local</th>
+                          <th className="px-3 py-2 text-left font-semibold">Categoría</th>
+                          <th className="px-3 py-2 text-right font-semibold">Abierto</th>
+                          <th className="px-3 py-2 text-right font-semibold">Visitantes</th>
+                          <th className="px-3 py-2 text-right font-semibold">Llegar</th>
+                          <th className="px-3 py-2 text-right font-semibold">Maps</th>
+                          <th className="px-3 py-2 text-right font-semibold">Llegar %</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(essStats.items || []).map((i: any) => (
+                          <tr key={i.item_id} className="border-b border-white/5">
+                            <td className="max-w-[240px] truncate px-3 py-2 font-semibold text-white">{i.name || `#${i.item_id}`}</td>
+                            <td className="whitespace-nowrap px-3 py-2 text-zinc-400">{essentialSlugLabelEs(i.category)}</td>
+                            <td className="px-3 py-2 text-right">{i.opens}</td>
+                            <td className="px-3 py-2 text-right">{i.visitors}</td>
+                            <td className="px-3 py-2 text-right">{i.directions}</td>
+                            <td className="px-3 py-2 text-right">{i.maps}</td>
+                            <td className="px-3 py-2 text-right text-purple-300">{i.opens > 0 ? pct(i.directions, i.opens) : "—"}</td>
+                          </tr>
+                        ))}
+                        {(essStats.items || []).length === 0 && (
+                          <tr><td colSpan={7} className="px-3 py-8 text-center text-zinc-400">Todavía no hay locales abiertos en este periodo.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         )}

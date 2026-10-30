@@ -8,6 +8,7 @@ import { getOpenStatus } from "../../lib/openStatus"
 import { cleanEssential } from "../../lib/essentials"
 import { categoryInfo, categoryNameKey } from "../../lib/essentialCategories"
 import { useLanguage } from "../../context/LanguageContext"
+import { track } from "../../lib/track"
 
 // Tres chips con lo más cercano al local (comida, súper, cajero), sacados de la tabla essentials
 // (la misma que alimenta /essentials), y un enlace a todos los esenciales. Cada chip abre la ruta
@@ -85,6 +86,7 @@ export default function NearbyEssentials({ latitude, longitude }: { latitude: nu
               href={walkingDirectionsUrl(latitude, longitude, r.latitude, r.longitude)}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => track("essential_nearby", { itemType: "essential_nearby", itemName: r.name, meta: { category: cat.key } })}
               title={`${catName}: ${r.name}`}
               aria-label={`${catName}: ${r.name}, ${formatDistance(r.distanceMeters)}`}
               className="flex max-w-full items-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm text-ink transition hover:bg-white/5"

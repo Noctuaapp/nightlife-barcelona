@@ -11,6 +11,7 @@ import "mapbox-gl/dist/mapbox-gl.css"
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import { supabase } from "../../../lib/supabase"
+import { track } from "../../../lib/track"
 import { fetchAllPages } from "../../../lib/fetchAll"
 import { useLanguage } from "../../../context/LanguageContext"
 import ArrowIcon from "../../../components/ui/ArrowIcon"
@@ -95,6 +96,24 @@ export default function EssentialCategoryPage() {
 
   const [essentials, setEssentials] = useState<Essential[]>([])
   const [selected, setSelected] = useState<Essential | null>(null)
+
+  // Analítica de esenciales (30/10/2026): antes solo quedaba "entró a /essentials" (page_nav). Ahora:
+  //   essential_category   → abre una categoría (farmacias, súper...)
+  //   essential_open       → abre un local (tarjeta o chincheta del mapa)
+  //   essential_directions → pulsa «Cómo llegar»
+  //   essential_maps       → pulsa «Google Maps»
+  // Se ve en Admin › Datos › Esenciales. Los locales del catálogo fijo (metro; id ≤ 0) no tienen fila
+  // propia: se anotan sin id.
+  useEffect(() => {
+    track("essential_category", { itemType: "essential_category", itemName: category })
+  }, [category])
+  useEffect(() => {
+    if (!selected || selected.id <= 0) return
+    track("essential_open", { itemType: "essential", itemId: selected.id, itemName: selected.name, meta: { category } })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.id])
+  const trackEssentialClick = (eventType: "essential_directions" | "essential_maps", item: Essential) =>
+    track(eventType, { itemType: "essential", itemId: item.id > 0 ? item.id : null, itemName: item.name, meta: { category } })
   const [selectedNeighborhood, setSelectedNeighborhood] = useState("All")
   const [selectedZone, setSelectedZone] = useState("All")
   const [selectedSubcategory, setSelectedSubcategory] = useState("All")
@@ -609,12 +628,12 @@ export default function EssentialCategoryPage() {
           {item.description && <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-zinc-400">{item.description}</p>}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {hasCoords && (
-              <a href={directionsHref} target="_blank" rel="noopener noreferrer" onClick={stopPropagation} className="flex items-center gap-1.5 rounded-ctl bg-brand px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-brand-strong">
+              <a href={directionsHref} target="_blank" rel="noopener noreferrer" onClick={(e) => { stopPropagation(e); trackEssentialClick("essential_directions", item) }} className="flex items-center gap-1.5 rounded-ctl bg-brand px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-brand-strong">
                 <Icon name="map" className="h-3.5 w-3.5" /> {t("clubPage.directions")}
               </a>
             )}
             {item.maps_link && (
-              <a href={item.maps_link} target="_blank" rel="noopener noreferrer" onClick={stopPropagation} className="flex items-center gap-1 rounded-ctl border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:bg-white/5">
+              <a href={item.maps_link} target="_blank" rel="noopener noreferrer" onClick={(e) => { stopPropagation(e); trackEssentialClick("essential_maps", item) }} className="flex items-center gap-1 rounded-ctl border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:bg-white/5">
                 Google Maps <ArrowIcon className="h-3 w-3" />
               </a>
             )}
@@ -982,6 +1001,7 @@ export default function EssentialCategoryPage() {
                             href={directionsFor(selected)}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={() => trackEssentialClick("essential_directions", selected)}
                             className="flex items-center gap-1.5 rounded-ctl bg-brand px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-brand-strong"
                           >
                             <Icon name="map" className="h-3.5 w-3.5" /> {t("clubPage.directions")}
@@ -994,6 +1014,7 @@ export default function EssentialCategoryPage() {
                             href={selected.maps_link}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={() => trackEssentialClick("essential_maps", selected)}
                             className="rounded-ctl border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:bg-white/5"
                           >
                             Google Maps

@@ -29,6 +29,25 @@ export function categoryRank(key: string): number {
   return i === -1 ? 99 : i
 }
 
+// Nombre en español de cada categoría por su slug de la URL, para el admin (Datos, Visitas, Actividad),
+// que siempre está en español y recibe el slug tal cual lo guardó la analítica.
+const SLUG_LABEL_ES: Record<string, string> = {
+  pharmacy: "Farmacias",
+  atm: "Cajeros",
+  food: "Comida",
+  supermarket: "Supermercados",
+  metro: "Metro",
+  nitbus: "Nitbus",
+  hospital: "Hospitales",
+  "gas-station": "Gasolineras",
+  hotel: "Hoteles",
+  casino: "Casinos",
+}
+export function essentialSlugLabelEs(slug: string | null | undefined): string {
+  if (!slug) return "—"
+  return SLUG_LABEL_ES[slug] || slug
+}
+
 // Clave de traducción del nombre: essentials.category_names.<Key sin espacios>
 export const categoryNameKey = (key: string) => `essentials.category_names.${key.replace(/\s+/g, "")}`
 export const categoryDescKey = (key: string) => `essentials.categories.${key.replace(/\s+/g, "")}`

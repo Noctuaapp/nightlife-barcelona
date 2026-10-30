@@ -6,6 +6,7 @@ import { Smartphone, Monitor, ChevronDown, User } from "lucide-react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { isAdminEmail } from "../../../lib/admin"
+import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
 
 // Visitas (26/10/2026): «de las 84 sesiones, ¿dónde han entrado y qué han hecho?». Cada visita
 // con su origen, dispositivo, página de entrada y el recorrido completo en orden; más las páginas
@@ -88,6 +89,11 @@ const EVENT_LABELS: Record<string, string> = {
   install_click: "Pulsa instalar la app",
   install_choice: "Aviso de instalar:",
   app_installed: "Instala la app (confirmado)",
+  essential_category: "Abre la categoría de esenciales:",
+  essential_open: "Abre el esencial:",
+  essential_directions: "Pulsa cómo llegar al esencial:",
+  essential_maps: "Abre Google Maps del esencial:",
+  essential_nearby: "Pulsa un esencial cercano (ficha de club):",
 }
 const JOIN_TO: Record<string, string> = {
   google: "Continuar con Google", signup: "Crear cuenta con email", login: "Ya tengo cuenta", open: "Abierto ahora", map: "Mapa", plan: "Planifica tu noche", events: "Eventos",
@@ -103,6 +109,8 @@ const SIGNUP_REASONS: Record<string, string> = {
 function extraDetail(e: Ev): string | null {
   const to = String(e.meta?.to ?? "")
   const reason = String(e.meta?.reason ?? "")
+  if (e.type === "essential_category") return essentialSlugLabelEs(e.name)
+  if (e.type.startsWith("essential_")) return e.name || ""
   if (e.type === "next_click") return NEXT_TO[to] || to
   if (e.type === "welcome_click") return WELCOME_TO[to] || to
   if (e.type === "signup_error") return e.meta?.step === "auth" ? `el servidor dice «${reason}»` : SIGNUP_REASONS[reason] || reason
