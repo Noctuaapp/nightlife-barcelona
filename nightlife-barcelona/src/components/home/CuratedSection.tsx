@@ -9,6 +9,7 @@ interface Club {
   hours: string
   image: string
   rating: number
+  temporarily_closed?: boolean
 }
 
 interface CuratedSectionProps {
@@ -56,7 +57,7 @@ export default function CuratedSection({
 
       </div>
 
-      <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
 
         {clubs.map((club, index) => (
 
@@ -77,6 +78,7 @@ export default function CuratedSection({
               hours={club.hours}
               image={club.image}
               rating={club.rating}
+              temporarilyClosed={club.temporarily_closed === true}
             />
 
           </div>

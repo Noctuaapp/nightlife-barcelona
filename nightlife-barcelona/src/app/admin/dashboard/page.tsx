@@ -7,6 +7,7 @@ import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { SEASONAL_THEMES } from "../../../lib/nocSeasonal"
+import { madridDaysAgo, madridDaysAhead, madridToday } from "../../../lib/madridDay"
 
 // Resumen del admin, rehecho el 24/10/2026 tras el análisis del panel. Antes esta pantalla abría
 // con el interruptor de mantenimiento (el botón más peligroso del admin, en el sitio más visible)
@@ -19,9 +20,8 @@ import { SEASONAL_THEMES } from "../../../lib/nocSeasonal"
 //   4. ¿Qué viene esta semana y quién se ha registrado?
 // El interruptor de mantenimiento se ha movido a Ajustes y herramientas, junto a los otros dos.
 
-const isoDay = (d: Date) => d.toLocaleDateString("sv-SE")
-const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return isoDay(d) }
-const daysAhead = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return isoDay(d) }
+const daysAgo = madridDaysAgo
+const daysAhead = madridDaysAhead
 
 type Overview = { sessions: number; page_views: number; tickets: number; daily: { d: string; sessions: number; views: number }[] }
 type Pending = { messages: number; reports: number; denials: number; eventsToReview: number; ownerChanges: number }
@@ -51,6 +51,9 @@ export default function AdminDashboardPage() {
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [pending, setPending] = useState<Pending | null>(null)
   const [week, setWeek] = useState<Overview | null>(null)
+  // Si la función de datos falla (no está en Supabase, sesión caducada...), antes los números se
+  // quedaban en «…» para siempre sin decir nada.
+  const [trafficFailed, setTrafficFailed] = useState(false)
   const [prevWeek, setPrevWeek] = useState<Overview | null>(null)
   const [users, setUsers] = useState<{ total: number; new7: number; active7: number } | null>(null)
   const [signups, setSignups] = useState<Signup[]>([])
@@ -70,7 +73,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (checkingAdmin) return
-    const today = isoDay(new Date())
+    const today = madridToday()
     const weekAgoIso = new Date(Date.now() - 7 * 86400000).toISOString()
 
     const load = async () => {
@@ -78,7 +81,7 @@ export default function AdminDashboardPage() {
         msgs, reports, denials, review,
         ov, ovPrev, list,
         maint, club, season,
-        clubsRows, events30, nights7, nextEvents, nextNights, ownerChanges,
+        clubsVisibleRes, clubsHiddenRes, events30, nights7, nextEvents, nextNights, ownerChanges,
       ] = await Promise.all([
         supabase.from("contact_messages").select("id", { count: "exact", head: true }).eq("status", "new").or("is_spam.is.null,is_spam.eq.false"),
         supabase.from("club_checkin_reports").select("id", { count: "exact", head: true }).is("reviewed_at", null),
@@ -92,7 +95,9 @@ export default function AdminDashboardPage() {
         supabase.from("app_settings").select("maintenance_mode").eq("id", true).maybeSingle(),
         supabase.from("club_noctua_settings").select("enabled").eq("id", 1).maybeSingle(),
         supabase.from("noc_seasonal_settings").select("mode").eq("id", 1).maybeSingle(),
-        supabase.from("clubs").select("hidden"),
+        // Solo se cuentan (head): antes se descargaba el campo de TODOS los clubs, y Supabase corta en 1.000 filas.
+        supabase.from("clubs").select("id", { count: "exact", head: true }).eq("hidden", false),
+        supabase.from("clubs").select("id", { count: "exact", head: true }).eq("hidden", true),
         supabase.from("events").select("id", { count: "exact", head: true }).eq("hidden", false).gte("date", today).lte("date", daysAhead(30)),
         supabase.from("club_events").select("id", { count: "exact", head: true }).gte("date", today).lte("date", daysAhead(7)),
         supabase.from("events").select("id, title, date").eq("hidden", false).gte("date", today).lte("date", daysAhead(7)).order("date").limit(6),
@@ -108,6 +113,7 @@ export default function AdminDashboardPage() {
         eventsToReview: review.count || 0,
         ownerChanges: ownerChanges.error ? 0 : ownerChanges.count || 0,
       })
+      setTrafficFailed(!!ov.error)
       setWeek((ov.data as Overview) || null)
       setPrevWeek((ovPrev.data as Overview) || null)
 
@@ -126,10 +132,9 @@ export default function AdminDashboardPage() {
         season: (season.data?.mode as string) || "auto",
       })
 
-      const clubs = (clubsRows.data || []) as { hidden: boolean | null }[]
       setContent({
-        clubsVisible: clubs.filter((c) => !c.hidden).length,
-        clubsHidden: clubs.filter((c) => c.hidden).length,
+        clubsVisible: clubsVisibleRes.count || 0,
+        clubsHidden: clubsHiddenRes.count || 0,
         events30: events30.count || 0,
         nights7: nights7.count || 0,
       })
@@ -205,12 +210,12 @@ export default function AdminDashboardPage() {
             <h2 id="traffic-h" className="text-sm font-bold text-ink">Últimos 7 días</h2>
             <Link href="/admin/datos" className="text-xs font-semibold text-zinc-400 hover:text-ink">Ver datos completos</Link>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {traffic.map((t) => (
               <div key={t.label} className="rounded-card border border-white/10 bg-surface p-5">
                 <p className="text-xs text-zinc-400">{t.label}</p>
-                <p className="mt-1 font-display text-3xl text-ink tabular-nums">{week ? t.now : "…"}</p>
-                <p className="mt-1 text-xs text-zinc-500">{week ? delta(t.now, t.before) : ""}</p>
+                <p className="mt-1 font-display text-3xl text-ink tabular-nums">{week ? t.now : trafficFailed ? "—" : "…"}</p>
+                <p className="mt-1 text-xs text-zinc-500">{week ? delta(t.now, t.before) : trafficFailed ? "No se pudo cargar" : ""}</p>
                 {t.series.length > 0 && <Sparkline values={t.series} />}
               </div>
             ))}

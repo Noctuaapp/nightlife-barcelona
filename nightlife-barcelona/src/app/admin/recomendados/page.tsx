@@ -205,7 +205,7 @@ export default function AdminPicksPage() {
           ))}
         </datalist>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-3">
+        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
           {slots.map((s, i) => (
             <div key={i} className="rounded-xl border border-white/10 bg-black/20 p-4">
               <p className="font-display text-3xl leading-none text-white">{i + 1}</p>
@@ -244,7 +244,7 @@ export default function AdminPicksPage() {
       {groups.length === 0 ? (
         <p className="text-sm text-zinc-400">No hay ningún top 3 puesto para hoy ni para más adelante.</p>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {groups.map((g) => (
             <div key={`${g.period}|${g.starts_on}`} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <div className="flex items-start justify-between gap-3">

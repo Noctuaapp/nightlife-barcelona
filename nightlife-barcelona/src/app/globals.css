@@ -85,6 +85,18 @@ body {
   overflow-x: hidden;
 }
 
+/* REJILLAS EN MÓVIL (30/10/2026). Una rejilla sin columnas definidas ("grid gap-4 md:grid-cols-2")
+   tiene en móvil una sola columna AUTOMÁTICA, y esta crece hasta el texto más largo que no se parte
+   (un nombre largo con "truncate", "Gratuito/Consumición"...). Como el body recorta lo que se sale
+   por la derecha, las cards salían cortadas (en /clubs llegaban a 442 px en una pantalla de 360).
+   Con minmax(0,1fr) la columna nunca pasa del ancho disponible y el texto largo se recorta con
+   puntos suspensivos. Va en la capa base: cualquier grid-cols-* de Tailwind lo sustituye. */
+@layer base {
+  :where(.grid) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* DISPLAY — solo para el nombre del local / evento y el título de cada página. */
 .font-display {
   font-family: var(--font-display), Arial, Helvetica, sans-serif;
@@ -144,6 +156,15 @@ body {
 
 .pride-burst {
   animation: pride-burst 1.6s ease-out both;
+}
+
+/* El logo de Noctua "respira" despacio en las pantallas de carga (loading.tsx de la raíz y
+   PageLoader, usado en perfil/plan mientras cargan). Esta clase (animate-[breathe_...] en las
+   clases de Tailwind) no tenía su @keyframes definido en ningún sitio, así que el logo se quedaba
+   quieto en vez de "respirar" como decía el comentario junto a esas clases — queda arreglado aquí. */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.06); opacity: 0.85; }
 }
 
 /* Brillo tipo neón en el titular de "Planifica tu noche" — un único color de marca, estático

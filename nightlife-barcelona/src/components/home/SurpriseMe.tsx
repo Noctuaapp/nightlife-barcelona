@@ -86,7 +86,7 @@ export default function SurpriseMe({ clubs }: { clubs: any[] }) {
   const draw = () => {
     const zoned = zoneSel ? clubs.filter((c) => c && c.name && zoneOf(c) === zoneSel) : clubs
     // Nunca un local donde a esta persona no le dejaron entrar (lib/deniedVenues).
-    const usable = (zoned.length > 0 ? zoned : clubs).filter((c) => c && c.name && !denied.has(Number(c.id)))
+    const usable = (zoned.length > 0 ? zoned : clubs).filter((c) => c && c.name && !denied.has(Number(c.id)) && !c.temporarily_closed)
     if (usable.length === 0) return
     const words = MOODS.find((m) => m.id === mood)?.words || []
     const matches = (c: any) => words.length === 0 || words.some((w) => `${c.music || ""} ${c.category || ""}`.toLowerCase().includes(w))

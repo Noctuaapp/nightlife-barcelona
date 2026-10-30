@@ -18,6 +18,7 @@ export const EXTRA_FEATURES: ExtraFeature[] = [
   { field: "sports_tv", labelKey: "clubPage.fSportsTv", label: "Deportes en TV (partidos)", emoji: "📺", icon: "tv", summary: "pantallas para ver partidos", filter: "Partidos en TV" },
   { field: "hot_shows", labelKey: "clubPage.fHotShows", label: "Ambiente hot (striptease, shows +18)", emoji: "🔥", icon: "flame", summary: "ambiente hot con shows para adultos", filter: "Ambiente hot" },
   { field: "cocktails", labelKey: "clubPage.fCocktails", label: "Cócteles", emoji: "🍸", icon: "cocktail", summary: "carta de cócteles", filter: "Cócteles" },
+  { field: "games", labelKey: "clubPage.fGames", label: "Juegos (de mesa o de beber)", emoji: "🎲", icon: "dice", summary: "juegos de mesa o de beber", filter: "Juegos" },
   { field: "live_music", labelKey: "clubPage.fLiveMusic", label: "Música en directo", emoji: "🎸", icon: "guitar", summary: "música en directo", filter: "Música en directo" },
   { field: "dance_floor", labelKey: "clubPage.fDanceFloor", label: "Pista de baile", emoji: "🪩", icon: "disco", summary: "pista de baile", filter: "Pista de baile" },
   { field: "cloakroom", labelKey: "clubPage.fCloakroom", label: "Guardarropa", emoji: "🧥", icon: "hanger", summary: "guardarropa" },
@@ -28,11 +29,17 @@ export const EXTRA_FEATURES: ExtraFeature[] = [
 
 export const EXTRA_FEATURE_FIELDS = EXTRA_FEATURES.map((f) => f.field)
 
+// «Cerrado temporalmente» (30/10/2026): el local sigue en la web pero sale como cerrado y no se
+// recomienda. No es una etiqueta de servicios, así que no está en la lista de arriba; viaja en el
+// mismo mapa "extras" de los formularios (solo si la columna existe, ver supabase/56).
+export const CLOSED_FIELD = "temporarily_closed"
+
 // Para los formularios del admin y de "Mi club": solo se recogen las columnas que ya existen en la
 // fila (si aún no se ha ejecutado el SQL 30, el formulario sigue guardando sin error).
 export function extrasFromRow(row: Record<string, unknown> | null | undefined): Record<string, boolean> {
   const out: Record<string, boolean> = {}
   if (!row) return out
   for (const f of EXTRA_FEATURES) if (f.field in row) out[f.field] = !!row[f.field]
+  if (CLOSED_FIELD in row) out[CLOSED_FIELD] = !!row[CLOSED_FIELD]
   return out
 }

@@ -239,7 +239,7 @@ export default function AdminClubEventsPage() {
       <>
         <section className="mx-auto max-w-7xl">
           <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               <select value={newClubEvent.club_id} onChange={(e) => handleNewClubChange(e.target.value)} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none">
                 <option value="">Select club</option>
                 {clubs.map((club) => <option key={club.id} value={club.id}>{club.name}</option>)}
@@ -279,7 +279,7 @@ export default function AdminClubEventsPage() {
             {clubEvents.map((clubEvent) => (
               <div key={clubEvent.id} id={`clubevent-${clubEvent.id}`} className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                 {editingId === clubEvent.id ? (
-                  <div className="grid gap-4 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                     <select value={editClubEvent.club_id} onChange={(e) => handleEditClubChange(e.target.value)} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none">
                       <option value="">Select club</option>
                       {clubs.map((club) => <option key={club.id} value={club.id}>{club.name}</option>)}

@@ -129,7 +129,7 @@ export default function AreaListing({ kind, slug, name, clubs, neighborhoods, st
         </section>
       )}
 
-      <section className="mx-auto mt-8 grid max-w-6xl gap-5 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-3">
+      <section className="mx-auto mt-8 grid grid-cols-1 max-w-6xl gap-5 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-3">
         {clubs.map((club) => (
           <ClubCard
             key={club.id}
@@ -149,6 +149,7 @@ export default function AreaListing({ kind, slug, name, clubs, neighborhoods, st
             freeEntryInfo={club.free_entry_info}
             liveStatus={club.live_status}
             liveStatusUpdatedAt={club.live_status_updated_at}
+            temporarilyClosed={club.temporarily_closed === true}
             showHours
           />
         ))}

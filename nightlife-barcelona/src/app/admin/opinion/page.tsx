@@ -13,7 +13,10 @@ type Person = { email: string; username: string | null }
 export default function AdminOpinionPage() {
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [loading, setLoading] = useState(true)
+  // Los comentarios que se enseñan (los 100 últimos) y, aparte, el recuento exacto por estrellas:
+  // antes la media y las barras se calculaban con las últimas 500 filas y, con más, salían mal.
   const [rows, setRows] = useState<Feedback[]>([])
+  const [counts, setCounts] = useState<Record<number, number>>({})
   const [peopleById, setPeopleById] = useState<Record<string, Person>>({})
 
   useEffect(() => {
@@ -31,12 +34,19 @@ export default function AdminOpinionPage() {
   useEffect(() => {
     if (checkingAdmin) return
     const load = async () => {
-      const { data, error } = await supabase
-        .from("site_feedback")
-        .select("id, user_id, rating, comment, created_at")
-        .order("created_at", { ascending: false })
-        .limit(500)
-      if (error) { logError("OPINION FETCH ERROR:", error); setLoading(false); return }
+      const [commentsRes, ...starRes] = await Promise.all([
+        supabase
+          .from("site_feedback")
+          .select("id, user_id, rating, comment, created_at")
+          .not("comment", "is", null)
+          .neq("comment", "")
+          .order("created_at", { ascending: false })
+          .limit(100),
+        ...[5, 4, 3, 2, 1].map((n) => supabase.from("site_feedback").select("id", { count: "exact", head: true }).eq("rating", n)),
+      ])
+      const { data, error } = commentsRes
+      if (error || starRes.some((r) => r.error)) { logError("OPINION FETCH ERROR:", error || starRes.find((r) => r.error)?.error); setLoading(false); return }
+      setCounts(Object.fromEntries([5, 4, 3, 2, 1].map((n, i) => [n, starRes[i].count || 0])))
       const list = (data || []) as Feedback[]
       setRows(list)
       setLoading(false)
@@ -61,14 +71,15 @@ export default function AdminOpinionPage() {
     )
   }
 
-  const avg = rows.length ? rows.reduce((s, r) => s + r.rating, 0) / rows.length : 0
-  const distribution = [5, 4, 3, 2, 1].map((n) => ({ n, count: rows.filter((r) => r.rating === n).length }))
+  const total = [5, 4, 3, 2, 1].reduce((sum, n) => sum + (counts[n] || 0), 0)
+  const avg = total ? [5, 4, 3, 2, 1].reduce((sum, n) => sum + n * (counts[n] || 0), 0) / total : 0
+  const distribution = [5, 4, 3, 2, 1].map((n) => ({ n, count: counts[n] || 0 }))
 
   return (
     <AdminShell title="Opiniones" subtitle="Valoraciones enviadas desde /opinion (enlazada en el footer).">
       {loading ? (
         <p className="mt-10 text-center text-zinc-400">Cargando...</p>
-      ) : rows.length === 0 ? (
+      ) : total === 0 ? (
         <section className="mx-auto mt-10 max-w-4xl px-4">
           <div className="rounded-card border border-white/10 bg-white/[0.03] p-10 text-center">
             <p className="text-3xl">⭐</p>
@@ -77,13 +88,13 @@ export default function AdminOpinionPage() {
         </section>
       ) : (
         <section className="mx-auto mt-6 max-w-4xl px-4 pb-10">
-          <div className="grid gap-4 sm:grid-cols-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-6">
             <div className="rounded-card border border-white/10 bg-white/[0.03] p-5 sm:col-span-2">
               <p className="text-xs text-zinc-400">Media</p>
               <p className="mt-2 flex items-center gap-2 text-4xl font-black text-white">
                 {avg.toFixed(1)} <Star className="h-7 w-7 fill-amber-400 text-amber-400" />
               </p>
-              <p className="mt-1 text-xs text-zinc-400">{rows.length} valoraciones</p>
+              <p className="mt-1 text-xs text-zinc-400">{total} valoraciones</p>
             </div>
             <div className="rounded-card border border-white/10 bg-white/[0.03] p-5 sm:col-span-4">
               <div className="flex h-full flex-col justify-center gap-1.5">
@@ -93,7 +104,7 @@ export default function AdminOpinionPage() {
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
                       <div
                         className="h-full rounded-full bg-amber-400"
-                        style={{ width: rows.length ? `${(d.count / rows.length) * 100}%` : "0%" }}
+                        style={{ width: total ? `${(d.count / total) * 100}%` : "0%" }}
                       />
                     </div>
                     <span className="w-6 shrink-0 text-right">{d.count}</span>

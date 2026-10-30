@@ -8,6 +8,7 @@ import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import { useIdleVisible } from "../../lib/useIdleVisible"
 import { ADMIN_EMAIL } from "../../lib/admin"
+import { EVENTS_COMING_SOON } from "../../lib/featureFlags"
 
 export default function BottomNav() {
   const pathname = usePathname()
@@ -46,12 +47,17 @@ export default function BottomNav() {
           <Link
             key={item.href}
             href={item.href}
-            className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition ${
+            className={`relative flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition ${
               active ? "bg-white text-black" : "text-zinc-400 hover:text-white"
             }`}
           >
             <Icon size={18} />
             <span>{item.label}</span>
+            {item.href === "/events" && EVENTS_COMING_SOON && (
+              <span className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-warn px-1.5 py-px text-[8px] font-bold leading-tight text-night">
+                {t("nav.soon")}
+              </span>
+            )}
           </Link>
         )
       })}

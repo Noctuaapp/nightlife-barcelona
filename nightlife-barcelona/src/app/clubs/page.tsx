@@ -6,7 +6,8 @@ import ExploreLinks from "../../components/nightlife/ExploreLinks"
 import ClubsDirectory from "../../components/nightlife/ClubsDirectory"
 import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../../lib/clubQueries"
 import { MIN_INDEXABLE, neighborhoodsOf, stylesOf } from "../../lib/areas"
-import { safeJsonLd } from "../../lib/structuredData"
+import { cleanPriceRange, safeJsonLd } from "../../lib/structuredData"
+import { createSlug } from "../../lib/slug"
 
 export const revalidate = 3600
 
@@ -38,13 +39,14 @@ export default async function ClubsPage() {
       item: {
         "@type": "NightClub",
         name: club.name,
+        url: `https://www.noctuaapp.com/clubs/${club.slug || createSlug(club.name)}`,
         image: club.image || undefined,
         address: {
           "@type": "PostalAddress",
           addressLocality: club.neighborhood || "Barcelona",
           addressCountry: "ES",
         },
-        priceRange: club.price || undefined,
+        priceRange: cleanPriceRange(club.price),
       },
     })),
   }

@@ -169,7 +169,7 @@ export default function AdminClubSessionsPage() {
   const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1.5"
 
   const renderForm = (form: typeof emptyForm, setForm: (f: typeof emptyForm) => void) => (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
         <label className={labelClass}>Club *</label>
         <select value={form.club_id} onChange={(e) => setForm({ ...form, club_id: e.target.value })} className={inputClass}>

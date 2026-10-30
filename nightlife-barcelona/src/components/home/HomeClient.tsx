@@ -22,6 +22,7 @@ import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { clubOpenNow } from "../../lib/clubHours"
 import { matchesQuery, matchScore } from "../../lib/textSearch"
+import { EVENTS_COMING_SOON } from "../../lib/featureFlags"
 
 // Portada. Rediseñada tras la auditoría de octubre 2026:
 // - Antes el titular, un subtítulo de 7 líneas, tres cifras y una cinta animada ocupaban la
@@ -132,7 +133,7 @@ export default function HomeClient({
     setMounted(true)
     const compute = () => {
       const m: Record<string, boolean | null> = {}
-      for (const c of clubs) m[c.id] = clubOpenNow(c.hours, c.open_days)
+      for (const c of clubs) m[c.id] = c.temporarily_closed ? false : clubOpenNow(c.hours, c.open_days)
       setOpenMap(m)
     }
     compute()
@@ -148,7 +149,8 @@ export default function HomeClient({
 
   // Orden estable en el servidor; variedad (entre los mejores) solo tras montar.
   const ranked = useMemo(() => {
-    const base = [...clubs].sort((a, b) => quality(b) - quality(a))
+    // Los cerrados temporalmente no se recomiendan en la portada (siguen en el buscador y en /clubs).
+    const base = clubs.filter((c) => !c.temporarily_closed).sort((a, b) => quality(b) - quality(a))
     if (!mounted) return base
     const top = base.slice(0, 24).sort(() => Math.random() - 0.5)
     return [...top, ...base.slice(24)]
@@ -167,7 +169,7 @@ export default function HomeClient({
 
   const displayed = useMemo(() => {
     let list = ranked
-    if (activeTab === "top") list = [...clubs].sort((a, b) => Number(b.google_rating || b.rating || 0) - Number(a.google_rating || a.rating || 0))
+    if (activeTab === "top") list = clubs.filter((c) => !c.temporarily_closed).sort((a, b) => Number(b.google_rating || b.rating || 0) - Number(a.google_rating || a.rating || 0))
     else if (activeTab === "lgtbi") list = ranked.filter((c) => c.lgtbi_friendly)
     else if (activeTab === "free") list = ranked.filter((c) => String(c.price || "").toLowerCase().includes("gratis"))
     else if (activeTab === "open") list = ranked.filter((c) => isOpen(c) === true)
@@ -405,6 +407,9 @@ export default function HomeClient({
                   className="flex shrink-0 items-center gap-2 rounded-full border border-white/15 bg-black/30 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:border-cyan-300/50 hover:bg-black/45"
                 >
                   <Icon name={q.icon} className="h-4 w-4 text-cyan-300" /> {q.label}
+                  {q.href === "/events" && EVENTS_COMING_SOON && (
+                    <span className="rounded-full bg-warn/25 px-2 py-0.5 text-[10px] font-bold text-warn">{t("nav.soon")}</span>
+                  )}
                 </Link>
               ))}
             </nav>
@@ -478,7 +483,7 @@ export default function HomeClient({
 
           {activeTab === "near" && geo.error && <p className="mt-4 text-sm text-warn">{geo.error}</p>}
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {displayed.length === 0 ? (
               <p className="col-span-full py-12 text-center text-zinc-400">{t("home.noResults")}</p>
             ) : (

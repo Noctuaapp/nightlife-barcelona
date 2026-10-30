@@ -47,7 +47,7 @@ export default function ClubInsider({ club, isAdmin }: { club: Club; isAdmin: bo
       {filled && (
         <div className="space-y-5">
           {facts.length > 0 && (
-            <dl className="grid gap-3 sm:grid-cols-2">
+            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {facts.map((f) => (
                 <div key={f.key} className="flex items-start gap-3 rounded-ctl border border-white/10 px-4 py-3">
                   <Icon name={f.icon} className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" />
@@ -61,7 +61,7 @@ export default function ClubInsider({ club, isAdmin }: { club: Club; isAdmin: bo
           )}
 
           {(data.best.length > 0 || data.watch.length > 0) && (
-            <div className={`grid gap-6 ${data.best.length > 0 && data.watch.length > 0 ? "sm:grid-cols-2" : ""}`}>
+            <div className={`grid grid-cols-1 gap-6 ${data.best.length > 0 && data.watch.length > 0 ? "sm:grid-cols-2" : ""}`}>
               {data.best.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-ink">{t("clubPage.insiderBest")}</h3>
@@ -110,7 +110,7 @@ export default function ClubInsider({ club, isAdmin }: { club: Club; isAdmin: bo
           <p className="mb-3 text-xs font-semibold text-purple-200">
             Escribe solo lo que hayas comprobado. Lo vacío no se enseña, y si todo está vacío el bloque no sale.
           </p>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <EditRow club={club} field="peak_hours" label={t("clubPage.insiderPeak")} />
             <EditRow club={club} field="audience" label={t("clubPage.insiderAudience")} />
             <EditRow club={club} field="highlights" label={t("clubPage.insiderBest")} multiline hint="Una frase por línea (máximo 5)." />

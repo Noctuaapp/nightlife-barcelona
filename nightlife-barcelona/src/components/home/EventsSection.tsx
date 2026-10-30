@@ -169,7 +169,7 @@ export default function EventsSection() {
         <p className={`mt-4 text-sm ${geo.error ? "text-warn" : "text-zinc-400"}`}>{geo.locating ? t("home.locating") : geo.error}</p>
       )}
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filteredEvents.length === 0 ? (
           <p className="col-span-full py-10 text-center text-zinc-400">{t("homeEvents.empty")}</p>
         ) : (

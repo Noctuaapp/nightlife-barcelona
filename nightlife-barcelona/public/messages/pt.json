@@ -15,7 +15,8 @@
     "tonight": "Esta noite",
     "explore": "Explorar",
     "you": "Tu",
-    "main": "Navegação principal"
+    "main": "Navegação principal",
+    "soon": "Em breve"
   },
   "home": {
     "hero": "A tua noite em Barcelona",
@@ -136,7 +137,8 @@
     "sold_out": "Esgotado",
     "live": "Eventos em direto",
     "happening": "O que se passa",
-    "see_all": "Ver todos os eventos →"
+    "see_all": "Ver todos os eventos →",
+    "soonNote": "Em breve: estamos a preparar a agenda completa de eventos e festivais."
   },
   "essentials": {
     "title": "Essenciais",
@@ -270,12 +272,12 @@
   "privacy": {
     "title": "Política de Privacidade",
     "subtitle": "Como o Noctua recolhe, usa e protege a tua informação.",
-    "last_updated": "Última atualização: 26 de outubro de 2026",
+    "last_updated": "Última atualização: 30 de outubro de 2026",
     "s1_title": "Quem somos",
     "s1_body": "O Noctua (\"nós\", \"nosso\") é uma plataforma de descoberta de vida noturna centrada em Barcelona. Operamos o website e a aplicação disponíveis em noctuaapp.com. Para qualquer questão relacionada com privacidade, contacta-nos em {email}.",
     "s2_title": "Dados que recolhemos",
     "s2_intro": "Recolhemos as seguintes categorias de dados:",
-    "s2_items": "Dados de conta::Endereço de email, palavra-passe cifrada, nome de utilizador, género e ano de nascimento. No registo pedimos a data de nascimento completa apenas para confirmar que és maior de 18 anos; dela guardamos apenas o ano.\nFoto de perfil::A imagem que carregues voluntariamente como avatar da tua conta.\nDados de utilização::Páginas visitadas, clubs e eventos vistos, botões premidos (por exemplo, bilhetes, como chegar ou partilhar), pesquisas realizadas e quantos resultados deram, e a origem da visita (por exemplo, motor de busca, rede social ou link de convite). Estão associados a um identificador de sessão aleatório que desaparece ao fechar o separador e, se tiveres sessão iniciada, à tua conta. Para juntar as visitas da mesma pessoa dentro de um mesmo dia usamos também um código anónimo diário que não permite identificar-te (mais detalhes na secção sobre cookies e analítica).\nFavoritos::Clubs, eventos e noites de club que decidas guardar, juntamente com as listas e notas pessoais que crias para os organizar.\nAtividade e pontos (XP)::Se marcares que vais assistir a um evento ou a um club numa noite específica, fizeres check-in num club ou ganhares pontos de experiência, guardamos essa atividade (incluindo a data) para te mostrar o teu progresso e nível dentro da app e para elaborar estatísticas agregadas.\nLocalização precisa (apenas para check-in)::Quando decides fazer check-in na ficha de um club, acedemos uma única vez à tua localização GPS para confirmar que estás perto do local. Não guardamos as tuas coordenadas: só se regista em que club e em que dia fizeste check-in.\nMensagens de contacto::Qualquer mensagem que nos envies através da página de Contacto, incluindo pedidos para gerir a ficha do teu club ou festival.\nContas de locais e festivais verificados::Se és responsável por um club ou festival e te damos acesso para editar a sua ficha, associamos a tua conta a esse local ou evento. Só tu e a equipa do Noctua podem gerir essa ficha a partir daí.\nNotificações dentro da app::Os avisos que te enviamos dentro do Noctua (por exemplo, confirmações ou mensagens da equipa) e se os leste.\nDados do dispositivo e analítica::Tipo de navegador, tipo de dispositivo e localização aproximada (a nível de país/cidade) para análise de utilização, através do Vercel Analytics.\nOpiniões e «Obrigado»::As opiniões que publicares sobre espaços e eventos (estrelas e texto) são públicas juntamente com o teu nome de utilizador e o teu nível. Guardamos também a que opiniões agradeceste (nunca se mostra quem agradeceu) e as denúncias que fizeres, que são confidenciais.\nAvisos «não me deixam entrar»::Se nos disseres que não te deixaram entrar num espaço, guardamos o espaço, o motivo e a data para deixarmos de to recomendar e melhorar o site. O espaço nunca recebe a tua identidade, e podes voltar a vê-lo no teu perfil.\nInquéritos::As tuas respostas aos inquéritos rápidos da app e à avaliação do site.",
+    "s2_items": "Dados de conta::Endereço de email, palavra-passe cifrada, nome de utilizador, género, ano de nascimento e, se o indicares, o teu país. No registo pedimos a data de nascimento completa apenas para confirmar que és maior de 18 anos; dela guardamos apenas o ano.\nFoto de perfil::A imagem que carregues voluntariamente como avatar da tua conta.\nDados de utilização::Páginas visitadas, clubs, eventos e serviços essenciais vistos, botões premidos (por exemplo, bilhetes, como chegar ou partilhar), pesquisas realizadas e quantos resultados deram, e a origem da visita (por exemplo, motor de busca, rede social ou link de convite). Estão associados a um identificador de sessão aleatório que desaparece ao fechar o separador e, se tiveres sessão iniciada, à tua conta. Para juntar as visitas da mesma pessoa dentro de um mesmo dia usamos também um código anónimo diário que não permite identificar-te (mais detalhes na secção sobre cookies e analítica).\nFavoritos::Clubs, eventos e noites de club que decidas guardar, juntamente com as listas e notas pessoais que crias para os organizar.\nAtividade e pontos (XP)::Se marcares que vais assistir a um evento ou a um club numa noite específica, fizeres check-in num club ou ganhares pontos de experiência, guardamos essa atividade (incluindo a data) para te mostrar o teu progresso e nível dentro da app e para elaborar estatísticas agregadas.\nLocalização precisa (apenas para check-in)::Quando decides fazer check-in na ficha de um club, acedemos uma única vez à tua localização GPS para confirmar que estás perto do local. Não guardamos as tuas coordenadas: só se regista em que club e em que dia fizeste check-in.\nMensagens de contacto::Qualquer mensagem que nos envies através da página de Contacto, incluindo pedidos para gerir a ficha do teu club ou festival.\nContas de locais e festivais verificados::Se és responsável por um club ou festival e te damos acesso para editar a sua ficha, associamos a tua conta a esse local ou evento. Só tu e a equipa do Noctua podem gerir essa ficha a partir daí.\nNotificações dentro da app::Os avisos que te enviamos dentro do Noctua (por exemplo, confirmações ou mensagens da equipa) e se os leste.\nDados do dispositivo e analítica::Tipo de navegador, tipo de dispositivo e localização aproximada (a nível de país/cidade) para análise de utilização, através do Vercel Analytics.\nOpiniões e «Obrigado»::As opiniões que publicares sobre espaços e eventos (estrelas e texto) são públicas juntamente com o teu nome de utilizador e o teu nível. Guardamos também a que opiniões agradeceste (nunca se mostra quem agradeceu) e as denúncias que fizeres, que são confidenciais.\nAvisos «não me deixam entrar»::Se nos disseres que não te deixaram entrar num espaço, guardamos o espaço, o motivo e a data para deixarmos de to recomendar e melhorar o site. O espaço nunca recebe a tua identidade, e podes voltar a vê-lo no teu perfil.\nInquéritos::As tuas respostas aos inquéritos rápidos da app e à avaliação do site. Se não tiveres conta e aceitares os cookies, o teu voto no inquérito do dia é guardado sem qualquer dado que te identifique.",
     "s3_title": "Como usamos os teus dados",
     "s3_intro": "Usamos os dados que recolhemos para:",
     "s3_items": "Fornecer e operar a plataforma Noctua.\nGuardar e mostrar os teus clubs, eventos e noites de club favoritos.\nCalcular o teu progresso e nível dentro do sistema de pontos (XP) do Noctua.\nVerificar a tua localização no momento do check-in num club (nunca a armazenamos, apenas o resultado).\nResponder a mensagens e pedidos de suporte, incluindo mensagens que a equipa do Noctua te envie diretamente.\nDar acesso de gestão aos responsáveis verificados de um club ou festival sobre a sua própria ficha, mantendo sempre a equipa do Noctua a capacidade de rever, corrigir ou revogar esse acesso.\nMelhorar a plataforma com base em padrões de utilização.\nMelhorar as tuas pesquisas e recomendações usando o teu ano de nascimento (por exemplo, sugerir-te locais com um ambiente adequado à tua idade).\nElaborar estatísticas agregadas e anónimas sobre a utilização da plataforma e a afluência a locais e eventos (por exemplo, faixas etárias, proveniência ou horários das visitas), que podemos partilhar com locais, organizadores de eventos e outros terceiros, mesmo em troca de uma contrapartida económica.\nEnviar comunicações importantes do serviço (sem marketing sem o teu consentimento).\nMostrar aos responsáveis verificados de um espaço, se a Noctua o ativar, estatísticas agregadas da sua ficha (visitas, cliques, origem e horários), sem nenhum dado que te identifique.\nModerar opiniões e conteúdos denunciados e proteger a plataforma contra abusos (por exemplo, com limites diários de publicações).",
@@ -293,7 +295,7 @@
     "s8_body": "Usamos cookies essenciais necessários para a autenticação e a gestão de sessão, além de armazenamento local do navegador (localStorage) para lembrar preferências como que avisos já leste. Usamos também o Vercel Analytics, uma ferramenta de analítica que não utiliza cookies de rastreio nem identifica individualmente os utilizadores, para entender de forma agregada como se usa a Plataforma. Não usamos cookies publicitários nem de rastreio entre sites. Além disso, o Noctua regista a sua própria analítica de utilização com um identificador de sessão aleatório que só existe na memória da página enquanto a tens aberta: para esta analítica não se guarda nada no teu dispositivo. Para saber se várias visitas no mesmo dia são da mesma pessoa, o servidor calcula um código anónimo a partir do teu endereço IP e do teu navegador, misturados com uma chave secreta que muda todos os dias e é apagada no dia seguinte; o teu IP não é guardado na analítica, o código não é reversível e não permite reconhecer-te de um dia para o outro. Nenhuma rede publicitária de terceiros tem acesso aos teus dados. Com a tua autorização (banner de cookies), guardamos também no teu dispositivo uma marca que lembra o que votaste na sondagem do dia, para não ta voltar a mostrar. Se recusares, não se guarda nada e, sem conta, a sondagem não te é mostrada. A marca não te identifica nem sai do teu dispositivo, e os votos sem conta são anónimos. Podes mudar a tua decisão quando quiseres em «Preferências de cookies», no rodapé.",
     "s9_title": "Serviços de terceiros",
     "s9_intro": "Trabalhamos com os seguintes fornecedores para operar a Plataforma, cada um processando dados apenas na medida necessária para prestar o seu serviço:",
-    "s9_items": "Supabase::Autenticação, base de dados, armazenamento de imagens e envio dos emails de acesso (confirmação da conta e recuperação da palavra-passe). Trata os dados de acordo com o RGPD.\nVercel::Alojamento da aplicação e analítica de utilização agregada e anónima.\nMapbox::Renderização dos mapas dentro da app. Ao carregar um mapa, o Mapbox pode receber o teu endereço IP e a informação técnica necessária para o mostrar.\nGoogle Places::Fonte de dados públicos (nome, avaliação, avaliações e fotos) de clubs, festivais e serviços essenciais que mostramos nas suas fichas. Não enviamos os teus dados pessoais à Google através desta integração.",
+    "s9_items": "Supabase::Autenticação, base de dados, armazenamento de imagens e envio dos emails de acesso (confirmação da conta e recuperação da palavra-passe). Trata os dados de acordo com o RGPD.\nVercel::Alojamento da aplicação e analítica de utilização agregada e anónima.\nMapbox::Renderização dos mapas dentro da app. Ao carregar um mapa, o Mapbox pode receber o teu endereço IP e a informação técnica necessária para o mostrar.\nGoogle Places::Fonte de dados públicos (nome, avaliação, avaliações e fotos) de clubs, festivais e serviços essenciais que mostramos nas suas fichas. Não enviamos os teus dados pessoais à Google através desta integração.\nOpen-Meteo::Dados meteorológicos mostrados no cabeçalho. O teu navegador pede-os diretamente ao servidor deles com as coordenadas da cidade escolhida (não as tuas); por isso o Open-Meteo recebe o teu endereço IP.",
     "s9_closing": "Não partilhamos os teus dados pessoais com nenhum outro terceiro, salvo quando exigido por lei. Alguns fornecedores (Vercel, Mapbox ou Google) podem tratar dados fora do Espaço Económico Europeu; nesse caso, fazem-no com as garantias exigidas pelo RGPD (cláusulas contratuais-tipo da Comissão Europeia ou Quadro de Privacidade de Dados UE-EUA).",
     "s10_title": "Início de sessão com Google",
     "s10_intro": "O Noctua permite aos utilizadores iniciar sessão com a sua conta Google através do Google OAuth 2.0. Quando escolhes iniciar sessão com Google, recebemos a seguinte informação da Google:",
@@ -359,7 +361,7 @@
     "cat4_name": "Para locais e organizadores",
     "cat4_items": "Como consigo que o meu club, bar ou festival apareça no Noctua?||Usa a nossa página de Contacto e escolhe \"Sugerir um local\" (para clubs e bares) ou a categoria de parceria correspondente para festivais. Analisamos todas as propostas e responderemos.\nSou o responsável por um club ou festival, posso gerir eu mesmo a minha ficha?||Sim. Escreve-nos a partir do Contacto escolhendo \"Gerir o meu club ou evento\". Depois de confirmarmos que és o responsável, associamos a tua conta e poderás editar a tua ficha, fotos, preços e noites ou sessões diretamente.\nEncontrei informação incorreta sobre um local. Como reporto?||Usa a página de Contacto e escolhe \"Reportar informação incorreta\". Indica o nome do local e o dado errado — iremos atualizá-lo o mais rápido possível.",
     "cat5_name": "Privacidade e segurança",
-    "cat5_items": "Como protege o Noctua os meus dados?||Os teus dados são armazenados de forma segura e não vendemos os teus dados pessoais a terceiros. Podemos partilhar estatísticas agregadas e anónimas (por exemplo, faixas etárias dos visitantes de um local), que nunca identificam pessoas. Podes consultar todos os detalhes na nossa Política de Privacidade.\nCom quem posso falar se tiver um problema?||Escreve-nos a partir da página de Contacto escolhendo \"Suporte ao utilizador\" e responderemos o mais rápido possível."
+    "cat5_items": "Como protege o Noctua os meus dados?||Os teus dados são armazenados de forma segura e não vendemos os teus dados pessoais a terceiros. Podemos partilhar estatísticas agregadas e anónimas (por exemplo, faixas etárias dos visitantes de um local), que nunca identificam pessoas. Podes consultar todos os detalhes na nossa Política de Privacidade.\nCom quem posso falar se tiver um problema?||Escreve-nos a partir da página de Contacto escolhendo \"Suporte ao utilizador\" e responderemos o mais rápido possível. Se não conseguires entrar na tua conta, escreve-nos para info@noctuaapp.com."
   },
   "contact": {
     "eyebrow": "Contacto",
@@ -378,7 +380,17 @@
     "types": "user_support||Suporte ao utilizador||Ajuda com a tua conta ou a app\nreport_issue||Reportar informação incorreta||Horários, preços ou dados errados\nsuggest_venue||Sugerir um local||Conheces um club ou bar que falta?\nsuggest_essential||Sugerir um essencial||Multibanco, farmácia, transporte... que não apareça\nclub_partnership||Parceria com local||Colaboração para clubs e bares\nfestival_partnership||Parceria com festival||Colaboração para eventos e festivais\nowner_access||Gerir o meu club ou evento||És o responsável e queres editar a tua ficha tu mesmo",
     "loginRequired": "Inicia sessão para nos enviares uma mensagem.",
     "loginTitle": "Inicia sessão para nos escreveres",
-    "loginBody": "Assim podemos responder-te dentro do Noctua e vês a resposta no teu perfil."
+    "loginBody": "Assim podemos responder-te dentro do Noctua e vês a resposta no teu perfil.",
+    "emailFallback": "Não consegues entrar na tua conta ou preferes o email? Escreve-nos para {email}.",
+    "errorSend": "Não conseguimos enviar a tua mensagem. Tenta outra vez dentro de uns minutos ou escreve-nos para info@noctuaapp.com.",
+    "emailHint": "É o email da tua conta",
+    "back": "Voltar",
+    "sendAnother": "Enviar outra mensagem",
+    "thanksTitle": "Mensagem recebida!",
+    "thanksBody": "Obrigado por nos escreveres. Respondemos o mais rápido possível e vês a resposta no teu perfil.",
+    "thanksReportTitle": "Obrigado por nos avisares!",
+    "thanksReportBody": "Cada dado que nos corriges torna o Noctua mais fiável para todos — é por ti e por quem sai esta noite. Revemos e corrigimos o mais rápido possível.",
+    "errorLimit": "Já enviaste 5 mensagens nas últimas 24 horas. Tenta amanhã ou escreve-nos por e-mail (mais abaixo)."
   },
   "nearby": {
     "triggerButton": "Não te deixam entrar?",
@@ -840,7 +852,10 @@
     "nearbyTitle": "Aqui perto",
     "nearbyClosedTitle": "Fechado agora · abertos aqui perto",
     "nearbySeeMap": "Ver no mapa",
-    "fCocktails": "Cocktails"
+    "fCocktails": "Cocktails",
+    "fGames": "Jogos de tabuleiro ou de beber",
+    "tempClosed": "Temporariamente fechado",
+    "tempClosedNote": "Este espaço está fechado por agora. Vê o Instagram ou o site para saber quando volta a abrir."
   },
   "eventPage": {
     "dateTbc": "Data a confirmar",
@@ -1406,7 +1421,9 @@
     "errSave": "Não foi possível guardar as alterações",
     "errDelete": "Não foi possível apagar",
     "errName": "O nome é obrigatório",
-    "errStatus": "Não foi possível atualizar o estado"
+    "errStatus": "Não foi possível atualizar o estado",
+    "tempClosed": "Temporariamente fechado",
+    "tempClosedHint": "A tua ficha continua visível, mas aparece como fechada e não é recomendada até desativares isto."
   },
   "festivalPortal": {
     "kicker": "Portal de festivais",

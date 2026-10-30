@@ -324,7 +324,7 @@ export default function AdminToolsPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {TOOLS.map((tool) => {
           const st = state[tool.key]
           const remaining = typeof st?.result?.remaining === "number" ? st.result.remaining : null

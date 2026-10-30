@@ -25,6 +25,15 @@ export function parsePriceEUR(raw: string | null | undefined): string | null {
   return match[0].replace(",", ".")
 }
 
+// «priceRange» de los locales (30/10/2026). Es texto libre ("Gratis", "10-15€", "Entrada 15€ con copa..."),
+// y Google pide un valor corto (máximo 100 caracteres). Se limpia y recorta; vacío → se omite.
+export function cleanPriceRange(raw: string | null | undefined): string | undefined {
+  if (!raw) return undefined
+  const text = raw.replace(/\s+/g, " ").trim()
+  if (!text) return undefined
+  return text.length > 100 ? text.slice(0, 99).trimEnd() + "…" : text
+}
+
 // JSON-LD seguro para meter dentro de <script> (26/10/2026, revisión de seguridad). JSON.stringify
 // no escapa "<", así que un nombre o una descripción con "</script>" (los dueños ya pueden editar
 // su ficha) cerraría la etiqueta y permitiría inyectar código en la página. Con < > & escapados

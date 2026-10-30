@@ -130,7 +130,7 @@ export default function OwnerStats({ type, id, name }: { type: "club" | "event";
             </div>
           </div>
 
-          <div className="mt-6 grid gap-6 md:grid-cols-2">
+          <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
               <p className="text-xs font-semibold text-zinc-400">Qué pulsan</p>
               {clicks.length === 0 ? (

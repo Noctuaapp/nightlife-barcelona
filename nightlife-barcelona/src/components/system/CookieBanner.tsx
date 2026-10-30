@@ -14,6 +14,8 @@ import { OPEN_CONSENT_EVENT, saveConsent } from "../../lib/consent"
 // Criterios: «Aceptar» y «Rechazar» con el mismo tamaño y el mismo aspecto (que rechazar sea tan
 // fácil como aceptar); nada marcado de antemano; no tapa la página (es una tarjeta, no un muro); y se
 // puede cambiar la decisión cuando se quiera desde «Preferencias de cookies» en el pie de página.
+// Colocación (30/10/2026): recuadro pequeño abajo a la derecha, por encima de la barra inferior. Antes
+// ocupaba casi todo el ancho del móvil y tapaba contenido. Los botones siguen siendo iguales entre sí.
 // No sale en el admin. Hasta que se lee el navegador (`ready`) no se pinta nada, para no romper la
 // hidratación ni parpadear a quien ya decidió.
 export default function CookieBanner() {
@@ -37,26 +39,26 @@ export default function CookieBanner() {
   }
 
   const buttonClass =
-    "flex-1 rounded-ctl border border-white/25 bg-white/[0.08] px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white/[0.14] active:scale-95"
+    "flex-1 rounded-ctl border border-white/25 bg-white/[0.08] px-3 py-2 text-xs font-semibold text-ink transition hover:bg-white/[0.14] active:scale-95"
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(88px+env(safe-area-inset-bottom))] z-[900] flex justify-center px-4 md:bottom-24 md:justify-start md:px-6">
+    <div className="pointer-events-none fixed bottom-[calc(96px+env(safe-area-inset-bottom))] right-3 z-[900] w-[min(19rem,calc(100vw-1.5rem))] md:bottom-24 md:right-6">
       <div
         role="dialog"
         aria-labelledby="cookie-banner-title"
         aria-describedby="cookie-banner-text"
-        className="pointer-events-auto w-full max-w-md rounded-card border border-white/10 bg-surface p-5 shadow-2xl"
+        className="pointer-events-auto rounded-card border border-white/10 bg-surface p-3.5 shadow-2xl"
       >
-        <p id="cookie-banner-title" className="font-display text-lg text-ink">
+        <p id="cookie-banner-title" className="font-display text-sm text-ink">
           {t("cookieBanner.title")}
         </p>
-        <p id="cookie-banner-text" className="mt-2 text-sm leading-relaxed text-zinc-300">
+        <p id="cookie-banner-text" className="mt-1.5 text-xs leading-snug text-zinc-300">
           {t("cookieBanner.text")}{" "}
           <Link href="/privacy#cookies" className="font-semibold text-brand-soft underline underline-offset-2 hover:text-ink">
             {t("cookieBanner.more")}
           </Link>
         </p>
-        <div className="mt-4 flex gap-3">
+        <div className="mt-3 flex gap-2">
           <button type="button" onClick={() => choose(false)} className={buttonClass}>
             {t("cookieBanner.reject")}
           </button>

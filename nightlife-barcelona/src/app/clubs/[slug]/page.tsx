@@ -11,7 +11,7 @@ import { findBySlug } from "../../../lib/slugLookup"
 import { createSlug } from "../../../lib/slug"
 import { clubMetaDescription, clubSummary, venueKind } from "../../../lib/clubSummary"
 import type { DbRow } from "../../../lib/clubQueries"
-import { safeJsonLd } from "../../../lib/structuredData"
+import { cleanPriceRange, safeJsonLd } from "../../../lib/structuredData"
 import { clubOpeningHoursSpec } from "../../../lib/clubHours"
 
 // ISR: la ficha se genera la primera vez que alguien la pide y se sirve ya hecha durante 5 min
@@ -116,7 +116,8 @@ export default async function ClubPage({ params }: ClubPageProps) {
     relatedClubs(club),
   ])
 
-  const openingHours = clubOpeningHoursSpec(club.hours, club.open_days)
+  // Cerrado temporalmente: no se declara un horario que no se está cumpliendo.
+  const openingHours = club.temporarily_closed === true ? [] : clubOpeningHoursSpec(club.hours, club.open_days)
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -137,7 +138,7 @@ export default async function ClubPage({ params }: ClubPageProps) {
     ...(club.latitude && club.longitude
       ? { geo: { "@type": "GeoCoordinates", latitude: club.latitude, longitude: club.longitude } }
       : {}),
-    priceRange: club.price || undefined,
+    priceRange: cleanPriceRange(club.price),
     // Horario (27/10/2026): solo si se puede interpretar el campo "hours" (ver clubOpeningHoursSpec).
     ...(openingHours.length > 0 ? { openingHoursSpecification: openingHours } : {}),
     // Sin aggregateRating a propósito: las valoraciones son de Google, no de usuarios de Noctua, y

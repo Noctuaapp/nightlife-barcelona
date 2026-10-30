@@ -235,7 +235,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         matchesQuery(search, [club.name, club.neighborhood, club.music, club.address, club.city, club.venue_type]) ||
         (!!postalAreas && postalAreas.some((area) => matchesQuery(area, [club.neighborhood])))
 
-      const matchesOpenNow = !openNow || isOpenNow(club.hours)
+      const matchesOpenNow = !openNow || (club.temporarily_closed !== true && isOpenNow(club.hours))
       const matchesDay = clubMatchesDay(club.hours, club.open_days, selectedDay)
 
       const matchesNearMe =
@@ -260,6 +260,8 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         return da - db
       })
     }
+    // Los cerrados temporalmente siguen en el listado, pero al final (salvo orden A-Z).
+    if (sortBy !== "name") return [...arr.filter((c) => c.temporarily_closed !== true), ...arr.filter((c) => c.temporarily_closed === true)]
     return arr
   }, [filteredClubs, sortBy, userLat, userLng])
 
@@ -546,7 +548,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         </section>
 
         {/* Results */}
-        <section className="mx-auto mt-4 grid max-w-7xl gap-8 px-4 md:grid-cols-2 xl:grid-cols-3">
+        <section className="mx-auto mt-4 grid grid-cols-1 max-w-7xl gap-8 px-4 md:grid-cols-2 xl:grid-cols-3">
           {visibleClubs.length === 0 ? (
             <div className="col-span-full py-24 text-center">
               <p className="text-lg font-bold text-zinc-300">No hay clubs con estos filtros</p>
@@ -580,6 +582,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                   freeEntryInfo={club.free_entry_info}
                   liveStatus={club.live_status}
                   liveStatusUpdatedAt={club.live_status_updated_at}
+                  temporarilyClosed={club.temporarily_closed === true}
                 />
               </Reveal>
             ))

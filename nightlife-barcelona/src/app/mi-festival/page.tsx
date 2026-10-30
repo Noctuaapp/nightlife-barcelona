@@ -324,7 +324,7 @@ export default function MiFestivalPage() {
     handleImageUpload: (e: ChangeEvent<HTMLInputElement>) => void,
     handleGalleryUpload: (e: ChangeEvent<HTMLInputElement>) => void
   ) => (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div className="md:col-span-2">
         <label className={labelClass}>Título del festival *</label>
         <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Nombre del festival" className={inputClass} />
@@ -413,7 +413,7 @@ export default function MiFestivalPage() {
         <div className="grid gap-2">
           {festivalSessions.map((s) => (
             editingSessionId === s.id ? (
-              <div key={s.id} className="grid gap-2 rounded-xl border border-purple-500/30 bg-purple-500/[0.04] p-3 sm:grid-cols-3">
+              <div key={s.id} className="grid grid-cols-1 gap-2 rounded-xl border border-purple-500/30 bg-purple-500/[0.04] p-3 sm:grid-cols-3">
                 <input type="date" value={editSessionForm.date} onChange={(e) => setEditSessionForm({ ...editSessionForm, date: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
                 <input value={editSessionForm.title} onChange={(e) => setEditSessionForm({ ...editSessionForm, title: e.target.value })} placeholder="Título de la sesión" className={inputClass} />
                 <input value={editSessionForm.artist} onChange={(e) => setEditSessionForm({ ...editSessionForm, artist: e.target.value })} placeholder="DJ / artista" className={inputClass} />
@@ -444,7 +444,7 @@ export default function MiFestivalPage() {
           ))}
         </div>
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
           <input type="date" value={newSessionForm.date} onChange={(e) => setNewSessionForm({ ...newSessionForm, date: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
           <input value={newSessionForm.title} onChange={(e) => setNewSessionForm({ ...newSessionForm, title: e.target.value })} placeholder="Título de la sesión" className={inputClass} />
           <input value={newSessionForm.artist} onChange={(e) => setNewSessionForm({ ...newSessionForm, artist: e.target.value })} placeholder="DJ / artista" className={inputClass} />

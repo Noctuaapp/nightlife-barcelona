@@ -7,6 +7,18 @@ import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import NocOwl from "../../components/mascot/NocOwl"
+import { logError } from "../../lib/log"
+import { renderWithLinks } from "../../lib/legalText"
+
+// Tipos de consulta que acepta el formulario. El enlace puede traer ?type=...; si el valor no es
+// uno de estos se ignora (antes cualquier texto de la dirección acababa guardado como "tipo").
+const CONTACT_TYPES = ["user_support", "report_issue", "suggest_venue", "suggest_essential", "club_partnership", "festival_partnership", "owner_access"]
+// Límites de longitud (30/10/2026): evitan mensajes gigantes por error o abuso.
+const SUBJECT_MAX = 150
+const MESSAGE_MAX = 4000
+// Vía alternativa para quien no puede iniciar sesión (olvidó la contraseña, no recibe el correo de
+// confirmación...) y para ejercer derechos de privacidad: el formulario exige cuenta.
+const EMAIL_LINK = { email: { href: "mailto:info@noctuaapp.com", label: "info@noctuaapp.com" } }
 
 function parseContactTypes(text: string) {
   return text
@@ -57,8 +69,8 @@ export default function ContactPage() {
   useEffect(() => {
     const typeParam = searchParams.get("type")
     const subjectParam = searchParams.get("subject")
-    if (typeParam) setType(typeParam)
-    if (subjectParam) setSubject(subjectParam)
+    if (typeParam && CONTACT_TYPES.includes(typeParam)) setType(typeParam)
+    if (subjectParam) setSubject(subjectParam.slice(0, SUBJECT_MAX))
   }, [searchParams])
 
   const sendMessage = async () => {
@@ -100,7 +112,14 @@ export default function ContactPage() {
     })
 
     setSending(false)
-    if (insertError) { setError(insertError.message); return }
+    if (insertError) {
+      // El texto técnico del servidor (en inglés, con nombres de tablas) no le sirve a quien escribe: se
+      // deja en la consola solo en desarrollo y a la persona se le enseña un aviso claro con el correo.
+      logError("CONTACT INSERT ERROR:", insertError)
+      // Tope diario (SQL 57): 5 mensajes por cuenta cada 24 h. Se avisa con un texto claro, no con el genérico.
+      setError(String(insertError.message || "").includes("contact_rate_limit") ? t("contact.errorLimit") : t("contact.errorSend"))
+      return
+    }
     setSuccess(t("contact.successMessage"))
     setSentType(type)
     setType("user_support"); setSubject(""); setMessage("")
@@ -126,29 +145,38 @@ export default function ContactPage() {
         </section>
 
         <section className="mx-auto max-w-5xl px-4">
-          <div className="grid gap-8 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
 
             {/* Type selector */}
             <div className="lg:col-span-1">
               <p className="mb-4 text-xs text-zinc-400">{t("contact.typeLabel")}</p>
-              <div className="flex flex-col gap-3">
-                {contactTypes.map((ct) => (
+              {/* Móvil: rejilla de 2 columnas solo con el nombre (antes eran 7 tarjetas apiladas y el formulario
+                  quedaba muy abajo); la descripción del tipo elegido sale debajo. Escritorio: igual que antes. */}
+              <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-col lg:gap-3">
+                {contactTypes.map((ct, i) => (
                   <button
                     key={ct.value}
+                    type="button"
                     onClick={() => setType(ct.value)}
-                    className={`rounded-2xl border p-4 text-left transition ${
+                    aria-pressed={type === ct.value}
+                    className={`rounded-2xl border px-3 py-3 text-left transition lg:p-4 ${
+                      i === contactTypes.length - 1 && contactTypes.length % 2 === 1 ? "col-span-2 lg:col-span-1" : ""
+                    } ${
                       type === ct.value
                         ? "border-brand bg-brand/15"
                         : "border-white/10 bg-white/[0.02] hover:bg-white/5"
                     }`}
                   >
-                    <p className={`text-sm font-bold ${type === ct.value ? "text-brand-soft" : "text-ink"}`}>
+                    <p className={`text-sm font-bold leading-snug ${type === ct.value ? "text-brand-soft" : "text-ink"}`}>
                       {ct.label}
                     </p>
-                    <p className="mt-1 text-xs text-zinc-400">{ct.desc}</p>
+                    <p className="mt-1 hidden text-xs text-zinc-400 lg:block">{ct.desc}</p>
                   </button>
                 ))}
               </div>
+              <p className="mt-3 text-xs leading-relaxed text-zinc-400 lg:hidden" aria-live="polite">
+                {contactTypes.find((c) => c.value === type)?.desc}
+              </p>
             </div>
 
             {/* Form */}
@@ -198,36 +226,43 @@ export default function ContactPage() {
                   <div className="h-40" />
                 ) : (
                 <>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={t("contact.namePlaceholder")}
+                    aria-label={t("contact.namePlaceholder")}
+                    maxLength={60}
                     className="rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand transition"
                   />
                   <input
                     value={email}
                     readOnly
-                    title="Es el email de tu cuenta"
+                    title={t("contact.emailHint")}
                     placeholder={t("contact.emailPlaceholder")}
+                    aria-label={t("contact.emailPlaceholder")}
                     className="cursor-not-allowed rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink text-zinc-400 outline-none transition"
                   />
                   <input
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder={t("contact.subjectPlaceholder")}
+                    aria-label={t("contact.subjectPlaceholder")}
+                    maxLength={SUBJECT_MAX}
                     className="rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand transition md:col-span-2"
                   />
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder={t("contact.messagePlaceholder")}
+                    aria-label={t("contact.messageLabel")}
+                    maxLength={MESSAGE_MAX}
                     rows={7}
                     className="resize-none rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand transition md:col-span-2"
                   />
                 </div>
 
-                {error && <p className="mt-4 text-sm font-semibold text-red-300">{error}</p>}
+                {error && <p className="mt-4 text-sm font-semibold text-red-300" role="alert">{error}</p>}
                 {success && <p className="mt-4 text-sm font-bold text-emerald-300">{success}</p>}
 
                 <button
@@ -240,6 +275,7 @@ export default function ContactPage() {
                 </>
                 )}
               </div>
+              <p className="mt-4 text-sm leading-relaxed text-zinc-400">{renderWithLinks(t("contact.emailFallback"), EMAIL_LINK)}</p>
             </div>
           </div>
         </section>

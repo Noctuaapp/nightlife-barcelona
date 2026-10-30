@@ -551,7 +551,7 @@ export default function PlanPage() {
       lgtbiVenueNames.has(normName(e.club_name)) || /\b(lgtb|lgbt|gay|queer|orgullo|pride)/i.test(String(e.title ?? ""))
 
     const baseClubFilters = (c: any) =>
-      !c.sold_out && clubOpensOn(c.hours, c.open_days, dow) !== false && !(hideLgtbi && c.lgtbi_friendly === true)
+      !c.sold_out && c.temporarily_closed !== true && clubOpensOn(c.hours, c.open_days, dow) !== false && !(hideLgtbi && c.lgtbi_friendly === true)
 
     // Si la zona elegida no tiene ningún club que cumpla el resto de filtros, en vez de dejar
     // el plan vacío, se suelta el filtro de zona y se busca en toda la ciudad (lo más parecido
@@ -1119,7 +1119,7 @@ export default function PlanPage() {
                     {otherEvents.length > 0 && (
                       <div>
                         <h2 className="mb-4 text-lg font-semibold">{t("planPage.upcomingEventsForYou")}</h2>
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                           {otherEvents.map((event) => (
                             <Link key={event.id} href={`/event/${event.slug || createSlug(event.title)}`} className="flex items-center gap-4 rounded-card border border-white/10 bg-surface p-3 transition hover:border-white/25">
                               <div className="h-16 w-16 shrink-0 overflow-hidden rounded-ctl">

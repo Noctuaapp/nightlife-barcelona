@@ -41,7 +41,7 @@ export default function TopPicks({ data }: { data: ActivePicks | null }) {
           </div>
         </div>
 
-        <ol className="mt-5 grid gap-3 sm:grid-cols-3 sm:gap-4">
+        <ol className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           {data.picks.map((p) => {
             const href = `/clubs/${p.club.slug || createSlug(p.club.name)}`
             return (

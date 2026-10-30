@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useLanguage } from "../../context/LanguageContext"
 import { OPEN_CONSENT_EVENT } from "../../lib/consent"
+import { EVENTS_COMING_SOON } from "../../lib/featureFlags"
 
 export default function Footer() {
   const { t } = useLanguage()
@@ -30,7 +31,7 @@ export default function Footer() {
         </a>
 
         {/* Top row */}
-        <div className="grid gap-12 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
 
           {/* Brand */}
           <div>
@@ -45,7 +46,10 @@ export default function Footer() {
             <p className="mb-4 text-sm font-semibold text-zinc-300">{t("footer.explore")}</p>
             <div className="flex flex-col gap-3">
               <Link href="/clubs" className="text-sm text-zinc-400 transition hover:text-ink">{t("nav.clubs")}</Link>
-              <Link href="/events" className="text-sm text-zinc-400 transition hover:text-ink">{t("nav.events")}</Link>
+              <Link href="/events" className="text-sm text-zinc-400 transition hover:text-ink">
+                {t("nav.events")}
+                {EVENTS_COMING_SOON && <span className="ml-2 rounded-full bg-warn/20 px-2 py-0.5 text-[10px] font-bold text-warn">{t("nav.soon")}</span>}
+              </Link>
               <Link href="/essentials" className="text-sm text-zinc-400 transition hover:text-ink">{t("nav.essentials")}</Link>
               <Link href="/map" className="text-sm text-zinc-400 transition hover:text-ink">{t("nav.map")}</Link>
               <Link href="/plan" className="text-sm text-zinc-400 transition hover:text-ink">{t("nav.plan")}</Link>

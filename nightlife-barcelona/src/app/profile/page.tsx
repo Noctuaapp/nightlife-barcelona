@@ -395,6 +395,20 @@ function ProfileInner() {
   const confirmDeleteAccount = async () => {
     setShowDeleteModal(false)
     setDeleting(true)
+    // Borrar la cuenta (delete_current_user) elimina los datos de la base de datos, pero NO los archivos
+    // del almacenamiento: las fotos de perfil (un archivo nuevo cada vez que se cambia la foto) se
+    // quedaban publicadas para siempre. Se borran aquí, antes, mientras la sesión sigue activa. Si falla,
+    // no se bloquea el borrado de la cuenta.
+    if (userId) {
+      try {
+        const { data: files } = await supabase.storage.from("avatars").list(userId, { limit: 200 })
+        if (files && files.length > 0) {
+          await supabase.storage.from("avatars").remove(files.map((f) => `${userId}/${f.name}`))
+        }
+      } catch {
+        /* se sigue con el borrado de la cuenta */
+      }
+    }
     const { error } = await supabase.rpc("delete_current_user")
     if (error) { setDeleteError(error.message); setDeleting(false); return }
     await supabase.auth.signOut()

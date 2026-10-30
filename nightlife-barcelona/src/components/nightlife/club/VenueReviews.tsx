@@ -294,7 +294,7 @@ export default function VenueReviews({
       {visible.length === 0 ? (
         userId && !isOwner ? null : <p className="mt-5 text-sm text-zinc-500">{t("reviews.empty")}</p>
       ) : (
-        <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+        <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {shown.map((r) => {
             const lvl = r.author_level ? levelByKey(r.author_level) : null
             const isMine = r.user_id === userId

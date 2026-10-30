@@ -176,7 +176,7 @@ export function SystemStatus() {
   return (
     <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
       <h2 className="text-base font-black">Estado del sistema</h2>
-      <div className="mt-4 grid gap-6 lg:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-4">
           <Meter label="Base de datos" used={Number(s.db_mb || 0)} limit={DB_LIMIT_MB} unit="MB" />
           <Meter label="Fotos y archivos" used={Math.round(storageMb)} limit={STORAGE_LIMIT_MB} unit="MB" />

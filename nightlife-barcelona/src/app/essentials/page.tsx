@@ -212,7 +212,7 @@ export default function EssentialsPage() {
                 <p className="mt-2 text-sm text-zinc-400">{t("essentialsPage.noResultsHint")}</p>
               </div>
             ) : (
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {searchResults.map((item) => {
                   const info = categoryInfo(item.category)
                   const CatIcon = info.icon
@@ -275,7 +275,7 @@ export default function EssentialsPage() {
 
             <section className="mx-auto mt-10 max-w-7xl px-4">
               <h2 className={sectionTitle}>{t("essentialsPage.transportTitle")}</h2>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {[
                   { cat: "Metro", line: metroLabel },
                   { cat: "Nitbus", line: t("essentialsPage.nitbusLine") },
@@ -322,7 +322,7 @@ export default function EssentialsPage() {
             <section className="mx-auto mt-10 max-w-7xl px-4">
               <h2 className={sectionTitle}>{t("essentialsPage.allTitle")}</h2>
               {loading ? (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} className="h-20 animate-pulse rounded-card bg-surface" />
                   ))}
@@ -330,7 +330,7 @@ export default function EssentialsPage() {
               ) : categories.length === 0 ? (
                 <p className="py-12 text-center text-zinc-400">{t("essentialsPage.empty")}</p>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {categories.map((cat) => {
                     const info = categoryInfo(cat)
                     const CatIcon = info.icon

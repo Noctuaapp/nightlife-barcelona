@@ -29,6 +29,7 @@ type Near = {
   longitude: number
   hours: string | null
   open_days: string[] | null
+  temporarily_closed?: boolean | null
   dist: number
   open: boolean | null
 }
@@ -62,21 +63,27 @@ export default function NearbyStrip({
     if (!hasCoords) return
     let alive = true
     // Caja de unos 2,5 km alrededor del local (más ligero que pedir todos los clubs).
-    supabase
-      .from("clubs")
-      .select("id, name, slug, image, neighborhood, music, rating, google_rating, latitude, longitude, hours, open_days")
-      .eq("hidden", false)
-      .neq("id", club.id)
-      .gte("latitude", lat - 0.023)
-      .lte("latitude", lat + 0.023)
-      .gte("longitude", lon - 0.031)
-      .lte("longitude", lon + 0.031)
-      .limit(150)
+    const baseCols = "id, name, slug, image, neighborhood, music, rating, google_rating, latitude, longitude, hours, open_days"
+    const query = (cols: string) =>
+      supabase
+        .from("clubs")
+        .select(cols)
+        .eq("hidden", false)
+        .neq("id", club.id)
+        .gte("latitude", lat - 0.023)
+        .lte("latitude", lat + 0.023)
+        .gte("longitude", lon - 0.031)
+        .lte("longitude", lon + 0.031)
+        .limit(150)
+    // Si la columna «temporarily_closed» aún no existe (SQL 56 sin ejecutar), se repite sin ella.
+    query(baseCols + ", temporarily_closed")
+      .then((res) => (res.error ? query(baseCols) : res))
       .then(({ data }) => {
         if (!alive || !data) return
         const myMusic = String(club.music || "").toLowerCase().split(/[,/·]/).map((m) => m.trim()).filter(Boolean)
-        const rows = (data as Omit<Near, "dist" | "open">[])
-          .filter((r) => r.latitude && r.longitude)
+        const rows = (data as unknown as Omit<Near, "dist" | "open">[])
+          // Un local cerrado temporalmente no se recomienda como plan cercano.
+          .filter((r) => r.latitude && r.longitude && r.temporarily_closed !== true)
           .map((r) => ({ ...r, dist: distanceM(lat, lon, Number(r.latitude), Number(r.longitude)), open: clubOpenNow(r.hours, r.open_days) }))
           .filter((r) => r.dist <= 2500)
         const score = (r: Near) => {

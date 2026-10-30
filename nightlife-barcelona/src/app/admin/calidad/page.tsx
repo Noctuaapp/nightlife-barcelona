@@ -208,6 +208,9 @@ export default function AdminQualityPage() {
               </div>
             ))}
           </div>
+          {rows.length > 300 && (
+            <p className="mt-3 text-xs text-zinc-400">Se enseñan las 300 con más prioridad. Al arreglar algunas, entrarán las siguientes.</p>
+          )}
         </>
       )}
     </AdminShell>

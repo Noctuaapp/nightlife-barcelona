@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { supabase } from "../../lib/supabase"
-import { EXTRA_FEATURES, extrasFromRow } from "../../lib/extraFeatures"
+import { EXTRA_FEATURES, CLOSED_FIELD, extrasFromRow } from "../../lib/extraFeatures"
 import AdminShell from "../../components/admin/AdminShell"
 import { ADMIN_EMAIL } from "../../lib/admin"
 import { toast } from "../../components/ui/Toast"
@@ -42,6 +42,7 @@ type Club = {
   metro_lines?: string
   night_buses?: string
   has_foosball?: boolean
+  temporarily_closed?: boolean
   discount_info?: string
   free_entry_info?: string
   gallery?: string[] | null
@@ -499,7 +500,7 @@ export default function AdminPage() {
   const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1.5"
 
   const renderClubForm = (form: ClubFormData, setForm: (f: ClubFormData) => void) => (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
         <label className={labelClass}>Nombre *</label>
         <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nombre del club" className={inputClass} />
@@ -683,6 +684,16 @@ export default function AdminPage() {
           )
         })}
       </div>
+      {CLOSED_FIELD in form.extras && (
+        <div className="md:col-span-2 rounded-ctl border border-amber-400/30 bg-amber-400/[0.06] p-4">
+          <button type="button" aria-pressed={!!form.extras[CLOSED_FIELD]}
+            onClick={() => setForm({ ...form, extras: { ...form.extras, [CLOSED_FIELD]: !form.extras[CLOSED_FIELD] } })}
+            className={`rounded-full px-4 py-2 text-xs font-bold transition ${form.extras[CLOSED_FIELD] ? "bg-amber-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
+            ⏸️ Cerrado temporalmente
+          </button>
+          <p className="mt-2 text-xs text-zinc-400">El local sigue en la web con su etiqueta, pero nunca sale como «abierto ahora» y no se recomienda en la portada, «Sorpréndeme», el plan ni «cerca de aquí».</p>
+        </div>
+      )}
       {form.swinger_friendly && (
         <div className="md:col-span-2">
           <label className={labelClass}>Normas del club swinger (vacío = no se enseña nada en la ficha)</label>
@@ -825,6 +836,7 @@ export default function AdminPage() {
                             {club.trending && <span className="rounded-full bg-orange-500/20 border border-orange-500/30 px-2 py-0.5 text-xs font-bold text-orange-300">🔥 Trending</span>}
                             {club.vip_tables && <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 text-xs font-bold text-amber-300">🛋️ Mesa VIP</span>}
                             {club.hidden && <span className="rounded-full bg-zinc-500/20 border border-zinc-500/30 px-2 py-0.5 text-xs font-bold text-zinc-400">Oculto</span>}
+                            {club.temporarily_closed && <span className="rounded-full bg-amber-400/20 border border-amber-400/30 px-2 py-0.5 text-xs font-bold text-amber-300">⏸️ Cerrado temporalmente</span>}
                           </div>
                           <p className="text-xs text-zinc-400 mt-0.5">
                             {club.neighborhood} · {club.music} {club.rating ? `· ⭐ ${club.rating}` : ""}
@@ -845,6 +857,12 @@ export default function AdminPage() {
                           className={`rounded-full px-4 py-2 text-xs font-bold transition ${club.sold_out ? "bg-red-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
                           🚫 Sold out
                         </button>
+                        {"temporarily_closed" in club && (
+                          <button onClick={() => toggleField(club, "temporarily_closed")}
+                            className={`rounded-full px-4 py-2 text-xs font-bold transition ${club.temporarily_closed ? "bg-amber-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
+                            ⏸️ Cerrado temp.
+                          </button>
+                        )}
                         <button onClick={() => toggleField(club, "hidden")}
                           className={`rounded-full px-4 py-2 text-xs font-bold transition ${!club.hidden ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
                           👁️ {club.hidden ? "Oculto" : "Visible"}

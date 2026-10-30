@@ -15,7 +15,8 @@
     "tonight": "Aquesta nit",
     "explore": "Explorar",
     "you": "Tu",
-    "main": "Navegació principal"
+    "main": "Navegació principal",
+    "soon": "Aviat"
   },
   "home": {
     "hero": "La teva nit a Barcelona",
@@ -138,7 +139,8 @@
     "sold_out": "Exhaurit",
     "live": "Esdeveniments en directe",
     "happening": "Què està passant",
-    "see_all": "Veure tots els esdeveniments →"
+    "see_all": "Veure tots els esdeveniments →",
+    "soonNote": "Aviat: estem preparant l'agenda completa d'esdeveniments i festivals."
   },
   "essentials": {
     "title": "Essencials",
@@ -272,12 +274,12 @@
   "privacy": {
     "title": "Política de Privacitat",
     "subtitle": "Com Noctua recull, utilitza i protegeix la teva informació.",
-    "last_updated": "Última actualització: 26 d'octubre de 2026",
+    "last_updated": "Última actualització: 30 d'octubre de 2026",
     "s1_title": "Qui som",
     "s1_body": "Noctua (\"nosaltres\", \"el nostre\") és una plataforma de descobriment de vida nocturna centrada en Barcelona. Operem el lloc web i l'aplicació disponibles a noctuaapp.com. Per a qualsevol consulta relacionada amb privacitat, contacta'ns a {email}.",
     "s2_title": "Dades que recollim",
     "s2_intro": "Recollim les següents categories de dades:",
-    "s2_items": "Dades de compte::Adreça de correu electrònic, contrasenya xifrada, nom d'usuari, gènere i any de naixement. En registrar-te et demanem la data de naixement completa només per comprovar que ets major de 18 anys; d'ella només desem l'any.\nFoto de perfil::La imatge que pugis voluntàriament com a avatar del teu compte.\nDades d'ús::Pàgines visitades, clubs i esdeveniments vistos, botons premuts (per exemple, entrades, com arribar-hi o compartir), cerques realitzades i quants resultats han donat, i l'origen de la visita (per exemple, cercador, xarxa social o enllaç d'invitació). S'associen a un identificador de sessió aleatori que desapareix en tancar la pestanya i, si has iniciat sessió, al teu compte. Per unir les visites de la mateixa persona dins d'un mateix dia s'usa a més un codi anònim diari que no permet identificar-te (més detalls a la secció sobre cookies i analítica).\nPreferits::Clubs, esdeveniments i nits de club que decideixis desar, juntament amb les llistes i notes personals que creïs per organitzar-los.\nActivitat i punts (XP)::Si marques que assistiràs a un esdeveniment o a un club en una nit concreta, fas check-in en un club o guanyes punts d'experiència, desem aquesta activitat (inclosa la data) per mostrar-te el teu progrés i nivell dins l'app i per elaborar estadístiques agregades.\nUbicació precisa (només per al check-in)::Quan decideixes fer check-in a la fitxa d'un club, accedim una única vegada a la teva ubicació GPS per comprovar que ets a prop del local. No desem les teves coordenades: només es registra en quin club i quin dia vas fer check-in.\nMissatges de contacte::Qualsevol missatge que ens enviïs a través de la pàgina de Contacte, incloses sol·licituds per gestionar la fitxa del teu club o festival.\nComptes de locals i festivals verificats::Si ets responsable d'un club o festival i et donem accés per editar la seva fitxa, vinculem el teu compte a aquest local o esdeveniment. Només tu i l'equip de Noctua podeu gestionar aquesta fitxa des d'allà.\nNotificacions dins l'app::Els avisos que t'enviem dins Noctua (per exemple, confirmacions o missatges de l'equip) i si els has llegit.\nDades del dispositiu i analítica::Tipus de navegador, tipus de dispositiu i ubicació aproximada (a nivell de país/ciutat) per a anàlisi d'ús, mitjançant Vercel Analytics.\nOpinions i «Gràcies»::Les opinions que publiquis sobre locals i esdeveniments (estrelles i text) són públiques juntament amb el teu nom d'usuari i el teu nivell. També guardem a quines opinions has donat les gràcies (mai no es mostra qui) i les denúncies que facis, que són confidencials.\nAvisos de «no em deixen entrar»::Si ens dius que no et van deixar entrar en un local, guardem el local, el motiu i la data per deixar de recomanar-te'l i millorar la informació del web. El local mai no rep la teva identitat, i el pots tornar a veure des del teu perfil.\nEnquestes::Les teves respostes a les enquestes ràpides de l'app i a la valoració del web.",
+    "s2_items": "Dades de compte::Adreça de correu electrònic, contrasenya xifrada, nom d'usuari, gènere, any de naixement i, si l'indiques, el teu país. En registrar-te et demanem la data de naixement completa només per comprovar que ets major de 18 anys; d'ella només desem l'any.\nFoto de perfil::La imatge que pugis voluntàriament com a avatar del teu compte.\nDades d'ús::Pàgines visitades, clubs, esdeveniments i serveis essencials vistos, botons premuts (per exemple, entrades, com arribar-hi o compartir), cerques realitzades i quants resultats han donat, i l'origen de la visita (per exemple, cercador, xarxa social o enllaç d'invitació). S'associen a un identificador de sessió aleatori que desapareix en tancar la pestanya i, si has iniciat sessió, al teu compte. Per unir les visites de la mateixa persona dins d'un mateix dia s'usa a més un codi anònim diari que no permet identificar-te (més detalls a la secció sobre cookies i analítica).\nPreferits::Clubs, esdeveniments i nits de club que decideixis desar, juntament amb les llistes i notes personals que creïs per organitzar-los.\nActivitat i punts (XP)::Si marques que assistiràs a un esdeveniment o a un club en una nit concreta, fas check-in en un club o guanyes punts d'experiència, desem aquesta activitat (inclosa la data) per mostrar-te el teu progrés i nivell dins l'app i per elaborar estadístiques agregades.\nUbicació precisa (només per al check-in)::Quan decideixes fer check-in a la fitxa d'un club, accedim una única vegada a la teva ubicació GPS per comprovar que ets a prop del local. No desem les teves coordenades: només es registra en quin club i quin dia vas fer check-in.\nMissatges de contacte::Qualsevol missatge que ens enviïs a través de la pàgina de Contacte, incloses sol·licituds per gestionar la fitxa del teu club o festival.\nComptes de locals i festivals verificats::Si ets responsable d'un club o festival i et donem accés per editar la seva fitxa, vinculem el teu compte a aquest local o esdeveniment. Només tu i l'equip de Noctua podeu gestionar aquesta fitxa des d'allà.\nNotificacions dins l'app::Els avisos que t'enviem dins Noctua (per exemple, confirmacions o missatges de l'equip) i si els has llegit.\nDades del dispositiu i analítica::Tipus de navegador, tipus de dispositiu i ubicació aproximada (a nivell de país/ciutat) per a anàlisi d'ús, mitjançant Vercel Analytics.\nOpinions i «Gràcies»::Les opinions que publiquis sobre locals i esdeveniments (estrelles i text) són públiques juntament amb el teu nom d'usuari i el teu nivell. També guardem a quines opinions has donat les gràcies (mai no es mostra qui) i les denúncies que facis, que són confidencials.\nAvisos de «no em deixen entrar»::Si ens dius que no et van deixar entrar en un local, guardem el local, el motiu i la data per deixar de recomanar-te'l i millorar la informació del web. El local mai no rep la teva identitat, i el pots tornar a veure des del teu perfil.\nEnquestes::Les teves respostes a les enquestes ràpides de l'app i a la valoració del web. Si no tens compte i acceptes les cookies, el teu vot a l'enquesta del dia es desa sense cap dada que t'identifiqui.",
     "s3_title": "Com utilitzem les teves dades",
     "s3_intro": "Utilitzem les dades que recollim per:",
     "s3_items": "Proporcionar i operar la plataforma Noctua.\nDesar i mostrar els teus clubs, esdeveniments i nits de club preferits.\nCalcular el teu progrés i nivell dins el sistema de punts (XP) de Noctua.\nVerificar la teva ubicació en el moment del check-in en un club (mai l'emmagatzemem, només el resultat).\nRespondre a missatges i sol·licituds de suport, inclosos missatges que l'equip de Noctua t'enviï directament.\nDonar accés de gestió als responsables verificats d'un club o festival sobre la seva pròpia fitxa, mantenint sempre l'equip de Noctua la capacitat de revisar, corregir o revocar aquest accés.\nMillorar la plataforma en base a patrons d'ús.\nMillorar les teves cerques i recomanacions utilitzant el teu any de naixement (per exemple, suggerint-te locals amb un ambient d'acord amb la teva edat).\nElaborar estadístiques agregades i anònimes sobre l'ús de la plataforma i l'afluència a locals i esdeveniments (per exemple, trams d'edat, procedència o horaris de les visites), que podem compartir amb locals, organitzadors d'esdeveniments i altres tercers, fins i tot a canvi d'una contraprestació econòmica.\nEnviar comunicacions importants del servei (sense màrqueting sense el teu consentiment).\nMostrar als responsables verificats d'un local, si Noctua els ho activa, estadístiques agregades de la seva fitxa (visites, clics, procedència i hores), sense cap dada que t'identifiqui.\nModerar opinions i contingut denunciat i protegir la plataforma d'abusos (per exemple, amb límits de publicacions diàries).",
@@ -295,7 +297,7 @@
     "s8_body": "Utilitzem cookies essencials necessàries per a l'autenticació i la gestió de sessió, a més d'emmagatzematge local del navegador (localStorage) per recordar preferències com quins avisos ja has llegit. Utilitzem també Vercel Analytics, una eina d'analítica que no utilitza cookies de seguiment ni identifica individualment els usuaris, per entendre de forma agregada com s'utilitza la Plataforma. No utilitzem cookies publicitàries ni de seguiment entre webs. A més, Noctua registra la seva pròpia analítica d'ús amb un identificador de sessió aleatori que només existeix a la memòria de la pàgina mentre la tens oberta: per a aquesta analítica no es desa res al teu dispositiu. Per saber si diverses visites del mateix dia són de la mateixa persona, el servidor calcula un codi anònim a partir de la teva adreça IP i el teu navegador, barrejats amb una clau secreta que canvia cada dia i s'esborra l'endemà; la teva IP no es desa a l'analítica, el codi no es pot desfer i no permet reconèixer-te d'un dia per l'altre. Cap xarxa publicitària de tercers té accés a les teves dades. Amb el teu permís (bàner de galetes) desem també al teu dispositiu una marca que recorda què has votat a l'enquesta del dia, per no tornar-te-la a mostrar. Si ho rebutges no es desa res i, si no tens compte, no se't mostra l'enquesta. La marca no t'identifica ni surt del teu dispositiu, i els vots sense compte són anònims. Pots canviar la teva decisió quan vulguis a «Preferències de galetes», al peu de la pàgina.",
     "s9_title": "Serveis de tercers",
     "s9_intro": "Treballem amb els següents proveïdors per operar la Plataforma, cadascun processant dades únicament en la mesura necessària per prestar el seu servei:",
-    "s9_items": "Supabase::Autenticació, base de dades, emmagatzematge d'imatges i enviament dels correus d'accés (confirmació del compte i recuperació de la contrasenya). Processa les dades d'acord amb el RGPD.\nVercel::Allotjament de l'aplicació i analítica d'ús agregada i anònima.\nMapbox::Renderitzat dels mapes dins l'app. En carregar un mapa, Mapbox pot rebre la teva adreça IP i la informació tècnica necessària per mostrar-lo.\nGoogle Places::Font de dades públiques (nom, valoració, ressenyes i fotos) de clubs, festivals i serveis essencials que mostrem a les seves fitxes. No enviem les teves dades personals a Google mitjançant aquesta integració.",
+    "s9_items": "Supabase::Autenticació, base de dades, emmagatzematge d'imatges i enviament dels correus d'accés (confirmació del compte i recuperació de la contrasenya). Processa les dades d'acord amb el RGPD.\nVercel::Allotjament de l'aplicació i analítica d'ús agregada i anònima.\nMapbox::Renderitzat dels mapes dins l'app. En carregar un mapa, Mapbox pot rebre la teva adreça IP i la informació tècnica necessària per mostrar-lo.\nGoogle Places::Font de dades públiques (nom, valoració, ressenyes i fotos) de clubs, festivals i serveis essencials que mostrem a les seves fitxes. No enviem les teves dades personals a Google mitjançant aquesta integració.\nOpen-Meteo::Dades del temps que es mostren a la capçalera. El teu navegador les demana directament al seu servidor amb les coordenades de la ciutat triada (no les teves); per això Open-Meteo rep la teva adreça IP.",
     "s9_closing": "No compartim les teves dades personals amb cap altre tercer llevat que la llei ho exigeixi. Alguns proveïdors (Vercel, Mapbox o Google) poden tractar dades fora de l'Espai Econòmic Europeu; en aquest cas ho fan amb les garanties que exigeix el RGPD (clàusules contractuals tipus de la Comissió Europea o el Marc de Privadesa de Dades UE-EUA).",
     "s10_title": "Inici de sessió amb Google",
     "s10_intro": "Noctua permet als usuaris iniciar sessió amb el seu compte de Google mitjançant Google OAuth 2.0. Quan tries iniciar sessió amb Google, rebem la següent informació de Google:",
@@ -361,7 +363,7 @@
     "cat4_name": "Per a locals i organitzadors",
     "cat4_items": "Com aconsegueixo que el meu club, bar o festival aparegui a Noctua?||Utilitza la nostra pàgina de Contacte i tria \"Suggerir un local\" (per a clubs i bars) o la categoria de partnership corresponent per a festivals. Revisem totes les propostes i et respondrem.\nSóc el responsable d'un club o festival, puc gestionar jo mateix la meva fitxa?||Sí. Escriu-nos des de Contacte triant \"Gestionar el meu club o esdeveniment\". Un cop verifiquem que ets el responsable, vinculem el teu compte i podràs editar la teva fitxa, fotos, preus i nits o sessions directament.\nHe trobat informació incorrecta sobre un local. Com ho reporto?||Utilitza la pàgina de Contacte i tria \"Reportar informació incorrecta\". Indica el nom del local i la dada errònia — l'actualitzarem com més aviat millor.",
     "cat5_name": "Privacitat i seguretat",
-    "cat5_items": "Com protegeix Noctua les meves dades?||Les teves dades s'emmagatzemen de forma segura i no venem les teves dades personals a tercers. Sí que podem compartir estadístiques agregades i anònimes (per exemple, trams d'edat dels visitants d'un local), que mai identifiquen persones. Pots consultar tots els detalls a la nostra Política de Privadesa.\nAmb qui puc parlar si tinc un problema?||Escriu-nos des de la pàgina de Contacte triant \"Suport d'usuari\" i et respondrem al més aviat possible."
+    "cat5_items": "Com protegeix Noctua les meves dades?||Les teves dades s'emmagatzemen de forma segura i no venem les teves dades personals a tercers. Sí que podem compartir estadístiques agregades i anònimes (per exemple, trams d'edat dels visitants d'un local), que mai identifiquen persones. Pots consultar tots els detalls a la nostra Política de Privadesa.\nAmb qui puc parlar si tinc un problema?||Escriu-nos des de la pàgina de Contacte triant \"Suport d'usuari\" i et respondrem al més aviat possible. Si no pots entrar al teu compte, escriu-nos a info@noctuaapp.com."
   },
   "contact": {
     "eyebrow": "Contacte",
@@ -386,7 +388,11 @@
     "types": "user_support||Suport d'usuari||Ajuda amb el teu compte o l'app\nreport_issue||Reportar informació incorrecta||Horaris, preus o dades errònies\nsuggest_venue||Suggerir un local||Coneixes un club o bar que falta?\nsuggest_essential||Suggerir un essencial||Caixer, farmàcia, transport... que no aparegui\nclub_partnership||Partnership amb local||Col·laboració per a clubs i bars\nfestival_partnership||Partnership amb festival||Col·laboració per a esdeveniments i festivals\nowner_access||Gestionar el meu club o esdeveniment||Ets el responsable i vols editar la teva fitxa tu mateix",
     "loginRequired": "Inicia sessió per enviar-nos un missatge.",
     "loginTitle": "Inicia sessió per escriure'ns",
-    "loginBody": "Així et podem respondre dins de Noctua i veus la resposta al teu perfil."
+    "loginBody": "Així et podem respondre dins de Noctua i veus la resposta al teu perfil.",
+    "emailFallback": "No pots entrar al teu compte o prefereixes el correu? Escriu-nos a {email}.",
+    "errorSend": "No hem pogut enviar el teu missatge. Torna-ho a provar d'aquí uns minuts o escriu-nos a info@noctuaapp.com.",
+    "emailHint": "És l'email del teu compte",
+    "errorLimit": "Ja has enviat 5 missatges en les últimes 24 hores. Torna-ho a provar demà o escriu-nos per correu (més avall)."
   },
   "nearby": {
     "triggerButton": "No et deixen entrar?",
@@ -855,7 +861,10 @@
     "nearbyTitle": "A prop d'aquí",
     "nearbyClosedTitle": "Ara està tancat · oberts a prop",
     "nearbySeeMap": "Veure al mapa",
-    "fCocktails": "Còctels"
+    "fCocktails": "Còctels",
+    "fGames": "Jocs de taula o de beure",
+    "tempClosed": "Tancat temporalment",
+    "tempClosedNote": "Aquest local està tancat per ara. Mira el seu Instagram o la seva web per saber quan torna a obrir."
   },
   "eventPage": {
     "dateTbc": "Data per confirmar",
@@ -1430,7 +1439,9 @@
     "errSave": "No s'han pogut desar els canvis",
     "errDelete": "No s'ha pogut esborrar",
     "errName": "El nom és obligatori",
-    "errStatus": "No s'ha pogut actualitzar l'estat"
+    "errStatus": "No s'ha pogut actualitzar l'estat",
+    "tempClosed": "Tancat temporalment",
+    "tempClosedHint": "La teva fitxa continua visible, però surt com a tancada i no es recomana fins que ho desactivis."
   },
   "festivalPortal": {
     "kicker": "Portal de festivals",

@@ -731,7 +731,7 @@ export default function EssentialCategoryPage() {
                 <summary className="cursor-pointer list-none text-sm font-semibold text-brand-soft">
                   {t("essentialsPage.nitbusAllLines")} <span className="inline-block transition group-open:rotate-90">›</span>
                 </summary>
-                <div className="mt-4 grid gap-x-5 gap-y-3 sm:grid-cols-2">
+                <div className="mt-4 grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2">
                   {Object.values(NIGHT_BUS_LINES).map((line) => (
                     <NitbusRouteRow key={line.code} code={line.code} seeStopsLabel={t("clubPage.seeStops")} unknownLabel={t("clubPage.lineUnknown")} onSelectLine={essentials.length > 0 ? showLine : undefined} />
                   ))}
@@ -922,7 +922,7 @@ export default function EssentialCategoryPage() {
             arriba). */}
         {(category !== "nitbus" || essentials.length > 0) && (
         <section className="mx-auto mt-6 max-w-7xl px-4">
-          <div className="grid gap-6 md:grid-cols-12">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
             <div className={`md:col-span-5 ${mobileView === "map" ? "hidden md:block" : ""}`}>
               {loading ? (
                 <div className="grid gap-3">

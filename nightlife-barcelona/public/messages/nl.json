@@ -15,7 +15,8 @@
     "tonight": "Vanavond",
     "explore": "Ontdekken",
     "you": "Jij",
-    "main": "Hoofdnavigatie"
+    "main": "Hoofdnavigatie",
+    "soon": "Binnenkort"
   },
   "home": {
     "hero": "Jouw nacht in Barcelona",
@@ -135,7 +136,8 @@
     "sold_out": "Uitverkocht",
     "live": "Live evenementen",
     "happening": "Wat er gebeurt",
-    "see_all": "Alle evenementen bekijken →"
+    "see_all": "Alle evenementen bekijken →",
+    "soonNote": "Binnenkort: we werken aan de volledige agenda met evenementen en festivals."
   },
   "essentials": {
     "title": "Essentials",
@@ -269,12 +271,12 @@
   "privacy": {
     "title": "Privacybeleid",
     "subtitle": "Hoe Noctua jouw informatie verzamelt, gebruikt en beschermt.",
-    "last_updated": "Laatst bijgewerkt: 26 oktober 2026",
+    "last_updated": "Laatst bijgewerkt: 30 oktober 2026",
     "s1_title": "Wie we zijn",
     "s1_body": "Noctua (\"wij\", \"ons\") is een platform voor het ontdekken van het nachtleven, gericht op Barcelona. Wij beheren de website en app die beschikbaar zijn op noctuaapp.com. Voor vragen over privacy kun je contact met ons opnemen via {email}.",
     "s2_title": "Gegevens die we verzamelen",
     "s2_intro": "We verzamelen de volgende categorieën gegevens:",
-    "s2_items": "Accountgegevens::E-mailadres, versleuteld wachtwoord, gebruikersnaam, geslacht en geboortejaar. Bij registratie vragen we de volledige geboortedatum alleen om te controleren of je ouder dan 18 bent; we slaan enkel het jaar op.\nProfielfoto::De afbeelding die je vrijwillig uploadt als avatar van je account.\nGebruiksgegevens::Bezochte pagina's, bekeken clubs en evenementen, aangeklikte knoppen (bijvoorbeeld tickets, route of delen), uitgevoerde zoekopdrachten en hoeveel resultaten ze opleverden, en de herkomst van het bezoek (bijvoorbeeld zoekmachine, sociaal netwerk of uitnodigingslink). Ze worden gekoppeld aan een willekeurige sessie-ID die verdwijnt wanneer je het tabblad sluit en, als je bent ingelogd, aan je account. Om bezoeken van dezelfde persoon binnen één dag samen te voegen gebruiken we ook een dagelijkse anonieme code die je niet identificeert (meer details in het onderdeel over cookies en analyse).\nFavorieten::Clubs, evenementen en clubnachten die je opslaat, samen met de lijsten en persoonlijke notities die je aanmaakt om ze te organiseren.\nActiviteit en punten (XP)::Als je aangeeft dat je op een bepaalde avond bij een evenement of club aanwezig zult zijn, incheckt bij een club of ervaringspunten verdient, slaan we die activiteit op (inclusief de datum) om je voortgang en niveau binnen de app te tonen en om geaggregeerde statistieken op te stellen.\nNauwkeurige locatie (alleen voor check-in)::Wanneer je besluit in te checken op de pagina van een club, krijgen we eenmalig toegang tot je gps-locatie om te bevestigen dat je in de buurt van de locatie bent. We slaan je coördinaten niet op — alleen bij welke club en op welke dag je hebt ingecheckt wordt vastgelegd.\nContactberichten::Elk bericht dat je ons stuurt via de contactpagina, inclusief verzoeken om de vermelding van jouw club of festival te beheren.\nGeverifieerde accounts voor locaties en festivals::Als je verantwoordelijk bent voor een club of festival en we je toegang geven om de vermelding te bewerken, koppelen we jouw account aan die locatie of dat evenement. Alleen jij en het Noctua-team kunnen die vermelding vanaf dan beheren.\nMeldingen in de app::De berichten die we je binnen Noctua sturen (bijvoorbeeld bevestigingen of berichten van het team) en of je ze hebt gelezen.\nApparaatgegevens en analyse::Browsertype, apparaattype en geschatte locatie (op land-/stadsniveau) voor gebruiksanalyse, via Vercel Analytics.\nReviews en ‘Bedankt’::De reviews die je over locaties en evenementen plaatst (sterren en tekst) zijn openbaar, samen met je gebruikersnaam en niveau. We bewaren ook welke reviews je hebt bedankt (wie bedankt wordt nooit getoond) en je meldingen, die vertrouwelijk zijn.\nMeldingen ‘ik word niet binnengelaten’::Als je ons laat weten dat je geweigerd bent bij een locatie, bewaren we de locatie, de reden en de datum om die niet meer aan te raden en de site te verbeteren. De locatie krijgt nooit je identiteit, en je kunt hem via je profiel weer tonen.\nPeilingen::Je antwoorden op de snelle peilingen in de app en op de beoordeling van de site.",
+    "s2_items": "Accountgegevens::E-mailadres, versleuteld wachtwoord, gebruikersnaam, geslacht, geboortejaar en, als je dat opgeeft, je land. Bij registratie vragen we de volledige geboortedatum alleen om te controleren of je ouder dan 18 bent; we slaan enkel het jaar op.\nProfielfoto::De afbeelding die je vrijwillig uploadt als avatar van je account.\nGebruiksgegevens::Bezochte pagina's, bekeken clubs, evenementen en essentiële diensten, aangeklikte knoppen (bijvoorbeeld tickets, route of delen), uitgevoerde zoekopdrachten en hoeveel resultaten ze opleverden, en de herkomst van het bezoek (bijvoorbeeld zoekmachine, sociaal netwerk of uitnodigingslink). Ze worden gekoppeld aan een willekeurige sessie-ID die verdwijnt wanneer je het tabblad sluit en, als je bent ingelogd, aan je account. Om bezoeken van dezelfde persoon binnen één dag samen te voegen gebruiken we ook een dagelijkse anonieme code die je niet identificeert (meer details in het onderdeel over cookies en analyse).\nFavorieten::Clubs, evenementen en clubnachten die je opslaat, samen met de lijsten en persoonlijke notities die je aanmaakt om ze te organiseren.\nActiviteit en punten (XP)::Als je aangeeft dat je op een bepaalde avond bij een evenement of club aanwezig zult zijn, incheckt bij een club of ervaringspunten verdient, slaan we die activiteit op (inclusief de datum) om je voortgang en niveau binnen de app te tonen en om geaggregeerde statistieken op te stellen.\nNauwkeurige locatie (alleen voor check-in)::Wanneer je besluit in te checken op de pagina van een club, krijgen we eenmalig toegang tot je gps-locatie om te bevestigen dat je in de buurt van de locatie bent. We slaan je coördinaten niet op — alleen bij welke club en op welke dag je hebt ingecheckt wordt vastgelegd.\nContactberichten::Elk bericht dat je ons stuurt via de contactpagina, inclusief verzoeken om de vermelding van jouw club of festival te beheren.\nGeverifieerde accounts voor locaties en festivals::Als je verantwoordelijk bent voor een club of festival en we je toegang geven om de vermelding te bewerken, koppelen we jouw account aan die locatie of dat evenement. Alleen jij en het Noctua-team kunnen die vermelding vanaf dan beheren.\nMeldingen in de app::De berichten die we je binnen Noctua sturen (bijvoorbeeld bevestigingen of berichten van het team) en of je ze hebt gelezen.\nApparaatgegevens en analyse::Browsertype, apparaattype en geschatte locatie (op land-/stadsniveau) voor gebruiksanalyse, via Vercel Analytics.\nReviews en ‘Bedankt’::De reviews die je over locaties en evenementen plaatst (sterren en tekst) zijn openbaar, samen met je gebruikersnaam en niveau. We bewaren ook welke reviews je hebt bedankt (wie bedankt wordt nooit getoond) en je meldingen, die vertrouwelijk zijn.\nMeldingen ‘ik word niet binnengelaten’::Als je ons laat weten dat je geweigerd bent bij een locatie, bewaren we de locatie, de reden en de datum om die niet meer aan te raden en de site te verbeteren. De locatie krijgt nooit je identiteit, en je kunt hem via je profiel weer tonen.\nPeilingen::Je antwoorden op de snelle peilingen in de app en op de beoordeling van de site. Als je geen account hebt en cookies accepteert, wordt je stem in de dagelijkse peiling opgeslagen zonder gegevens die je identificeren.",
     "s3_title": "Hoe we jouw gegevens gebruiken",
     "s3_intro": "We gebruiken de verzamelde gegevens om:",
     "s3_items": "Het Noctua-platform te leveren en te beheren.\nJe favoriete clubs, evenementen en clubnachten op te slaan en weer te geven.\nJe voortgang en niveau binnen het puntensysteem (XP) van Noctua te berekenen.\nJe locatie te verifiëren op het moment van check-in bij een club (we slaan deze nooit op, alleen het resultaat).\nTe reageren op berichten en ondersteuningsverzoeken, inclusief berichten die het Noctua-team je rechtstreeks stuurt.\nBeheertoegang te geven aan geverifieerde verantwoordelijken van een club of festival over hun eigen vermelding, waarbij het Noctua-team altijd de mogelijkheid behoudt om die toegang te controleren, corrigeren of intrekken.\nHet platform te verbeteren op basis van gebruikspatronen.\nJe zoekopdrachten en aanbevelingen te verbeteren aan de hand van je geboortejaar (bijvoorbeeld door locaties voor te stellen met een sfeer die bij je leeftijd past).\nGeaggregeerde, anonieme statistieken op te stellen over het gebruik van het platform en de opkomst bij locaties en evenementen (bijvoorbeeld leeftijdsgroepen, herkomst of tijdstippen van bezoeken), die we mogen delen met locaties, organisatoren van evenementen en andere derden, ook tegen betaling.\nBelangrijke servicecommunicatie te versturen (geen marketing zonder jouw toestemming).\nGeverifieerde verantwoordelijken van een locatie, als Noctua dat inschakelt, geaggregeerde statistieken van hun eigen vermelding tonen (bezoeken, klikken, herkomst en tijden), zonder gegevens die jou identificeren.\nReviews en gemelde inhoud modereren en het platform beschermen tegen misbruik (bijvoorbeeld met dagelijkse plaatsingslimieten).",
@@ -292,7 +294,7 @@
     "s8_body": "We gebruiken essentiële cookies die nodig zijn voor authenticatie en sessiebeheer, plus lokale browseropslag (localStorage) om voorkeuren te onthouden, zoals welke meldingen je al hebt gelezen. We gebruiken ook Vercel Analytics, een analysetool die geen trackingcookies gebruikt en gebruikers niet individueel identificeert, om op geaggregeerd niveau te begrijpen hoe het Platform wordt gebruikt. We gebruiken geen advertentie- of cross-site trackingcookies. Daarnaast registreert Noctua een eigen gebruiksanalyse met een willekeurige sessie-ID die alleen in het geheugen van de pagina bestaat zolang die openstaat: voor deze analyse wordt niets op je apparaat opgeslagen. Om te zien of meerdere bezoeken op dezelfde dag van dezelfde persoon zijn, berekent de server een anonieme code op basis van je IP-adres en je browser, gemengd met een geheime sleutel die elke dag verandert en de volgende dag wordt verwijderd; je IP-adres wordt niet in de analyse opgeslagen, de code is niet terug te rekenen en laat ons je niet van de ene dag op de andere herkennen. Geen enkel advertentienetwerk van derden heeft toegang tot jouw gegevens. Met je toestemming (cookiebanner) bewaren we daarnaast een markering op je apparaat die onthoudt wat je in de poll van de dag hebt gestemd, zodat je hem niet opnieuw ziet. Als je weigert, wordt er niets bewaard en zie je zonder account de poll niet. De markering identificeert je niet en verlaat je apparaat niet, en stemmen zonder account zijn anoniem. Je kunt je keuze altijd wijzigen via ‘Cookie-instellingen’ onderaan de pagina.",
     "s9_title": "Diensten van derden",
     "s9_intro": "We werken samen met de volgende aanbieders om het Platform te beheren, waarbij elk gegevens alleen verwerkt voor zover nodig om hun dienst te leveren:",
-    "s9_items": "Supabase::Authenticatie, database, opslag van afbeeldingen en het versturen van toegangsmails (accountbevestiging en wachtwoordherstel). Verwerkt gegevens volgens de AVG.\nVercel::Hosting van de applicatie en geaggregeerde, anonieme gebruiksanalyse.\nMapbox::Weergave van de kaarten binnen de app. Bij het laden van een kaart kan Mapbox je IP-adres en de technische informatie ontvangen die nodig is om deze weer te geven.\nGoogle Places::Bron van openbare gegevens (naam, beoordeling, recensies en foto's) van clubs, festivals en essentiële diensten die op hun vermeldingen worden getoond. We sturen je persoonsgegevens niet naar Google via deze integratie.",
+    "s9_items": "Supabase::Authenticatie, database, opslag van afbeeldingen en het versturen van toegangsmails (accountbevestiging en wachtwoordherstel). Verwerkt gegevens volgens de AVG.\nVercel::Hosting van de applicatie en geaggregeerde, anonieme gebruiksanalyse.\nMapbox::Weergave van de kaarten binnen de app. Bij het laden van een kaart kan Mapbox je IP-adres en de technische informatie ontvangen die nodig is om deze weer te geven.\nGoogle Places::Bron van openbare gegevens (naam, beoordeling, recensies en foto's) van clubs, festivals en essentiële diensten die op hun vermeldingen worden getoond. We sturen je persoonsgegevens niet naar Google via deze integratie.\nOpen-Meteo::Weergegevens die in de koptekst worden getoond. Je browser vraagt ze rechtstreeks op bij hun server met de coördinaten van de gekozen stad (niet de jouwe); daarom ontvangt Open-Meteo je IP-adres.",
     "s9_closing": "We delen jouw persoonsgegevens met geen enkele andere derde partij, tenzij wettelijk vereist. Sommige aanbieders (Vercel, Mapbox of Google) kunnen gegevens buiten de Europese Economische Ruimte verwerken; dan gebeurt dat met de waarborgen die de AVG vereist (standaardcontractbepalingen van de Europese Commissie of het EU-VS-gegevensprivacykader).",
     "s10_title": "Inloggen met Google",
     "s10_intro": "Noctua stelt gebruikers in staat om in te loggen met hun Google-account via Google OAuth 2.0. Wanneer je ervoor kiest om met Google in te loggen, ontvangen we de volgende informatie van Google:",
@@ -358,7 +360,7 @@
     "cat4_name": "Voor locaties en organisatoren",
     "cat4_items": "Hoe krijg ik mijn club, bar of festival op Noctua?||Gebruik onze Contactpagina en kies \"Een locatie voorstellen\" (voor clubs en bars) of de bijbehorende partnershipcategorie voor festivals. We beoordelen alle voorstellen en nemen contact met je op.\nIk ben verantwoordelijk voor een club of festival, kan ik mijn eigen vermelding beheren?||Ja. Stuur ons een bericht via Contact met \"Mijn club of evenement beheren\". Zodra we hebben geverifieerd dat je verantwoordelijk bent, koppelen we je account en kun je je vermelding, foto's, prijzen en nachten of sessies rechtstreeks bewerken.\nIk heb onjuiste informatie over een locatie gevonden. Hoe meld ik dit?||Gebruik de Contactpagina en kies \"Onjuiste informatie melden\". Vermeld de naam van de locatie en het foutieve gegeven — we werken het zo snel mogelijk bij.",
     "cat5_name": "Privacy en veiligheid",
-    "cat5_items": "Hoe beschermt Noctua mijn gegevens?||Je gegevens worden veilig opgeslagen en we verkopen je persoonsgegevens niet aan derden. We kunnen wel geaggregeerde, anonieme statistieken delen (bijvoorbeeld leeftijdsgroepen van de bezoekers van een locatie), die nooit personen identificeren. Alle details vind je in ons Privacybeleid.\nMet wie kan ik praten als ik een probleem heb?||Stuur ons een bericht via de Contactpagina met \"Gebruikersondersteuning\" en we reageren zo snel mogelijk."
+    "cat5_items": "Hoe beschermt Noctua mijn gegevens?||Je gegevens worden veilig opgeslagen en we verkopen je persoonsgegevens niet aan derden. We kunnen wel geaggregeerde, anonieme statistieken delen (bijvoorbeeld leeftijdsgroepen van de bezoekers van een locatie), die nooit personen identificeren. Alle details vind je in ons Privacybeleid.\nMet wie kan ik praten als ik een probleem heb?||Stuur ons een bericht via de Contactpagina met \"Gebruikersondersteuning\" en we reageren zo snel mogelijk. Als je niet kunt inloggen, mail ons dan via info@noctuaapp.com."
   },
   "contact": {
     "eyebrow": "Contact",
@@ -377,7 +379,17 @@
     "types": "user_support||Gebruikersondersteuning||Hulp met je account of de app\nreport_issue||Onjuiste informatie melden||Verkeerde tijden, prijzen of gegevens\nsuggest_venue||Een locatie voorstellen||Ken je een ontbrekende club of bar?\nsuggest_essential||Iets essentieels voorstellen||Ontbrekende pinautomaat, apotheek, vervoer...\nclub_partnership||Samenwerking met locatie||Samenwerking voor clubs en bars\nfestival_partnership||Samenwerking met festival||Samenwerking voor evenementen en festivals\nowner_access||Mijn club of evenement beheren||Je bent verantwoordelijk en wilt je vermelding zelf bewerken",
     "loginRequired": "Log in om ons een bericht te sturen.",
     "loginTitle": "Log in om ons te schrijven",
-    "loginBody": "Zo kunnen we je in Noctua antwoorden en zie je het antwoord in je profiel."
+    "loginBody": "Zo kunnen we je in Noctua antwoorden en zie je het antwoord in je profiel.",
+    "emailFallback": "Kun je niet inloggen of mail je liever? Schrijf ons via {email}.",
+    "errorSend": "We konden je bericht niet verzenden. Probeer het over een paar minuten opnieuw of mail ons via info@noctuaapp.com.",
+    "emailHint": "Dit is het e-mailadres van je account",
+    "back": "Terug",
+    "sendAnother": "Nog een bericht sturen",
+    "thanksTitle": "Bericht ontvangen!",
+    "thanksBody": "Bedankt voor je bericht. We reageren zo snel mogelijk en je ziet het antwoord in je profiel.",
+    "thanksReportTitle": "Bedankt voor de melding!",
+    "thanksReportBody": "Elke gegevenscorrectie maakt Noctua betrouwbaarder voor iedereen — voor jou en voor wie vanavond uitgaat. We controleren het en passen het zo snel mogelijk aan.",
+    "errorLimit": "Je hebt de afgelopen 24 uur al 5 berichten gestuurd. Probeer het morgen opnieuw of mail ons (hieronder)."
   },
   "nearby": {
     "triggerButton": "Kom je er niet in?",
@@ -827,7 +839,10 @@
     "nearbyTitle": "In de buurt",
     "nearbyClosedTitle": "Nu gesloten · open in de buurt",
     "nearbySeeMap": "Bekijk op de kaart",
-    "fCocktails": "Cocktails"
+    "fCocktails": "Cocktails",
+    "fGames": "Bord- of drankspellen",
+    "tempClosed": "Tijdelijk gesloten",
+    "tempClosedNote": "Deze zaak is voorlopig gesloten. Check Instagram of de website om te zien wanneer hij weer opent."
   },
   "eventPage": {
     "dateTbc": "Datum nog niet bekend",
@@ -1324,7 +1339,9 @@
     "errSave": "De wijzigingen konden niet worden opgeslagen",
     "errDelete": "Verwijderen is niet gelukt",
     "errName": "De naam is verplicht",
-    "errStatus": "De status kon niet worden bijgewerkt"
+    "errStatus": "De status kon niet worden bijgewerkt",
+    "tempClosed": "Tijdelijk gesloten",
+    "tempClosedHint": "Je pagina blijft zichtbaar, maar staat als gesloten en wordt niet aanbevolen tot je dit uitzet."
   },
   "festivalPortal": {
     "kicker": "Festivalportaal",

@@ -343,7 +343,7 @@ export default function AdminMessagesPage() {
     <AdminShell title="Mensajes" subtitle="Soporte, reportes de datos incorrectos, sugerencias de locales y propuestas de colaboración.">
       <>
         <section className="mx-auto max-w-7xl">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <FilterCard label="All" value={stats.all} active={filter === "all"} onClick={() => setFilter("all")} />
             <FilterCard label="New" value={stats.new} active={filter === "new"} onClick={() => setFilter("new")} />
             <FilterCard
@@ -561,7 +561,7 @@ export default function AdminMessagesPage() {
 
                   <p className="mt-4 whitespace-pre-wrap text-lg leading-relaxed text-zinc-200">{selectedMessage.message}</p>
 
-                  <div className="mt-6 grid gap-3 text-sm text-zinc-400 md:grid-cols-2">
+                  <div className="mt-6 grid grid-cols-1 gap-3 text-sm text-zinc-400 md:grid-cols-2">
                     <p>
                       <span className="text-zinc-400">Nombre:</span> {selectedMessage.name || "No proporcionado"}
                     </p>

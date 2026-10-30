@@ -8,7 +8,7 @@ import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import OwnerStats from "../../components/owner/OwnerStats"
-import { EXTRA_FEATURES, extrasFromRow } from "../../lib/extraFeatures"
+import { EXTRA_FEATURES, CLOSED_FIELD, extrasFromRow } from "../../lib/extraFeatures"
 import { useLanguage } from "../../context/LanguageContext"
 import { toast } from "../../components/ui/Toast"
 import { createSlug } from "../../lib/slug"
@@ -475,7 +475,7 @@ export default function MiClubPage() {
   const ghostBtn = "rounded-ctl border border-white/15 px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
 
   const renderEventForm = (eventForm: EventFormData, setEventForm: (f: EventFormData) => void, onImage: (e: ChangeEvent<HTMLInputElement>) => void) => (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div className="md:col-span-2">
         <label className={labelClass}>{t("ownerPortal.nightTitle")}</label>
         <input value={eventForm.title} onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })} placeholder={t("ownerPortal.nightTitlePh")} className={inputClass} />
@@ -641,7 +641,7 @@ export default function MiClubPage() {
           </div>
 
           <h2 className="mt-10 text-lg font-semibold">{t("ownerPortal.listingTitle")}</h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className={labelClass}>{t("ownerPortal.name")}</label>
               <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
@@ -799,6 +799,20 @@ export default function MiClubPage() {
                 })}
               </div>
             </div>
+
+            {CLOSED_FIELD in form.extras && (
+              <div className="md:col-span-2 rounded-ctl border border-warn/30 bg-warn/[0.07] p-4">
+                <button
+                  type="button"
+                  aria-pressed={!!form.extras[CLOSED_FIELD]}
+                  onClick={() => setForm({ ...form, extras: { ...form.extras, [CLOSED_FIELD]: !form.extras[CLOSED_FIELD] } })}
+                  className={toggle(!!form.extras[CLOSED_FIELD])}
+                >
+                  {t("ownerPortal.tempClosed")}
+                </button>
+                <p className="mt-2 text-xs leading-relaxed text-zinc-400">{t("ownerPortal.tempClosedHint")}</p>
+              </div>
+            )}
           </div>
 
           <div className="sticky bottom-[calc(72px+env(safe-area-inset-bottom))] z-20 mt-8 flex items-center gap-4 rounded-card border border-white/10 bg-night/95 p-3 backdrop-blur md:bottom-4">

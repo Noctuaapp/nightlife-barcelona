@@ -228,7 +228,7 @@ export default function AdminEssentialsPage() {
   // Función (no componente): definida como componente dentro de la página se volvía a montar en
   // cada tecla y el campo perdía el foco al escribir.
   const renderFormFields = (data: typeof emptyForm, setData: (d: typeof emptyForm) => void) => (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} placeholder="Nombre *" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
 
       <select value={data.category} onChange={(e) => setData({ ...data, category: e.target.value })} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none text-white">

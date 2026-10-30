@@ -163,7 +163,7 @@ export default function AdminVisitsPage() {
   const [checking, setChecking] = useState(true)
   const [days, setDays] = useState(7)
   const [data, setData] = useState<Data | null>(null)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
   const [onlyActive, setOnlyActive] = useState(false)
   const [source, setSource] = useState("all")
@@ -180,12 +180,17 @@ export default function AdminVisitsPage() {
 
   useEffect(() => {
     if (checking) return
+    // Si se cambia de periodo rápido, solo vale la última respuesta (antes la de un periodo anterior
+    // podía llegar tarde y pisar a la nueva).
+    let current = true
     setData(null)
-    setError(false)
+    setError(null)
     supabase.rpc("admin_sessions", { p_from: madridDay(days - 1), p_to: madridDay(0), p_limit: 400 }).then(({ data, error }) => {
-      if (error) setError(true)
+      if (!current) return
+      if (error) setError(error.message || "error")
       else setData(data as Data)
     })
+    return () => { current = false }
   }, [checking, days])
 
   // Nombres reales de las fichas (vienen en los eventos page_view).
@@ -278,7 +283,11 @@ export default function AdminVisitsPage() {
 
       {error && (
         <div className="mb-6 rounded-2xl border border-warn/40 bg-warn/10 p-5 text-sm text-warn">
-          Falta ejecutar supabase/44_recorridos_de_visitas.sql en Supabase.
+          {/function|schema cache|does not exist/i.test(error)
+            ? "Falta ejecutar supabase/44_recorridos_de_visitas.sql (y el 50) en Supabase."
+            : /no autorizado/i.test(error)
+              ? "Esta pantalla solo la puede ver la cuenta de administrador."
+              : `No se pudieron cargar las visitas (${error}). Vuelve a intentarlo en un momento.`}
         </div>
       )}
 
@@ -303,17 +312,17 @@ export default function AdminVisitsPage() {
             El recorrido página a página se guarda desde el 26/10/2026: las visitas anteriores solo muestran la página de entrada, las fichas vistas y los clics.
           </p>
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
             <TopList title="Por dónde entran" rows={data.landings.map((l) => ({ label: pageLabel(l.path, names), n: l.n }))} total={data.total_sessions} />
             <TopList title="Páginas más vistas (visitas que pasan por ellas)" rows={data.top_pages.map((p) => ({ label: pageLabel(p.path, names), n: p.n }))} total={data.total_sessions} />
           </div>
 
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <TopList title="Registro: dónde se cae la gente (visitas)" rows={funnel.rows} total={data.total_sessions} />
+          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <TopList title="Registro: dónde se cae la gente (visitas)" rows={funnel.rows} total={Math.max(1, data.sessions.length)} />
             <TopList title="Por qué fallan los registros" rows={funnel.errors} total={Math.max(1, ...funnel.errors.map((r) => r.n))} />
           </div>
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <TopList title="Instalar la app (visitas)" rows={funnel.install} total={data.total_sessions} />
+          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <TopList title="Instalar la app (visitas)" rows={funnel.install} total={Math.max(1, data.sessions.length)} />
             <p className="self-center text-xs leading-relaxed text-zinc-500">
               Android avisa cuando alguien instala la app ("App instalada"). iPhone no avisa de nada: allí solo se ve cuando la persona abre la web desde el
               icono. Cuenta desde que se publica este cambio (27/10/2026) y no incluye tus propias visitas.
@@ -520,7 +529,7 @@ function TopList({ title, rows, total }: { title: string; rows: { label: string;
                 <span className="shrink-0 tabular-nums text-zinc-400">{r.n}</span>
               </div>
               <div className="mt-1 h-1.5 rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-purple-400/70" style={{ width: `${total ? Math.max(3, (r.n / total) * 100) : 0}%` }} />
+                <div className="h-full rounded-full bg-purple-400/70" style={{ width: `${total && r.n > 0 ? Math.min(100, Math.max(3, (r.n / total) * 100)) : 0}%` }} />
               </div>
             </li>
           ))}

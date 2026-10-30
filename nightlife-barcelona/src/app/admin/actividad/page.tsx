@@ -9,6 +9,7 @@ import { ADMIN_EMAIL } from "../../../lib/admin"
 import { getSortedCountries } from "../../../lib/countries"
 import { PARTY_POLLS } from "../../../lib/partyPolls"
 import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
+import { madridDaysAgo, madridToday } from "../../../lib/madridDay"
 
 // Actividad por usuario (pedido: panel de analítica "detallado por usuario"). Sustituye a la
 // antigua /admin/analytics, que no salía en el menú y repetía —peor, trayendo 5.000 filas sueltas
@@ -73,8 +74,7 @@ const SOURCE_LABELS: Record<string, string> = {
 }
 const ITEM_LABELS: Record<string, string> = { club: "Club", event: "Evento", club_event: "Noche de club", essential: "Esencial" }
 
-const isoDay = (d: Date) => d.toLocaleDateString("sv-SE")
-const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return isoDay(d) }
+const daysAgo = madridDaysAgo
 const sourceLabel = (s: string | null) => (s ? SOURCE_LABELS[s] || s.replace(/^other:/, "") : "—")
 const deviceLabel = (d: string | null) => (d === "mobile" ? "Móvil" : d === "desktop" ? "Ordenador" : d || "—")
 const fmtDateTime = (iso: string) =>
@@ -161,7 +161,7 @@ function Bars({ rows }: { rows: { label: string; n: number }[] }) {
 export default function AdminActividadPage() {
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [from, setFrom] = useState(daysAgo(29))
-  const [to, setTo] = useState(isoDay(new Date()))
+  const [to, setTo] = useState(madridToday())
   const [rows, setRows] = useState<Row[]>([])
   const [users, setUsers] = useState<Record<string, UserInfo>>({})
   const [totalUsers, setTotalUsers] = useState(0)
@@ -266,7 +266,7 @@ export default function AdminActividadPage() {
   }
 
   const presets = [
-    { label: "Hoy", f: isoDay(new Date()) },
+    { label: "Hoy", f: madridToday() },
     { label: "7 días", f: daysAgo(6) },
     { label: "30 días", f: daysAgo(29) },
     { label: "90 días", f: daysAgo(89) },
@@ -289,8 +289,8 @@ export default function AdminActividadPage() {
           <button
             key={p.label}
             type="button"
-            onClick={() => { setFrom(p.f); setTo(isoDay(new Date())) }}
-            className={`rounded-full border px-4 py-2 text-xs font-bold transition ${from === p.f && to === isoDay(new Date()) ? "border-white bg-white text-night" : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"}`}
+            onClick={() => { setFrom(p.f); setTo(madridToday()) }}
+            className={`rounded-full border px-4 py-2 text-xs font-bold transition ${from === p.f && to === madridToday() ? "border-white bg-white text-night" : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"}`}
           >
             {p.label}
           </button>

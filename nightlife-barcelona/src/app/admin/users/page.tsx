@@ -502,7 +502,7 @@ export default function AdminUsersPage() {
 
                   {editingId === user.id ? (
                     <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                           <label className="mb-1 block text-xs text-zinc-400">Username</label>
                           <input

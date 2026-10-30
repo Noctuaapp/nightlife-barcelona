@@ -35,6 +35,9 @@ interface ClubCardProps {
   // Páginas de barrio, zona y estilo (29/10/2026): enseñan el horario escrito en la tarjeta, para
   // que el HTML que lee Google lleve horario y precio de cada local y no solo el nombre.
   showHours?: boolean
+  // «Cerrado temporalmente» (30/10/2026): el local sigue en el listado, pero con su etiqueta y sin
+  // el punto verde de «abierto ahora» aunque su horario diga que sí.
+  temporarilyClosed?: boolean
 }
 
 const LIVE_STATUS_MAX_AGE_MS = 4 * 60 * 60 * 1000
@@ -56,6 +59,7 @@ export default function ClubCard({
   liveStatus,
   liveStatusUpdatedAt,
   showHours = false,
+  temporarilyClosed = false,
 }: ClubCardProps) {
   const { t } = useLanguage()
   const [openNow, setOpenNow] = useState<boolean | null>(null)
@@ -89,17 +93,22 @@ export default function ClubCard({
           fill
           sizes="(max-width: 768px) 100vw, 33vw"
           unoptimized={!image}
-          className="object-cover transition duration-500 group-hover:scale-[1.03]"
+          className={`object-cover transition duration-500 group-hover:scale-[1.03] ${temporarilyClosed ? "opacity-60 saturate-50" : ""}`}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          {openNow !== null && (
+          {temporarilyClosed ? (
+            <span className="flex items-center gap-1.5 rounded-full bg-night/85 px-2.5 py-1 text-xs font-semibold text-warn">
+              <span className="h-1.5 w-1.5 rounded-full bg-warn" />
+              {t("clubPage.tempClosed")}
+            </span>
+          ) : openNow !== null && (
             <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${openNow ? "bg-night/80 text-open" : "bg-night/70 text-zinc-300"}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${openNow ? "live-dot bg-open" : "bg-off"}`} />
               {openNow ? t("clubPage.openNow") : t("home.closed")}
             </span>
           )}
-          {live && (
+          {live && !temporarilyClosed && (
             <span className="flex items-center gap-1.5 rounded-full bg-night/80 px-2.5 py-1 text-xs font-semibold text-ink">
               <span className="live-dot h-1.5 w-1.5 rounded-full bg-open" /> {live}
             </span>

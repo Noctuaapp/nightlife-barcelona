@@ -57,6 +57,7 @@ export default function Icon({ name, className = "h-5 w-5", style }: { name: str
     case "thumbsUp": return <svg {...p}><path d="M7 11v9H4v-9zM7 11l3-7a2 2 0 012 2v4h5a2 2 0 012 2.3l-1.3 6A2 2 0 0115.7 20H7" /></svg>
     case "thumbsDown": return <svg {...p}><path d="M17 13V4h3v9zM17 13l-3 7a2 2 0 01-2-2v-4H7a2 2 0 01-2-2.3l1.3-6A2 2 0 018.3 4H17" /></svg>
     case "cocktail": return <svg {...p}><path d="M4 4h16l-8 9z" /><path d="M12 13v7M8 20h8M17.5 1.8L14 7.5" /></svg>
+    case "dice": return <svg {...p}><rect x="4" y="4" width="16" height="16" rx="3" /><circle cx="9" cy="9" r="0.9" /><circle cx="15" cy="9" r="0.9" /><circle cx="12" cy="12" r="0.9" /><circle cx="9" cy="15" r="0.9" /><circle cx="15" cy="15" r="0.9" /></svg>
     case "bell": return <svg {...p}><path d="M6 16v-5a6 6 0 0112 0v5l1.5 2h-15z" /><path d="M10 21h4" /></svg>
     case "smartphone": return <svg {...p}><rect x="7" y="2.5" width="10" height="19" rx="2.5" /><path d="M11 18.5h2" /></svg>
     case "camera": return <svg {...p}><path d="M4 8h3l1.6-2.5h6.8L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" /><circle cx="12" cy="13" r="3.4" /></svg>

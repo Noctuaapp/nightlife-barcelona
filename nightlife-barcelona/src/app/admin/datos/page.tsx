@@ -1,11 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { zoneOf } from "../../../lib/zones"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
+import { madridDaysAgo, madridToday, madridYear } from "../../../lib/madridDay"
 
 // Panel "Datos": métricas agregadas de Noctua pensadas para enseñar a clubs y managers (y para
 // venderlas). Todo se calcula en Supabase con funciones que solo el admin puede ejecutar y que
@@ -25,14 +26,16 @@ const SOURCE_LABELS: Record<string, string> = {
 const WEEKDAYS = ["", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
 const RIDE_PROVIDER_LABELS: Record<string, string> = { uber: "Uber", cabify: "Cabify", freenow: "FREE NOW" }
 
-const isoDay = (d: Date) => d.toLocaleDateString("sv-SE")
-const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return isoDay(d) }
+const daysAgo = madridDaysAgo
 const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0)
 
 function downloadCsv(filename: string, headers: string[], rows: (string | number | null)[][]) {
   const esc = (v: string | number | null) => {
-    const s = v === null || v === undefined ? "" : String(v)
-    return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+    let s = v === null || v === undefined ? "" : String(v)
+    // Excel y Google Sheets tratan como fórmula lo que empieza por = + - @ (y las búsquedas las escribe
+    // cualquier visitante). Con una comilla delante se abre como texto y no se ejecuta nada.
+    if (typeof v === "string" && /^[=+\-@\t\r]/.test(s)) s = "'" + s
+    return /[";\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
   const csv = "﻿" + [headers, ...rows].map((r) => r.map(esc).join(";")).join("\n")
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }))
@@ -99,7 +102,7 @@ export default function AdminDatosPage() {
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [tab, setTab] = useState<Tab>("resumen")
   const [from, setFrom] = useState(daysAgo(29))
-  const [to, setTo] = useState(isoDay(new Date()))
+  const [to, setTo] = useState(madridToday())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -114,6 +117,9 @@ export default function AdminDatosPage() {
   // pestañas sigan funcionando y solo esta avise.
   const [essStats, setEssStats] = useState<any>(null)
   const [essError, setEssError] = useState("")
+  // Si cambias las fechas rápido, solo vale la última consulta (antes una respuesta lenta de un rango
+  // anterior podía pisar a la nueva y enseñar números de otro periodo).
+  const loadSeq = useRef(0)
 
   const [selected, setSelected] = useState<{ type: "club" | "event"; id: number; name: string } | null>(null)
   const [detail, setDetail] = useState<any>(null)
@@ -132,6 +138,7 @@ export default function AdminDatosPage() {
   }, [])
 
   const load = useCallback(async () => {
+    const seq = ++loadSeq.current
     setLoading(true)
     setError("")
     const range = { p_from: from, p_to: to }
@@ -145,8 +152,17 @@ export default function AdminDatosPage() {
       supabase.rpc("admin_ride_clicks", range),
       supabase.rpc("admin_essentials_stats", range),
     ])
+    if (seq !== loadSeq.current) return
     const firstErr = [ov, ci, ei, se, au].find((r) => r.error)?.error
-    if (firstErr) setError(`No se pudieron cargar los datos: ${firstErr.message}. ¿Has ejecutado datos_funciones.sql en Supabase?`)
+    if (firstErr) {
+      const m = firstErr.message || ""
+      const hint = /no autorizado/i.test(m)
+        ? "Entra con la cuenta de administrador."
+        : /function|schema cache|does not exist/i.test(m)
+          ? "Parece que falta alguna de las funciones admin_data_* en Supabase."
+          : "Vuelve a intentarlo en un momento."
+      setError(`No se pudieron cargar los datos (${m}). ${hint}`)
+    }
     setOverview(ov.data)
     setClubItems(ci.data || [])
     setEventItems(ei.data || [])
@@ -213,11 +229,11 @@ export default function AdminDatosPage() {
 
   const exportClubsCsv = () =>
     downloadCsv(`noctua_clubs_${from}_${to}.csv`,
-      ["Club", "Zona", "Tipo", "Visitas", "Visitantes", "Clics entradas", "Conversion %", "Como llegar", "Compartir", "Favoritos", "Web/Instagram", "Asistire", "Check-ins", "Cumplimiento %"],
+      ["Club", "Zona", "Tipo", "Visitas", "Visitantes", "Clics entradas", "Clics en entradas % (de visitas)", "Como llegar", "Compartir", "Favoritos", "Web/Instagram", "Asistire", "Check-ins", "Cumplimiento %"],
       clubRows.map((c) => [c.name, c.zone, c.venue_type, c.views, c.visitors, c.tickets, c.conv, c.directions, c.shares, c.favorites, c.website, c.attendances, c.checkins, c.fulfil]))
   const exportEventsCsv = () =>
     downloadCsv(`noctua_eventos_${from}_${to}.csv`,
-      ["Evento", "Visitas", "Visitantes", "Clics entradas", "Conversion %", "Como llegar", "Compartir", "Favoritos", "Asistire"],
+      ["Evento", "Visitas", "Visitantes", "Clics entradas", "Clics en entradas % (de visitas)", "Como llegar", "Compartir", "Favoritos", "Asistire"],
       eventRows.map((e) => [e.name, e.views, e.visitors, e.tickets, e.conv, e.directions, e.shares, e.favorites, e.attendances]))
   const exportEssCategoriesCsv = () =>
     downloadCsv(`noctua_esenciales_categorias_${from}_${to}.csv`,
@@ -278,15 +294,19 @@ export default function AdminDatosPage() {
     { label: "7 días", f: daysAgo(6) },
     { label: "30 días", f: daysAgo(29) },
     { label: "90 días", f: daysAgo(89) },
-    { label: "Este año", f: `${new Date().getFullYear()}-01-01` },
+    { label: "Este año", f: `${madridYear()}-01-01` },
   ]
 
   const th = (key: string, label: string) => (
-    <th
-      onClick={() => setSortKey(key)}
-      className={`cursor-pointer whitespace-nowrap px-3 py-2 text-right text-xs font-semibold ${sortKey === key ? "text-purple-300" : "text-zinc-400"}`}
-    >
-      {label}
+    <th aria-sort={sortKey === key ? "descending" : "none"} className="whitespace-nowrap px-3 py-2 text-right text-xs font-semibold">
+      {/* Un botón de verdad: se ordena también con el teclado (Tab + Enter). */}
+      <button
+        type="button"
+        onClick={() => setSortKey(key)}
+        className={`cursor-pointer text-xs font-semibold hover:text-white focus-visible:outline-2 focus-visible:outline-purple-300 ${sortKey === key ? "text-purple-300" : "text-zinc-400"}`}
+      >
+        {label}
+      </button>
     </th>
   )
 
@@ -301,8 +321,8 @@ export default function AdminDatosPage() {
           {presets.map((p) => (
             <button
               key={p.label}
-              onClick={() => { setFrom(p.f); setTo(isoDay(new Date())) }}
-              className={`rounded-full border px-4 py-2 text-xs font-bold transition ${from === p.f && to === isoDay(new Date()) ? "border-white bg-white text-black" : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"}`}
+              onClick={() => { setFrom(p.f); setTo(madridToday()) }}
+              className={`rounded-full border px-4 py-2 text-xs font-bold transition ${from === p.f && to === madridToday() ? "border-white bg-white text-black" : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"}`}
             >
               {p.label}
             </button>
@@ -332,7 +352,7 @@ export default function AdminDatosPage() {
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <Stat label="Sesiones" value={overview.sessions} />
               <Stat label="Visitas a fichas" value={overview.page_views} />
-              <Stat label="Clics en entradas" value={overview.tickets} sub={`Conversión ${pct(overview.tickets, overview.page_views)}%`} />
+              <Stat label="Clics en entradas" value={overview.tickets} sub={`${pct(overview.tickets, overview.page_views)} % de las visitas a fichas`} />
               <Stat label="Cómo llegar" value={overview.directions} />
               <Stat label="Compartidos" value={overview.shares} />
               <Stat label="Búsquedas" value={overview.searches} sub={`${overview.searches_zero} sin resultados`} />
@@ -346,7 +366,7 @@ export default function AdminDatosPage() {
               </div>
               <Bars data={(overview.daily || []).map((d: any) => ({ label: d.d.slice(5), value: d.views }))} />
             </div>
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                 <p className="mb-4 text-sm font-bold">Origen del tráfico (sesiones)</p>
                 <ListBars rows={(overview.sources || []).map((s: any) => ({ label: SOURCE_LABELS[s.source] || s.source, n: s.sessions }))} />
@@ -386,7 +406,7 @@ export default function AdminDatosPage() {
                     {th("views", "Visitas")}
                     {th("visitors", "Visitantes")}
                     {th("tickets", "Entradas")}
-                    {th("conv", "Conv. %")}
+                    {th("conv", "Clic entrada %")}
                     {th("directions", "Llegar")}
                     {th("shares", "Compart.")}
                     {th("attendances", "Asistiré")}
@@ -397,7 +417,16 @@ export default function AdminDatosPage() {
                 <tbody>
                   {(tab === "clubs" ? clubRows : eventRows).map((r) => (
                     <tr key={r.id} onClick={() => setSelected({ type: tab === "clubs" ? "club" : "event", id: r.id, name: r.name })} className="cursor-pointer border-b border-white/5 hover:bg-white/[0.04]">
-                      <td className="max-w-[220px] truncate px-3 py-2 font-semibold text-white">{r.name}</td>
+                      <td className="max-w-[220px] truncate px-3 py-2 font-semibold text-white">
+                        {/* El nombre es un botón para abrir el detalle con el teclado; el clic en la fila sigue funcionando con el ratón. */}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setSelected({ type: tab === "clubs" ? "club" : "event", id: r.id, name: r.name }) }}
+                          className="max-w-full truncate text-left hover:underline focus-visible:outline-2 focus-visible:outline-purple-300"
+                        >
+                          {r.name}
+                        </button>
+                      </td>
                       {tab === "clubs" && <td className="whitespace-nowrap px-3 py-2 text-zinc-400">{r.zone}</td>}
                       <td className="px-3 py-2 text-right">{r.views}</td>
                       <td className="px-3 py-2 text-right">{r.visitors}</td>
@@ -433,7 +462,7 @@ export default function AdminDatosPage() {
             {sel && (
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 <Stat label="Visitas" value={sel.views} />
-                <Stat label="Clics en entradas" value={sel.tickets} sub={`Conversión ${sel.conv}%`} />
+                <Stat label="Clics en entradas" value={sel.tickets} sub={`${sel.conv} % de las visitas`} />
                 <Stat label="Asistiré" value={sel.attendances} />
                 <Stat label="Check-ins" value={sel.checkins} sub={sel.attendances ? `Cumplimiento ${sel.fulfil}%` : undefined} />
               </div>
@@ -444,7 +473,7 @@ export default function AdminDatosPage() {
                 <p className="mb-3 text-sm font-bold">Comparativa</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="text-xs text-zinc-400"><th className="py-1 text-left"></th><th className="py-1 text-right">Visitas</th><th className="py-1 text-right">Entradas</th><th className="py-1 text-right">Conv. %</th></tr></thead>
+                    <thead><tr className="text-xs text-zinc-400"><th className="py-1 text-left"></th><th className="py-1 text-right">Visitas</th><th className="py-1 text-right">Entradas</th><th className="py-1 text-right">Clic entrada %</th></tr></thead>
                     <tbody>
                       <tr><td className="py-1 font-semibold">Este club</td><td className="text-right">{sel.views}</td><td className="text-right">{sel.tickets}</td><td className="text-right text-purple-300">{sel.conv}</td></tr>
                       {bench.zone && <tr><td className="py-1 text-zinc-400">Media {sel.zone} ({bench.zone.n} clubs)</td><td className="text-right">{bench.zone.views}</td><td className="text-right">{bench.zone.tickets}</td><td className="text-right">{bench.zone.conv}</td></tr>}
@@ -456,7 +485,7 @@ export default function AdminDatosPage() {
             )}
 
             {detail && (
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 md:col-span-2">
                   <p className="mb-4 text-sm font-bold">Visitas por día</p>
                   <Bars data={detail.daily.map((d: any) => ({ label: d.d.slice(5), value: d.views }))} />
@@ -485,7 +514,7 @@ export default function AdminDatosPage() {
               <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
                 <p className="mb-1 text-sm font-bold">Audiencia con cuenta ({detailAud.users} usuarios)</p>
                 <p className="mb-4 text-xs text-zinc-400">Solo usuarios registrados; los grupos de menos de 5 personas se ocultan.</p>
-                <div className="grid gap-6 md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                   <div><p className="mb-2 text-xs text-zinc-400">Edad</p><ListBars rows={detailAud.ages} /></div>
                   <div><p className="mb-2 text-xs text-zinc-400">Género</p><ListBars rows={detailAud.genders} /></div>
                   <div><p className="mb-2 text-xs text-zinc-400">País</p><ListBars rows={detailAud.countries} /></div>
@@ -506,6 +535,7 @@ export default function AdminDatosPage() {
               <>
                 <p className="text-xs text-zinc-400">
                   Cuenta desde que se publicó la web con el registro de esenciales (30/10/2026). No incluye tu actividad de admin, bots ni pruebas, y no guarda datos de personas.
+                  {(new Date(to).getTime() - new Date(from).getTime()) / 86400000 > 366 && " Esta pestaña muestra como máximo los últimos 12 meses del periodo elegido."}
                 </p>
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
                   <Stat label="Visitas a categorías" value={essStats.totals?.category_views ?? 0} />
@@ -628,7 +658,7 @@ export default function AdminDatosPage() {
           <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
             <p className="mb-1 text-sm font-bold">Usuarios con cuenta activos en el periodo: {audience.users}</p>
             <p className="mb-5 text-xs text-zinc-400">Datos agregados y anónimos. Los grupos de menos de 5 personas se ocultan.</p>
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               <div><p className="mb-2 text-xs text-zinc-400">Edad</p><ListBars rows={audience.ages} /></div>
               <div><p className="mb-2 text-xs text-zinc-400">Género</p><ListBars rows={audience.genders} /></div>
               <div><p className="mb-2 text-xs text-zinc-400">País</p><ListBars rows={audience.countries} /></div>

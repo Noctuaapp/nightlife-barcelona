@@ -3,7 +3,8 @@ import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import EventsExplorer from "../../components/nightlife/EventsExplorer"
 import { supabase } from "../../lib/supabase"
-import { safeJsonLd } from "../../lib/structuredData"
+import { EVENT_IMAGE_FALLBACK, parsePriceEUR, safeJsonLd } from "../../lib/structuredData"
+import { createSlug } from "../../lib/slug"
 
 export const revalidate = 3600
 
@@ -25,31 +26,54 @@ export const metadata: Metadata = {
 export default async function EventsPage() {
   const { data: events } = await supabase.from("events").select("*").eq("hidden", false).order("date", { ascending: true })
 
+  // Datos estructurados de la lista (30/10/2026). Antes cada evento mandaba el precio tal cual lo
+  // escribe el admin ("15€", "Gratis"), sin foto cuando el evento no tenía y hasta sin fecha:
+  // Search Console lo marcaba como valor no válido / campo obligatorio ausente. Ahora el precio
+  // pasa por parsePriceEUR (número limpio o se omite la oferta), "image" nunca falta, solo entran
+  // eventos con fecha (startDate es obligatorio) y cada elemento lleva la dirección de su página.
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    itemListElement: (events || []).slice(0, 30).map((event, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      item: {
-        "@type": "Event",
-        name: event.title,
-        image: event.image || undefined,
-        startDate: event.date || undefined,
-        location: {
-          "@type": "Place",
-          name: event.club_name || "Barcelona",
-          address: {
-            "@type": "PostalAddress",
-            addressLocality: "Barcelona",
-            addressCountry: "ES",
+    itemListElement: (events || [])
+      .filter((event) => !!event.date && !!event.title)
+      .slice(0, 30)
+      .map((event, index) => {
+        const price = parsePriceEUR(event.price)
+        return {
+          "@type": "ListItem",
+          position: index + 1,
+          item: {
+            "@type": "Event",
+            name: event.title,
+            url: `https://www.noctuaapp.com/event/${event.slug || createSlug(event.title)}`,
+            image: event.image || EVENT_IMAGE_FALLBACK,
+            startDate: event.date,
+            eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+            eventStatus: "https://schema.org/EventScheduled",
+            location: {
+              "@type": "Place",
+              name: event.club_name || "Barcelona",
+              address: {
+                "@type": "PostalAddress",
+                streetAddress: event.address || undefined,
+                addressLocality: "Barcelona",
+                addressCountry: "ES",
+              },
+            },
+            ...(price !== null
+              ? {
+                  offers: {
+                    "@type": "Offer",
+                    price,
+                    priceCurrency: "EUR",
+                    url: event.ticket_url || `https://www.noctuaapp.com/event/${event.slug || createSlug(event.title)}`,
+                    availability: event.sold_out ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
+                  },
+                }
+              : {}),
           },
-        },
-        ...(event.price
-          ? { offers: { "@type": "Offer", price: event.price, priceCurrency: "EUR", url: event.ticket_url || undefined } }
-          : {}),
-      },
-    })),
+        }
+      }),
   }
 
   return (

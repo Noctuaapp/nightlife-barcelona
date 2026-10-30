@@ -105,24 +105,27 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
   // false solo cuando se sabe con certeza que el club no abre esta noche (por open_days o por los
   // días de su horario) — null (sin datos para saberlo) no bloquea nada, igual que en el resto de
   // sitios donde se usa clubOpensOn.
-  const opensTonight = clubOpensOn(club.hours, club.open_days, madridClock().dow) !== false
+  // «Cerrado temporalmente» (30/10/2026): la ficha sigue visible, pero nunca sale como abierta.
+  const tempClosed = club.temporarily_closed === true
+  const opensTonight = !tempClosed && clubOpensOn(club.hours, club.open_days, madridClock().dow) !== false
 
   useEffect(() => {
-    setOpenNow(clubOpenNow(club.hours, club.open_days))
+    const calc = () => (tempClosed ? false : clubOpenNow(club.hours, club.open_days))
+    setOpenNow(calc())
     setNow(Date.now())
     const id = setInterval(() => {
-      setOpenNow(clubOpenNow(club.hours, club.open_days))
+      setOpenNow(calc())
       setNow(Date.now())
     }, 60000)
     return () => clearInterval(id)
-  }, [club.hours, club.open_days])
+  }, [club.hours, club.open_days, tempClosed])
 
   useEffect(() => {
     trackClick("page_view")
 
     // Parecidos: mismo barrio y mismo estilo, con buena nota (antes, 3 al azar de la tabla).
     const loadRelated = async () => {
-      const fields = "id, name, slug, image, neighborhood, music, rating, google_rating"
+      const fields = "id, name, slug, image, neighborhood, music, rating, google_rating, temporarily_closed"
       let { data, error } = await supabase.from("clubs").select(fields).eq("hidden", false).neq("id", club.id)
       if (error) ({ data } = await supabase.from("clubs").select("*").eq("hidden", false).neq("id", club.id))
       if (!data) return
@@ -136,7 +139,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
         if (r.image) points += 1
         return points
       }
-      const best = [...data].sort((a, b) => score(b) - score(a)).slice(0, 6)
+      const best = [...data].filter((r: any) => r.temporarily_closed !== true).sort((a, b) => score(b) - score(a)).slice(0, 6)
       setRelated(best.sort(() => Math.random() - 0.5).slice(0, 3))
     }
 
@@ -416,13 +419,24 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                   {reviewCount ? <span className="text-zinc-400">({reviewCount.toLocaleString("es-ES")})</span> : null}
                 </button>
               )}
-              {openNow !== null && (
+              {tempClosed ? (
+                <span className="flex items-center gap-1.5 font-semibold text-warn">
+                  <span className="h-2 w-2 rounded-full bg-warn" />
+                  {t("clubPage.tempClosed")}
+                </span>
+              ) : openNow !== null && (
                 <span className={`flex items-center gap-1.5 font-semibold ${openNow ? "text-open" : "text-zinc-400"}`}>
                   <span className={`h-2 w-2 rounded-full ${openNow ? "live-dot bg-open" : "bg-off"}`} />
                   {openNow ? t("clubPage.openNow") : t("clubPage.closedNow")}
                 </span>
               )}
             </div>
+
+            {tempClosed && (
+              <p className="mt-5 max-w-2xl rounded-ctl border border-warn/30 bg-warn/[0.08] px-4 py-3 text-sm leading-relaxed text-zinc-200" role="note">
+                {t("clubPage.tempClosedNote")}
+              </p>
+            )}
 
             <div className="mt-6 flex flex-wrap gap-3">
               {ticketUrl ? (
@@ -524,7 +538,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                     <Icon name="close" className="h-4 w-4" />
                   </button>
                 </div>
-                <div className={`grid gap-3 sm:grid-cols-2 ${liveNotes.length > 4 ? "max-h-[420px] overflow-y-auto pr-1" : ""}`}>
+                <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${liveNotes.length > 4 ? "max-h-[420px] overflow-y-auto pr-1" : ""}`}>
                   {liveNotes.map((n) => {
                     const mins = Math.max(0, Math.round((Date.now() - new Date(n.note_created_at).getTime()) / 60000))
                     const ago = mins < 1 ? t("clubPage.justNow") : mins < 60 ? t("clubPage.minAgo").replace("{n}", String(mins)) : t("clubPage.hoursAgo").replace("{n}", String(Math.round(mins / 60)))
@@ -597,7 +611,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
       )}
 
       <section id="club-content" className="mx-auto max-w-6xl scroll-mt-24 px-4 pt-10 sm:px-6">
-        <div className="grid gap-8 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* COLUMNA PRINCIPAL — en móvil va primero; las acciones (guardar, asistiré, check-in)
               quedan debajo, en una fila compacta, para no cortar la información */}
           <div className="min-w-0 space-y-6 lg:col-span-2">
@@ -864,7 +878,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
       {related.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">
           <h2 className="mb-5 text-lg font-semibold text-ink">{t("clubPage.related")}</h2>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {related.map((r) => {
               const rRating = r.google_rating || r.rating || null
               return (

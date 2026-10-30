@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useLanguage } from "../../context/LanguageContext"
+import { EVENTS_COMING_SOON } from "../../lib/featureFlags"
 
 // Selector Clubs · Eventos · Esenciales en lo alto de cada listado: son las tres secciones de
 // "Explorar" en la barra inferior, y antes no había forma de pasar de una a otra sin volver atrás.
@@ -19,11 +20,16 @@ export default function ExploreSwitch({ active }: { active: "clubs" | "events" |
           key={it.key}
           href={it.href}
           aria-current={active === it.key ? "page" : undefined}
-          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+          className={`relative rounded-full px-4 py-2 text-sm font-semibold transition ${
             active === it.key ? "bg-white text-night" : "text-zinc-300 hover:text-ink"
           }`}
         >
           {it.label}
+          {it.key === "events" && EVENTS_COMING_SOON && (
+            <span className="pointer-events-none absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-warn px-1.5 py-px text-[9px] font-bold leading-tight text-night">
+              {t("nav.soon")}
+            </span>
+          )}
         </Link>
       ))}
     </nav>
