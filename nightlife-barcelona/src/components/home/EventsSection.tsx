@@ -11,6 +11,7 @@ import { createSlug } from "../../lib/slug"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import Icon from "../ui/Icon"
+import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { eventHappensOn, eventInHomeWindow, nightDateMadrid } from "../../lib/homeEvents"
 
 type Event = {
@@ -66,7 +67,8 @@ export default function EventsSection() {
       // del código) ni lat/lng propia, así que esas se añaden sin coordenadas: no entran en el
       // filtro "Cerca" pero sí en el resto.
       const [eventsRes, clubEventsRes] = await Promise.all([
-        supabase.from("events").select("*").eq("hidden", false).order("date", { ascending: true }),
+        // Eventos oculto (lib/featureFlags.ts): solo se enseñan las noches de club.
+        EVENTS_HIDDEN ? Promise.resolve({ data: [] as any[] }) : supabase.from("events").select("*").eq("hidden", false).order("date", { ascending: true }),
         supabase.from("club_events").select("*").order("date", { ascending: true }),
       ])
       const fromEvents: Event[] = (eventsRes.data || []).map((e) => ({ ...e, kind: "event" }))
@@ -230,11 +232,13 @@ export default function EventsSection() {
         )}
       </div>
 
-      <div className="mt-8 text-center">
-        <Link href="/events" className="inline-flex items-center gap-2 rounded-ctl border border-white/15 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/5">
-          {t("homeEvents.seeAll")} <Icon name="arrow" className="h-4 w-4" />
-        </Link>
-      </div>
+      {!EVENTS_HIDDEN && (
+        <div className="mt-8 text-center">
+          <Link href="/events" className="inline-flex items-center gap-2 rounded-ctl border border-white/15 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/5">
+            {t("homeEvents.seeAll")} <Icon name="arrow" className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
     </section>
   )
 }

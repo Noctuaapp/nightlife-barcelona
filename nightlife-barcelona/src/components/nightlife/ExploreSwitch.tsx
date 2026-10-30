@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useLanguage } from "../../context/LanguageContext"
-import { EVENTS_COMING_SOON } from "../../lib/featureFlags"
+import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 
 // Selector Clubs · Eventos · Esenciales en lo alto de cada listado: son las tres secciones de
 // "Explorar" en la barra inferior, y antes no había forma de pasar de una a otra sin volver atrás.
@@ -13,6 +13,7 @@ export default function ExploreSwitch({ active }: { active: "clubs" | "events" |
     { key: "events", href: "/events", label: t("nav.events") },
     { key: "essentials", href: "/essentials", label: t("nav.essentials") },
   ] as const
+  // Con Eventos cerrado (lib/featureFlags.ts) la opción sigue ahí, con la etiqueta «Próximamente».
   return (
     <nav aria-label={t("nav.explore")} className="inline-flex rounded-full border border-white/10 bg-surface p-1">
       {items.map((it) => (
@@ -25,7 +26,7 @@ export default function ExploreSwitch({ active }: { active: "clubs" | "events" |
           }`}
         >
           {it.label}
-          {it.key === "events" && EVENTS_COMING_SOON && (
+          {it.key === "events" && EVENTS_HIDDEN && (
             <span className="pointer-events-none absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-warn px-1.5 py-px text-[9px] font-bold leading-tight text-night">
               {t("nav.soon")}
             </span>

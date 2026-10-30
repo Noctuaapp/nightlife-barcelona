@@ -18,6 +18,7 @@ import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { Disc3, CalendarDays, MapPin, Footprints, X, List, LocateFixed, Search, type LucideIcon } from "lucide-react"
 import { logError } from "../../lib/log"
 import { getOpenStatus } from "../../lib/openStatus"
+import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { renderToStaticMarkup } from "react-dom/server"
 
 // "Taxi" y "Transport" ya no son categorías de esenciales (ver essentialCategories.ts y
@@ -408,7 +409,8 @@ export default function MapPage() {
     const fetchData = async () => {
       const [{ data: clubsData }, { data: eventsData }, { data: essentialsData }] = await Promise.all([
         supabase.from("clubs").select("id, name, slug, neighborhood, music, hours, price, latitude, longitude, address, image").eq("hidden", false),
-        supabase.from("events").select("id, title, slug, date, price, image, latitude, longitude, address").eq("hidden", false),
+        // Eventos oculto (lib/featureFlags.ts): no salen en el mapa.
+        EVENTS_HIDDEN ? Promise.resolve({ data: [] as any[] }) : supabase.from("events").select("id, title, slug, date, price, image, latitude, longitude, address").eq("hidden", false),
         // Sin las paradas de Nitbus (más de mil chinchetas): tienen su propio mapa en Esenciales › Nitbus.
         supabase.from("essentials").select("id, name, category, neighborhood, open_hours, latitude, longitude, address").eq("hidden", false).neq("category", "Nitbus").limit(5000),
       ])

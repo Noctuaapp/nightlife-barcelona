@@ -21,6 +21,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { cleanEssential } from "../../lib/essentials"
+import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { UtensilsCrossed, ShoppingCart } from "lucide-react"
 
 // "Planifica tu noche". Cambios de la auditoría de octubre 2026:
@@ -389,7 +390,8 @@ export default function PlanPage() {
     })
     Promise.all([
       supabase.from("clubs").select("*").eq("hidden", false),
-      supabase.from("events").select("*").eq("hidden", false).order("date", { ascending: true }),
+      // Eventos oculto (lib/featureFlags.ts): el plan solo propone clubs y esenciales.
+      EVENTS_HIDDEN ? Promise.resolve({ data: [] as any[] }) : supabase.from("events").select("*").eq("hidden", false).order("date", { ascending: true }),
       supabase.from("essentials").select("*").eq("hidden", false).in("category", ["Food", "Supermarket"]),
     ]).then(([{ data: clubsData }, { data: eventsData }, { data: essentialsData }]) => {
       if (clubsData) setClubs(clubsData)

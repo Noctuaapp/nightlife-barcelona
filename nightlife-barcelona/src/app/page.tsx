@@ -2,6 +2,7 @@ import { fetchVisibleClubs, HOME_CLUB_FIELDS } from "../lib/clubQueries"
 import { supabase } from "../lib/supabase"
 import HomeClient from "../components/home/HomeClient"
 import { getActivePicks } from "../lib/picks"
+import { EVENTS_HIDDEN } from "../lib/featureFlags"
 
 // Antes esta página empezaba con "use client" y pedía los clubs a Supabase dentro de un
 // useEffect, es decir, después de que el navegador descargase y ejecutase el JS. El HTML inicial
@@ -25,6 +26,7 @@ async function countEssentials(): Promise<number> {
 // enseña atenuados), así que prometía mucho más de lo que se podía ver. Ahora solo cuenta los que
 // tienen fecha de hoy o posterior (el último día, si dura varios, como en la lista de eventos).
 async function countUpcomingEvents(): Promise<number> {
+  if (EVENTS_HIDDEN) return 0 // Eventos oculto (lib/featureFlags.ts): la portada no presume de ellos.
   const { data } = await supabase.from("events").select("date, date_end").eq("hidden", false)
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date()) // AAAA-MM-DD
   return (data || []).filter((e) => {

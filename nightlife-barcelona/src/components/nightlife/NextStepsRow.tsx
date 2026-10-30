@@ -3,6 +3,7 @@
 import Link from "next/link"
 import Icon from "../ui/Icon"
 import { useLanguage } from "../../context/LanguageContext"
+import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { createSlug } from "../../lib/slug"
 import { STYLES } from "../../lib/areas"
 import { track } from "../../lib/track"
@@ -58,7 +59,7 @@ export default function NextStepsRow({ kind, itemId, name, neighborhood, music }
             <Icon name="calendar" className="h-3.5 w-3.5 text-cyan-300" /> {t("home.quickPlan")}
           </Link>
         </li>
-        {kind === "event" && (
+        {kind === "event" && !EVENTS_HIDDEN && (
           <li>
             <Link href="/events" onClick={() => track_("events")} className={pill}>
               <Icon name="ticket" className="h-3.5 w-3.5 text-cyan-300" /> {t("home.quickEvents")}

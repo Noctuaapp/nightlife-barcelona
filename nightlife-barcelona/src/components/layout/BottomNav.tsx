@@ -8,7 +8,7 @@ import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import { useIdleVisible } from "../../lib/useIdleVisible"
 import { ADMIN_EMAIL } from "../../lib/admin"
-import { EVENTS_COMING_SOON } from "../../lib/featureFlags"
+import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 
 export default function BottomNav() {
   const pathname = usePathname()
@@ -32,6 +32,7 @@ export default function BottomNav() {
   const navItems = [
     { label: t("nav.home"), href: "/", icon: Home },
     { label: t("nav.clubs"), href: "/clubs", icon: Martini },
+    // Con Eventos cerrado (lib/featureFlags.ts) el botón sigue ahí, con la etiqueta «Próximamente», y lleva al aviso.
     { label: t("nav.events"), href: "/events", icon: Ticket },
     { label: t("nav.essentials"), href: "/essentials", icon: Backpack },
     // Al entrar en admin se va directo al dashboard, no a la gestión de clubs (que sigue en /admin).
@@ -53,7 +54,7 @@ export default function BottomNav() {
           >
             <Icon size={18} />
             <span>{item.label}</span>
-            {item.href === "/events" && EVENTS_COMING_SOON && (
+            {item.href === "/events" && EVENTS_HIDDEN && (
               <span className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-warn px-1.5 py-px text-[8px] font-bold leading-tight text-night">
                 {t("nav.soon")}
               </span>

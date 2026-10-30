@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useLanguage } from "../../context/LanguageContext"
 import { OPEN_CONSENT_EVENT } from "../../lib/consent"
-import { EVENTS_COMING_SOON } from "../../lib/featureFlags"
+import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 
 export default function Footer() {
   const { t } = useLanguage()
@@ -48,7 +48,7 @@ export default function Footer() {
               <Link href="/clubs" className="text-sm text-zinc-400 transition hover:text-ink">{t("nav.clubs")}</Link>
               <Link href="/events" className="text-sm text-zinc-400 transition hover:text-ink">
                 {t("nav.events")}
-                {EVENTS_COMING_SOON && <span className="ml-2 rounded-full bg-warn/20 px-2 py-0.5 text-[10px] font-bold text-warn">{t("nav.soon")}</span>}
+                {EVENTS_HIDDEN && <span className="ml-2 rounded-full bg-warn/20 px-2 py-0.5 text-[10px] font-bold text-warn">{t("nav.soon")}</span>}
               </Link>
               <Link href="/essentials" className="text-sm text-zinc-400 transition hover:text-ink">{t("nav.essentials")}</Link>
               <Link href="/map" className="text-sm text-zinc-400 transition hover:text-ink">{t("nav.map")}</Link>

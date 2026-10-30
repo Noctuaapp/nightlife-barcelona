@@ -4,6 +4,7 @@ import { createSlug } from "../lib/slug"
 import type { DbRow } from "../lib/clubQueries"
 import { MIN_INDEXABLE, neighborhoodsOf, stylesOf } from "../lib/areas"
 import { zoneLinks } from "../lib/zonePages"
+import { EVENTS_HIDDEN } from "../lib/featureFlags"
 
 const BASE_URL = "https://www.noctuaapp.com"
 
@@ -25,7 +26,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: BASE_URL, changeFrequency: "daily", priority: 1 },
     { url: `${BASE_URL}/clubs`, changeFrequency: "daily", priority: 0.9 },
-    { url: `${BASE_URL}/events`, changeFrequency: "daily", priority: 0.9 },
+    // /events no se declara mientras Eventos esté oculto (ver featureFlags.ts).
+    ...(EVENTS_HIDDEN ? [] : [{ url: `${BASE_URL}/events`, changeFrequency: "daily" as const, priority: 0.9 }]),
     { url: `${BASE_URL}/essentials`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${BASE_URL}/map`, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE_URL}/plan`, changeFrequency: "weekly", priority: 0.5 },
@@ -90,7 +92,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }))
 
-  const eventRoutes: MetadataRoute.Sitemap = events
+  const eventRoutes: MetadataRoute.Sitemap = (EVENTS_HIDDEN ? ([] as typeof events) : events)
     .filter((e) => e.slug || e.title)
     .map((e) => ({
       url: `${BASE_URL}/event/${e.slug || createSlug(e.title)}`,

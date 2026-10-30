@@ -16,13 +16,14 @@ import type { ActivePicks } from "../../lib/picks"
 import AreasSection from "./AreasSection"
 import Icon from "../ui/Icon"
 import { useLanguage } from "../../context/LanguageContext"
+import { homeSeed, weightedOrder } from "../../lib/rotation"
 import { createSlug } from "../../lib/slug"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { clubOpenNow } from "../../lib/clubHours"
 import { matchesQuery, matchScore } from "../../lib/textSearch"
-import { EVENTS_COMING_SOON } from "../../lib/featureFlags"
+import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 
 // Portada. Rediseñada tras la auditoría de octubre 2026:
 // - Antes el titular, un subtítulo de 7 líneas, tres cifras y una cinta animada ocupaban la
@@ -119,6 +120,9 @@ export default function HomeClient({
   const clubs = initialClubs
   const geo = useGeolocation()
   const [mounted, setMounted] = useState(false)
+  // Semilla de la rotación de «Abierto ahora» (lib/rotation.ts). 0 hasta montar: el servidor y el
+  // primer pintado salen en orden fijo y no hay desajuste de hidratación.
+  const [seed, setSeed] = useState(0)
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]["key"]>("all")
   const [search, setSearch] = useState("")
   // Sugerencias en directo mientras se escribe (antes no pasaba nada hasta pulsar Enter, y al
@@ -131,6 +135,7 @@ export default function HomeClient({
 
   useEffect(() => {
     setMounted(true)
+    setSeed(homeSeed())
     const compute = () => {
       const m: Record<string, boolean | null> = {}
       for (const c of clubs) m[c.id] = c.temporarily_closed ? false : clubOpenNow(c.hours, c.open_days)
@@ -159,13 +164,19 @@ export default function HomeClient({
 
   // Primera pantalla: abiertos ahora (los más cercanos si hay ubicación). Si no hay ninguno
   // abierto (de día), los mejor valorados para esta noche.
+  // 30/10/2026: antes salían siempre los mismos, porque solo se barajaban los 24 mejor puntuados.
+  // Ahora se baraja TODO lo que está abierto, dando más opciones a los mejor puntuados pero sin
+  // cerrar la puerta al resto (ver lib/rotation.ts). Con ubicación sigue mandando la distancia.
   const tonight = useMemo(() => {
     const open = ranked.filter((c) => isOpen(c) === true)
-    const pool = open.length >= 3 ? open : ranked
+    const anyOpen = open.length >= 3
+    const pool = anyOpen
+      ? weightedOrder(open, { seed, id: (c) => c.id, weight: (c) => Math.max(1, quality(c)) ** 1.5 })
+      : ranked
     const list = geo.pos ? [...pool].filter((c) => dist(c) !== null).sort((a, b) => (dist(a) as number) - (dist(b) as number)) : pool
-    return { anyOpen: open.length >= 3, list: list.slice(0, 10) }
+    return { anyOpen, list: list.slice(0, 10) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ranked, openMap, geo.pos])
+  }, [ranked, openMap, geo.pos, seed])
 
   const displayed = useMemo(() => {
     let list = ranked
@@ -245,11 +256,12 @@ export default function HomeClient({
     ? { none: "Ningún local coincide con", all: "Ver todos los resultados", one: "resultado", many: "resultados" }
     : { none: "No venues match", all: "See all results", one: "result", many: "results" }
 
-  const quickLinks = [
+  const quickLinks: { href: string; icon: string; label: string; soon?: boolean }[] = [
     { href: "/map", icon: "map", label: t("home.quickMap") },
     { href: "/essentials", icon: "globe", label: t("home.quickEssentials") },
     { href: "/plan", icon: "calendar", label: t("home.quickPlan") },
-    { href: "/events", icon: "ticket", label: t("home.quickEvents") },
+    // Con Eventos cerrado (lib/featureFlags.ts) el acceso sigue, con la etiqueta «Próximamente», y lleva al aviso.
+    { href: "/events", icon: "ticket", label: t("home.quickEvents"), soon: EVENTS_HIDDEN },
   ]
 
   return (
@@ -407,9 +419,7 @@ export default function HomeClient({
                   className="flex shrink-0 items-center gap-2 rounded-full border border-white/15 bg-black/30 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:border-cyan-300/50 hover:bg-black/45"
                 >
                   <Icon name={q.icon} className="h-4 w-4 text-cyan-300" /> {q.label}
-                  {q.href === "/events" && EVENTS_COMING_SOON && (
-                    <span className="rounded-full bg-warn/25 px-2 py-0.5 text-[10px] font-bold text-warn">{t("nav.soon")}</span>
-                  )}
+                  {q.soon && <span className="rounded-full bg-warn px-1.5 py-px text-[10px] font-bold leading-tight text-night">{t("nav.soon")}</span>}
                 </Link>
               ))}
             </nav>

@@ -11,7 +11,6 @@ import { SearchIcon, CloseIcon, LocationIcon, CalendarIcon, ChevronDownIcon } fr
 import ExploreSwitch from "./ExploreSwitch"
 import Icon from "../ui/Icon"
 import { toDateLocale } from "../../lib/dateLocale"
-import { EVENTS_COMING_SOON } from "../../lib/featureFlags"
 
 // Un evento de varios días (date_end) no se considera terminado hasta que pasa el último día,
 // no el primero.
@@ -236,11 +235,6 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
           <div className="mx-auto max-w-7xl">
             <ExploreSwitch active="events" />
             <h1 className="font-display mt-6 break-words text-[2rem] leading-[1.06] text-ink sm:text-5xl md:text-6xl">{t("events.subtitle")}</h1>
-            {EVENTS_COMING_SOON && (
-              <p className="mt-4 inline-flex max-w-2xl items-start gap-2 rounded-ctl border border-warn/30 bg-warn/[0.08] px-4 py-3 text-sm leading-relaxed text-zinc-200" role="note">
-                {t("events.soonNote")}
-              </p>
-            )}
           </div>
         </section>
 

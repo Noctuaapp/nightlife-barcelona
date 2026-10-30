@@ -366,9 +366,16 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
     <main className="relative min-h-screen bg-night pb-40 text-ink lg:pb-16">
       {/* PORTADA */}
       <section className="relative">
-        <div className="relative h-[46vh] max-h-[560px] min-h-[320px] w-full overflow-hidden">
+        <div className={`relative h-[46vh] max-h-[560px] min-h-[320px] w-full overflow-hidden ${tempClosed ? "[&_img]:opacity-60 [&_img]:grayscale" : ""}`}>
           <HeroImage src={club.image} alt={club.name} fallback={FALLBACK_CLUB_IMAGE} />
           <div className="absolute inset-0 bg-gradient-to-t from-night via-night/40 to-transparent" />
+          {/* Cerrado temporalmente (30/10/2026): banda ámbar sobre la foto, a primera vista (no es un popup). */}
+          {tempClosed && (
+            <div className="absolute inset-x-0 top-0 flex items-center justify-center gap-2 bg-warn px-4 py-2.5 text-center text-sm font-bold text-night" role="status">
+              <Icon name="hourglass" className="h-4 w-4 shrink-0" />
+              {t("clubPage.tempClosed")}
+            </div>
+          )}
           <InlineEditImage table="clubs" id={club.id} field="image" bucket="club-images" label="Cambiar foto" />
         </div>
 
@@ -419,12 +426,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                   {reviewCount ? <span className="text-zinc-400">({reviewCount.toLocaleString("es-ES")})</span> : null}
                 </button>
               )}
-              {tempClosed ? (
-                <span className="flex items-center gap-1.5 font-semibold text-warn">
-                  <span className="h-2 w-2 rounded-full bg-warn" />
-                  {t("clubPage.tempClosed")}
-                </span>
-              ) : openNow !== null && (
+              {tempClosed ? null : openNow !== null && (
                 <span className={`flex items-center gap-1.5 font-semibold ${openNow ? "text-open" : "text-zinc-400"}`}>
                   <span className={`h-2 w-2 rounded-full ${openNow ? "live-dot bg-open" : "bg-off"}`} />
                   {openNow ? t("clubPage.openNow") : t("clubPage.closedNow")}
@@ -433,9 +435,13 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
             </div>
 
             {tempClosed && (
-              <p className="mt-5 max-w-2xl rounded-ctl border border-warn/30 bg-warn/[0.08] px-4 py-3 text-sm leading-relaxed text-zinc-200" role="note">
-                {t("clubPage.tempClosedNote")}
-              </p>
+              <div className="mt-5 flex max-w-2xl items-start gap-3 rounded-card border border-warn/50 bg-warn/[0.14] px-4 py-3.5" role="note">
+                <Icon name="hourglass" className="mt-0.5 h-5 w-5 shrink-0 text-warn" />
+                <div>
+                  <p className="text-base font-bold text-warn">{t("clubPage.tempClosed")}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-zinc-100">{t("clubPage.tempClosedNote")}</p>
+                </div>
+              </div>
             )}
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -657,8 +663,9 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
             {activeTab === "about" && (
               <div className="space-y-6">
                 {/* Antes de ir (29/10/2026): lo mejor, ojo con esto, hora punta, público y consejo.
-                    Solo sale si alguien ha escrito algo (ver club/ClubInsider). */}
-                <ClubInsider club={club} isAdmin={isAdmin} />
+                    Solo sale si alguien ha escrito algo (ver club/ClubInsider). Sin recuadro de
+                    edición desde el 30/10/2026. */}
+                <ClubInsider club={club} />
 
                 {(featureCount > 0 || isAdmin) && (
                   <Panel>

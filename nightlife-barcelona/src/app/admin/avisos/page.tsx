@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import {
-  Bell, MessageSquare, Flag, UserPlus, Ban, Star, AlertTriangle, PencilLine, CheckCheck, MessageSquareQuote, Mail, type LucideIcon,
+  Bell, MessageSquare, Flag, UserPlus, Ban, Star, AlertTriangle, PencilLine, CheckCheck, MessageSquareQuote, Mail, Inbox, type LucideIcon,
 } from "lucide-react"
 import AdminShell, { invalidateAdminBadges } from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
@@ -35,6 +35,7 @@ const KINDS: Record<string, { label: string; icon: LucideIcon; tone: string }> =
   feedback: { label: "Opiniones de la web", icon: Star, tone: "text-amber-200" },
   signup: { label: "Usuarios nuevos", icon: UserPlus, tone: "text-emerald-300" },
   owner_change: { label: "Cambios de dueños", icon: PencilLine, tone: "text-violet-300" },
+  owner_message: { label: "Mensajes de dueños", icon: Inbox, tone: "text-teal-300" },
 }
 
 function when(iso: string) {

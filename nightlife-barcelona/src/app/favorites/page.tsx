@@ -14,6 +14,7 @@ import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
 import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
+import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 
 // Antes esta pantalla tenía un sistema de "listas" (carpetas para organizar favoritos) y una
 // nota de texto por favorito. Tras probarlo, no se le veía suficiente utilidad como para
@@ -99,7 +100,7 @@ export default function FavoritesPage() {
         setClubs([])
       }
 
-      if (eventFavs.length > 0) {
+      if (eventFavs.length > 0 && !EVENTS_HIDDEN) {
         const { data } = await supabase
           .from("events")
           .select("id, title, slug, club_name, image, music, date, price")

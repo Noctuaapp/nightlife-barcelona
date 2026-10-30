@@ -7,6 +7,7 @@ import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import OwnerStats from "../../components/owner/OwnerStats"
+import OwnerInbox from "../../components/owner/OwnerInbox"
 
 // Portal para que el organizador de un festival gestione sus propios festivales y las sesiones
 // de DJ de cada uno, sin pasar por Jordi. Un festival queda "vinculado" cuando su fila en
@@ -554,6 +555,14 @@ export default function MiFestivalPage() {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Buzón con Noctua (30/10/2026, supabase/59): conversación privada; solo las cuentas
+              vinculadas a un festival lo ven. Si organiza varios, elige sobre cuál escribe. */}
+          {userId && festivals.length > 0 && (
+            <div className="mt-10">
+              <OwnerInbox userId={userId} topics={festivals.map((f) => ({ type: "event" as const, id: f.id, name: f.title }))} />
             </div>
           )}
         </section>

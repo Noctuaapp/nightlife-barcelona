@@ -93,16 +93,18 @@ export default function ClubCard({
           fill
           sizes="(max-width: 768px) 100vw, 33vw"
           unoptimized={!image}
-          className={`object-cover transition duration-500 group-hover:scale-[1.03] ${temporarilyClosed ? "opacity-60 saturate-50" : ""}`}
+          className={`object-cover transition duration-500 group-hover:scale-[1.03] ${temporarilyClosed ? "opacity-50 grayscale" : ""}`}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
+        {/* Cerrado temporalmente (30/10/2026): banda ámbar a lo ancho de la foto para que se vea a primera vista. */}
+        {temporarilyClosed && (
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-warn px-3 py-2 text-sm font-bold text-night">
+            <Icon name="hourglass" className="h-4 w-4 shrink-0" />
+            <span className="truncate">{t("clubPage.tempClosed")}</span>
+          </div>
+        )}
         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          {temporarilyClosed ? (
-            <span className="flex items-center gap-1.5 rounded-full bg-night/85 px-2.5 py-1 text-xs font-semibold text-warn">
-              <span className="h-1.5 w-1.5 rounded-full bg-warn" />
-              {t("clubPage.tempClosed")}
-            </span>
-          ) : openNow !== null && (
+          {temporarilyClosed ? null : openNow !== null && (
             <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${openNow ? "bg-night/80 text-open" : "bg-night/70 text-zinc-300"}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${openNow ? "live-dot bg-open" : "bg-off"}`} />
               {openNow ? t("clubPage.openNow") : t("home.closed")}

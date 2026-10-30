@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, BarChart3, Disc3, BadgeCheck, CalendarDays, Headphones, MapPin, Users,
-  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, History, Bell, Footprints, TrendingUp, type LucideIcon,
+  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, History, Bell, Footprints, TrendingUp, Inbox, type LucideIcon,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
@@ -19,7 +19,8 @@ import { supabase } from "../../lib/supabase"
 //   - Contadores de lo que pide atención (mensajes nuevos, notas denunciadas sin revisar)
 //     directamente en el menú, visibles desde cualquier pantalla del admin.
 //   - (25/10/2026) Avisos: bandeja con todo lo importante que pasa (campana arriba en el móvil).
-type NavItem = { href: string; label: string; icon: LucideIcon; badge?: "messages" | "reports" | "notices" }
+//   - (30/10/2026) Buzón de propietarios: contador de mensajes de dueños sin leer.
+type NavItem = { href: string; label: string; icon: LucideIcon; badge?: "messages" | "reports" | "notices" | "owners" }
 type NavGroup = { label: string; items: NavItem[] }
 
 const ADMIN_NAV: NavGroup[] = [
@@ -47,6 +48,7 @@ const ADMIN_NAV: NavGroup[] = [
     items: [
       { href: "/admin/users", label: "Usuarios", icon: Users },
       { href: "/admin/messages", label: "Mensajes", icon: MessageSquare, badge: "messages" },
+      { href: "/admin/buzon", label: "Buzón de propietarios", icon: Inbox, badge: "owners" },
       { href: "/admin/notas", label: "Notas denunciadas", icon: Flag, badge: "reports" },
       { href: "/admin/entry-denials", label: "No dejan entrar", icon: Ban },
       { href: "/admin/opinion", label: "Opiniones", icon: Star },
@@ -70,7 +72,7 @@ const ADMIN_NAV: NavGroup[] = [
   },
 ]
 
-type Badges = { messages: number; reports: number; notices: number }
+type Badges = { messages: number; reports: number; notices: number; owners: number }
 
 // Contadores del menú. Dos consultas que solo cuentan filas (no traen datos), compartidas entre
 // todas las pantallas durante un minuto para no repetirlas en cada cambio de sección.
@@ -79,13 +81,15 @@ const BADGE_TTL_MS = 60_000
 
 async function loadBadges(): Promise<Badges> {
   if (badgeCache && Date.now() - badgeCache.at < BADGE_TTL_MS) return badgeCache.value
-  const [msgs, reports, notices] = await Promise.all([
+  const [msgs, reports, notices, owners] = await Promise.all([
     supabase.from("contact_messages").select("id", { count: "exact", head: true }).eq("status", "new").or("is_spam.is.null,is_spam.eq.false"),
     supabase.from("club_checkin_reports").select("id", { count: "exact", head: true }).is("reviewed_at", null),
     // Avisos sin leer (supabase/38). Si la tabla aún no existe, cuenta 0.
     supabase.from("admin_notifications").select("id", { count: "exact", head: true }).is("read_at", null),
+    // Mensajes de dueños sin leer (supabase/59). Si la tabla aún no existe, cuenta 0.
+    supabase.from("owner_messages").select("id", { count: "exact", head: true }).eq("sender", "owner").is("read_at", null),
   ])
-  const value = { messages: msgs.count || 0, reports: reports.count || 0, notices: notices.count || 0 }
+  const value = { messages: msgs.count || 0, reports: reports.count || 0, notices: notices.count || 0, owners: owners.count || 0 }
   badgeCache = { at: Date.now(), value }
   return value
 }
@@ -148,7 +152,7 @@ export default function AdminShell({
   children: React.ReactNode
 }) {
   const pathname = usePathname() || ""
-  const [badges, setBadges] = useState<Badges>(badgeCache?.value || { messages: 0, reports: 0, notices: 0 })
+  const [badges, setBadges] = useState<Badges>(badgeCache?.value || { messages: 0, reports: 0, notices: 0, owners: 0 })
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -178,7 +182,7 @@ export default function AdminShell({
     }
   }, [menuOpen])
 
-  const pending = badges.messages + badges.reports
+  const pending = badges.messages + badges.reports + badges.owners
 
   const brand = (
     <Link href="/admin/dashboard" className="flex items-center gap-2.5">

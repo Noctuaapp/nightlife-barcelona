@@ -1,25 +1,38 @@
 "use client"
 
-import { useState, useEffect, type ChangeEvent } from "react"
+import { useState, useEffect, useMemo, type ChangeEvent, type ReactNode } from "react"
 import Link from "next/link"
 
-import { Upload, X, Pencil, Trash2, Check } from "lucide-react"
+import { Upload, X, Pencil, Trash2, Check, ExternalLink, Copy, BadgeCheck, TrendingUp, Lock, Files } from "lucide-react"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import OwnerStats from "../../components/owner/OwnerStats"
+import OwnerInbox from "../../components/owner/OwnerInbox"
 import { EXTRA_FEATURES, CLOSED_FIELD, extrasFromRow } from "../../lib/extraFeatures"
 import { useLanguage } from "../../context/LanguageContext"
 import { toast } from "../../components/ui/Toast"
 import { createSlug } from "../../lib/slug"
+import { madridToday } from "../../lib/madridDay"
 import { touchCache, clubPaths, clubEventPaths } from "../../lib/touchCache"
 
 // Portal para que un club verificado edite su propia ficha sin pasar por Jordi. Un club queda
 // "vinculado" cuando su fila en `clubs` tiene `owner_user_id` = el id de un usuario de Supabase
-// Auth (Jordi lo vincula a mano la primera vez, desde el SQL Editor). Reutiliza el mismo
-// formulario y los mismos campos que /admin, con dos excepciones deliberadas: el club no puede
-// tocar "Verified" (es el sello de confianza que otorga Noctua) ni "Trending" (es una curación
-// editorial nuestra) — todo lo demás es igual que en el panel de admin.
+// Auth (Jordi lo vincula a mano desde Admin › Usuarios). Reutiliza los mismos campos que /admin,
+// con las excepciones que decide solo Noctua (la base de datos las protege aunque alguien las
+// mandara a mano, supabase/35 y 37): verificado, tendencia, valoración, destacado, ocultar o
+// publicar, enlace de la ficha y el punto exacto del mapa.
+//
+// Rediseño del 30/10/2026: antes era un formulario largo sin secciones. Ahora:
+//   - Menú de secciones pegado arriba (Resumen · Ficha · Fotos · Etiquetas · Noches · Mensajes).
+//   - Resumen: estado de la ficha, "tu ficha está al X%" con lo que falta, estado en directo y
+//     estadísticas.
+//   - Ficha en tarjetas (datos básicos, descripción y redes, cómo llegar, ofertas) — ahora también
+//     se pueden editar aquí la descripción, Instagram, TikTok y la web, que antes solo se tocaban
+//     sobre la ficha pública.
+//   - Etiquetas agrupadas igual que en el admin.
+//   - Barra de guardado que avisa de los cambios sin guardar (y de si se intenta salir sin guardar).
+//   - "Lo gestiona Noctua" + buzón de mensajes con Noctua (supabase/59).
 type Club = {
   id: number
   name: string
@@ -53,6 +66,11 @@ type Club = {
   owner_user_id?: string | null
   live_status?: string | null
   live_status_updated_at?: string | null
+  slug?: string | null
+  description?: string | null
+  instagram?: string | null
+  tiktok?: string | null
+  website?: string | null
 }
 
 // Estados en directo: la etiqueta sale de clubPage.vibeQuiet/vibeBusy/vibeFull (las mismas que ve
@@ -73,6 +91,16 @@ const VENUE_TYPE_OPTIONS = [
   { value: "Bar de billar", key: "planPage.venuePool" },
 ]
 const DAY_OPTIONS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+
+// Secciones del menú de arriba (id del bloque de la página + clave del texto).
+const SECTIONS = [
+  { id: "resumen", label: "ownerPortal.navSummary" },
+  { id: "ficha", label: "ownerPortal.navListing" },
+  { id: "fotos", label: "ownerPortal.navPhotos" },
+  { id: "etiquetas", label: "ownerPortal.navTags" },
+  { id: "noches", label: "ownerPortal.navNights" },
+  { id: "mensajes", label: "ownerPortal.navMessages" },
+] as const
 
 type ClubFormData = {
   name: string
@@ -104,6 +132,10 @@ type ClubFormData = {
   discount_info: string
   free_entry_info: string
   gallery: string[]
+  description: string
+  instagram: string
+  tiktok: string
+  website: string
 }
 
 const clubToForm = (club: Club): ClubFormData => ({
@@ -135,9 +167,13 @@ const clubToForm = (club: Club): ClubFormData => ({
   discount_info: club.discount_info || "",
   free_entry_info: club.free_entry_info || "",
   gallery: Array.isArray(club.gallery) ? club.gallery : [],
+  description: club.description || "",
+  instagram: club.instagram || "",
+  tiktok: club.tiktok || "",
+  website: club.website || "",
 })
 
-const formToPayload = (form: ClubFormData) => ({
+const formToPayload = (form: ClubFormData, row: Club) => ({
   name: form.name.trim(),
   neighborhood: form.neighborhood.trim(),
   address: form.address.trim(),
@@ -166,6 +202,12 @@ const formToPayload = (form: ClubFormData) => ({
   free_entry_info: form.free_entry_info.trim(),
   gallery: form.gallery.length > 0 ? form.gallery : null,
   manual_photos: form.gallery.length > 0,
+  // Descripción y redes: solo si esas columnas existen en la fila (igual que las etiquetas
+  // nuevas), para que un guardado nunca falle por una columna que falte.
+  ...("description" in row ? { description: form.description.trim() || null } : {}),
+  ...("instagram" in row ? { instagram: form.instagram.trim() || null } : {}),
+  ...("tiktok" in row ? { tiktok: form.tiktok.trim() || null } : {}),
+  ...("website" in row ? { website: form.website.trim() || null } : {}),
 })
 
 // Noches del club. No llevan su propio owner_user_id: pertenecen automáticamente al dueño del
@@ -213,9 +255,31 @@ const eventToForm = (e: ClubEvent): EventFormData => ({
   sold_out: !!e.sold_out,
 })
 
+// Estilos compartidos de los campos.
+const inputClass = "w-full rounded-ctl border border-white/15 bg-night px-4 py-3 text-base text-ink outline-none transition placeholder:text-zinc-500 focus:border-brand"
+const labelClass = "mb-1.5 block text-sm font-semibold text-zinc-300"
+const toggle = (active: boolean) =>
+  `rounded-full px-4 py-2 text-sm font-semibold transition ${active ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"}`
+const uploadBox = (busy: boolean) =>
+  `flex cursor-pointer items-center justify-center gap-2 rounded-ctl border border-dashed px-4 py-3 text-sm font-semibold transition ${busy ? "border-white/10 text-zinc-500" : "border-white/20 text-zinc-300 hover:border-brand hover:text-ink"}`
+const primaryBtn = "rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-50"
+const ghostBtn = "rounded-ctl border border-white/15 px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
+
+// Tarjeta de sección con título y una línea de explicación.
+function Card({ id, title, desc, children }: { id?: string; title: string; desc?: string; children: ReactNode }) {
+  return (
+    <div id={id} className="scroll-mt-36 rounded-card border border-white/10 bg-surface p-5 sm:scroll-mt-40 sm:p-6">
+      <h3 className="text-base font-semibold text-ink">{title}</h3>
+      {desc && <p className="mt-1 text-sm text-zinc-400">{desc}</p>}
+      <div className="mt-5">{children}</div>
+    </div>
+  )
+}
+
 export default function MiClubPage() {
   const { t, locale } = useLanguage()
   const [checkingAccess, setCheckingAccess] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
   const [club, setClub] = useState<Club | null>(null)
   const [form, setForm] = useState<ClubFormData | null>(null)
   const [notLinked, setNotLinked] = useState(false)
@@ -225,6 +289,8 @@ export default function MiClubPage() {
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [uploadingGallery, setUploadingGallery] = useState(false)
+  const [inboxUnread, setInboxUnread] = useState(0)
+  const [activeSection, setActiveSection] = useState<string>("resumen")
 
   const [events, setEvents] = useState<ClubEvent[]>([])
   const [showAddEventForm, setShowAddEventForm] = useState(false)
@@ -253,6 +319,7 @@ export default function MiClubPage() {
         window.location.href = "/login?next=/mi-club"
         return
       }
+      setUserId(user.id)
       const { data, error } = await supabase.from("clubs").select("*").eq("owner_user_id", user.id).maybeSingle()
 
       if (error) {
@@ -269,6 +336,38 @@ export default function MiClubPage() {
     }
     load()
   }, [])
+
+  // ¿Hay cambios sin guardar? (comparando el formulario con lo último guardado)
+  const dirty = useMemo(() => {
+    if (!club || !form) return false
+    return JSON.stringify(form) !== JSON.stringify(clubToForm(club))
+  }, [club, form])
+
+  useEffect(() => {
+    if (!dirty) return
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ""
+    }
+    window.addEventListener("beforeunload", warn)
+    return () => window.removeEventListener("beforeunload", warn)
+  }, [dirty])
+
+  // Sección que se está viendo, para resaltarla en el menú de arriba.
+  const loadedClub = !!club
+  useEffect(() => {
+    if (!loadedClub || typeof IntersectionObserver === "undefined") return
+    const els = SECTIONS.map((s) => document.getElementById(s.id)).filter(Boolean) as HTMLElement[]
+    const io = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible[0]) setActiveSection(visible[0].target.id)
+      },
+      { rootMargin: "-25% 0px -60% 0px", threshold: 0 }
+    )
+    els.forEach((el) => io.observe(el))
+    return () => io.disconnect()
+  }, [loadedClub])
 
   const eventFormToPayload = (f: EventFormData, clubId: number, clubName: string) => ({
     club_id: clubId,
@@ -346,6 +445,16 @@ export default function MiClubPage() {
     setEditEventForm(emptyEventForm)
   }
 
+  // Duplicar una noche (la misma noche de la semana siguiente, otro mes...): abre el formulario de
+  // "Nueva noche" con todo copiado menos la fecha.
+  const duplicateEvent = (event: ClubEvent) => {
+    setNewEventForm({ ...eventToForm(event), date: "" })
+    setEditingEventId(null)
+    setShowAddEventForm(true)
+    toast(t("ownerPortal.duplicated"), 4000)
+    window.setTimeout(() => document.getElementById("nueva-noche")?.scrollIntoView({ behavior: "smooth", block: "center" }), 80)
+  }
+
   const saveEditEvent = async (id: number) => {
     if (!club) return
     if (!editEventForm.title.trim()) { fail("ownerPortal.errNightTitle"); return }
@@ -377,7 +486,7 @@ export default function MiClubPage() {
     if (!club || !form) return
     if (!form.name.trim()) { fail("ownerPortal.errName"); return }
     setSaving(true)
-    const { data, error } = await supabase.from("clubs").update(formToPayload(form)).eq("id", club.id).select().maybeSingle()
+    const { data, error } = await supabase.from("clubs").update(formToPayload(form, club)).eq("id", club.id).select().maybeSingle()
     setSaving(false)
     if (error) { fail("ownerPortal.errSave", error.message); return }
     if (data) {
@@ -397,8 +506,10 @@ export default function MiClubPage() {
     const { data, error } = await supabase.from("clubs").update({ live_status: status, live_status_updated_at: nowIso }).eq("id", club.id).select().maybeSingle()
     setUpdatingStatus(false)
     if (error) { fail("ownerPortal.errStatus", error.message); return }
-    setClub((data as Club) || { ...club, live_status: status, live_status_updated_at: nowIso })
-    touchCache(clubPaths((club as unknown as { slug?: string | null }).slug || createSlug((club as unknown as { name?: string }).name)))
+    // Solo cambia el estado en directo: lo demás de la ficha (incluido lo que se esté editando y
+    // aún no se haya guardado) se queda como estaba.
+    setClub((prev) => (prev ? { ...prev, live_status: status, live_status_updated_at: (data as Club | null)?.live_status_updated_at ?? nowIso } : prev))
+    touchCache(clubPaths(club.slug || createSlug(club.name)))
   }
 
   const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -420,7 +531,7 @@ export default function MiClubPage() {
         return
       }
       const { data } = supabase.storage.from("club-images").getPublicUrl(fileName)
-      setForm({ ...form, image: data.publicUrl })
+      setForm((f) => (f ? { ...f, image: data.publicUrl } : f))
     } catch (err) {
       fail("ownerPortal.errUpload", err instanceof Error ? err.message : String(err))
     } finally {
@@ -454,25 +565,26 @@ export default function MiClubPage() {
       if (!firstError) firstError = err instanceof Error ? err.message : String(err)
     } finally {
       setUploadingGallery(false)
-      if (urls.length > 0) setForm({ ...form, gallery: [...form.gallery, ...urls] })
+      if (urls.length > 0) setForm((f) => (f ? { ...f, gallery: [...f.gallery, ...urls] } : f))
       if (firstError) fail("ownerPortal.errUpload", firstError)
       input.value = ""
     }
   }
 
   const removeGalleryPhoto = (url: string) => {
-    if (!form) return
-    setForm({ ...form, gallery: form.gallery.filter((u) => u !== url) })
+    setForm((f) => (f ? { ...f, gallery: f.gallery.filter((u) => u !== url) } : f))
   }
 
-  const inputClass = "w-full rounded-ctl border border-white/15 bg-night px-4 py-3 text-base text-ink outline-none transition placeholder:text-zinc-500 focus:border-brand"
-  const labelClass = "mb-1.5 block text-sm font-semibold text-zinc-300"
-  const toggle = (active: boolean) =>
-    `rounded-full px-4 py-2 text-sm font-semibold transition ${active ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"}`
-  const uploadBox = (busy: boolean) =>
-    `flex cursor-pointer items-center justify-center gap-2 rounded-ctl border border-dashed px-4 py-3 text-sm font-semibold transition ${busy ? "border-white/10 text-zinc-500" : "border-white/20 text-zinc-300 hover:border-brand hover:text-ink"}`
-  const primaryBtn = "rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-50"
-  const ghostBtn = "rounded-ctl border border-white/15 px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
+  const copyListingLink = async () => {
+    if (!club) return
+    const url = `https://www.noctuaapp.com/clubs/${club.slug || createSlug(club.name)}`
+    try {
+      await navigator.clipboard.writeText(url)
+      toast(t("ownerPortal.linkCopied"))
+    } catch {
+      toast(url, 6000)
+    }
+  }
 
   const renderEventForm = (eventForm: EventFormData, setEventForm: (f: EventFormData) => void, onImage: (e: ChangeEvent<HTMLInputElement>) => void) => (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -584,254 +696,448 @@ export default function MiClubPage() {
     )
   }
 
+  const dateLocale = locale === "en" ? "en-GB" : locale === "ca" ? "ca-ES" : "es-ES"
   const fmtDate = (d: string | null) =>
-    d ? new Date(`${d}T12:00:00`).toLocaleDateString(locale === "en" ? "en-GB" : locale === "ca" ? "ca-ES" : "es-ES", { weekday: "short", day: "numeric", month: "short" }) : t("eventPage.dateTbc")
+    d ? new Date(`${d}T12:00:00`).toLocaleDateString(dateLocale, { weekday: "short", day: "numeric", month: "short" }) : t("eventPage.dateTbc")
 
-  const features: { key: keyof ClubFormData; label: string }[] = [
-    { key: "terrace", label: t("ownerPortal.fTerrace") },
-    { key: "smoking_area", label: t("ownerPortal.fSmoking") },
-    { key: "table_booking", label: t("ownerPortal.fTables") },
-    { key: "vip_tables", label: t("event.vipTable") },
-    { key: "has_foosball", label: t("explorer.attr_games") },
-    { key: "lgtbi_friendly", label: "LGTBI+" },
-    { key: "sold_out", label: t("ownerPortal.fSoldOutToday") },
-    // "Ocultar ficha" ya no está: ocultar o publicar lo decide solo Noctua (supabase/35).
+  const set = <K extends keyof ClubFormData>(key: K, value: ClubFormData[K]) => setForm((f) => (f ? { ...f, [key]: value } : f))
+  const listingSlug = club.slug || createSlug(club.name)
+
+  // Etiquetas agrupadas igual que en el admin. Lo que decide solo Noctua (verificado, tendencia,
+  // ocultar...) no está aquí. "Cerrado temporalmente" va aparte, con su aviso.
+  type Tag = { key: string; label: string; extra?: boolean }
+  const core = (key: keyof ClubFormData, label: string): Tag => ({ key, label })
+  const extra = (field: string): Tag => {
+    const f = EXTRA_FEATURES.find((x) => x.field === field)
+    return { key: field, label: f ? t(f.labelKey) : field, extra: true }
+  }
+  const tagGroups: { title: string; tags: Tag[] }[] = [
+    { title: t("ownerPortal.groupAmbience"), tags: [extra("dance_floor"), extra("live_music"), extra("hot_shows"), core("lgtbi_friendly", "LGTBI+")] },
+    { title: t("ownerPortal.groupEntertainment"), tags: [extra("karaoke"), extra("darts"), core("has_foosball", t("explorer.attr_games")), extra("games"), extra("sports_tv")] },
+    { title: t("ownerPortal.groupFood"), tags: [extra("cocktails"), extra("food"), extra("shisha")] },
+    {
+      title: t("ownerPortal.groupZones"),
+      tags: [
+        core("terrace", t("ownerPortal.fTerrace")),
+        core("smoking_area", t("ownerPortal.fSmoking")),
+        extra("cigarette_machine"),
+        core("table_booking", t("ownerPortal.fTables")),
+        core("vip_tables", t("event.vipTable")),
+        extra("cloakroom"),
+        extra("wheelchair_accessible"),
+      ],
+    },
+    { title: t("ownerPortal.groupToday"), tags: [core("sold_out", t("ownerPortal.fSoldOutToday"))] },
   ]
+  // Si en el futuro se añade otra etiqueta en lib/extraFeatures.ts, sale aquí sin tocar más.
+  const placed = new Set(tagGroups.flatMap((g) => g.tags.map((x) => x.key)))
+  const unplaced = EXTRA_FEATURES.filter((f) => !placed.has(f.field)).map((f) => extra(f.field))
+  if (unplaced.length) tagGroups[3].tags.push(...unplaced)
+  const tagOn = (tag: Tag) => (tag.extra ? !!form.extras[tag.key] : !!form[tag.key as keyof ClubFormData])
+  const tagToggle = (tag: Tag) =>
+    tag.extra ? set("extras", { ...form.extras, [tag.key]: !form.extras[tag.key] }) : set(tag.key as keyof ClubFormData, !form[tag.key as keyof ClubFormData] as never)
+
+  // Qué le falta a la ficha para estar completa (se recalcula según escribe).
+  const today = madridToday()
+  const checks: { label: string; ok: boolean; to: string }[] = [
+    { label: t("ownerPortal.ckImage"), ok: !!form.image.trim(), to: "fotos" },
+    { label: t("ownerPortal.ckDescription"), ok: form.description.trim().length >= 40, to: "descripcion" },
+    { label: t("ownerPortal.ckAddress"), ok: !!form.address.trim(), to: "datos" },
+    { label: t("ownerPortal.ckHours"), ok: !!form.hours.trim(), to: "datos" },
+    { label: t("ownerPortal.ckDays"), ok: form.open_days.length > 0, to: "datos" },
+    { label: t("ownerPortal.ckMusic"), ok: !!form.music.trim(), to: "datos" },
+    { label: t("ownerPortal.ckPrice"), ok: !!form.price.trim() || !!form.free_entry_info.trim(), to: "datos" },
+    { label: t("ownerPortal.ckSocial"), ok: !!(form.instagram.trim() || form.tiktok.trim() || form.website.trim()), to: "descripcion" },
+    { label: t("ownerPortal.ckGallery"), ok: form.gallery.length >= 3, to: "fotos" },
+    { label: t("ownerPortal.ckNight"), ok: events.some((e) => (e.date || "") >= today), to: "noches" },
+  ]
+  const missing = checks.filter((c) => !c.ok)
+  const pct = Math.round(((checks.length - missing.length) / checks.length) * 100)
+
+  const stateChip = (on: boolean) => (
+    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${on ? "bg-open/15 text-open" : "bg-white/[0.06] text-zinc-400"}`}>
+      {on ? t("ownerPortal.stateOn") : t("ownerPortal.stateOff")}
+    </span>
+  )
 
   return (
     <>
       <Header />
       <main className="min-h-screen bg-night pb-40 pt-8 text-ink sm:pt-12">
-        <section className="mx-auto max-w-3xl px-4">
-          <p className="text-sm font-semibold text-brand-soft">{t("ownerPortal.kicker")}</p>
-          <h1 className="font-display mt-2 text-[2rem] leading-tight sm:text-5xl">{club.name}</h1>
-          <p className="mt-3 max-w-xl text-sm text-zinc-300">{t("ownerPortal.intro")}</p>
-
-          <div className="mt-8 rounded-card border border-white/10 bg-surface p-5 sm:p-6">
-            <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
-              <span className="live-dot h-2 w-2 rounded-full bg-open" /> {t("forVenues.f2Title")}
-            </h2>
-            <p className="mt-2 text-sm text-zinc-300">{t("forVenues.f2Body")}</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {LIVE_STATUS_OPTIONS.map((opt) => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  disabled={updatingStatus}
-                  onClick={() => setLiveStatus(opt.key)}
-                  aria-pressed={club.live_status === opt.key}
-                  className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition disabled:opacity-50 ${
-                    club.live_status === opt.key ? "bg-white text-night" : "border border-white/15 text-ink hover:bg-white/5"
-                  }`}
-                >
-                  <span className={`h-2 w-2 rounded-full ${opt.dot}`} /> {t(opt.label)}
-                </button>
-              ))}
-            </div>
-            {club.live_status && club.live_status_updated_at && (
-              <p className="mt-3 text-sm text-zinc-400">
-                {t("ownerPortal.markedAs")} <strong className="text-zinc-200">{t(LIVE_STATUS_OPTIONS.find((o) => o.key === club.live_status)?.label || "")}</strong> · {timeAgo(club.live_status_updated_at)}
-              </p>
-            )}
-          </div>
-
-          {/* Estadísticas de su ficha (visitas, clics, de dónde llegan). */}
-          <div className="mt-6">
-            <OwnerStats type="club" id={club.id} name={club.name} />
-          </div>
-
-          <h2 className="mt-10 text-lg font-semibold">{t("ownerPortal.listingTitle")}</h2>
-          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className={labelClass}>{t("ownerPortal.name")}</label>
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>{t("explorer.barrioTitle")}</label>
-              <input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} placeholder="Gràcia, Eixample…" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>{t("ownerPortal.address")}</label>
-              <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Carrer de Còrsega, 327" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>{t("club.music")}</label>
-              <input value={form.music} onChange={(e) => setForm({ ...form, music: e.target.value })} placeholder="Techno, Reggaetón…" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>{t("event.price")}</label>
-              <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="15–20 €" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>{t("event.schedule")}</label>
-              <input value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} placeholder="23:55-06:00" className={inputClass} />
-              <p className="mt-1 text-xs text-zinc-400">{t("ownerPortal.hoursHint")}</p>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className={labelClass}>{t("ownerPortal.openDays")}</label>
-              <div className="flex flex-wrap gap-2">
-                {DAY_OPTIONS.map((day, i) => {
-                  const active = form.open_days.includes(day)
-                  // Etiqueta del día en el idioma activo (2024-01-01 fue lunes).
-                  const label = new Date(2024, 0, 1 + i).toLocaleDateString(locale === "en" ? "en-GB" : locale === "ca" ? "ca-ES" : "es-ES", { weekday: "short" }).replace(".", "")
-                  return (
-                    <button
-                      key={day}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => setForm({ ...form, open_days: active ? form.open_days.filter((d) => d !== day) : [...form.open_days, day] })}
-                      className={`${toggle(active)} capitalize`}
-                    >
-                      {label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className={labelClass}>{t("ownerPortal.mainImage")}</label>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {form.image && <img src={form.image} alt={t("ownerPortal.preview")} className="h-20 w-20 shrink-0 rounded-ctl border border-white/10 object-cover" />}
-                <div className="flex-1 space-y-2">
-                  <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder={t("ownerPortal.imageUrlPh")} className={inputClass} />
-                  <label className={uploadBox(uploadingImage)}>
-                    <Upload size={16} /> {uploadingImage ? t("ownerPortal.uploading") : t("ownerPortal.uploadImage")}
-                    <input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={handleImageUpload} />
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className={labelClass}>
-                {t("ownerPortal.gallery").replace("{n}", String(form.gallery.length))}
-                {form.gallery.length > 0 && <span className="ml-2 font-normal text-zinc-400">{t("ownerPortal.galleryHint")}</span>}
-              </label>
-              <label className={uploadBox(uploadingGallery)}>
-                <Upload size={16} /> {uploadingGallery ? t("ownerPortal.uploading") : t("ownerPortal.addPhotos")}
-                <input type="file" accept="image/*" multiple className="hidden" disabled={uploadingGallery} onChange={handleGalleryUpload} />
-              </label>
-              {form.gallery.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-3">
-                  {form.gallery.map((url) => (
-                    <div key={url} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-ctl border border-white/10">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt="" className="h-full w-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => removeGalleryPhoto(url)}
-                        aria-label={t("ownerPortal.removePhoto")}
-                        className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-night/80 text-white"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
+        <div className="mx-auto max-w-3xl px-4">
+          {/* Cabecera */}
+          <div className="flex items-start gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {club.image && <img src={club.image} alt="" className="hidden h-20 w-20 shrink-0 rounded-card border border-white/10 object-cover sm:block" />}
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-brand-soft">{t("ownerPortal.kicker")}</p>
+              <h1 className="font-display mt-1 break-words text-[2rem] leading-tight sm:text-5xl">{club.name}</h1>
+              {(club.verified || club.trending) && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {club.verified && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-open/15 px-3 py-1 text-xs font-semibold text-open">
+                      <BadgeCheck size={14} aria-hidden="true" /> {t("ownerPortal.statusVerified")}
+                    </span>
+                  )}
+                  {club.trending && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-warn/15 px-3 py-1 text-xs font-semibold text-warn">
+                      <TrendingUp size={14} aria-hidden="true" /> {t("ownerPortal.statusTrending")}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
+          </div>
+          <p className="mt-4 max-w-xl text-sm text-zinc-300">{t("ownerPortal.intro")}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href={`/clubs/${listingSlug}`} className={`${ghostBtn} flex items-center gap-2 !py-2.5`}>
+              <ExternalLink size={15} aria-hidden="true" /> {t("ownerPortal.viewListing")}
+            </Link>
+            <button type="button" onClick={copyListingLink} className={`${ghostBtn} flex items-center gap-2 !py-2.5`}>
+              <Copy size={15} aria-hidden="true" /> {t("ownerPortal.copyLink")}
+            </button>
+          </div>
 
-            <div>
-              <label className={labelClass}>{t("ownerPortal.capacity")}</label>
-              <input value={form.people} onChange={(e) => setForm({ ...form, people: e.target.value })} placeholder={t("ownerPortal.capacityPh")} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>{t("planPage.dresscode")}</label>
-              <input value={form.dresscode} onChange={(e) => setForm({ ...form, dresscode: e.target.value })} placeholder="Casual, Smart casual…" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>{t("planPage.stepVenueType")}</label>
-              <select value={form.venue_type} onChange={(e) => setForm({ ...form, venue_type: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass}>
-                {VENUE_TYPE_OPTIONS.map((v) => (
-                  <option key={v.value} value={v.value}>
-                    {t(v.key)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>{t("ownerPortal.metroLines")}</label>
-              <input value={form.metro_lines} onChange={(e) => setForm({ ...form, metro_lines: e.target.value })} placeholder="L1, L4" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>{t("ownerPortal.nightBuses")}</label>
-              <input value={form.night_buses} onChange={(e) => setForm({ ...form, night_buses: e.target.value })} placeholder="N0, N6" className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>{t("ownerPortal.promo")}</label>
-              <input value={form.discount_info} onChange={(e) => setForm({ ...form, discount_info: e.target.value })} placeholder={t("ownerPortal.promoPh")} className={inputClass} />
-            </div>
-            <div className="md:col-span-2">
-              <label className={labelClass}>{t("ownerPortal.freeEntry")}</label>
-              <input value={form.free_entry_info} onChange={(e) => setForm({ ...form, free_entry_info: e.target.value })} placeholder={t("ownerPortal.freeEntryPh")} className={inputClass} />
+          {/* Menú de secciones */}
+          <nav aria-label={t("ownerPortal.navLabel")} className="sticky top-[72px] z-30 -mx-4 mt-6 border-b border-white/10 bg-night/90 px-4 backdrop-blur sm:top-20">
+            <ul className="scroll-x-thin flex gap-1 overflow-x-auto py-2">
+              {SECTIONS.map((s) => (
+                <li key={s.id} className="shrink-0">
+                  <a
+                    href={`#${s.id}`}
+                    aria-current={activeSection === s.id ? "true" : undefined}
+                    className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-semibold transition ${
+                      activeSection === s.id ? "bg-white text-night" : "text-zinc-300 hover:bg-white/5"
+                    }`}
+                  >
+                    {t(s.label)}
+                    {s.id === "mensajes" && inboxUnread > 0 && (
+                      <span className="min-w-[20px] rounded-full bg-warn px-1.5 py-0.5 text-center text-[11px] font-bold leading-none text-night">{inboxUnread}</span>
+                    )}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* RESUMEN */}
+          <section id="resumen" className="scroll-mt-36 space-y-4 pt-6 sm:scroll-mt-40">
+            {club.hidden && (
+              <div className="rounded-card border border-warn/40 bg-warn/[0.08] p-4 text-sm leading-relaxed text-zinc-100" role="status">
+                {t("ownerPortal.statusHidden")}
+              </div>
+            )}
+
+            <div className="rounded-card border border-white/10 bg-surface p-5 sm:p-6">
+              {missing.length === 0 ? (
+                <p className="flex items-center gap-2 text-base font-semibold text-open">
+                  <Check size={18} aria-hidden="true" /> {t("ownerPortal.completenessDone")}
+                </p>
+              ) : (
+                <>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <h2 className="text-base font-semibold text-ink">{t("ownerPortal.completenessTitle").replace("{pct}", String(pct))}</h2>
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/[0.08]" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+                    <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                  <p className="mt-3 text-sm text-zinc-400">{t("ownerPortal.completenessBody")}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {missing.map((m) => (
+                      <a
+                        key={m.label}
+                        href={`#${m.to}`}
+                        className="rounded-full border border-white/15 px-3.5 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white/5"
+                      >
+                        {m.label}
+                      </a>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
-            <div className="md:col-span-2">
-              <label className={labelClass}>{t("ownerPortal.features")}</label>
-              <div className="flex flex-wrap gap-2">
-                {features.map((opt) => (
+            <div className="rounded-card border border-white/10 bg-surface p-5 sm:p-6">
+              <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
+                <span className="live-dot h-2 w-2 rounded-full bg-open" /> {t("forVenues.f2Title")}
+              </h2>
+              <p className="mt-2 text-sm text-zinc-300">{t("forVenues.f2Body")}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {LIVE_STATUS_OPTIONS.map((opt) => (
                   <button
                     key={opt.key}
                     type="button"
-                    aria-pressed={!!form[opt.key]}
-                    onClick={() => setForm({ ...form, [opt.key]: !form[opt.key] })}
-                    className={toggle(!!form[opt.key])}
+                    disabled={updatingStatus}
+                    onClick={() => setLiveStatus(opt.key)}
+                    aria-pressed={club.live_status === opt.key}
+                    className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition disabled:opacity-50 ${
+                      club.live_status === opt.key ? "bg-white text-night" : "border border-white/15 text-ink hover:bg-white/5"
+                    }`}
                   >
-                    {opt.label}
+                    <span className={`h-2 w-2 rounded-full ${opt.dot}`} /> {t(opt.label)}
                   </button>
                 ))}
-                {EXTRA_FEATURES.map((f) => {
-                  const on = !!form.extras[f.field]
-                  return (
-                    <button
-                      key={f.field}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => setForm({ ...form, extras: { ...form.extras, [f.field]: !on } })}
-                      className={toggle(on)}
-                    >
-                      {t(f.labelKey)}
-                    </button>
-                  )
-                })}
               </div>
+              {club.live_status && club.live_status_updated_at && (
+                <p className="mt-3 text-sm text-zinc-400">
+                  {t("ownerPortal.markedAs")} <strong className="text-zinc-200">{t(LIVE_STATUS_OPTIONS.find((o) => o.key === club.live_status)?.label || "")}</strong> · {timeAgo(club.live_status_updated_at)}
+                </p>
+              )}
             </div>
 
-            {CLOSED_FIELD in form.extras && (
-              <div className="md:col-span-2 rounded-ctl border border-warn/30 bg-warn/[0.07] p-4">
-                <button
-                  type="button"
-                  aria-pressed={!!form.extras[CLOSED_FIELD]}
-                  onClick={() => setForm({ ...form, extras: { ...form.extras, [CLOSED_FIELD]: !form.extras[CLOSED_FIELD] } })}
-                  className={toggle(!!form.extras[CLOSED_FIELD])}
-                >
-                  {t("ownerPortal.tempClosed")}
-                </button>
-                <p className="mt-2 text-xs leading-relaxed text-zinc-400">{t("ownerPortal.tempClosedHint")}</p>
-              </div>
-            )}
-          </div>
+            {/* Estadísticas de su ficha (visitas, clics, de dónde llegan). */}
+            <OwnerStats type="club" id={club.id} name={club.name} />
+          </section>
 
-          <div className="sticky bottom-[calc(72px+env(safe-area-inset-bottom))] z-20 mt-8 flex items-center gap-4 rounded-card border border-white/10 bg-night/95 p-3 backdrop-blur md:bottom-4">
-            <button onClick={saveChanges} disabled={saving} className={primaryBtn}>
+          {/* FICHA */}
+          <section id="ficha" className="mt-10 scroll-mt-36 space-y-4 sm:scroll-mt-40">
+            <Card id="datos" title={t("ownerPortal.sectionBasics")} desc={t("ownerPortal.sectionBasicsDesc")}>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className={labelClass}>{t("ownerPortal.name")}</label>
+                  <input value={form.name} onChange={(e) => set("name", e.target.value)} className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>{t("planPage.stepVenueType")}</label>
+                  <select value={form.venue_type} onChange={(e) => set("venue_type", e.target.value)} style={{ colorScheme: "dark" }} className={inputClass}>
+                    {VENUE_TYPE_OPTIONS.map((v) => (
+                      <option key={v.value} value={v.value}>
+                        {t(v.key)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>{t("explorer.barrioTitle")}</label>
+                  <input value={form.neighborhood} onChange={(e) => set("neighborhood", e.target.value)} placeholder="Gràcia, Eixample…" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>{t("ownerPortal.address")}</label>
+                  <input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Carrer de Còrsega, 327" className={inputClass} />
+                  <p className="mt-1 text-xs text-zinc-400">{t("ownerPortal.addressHint")}</p>
+                </div>
+                <div>
+                  <label className={labelClass}>{t("club.music")}</label>
+                  <input value={form.music} onChange={(e) => set("music", e.target.value)} placeholder="Techno, Reggaetón…" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>{t("event.price")}</label>
+                  <input value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="15–20 €" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>{t("event.schedule")}</label>
+                  <input value={form.hours} onChange={(e) => set("hours", e.target.value)} placeholder="23:55-06:00" className={inputClass} />
+                  <p className="mt-1 text-xs text-zinc-400">{t("ownerPortal.hoursHint")}</p>
+                </div>
+                <div>
+                  <label className={labelClass}>{t("ownerPortal.capacity")}</label>
+                  <input value={form.people} onChange={(e) => set("people", e.target.value)} placeholder={t("ownerPortal.capacityPh")} className={inputClass} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className={labelClass}>{t("planPage.dresscode")}</label>
+                  <input value={form.dresscode} onChange={(e) => set("dresscode", e.target.value)} placeholder="Casual, Smart casual…" className={inputClass} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className={labelClass}>{t("ownerPortal.openDays")}</label>
+                  <div className="flex flex-wrap gap-2">
+                    {DAY_OPTIONS.map((day, i) => {
+                      const active = form.open_days.includes(day)
+                      // Etiqueta del día en el idioma activo (2024-01-01 fue lunes).
+                      const label = new Date(2024, 0, 1 + i).toLocaleDateString(dateLocale, { weekday: "short" }).replace(".", "")
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => set("open_days", active ? form.open_days.filter((d) => d !== day) : [...form.open_days, day])}
+                          className={`${toggle(active)} capitalize`}
+                        >
+                          {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card id="descripcion" title={t("ownerPortal.sectionAbout")} desc={t("ownerPortal.sectionAboutDesc")}>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <label className={labelClass}>{t("ownerPortal.description")}</label>
+                  <textarea
+                    value={form.description}
+                    onChange={(e) => set("description", e.target.value)}
+                    placeholder={t("ownerPortal.descPh")}
+                    className={`min-h-[130px] ${inputClass}`}
+                  />
+                  <p className="mt-1 text-xs text-zinc-400">{t("ownerPortal.descHint")}</p>
+                </div>
+                <div>
+                  <label className={labelClass}>{t("ownerPortal.instagram")}</label>
+                  <input value={form.instagram} onChange={(e) => set("instagram", e.target.value)} placeholder={t("ownerPortal.socialPh")} autoCapitalize="none" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>{t("ownerPortal.tiktok")}</label>
+                  <input value={form.tiktok} onChange={(e) => set("tiktok", e.target.value)} placeholder={t("ownerPortal.socialPh")} autoCapitalize="none" className={inputClass} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className={labelClass}>{t("ownerPortal.website")}</label>
+                  <input value={form.website} onChange={(e) => set("website", e.target.value)} placeholder={t("ownerPortal.websitePh")} autoCapitalize="none" inputMode="url" className={inputClass} />
+                  <p className="mt-1 text-xs text-zinc-400">{t("ownerPortal.socialHint")}</p>
+                </div>
+              </div>
+            </Card>
+
+            <Card id="llegar" title={t("ownerPortal.sectionGetThere")} desc={t("ownerPortal.sectionGetThereDesc")}>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className={labelClass}>{t("ownerPortal.metroLines")}</label>
+                  <input value={form.metro_lines} onChange={(e) => set("metro_lines", e.target.value)} placeholder="L1, L4" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>{t("ownerPortal.nightBuses")}</label>
+                  <input value={form.night_buses} onChange={(e) => set("night_buses", e.target.value)} placeholder="N0, N6" className={inputClass} />
+                </div>
+              </div>
+            </Card>
+
+            <Card id="ofertas" title={t("ownerPortal.sectionOffers")} desc={t("ownerPortal.sectionOffersDesc")}>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className={labelClass}>{t("ownerPortal.promo")}</label>
+                  <input value={form.discount_info} onChange={(e) => set("discount_info", e.target.value)} placeholder={t("ownerPortal.promoPh")} className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>{t("ownerPortal.freeEntry")}</label>
+                  <input value={form.free_entry_info} onChange={(e) => set("free_entry_info", e.target.value)} placeholder={t("ownerPortal.freeEntryPh")} className={inputClass} />
+                </div>
+              </div>
+            </Card>
+          </section>
+
+          {/* FOTOS */}
+          <section id="fotos" className="mt-4 scroll-mt-36 sm:scroll-mt-40">
+            <Card title={t("ownerPortal.sectionPhotos")} desc={t("ownerPortal.sectionPhotosDesc")}>
+              <div className="space-y-6">
+                <div>
+                  <label className={labelClass}>{t("ownerPortal.mainImage")}</label>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {form.image && <img src={form.image} alt={t("ownerPortal.preview")} className="h-24 w-24 shrink-0 rounded-ctl border border-white/10 object-cover" />}
+                    <div className="flex-1 space-y-2">
+                      <input value={form.image} onChange={(e) => set("image", e.target.value)} placeholder={t("ownerPortal.imageUrlPh")} className={inputClass} />
+                      <label className={uploadBox(uploadingImage)}>
+                        <Upload size={16} /> {uploadingImage ? t("ownerPortal.uploading") : t("ownerPortal.uploadImage")}
+                        <input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={handleImageUpload} />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    {t("ownerPortal.gallery").replace("{n}", String(form.gallery.length))}
+                    {form.gallery.length > 0 && <span className="ml-2 font-normal text-zinc-400">{t("ownerPortal.galleryHint")}</span>}
+                  </label>
+                  <label className={uploadBox(uploadingGallery)}>
+                    <Upload size={16} /> {uploadingGallery ? t("ownerPortal.uploading") : t("ownerPortal.addPhotos")}
+                    <input type="file" accept="image/*" multiple className="hidden" disabled={uploadingGallery} onChange={handleGalleryUpload} />
+                  </label>
+                  {form.gallery.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      {form.gallery.map((url) => (
+                        <div key={url} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-ctl border border-white/10">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={url} alt="" className="h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeGalleryPhoto(url)}
+                            aria-label={t("ownerPortal.removePhoto")}
+                            className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-night/80 text-white"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </section>
+
+          {/* ETIQUETAS */}
+          <section id="etiquetas" className="mt-4 scroll-mt-36 sm:scroll-mt-40">
+            <Card title={t("ownerPortal.sectionTags")} desc={t("ownerPortal.sectionTagsDesc")}>
+              <div className="space-y-5">
+                {tagGroups.map((group) => (
+                  <div key={group.title}>
+                    <p className="mb-2 text-sm font-semibold text-zinc-400">{group.title}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {group.tags.map((tag) => (
+                        <button key={tag.key} type="button" aria-pressed={tagOn(tag)} onClick={() => tagToggle(tag)} className={toggle(tagOn(tag))}>
+                          {tag.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {CLOSED_FIELD in form.extras && (
+                  <div className="rounded-ctl border border-warn/30 bg-warn/[0.07] p-4">
+                    <button
+                      type="button"
+                      aria-pressed={!!form.extras[CLOSED_FIELD]}
+                      onClick={() => set("extras", { ...form.extras, [CLOSED_FIELD]: !form.extras[CLOSED_FIELD] })}
+                      className={toggle(!!form.extras[CLOSED_FIELD])}
+                    >
+                      {t("ownerPortal.tempClosed")}
+                    </button>
+                    <p className="mt-2 text-xs leading-relaxed text-zinc-400">{t("ownerPortal.tempClosedHint")}</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </section>
+
+          {/* Barra de guardado: solo se ve cuando hay algo que guardar (o acaba de guardarse); el
+              resto del tiempo ocupa su sitio pero invisible, para que la página no salte. */}
+          <div
+            className={`sticky bottom-[calc(72px+env(safe-area-inset-bottom))] z-20 mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border border-white/10 bg-night/95 p-3 backdrop-blur transition-opacity md:bottom-4 ${
+              dirty || saving || savedFlash ? "" : "invisible opacity-0"
+            }`}
+          >
+            <button onClick={saveChanges} disabled={saving || !dirty} className={primaryBtn}>
               {saving ? t("profile.saving") : t("ownerPortal.saveChanges")}
             </button>
-            {savedFlash && (
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-open" aria-live="polite">
-                <Check size={16} /> {t("ownerPortal.saved")}
-              </p>
+            {dirty && (
+              <button onClick={() => setForm(clubToForm(club))} disabled={saving} className={`${ghostBtn} !px-4`}>
+                {t("ownerPortal.discard")}
+              </button>
             )}
+            <p className="order-first w-full text-sm sm:order-last sm:ml-auto sm:w-auto" aria-live="polite">
+              {dirty ? (
+                <span className="flex items-center gap-2 font-semibold text-warn">
+                  <span className="h-2 w-2 rounded-full bg-warn" aria-hidden="true" /> {t("ownerPortal.unsaved")}
+                </span>
+              ) : savedFlash ? (
+                <span className="flex items-center gap-1.5 font-semibold text-open">
+                  <Check size={16} aria-hidden="true" /> {t("ownerPortal.saved")}
+                </span>
+              ) : (
+                <span className="text-zinc-400">{t("ownerPortal.allSaved")}</span>
+              )}
+            </p>
           </div>
 
-          <div className="mt-14 border-t border-white/10 pt-10">
+          {/* NOCHES */}
+          <section id="noches" className="mt-14 scroll-mt-36 border-t border-white/10 pt-10 sm:scroll-mt-40">
             <h2 className="text-xl font-semibold">{t("ownerPortal.nightsTitle")}</h2>
             <p className="mt-2 text-sm text-zinc-300">{t("ownerPortal.nightsIntro")}</p>
 
-            <div className="mt-6">
-              <button onClick={() => { setShowAddEventForm((v) => !v); setEditingEventId(null) }} className={showAddEventForm ? ghostBtn : primaryBtn}>
+            <div className="mt-6" id="nueva-noche">
+              <button onClick={() => { setShowAddEventForm((v) => !v); setEditingEventId(null); if (showAddEventForm) setNewEventForm(emptyEventForm) }} className={showAddEventForm ? ghostBtn : primaryBtn}>
                 {showAddEventForm ? t("ownerPortal.closeForm") : t("ownerPortal.newNight")}
               </button>
               {showAddEventForm && (
@@ -889,6 +1195,9 @@ export default function MiClubPage() {
                           <button onClick={() => startEditEvent(event)} className={`${ghostBtn} flex items-center gap-1.5`}>
                             <Pencil size={14} /> {t("ownerPortal.edit")}
                           </button>
+                          <button onClick={() => duplicateEvent(event)} className={`${ghostBtn} flex items-center gap-1.5`}>
+                            <Files size={14} /> {t("ownerPortal.duplicate")}
+                          </button>
                           <button
                             onClick={() => deleteEvent(event.id)}
                             className={`flex items-center gap-1.5 rounded-ctl px-5 py-3 text-sm font-semibold transition ${pendingDelete === event.id ? "bg-red-500 text-white" : "border border-red-500/30 text-red-300 hover:bg-red-500/10"}`}
@@ -902,8 +1211,40 @@ export default function MiClubPage() {
                 ))}
               </ul>
             )}
-          </div>
-        </section>
+          </section>
+
+          {/* MENSAJES */}
+          <section id="mensajes" className="mt-14 scroll-mt-36 space-y-4 border-t border-white/10 pt-10 sm:scroll-mt-40">
+            <h2 className="text-xl font-semibold">{t("ownerPortal.navMessages")}</h2>
+
+            <div className="rounded-card border border-white/10 bg-surface p-5 sm:p-6">
+              <h3 className="flex items-center gap-2 text-base font-semibold text-ink">
+                <Lock size={16} className="text-brand-soft" aria-hidden="true" /> {t("ownerPortal.noctuaTitle")}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-300">{t("ownerPortal.noctuaBody")}</p>
+              <dl className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div className="flex items-center justify-between gap-3 rounded-ctl border border-white/10 px-4 py-2.5">
+                  <dt className="text-sm text-zinc-300">{t("ownerPortal.noctuaVerified")}</dt>
+                  <dd>{stateChip(!!club.verified)}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3 rounded-ctl border border-white/10 px-4 py-2.5">
+                  <dt className="text-sm text-zinc-300">{t("ownerPortal.noctuaTrending")}</dt>
+                  <dd>{stateChip(!!club.trending)}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3 rounded-ctl border border-white/10 px-4 py-2.5">
+                  <dt className="text-sm text-zinc-300">{t("ownerPortal.noctuaRating")}</dt>
+                  <dd className="text-sm font-semibold text-ink">{club.rating ? `★ ${club.rating}` : "—"}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3 rounded-ctl border border-white/10 px-4 py-2.5">
+                  <dt className="shrink-0 text-sm text-zinc-300">{t("ownerPortal.noctuaLink")}</dt>
+                  <dd className="min-w-0 truncate text-sm font-semibold text-ink">/clubs/{listingSlug}</dd>
+                </div>
+              </dl>
+            </div>
+
+            {userId && <OwnerInbox userId={userId} topics={[{ type: "club", id: club.id, name: club.name }]} onUnreadChange={setInboxUnread} />}
+          </section>
+        </div>
       </main>
       <BottomNav />
     </>

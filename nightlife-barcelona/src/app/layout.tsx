@@ -6,6 +6,7 @@ import { LanguageProvider } from "../context/LanguageContext"
 import MaintenanceGate from "../components/system/MaintenanceGate"
 import TrafficSource from "../components/system/TrafficSource"
 import InstallCapture from "../components/system/InstallCapture"
+import EventsPreviewCookie from "../components/system/EventsPreviewCookie"
 import ToastHost from "../components/ui/Toast"
 import PartyPollPopup from "../components/fun/PartyPollPopup"
 import CookieBanner from "../components/system/CookieBanner"
@@ -89,7 +90,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" translate="no" className={`${unbounded.variable} ${plusJakarta.variable}`}>
+    // data-scroll-behavior="smooth": globals.css pone scroll-behavior: smooth en <html>. Desde Next 16, sin este
+    // atributo el salto al inicio al cambiar de página también se anima, y si la página anterior era más
+    // larga que la nueva (de /clubs a la portada) el navegador corta la animación y te deja abajo, en el pie.
+    // Con el atributo, Next desactiva el scroll suave solo durante el cambio de página y sube de golpe.
+    <html lang="es" translate="no" data-scroll-behavior="smooth" className={`${unbounded.variable} ${plusJakarta.variable}`}>
       <head>
         <meta name="google" content="notranslate" />
       </head>
@@ -136,6 +141,7 @@ export default function RootLayout({
         />
         <TrafficSource />
         <InstallCapture />
+        <EventsPreviewCookie />
         <ToastHost />
         <Analytics />
       </body>

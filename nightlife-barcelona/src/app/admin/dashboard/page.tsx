@@ -24,7 +24,7 @@ const daysAgo = madridDaysAgo
 const daysAhead = madridDaysAhead
 
 type Overview = { sessions: number; page_views: number; tickets: number; daily: { d: string; sessions: number; views: number }[] }
-type Pending = { messages: number; reports: number; denials: number; eventsToReview: number; ownerChanges: number }
+type Pending = { messages: number; ownerMessages: number; reports: number; denials: number; eventsToReview: number; ownerChanges: number }
 type System = { maintenance: boolean | null; clubNoctua: boolean | null; season: string | null }
 type Upcoming = { id: number; title: string; date: string; kind: "Evento" | "Noche de club"; href: string }
 type Signup = { id: string; email: string; username: string | null; created_at: string; last_sign_in_at: string | null }
@@ -81,7 +81,7 @@ export default function AdminDashboardPage() {
         msgs, reports, denials, review,
         ov, ovPrev, list,
         maint, club, season,
-        clubsVisibleRes, clubsHiddenRes, events30, nights7, nextEvents, nextNights, ownerChanges,
+        clubsVisibleRes, clubsHiddenRes, events30, nights7, nextEvents, nextNights, ownerChanges, ownerMessages,
       ] = await Promise.all([
         supabase.from("contact_messages").select("id", { count: "exact", head: true }).eq("status", "new").or("is_spam.is.null,is_spam.eq.false"),
         supabase.from("club_checkin_reports").select("id", { count: "exact", head: true }).is("reviewed_at", null),
@@ -104,10 +104,13 @@ export default function AdminDashboardPage() {
         supabase.from("club_events").select("id, title, date").gte("date", today).lte("date", daysAhead(7)).order("date").limit(6),
         // Cambios hechos por dueños y organizadores en su ficha esta semana (supabase/34).
         supabase.from("admin_audit_log").select("id", { count: "exact", head: true }).gte("at", weekAgoIso).neq("user_email", ADMIN_EMAIL),
+        // Mensajes de dueños sin leer (supabase/59). Si la tabla aún no existe, cuenta 0.
+        supabase.from("owner_messages").select("id", { count: "exact", head: true }).eq("sender", "owner").is("read_at", null),
       ])
 
       setPending({
         messages: msgs.count || 0,
+        ownerMessages: ownerMessages.error ? 0 : ownerMessages.count || 0,
         reports: reports.count || 0,
         denials: denials.count || 0,
         eventsToReview: review.count || 0,
@@ -159,6 +162,7 @@ export default function AdminDashboardPage() {
   const queue = pending
     ? [
         { n: pending.messages, label: "mensajes sin leer", href: "/admin/messages" },
+        { n: pending.ownerMessages, label: "mensajes de propietarios sin leer", href: "/admin/buzon" },
         { n: pending.reports, label: "notas denunciadas por revisar", href: "/admin/notas" },
         { n: pending.eventsToReview, label: "ediciones nuevas de eventos anuales por revisar y publicar", href: "/admin/events" },
         { n: pending.denials, label: "avisos de \"no me dejan entrar\" esta semana", href: "/admin/entry-denials" },

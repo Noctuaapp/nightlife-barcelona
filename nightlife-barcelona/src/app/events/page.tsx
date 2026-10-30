@@ -2,13 +2,17 @@ import type { Metadata } from "next"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import EventsExplorer from "../../components/nightlife/EventsExplorer"
+import EventsComingSoon from "../../components/nightlife/EventsComingSoon"
 import { supabase } from "../../lib/supabase"
 import { EVENT_IMAGE_FALLBACK, parsePriceEUR, safeJsonLd } from "../../lib/structuredData"
 import { createSlug } from "../../lib/slug"
+import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 
 export const revalidate = 3600
 
 export const metadata: Metadata = {
+  // Con Eventos cerrado (lib/featureFlags.ts) esta dirección solo enseña el aviso «Próximamente»: no se indexa.
+  ...(EVENTS_HIDDEN ? { robots: { index: false, follow: true } } : {}),
   title: "Eventos y fiestas en Barcelona | Noctua",
   description:
     "Los próximos eventos, festivales y fiestas en Barcelona: fecha, horario, precio y ubicación. Filtra por barrio, festival y entrada gratuita.",
@@ -24,6 +28,18 @@ export const metadata: Metadata = {
 }
 
 export default async function EventsPage() {
+  // Eventos cerrado (lib/featureFlags.ts): los visitantes ven el aviso «Próximamente». La agenda ni se pide
+  // aquí; solo la carga el admin, ya con su sesión, dentro de EventsComingSoon.
+  if (EVENTS_HIDDEN) {
+    return (
+      <>
+        <Header />
+        <EventsComingSoon />
+        <BottomNav />
+      </>
+    )
+  }
+
   const { data: events } = await supabase.from("events").select("*").eq("hidden", false).order("date", { ascending: true })
 
   // Datos estructurados de la lista (30/10/2026). Antes cada evento mandaba el precio tal cual lo

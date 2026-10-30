@@ -60,6 +60,74 @@ type Club = {
 const VENUE_TYPE_OPTIONS = ["Discoteca", "Pub", "Bar musical", "Coctelería", "Karaoke", "Bar de billar"]
 const DAY_OPTIONS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
 
+// Etiquetas de un club, agrupadas (30/10/2026). Antes eran dos filas sueltas de botones (11 fijos y
+// luego los extras, con «Cerrado temporalmente» aparte) y se veían desordenadas. Ahora el formulario de
+// edición y el filtro de la lista usan los mismos grupos. Una etiqueta nueva de EXTRA_FEATURES que no
+// esté aquí sale sola en «Zonas y servicios».
+type TagRef = {
+  key: string // columna de public.clubs
+  label: string
+  emoji: string
+  filterLabel?: string // cómo se llama en el filtro de la lista (por defecto, label)
+  extra?: boolean // viaja en form.extras (en vez de en un campo propio del formulario)
+  closed?: boolean // «Cerrado temporalmente»: se pinta en ámbar y solo si la columna existe
+}
+const extraTag = (field: string): TagRef => {
+  const f = EXTRA_FEATURES.find((x) => x.field === field)
+  return { key: field, label: f?.label ?? field, emoji: f?.emoji ?? "🏷️", extra: true }
+}
+const TAG_GROUPS_BASE: { title: string; tags: TagRef[] }[] = [
+  {
+    title: "Estado de la ficha",
+    tags: [
+      { key: "verified", label: "Verified", emoji: "✓", filterLabel: "Verificados" },
+      { key: "trending", label: "Trending", emoji: "🔥", filterLabel: "Trending" },
+      { key: "sold_out", label: "Sold out", emoji: "🚫", filterLabel: "Agotados" },
+      { key: "hidden", label: "Oculto", emoji: "👁️", filterLabel: "Ocultos" },
+      { key: CLOSED_FIELD, label: "Cerrado temporalmente", emoji: "⏸️", filterLabel: "Cerrados temporalmente", extra: true, closed: true },
+    ],
+  },
+  {
+    title: "Ambiente",
+    tags: [
+      extraTag("dance_floor"),
+      extraTag("live_music"),
+      extraTag("hot_shows"),
+      { key: "lgtbi_friendly", label: "LGTBI+", emoji: "🏳️‍🌈" },
+      { key: "swinger_friendly", label: "Swinger", emoji: "🔞" },
+    ],
+  },
+  {
+    title: "Entretenimiento",
+    tags: [
+      extraTag("karaoke"),
+      extraTag("darts"),
+      { key: "has_foosball", label: "Futbolín/Billar", emoji: "🎱" },
+      extraTag("games"),
+      extraTag("sports_tv"),
+    ],
+  },
+  { title: "Comida y bebida", tags: [extraTag("cocktails"), extraTag("food"), extraTag("shisha")] },
+  {
+    title: "Zonas y servicios",
+    tags: [
+      { key: "terrace", label: "Terraza", emoji: "🌿" },
+      { key: "smoking_area", label: "Zona fumadores", emoji: "🚬" },
+      extraTag("cigarette_machine"),
+      { key: "table_booking", label: "Reserva de mesas", emoji: "🍾" },
+      { key: "vip_tables", label: "Mesa VIP", emoji: "🛋️" },
+      extraTag("cloakroom"),
+      extraTag("wheelchair_accessible"),
+    ],
+  },
+]
+const TAG_GROUPS: { title: string; tags: TagRef[] }[] = (() => {
+  const listed = new Set(TAG_GROUPS_BASE.flatMap((g) => g.tags.map((t) => t.key)))
+  const missing = EXTRA_FEATURES.filter((f) => !listed.has(f.field)).map((f) => extraTag(f.field))
+  if (!missing.length) return TAG_GROUPS_BASE
+  return TAG_GROUPS_BASE.map((g) => (g.title === "Zonas y servicios" ? { ...g, tags: [...g.tags, ...missing] } : g))
+})()
+
 type ClubFormData = {
   name: string
   neighborhood: string
@@ -472,13 +540,11 @@ export default function AdminPage() {
       club.neighborhood?.toLowerCase().includes(search.toLowerCase()) ||
       club.music?.toLowerCase().includes(search.toLowerCase())
 
+    // filter: "all", "visible" o "tag:<columna>" (ver TAG_GROUPS).
     const matchesFilter =
       filter === "all" ||
       (filter === "visible" && !club.hidden) ||
-      (filter === "hidden" && club.hidden) ||
-      (filter === "verified" && club.verified) ||
-      (filter === "vip" && club.vip_tables) ||
-      (filter === "trending" && club.trending)
+      (filter.startsWith("tag:") && !!(club as unknown as Record<string, unknown>)[filter.slice(4)])
 
     return matchesSearch && matchesFilter
   })
@@ -653,47 +719,39 @@ export default function AdminPage() {
         <label className={labelClass}>Entrada gratis — condiciones (vacío = ninguna)</label>
         <input value={form.free_entry_info} onChange={(e) => setForm({ ...form, free_entry_info: e.target.value })} placeholder="Gratis para chicas hasta las 00:30" className={inputClass} />
       </div>
-      <div className="md:col-span-2 flex flex-wrap gap-2 pt-2">
-        {[
-          { key: "terrace" as const, label: "🌿 Terraza" },
-          { key: "smoking_area" as const, label: "🚬 Zona fumadores" },
-          { key: "table_booking" as const, label: "🍾 Reserva de mesas" },
-          { key: "vip_tables" as const, label: "🛋️ Mesa VIP" },
-          { key: "has_foosball" as const, label: "🎱 Futbolín/Billar" },
-          { key: "lgtbi_friendly" as const, label: "🏳️‍🌈 LGTBI+" },
-          { key: "swinger_friendly" as const, label: "🔞 Swinger" },
-          { key: "verified" as const, label: "✓ Verified" },
-          { key: "trending" as const, label: "🔥 Trending" },
-          { key: "sold_out" as const, label: "🚫 Sold out" },
-          { key: "hidden" as const, label: "👁️ Oculto" },
-        ].map((opt) => (
-          <button key={opt.key} type="button" onClick={() => setForm({ ...form, [opt.key]: !form[opt.key] })}
-            className={`rounded-full px-4 py-2 text-xs font-bold transition ${form[opt.key] ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-            {opt.label}
-          </button>
-        ))}
-      </div>
-      <div className="md:col-span-2 flex flex-wrap gap-2">
-        {EXTRA_FEATURES.map((f) => {
-          const on = !!form.extras[f.field]
+      <div className="md:col-span-2 space-y-4 rounded-card border border-white/10 bg-white/[0.02] p-4 pt-3">
+        <p className={labelClass}>Etiquetas</p>
+        {TAG_GROUPS.map((group) => {
+          // «Cerrado temporalmente» solo sale si la columna ya existe (SQL 56).
+          const tags = group.tags.filter((t) => !t.closed || CLOSED_FIELD in form.extras)
+          if (!tags.length) return null
           return (
-            <button key={f.field} type="button" onClick={() => setForm({ ...form, extras: { ...form.extras, [f.field]: !on } })}
-              className={`rounded-full px-4 py-2 text-xs font-bold transition ${on ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-              {f.emoji} {f.label}
-            </button>
+            <div key={group.title}>
+              <p className="mb-2 text-xs font-semibold text-zinc-400">{group.title}</p>
+              <div className="flex flex-wrap gap-2">
+                {tags.map((t) => {
+                  const on = t.extra ? !!form.extras[t.key] : !!(form as unknown as Record<string, unknown>)[t.key]
+                  const toggle = () =>
+                    t.extra
+                      ? setForm({ ...form, extras: { ...form.extras, [t.key]: !on } })
+                      : setForm({ ...form, [t.key]: !on })
+                  return (
+                    <button key={t.key} type="button" aria-pressed={on} onClick={toggle}
+                      className={`rounded-full px-4 py-2 text-xs font-bold transition ${
+                        on ? (t.closed ? "bg-amber-400 text-black" : "bg-purple-500 text-white") : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                      }`}>
+                      {t.emoji} {t.label}
+                    </button>
+                  )
+                })}
+              </div>
+              {tags.some((t) => t.closed) && (
+                <p className="mt-2 text-xs text-zinc-400">Cerrado temporalmente: el local sigue en la web con su etiqueta, pero nunca sale como «abierto ahora» y no se recomienda en la portada, «Sorpréndeme», el plan ni «cerca de aquí».</p>
+              )}
+            </div>
           )
         })}
       </div>
-      {CLOSED_FIELD in form.extras && (
-        <div className="md:col-span-2 rounded-ctl border border-amber-400/30 bg-amber-400/[0.06] p-4">
-          <button type="button" aria-pressed={!!form.extras[CLOSED_FIELD]}
-            onClick={() => setForm({ ...form, extras: { ...form.extras, [CLOSED_FIELD]: !form.extras[CLOSED_FIELD] } })}
-            className={`rounded-full px-4 py-2 text-xs font-bold transition ${form.extras[CLOSED_FIELD] ? "bg-amber-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-            ⏸️ Cerrado temporalmente
-          </button>
-          <p className="mt-2 text-xs text-zinc-400">El local sigue en la web con su etiqueta, pero nunca sale como «abierto ahora» y no se recomienda en la portada, «Sorpréndeme», el plan ni «cerca de aquí».</p>
-        </div>
-      )}
       {form.swinger_friendly && (
         <div className="md:col-span-2">
           <label className={labelClass}>Normas del club swinger (vacío = no se enseña nada en la ficha)</label>
@@ -759,21 +817,30 @@ export default function AdminPage() {
               placeholder="Buscar clubs..."
               className="flex-1 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 outline-none focus:border-purple-500/50 transition"
             />
-            <div className="flex gap-2 flex-wrap">
-              {[
-                { value: "all", label: "Todos" },
-                { value: "visible", label: "Visibles" },
-                { value: "hidden", label: "Ocultos" },
-                { value: "verified", label: "Verificados" },
-                { value: "vip", label: "Mesa VIP" },
-                { value: "trending", label: "Trending" },
-              ].map((f) => (
-                <button key={f.value} onClick={() => setFilter(f.value)}
-                  className={`rounded-full px-4 py-2 text-xs font-bold transition ${filter === f.value ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-                  {f.label}
-                </button>
-              ))}
-            </div>
+            {/* Un solo desplegable con el estado y todas las etiquetas, cada una con cuántos clubs la tienen. */}
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              aria-label="Filtrar clubs"
+              style={{ colorScheme: "dark" }}
+              className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white outline-none transition focus:border-purple-500/50 md:w-72"
+            >
+              <option value="all">Todos ({clubs.length})</option>
+              <option value="visible">Visibles ({stats.visible})</option>
+              {TAG_GROUPS.map((group) => {
+                const tags = group.tags.filter((t) => !t.closed || clubs.some((c) => CLOSED_FIELD in (c as unknown as Record<string, unknown>)))
+                if (!tags.length) return null
+                return (
+                  <optgroup key={group.title} label={group.title}>
+                    {tags.map((t) => (
+                      <option key={t.key} value={`tag:${t.key}`}>
+                        {t.emoji} {t.filterLabel || t.label} ({clubs.filter((c) => !!(c as unknown as Record<string, unknown>)[t.key]).length})
+                      </option>
+                    ))}
+                  </optgroup>
+                )
+              })}
+            </select>
           </div>
 
           {/* Bulk actions */}

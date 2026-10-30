@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import ClubCard from "./ClubCard"
+import ExploreSwitch from "./ExploreSwitch"
 import { useLanguage } from "../../context/LanguageContext"
 import { matchesQuery } from "../../lib/textSearch"
 import { EXTRA_FEATURES } from "../../lib/extraFeatures"
@@ -367,7 +368,9 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
 
         <section className="px-4 pt-14">
           <div className="mx-auto max-w-7xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">{t("clubs.title")}</p>
+            {/* Selector Clubs · Eventos · Esenciales: ya salía en Eventos y Esenciales, pero no aquí (30/10/2026). */}
+            <ExploreSwitch active="clubs" />
+            <p className="mt-6 text-sm uppercase tracking-[0.3em] text-zinc-500">{t("clubs.title")}</p>
             <h1 className="font-display mt-4 text-5xl font-black text-white md:text-6xl">{t("clubs.subtitle")}</h1>
           </div>
         </section>
