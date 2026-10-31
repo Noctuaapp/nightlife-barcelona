@@ -1870,7 +1870,15 @@
     "approxTime": "≈ {min} Min. von Ende zu Ende",
     "estimateNote": "Von Noctua anhand der Entfernung zwischen den Haltestellen geschätzt. Kein offizieller Fahrplan: prüf bei TMB.",
     "seeRoute": "Strecke ansehen",
-    "spotHere": "{dist} von dem Ort, den du angesehen hast"
+    "spotHere": "{dist} von dem Ort, den du angesehen hast",
+    "tripTitle": "So fährst du mit dem {code}",
+    "tripGo": "Hinfahrt",
+    "tripBack": "Rückfahrt",
+    "tripBoard": "Einsteigen: {from}, aussteigen: {end}",
+    "tripDirection": "Richtung {to}",
+    "tripStops": "{n} Haltestellen",
+    "tripStopOne": "1 Haltestelle",
+    "tripMin": "≈ {min} Min."
   },
   "essentialsSuggest": {
     "boxTitle": "Uns fehlen vielleicht ein paar Essentials. Hilfst du uns?",

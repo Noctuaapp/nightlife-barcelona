@@ -1883,7 +1883,15 @@
     "approxTime": "≈ {min} min de ponta a ponta",
     "estimateNote": "Tempo estimado pela Noctua com base na distância entre paragens. Não é um horário oficial: consulta a TMB.",
     "seeRoute": "Ver percurso",
-    "spotHere": "A {dist} do sítio que estavas a ver"
+    "spotHere": "A {dist} do sítio que estavas a ver",
+    "tripTitle": "Como ir no {code}",
+    "tripGo": "Para ir",
+    "tripBack": "Para voltar",
+    "tripBoard": "Sobe em {from} e desce em {end}",
+    "tripDirection": "Direção {to}",
+    "tripStops": "{n} paragens",
+    "tripStopOne": "1 paragem",
+    "tripMin": "≈ {min} min"
   },
   "essentialsSuggest": {
     "boxTitle": "Pode ser que nos faltem essenciais. Ajudas-nos?",

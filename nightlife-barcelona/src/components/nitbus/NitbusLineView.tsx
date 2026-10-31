@@ -11,7 +11,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { NITBUS_PLATE, NITBUS_RAIL } from "../../lib/transitColors"
-import { directionStats, nearestStop, normStopName, type NbLine, type NbStop } from "../../lib/nitbusRoutes"
+import { directionStats, nearestStop, normStopName, planTrips, type NbLine, type NbStop } from "../../lib/nitbusRoutes"
 
 // Esquema de una línea de Nitbus (31/10/2026): una barra vertical con todas sus paradas en orden,
 // cabeceras marcadas, transbordos con otras líneas nocturnas y «parada más cercana». Sustituye al
@@ -143,6 +143,8 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
     const n = me && current ? nearestStop(current.stops, me.lat, me.lon, distanceInMeters) : null
     return n ? { index: n.index, meters: n.meters } : null
   }, [me, current])
+  // Con mi parada y la del sitio marcadas: en qué sentido ir, dónde subir y bajar y cuántas paradas.
+  const trips = useMemo(() => (line && me && spot ? planTrips(line, me, spot, distanceInMeters) : []), [line, me, spot])
   // Tiempo aproximado de punta a punta del sentido que se está viendo (solo con el recorrido en orden).
   const dirStats = useMemo(() => (ordered && stops.length > 1 ? directionStats(stops, distanceInMeters) : null), [ordered, stops])
   const approxMinutes = !filtering && dirStats?.minutes != null ? dirStats.minutes : null
@@ -276,6 +278,46 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                       </span>
                     </button>
                   )}
+                </div>
+              )}
+              {trips.length > 0 && (
+                <div className="mt-3 rounded-card border border-white/15 bg-white/[0.03] p-3">
+                  <p className="text-sm font-semibold text-ink">{t("nitbusPage.tripTitle").replace("{code}", code)}</p>
+                  <div className="mt-2 flex flex-col gap-2">
+                    {trips.map((tr) => {
+                      const dr = directions[tr.dir]
+                      const board = t("nitbusPage.tripBoard")
+                        .replace("{from}", `«${dr.stops[tr.from].name}»`)
+                        .replace("{end}", `«${dr.stops[tr.to].name}»`)
+                      const stopsLabel = tr.stops === 1 ? t("nitbusPage.tripStopOne") : t("nitbusPage.tripStops").replace("{n}", String(tr.stops))
+                      const meta = [
+                        t("nitbusPage.tripDirection").replace("{to}", dr.to),
+                        stopsLabel,
+                        tr.minutes != null ? t("nitbusPage.tripMin").replace("{min}", String(tr.minutes)) : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")
+                      return (
+                        <button
+                          key={`${tr.kind}-${tr.dir}`}
+                          type="button"
+                          onClick={() => {
+                            setDir(tr.dir)
+                            setFocus({ dir: tr.dir, index: tr.from, tick: Date.now() })
+                          }}
+                          className={`w-full rounded-ctl border px-3 py-2.5 text-left transition hover:bg-white/5 ${
+                            tr.dir === dir ? "border-brand/60" : "border-white/10"
+                          }`}
+                        >
+                          <span className="block text-xs font-semibold text-zinc-400">
+                            {t(tr.kind === "go" ? "nitbusPage.tripGo" : "nitbusPage.tripBack")}
+                          </span>
+                          <span className="block text-sm text-ink">{board}</span>
+                          <span className="block text-xs text-zinc-300">{meta}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>

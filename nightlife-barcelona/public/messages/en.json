@@ -1922,7 +1922,15 @@
     "approxTime": "≈ {min} min end to end",
     "estimateNote": "Time estimated by Noctua from the distance between stops. Not an official timetable: check TMB.",
     "seeRoute": "See route",
-    "spotHere": "{dist} from the place you were viewing"
+    "spotHere": "{dist} from the place you were viewing",
+    "tripTitle": "How to ride the {code}",
+    "tripGo": "To get there",
+    "tripBack": "To come back",
+    "tripBoard": "Board at {from}, get off at {end}",
+    "tripDirection": "Towards {to}",
+    "tripStops": "{n} stops",
+    "tripStopOne": "1 stop",
+    "tripMin": "≈ {min} min"
   },
   "essentialsSuggest": {
     "boxTitle": "We might be missing some essentials. Can you help?",

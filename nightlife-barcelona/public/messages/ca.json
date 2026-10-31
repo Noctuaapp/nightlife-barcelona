@@ -1922,7 +1922,15 @@
     "approxTime": "≈ {min} min d'un extrem a l'altre",
     "estimateNote": "Temps estimat per Noctua segons la distància entre parades. No és un horari oficial: consulta TMB.",
     "seeRoute": "Veure recorregut",
-    "spotHere": "A {dist} del lloc que mirabes"
+    "spotHere": "A {dist} del lloc que mirabes",
+    "tripTitle": "Com anar-hi amb el {code}",
+    "tripGo": "Per anar-hi",
+    "tripBack": "Per tornar",
+    "tripBoard": "Puja a {from} i baixa a {end}",
+    "tripDirection": "Direcció {to}",
+    "tripStops": "{n} parades",
+    "tripStopOne": "1 parada",
+    "tripMin": "≈ {min} min"
   },
   "essentialsSuggest": {
     "boxTitle": "Pot ser que ens faltin essencials. Ens ajudes?",

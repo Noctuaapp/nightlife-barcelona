@@ -1870,7 +1870,15 @@
     "approxTime": "≈ {min} min d'un bout à l'autre",
     "estimateNote": "Durée estimée par Noctua d'après la distance entre les arrêts. Ce n'est pas un horaire officiel : consulte TMB.",
     "seeRoute": "Voir le trajet",
-    "spotHere": "À {dist} du lieu que tu regardais"
+    "spotHere": "À {dist} du lieu que tu regardais",
+    "tripTitle": "Comment prendre le {code}",
+    "tripGo": "Pour y aller",
+    "tripBack": "Pour rentrer",
+    "tripBoard": "Monte à {from} et descends à {end}",
+    "tripDirection": "Direction {to}",
+    "tripStops": "{n} arrêts",
+    "tripStopOne": "1 arrêt",
+    "tripMin": "≈ {min} min"
   },
   "essentialsSuggest": {
     "boxTitle": "Il nous manque peut-être des essentiels. Tu nous aides ?",

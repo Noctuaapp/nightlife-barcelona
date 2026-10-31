@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { buildNitbusData, compareLineCodes, directionStats, nearestStop, normStopName, summarizeRoutes, type RouteRow, type LooseStop } from "../nitbusRoutes"
+import { buildNitbusData, compareLineCodes, directionStats, nearestStop, normStopName, planTrips, summarizeRoutes, type RouteRow, type LooseStop } from "../nitbusRoutes"
 import { distanceInMeters } from "../geo"
 
 // El módulo importa el cliente de Supabase (necesita variables de entorno); aquí solo se prueba lo puro.
@@ -155,5 +155,30 @@ describe("directionStats y summarizeRoutes", () => {
     expect(Object.keys(sum).sort()).toEqual(["N1", "N24"])
     expect(sum.N24.stops).toBe(8)
     expect(sum.N1.stops).toBe(3)
+  })
+})
+
+describe("planTrips", () => {
+  // Sentido 0 va de sur a norte (A1…A10); el sentido 1 vuelve de norte a sur (B1…B10), una calle al lado.
+  const rows: RouteRow[] = []
+  for (let i = 0; i < 10; i++) rows.push(r("N24", 0, i + 1, `A${i + 1}`, 41.38 + i * 0.002, 2.17))
+  for (let i = 0; i < 10; i++) rows.push(r("N24", 1, i + 1, `B${i + 1}`, 41.38 + (9 - i) * 0.002, 2.1703))
+  const line = buildNitbusData(rows, []).lines.N24
+  const me = { lat: 41.3805, lon: 2.17 } // junto a A1 (y B10)
+  const spot = { lat: 41.3961, lon: 2.17 } // junto a A9 (y B2)
+
+  it("da la ida en el sentido que va de mi parada al sitio y la vuelta en el contrario", () => {
+    const trips = planTrips(line, me, spot, distanceInMeters)
+    expect(trips).toHaveLength(2)
+    const [go, back] = trips
+    expect(go).toMatchObject({ dir: 0, kind: "go", from: 0, to: 8, stops: 8 })
+    expect(back).toMatchObject({ dir: 1, kind: "back", from: 1, to: 9, stops: 8 })
+    expect(go.minutes === null || go.minutes >= 5).toBe(true)
+  })
+
+  it("no inventa trayecto si la línea no tiene el recorrido en orden o es la misma parada", () => {
+    const loose = buildNitbusData([], [{ name: "X", subcategory: "N24", latitude: 41.38, longitude: 2.17 }, { name: "Y", subcategory: "N24", latitude: 41.39, longitude: 2.17 }]).lines.N24
+    expect(planTrips(loose, me, spot, distanceInMeters)).toEqual([])
+    expect(planTrips(line, me, me, distanceInMeters)).toEqual([])
   })
 })

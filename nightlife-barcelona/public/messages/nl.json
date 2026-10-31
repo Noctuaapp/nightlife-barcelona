@@ -1870,7 +1870,15 @@
     "approxTime": "≈ {min} min van begin tot eind",
     "estimateNote": "Tijd geschat door Noctua op basis van de afstand tussen de haltes. Geen officiële dienstregeling: check TMB.",
     "seeRoute": "Route bekijken",
-    "spotHere": "{dist} van de plek die je bekeek"
+    "spotHere": "{dist} van de plek die je bekeek",
+    "tripTitle": "Zo reis je met de {code}",
+    "tripGo": "Heen",
+    "tripBack": "Terug",
+    "tripBoard": "Stap in bij {from} en uit bij {end}",
+    "tripDirection": "Richting {to}",
+    "tripStops": "{n} haltes",
+    "tripStopOne": "1 halte",
+    "tripMin": "≈ {min} min"
   },
   "essentialsSuggest": {
     "boxTitle": "Misschien missen we wat essentials. Help je ons?",

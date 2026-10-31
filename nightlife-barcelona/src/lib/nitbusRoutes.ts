@@ -238,6 +238,35 @@ export function summarizeRoutes(rows: RouteRow[], distance: Distance): Record<st
   return out
 }
 
+// Trayectos entre dos puntos en una línea con el recorrido en orden (31/10/2026): dónde subir, dónde
+// bajar, en qué sentido y cuántas paradas. Sirve para «mi parada» ↔ «la parada del sitio al que
+// voy». En cada sentido se toma la parada más cercana a cada punto; si la de salida va antes que la
+// de llegada, ese sentido lleva de un punto al otro. «go» = de mí al sitio, «back» = del sitio a mí.
+export type Trip = {
+  dir: number
+  kind: "go" | "back"
+  from: number // índice de la parada donde se sube
+  to: number // índice de la parada donde se baja
+  stops: number // paradas que se recorren (subir en A2 y bajar en A20 = 18)
+  minutes: number | null
+}
+
+export function planTrips(line: NbLine, me: { lat: number; lon: number }, spot: { lat: number; lon: number }, distance: Distance): Trip[] {
+  if (!line.ordered) return []
+  const out: Trip[] = []
+  line.directions.forEach((d, dir) => {
+    const a = nearestStop(d.stops, me.lat, me.lon, distance)
+    const b = nearestStop(d.stops, spot.lat, spot.lon, distance)
+    if (!a || !b || a.index === b.index) return
+    const kind = a.index < b.index ? "go" : "back"
+    const from = Math.min(a.index, b.index)
+    const to = Math.max(a.index, b.index)
+    const st = directionStats(d.stops.slice(from, to + 1), distance)
+    out.push({ dir, kind, from, to, stops: to - from, minutes: st.minutes })
+  })
+  return out.sort((x, y) => (x.kind === y.kind ? x.dir - y.dir : x.kind === "go" ? -1 : 1))
+}
+
 // Servidor: lee las dos fuentes y construye los datos. Si falla la tabla (aún no existe) sigue con
 // las paradas sueltas; si falla todo, devuelve vacío y la página lo explica.
 export async function loadNitbusData(): Promise<NbData> {
