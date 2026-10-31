@@ -25,7 +25,12 @@ type Props = {
   allCodes: string[]
 }
 
-type Highlight = { dir: number; index: number; meters: number | null; kind: "me" | "spot" | "stop" }
+// Un punto del mapa (el sitio que se estaba mirando o la posición de la persona) y la parada de
+// esta línea que le queda más cerca. Pueden marcarse las dos a la vez (31/10/2026): antes, al pulsar
+// «Cerca de mí» se perdía la marcada desde el local y no se podía ver el trayecto entre ambas.
+type Point = { lat: number; lon: number }
+type Focus = { dir: number; index: number; tick: number }
+type Nearest = { index: number; meters: number }
 
 // Una parada con tantas líneas se pinta como nudo de transbordo (Pl. Catalunya, Sants, etc.).
 const HUB_MIN_LINES = 4
@@ -35,11 +40,11 @@ const MAX_TRANSFER_BADGES = 12
 const DOT_TOP = "1.5rem"
 
 // Parada más cercana a un punto, mirando los dos sentidos de la línea.
-function pickNearest(line: NbLine, lat: number, lon: number, kind: Highlight["kind"]): Highlight | null {
-  let best: Highlight | null = null
+function pickNearest(line: NbLine, lat: number, lon: number): { dir: number; index: number; meters: number } | null {
+  let best: { dir: number; index: number; meters: number } | null = null
   for (let d = 0; d < line.directions.length; d++) {
     const n = nearestStop(line.directions[d].stops, lat, lon, distanceInMeters)
-    if (n && (best === null || n.meters < (best.meters ?? Infinity))) best = { dir: d, index: n.index, meters: n.meters, kind }
+    if (n && (best === null || n.meters < best.meters)) best = { dir: d, index: n.index, meters: n.meters }
   }
   return best
 }
@@ -58,7 +63,10 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
   const geo = useGeolocation()
   const [dir, setDir] = useState(0)
   const [query, setQuery] = useState("")
-  const [highlight, setHighlight] = useState<Highlight | null>(null)
+  const [spot, setSpot] = useState<Point | null>(null) // el sitio que se estaba mirando (?lat y ?lon)
+  const [me, setMe] = useState<Point | null>(null) // la posición de la persona («Cerca de mí»)
+  const [named, setNamed] = useState<{ dir: number; index: number } | null>(null) // ?stop=Nombre
+  const [focus, setFocus] = useState<Focus | null>(null) // a qué parada llevar la pantalla
 
   const directions = line?.directions ?? []
   const current = directions[Math.min(dir, Math.max(directions.length - 1, 0))]
@@ -78,36 +86,45 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
         const i = line.directions[d].stops.findIndex((s) => normStopName(s.name) === key)
         if (i >= 0) {
           setDir(d)
-          setHighlight({ dir: d, index: i, meters: null, kind: "stop" })
+          setNamed({ dir: d, index: i })
+          setFocus({ dir: d, index: i, tick: Date.now() })
           return
         }
       }
     } else if (p.get("lat") && p.get("lon") && isFinite(lat) && isFinite(lon)) {
-      const best = pickNearest(line, lat, lon, "spot")
+      const best = pickNearest(line, lat, lon)
+      setSpot({ lat, lon })
       if (best) {
         setDir(best.dir)
-        setHighlight(best)
+        setFocus({ dir: best.dir, index: best.index, tick: Date.now() })
       }
     }
   }, [line])
 
-  // Lleva la parada resaltada al centro de la pantalla.
+  // Lleva la parada elegida al centro de la pantalla.
   useEffect(() => {
-    if (!highlight || highlight.dir !== dir) return
-    const el = document.getElementById(`stop-${highlight.dir}-${highlight.index}`)
+    if (!focus || focus.dir !== dir) return
+    const el = document.getElementById(`stop-${focus.dir}-${focus.index}`)
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
-  }, [highlight, dir, query])
+  }, [focus, dir, query])
 
   const findMine = async () => {
     if (!line) return
     const pos = await geo.request()
     if (!pos) return
-    const best = pickNearest(line, pos.lat, pos.lng, "me")
-    if (best) {
-      setQuery("")
-      setDir(best.dir)
-      setHighlight(best)
+    setQuery("")
+    setMe({ lat: pos.lat, lon: pos.lng })
+    // Con un sitio ya marcado se queda en el sentido que se estaba viendo, para que las dos paradas
+    // salgan en la misma lista; sin él, se elige el sentido de la parada más cercana.
+    let d = dir
+    if (!spot) {
+      const best = pickNearest(line, pos.lat, pos.lng)
+      if (!best) return
+      d = best.dir
+      setDir(d)
     }
+    const n = line.directions[d] ? nearestStop(line.directions[d].stops, pos.lat, pos.lng, distanceInMeters) : null
+    if (n) setFocus({ dir: d, index: n.index, tick: Date.now() })
   }
 
   const q = normStopName(query)
@@ -117,7 +134,15 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
   )
   const filtering = q.length > 0
   const ordered = !!line?.ordered
-  const highlightedStop = highlight && directions[highlight.dir] ? directions[highlight.dir].stops[highlight.index] : null
+  // La parada de ESTE sentido más cercana a cada punto: al cambiar de sentido se recalculan solas.
+  const spotHi: Nearest | null = useMemo(() => {
+    const n = spot && current ? nearestStop(current.stops, spot.lat, spot.lon, distanceInMeters) : null
+    return n ? { index: n.index, meters: n.meters } : null
+  }, [spot, current])
+  const meHi: Nearest | null = useMemo(() => {
+    const n = me && current ? nearestStop(current.stops, me.lat, me.lon, distanceInMeters) : null
+    return n ? { index: n.index, meters: n.meters } : null
+  }, [me, current])
   // Tiempo aproximado de punta a punta del sentido que se está viendo (solo con el recorrido en orden).
   const dirStats = useMemo(() => (ordered && stops.length > 1 ? directionStats(stops, distanceInMeters) : null), [ordered, stops])
   const approxMinutes = !filtering && dirStats?.minutes != null ? dirStats.minutes : null
@@ -185,7 +210,7 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                     aria-selected={dir === i}
                     onClick={() => {
                       setDir(i)
-                      if (highlight && highlight.dir !== i) setHighlight(null)
+                      setFocus(null)
                     }}
                     className={`min-w-0 rounded-ctl border px-3 py-3 text-left text-sm font-semibold transition ${
                       dir === i ? "border-brand bg-brand text-white" : "border-white/15 text-zinc-200 hover:bg-white/5"
@@ -221,12 +246,37 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
 
             <div aria-live="polite" className="min-h-0">
               {geo.error && <p className="mt-3 text-sm leading-relaxed text-red-300">{geo.error}</p>}
-              {highlightedStop && highlight && highlight.kind !== "stop" && highlight.meters != null && (
-                <p className="mt-3 rounded-card border border-warn/40 bg-warn/[0.08] p-3 text-sm leading-snug text-zinc-100">
-                  {t(highlight.kind === "me" ? "nitbusPage.nearestIs" : "nitbusPage.nearSpotIs")
-                    .replace("{name}", highlightedStop.name)
-                    .replace("{dist}", formatDistance(highlight.meters))}
-                </p>
+              {(spotHi || meHi) && (
+                <div className="mt-3 flex flex-col gap-2">
+                  {spotHi && current && (
+                    <button
+                      type="button"
+                      onClick={() => setFocus({ dir, index: spotHi.index, tick: Date.now() })}
+                      className="flex w-full items-start gap-3 rounded-card border border-warn/40 bg-warn/[0.08] p-3 text-left text-sm leading-snug text-zinc-100"
+                    >
+                      <span aria-hidden="true" className="mt-1 h-3 w-3 shrink-0 rounded-full bg-warn" />
+                      <span>
+                        {t("nitbusPage.nearSpotIs")
+                          .replace("{name}", current.stops[spotHi.index].name)
+                          .replace("{dist}", formatDistance(spotHi.meters))}
+                      </span>
+                    </button>
+                  )}
+                  {meHi && current && (
+                    <button
+                      type="button"
+                      onClick={() => setFocus({ dir, index: meHi.index, tick: Date.now() })}
+                      className="flex w-full items-start gap-3 rounded-card border border-brand/50 bg-brand/[0.10] p-3 text-left text-sm leading-snug text-zinc-100"
+                    >
+                      <span aria-hidden="true" className="mt-1 h-3 w-3 shrink-0 rounded-full bg-brand" />
+                      <span>
+                        {t("nitbusPage.nearestIs")
+                          .replace("{name}", current.stops[meHi.index].name)
+                          .replace("{dist}", formatDistance(meHi.meters))}
+                      </span>
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
@@ -246,14 +296,18 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                   const isLast = index === stops.length - 1
                   const terminal = ordered && (isFirst || isLast)
                   const hub = !terminal && s.others.length >= HUB_MIN_LINES
-                  const isHi = !!highlight && highlight.dir === dir && highlight.index === index
+                  const isSpot = spotHi?.index === index
+                  const isMe = meHi?.index === index
+                  const isNamed = !!named && named.dir === dir && named.index === index
                   const railTop = filtering || !ordered ? false : !isFirst
                   const railBottom = filtering || !ordered ? false : !isLast
                   return (
                     <li
                       key={`${index}-${s.name}`}
                       id={`stop-${dir}-${index}`}
-                      className={`relative flex gap-3 scroll-mt-28 rounded-xl pr-2 ${isHi ? "bg-warn/[0.10] ring-1 ring-warn/50" : ""}`}
+                      className={`relative flex gap-3 scroll-mt-28 rounded-xl pr-2 ${
+                        isMe ? "bg-brand/[0.14] ring-1 ring-brand/60" : isSpot || isNamed ? "bg-warn/[0.10] ring-1 ring-warn/50" : ""
+                      }`}
                     >
                       <div className="relative w-8 shrink-0" aria-hidden="true">
                         {(railTop || railBottom) && (
@@ -279,8 +333,11 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                         {terminal && (
                           <p className="text-xs text-zinc-400">{isFirst ? t("nitbusPage.start") : t("nitbusPage.end")}</p>
                         )}
-                        {isHi && highlight?.kind === "me" && highlight.meters != null && (
-                          <p className="text-xs font-semibold text-warn">{t("nitbusPage.youAreHere").replace("{dist}", formatDistance(highlight.meters))}</p>
+                        {isSpot && spotHi && (
+                          <p className="text-xs font-semibold text-warn">{t("nitbusPage.spotHere").replace("{dist}", formatDistance(spotHi.meters))}</p>
+                        )}
+                        {isMe && meHi && (
+                          <p className="text-xs font-semibold text-brand-soft">{t("nitbusPage.youAreHere").replace("{dist}", formatDistance(meHi.meters))}</p>
                         )}
                         {s.others.length > 0 && (
                           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">

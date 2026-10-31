@@ -1921,7 +1921,8 @@
     "routeSummary": "{n} parades · ≈ {min} min d'un extrem a l'altre",
     "approxTime": "≈ {min} min d'un extrem a l'altre",
     "estimateNote": "Temps estimat per Noctua segons la distància entre parades. No és un horari oficial: consulta TMB.",
-    "seeRoute": "Veure recorregut"
+    "seeRoute": "Veure recorregut",
+    "spotHere": "A {dist} del lloc que mirabes"
   },
   "essentialsSuggest": {
     "boxTitle": "Pot ser que ens faltin essencials. Ens ajudes?",

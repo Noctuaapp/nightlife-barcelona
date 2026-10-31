@@ -1869,7 +1869,8 @@
     "routeSummary": "{n} arrêts · ≈ {min} min d'un bout à l'autre",
     "approxTime": "≈ {min} min d'un bout à l'autre",
     "estimateNote": "Durée estimée par Noctua d'après la distance entre les arrêts. Ce n'est pas un horaire officiel : consulte TMB.",
-    "seeRoute": "Voir le trajet"
+    "seeRoute": "Voir le trajet",
+    "spotHere": "À {dist} du lieu que tu regardais"
   },
   "essentialsSuggest": {
     "boxTitle": "Il nous manque peut-être des essentiels. Tu nous aides ?",

@@ -1921,7 +1921,8 @@
     "routeSummary": "{n} stops · ≈ {min} min end to end",
     "approxTime": "≈ {min} min end to end",
     "estimateNote": "Time estimated by Noctua from the distance between stops. Not an official timetable: check TMB.",
-    "seeRoute": "See route"
+    "seeRoute": "See route",
+    "spotHere": "{dist} from the place you were viewing"
   },
   "essentialsSuggest": {
     "boxTitle": "We might be missing some essentials. Can you help?",

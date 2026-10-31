@@ -1869,7 +1869,8 @@
     "routeSummary": "{n} Haltestellen · ≈ {min} Min. von Ende zu Ende",
     "approxTime": "≈ {min} Min. von Ende zu Ende",
     "estimateNote": "Von Noctua anhand der Entfernung zwischen den Haltestellen geschätzt. Kein offizieller Fahrplan: prüf bei TMB.",
-    "seeRoute": "Strecke ansehen"
+    "seeRoute": "Strecke ansehen",
+    "spotHere": "{dist} von dem Ort, den du angesehen hast"
   },
   "essentialsSuggest": {
     "boxTitle": "Uns fehlen vielleicht ein paar Essentials. Hilfst du uns?",

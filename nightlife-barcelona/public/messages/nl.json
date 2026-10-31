@@ -1869,7 +1869,8 @@
     "routeSummary": "{n} haltes · ≈ {min} min van begin tot eind",
     "approxTime": "≈ {min} min van begin tot eind",
     "estimateNote": "Tijd geschat door Noctua op basis van de afstand tussen de haltes. Geen officiële dienstregeling: check TMB.",
-    "seeRoute": "Route bekijken"
+    "seeRoute": "Route bekijken",
+    "spotHere": "{dist} van de plek die je bekeek"
   },
   "essentialsSuggest": {
     "boxTitle": "Misschien missen we wat essentials. Help je ons?",

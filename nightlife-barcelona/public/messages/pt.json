@@ -1882,7 +1882,8 @@
     "routeSummary": "{n} paragens · ≈ {min} min de ponta a ponta",
     "approxTime": "≈ {min} min de ponta a ponta",
     "estimateNote": "Tempo estimado pela Noctua com base na distância entre paragens. Não é um horário oficial: consulta a TMB.",
-    "seeRoute": "Ver percurso"
+    "seeRoute": "Ver percurso",
+    "spotHere": "A {dist} do sítio que estavas a ver"
   },
   "essentialsSuggest": {
     "boxTitle": "Pode ser que nos faltem essenciais. Ajudas-nos?",

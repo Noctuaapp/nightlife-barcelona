@@ -1869,7 +1869,8 @@
     "routeSummary": "{n} fermate · ≈ {min} min da capolinea a capolinea",
     "approxTime": "≈ {min} min da capolinea a capolinea",
     "estimateNote": "Tempo stimato da Noctua in base alla distanza tra le fermate. Non è un orario ufficiale: controlla TMB.",
-    "seeRoute": "Vedi il percorso"
+    "seeRoute": "Vedi il percorso",
+    "spotHere": "A {dist} dal posto che stavi guardando"
   },
   "essentialsSuggest": {
     "boxTitle": "Forse ci mancano degli essenziali. Ci aiuti?",
