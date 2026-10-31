@@ -915,7 +915,7 @@ export default function EssentialCategoryPage() {
           )}
 
           {/* Toggle lista/mapa — solo móvil */}
-          <div className="mt-3 flex gap-1 rounded-full border border-white/10 bg-surface p-1 md:hidden">
+          <div className={`mt-3 gap-1 rounded-full border border-white/10 bg-surface p-1 ${category === "nitbus" ? "hidden" : "flex md:hidden"}`}>
             {(["list", "map"] as const).map((v) => (
               <button
                 key={v}
@@ -930,12 +930,14 @@ export default function EssentialCategoryPage() {
         </section>
         )}
 
-        {/* Content: lista + mapa lado a lado en escritorio — tampoco se enseña para Nitbus (ver
-            arriba). */}
+        {/* Content: lista + mapa lado a lado en escritorio. En Nitbus NO hay mapa (31/10/2026): el
+            mapa nunca llegaba a crearse —su contenedor aparece cuando cargan las paradas, y el
+            mapa se crea una sola vez al montar la página— y dejaba un cuadro vacío. La red se ve
+            en /nitbus; aquí solo la lista, a todo el ancho. */}
         {(category !== "nitbus" || essentials.length > 0) && (
         <section className="mx-auto mt-6 max-w-7xl px-4">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
-            <div className={`md:col-span-5 ${mobileView === "map" ? "hidden md:block" : ""}`}>
+            <div className={category === "nitbus" ? "md:col-span-12" : `md:col-span-5 ${mobileView === "map" ? "hidden md:block" : ""}`}>
               {loading ? (
                 <div className="grid gap-3">
                   {[0, 1, 2, 3].map((i) => <div key={i} className="h-28 animate-pulse rounded-card bg-surface" />)}
@@ -945,13 +947,13 @@ export default function EssentialCategoryPage() {
                   <p className="text-lg font-semibold text-zinc-200">{t("essentialsPage.noFilterResults")}</p>
                 </div>
               ) : (
-                <div className="grid gap-3 md:max-h-[640px] md:overflow-y-auto md:pr-1 [scrollbar-width:thin]">
+                <div className={category === "nitbus" ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 md:max-h-[720px] md:overflow-y-auto md:pr-1 [scrollbar-width:thin]" : "grid gap-3 md:max-h-[640px] md:overflow-y-auto md:pr-1 [scrollbar-width:thin]"}>
                   {filteredEssentials.map((item) => renderCard(item))}
                 </div>
               )}
             </div>
 
-            <div className={`md:col-span-7 ${mobileView === "list" ? "hidden md:block" : ""}`}>
+            <div className={category === "nitbus" ? "hidden" : `md:col-span-7 ${mobileView === "list" ? "hidden md:block" : ""}`}>
               <div
                 ref={mapWrapperRef}
                 className="relative h-[58dvh] min-h-[360px] scroll-mt-20 overflow-hidden rounded-card border border-white/10 md:sticky md:top-24 md:h-[640px]"
@@ -1043,7 +1045,7 @@ export default function EssentialCategoryPage() {
         )}
       </main>
       {/* Acceso rápido al mapa mientras se mira la lista (solo móvil) */}
-      {mobileView === "list" && !loading && essentials.length > 0 && (
+      {category !== "nitbus" && mobileView === "list" && !loading && essentials.length > 0 && (
         <button
           onClick={() => setMobileView("map")}
           className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] right-4 z-30 flex items-center gap-1.5 rounded-full bg-ink px-4 py-2.5 text-xs font-semibold text-night shadow-lg md:hidden"

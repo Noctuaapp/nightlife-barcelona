@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { createClient } from "@supabase/supabase-js"
 import { isAdminRequest } from "@/lib/adminAuth"
 import { buildRouteRows } from "@/lib/nitbusOsmRoutes"
@@ -269,6 +270,15 @@ out;`
       }
       recorridos = failed ? `Guardados ${saved} y falló: ${failed}` : `${saved} paradas de recorrido guardadas (${Object.keys(routeSummary).length} líneas).`
     }
+  }
+
+  // Las páginas /nitbus se guardan una hora (regeneración): sin esto, tras importar se seguía viendo
+  // la versión anterior («falta el orden del recorrido») hasta una hora después.
+  try {
+    revalidatePath("/nitbus")
+    revalidatePath("/nitbus/[line]", "page")
+  } catch {
+    // si no se puede refrescar, se refrescan solas en una hora
   }
 
   return NextResponse.json({
