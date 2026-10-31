@@ -1917,7 +1917,11 @@
     "otherLines": "Other lines",
     "ctaTitle": "Every stop on every line, in order",
     "ctaBody": "Pick a line and see its route stop by stop, with connections and the stop nearest to you.",
-    "ctaButton": "See lines"
+    "ctaButton": "See lines",
+    "routeSummary": "{n} stops · ≈ {min} min end to end",
+    "approxTime": "≈ {min} min end to end",
+    "estimateNote": "Time estimated by Noctua from the distance between stops. Not an official timetable: check TMB.",
+    "seeRoute": "See route"
   },
   "essentialsSuggest": {
     "boxTitle": "We might be missing some essentials. Can you help?",

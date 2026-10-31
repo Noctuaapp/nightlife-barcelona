@@ -1865,7 +1865,11 @@
     "otherLines": "Autres lignes",
     "ctaTitle": "Tous les arrêts de chaque ligne, dans l'ordre",
     "ctaBody": "Choisis une ligne et regarde son parcours arrêt par arrêt, avec les correspondances et l'arrêt le plus proche de toi.",
-    "ctaButton": "Voir les lignes"
+    "ctaButton": "Voir les lignes",
+    "routeSummary": "{n} arrêts · ≈ {min} min d'un bout à l'autre",
+    "approxTime": "≈ {min} min d'un bout à l'autre",
+    "estimateNote": "Durée estimée par Noctua d'après la distance entre les arrêts. Ce n'est pas un horaire officiel : consulte TMB.",
+    "seeRoute": "Voir le trajet"
   },
   "essentialsSuggest": {
     "boxTitle": "Il nous manque peut-être des essentiels. Tu nous aides ?",

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
-import { buildNitbusData, compareLineCodes, nearestStop, normStopName, type RouteRow, type LooseStop } from "../nitbusRoutes"
+import { buildNitbusData, compareLineCodes, directionStats, nearestStop, normStopName, summarizeRoutes, type RouteRow, type LooseStop } from "../nitbusRoutes"
+import { distanceInMeters } from "../geo"
 
 // El módulo importa el cliente de Supabase (necesita variables de entorno); aquí solo se prueba lo puro.
 vi.mock("../supabase", () => ({ supabase: {} }))
@@ -120,5 +121,39 @@ describe("nearestStop", () => {
   })
   it("sin ninguna con coordenadas, null", () => {
     expect(nearestStop([{ lat: null, lon: null }], 41, 2, dist)).toBeNull()
+  })
+})
+
+describe("directionStats y summarizeRoutes", () => {
+  // Paradas cada ~0,001° de latitud (≈ 111 m): 10 paradas = 9 tramos ≈ 1 km en línea recta.
+  const line = (n: number) => Array.from({ length: n }, (_, i) => ({ lat: 41.38 + i * 0.001, lon: 2.17 }))
+
+  it("cuenta las paradas y estima minutos redondeados a 5", () => {
+    const st = directionStats(line(10), distanceInMeters)
+    expect(st.stops).toBe(10)
+    // ≈ 1 km × 1,25 / 17 km/h ≈ 4,4 min → mínimo 5
+    expect(st.minutes).toBe(5)
+    const long = directionStats(line(101), distanceInMeters) // ≈ 11,1 km → ≈ 49 min → 50
+    expect(long.stops).toBe(101)
+    expect(long.minutes).toBe(50)
+  })
+
+  it("no inventa un tiempo sin coordenadas suficientes", () => {
+    const stops = line(10).map((s, i) => (i % 2 === 0 ? { lat: null, lon: null } : s))
+    expect(directionStats(stops, distanceInMeters)).toEqual({ stops: 10, minutes: null })
+    expect(directionStats([{ lat: 41.38, lon: 2.17 }], distanceInMeters)).toEqual({ stops: 1, minutes: null })
+  })
+
+  it("resume cada línea con su sentido más largo y respeta el orden", () => {
+    const rows: RouteRow[] = [
+      // desordenadas a propósito
+      ...line(5).map((s, i) => r("n24", 0, 5 - i, `A${i}`, s.lat, s.lon)),
+      ...line(8).map((s, i) => r("N24", 1, i + 1, `B${i}`, s.lat, s.lon)),
+      ...line(3).map((s, i) => r("N1", 0, i + 1, `C${i}`, s.lat, s.lon)),
+    ]
+    const sum = summarizeRoutes(rows, distanceInMeters)
+    expect(Object.keys(sum).sort()).toEqual(["N1", "N24"])
+    expect(sum.N24.stops).toBe(8)
+    expect(sum.N1.stops).toBe(3)
   })
 })

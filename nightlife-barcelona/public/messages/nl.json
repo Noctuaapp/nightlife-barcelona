@@ -1865,7 +1865,11 @@
     "otherLines": "Andere lijnen",
     "ctaTitle": "Alle haltes van elke lijn, op volgorde",
     "ctaBody": "Kies een lijn en bekijk de route halte voor halte, met overstappen en de halte die het dichtst bij je is.",
-    "ctaButton": "Bekijk lijnen"
+    "ctaButton": "Bekijk lijnen",
+    "routeSummary": "{n} haltes · ≈ {min} min van begin tot eind",
+    "approxTime": "≈ {min} min van begin tot eind",
+    "estimateNote": "Tijd geschat door Noctua op basis van de afstand tussen de haltes. Geen officiële dienstregeling: check TMB.",
+    "seeRoute": "Route bekijken"
   },
   "essentialsSuggest": {
     "boxTitle": "Misschien missen we wat essentials. Help je ons?",

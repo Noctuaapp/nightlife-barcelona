@@ -1917,7 +1917,11 @@
     "otherLines": "Altres línies",
     "ctaTitle": "Totes les parades de cada línia, en ordre",
     "ctaBody": "Tria una línia i mira el seu recorregut parada a parada, amb transbords i la parada més propera a tu.",
-    "ctaButton": "Veure línies"
+    "ctaButton": "Veure línies",
+    "routeSummary": "{n} parades · ≈ {min} min d'un extrem a l'altre",
+    "approxTime": "≈ {min} min d'un extrem a l'altre",
+    "estimateNote": "Temps estimat per Noctua segons la distància entre parades. No és un horari oficial: consulta TMB.",
+    "seeRoute": "Veure recorregut"
   },
   "essentialsSuggest": {
     "boxTitle": "Pot ser que ens faltin essencials. Ens ajudes?",

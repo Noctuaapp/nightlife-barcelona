@@ -180,6 +180,64 @@ export function nearestStop<T extends { lat: number | null; lon: number | null }
   return best
 }
 
+// Medidas aproximadas de un recorrido (31/10/2026): número de paradas y minutos de punta a punta.
+// No hay horarios oficiales en los datos, así que el tiempo es una ESTIMACIÓN por distancia: se suma
+// la distancia en línea recta entre paradas consecutivas, se pasa a distancia por calle (las calles
+// no van en línea recta) y se divide por una velocidad media de autobús nocturno con sus paradas.
+// Los dos números son supuestos nuestros, no datos de TMB: la web lo dice donde lo enseña.
+export const ROAD_FACTOR = 1.25
+export const AVG_KMH = 17
+
+export type RouteStats = { stops: number; minutes: number | null }
+
+type Distance = (lat1: number, lon1: number, lat2: number, lon2: number) => number
+
+// Estadísticas de UN sentido (paradas en orden). Sin coordenadas suficientes no se inventa un tiempo.
+export function directionStats(stops: { lat: number | null; lon: number | null }[], distance: Distance): RouteStats {
+  const n = stops.length
+  if (n < 2) return { stops: n, minutes: null }
+  let meters = 0
+  let pairs = 0
+  for (let i = 1; i < n; i++) {
+    const a = stops[i - 1]
+    const b = stops[i]
+    if (a.lat == null || a.lon == null || b.lat == null || b.lon == null) continue
+    meters += distance(a.lat, a.lon, b.lat, b.lon)
+    pairs++
+  }
+  if (pairs < (n - 1) * 0.8) return { stops: n, minutes: null }
+  // Si faltaban algunos tramos, se completan con la media de los que sí hay.
+  const km = ((meters / pairs) * (n - 1)) / 1000
+  const raw = ((km * ROAD_FACTOR) / AVG_KMH) * 60
+  return { stops: n, minutes: Math.max(5, Math.round(raw / 5) * 5) }
+}
+
+// Resumen por línea a partir de filas de recorrido: se toma el sentido con más paradas.
+export function summarizeRoutes(rows: RouteRow[], distance: Distance): Record<string, RouteStats> {
+  const byLine = new Map<string, Map<number, RouteRow[]>>()
+  for (const r of rows) {
+    const code = r.line.trim().toUpperCase()
+    if (!byLine.has(code)) byLine.set(code, new Map())
+    const dirs = byLine.get(code)!
+    if (!dirs.has(r.direction)) dirs.set(r.direction, [])
+    dirs.get(r.direction)!.push(r)
+  }
+  const out: Record<string, RouteStats> = {}
+  for (const [code, dirs] of byLine) {
+    let best: RouteStats | null = null
+    for (const list of dirs.values()) {
+      const ordered = [...list].sort((a, b) => a.seq - b.seq)
+      const st = directionStats(
+        ordered.map((r) => ({ lat: r.latitude, lon: r.longitude })),
+        distance
+      )
+      if (!best || st.stops > best.stops) best = st
+    }
+    if (best) out[code] = best
+  }
+  return out
+}
+
 // Servidor: lee las dos fuentes y construye los datos. Si falla la tabla (aún no existe) sigue con
 // las paradas sueltas; si falla todo, devuelve vacío y la página lo explica.
 export async function loadNitbusData(): Promise<NbData> {

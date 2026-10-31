@@ -1865,7 +1865,11 @@
     "otherLines": "Andere Linien",
     "ctaTitle": "Alle Haltestellen jeder Linie, in der richtigen Reihenfolge",
     "ctaBody": "Wähl eine Linie und sieh dir ihre Strecke Haltestelle für Haltestelle an, mit Anschlüssen und der Haltestelle, die dir am nächsten ist.",
-    "ctaButton": "Linien ansehen"
+    "ctaButton": "Linien ansehen",
+    "routeSummary": "{n} Haltestellen · ≈ {min} Min. von Ende zu Ende",
+    "approxTime": "≈ {min} Min. von Ende zu Ende",
+    "estimateNote": "Von Noctua anhand der Entfernung zwischen den Haltestellen geschätzt. Kein offizieller Fahrplan: prüf bei TMB.",
+    "seeRoute": "Strecke ansehen"
   },
   "essentialsSuggest": {
     "boxTitle": "Uns fehlen vielleicht ein paar Essentials. Hilfst du uns?",

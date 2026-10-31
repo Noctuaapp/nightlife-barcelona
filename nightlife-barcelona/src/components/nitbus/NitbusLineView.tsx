@@ -11,7 +11,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { NITBUS_PLATE, NITBUS_RAIL } from "../../lib/transitColors"
-import { nearestStop, normStopName, type NbLine, type NbStop } from "../../lib/nitbusRoutes"
+import { directionStats, nearestStop, normStopName, type NbLine, type NbStop } from "../../lib/nitbusRoutes"
 
 // Esquema de una línea de Nitbus (31/10/2026): una barra vertical con todas sus paradas en orden,
 // cabeceras marcadas, transbordos con otras líneas nocturnas y «parada más cercana». Sustituye al
@@ -118,6 +118,9 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
   const filtering = q.length > 0
   const ordered = !!line?.ordered
   const highlightedStop = highlight && directions[highlight.dir] ? directions[highlight.dir].stops[highlight.index] : null
+  // Tiempo aproximado de punta a punta del sentido que se está viendo (solo con el recorrido en orden).
+  const dirStats = useMemo(() => (ordered && stops.length > 1 ? directionStats(stops, distanceInMeters) : null), [ordered, stops])
+  const approxMinutes = !filtering && dirStats?.minutes != null ? dirStats.minutes : null
 
   const title = `Nitbus ${code}`
 
@@ -230,7 +233,9 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
             <p className="mt-6 text-sm text-zinc-400">
               {t("nitbusPage.stopsCount").replace("{n}", String(filtering ? rows.length : stops.length))}
               {current?.to && !filtering && ordered ? ` · ${current.from} → ${current.to}` : ""}
+              {approxMinutes != null ? ` · ${t("nitbusPage.approxTime").replace("{min}", String(approxMinutes))}` : ""}
             </p>
+            {approxMinutes != null && <p className="mt-1 text-xs text-zinc-500">{t("nitbusPage.estimateNote")}</p>}
 
             {rows.length === 0 ? (
               <p className="mt-4 text-base text-zinc-300">{t("nitbusPage.noMatch").replace("{q}", query)}</p>

@@ -1865,7 +1865,11 @@
     "otherLines": "Altre linee",
     "ctaTitle": "Tutte le fermate di ogni linea, in ordine",
     "ctaBody": "Scegli una linea e guarda il suo percorso fermata per fermata, con le coincidenze e la fermata più vicina a te.",
-    "ctaButton": "Vedi le linee"
+    "ctaButton": "Vedi le linee",
+    "routeSummary": "{n} fermate · ≈ {min} min da capolinea a capolinea",
+    "approxTime": "≈ {min} min da capolinea a capolinea",
+    "estimateNote": "Tempo stimato da Noctua in base alla distanza tra le fermate. Non è un orario ufficiale: controlla TMB.",
+    "seeRoute": "Vedi il percorso"
   },
   "essentialsSuggest": {
     "boxTitle": "Forse ci mancano degli essenziali. Ci aiuti?",

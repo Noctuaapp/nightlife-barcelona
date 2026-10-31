@@ -1930,7 +1930,11 @@
     "otherLines": "Otras líneas",
     "ctaTitle": "Todas las paradas de cada línea, en orden",
     "ctaBody": "Elige una línea y mira su recorrido parada a parada, con transbordos y la parada más cercana a ti.",
-    "ctaButton": "Ver líneas"
+    "ctaButton": "Ver líneas",
+    "routeSummary": "{n} paradas · ≈ {min} min de punta a punta",
+    "approxTime": "≈ {min} min de punta a punta",
+    "estimateNote": "Tiempo estimado por Noctua según la distancia entre paradas. No es un horario oficial: consulta TMB.",
+    "seeRoute": "Ver recorrido"
   },
   "essentialsSuggest": {
     "boxTitle": "Es posible que nos falten esenciales. ¿Nos ayudas?",
