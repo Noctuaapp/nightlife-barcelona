@@ -5,6 +5,7 @@ import type { DbRow } from "../lib/clubQueries"
 import { MIN_INDEXABLE, neighborhoodsOf, stylesOf } from "../lib/areas"
 import { zoneLinks } from "../lib/zonePages"
 import { EVENTS_HIDDEN } from "../lib/featureFlags"
+import { NIGHT_BUS_LINES } from "../lib/nightBuses"
 
 const BASE_URL = "https://www.noctuaapp.com"
 
@@ -34,6 +35,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/para-locales`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE_URL}/club-noctua`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE_URL}/faq`, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${BASE_URL}/derechos`, changeFrequency: "monthly", priority: 0.4 },
+    // Nitbus: portada y una página por línea, con sus paradas en orden.
+    { url: `${BASE_URL}/nitbus`, changeFrequency: "weekly", priority: 0.5 },
+    ...Object.keys(NIGHT_BUS_LINES).map((code) => ({
+      url: `${BASE_URL}/nitbus/${code}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.4,
+    })),
     { url: `${BASE_URL}/contact`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE_URL}/privacy`, changeFrequency: "yearly", priority: 0.2 },
     { url: `${BASE_URL}/terms`, changeFrequency: "yearly", priority: 0.2 },

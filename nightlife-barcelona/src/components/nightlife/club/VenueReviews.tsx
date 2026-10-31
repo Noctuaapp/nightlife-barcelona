@@ -29,6 +29,19 @@ type Review = {
   thanks_count?: number
 }
 
+// Respuesta del local a una opinión (supabase/60): la escribe el dueño vinculado del club o del
+// evento, una por opinión.
+type Reply = {
+  id: number
+  review_id: number
+  body: string
+  hidden: boolean
+  created_at: string
+  updated_at: string
+}
+const REPLY_COLS = "id, review_id, body, hidden, created_at, updated_at"
+const REPLY_MAX = 600
+
 const MAX_LEN = 800
 
 export default function VenueReviews({
@@ -54,6 +67,12 @@ export default function VenueReviews({
   const [draftBody, setDraftBody] = useState("")
   const [saving, setSaving] = useState(false)
   const [showAll, setShowAll] = useState(false)
+  // Respuestas del local (supabase/60). Si la tabla aún no existe, simplemente no se ofrecen.
+  const [replies, setReplies] = useState<Record<number, Reply>>({})
+  const [repliesReady, setRepliesReady] = useState(false)
+  const [replyingId, setReplyingId] = useState<number | null>(null)
+  const [replyDraft, setReplyDraft] = useState("")
+  const [savingReply, setSavingReply] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -77,6 +96,19 @@ export default function VenueReviews({
       }
       setReviews((data || []) as unknown as Review[])
       if (alive) setThanksReady(withThanks)
+      if (data && data.length) {
+        const { data: rp, error: rpErr } = await supabase
+          .from("venue_review_replies")
+          .select(REPLY_COLS)
+          .eq("venue_type", venueType)
+          .eq("venue_id", venueId)
+        if (alive && !rpErr) {
+          setRepliesReady(true)
+          const map: Record<number, Reply> = {}
+          for (const x of (rp || []) as unknown as Reply[]) map[x.review_id] = x
+          setReplies(map)
+        }
+      }
       if (uid && data && data.length) {
         const { data: reps } = await supabase.from("venue_review_reports").select("review_id").eq("reporter_id", uid)
         if (alive && reps) setReported(new Set(reps.map((r: { review_id: number }) => r.review_id)))
@@ -138,6 +170,52 @@ export default function VenueReviews({
   const toggleHidden = async (r: Review) => {
     const { error } = await supabase.from("venue_reviews").update({ hidden: !r.hidden }).eq("id", r.id)
     if (!error) setReviews((prev) => (prev || []).map((x) => (x.id === r.id ? { ...x, hidden: !r.hidden } : x)))
+  }
+
+  const startReply = (r: Review) => {
+    setReplyingId(r.id)
+    setReplyDraft(replies[r.id]?.body || "")
+  }
+
+  const saveReply = async (r: Review) => {
+    const body = replyDraft.trim()
+    if (!body || savingReply) return
+    setSavingReply(true)
+    const existing = replies[r.id]
+    const res = existing
+      ? await supabase.from("venue_review_replies").update({ body }).eq("id", existing.id).select(REPLY_COLS).single()
+      : await supabase.from("venue_review_replies").insert({ review_id: r.id, venue_type: venueType, venue_id: venueId, body }).select(REPLY_COLS).single()
+    setSavingReply(false)
+    if (res.error || !res.data) {
+      toast(t("reviews.replyError"))
+      return
+    }
+    setReplies((prev) => ({ ...prev, [r.id]: res.data as unknown as Reply }))
+    setReplyingId(null)
+    toast(t("reviews.replyPosted"))
+  }
+
+  const removeReply = async (r: Review) => {
+    const existing = replies[r.id]
+    if (!existing) return
+    if (!window.confirm(t("reviews.replyDeleteConfirm"))) return
+    const { error } = await supabase.from("venue_review_replies").delete().eq("id", existing.id)
+    if (error) {
+      toast(t("reviews.replyError"))
+      return
+    }
+    setReplies((prev) => {
+      const next = { ...prev }
+      delete next[r.id]
+      return next
+    })
+  }
+
+  const toggleReplyHidden = async (r: Review) => {
+    const existing = replies[r.id]
+    if (!existing) return
+    const { error } = await supabase.from("venue_review_replies").update({ hidden: !existing.hidden }).eq("id", existing.id)
+    if (!error) setReplies((prev) => ({ ...prev, [r.id]: { ...existing, hidden: !existing.hidden } }))
   }
 
   const toggleThanks = async (r: Review) => {
@@ -298,6 +376,8 @@ export default function VenueReviews({
           {shown.map((r) => {
             const lvl = r.author_level ? levelByKey(r.author_level) : null
             const isMine = r.user_id === userId
+            const rp = replies[r.id]
+            const canReply = isOwner && repliesReady && !r.hidden
             return (
               <li key={r.id} className={`rounded-card border bg-surface p-4 ${isMine ? "border-brand/40" : "border-white/10"} ${r.hidden ? "opacity-60" : ""}`}>
                 <div className="flex items-center gap-2.5">
@@ -327,6 +407,47 @@ export default function VenueReviews({
                 </div>
                 {r.body && <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-zinc-300">{r.body}</p>}
                 {r.hidden && <p className="mt-2 text-xs font-semibold text-warn">{t("reviews.hiddenNote")}</p>}
+                {/* Respuesta del local */}
+                {rp && (!rp.hidden || isAdmin) && replyingId !== r.id && (
+                  <div className={`mt-3 rounded-ctl border border-brand/30 bg-brand/[0.07] p-3 ${rp.hidden ? "opacity-60" : ""}`}>
+                    <p className="text-xs font-bold text-brand-soft">
+                      {t("reviews.replyTitle")} <span className="font-normal text-zinc-500">· {dateFmt(rp.created_at)}</span>
+                    </p>
+                    <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-zinc-200">{rp.body}</p>
+                    {rp.hidden && <p className="mt-1 text-xs font-semibold text-warn">{t("reviews.replyHiddenNote")}</p>}
+                  </div>
+                )}
+                {replyingId === r.id && (
+                  <div className="mt-3">
+                    <textarea
+                      value={replyDraft}
+                      onChange={(e) => setReplyDraft(e.target.value.slice(0, REPLY_MAX))}
+                      rows={3}
+                      autoFocus
+                      aria-label={t("reviews.replyTitle")}
+                      placeholder={t("reviews.replyPlaceholder")}
+                      className="w-full resize-y rounded-ctl border border-white/10 bg-night px-3 py-2.5 text-sm text-ink placeholder:text-zinc-500 focus:border-brand focus:outline-none"
+                    />
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+                      <span className="text-[11px] tabular-nums text-zinc-500">
+                        {replyDraft.length}/{REPLY_MAX}
+                      </span>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => setReplyingId(null)} className="rounded-full px-4 py-2 text-sm font-semibold text-zinc-300 hover:bg-white/5">
+                          {t("reviews.cancel")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => saveReply(r)}
+                          disabled={savingReply || !replyDraft.trim()}
+                          className="rounded-full bg-ink px-5 py-2 text-sm font-bold text-night transition disabled:opacity-40"
+                        >
+                          {savingReply ? t("reviews.saving") : t("reviews.replyPublish")}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {thanksReady && !r.hidden && (
                   isMine ? (
                     (r.thanks_count || 0) > 0 && (
@@ -349,6 +470,33 @@ export default function VenueReviews({
                   )
                 )}
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
+                  {canReply && !rp && replyingId !== r.id && (
+                    <button type="button" onClick={() => startReply(r)} className="text-brand-soft hover:text-ink">
+                      {t("reviews.reply")}
+                    </button>
+                  )}
+                  {isOwner && rp && replyingId !== r.id && (
+                    <>
+                      <button type="button" onClick={() => startReply(r)} className="text-zinc-300 hover:text-ink">
+                        {t("reviews.replyEdit")}
+                      </button>
+                      <button type="button" onClick={() => removeReply(r)} className="text-zinc-400 hover:text-red-300">
+                        {t("reviews.replyDelete")}
+                      </button>
+                    </>
+                  )}
+                  {isAdmin && rp && (
+                    <>
+                      <button type="button" onClick={() => toggleReplyHidden(r)} className="text-zinc-400 hover:text-ink">
+                        {rp.hidden ? t("reviews.replyUnhide") : t("reviews.replyHide")}
+                      </button>
+                      {!isOwner && (
+                        <button type="button" onClick={() => removeReply(r)} className="text-zinc-400 hover:text-red-300">
+                          {t("reviews.replyDelete")}
+                        </button>
+                      )}
+                    </>
+                  )}
                   {isMine && !editing && (
                     <button type="button" onClick={startEdit} className="text-zinc-300 hover:text-ink">
                       {t("reviews.edit")}

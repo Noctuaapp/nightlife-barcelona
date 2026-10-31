@@ -23,6 +23,22 @@ const MESSAGES: { icon: string; key: string }[] = [
   { icon: "car", key: "homeTicker.msg7" },
   { icon: "thermometer", key: "homeTicker.msg8" },
   { icon: "map", key: "homeTicker.msg9" },
+  // 31/10/2026: el resto de funciones de Noctua, para que la rotación las cubra todas.
+  { icon: "bus", key: "homeTicker.msg12" },
+  { icon: "clock", key: "homeTicker.msg13" },
+  { icon: "scale", key: "homeTicker.msg14" },
+  { icon: "pride", key: "homeTicker.msg15" },
+  { icon: "cocktail", key: "homeTicker.msg16" },
+  { icon: "food", key: "homeTicker.msg17" },
+  { icon: "chat", key: "homeTicker.msg18" },
+  { icon: "megaphone", key: "homeTicker.msg19" },
+  { icon: "users", key: "homeTicker.msg20" },
+  { icon: "share", key: "homeTicker.msg21" },
+  { icon: "dice", key: "homeTicker.msg22" },
+  { icon: "flame", key: "homeTicker.msg23" },
+  { icon: "flag", key: "homeTicker.msg24" },
+  { icon: "globe", key: "homeTicker.msg25" },
+  { icon: "search", key: "homeTicker.msg26" },
 ]
 
 // 27/10/2026: dos frases más. «Instala Noctua en tu móvil» (se salta si ya la tienes instalada) y un
@@ -40,6 +56,13 @@ export default function FeatureTicker() {
     () => (install.installed ? [...MESSAGES, PHOTOS_MESSAGE] : [...MESSAGES, INSTALL_MESSAGE, PHOTOS_MESSAGE]),
     [install.installed]
   )
+
+  // Cada visita empieza por una frase distinta (con tantas, siempre empezar por la primera
+  // dejaba las últimas casi sin verse). Se hace tras montar para no desajustar el HTML del servidor.
+  useEffect(() => {
+    setIndex(Math.floor(Math.random() * messages.length))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     const id = setInterval(() => {

@@ -136,7 +136,9 @@ function ProfileInner() {
   // vinculado a su cuenta (owner_user_id en clubs / events) — mostrarlos a todo el mundo solo
   // generaría confusión y mensajes de gente que no es dueña de nada. Las noches de club no
   // llevan link propio aquí: se gestionan dentro de /mi-club, ligadas al club.
-  const [hasLinkedClub, setHasLinkedClub] = useState(false)
+  // Quien tiene un club vinculado ve arriba una tarjeta destacada con su club y atajos (30/10/2026).
+  const [ownerClub, setOwnerClub] = useState<{ name: string; image: string | null; slug: string | null; hidden: boolean } | null>(null)
+  const [ownerUnread, setOwnerUnread] = useState(0)
   const [hasLinkedFestival, setHasLinkedFestival] = useState(false)
 
   useEffect(() => {
@@ -176,11 +178,29 @@ function ProfileInner() {
       } catch {}
 
       const [{ data: ownedClub }, { data: ownedFestival }] = await Promise.all([
-        supabase.from("clubs").select("id").eq("owner_user_id", data.user.id).maybeSingle(),
+        supabase.from("clubs").select("id, name, image, slug, hidden").eq("owner_user_id", data.user.id).maybeSingle(),
         supabase.from("events").select("id").eq("owner_user_id", data.user.id).limit(1).maybeSingle(),
       ])
-      setHasLinkedClub(!!ownedClub)
+      if (ownedClub) {
+        setOwnerClub({
+          name: ownedClub.name || "",
+          image: ownedClub.image || null,
+          slug: ownedClub.slug || null,
+          hidden: !!ownedClub.hidden,
+        })
+      }
       setHasLinkedFestival(!!ownedFestival)
+
+      // Mensajes de Noctua sin leer en el buzón de propietarios (supabase/59). Si falla, no se avisa.
+      if (ownedClub || ownedFestival) {
+        const { count } = await supabase
+          .from("owner_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("owner_user_id", data.user.id)
+          .eq("sender", "admin")
+          .is("read_at", null)
+        setOwnerUnread(count || 0)
+      }
 
       setLoading(false)
     }
@@ -504,7 +524,6 @@ function ProfileInner() {
     { href: "/club-noctua", icon: Trophy, title: "Club Noctua", sub: t("profilePage.clubSub") },
     { href: "/mi-mes", icon: CalendarDays, title: t("profilePage.monthTitle"), sub: t("profilePage.monthSub") },
     { href: "/invitar", icon: Gift, title: t("profilePage.inviteTitle"), sub: t("profilePage.inviteSub") },
-    ...(hasLinkedClub ? [{ href: "/mi-club", icon: Building2, title: t("profilePage.myClub"), sub: t("profilePage.myClubSub") }] : []),
     ...(hasLinkedFestival ? [{ href: "/mi-festival", icon: Music2, title: t("profilePage.myFestivals"), sub: t("profilePage.myFestivalsSub") }] : []),
   ]
 
@@ -538,6 +557,52 @@ function ProfileInner() {
             </div>
           </div>
           {avatarError && <p className="mt-3 text-sm text-red-300">{avatarError}</p>}
+
+          {/* Propietario de un club: su club, a un toque (antes solo había una casilla pequeña más abajo). */}
+          {ownerClub && (
+            <section aria-label={t("profilePage.ownerCardKicker")} className="mt-6 overflow-hidden rounded-card border border-brand/40 bg-brand/[0.07]">
+              <div className="flex items-center gap-4 p-4 sm:p-5">
+                {ownerClub.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={ownerClub.image} alt="" className="h-16 w-16 shrink-0 rounded-card border border-white/10 object-cover" />
+                ) : (
+                  <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-card border border-white/10 bg-white/[0.04] text-zinc-300">
+                    <Building2 size={26} aria-hidden="true" />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-brand-soft">{t("profilePage.ownerCardKicker")}</p>
+                  <h2 className="truncate text-lg font-semibold text-ink">{ownerClub.name}</h2>
+                  {ownerClub.hidden ? (
+                    <p className="mt-0.5 text-sm text-warn">{t("profilePage.ownerCardHidden")}</p>
+                  ) : ownerUnread > 0 ? (
+                    <Link href="/mi-club#mensajes" className="mt-0.5 inline-block text-sm font-semibold text-warn underline underline-offset-4">
+                      {ownerUnread === 1 ? t("profilePage.ownerCardUnreadOne") : t("profilePage.ownerCardUnreadMany").replace("{n}", String(ownerUnread))}
+                    </Link>
+                  ) : (
+                    <p className="mt-0.5 text-sm text-zinc-400">{t("profilePage.ownerCardSub")}</p>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 border-t border-white/10 p-3 sm:grid-cols-4">
+                <Link href="/mi-club" className="rounded-ctl bg-brand px-3 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-brand-strong">
+                  {t("profilePage.ownerCardManage")}
+                </Link>
+                <Link href="/mi-club#avisos" className="rounded-ctl border border-white/15 px-3 py-2.5 text-center text-sm font-semibold text-ink transition hover:bg-white/5">
+                  {t("profilePage.ownerCardNotice")}
+                </Link>
+                <Link href="/mi-club#noches" className="rounded-ctl border border-white/15 px-3 py-2.5 text-center text-sm font-semibold text-ink transition hover:bg-white/5">
+                  {t("profilePage.ownerCardNights")}
+                </Link>
+                <Link
+                  href={`/clubs/${ownerClub.slug || createSlug(ownerClub.name)}`}
+                  className="rounded-ctl border border-white/15 px-3 py-2.5 text-center text-sm font-semibold text-ink transition hover:bg-white/5"
+                >
+                  {t("profilePage.ownerCardView")}
+                </Link>
+              </div>
+            </section>
+          )}
 
           <Link href="/club-noctua" className="mt-6 block rounded-card border border-white/10 bg-surface p-5 transition hover:border-white/25">
             <div className="flex items-center justify-between gap-3">

@@ -150,6 +150,7 @@ export default function AreaListing({ kind, slug, name, clubs, neighborhoods, st
             liveStatus={club.live_status}
             liveStatusUpdatedAt={club.live_status_updated_at}
             temporarilyClosed={club.temporarily_closed === true}
+            scheduleNotices={club.schedule_notices}
             showHours
           />
         ))}

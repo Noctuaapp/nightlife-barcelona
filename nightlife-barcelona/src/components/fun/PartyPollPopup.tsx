@@ -44,8 +44,8 @@ const SHOW_DELAY_MS = 6000
 let checkedDay: number | null = null
 
 const UI = {
-  es: { title: "¿Qué prefieres?", or: "o", close: "Cerrar", votes: "votos", vote: "voto", yours: "Tu elección", fun: "La encuesta de hoy. Nadie ve lo que votas, solo el total.", tomorrow: "Mañana, otra." },
-  ca: { title: "Què prefereixes?", or: "o", close: "Tancar", votes: "vots", vote: "vot", yours: "La teva tria", fun: "L'enquesta d'avui. Ningú veu què votes, només el total.", tomorrow: "Demà, una altra." },
+  es: { title: "¿Qué preferirías?", or: "o", close: "Cerrar", votes: "votos", vote: "voto", yours: "Tu elección", fun: "La encuesta de hoy. Nadie ve lo que votas, solo el total.", tomorrow: "Mañana, otra." },
+  ca: { title: "Què preferiries?", or: "o", close: "Tancar", votes: "vots", vote: "vot", yours: "La teva tria", fun: "L'enquesta d'avui. Ningú veu què votes, només el total.", tomorrow: "Demà, una altra." },
   en: { title: "Would you rather?", or: "or", close: "Close", votes: "votes", vote: "vote", yours: "Your pick", fun: "Today's poll. Nobody sees your vote, only the totals.", tomorrow: "New one tomorrow." },
 }
 

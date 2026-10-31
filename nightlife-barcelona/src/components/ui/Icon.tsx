@@ -61,6 +61,11 @@ export default function Icon({ name, className = "h-5 w-5", style }: { name: str
     case "bell": return <svg {...p}><path d="M6 16v-5a6 6 0 0112 0v5l1.5 2h-15z" /><path d="M10 21h4" /></svg>
     case "smartphone": return <svg {...p}><rect x="7" y="2.5" width="10" height="19" rx="2.5" /><path d="M11 18.5h2" /></svg>
     case "camera": return <svg {...p}><path d="M4 8h3l1.6-2.5h6.8L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" /><circle cx="12" cy="13" r="3.4" /></svg>
+    case "cake": return <svg {...p}><path d="M4 20h16M5 20v-6a2 2 0 012-2h10a2 2 0 012 2v6" /><path d="M5 16c2 1.5 3 1.5 4.5 0s3-1.5 4.5 0 3 1.5 5 0" /><path d="M9 12V8.5M12 12V7.5M15 12V8.5" /><path d="M9 6.2v.1M12 5.2v.1M15 6.2v.1" /></svg>
+    case "lock": return <svg {...p}><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></svg>
+    case "key": return <svg {...p}><circle cx="8" cy="15" r="4" /><path d="M11 12l9-9M16 7l3 3M14 9l2 2" /></svg>
+    case "scale": return <svg {...p}><path d="M12 4v16M7 20h10M5 7h14" /><path d="M5 7l-3 7a3.5 3.5 0 006 0zM19 7l-3 7a3.5 3.5 0 006 0z" /></svg>
+    case "megaphone": return <svg {...p}><path d="M3 11v2a1 1 0 001 1h2l7 4V6L6 10H4a1 1 0 00-1 1z" /><path d="M16 9a4 4 0 010 6" /></svg>
     default: return null
   }
 }

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, X, LocateFixed } from "lucide-react"
+import { Search, X, LocateFixed, Plus } from "lucide-react"
+import { ESSENTIAL_SUGGESTION_XP } from "../../lib/xp"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import ExploreSwitch from "../../components/nightlife/ExploreSwitch"
@@ -210,6 +211,9 @@ export default function EssentialsPage() {
               <div className="py-16 text-center">
                 <p className="text-lg font-semibold text-zinc-200">{t("essentialsPage.noResults")}</p>
                 <p className="mt-2 text-sm text-zinc-400">{t("essentialsPage.noResultsHint")}</p>
+                <Link href="/essentials/sugerir" className="mt-4 inline-block text-sm font-semibold text-brand-soft underline underline-offset-4 hover:text-ink">
+                  {t("essentialsSuggest.noResultsLink")}
+                </Link>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -319,7 +323,29 @@ export default function EssentialsPage() {
               </section>
             )}
 
+            {/* «¿Nos faltan esenciales? ¡Ayúdanos!» (31/10/2026): formulario para proponer uno nuevo.
+                Si se comprueba y es correcto, da XP (supabase/62). */}
             <section className="mx-auto mt-10 max-w-7xl px-4">
+              <Link
+                href="/essentials/sugerir"
+                className="flex items-center gap-4 rounded-card border border-brand/40 bg-brand/[0.08] p-5 transition hover:border-brand/70"
+              >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl bg-brand/20 text-brand-soft">
+                  <Plus size={22} aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-semibold text-ink">{t("essentialsSuggest.boxTitle")}</span>
+                  <span className="mt-0.5 block text-sm leading-snug text-zinc-300">
+                    {t("essentialsSuggest.boxBody").replace("{xp}", String(ESSENTIAL_SUGGESTION_XP))}
+                  </span>
+                </span>
+                <span className="hidden shrink-0 rounded-ctl bg-brand px-4 py-2.5 text-sm font-semibold text-white sm:block">
+                  {t("essentialsSuggest.boxButton")}
+                </span>
+              </Link>
+            </section>
+
+            <section className="mx-auto mt-10 max-w-7xl px-4 pb-24">
               <h2 className={sectionTitle}>{t("essentialsPage.allTitle")}</h2>
               {loading ? (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

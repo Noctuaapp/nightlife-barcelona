@@ -9,11 +9,13 @@ import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import OwnerStats from "../../components/owner/OwnerStats"
 import OwnerInbox from "../../components/owner/OwnerInbox"
+import OwnerNotices from "../../components/owner/OwnerNotices"
 import { EXTRA_FEATURES, CLOSED_FIELD, extrasFromRow } from "../../lib/extraFeatures"
 import { useLanguage } from "../../context/LanguageContext"
 import { toast } from "../../components/ui/Toast"
 import { createSlug } from "../../lib/slug"
 import { madridToday } from "../../lib/madridDay"
+import { addDays } from "../../lib/scheduleNotices"
 import { touchCache, clubPaths, clubEventPaths } from "../../lib/touchCache"
 
 // Portal para que un club verificado edite su propia ficha sin pasar por Jordi. Un club queda
@@ -71,6 +73,8 @@ type Club = {
   instagram?: string | null
   tiktok?: string | null
   website?: string | null
+  // Avisos de cierre / horarios especiales (supabase/60). Se guardan al instante desde su editor.
+  schedule_notices?: unknown
 }
 
 // Estados en directo: la etiqueta sale de clubPage.vibeQuiet/vibeBusy/vibeFull (las mismas que ve
@@ -95,6 +99,7 @@ const DAY_OPTIONS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
 // Secciones del menú de arriba (id del bloque de la página + clave del texto).
 const SECTIONS = [
   { id: "resumen", label: "ownerPortal.navSummary" },
+  { id: "avisos", label: "ownerPortal.navNotices" },
   { id: "ficha", label: "ownerPortal.navListing" },
   { id: "fotos", label: "ownerPortal.navPhotos" },
   { id: "etiquetas", label: "ownerPortal.navTags" },
@@ -300,6 +305,8 @@ export default function MiClubPage() {
   const [savingEvent, setSavingEvent] = useState(false)
   const [uploadingEventImage, setUploadingEventImage] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<number | null>(null)
+  // Noches que se repiten: 1 = solo esta; 2, 4, 8 o 12 = esa noche y las siguientes, una por semana.
+  const [repeatWeeks, setRepeatWeeks] = useState(1)
 
   const fail = (key: string, detail?: string) => toast(`${t(key)}${detail ? `: ${detail}` : ""}`, 5000)
 
@@ -422,17 +429,25 @@ export default function MiClubPage() {
   const addEvent = async () => {
     if (!club) return
     if (!newEventForm.title.trim()) { fail("ownerPortal.errNightTitle"); return }
+    const weeks = repeatWeeks > 1 && newEventForm.date ? repeatWeeks : 1
+    if (repeatWeeks > 1 && !newEventForm.date) { fail("ownerPortal.errRepeatDate"); return }
     setSavingEvent(true)
-    const { data, error } = await supabase.from("club_events").insert(eventFormToPayload(newEventForm, club.id, club.name)).select().single()
+    // Una fila por semana (la primera es la fecha elegida). Se guardan todas de una vez: o se crean
+    // todas o ninguna.
+    const base = eventFormToPayload(newEventForm, club.id, club.name)
+    const rows = Array.from({ length: weeks }, (_, i) => (i === 0 ? base : { ...base, date: addDays(newEventForm.date, 7 * i) }))
+    const { data, error } = await supabase.from("club_events").insert(rows).select()
     setSavingEvent(false)
     if (error) { fail("ownerPortal.errCreateNight", error.message); return }
-    if (data) {
-      setEvents((prev) => [...prev, data].sort((a, b) => (a.date || "").localeCompare(b.date || "")))
-      touchCache(clubEventPaths(data.id))
+    const created = (data || []) as ClubEvent[]
+    if (created.length) {
+      setEvents((prev) => [...prev, ...created].sort((a, b) => (a.date || "").localeCompare(b.date || "")))
+      created.forEach((e) => touchCache(clubEventPaths(e.id)))
     }
     setNewEventForm(emptyEventForm)
+    setRepeatWeeks(1)
     setShowAddEventForm(false)
-    toast(t("ownerPortal.nightCreated"))
+    toast(created.length > 1 ? t("ownerPortal.nightsCreated").replace("{n}", String(created.length)) : t("ownerPortal.nightCreated"))
   }
 
   const startEditEvent = (event: ClubEvent) => {
@@ -449,6 +464,7 @@ export default function MiClubPage() {
   // "Nueva noche" con todo copiado menos la fecha.
   const duplicateEvent = (event: ClubEvent) => {
     setNewEventForm({ ...eventToForm(event), date: "" })
+    setRepeatWeeks(1)
     setEditingEventId(null)
     setShowAddEventForm(true)
     toast(t("ownerPortal.duplicated"), 4000)
@@ -702,6 +718,8 @@ export default function MiClubPage() {
 
   const set = <K extends keyof ClubFormData>(key: K, value: ClubFormData[K]) => setForm((f) => (f ? { ...f, [key]: value } : f))
   const listingSlug = club.slug || createSlug(club.name)
+  // El editor de avisos solo se ofrece si la columna ya existe (se crea con supabase/60).
+  const hasNotices = "schedule_notices" in club
 
   // Etiquetas agrupadas igual que en el admin. Lo que decide solo Noctua (verificado, tendencia,
   // ocultar...) no está aquí. "Cerrado temporalmente" va aparte, con su aviso.
@@ -715,6 +733,9 @@ export default function MiClubPage() {
     { title: t("ownerPortal.groupAmbience"), tags: [extra("dance_floor"), extra("live_music"), extra("hot_shows"), core("lgtbi_friendly", "LGTBI+")] },
     { title: t("ownerPortal.groupEntertainment"), tags: [extra("karaoke"), extra("darts"), core("has_foosball", t("explorer.attr_games")), extra("games"), extra("sports_tv")] },
     { title: t("ownerPortal.groupFood"), tags: [extra("cocktails"), extra("food"), extra("shisha")] },
+    // Cumpleaños, eventos privados y alquiler del local (supabase/60): sale en la ficha como
+    // «Celebraciones» y como filtro en /clubs.
+    { title: t("ownerPortal.groupCelebrations"), tags: [extra("birthdays"), extra("private_events"), extra("venue_rental")] },
     {
       title: t("ownerPortal.groupZones"),
       tags: [
@@ -732,7 +753,12 @@ export default function MiClubPage() {
   // Si en el futuro se añade otra etiqueta en lib/extraFeatures.ts, sale aquí sin tocar más.
   const placed = new Set(tagGroups.flatMap((g) => g.tags.map((x) => x.key)))
   const unplaced = EXTRA_FEATURES.filter((f) => !placed.has(f.field)).map((f) => extra(f.field))
-  if (unplaced.length) tagGroups[3].tags.push(...unplaced)
+  if (unplaced.length) tagGroups[4].tags.push(...unplaced)
+  // Una etiqueta de servicios solo se muestra si su columna existe en la base de datos (así, si
+  // falta ejecutar un SQL, no se ofrece algo que luego fallaría al guardar).
+  const visibleGroups = tagGroups
+    .map((g) => ({ ...g, tags: g.tags.filter((tag) => !tag.extra || tag.key in form.extras) }))
+    .filter((g) => g.tags.length > 0)
   const tagOn = (tag: Tag) => (tag.extra ? !!form.extras[tag.key] : !!form[tag.key as keyof ClubFormData])
   const tagToggle = (tag: Tag) =>
     tag.extra ? set("extras", { ...form.extras, [tag.key]: !form.extras[tag.key] }) : set(tag.key as keyof ClubFormData, !form[tag.key as keyof ClubFormData] as never)
@@ -801,7 +827,7 @@ export default function MiClubPage() {
           {/* Menú de secciones */}
           <nav aria-label={t("ownerPortal.navLabel")} className="sticky top-[72px] z-30 -mx-4 mt-6 border-b border-white/10 bg-night/90 px-4 backdrop-blur sm:top-20">
             <ul className="scroll-x-thin flex gap-1 overflow-x-auto py-2">
-              {SECTIONS.map((s) => (
+              {SECTIONS.filter((s) => s.id !== "avisos" || hasNotices).map((s) => (
                 <li key={s.id} className="shrink-0">
                   <a
                     href={`#${s.id}`}
@@ -888,6 +914,22 @@ export default function MiClubPage() {
             {/* Estadísticas de su ficha (visitas, clics, de dónde llegan). */}
             <OwnerStats type="club" id={club.id} name={club.name} />
           </section>
+
+          {/* AVISOS: «hoy cerramos», horarios especiales y avisos. Solo si la columna existe (SQL 60). */}
+          {hasNotices && (
+            <section id="avisos" className="mt-4 scroll-mt-36 sm:scroll-mt-40">
+              <Card title={t("ownerPortal.noticesTitle")} desc={t("ownerPortal.noticesDesc")}>
+                <OwnerNotices
+                  clubId={club.id}
+                  initial={club.schedule_notices}
+                  onSaved={(list) => {
+                    setClub((prev) => (prev ? { ...prev, schedule_notices: list } : prev))
+                    touchCache(clubPaths(club.slug || createSlug(club.name)))
+                  }}
+                />
+              </Card>
+            </section>
+          )}
 
           {/* FICHA */}
           <section id="ficha" className="mt-10 scroll-mt-36 space-y-4 sm:scroll-mt-40">
@@ -1071,7 +1113,7 @@ export default function MiClubPage() {
           <section id="etiquetas" className="mt-4 scroll-mt-36 sm:scroll-mt-40">
             <Card title={t("ownerPortal.sectionTags")} desc={t("ownerPortal.sectionTagsDesc")}>
               <div className="space-y-5">
-                {tagGroups.map((group) => (
+                {visibleGroups.map((group) => (
                   <div key={group.title}>
                     <p className="mb-2 text-sm font-semibold text-zinc-400">{group.title}</p>
                     <div className="flex flex-wrap gap-2">
@@ -1137,18 +1179,39 @@ export default function MiClubPage() {
             <p className="mt-2 text-sm text-zinc-300">{t("ownerPortal.nightsIntro")}</p>
 
             <div className="mt-6" id="nueva-noche">
-              <button onClick={() => { setShowAddEventForm((v) => !v); setEditingEventId(null); if (showAddEventForm) setNewEventForm(emptyEventForm) }} className={showAddEventForm ? ghostBtn : primaryBtn}>
+              <button onClick={() => { setShowAddEventForm((v) => !v); setEditingEventId(null); if (showAddEventForm) { setNewEventForm(emptyEventForm); setRepeatWeeks(1) } }} className={showAddEventForm ? ghostBtn : primaryBtn}>
                 {showAddEventForm ? t("ownerPortal.closeForm") : t("ownerPortal.newNight")}
               </button>
               {showAddEventForm && (
                 <div className="mt-4 rounded-card border border-brand/30 bg-brand/5 p-5 sm:p-6">
                   <h3 className="mb-4 text-lg font-semibold">{t("ownerPortal.newNight")}</h3>
                   {renderEventForm(newEventForm, setNewEventForm, handleNewEventImageUpload)}
+                  {/* Noches que se repiten cada semana (mismo día de la semana). */}
+                  <div className="mt-4 rounded-ctl border border-white/10 bg-night/40 p-4">
+                    <label htmlFor="repeat-weeks" className={labelClass}>
+                      {t("ownerPortal.repeatLabel")}
+                    </label>
+                    <select
+                      id="repeat-weeks"
+                      value={repeatWeeks}
+                      onChange={(e) => setRepeatWeeks(Number(e.target.value))}
+                      style={{ colorScheme: "dark" }}
+                      className={inputClass}
+                    >
+                      <option value={1}>{t("ownerPortal.repeatNone")}</option>
+                      {[2, 4, 8, 12].map((n) => (
+                        <option key={n} value={n}>
+                          {t("ownerPortal.repeatN").replace("{n}", String(n))}
+                        </option>
+                      ))}
+                    </select>
+                    {repeatWeeks > 1 && <p className="mt-2 text-xs leading-relaxed text-zinc-400">{t("ownerPortal.repeatHint").replace("{n}", String(repeatWeeks))}</p>}
+                  </div>
                   <div className="mt-5 flex gap-3">
                     <button onClick={addEvent} disabled={savingEvent} className={primaryBtn}>
-                      {savingEvent ? t("profile.saving") : t("ownerPortal.createNight")}
+                      {savingEvent ? t("profile.saving") : repeatWeeks > 1 ? t("ownerPortal.createNights").replace("{n}", String(repeatWeeks)) : t("ownerPortal.createNight")}
                     </button>
-                    <button onClick={() => { setShowAddEventForm(false); setNewEventForm(emptyEventForm) }} className={ghostBtn}>
+                    <button onClick={() => { setShowAddEventForm(false); setNewEventForm(emptyEventForm); setRepeatWeeks(1) }} className={ghostBtn}>
                       {t("common.cancel")}
                     </button>
                   </div>

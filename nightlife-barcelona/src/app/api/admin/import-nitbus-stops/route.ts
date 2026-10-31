@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isAdminRequest } from "@/lib/adminAuth"
+import { buildRouteRows } from "@/lib/nitbusOsmRoutes"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -200,12 +201,25 @@ out;`
   for (const r of rows) for (const l of r.subcategory.split(", ")) perLine[l] = (perLine[l] || 0) + 1
   const lineasOrdenadas = Object.keys(perLine).sort(lineSort)
 
+  // Orden del recorrido de cada línea y sentido (31/10/2026), para la página /nitbus/N24.
+  const routeRows = buildRouteRows(routes, nodes)
+  const dirCounts = new Map<string, [number, number]>()
+  for (const r of routeRows) {
+    const c = dirCounts.get(r.line) || [0, 0]
+    c[r.direction === 1 ? 1 : 0] += 1
+    dirCounts.set(r.line, c)
+  }
+  const routeSummary: Record<string, string> = {}
+  for (const [line, [a, b]] of dirCounts) routeSummary[line] = `${a} + ${b} paradas (sentido A + sentido B)`
+
   if (dry) {
     return NextResponse.json({
       modo: "VISTA PREVIA (no se ha escrito nada). Marca «Importar de verdad» para guardarlas.",
       lineas_encontradas: lineasOrdenadas.length,
       paradas: rows.length,
       paradas_por_linea: Object.fromEntries(lineasOrdenadas.map((l) => [l, perLine[l]])),
+      recorridos_con_orden: Object.keys(routeSummary).length,
+      recorrido_por_linea: routeSummary,
       muestra: rows.slice(0, 25).map((r) => `${r.name} (${r.subcategory})`),
     })
   }
@@ -231,9 +245,37 @@ out;`
     inserted += chunk.length
   }
 
+  // Recorridos en orden → tabla nitbus_line_stops (supabase/61). Si la tabla aún no existe, las
+  // paradas ya están guardadas y la web sigue funcionando (enseña las paradas de cada línea A–Z);
+  // solo se avisa de que falta ejecutar el SQL y volver a importar.
+  let recorridos: string
+  if (routeRows.length === 0) {
+    recorridos = "OpenStreetMap no ha devuelto el orden de ninguna línea."
+  } else {
+    const { error: delRouteErr } = await supabase.from("nitbus_line_stops").delete().gte("id", 0)
+    if (delRouteErr) {
+      recorridos = `NO guardados (${delRouteErr.message}). ¿Has ejecutado supabase/61_nitbus_recorridos.sql? Ejecútalo y vuelve a importar.`
+    } else {
+      let saved = 0
+      let failed: string | null = null
+      for (let i = 0; i < routeRows.length; i += 500) {
+        const chunk = routeRows.slice(i, i + 500)
+        const { error } = await supabase.from("nitbus_line_stops").insert(chunk)
+        if (error) {
+          failed = error.message
+          break
+        }
+        saved += chunk.length
+      }
+      recorridos = failed ? `Guardados ${saved} y falló: ${failed}` : `${saved} paradas de recorrido guardadas (${Object.keys(routeSummary).length} líneas).`
+    }
+  }
+
   return NextResponse.json({
     lineas: lineasOrdenadas.length,
     paradas_guardadas: inserted,
     paradas_por_linea: Object.fromEntries(lineasOrdenadas.map((l) => [l, perLine[l]])),
+    recorridos,
+    recorrido_por_linea: routeSummary,
   })
 }

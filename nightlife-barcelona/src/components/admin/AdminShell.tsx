@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, BarChart3, Disc3, BadgeCheck, CalendarDays, Headphones, MapPin, Users,
-  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, History, Bell, Footprints, TrendingUp, Inbox, type LucideIcon,
+  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, History, Bell, Footprints, TrendingUp, Inbox, Lightbulb, Moon, type LucideIcon,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
@@ -40,6 +40,7 @@ const ADMIN_NAV: NavGroup[] = [
       { href: "/admin/club-events", label: "Noches de club", icon: Headphones },
       { href: "/admin/events", label: "Eventos y festivales", icon: CalendarDays },
       { href: "/admin/essentials", label: "Esenciales", icon: MapPin },
+      { href: "/admin/sugerencias", label: "Sugerencias de esenciales", icon: Lightbulb },
       { href: "/admin/calidad", label: "Calidad de fichas", icon: BadgeCheck },
     ],
   },
@@ -59,6 +60,7 @@ const ADMIN_NAV: NavGroup[] = [
     items: [
       { href: "/admin/visitas", label: "Visitas", icon: Footprints },
       { href: "/admin/retencion", label: "Retención", icon: TrendingUp },
+      { href: "/admin/afluencia", label: "Cuándo sale la gente", icon: Moon },
       { href: "/admin/datos", label: "Datos de negocio", icon: BarChart3 },
       { href: "/admin/actividad", label: "Actividad por usuario", icon: Activity },
     ],

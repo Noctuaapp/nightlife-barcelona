@@ -103,6 +103,57 @@ export function clubOpenNow(hours: string | null | undefined, openDays?: string[
   }
 }
 
+// Qué hora cierra (si está abierto ahora) o a qué hora abre esta noche (si todavía no ha abierto).
+// Usa los mismos formatos y la misma lógica de días que clubOpenNow. Devuelve null si no se puede
+// saber con seguridad (sin horario, horario ilegible, o ya cerrado hasta otro día): mejor no decir
+// nada que decir una hora falsa.
+export type HoursStatus = { open: boolean; at: string }
+
+function fmtHM(totalMinutes: number): string {
+  const x = ((totalMinutes % 1440) + 1440) % 1440
+  return `${String(Math.floor(x / 60)).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`
+}
+
+export function clubHoursStatus(hours: string | null | undefined, openDays?: string[] | null): HoursStatus | null {
+  if (!hours || !hours.trim()) return null
+  try {
+    const { dow, minutes } = madridClock()
+    const today = DAY_LETTERS[dow]
+    const yesterday = DAY_LETTERS[(dow + 6) % 7]
+    const openLetters = openDaysToLetters(openDays)
+    let nextStart: number | null = null
+
+    for (const raw of hours.split(/[,|;]/)) {
+      const m = raw
+        .trim()
+        .match(/^(?:([LMXJVSD/\-]+)\s+)?(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})$/)
+      if (!m) continue
+      const start = parseInt(m[2], 10) * 60 + parseInt(m[3], 10)
+      let end = parseInt(m[4], 10) * 60 + parseInt(m[5], 10)
+      const overnight = end <= start
+      if (overnight) end += 24 * 60
+
+      if (!m[1] && openLetters) {
+        const nightDay = minutes < 6 * 60 ? yesterday : today
+        if (openLetters.includes(nightDay) && ((minutes >= start && minutes < end) || (overnight && minutes + 24 * 60 < end))) {
+          return { open: true, at: fmtHM(end) }
+        }
+        // Todavía no ha abierto: solo si la noche que empieza esta tarde es de las que abre.
+        if (openLetters.includes(today) && start >= 6 * 60 && start > minutes) nextStart = nextStart === null ? start : Math.min(nextStart, start)
+        continue
+      }
+
+      const days = m[1] ? expandDays(m[1]) : DAY_LETTERS
+      if (days.includes(today) && minutes >= start && minutes < end) return { open: true, at: fmtHM(end) }
+      if (overnight && days.includes(yesterday) && minutes + 24 * 60 < end) return { open: true, at: fmtHM(end) }
+      if (days.includes(today) && start > minutes) nextStart = nextStart === null ? start : Math.min(nextStart, start)
+    }
+    return nextStart !== null ? { open: false, at: fmtHM(nextStart) } : null
+  } catch {
+    return null
+  }
+}
+
 // ¿Alguna franja del horario sigue abierta pasada cierta hora de la madrugada? (por defecto, las 02:30:
 // 150 minutos desde la medianoche). Sirve para el filtro «Bar/pub abierto tras las 2:30» del listado.
 // Cuenta el cierre de madrugada de cada franja ("23:00-06:00", "18:00-03:00", "00:00-05:00"); los

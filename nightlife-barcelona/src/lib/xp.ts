@@ -178,3 +178,7 @@ export function dayBefore(dateStr: string): string {
   d.setUTCDate(d.getUTCDate() - 1)
   return d.toISOString().slice(0, 10)
 }
+
+// XP por una sugerencia de esencial que se aprueba (la da el admin desde Admin › Sugerencias de
+// esenciales; el número real lo fija la función de Postgres de supabase/62, este es solo para el texto).
+export const ESSENTIAL_SUGGESTION_XP = 10

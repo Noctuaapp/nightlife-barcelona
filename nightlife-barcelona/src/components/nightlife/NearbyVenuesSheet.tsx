@@ -275,6 +275,28 @@ export default function NearbyVenuesSheet({
                   {t("nearby.reasonSaved").replace("{name}", name)}
                 </p>
               )}
+              {/* Qué suele ser normal y qué no, según el motivo elegido (31/10/2026). Solo orienta;
+                  el detalle y los pasos a seguir están en /derechos. */}
+              {reason && (
+                <p className="mt-2.5 text-xs leading-relaxed text-zinc-300">
+                  {t(
+                    reason === "dress"
+                      ? "nearby.hintDress"
+                      : reason === "full"
+                        ? "nearby.hintFull"
+                        : reason === "group"
+                          ? "nearby.hintGroup"
+                          : "nearby.hintOther"
+                  )}
+                </p>
+              )}
+              <Link
+                href="/derechos#denegada"
+                onClick={() => setOpen(false)}
+                className="mt-3 inline-block text-xs font-semibold text-brand-soft underline underline-offset-4 hover:text-ink"
+              >
+                {t("nearby.rightsLink")}
+              </Link>
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto p-4">

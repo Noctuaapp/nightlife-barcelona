@@ -30,6 +30,9 @@ const KIND_LABEL: Record<string, string> = {
   entry_denial: "🚫 No dejan entrar",
   feedback: "⭐ Opinión de la web",
   review: "🗣️ Opinión de un local",
+  review_reply: "↩️ Respuesta de un dueño",
+  owner_message: "📩 Mensaje de un dueño",
+  essential_suggestion: "💡 Sugerencia de esencial",
   signup: "👋 Usuario nuevo",
   owner_change: "✏️ Cambio de un dueño",
 }

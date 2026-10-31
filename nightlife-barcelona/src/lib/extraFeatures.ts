@@ -25,6 +25,10 @@ export const EXTRA_FEATURES: ExtraFeature[] = [
   { field: "food", labelKey: "clubPage.fFood", label: "Comida / cocina", emoji: "🍔", icon: "food", summary: "cocina", filter: "Comida" },
   { field: "shisha", labelKey: "clubPage.fShisha", label: "Shisha", emoji: "💨", icon: "shisha", summary: "shisha", filter: "Shisha" },
   { field: "wheelchair_accessible", labelKey: "clubPage.fAccessible", label: "Accesible en silla de ruedas", emoji: "♿", icon: "wheelchair", summary: "acceso en silla de ruedas", filter: "Accesible" },
+  // 30/10/2026: celebraciones. Columnas en supabase/60.
+  { field: "birthdays", labelKey: "clubPage.fBirthdays", label: "Cumpleaños", emoji: "🎂", icon: "cake", summary: "celebración de cumpleaños", filter: "Cumpleaños" },
+  { field: "private_events", labelKey: "clubPage.fPrivateEvents", label: "Eventos privados", emoji: "🥂", icon: "lock", summary: "eventos privados", filter: "Eventos privados" },
+  { field: "venue_rental", labelKey: "clubPage.fVenueRental", label: "Alquiler del local", emoji: "🔑", icon: "key", summary: "alquiler del local", filter: "Alquiler del local" },
 ]
 
 export const EXTRA_FEATURE_FIELDS = EXTRA_FEATURES.map((f) => f.field)

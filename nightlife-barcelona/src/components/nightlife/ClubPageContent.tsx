@@ -32,7 +32,9 @@ import { InlineEditText, InlineEditImage } from "../admin/InlineEdit"
 import { useCanEdit } from "../admin/EditAccess"
 import { FALLBACK_IMAGE as FALLBACK_CLUB_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
-import { clubOpenNow, clubOpensOn, madridClock } from "../../lib/clubHours"
+import { clubOpensOn, madridClock } from "../../lib/clubHours"
+import { effectiveOpenNow, isClosedTonight } from "../../lib/scheduleNotices"
+import ClubNotices from "./club/ClubNotices"
 import { toDateLocale } from "../../lib/dateLocale"
 import { clubSummary } from "../../lib/clubSummary"
 import { safeUrl } from "../../lib/safeUrl"
@@ -107,10 +109,11 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
   // sitios donde se usa clubOpensOn.
   // «Cerrado temporalmente» (30/10/2026): la ficha sigue visible, pero nunca sale como abierta.
   const tempClosed = club.temporarily_closed === true
-  const opensTonight = !tempClosed && clubOpensOn(club.hours, club.open_days, madridClock().dow) !== false
+  // «Hoy cerramos» (aviso del dueño, supabase/60) también cuenta como que esta noche no abre.
+  const opensTonight = !tempClosed && !isClosedTonight(club.schedule_notices) && clubOpensOn(club.hours, club.open_days, madridClock().dow) !== false
 
   useEffect(() => {
-    const calc = () => (tempClosed ? false : clubOpenNow(club.hours, club.open_days))
+    const calc = () => (tempClosed ? false : effectiveOpenNow(club))
     setOpenNow(calc())
     setNow(Date.now())
     const id = setInterval(() => {
@@ -118,7 +121,8 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
       setNow(Date.now())
     }, 60000)
     return () => clearInterval(id)
-  }, [club.hours, club.open_days, tempClosed])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [club.hours, club.open_days, club.schedule_notices, tempClosed])
 
   useEffect(() => {
     trackClick("page_view")
@@ -443,6 +447,8 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                 </div>
               </div>
             )}
+            {/* Avisos del dueño: «hoy cerramos», horario especial, próximos cierres (supabase/60). */}
+            {!tempClosed && <ClubNotices notices={club.schedule_notices} />}
 
             <div className="mt-6 flex flex-wrap gap-3">
               {ticketUrl ? (

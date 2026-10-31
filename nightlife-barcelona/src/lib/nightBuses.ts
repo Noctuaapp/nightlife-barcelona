@@ -64,17 +64,15 @@ export function parseRoute(route: string): ParsedRoute {
   return { from: base, to: null, note }
 }
 
-// "Ver paradas" de una línea: antes abría una búsqueda de Google Maps ("parada nitbus N24") que
-// enseñaba paradas de cualquier línea, sin orden ni utilidad. Ahora lleva al mapa de Nitbus de la
-// propia web filtrado por esa línea y, si se mira desde un club o evento, centrado en la parada
-// de esa línea más cercana a él (25/10/2026).
+// "Ver paradas" de una línea: antes abría una búsqueda de Google Maps y luego un mapa con más de mil
+// chinchetas mezcladas, donde no se veía nada. Ahora lleva a la página de la línea (/nitbus/N24), con
+// todas sus paradas en orden. Si se mira desde un club o evento, esa página resalta la parada de la
+// línea más cercana a él (31/10/2026).
 export function nightBusStopsUrl(code: string, near?: { lat: number; lon: number }): string {
-  const params = new URLSearchParams({ line: code.trim().toUpperCase() })
-  if (near) {
-    params.set("lat", near.lat.toFixed(5))
-    params.set("lon", near.lon.toFixed(5))
-  }
-  return `/essentials/nitbus?${params.toString()}`
+  const line = encodeURIComponent(code.trim().toUpperCase())
+  if (!near) return `/nitbus/${line}`
+  const params = new URLSearchParams({ lat: near.lat.toFixed(5), lon: near.lon.toFixed(5) })
+  return `/nitbus/${line}?${params.toString()}`
 }
 
 // Separa el texto libre que escribe el admin en códigos individuales. No solo por comas: si

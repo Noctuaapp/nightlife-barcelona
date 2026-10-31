@@ -168,13 +168,6 @@ export default function EssentialCategoryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // En la propia página de Nitbus, "Ver paradas" de una línea filtra el mapa sin recargar.
-  const showLine = (code: string) => {
-    setSelectedMetroLine(code)
-    setSelected(null)
-    setTimeout(() => linesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50)
-  }
-
   // Encuadra el mapa a un conjunto de puntos. Si el mapa está oculto (móvil, vista lista) no
   // tiene tamaño y Mapbox calcularía mal el encuadre: se guarda y se aplica al mostrar el mapa.
   const fitMapTo = (points: [number, number][]) => {
@@ -561,7 +554,14 @@ export default function EssentialCategoryPage() {
       return (
         <div className="mt-2 space-y-2 border-t border-white/10 pt-2">
           {codes.map((code) => (
-            <NitbusRouteRow key={code} code={code} seeStopsLabel={t("clubPage.seeStops")} unknownLabel={t("clubPage.lineUnknown")} onLinkClick={stopPropagation} onSelectLine={essentials.length > 0 ? showLine : undefined} />
+            <NitbusRouteRow
+              key={code}
+              code={code}
+              seeStopsLabel={t("clubPage.seeStops")}
+              unknownLabel={t("clubPage.lineUnknown")}
+              onLinkClick={stopPropagation}
+              near={item.latitude != null && item.longitude != null ? { lat: Number(item.latitude), lon: Number(item.longitude) } : undefined}
+            />
           ))}
         </div>
       )
@@ -721,6 +721,18 @@ export default function EssentialCategoryPage() {
             cada línea) no cambia según la parada. */}
         {category === "nitbus" && (
           <section className="mx-auto mt-6 max-w-7xl px-4">
+            {/* Entrada a las paradas por línea, en orden (31/10/2026): el mapa de más de mil
+                chinchetas de abajo no sirve para saber por dónde pasa cada línea. */}
+            <Link
+              href="/nitbus"
+              className="mb-4 flex items-center gap-4 rounded-card border border-brand/40 bg-brand/[0.08] p-5 transition hover:border-brand/70"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-semibold text-ink">{t("nitbusPage.ctaTitle")}</span>
+                <span className="mt-1 block text-sm leading-snug text-zinc-300">{t("nitbusPage.ctaBody")}</span>
+              </span>
+              <span className="shrink-0 rounded-ctl bg-brand px-4 py-2.5 text-sm font-semibold text-white">{t("nitbusPage.ctaButton")}</span>
+            </Link>
             <div className="rounded-card border border-white/10 bg-surface p-5">
               <p className="mb-2 text-sm font-semibold text-ink">{t("essentialsPage.nitbusLine")}</p>
               <p className="text-lg font-semibold text-ink">{t("essentialsPage.nitbusHours")}</p>
@@ -733,7 +745,7 @@ export default function EssentialCategoryPage() {
                 </summary>
                 <div className="mt-4 grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2">
                   {Object.values(NIGHT_BUS_LINES).map((line) => (
-                    <NitbusRouteRow key={line.code} code={line.code} seeStopsLabel={t("clubPage.seeStops")} unknownLabel={t("clubPage.lineUnknown")} onSelectLine={essentials.length > 0 ? showLine : undefined} />
+                    <NitbusRouteRow key={line.code} code={line.code} seeStopsLabel={t("clubPage.seeStops")} unknownLabel={t("clubPage.lineUnknown")} />
                   ))}
                 </div>
                 <p className="mt-4 text-xs text-zinc-400">{t("essentialsPage.nitbusBody")}</p>

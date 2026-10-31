@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import {
-  Bell, MessageSquare, Flag, UserPlus, Ban, Star, AlertTriangle, PencilLine, CheckCheck, MessageSquareQuote, Mail, Inbox, type LucideIcon,
+import { Lightbulb,
+  Bell, MessageSquare, Flag, UserPlus, Ban, Star, AlertTriangle, PencilLine, CheckCheck, MessageSquareQuote, Mail, Inbox, Reply, type LucideIcon,
 } from "lucide-react"
 import AdminShell, { invalidateAdminBadges } from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
@@ -32,10 +32,12 @@ const KINDS: Record<string, { label: string; icon: LucideIcon; tone: string }> =
   report: { label: "Denuncias", icon: Flag, tone: "text-red-300" },
   entry_denial: { label: "No dejan entrar", icon: Ban, tone: "text-orange-300" },
   review: { label: "Opiniones de locales", icon: MessageSquareQuote, tone: "text-amber-300" },
+  review_reply: { label: "Respuestas de dueños", icon: Reply, tone: "text-teal-200" },
   feedback: { label: "Opiniones de la web", icon: Star, tone: "text-amber-200" },
   signup: { label: "Usuarios nuevos", icon: UserPlus, tone: "text-emerald-300" },
   owner_change: { label: "Cambios de dueños", icon: PencilLine, tone: "text-violet-300" },
   owner_message: { label: "Mensajes de dueños", icon: Inbox, tone: "text-teal-300" },
+  essential_suggestion: { label: "Sugerencias de esenciales", icon: Lightbulb, tone: "text-lime-300" },
 }
 
 function when(iso: string) {

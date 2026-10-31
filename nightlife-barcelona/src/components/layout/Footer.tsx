@@ -64,6 +64,7 @@ export default function Footer() {
               <Link href="/terms" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_terms")}</Link>
               <Link href="/contact" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_contact")}</Link>
               <Link href="/faq" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_faq")}</Link>
+              <Link href="/derechos" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_rights")}</Link>
               <Link href="/opinion" className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_feedback")}</Link>
               {/* Vuelve a abrir el banner de cookies para cambiar la decisión */}
               <button

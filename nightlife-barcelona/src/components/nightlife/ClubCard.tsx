@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
 import Icon from "../ui/Icon"
 import { createSlug } from "../../lib/slug"
-import { clubOpenNow } from "../../lib/clubHours"
+import { activeNotices, effectiveOpenNow } from "../../lib/scheduleNotices"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { useLanguage } from "../../context/LanguageContext"
 
@@ -38,6 +38,9 @@ interface ClubCardProps {
   // «Cerrado temporalmente» (30/10/2026): el local sigue en el listado, pero con su etiqueta y sin
   // el punto verde de «abierto ahora» aunque su horario diga que sí.
   temporarilyClosed?: boolean
+  // Avisos del dueño (clubs.schedule_notices, lib/scheduleNotices.ts): «hoy cerramos» tapa la foto con
+  // una banda y quita el «abierto ahora»; un horario especial se enseña junto al precio.
+  scheduleNotices?: unknown
 }
 
 const LIVE_STATUS_MAX_AGE_MS = 4 * 60 * 60 * 1000
@@ -60,10 +63,20 @@ export default function ClubCard({
   liveStatusUpdatedAt,
   showHours = false,
   temporarilyClosed = false,
+  scheduleNotices,
 }: ClubCardProps) {
   const { t } = useLanguage()
   const [openNow, setOpenNow] = useState<boolean | null>(null)
-  useEffect(() => setOpenNow(clubOpenNow(hours, openDays)), [hours, openDays])
+  const [closedTonight, setClosedTonight] = useState(false)
+  const [specialHours, setSpecialHours] = useState<string | null>(null)
+  useEffect(() => {
+    setOpenNow(effectiveOpenNow({ hours, open_days: openDays, schedule_notices: scheduleNotices }))
+    const active = activeNotices(scheduleNotices)
+    setClosedTonight(active.some((n) => n.kind === "closed"))
+    const sp = active.find((n) => n.kind === "hours" && n.open && n.close)
+    setSpecialHours(sp ? `${sp.open}–${sp.close}` : null)
+  }, [hours, openDays, scheduleNotices])
+  const dimmed = temporarilyClosed || closedTonight
 
   const LIVE: Record<string, string> = {
     tranquilo: t("clubPage.vibeQuiet"),
@@ -93,9 +106,16 @@ export default function ClubCard({
           fill
           sizes="(max-width: 768px) 100vw, 33vw"
           unoptimized={!image}
-          className={`object-cover transition duration-500 group-hover:scale-[1.03] ${temporarilyClosed ? "opacity-50 grayscale" : ""}`}
+          className={`object-cover transition duration-500 group-hover:scale-[1.03] ${dimmed ? "opacity-50 grayscale" : ""}`}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
+        {/* «Hoy cerramos» (aviso del dueño): banda sobre la foto, solo esta noche. */}
+        {closedTonight && !temporarilyClosed && (
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-night/90 px-3 py-2 text-sm font-bold text-warn">
+            <Icon name="clock" className="h-4 w-4 shrink-0" />
+            <span className="truncate">{t("notices.closedTonightShort")}</span>
+          </div>
+        )}
         {/* Cerrado temporalmente (30/10/2026): banda ámbar a lo ancho de la foto para que se vea a primera vista. */}
         {temporarilyClosed && (
           <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-warn px-3 py-2 text-sm font-bold text-night">
@@ -104,13 +124,13 @@ export default function ClubCard({
           </div>
         )}
         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          {temporarilyClosed ? null : openNow !== null && (
+          {dimmed ? null : openNow !== null && (
             <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${openNow ? "bg-night/80 text-open" : "bg-night/70 text-zinc-300"}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${openNow ? "live-dot bg-open" : "bg-off"}`} />
               {openNow ? t("clubPage.openNow") : t("home.closed")}
             </span>
           )}
-          {live && !temporarilyClosed && (
+          {live && !dimmed && (
             <span className="flex items-center gap-1.5 rounded-full bg-night/80 px-2.5 py-1 text-xs font-semibold text-ink">
               <span className="live-dot h-1.5 w-1.5 rounded-full bg-open" /> {live}
             </span>
@@ -132,6 +152,11 @@ export default function ClubCard({
         <p className="mt-0.5 truncate text-sm text-zinc-400">{[area || "Barcelona", music].filter(Boolean).join(" · ")}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
           {price && <span className="rounded-full border border-white/10 px-2.5 py-1 font-semibold text-zinc-200">{price}</span>}
+          {specialHours && !dimmed && (
+            <span className="rounded-full border border-warn/50 px-2.5 py-1 font-semibold text-warn">
+              {t("notices.specialHoursChip").replace("{hours}", specialHours)}
+            </span>
+          )}
           {tags.map((tag) => (
             <span key={tag} className="rounded-full bg-brand/15 px-2.5 py-1 font-semibold text-brand-soft">
               {tag}

@@ -97,6 +97,22 @@ body {
   }
 }
 
+/* DESPLEGABLES (<select>) SIEMPRE LEGIBLES (31/10/2026). En Chrome/Edge la lista que se abre usa el
+   color de fondo del propio select; con un fondo translúcido (bg-white/[0.03], el que llevan casi
+   todos) se mezcla con el blanco del navegador y queda una lista BLANCA con letra clara, ilegible
+   hasta que pasas el ratón o eliges una opción (pasaba en Admin › Clubs). Se les da un fondo sólido
+   oscuro a las opciones. Va en la capa base: una clase de Tailwind en una opción lo sustituye. */
+@layer base {
+  select {
+    color-scheme: dark;
+  }
+  select option,
+  select optgroup {
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+  }
+}
+
 /* DISPLAY — solo para el nombre del local / evento y el título de cada página. */
 .font-display {
   font-family: var(--font-display), Arial, Helvetica, sans-serif;

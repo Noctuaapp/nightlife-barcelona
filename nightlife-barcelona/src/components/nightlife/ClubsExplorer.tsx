@@ -9,6 +9,7 @@ import { EXTRA_FEATURES } from "../../lib/extraFeatures"
 import { SearchIcon, CloseIcon, LocationIcon, FlameIcon, SlidersIcon, ChevronDownIcon } from "../ui/FilterIcons"
 import { areasForPostalCode } from "../../lib/postalCodes"
 import { clubStaysOpenPast, madridClock } from "../../lib/clubHours"
+import { isClosedTonight } from "../../lib/scheduleNotices"
 import { WEEK_DOW_ORDER, tonightDow, clubMatchesDay } from "../../lib/clubDays"
 
 function useReveal<T extends HTMLElement>() {
@@ -236,7 +237,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         matchesQuery(search, [club.name, club.neighborhood, club.music, club.address, club.city, club.venue_type]) ||
         (!!postalAreas && postalAreas.some((area) => matchesQuery(area, [club.neighborhood])))
 
-      const matchesOpenNow = !openNow || (club.temporarily_closed !== true && isOpenNow(club.hours))
+      const matchesOpenNow = !openNow || (club.temporarily_closed !== true && !isClosedTonight(club.schedule_notices) && isOpenNow(club.hours))
       const matchesDay = clubMatchesDay(club.hours, club.open_days, selectedDay)
 
       const matchesNearMe =
@@ -586,6 +587,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                   liveStatus={club.live_status}
                   liveStatusUpdatedAt={club.live_status_updated_at}
                   temporarilyClosed={club.temporarily_closed === true}
+                  scheduleNotices={club.schedule_notices}
                 />
               </Reveal>
             ))

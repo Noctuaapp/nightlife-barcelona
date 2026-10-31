@@ -10,6 +10,7 @@ interface Club {
   image: string
   rating: number
   temporarily_closed?: boolean
+  schedule_notices?: unknown
 }
 
 interface CuratedSectionProps {
@@ -79,6 +80,7 @@ export default function CuratedSection({
               image={club.image}
               rating={club.rating}
               temporarilyClosed={club.temporarily_closed === true}
+              scheduleNotices={club.schedule_notices}
             />
 
           </div>

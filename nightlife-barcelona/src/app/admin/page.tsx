@@ -108,6 +108,8 @@ const TAG_GROUPS_BASE: { title: string; tags: TagRef[] }[] = [
     ],
   },
   { title: "Comida y bebida", tags: [extraTag("cocktails"), extraTag("food"), extraTag("shisha")] },
+  // Cumpleaños, eventos privados y alquiler del local (supabase/60).
+  { title: "Celebraciones", tags: [extraTag("birthdays"), extraTag("private_events"), extraTag("venue_rental")] },
   {
     title: "Zonas y servicios",
     tags: [
@@ -722,8 +724,11 @@ export default function AdminPage() {
       <div className="md:col-span-2 space-y-4 rounded-card border border-white/10 bg-white/[0.02] p-4 pt-3">
         <p className={labelClass}>Etiquetas</p>
         {TAG_GROUPS.map((group) => {
-          // «Cerrado temporalmente» solo sale si la columna ya existe (SQL 56).
-          const tags = group.tags.filter((t) => !t.closed || CLOSED_FIELD in form.extras)
+          // Las etiquetas de servicios solo salen si su columna ya existe (SQL 56 para «Cerrado
+          // temporalmente», SQL 60 para cumpleaños / eventos privados / alquiler).
+          // (El formulario de club nuevo parte con los extras vacíos, así que también se mira si
+          // alguna ficha ya cargada tiene esa columna.)
+          const tags = group.tags.filter((t) => !t.extra || t.key in form.extras || clubs.some((c) => t.key in (c as unknown as Record<string, unknown>)))
           if (!tags.length) return null
           return (
             <div key={group.title}>
@@ -823,12 +828,12 @@ export default function AdminPage() {
               onChange={(e) => setFilter(e.target.value)}
               aria-label="Filtrar clubs"
               style={{ colorScheme: "dark" }}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm font-semibold text-white outline-none transition focus:border-purple-500/50 md:w-72"
+              className="rounded-2xl border border-white/10 bg-surface px-4 py-4 text-sm font-semibold text-white outline-none transition focus:border-purple-500/50 md:w-72"
             >
               <option value="all">Todos ({clubs.length})</option>
               <option value="visible">Visibles ({stats.visible})</option>
               {TAG_GROUPS.map((group) => {
-                const tags = group.tags.filter((t) => !t.closed || clubs.some((c) => CLOSED_FIELD in (c as unknown as Record<string, unknown>)))
+                const tags = group.tags.filter((t) => !t.extra || clubs.some((c) => t.key in (c as unknown as Record<string, unknown>)))
                 if (!tags.length) return null
                 return (
                   <optgroup key={group.title} label={group.title}>
@@ -901,7 +906,6 @@ export default function AdminPage() {
                             <h3 className="font-black text-white">{club.name}</h3>
                             {club.verified && <span className="rounded-full bg-purple-500/20 border border-purple-500/30 px-2 py-0.5 text-xs font-bold text-purple-300">N Verified</span>}
                             {club.trending && <span className="rounded-full bg-orange-500/20 border border-orange-500/30 px-2 py-0.5 text-xs font-bold text-orange-300">🔥 Trending</span>}
-                            {club.vip_tables && <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 text-xs font-bold text-amber-300">🛋️ Mesa VIP</span>}
                             {club.hidden && <span className="rounded-full bg-zinc-500/20 border border-zinc-500/30 px-2 py-0.5 text-xs font-bold text-zinc-400">Oculto</span>}
                             {club.temporarily_closed && <span className="rounded-full bg-amber-400/20 border border-amber-400/30 px-2 py-0.5 text-xs font-bold text-amber-300">⏸️ Cerrado temporalmente</span>}
                           </div>
@@ -934,14 +938,9 @@ export default function AdminPage() {
                           className={`rounded-full px-4 py-2 text-xs font-bold transition ${!club.hidden ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
                           👁️ {club.hidden ? "Oculto" : "Visible"}
                         </button>
-                        <button onClick={() => toggleField(club, "lgtbi_friendly")}
-                          className={`rounded-full px-4 py-2 text-xs font-bold transition ${club.lgtbi_friendly ? "bg-pink-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-                          🏳️‍🌈 LGTBI+
-                        </button>
-                        <button onClick={() => toggleField(club, "vip_tables")}
-                          className={`rounded-full px-4 py-2 text-xs font-bold transition ${club.vip_tables ? "bg-amber-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-                          🛋️ Mesa VIP
-                        </button>
+                        {/* Aquí solo van los estados del club (verificado, tendencia, agotado, cerrado,
+                            visible). El resto de etiquetas (LGTBI+, mesa VIP, terraza...) se editan
+                            dentro de «Editar». */}
                         <button onClick={() => toggleField(club, "verified")}
                           className={`rounded-full px-4 py-2 text-xs font-bold transition ${club.verified ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
                           ✓ Verified

@@ -21,7 +21,7 @@ import { createSlug } from "../../lib/slug"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
-import { clubOpenNow } from "../../lib/clubHours"
+import { effectiveOpenNow, isClosedTonight } from "../../lib/scheduleNotices"
 import { matchesQuery, matchScore } from "../../lib/textSearch"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 
@@ -138,7 +138,8 @@ export default function HomeClient({
     setSeed(homeSeed())
     const compute = () => {
       const m: Record<string, boolean | null> = {}
-      for (const c of clubs) m[c.id] = c.temporarily_closed ? false : clubOpenNow(c.hours, c.open_days)
+      // Cerrado temporalmente, «hoy cerramos» y horario especial del dueño (lib/scheduleNotices.ts).
+      for (const c of clubs) m[c.id] = effectiveOpenNow(c)
       setOpenMap(m)
     }
     compute()
@@ -155,7 +156,10 @@ export default function HomeClient({
   // Orden estable en el servidor; variedad (entre los mejores) solo tras montar.
   const ranked = useMemo(() => {
     // Los cerrados temporalmente no se recomiendan en la portada (siguen en el buscador y en /clubs).
-    const base = clubs.filter((c) => !c.temporarily_closed).sort((a, b) => quality(b) - quality(a))
+    // Tampoco los que avisan de que esta noche cierran (solo tras montar: depende de la hora).
+    const base = clubs
+      .filter((c) => !c.temporarily_closed && !(mounted && isClosedTonight(c.schedule_notices)))
+      .sort((a, b) => quality(b) - quality(a))
     if (!mounted) return base
     const top = base.slice(0, 24).sort(() => Math.random() - 0.5)
     return [...top, ...base.slice(24)]

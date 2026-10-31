@@ -33,3 +33,7 @@ export function metroLineColor(code: string): { bg: string; fg: string } {
 // Nitbus no tiene un color por línea (serían 16 colores sin significado real); en vez de eso,
 // toda la red comparte la placa azul noche con texto ámbar de las paradas reales de TMB.
 export const NITBUS_PLATE = { bg: "#1b2559", fg: "#ffd166" }
+
+// Color de la barra del recorrido en /nitbus/N24: el azul de la placa, más claro para que se lea
+// sobre el fondo oscuro de la web (la placa tal cual, #1b2559, casi se pierde).
+export const NITBUS_RAIL = "#4a64d6"

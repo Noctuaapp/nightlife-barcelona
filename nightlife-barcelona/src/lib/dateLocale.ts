@@ -9,6 +9,7 @@ const DATE_LOCALES: Record<string, string> = {
   de: "de-DE",
   it: "it-IT",
   nl: "nl-NL",
+  pt: "pt-PT",
 }
 
 export function toDateLocale(locale: string): string {
