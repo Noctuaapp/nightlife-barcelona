@@ -181,4 +181,11 @@ describe("planTrips", () => {
     expect(planTrips(loose, me, spot, distanceInMeters)).toEqual([])
     expect(planTrips(line, me, me, distanceInMeters)).toEqual([])
   })
+
+  it("no repite la misma tarjeta si los dos sentidos guardados son el mismo recorrido", () => {
+    const dup: RouteRow[] = []
+    for (const d of [0, 1]) for (let i = 0; i < 10; i++) dup.push(r("N9", d, i + 1, `A${i + 1}`, 41.38 + i * 0.002, 2.17))
+    const l = buildNitbusData(dup, []).lines.N9
+    expect(planTrips(l, me, spot, distanceInMeters)).toHaveLength(1)
+  })
 })

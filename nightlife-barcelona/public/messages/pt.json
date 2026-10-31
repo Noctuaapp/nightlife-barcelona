@@ -1010,7 +1010,12 @@
     "nitbusLinesCount": "{n} linhas noturnas",
     "nitbusHours": "Todas as noites, das 22:20 às 06:00",
     "nitbusHoursNote": "A frequência e o último autocarro exato variam consoante a linha.",
-    "allCategories": "Todas as categorias"
+    "allCategories": "Todas as categorias",
+    "nitbusNearest": "As tuas paragens mais próximas",
+    "nitbusLocateHint": "Toca em «Perto de mim» e vês no mapa as tuas 3 paragens mais próximas.",
+    "nitbusAllStops": "Todas as paragens",
+    "moreStops": "Ver mais paragens ({n})",
+    "nitbusLinesHere": "Linhas que param aqui"
   },
   "areas": {
     "titleBarrio": "Discotecas em {name}",
@@ -1106,7 +1111,9 @@
     "unsupported": "O teu navegador não permite usar a localização.",
     "denied": "Bloqueaste a localização. Ativa-a nas definições do navegador para este website.",
     "timeout": "A localização demorou demasiado. Tenta novamente.",
-    "error": "Não conseguimos obter a tua localização. Tenta novamente."
+    "error": "Não conseguimos obter a tua localização. Tenta novamente.",
+    "approximate": "A tua localização é aproximada (margem de cerca de {n} m). Num computador costuma ser menos exata: no telemóvel, com o GPS ativo, é muito melhor.",
+    "refining": "A afinar…"
   },
   "explorer": {
     "now": "Aberto agora",

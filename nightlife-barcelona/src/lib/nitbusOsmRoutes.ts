@@ -5,6 +5,8 @@
 // En OpenStreetMap cada línea es una «relación» cuyos miembros (paradas) van EN ORDEN DE RECORRIDO,
 // normalmente una relación por sentido. Aquí se coge el orden de esas listas.
 
+import { distanceInMeters } from "./geo"
+
 export type OsmMember = { type: string; ref: number; role: string }
 export type OsmRelationLike = { tags?: Record<string, string>; members?: OsmMember[] }
 export type OsmNodeLike = { lat?: number; lon?: number; tags?: Record<string, string> }
@@ -56,8 +58,33 @@ function sequenceOf(rel: OsmRelationLike, nodes: Map<number, OsmNodeLike>): Seq 
   return out.slice(0, MAX_STOPS_PER_DIRECTION)
 }
 
-// Hasta dos sentidos por línea: el recorrido más largo, y el más largo de los que empiezan o
-// acaban en otro sitio (así no se cuelan variantes del mismo sentido). Una línea circular o con
+// Una línea suele tener varias relaciones: los dos sentidos y variantes de cada uno (salidas
+// cortas, desvíos…). El segundo sentido tiene que ser el CONTRARIO del primero, no otra variante
+// del mismo (31/10/2026: en la N9 se coló una variante que acababa también en Pl. Catalunya, y los
+// dos sentidos salían iguales). Es el contrario si:
+//  - acaba lejos de donde acaba el primero (otro extremo de la línea), y
+//  - empieza cerca de donde acaba el primero (las cabeceras de ida y vuelta suelen estar a una
+//    calle de distancia, no en el mismo poste).
+// Se compara por coordenadas, no por nombre, porque un mismo extremo cambia de nombre entre
+// relaciones. Entre las que valen, la más larga.
+const OPPOSITE_ENDS_APART_M = 500
+const OPPOSITE_TERMINAL_GAP_M = 2500
+
+type SeqStop = Seq[number]
+const apart = (a: SeqStop, b: SeqStop) => distanceInMeters(a.lat, a.lon, b.lat, b.lon)
+
+function pickOpposite(first: Seq, rest: Seq[]): Seq | undefined {
+  const firstEnd = first[first.length - 1]
+  return rest
+    .filter((s) => {
+      const start = s[0]
+      const end = s[s.length - 1]
+      return apart(firstEnd, end) >= OPPOSITE_ENDS_APART_M && apart(firstEnd, start) <= OPPOSITE_TERMINAL_GAP_M
+    })
+    .sort((a, b) => b.length - a.length)[0]
+}
+
+// Hasta dos sentidos por línea: el recorrido más largo y su contrario. Una línea circular o con
 // un solo sentido en el mapa se queda con uno.
 export function buildRouteRows(routes: OsmRelationLike[], nodes: Map<number, OsmNodeLike>): RouteStopRow[] {
   const byLine = new Map<string, Seq[]>()
@@ -74,8 +101,7 @@ export function buildRouteRows(routes: OsmRelationLike[], nodes: Map<number, Osm
   for (const [line, candidates] of byLine) {
     const sorted = [...candidates].sort((a, b) => b.length - a.length)
     const first = sorted[0]
-    const ends = (s: Seq) => `${key(s[0].name)}>${key(s[s.length - 1].name)}`
-    const second = sorted.slice(1).find((s) => ends(s) !== ends(first))
+    const second = pickOpposite(first, sorted.slice(1))
     ;[first, second].forEach((seq, direction) => {
       if (!seq) return
       seq.forEach((s, i) =>

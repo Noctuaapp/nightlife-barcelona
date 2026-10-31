@@ -60,7 +60,7 @@ function StopDot({ kind }: { kind: "terminal" | "hub" | "stop" }) {
 
 export default function NitbusLineView({ code, line, route, allCodes }: Props) {
   const { t } = useLanguage()
-  const geo = useGeolocation()
+  const geo = useGeolocation({ precise: true })
   const [dir, setDir] = useState(0)
   const [query, setQuery] = useState("")
   const [spot, setSpot] = useState<Point | null>(null) // el sitio que se estaba mirando (?lat y ?lon)

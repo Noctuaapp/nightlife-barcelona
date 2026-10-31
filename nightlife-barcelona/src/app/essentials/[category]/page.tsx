@@ -3,7 +3,7 @@
 import { zoneOf, zonesPresent } from "../../../lib/zones"
 import { getMetroTonight } from "../../../lib/transitHours"
 import { cleanEssential } from "../../../lib/essentials"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import mapboxgl from "mapbox-gl"
@@ -24,7 +24,10 @@ import { ESSENTIAL_CATEGORIES, categoryNameKey } from "../../../lib/essentialCat
 import { NIGHT_BUS_LINES } from "../../../lib/nightBuses"
 import { METRO_STATIONS } from "../../../lib/metroStations"
 import { MetroLineBadge, NitbusBadge, NitbusRouteRow } from "../../../components/ui/TransitBadge"
-import { MapPin } from "lucide-react"
+import { NITBUS_PLATE } from "../../../lib/transitColors"
+import { ChevronDown, MapPin } from "lucide-react"
+import NitbusStopsMap, { type NitbusMapStop } from "../../../components/nitbus/NitbusStopsMap"
+import { getPrecisePosition } from "../../../lib/precisePosition"
 
 // Un solo color (el de la marca) para todas las categorías; antes eran doce colores y emojis.
 const BRAND = "#7c5cff"
@@ -67,6 +70,41 @@ type Essential = {
   subcategory: string | null
 }
 
+
+// Desplegable de filtro con aspecto de píldora. La primera opción ("Toda el área", "Todos los
+// barrios"...) es «sin filtro»: mientras está elegida el desplegable se ve neutro, y con otra opción
+// se marca en el color de la marca para que se note que hay un filtro puesto.
+function FilterSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: string
+  onChange: (v: string) => void
+  options: { value: string; label: string }[]
+}) {
+  const active = value !== options[0]?.value
+  return (
+    <div className="relative min-w-[10.5rem] flex-1 sm:max-w-xs sm:flex-none">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={options[0]?.label}
+        style={{ colorScheme: "dark" }}
+        className={`h-11 w-full appearance-none truncate rounded-full border py-2.5 pl-3.5 pr-8 text-sm font-semibold outline-none transition ${
+          active ? "border-brand/60 bg-brand/15 text-ink" : "border-white/10 bg-white/[0.04] text-zinc-200 hover:bg-white/[0.07]"
+        }`}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value} className="bg-night text-ink">
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown size={16} aria-hidden="true" className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 ${active ? "text-brand-soft" : "text-zinc-400"}`} />
+    </div>
+  )
+}
 
 export default function EssentialCategoryPage() {
   const { t } = useLanguage()
@@ -133,6 +171,14 @@ export default function EssentialCategoryPage() {
   const [locating, setLocating] = useState(false)
   const [locationDenied, setLocationDenied] = useState(false)
   const [farAway, setFarAway] = useState(false)
+  // Margen de error de la ubicación (m), y un contador que sube cuando hay que encuadrar el mapa
+  // de Nitbus al usuario (primera lectura y, si se movió bastante al afinar, la final).
+  const [userAccuracy, setUserAccuracy] = useState<number | null>(null)
+  const [userFixNonce, setUserFixNonce] = useState(0)
+  const [locationFail, setLocationFail] = useState(false)
+  // Lista de paradas de Nitbus por tandas: son más de 2.000.
+  const NB_PAGE = 24
+  const [nbLimit, setNbLimit] = useState(NB_PAGE)
   const userMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const mapWrapperRef = useRef<HTMLDivElement>(null)
   const pendingFitRef = useRef<[number, number][] | null>(null)
@@ -189,6 +235,9 @@ export default function EssentialCategoryPage() {
 
   // La ubicación solo se pide cuando el usuario pulsa "Cerca de mí" (antes se pedía al cargar,
   // sin que nadie lo hubiera pedido, y movía el mapa de golpe).
+  // Se escucha el GPS unos segundos y se queda la lectura más precisa (ver lib/precisePosition): la
+  // primera suele ser la peor (wifi/IP) y salía el metro más cercano en el sitio equivocado. Se
+  // enseña algo con la primera lectura y se afina después.
   const locateMe = () => {
     if (!navigator.geolocation) {
       setLocationDenied(true)
@@ -196,18 +245,31 @@ export default function EssentialCategoryPage() {
     }
     setLocating(true)
     setLocationDenied(false)
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
-        setSortByDistance(true)
-        setLocating(false)
+    setLocationFail(false)
+    let first: { lat: number; lng: number } | null = null
+    getPrecisePosition({
+      onUpdate: (p) => {
+        setUserAccuracy(p.accuracy)
+        setUserLocation((cur) => (cur && distanceInMeters(cur.lat, cur.lng, p.lat, p.lng) < 25 ? cur : { lat: p.lat, lng: p.lng }))
+        if (!first) {
+          first = { lat: p.lat, lng: p.lng }
+          setSortByDistance(true)
+          setUserFixNonce((n) => n + 1)
+        }
       },
-      () => {
-        setLocationDenied(true)
+    })
+      .then((p) => {
+        // Si al afinar la posición se movió bastante, se vuelve a encuadrar.
+        if (first && distanceInMeters(first.lat, first.lng, p.lat, p.lng) > 60) setUserFixNonce((n) => n + 1)
         setLocating(false)
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    )
+      })
+      .catch((e: { code?: number }) => {
+        if (!first) {
+          if (e.code === 1 || e.code === 0) setLocationDenied(true)
+          else setLocationFail(true)
+        }
+        setLocating(false)
+      })
   }
 
   useEffect(() => {
@@ -398,6 +460,29 @@ export default function EssentialCategoryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady, essentials])
 
+  // Nitbus: lo mismo que el efecto de arriba (abrir lo que pedía el enlace), pero sin el mapa de
+  // esta página: el mapa de Nitbus es NitbusStopsMap, que se acerca solo a la parada elegida.
+  useEffect(() => {
+    const f = focusRef.current
+    if (category !== "nitbus" || essentials.length === 0 || !f || focusDone.current) return
+    focusDone.current = true
+    let target: Essential | undefined
+    if (f.id) target = essentials.find((e) => String(e.id) === f.id)
+    if (!target && f.line && f.lat !== null && f.lon !== null) {
+      target = essentials
+        .filter((e) => e.latitude && e.longitude && (e.subcategory || "").split(",").some((l) => l.trim().toUpperCase() === f.line))
+        .map((e) => ({ e, d: distanceInMeters(f.lat!, f.lon!, Number(e.latitude), Number(e.longitude)) }))
+        .sort((a, b) => a.d - b.d)[0]?.e
+    }
+    if (target) setSelected(target)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, essentials])
+
+  // La lista de paradas de Nitbus vuelve a la primera tanda al cambiar de línea, búsqueda u orden.
+  useEffect(() => {
+    setNbLimit(NB_PAGE)
+  }, [selectedMetroLine, metroSearch, sortByDistance])
+
   // Al localizar al usuario: marcador morado y encuadre con los 5 más cercanos.
   useEffect(() => {
     if (!mapReady || !map.current || !userLocation) return
@@ -545,6 +630,53 @@ export default function EssentialCategoryPage() {
       return da - db
     })
 
+  // ---- Nitbus: datos para el mapa (31/10/2026) ----
+  // Las paradas que se ven (línea elegida y búsqueda), sin el orden por distancia: así la lista de
+  // puntos que se le pasa al mapa solo cambia cuando cambia el filtro, no cada vez que se mueve algo.
+  const nbStops = useMemo<NitbusMapStop[]>(() => {
+    if (category !== "nitbus") return []
+    const q = metroSearch.trim().toLowerCase()
+    return essentials
+      .filter((e) => e.latitude && e.longitude)
+      .filter((e) => selectedMetroLine === "All" || (e.subcategory || "").split(",").some((l) => l.trim().toUpperCase() === selectedMetroLine.toUpperCase()))
+      .filter((e) => !q || e.name.toLowerCase().includes(q))
+      .map((e) => ({
+        id: e.id,
+        name: e.name,
+        lat: Number(e.latitude),
+        lon: Number(e.longitude),
+        lines: (e.subcategory || "").split(",").map((l) => l.trim().toUpperCase()).filter(Boolean),
+      }))
+  }, [category, essentials, selectedMetroLine, metroSearch])
+  // Las 3 más cercanas a ti, con su distancia.
+  const nbNearest = useMemo(
+    () =>
+      userLocation
+        ? nbStops
+            .map((s) => ({ s, d: distanceInMeters(userLocation.lat, userLocation.lng, s.lat, s.lon) }))
+            .sort((a, b) => a.d - b.d)
+            .slice(0, 3)
+        : [],
+    [nbStops, userLocation]
+  )
+  const nbNearestStops = useMemo(() => nbNearest.map((n) => n.s), [nbNearest])
+  const nbSelected = useMemo<NitbusMapStop | null>(
+    () =>
+      category === "nitbus" && selected && selected.latitude && selected.longitude
+        ? {
+            id: selected.id,
+            name: selected.name,
+            lat: Number(selected.latitude),
+            lon: Number(selected.longitude),
+            lines: (selected.subcategory || "").split(",").map((l) => l.trim().toUpperCase()).filter(Boolean),
+          }
+        : null,
+    [category, selected]
+  )
+  const nbFitKey = selectedMetroLine === "All" && metroSearch.trim().length < 2 ? "" : `${selectedMetroLine}|${metroSearch.trim().toLowerCase()}`
+  // Si la parada más cercana está a más de 20 km (fuera de Barcelona) no se acerca el mapa al usuario.
+  const nbFar = nbNearest.length > 0 && nbNearest[0].d > 20000
+
   // Línea(s) de metro o ruta(s) de Nitbus de un esencial, para no repetir la lógica entre la
   // tarjeta de la lista y la ficha que sale al tocar su chincheta en el mapa — antes el mapa no
   // enseñaba esto y era la mitad de la información (dónde está la parada, sí; a dónde va, no).
@@ -591,6 +723,11 @@ export default function EssentialCategoryPage() {
 
     const handleCardClick = () => {
       setSelected(item)
+      if (category === "nitbus") {
+        // El mapa de Nitbus está encima de la lista: se sube hasta él para ver la parada.
+        document.getElementById("nitbus-map")?.scrollIntoView({ behavior: "smooth", block: "start" })
+        return
+      }
       setMobileView("map")
       if (hasCoords) {
         map.current?.flyTo({ center: [item.longitude as number, item.latitude as number], zoom: 16, duration: 800 })
@@ -829,86 +966,74 @@ export default function EssentialCategoryPage() {
         {/* Filters — en Nitbus no hay nada que filtrar: el roster de arriba ya es toda la
             información, así que esta sección entera (y la de abajo) no se enseña para esa
             categoría, en vez de enseñar filtros y un mapa vacíos de paradas sueltas sin sentido. */}
-        {(category !== "nitbus" || essentials.length > 0) && (
+        {category !== "nitbus" && (
         <section className="mx-auto mt-6 max-w-7xl px-4">
           <div className="flex flex-wrap items-center gap-3">
             {/* En Metro el barrio/zona de cada estación no es un dato útil para filtrar: la red
                 cubre toda Barcelona y el filtro no "lleva a nada" (deja la lista casi vacía o
                 igual, porque las estaciones del catálogo no tienen barrio asignado). Para eso ya
                 está el filtro por línea de arriba. */}
+            {/* Zona, barrio y tipo en desplegables (31/10/2026): antes eran tres filas de chips
+                sueltos —en Comida, decenas de barrios en fila— que llenaban la pantalla. Ahora cada
+                filtro es un desplegable (el del móvil abre la lista nativa) y, si tiene algo
+                elegido, se marca en el color de la marca. En Metro y Nitbus no hay (filtran por
+                línea, arriba). */}
             {!isLineCategory && availableZones.length > 1 && (
-              <div className="flex w-full gap-2.5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {["All", ...availableZones].map((z) => (
-                  <button
-                    key={z}
-                    onClick={() => {
-                      setSelectedZone(z)
-                      setSelectedNeighborhood("All")
-                    }}
-                    className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
-                      selectedZone === z ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
-                    }`}
-                  >
-                    {z === "All" ? t("essentialsPage.allArea") : z}
-                  </button>
-                ))}
-              </div>
+              <FilterSelect
+                value={selectedZone}
+                onChange={(z) => {
+                  setSelectedZone(z)
+                  setSelectedNeighborhood("All")
+                }}
+                options={[{ value: "All", label: t("essentialsPage.allArea") }, ...availableZones.map((z) => ({ value: z, label: z }))]}
+              />
             )}
             {!isLineCategory && neighborhoods.length > 2 && (
-              <div className="flex w-full gap-2.5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {neighborhoods.map((n) => {
-                  const isActive = selectedNeighborhood === n
-                  return (
-                    <button
-                      key={n || "all"}
-                      onClick={() => setSelectedNeighborhood(n || "All")}
-                      className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
-                        isActive ? "bg-white text-night" : "border border-white/10 text-zinc-200 hover:bg-white/5"
-                      }`}
-                    >
-                      {n === "All" ? t("essentialsPage.allBarrios") : n}
-                    </button>
-                  )
-                })}
-              </div>
+              <FilterSelect
+                value={selectedNeighborhood}
+                onChange={setSelectedNeighborhood}
+                options={neighborhoods.map((n) => ({ value: n || "All", label: n === "All" ? t("essentialsPage.allBarrios") : String(n) }))}
+              />
             )}
             {availableSubcategories.length > 1 && (
-              <div className="flex w-full gap-2.5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {["All", ...availableSubcategories].map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setSelectedSubcategory(s)}
-                    className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
-                      selectedSubcategory === s ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
-                    }`}
-                  >
-                    {s === "All" ? t("essentialsPage.allSubcategories") : s}
-                  </button>
-                ))}
-              </div>
+              <FilterSelect
+                value={selectedSubcategory}
+                onChange={setSelectedSubcategory}
+                options={[{ value: "All", label: t("essentialsPage.allSubcategories") }, ...availableSubcategories.map((sub) => ({ value: sub, label: sub }))]}
+              />
             )}
-            <button
-              onClick={() => (userLocation ? setSortByDistance(!sortByDistance) : locateMe())}
-              disabled={locating}
-              className={`flex-1 shrink-0 rounded-full px-4 py-2.5 text-center text-sm font-semibold transition sm:flex-none ${
-                userLocation && sortByDistance ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
-              }`}
-            >
-              {locating ? t("explorer.locating") : userLocation ? t("explorer.sortDistance") : t("explorer.near")}
-            </button>
-            <button
-              onClick={() => setOpenOnly(!openOnly)}
-              aria-pressed={openOnly}
-              className={`flex-1 shrink-0 rounded-full px-4 py-2.5 text-center text-sm font-semibold transition sm:flex-none ${
-                openOnly ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
-              }`}
-            >
-              {t("explorer.now")}
-            </button>
+            <div className="flex w-full gap-2.5 sm:w-auto">
+              <button
+                onClick={() => (userLocation ? setSortByDistance(!sortByDistance) : locateMe())}
+                disabled={locating}
+                className={`h-11 flex-1 shrink-0 whitespace-nowrap rounded-full px-4 text-center text-sm font-semibold transition sm:flex-none ${
+                  userLocation && sortByDistance ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
+                }`}
+              >
+                {locating ? t("explorer.locating") : userLocation ? t("explorer.sortDistance") : t("explorer.near")}
+              </button>
+              {/* En Nitbus no hay «Abierto ahora» (31/10/2026): una parada no tiene horario, el filtro
+                  no servía para nada. */}
+              {category !== "nitbus" && (
+                <button
+                  onClick={() => setOpenOnly(!openOnly)}
+                  aria-pressed={openOnly}
+                  className={`h-11 flex-1 shrink-0 whitespace-nowrap rounded-full px-4 text-center text-sm font-semibold transition sm:flex-none ${
+                    openOnly ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
+                  }`}
+                >
+                  {t("explorer.now")}
+                </button>
+              )}
+            </div>
           </div>
 
           {locationDenied && (
             <p className="mt-3 text-sm text-warn">{t("geo.denied")}</p>
+          )}
+          {locationFail && <p className="mt-3 text-sm text-warn">{t("geo.error")}</p>}
+          {userAccuracy != null && userAccuracy > 150 && (
+            <p className="mt-3 text-sm text-zinc-400">{t("geo.approximate").replace("{n}", String(Math.round(userAccuracy / 10) * 10))}</p>
           )}
           {farAway && (
             <p className="mt-3 text-sm text-zinc-400">{t("essentialsPage.farAway")}</p>
@@ -930,14 +1055,123 @@ export default function EssentialCategoryPage() {
         </section>
         )}
 
-        {/* Content: lista + mapa lado a lado en escritorio. En Nitbus NO hay mapa (31/10/2026): el
-            mapa nunca llegaba a crearse —su contenedor aparece cuando cargan las paradas, y el
-            mapa se crea una sola vez al montar la página— y dejaba un cuadro vacío. La red se ve
-            en /nitbus; aquí solo la lista, a todo el ancho. */}
+        {/* Nitbus: mapa de paradas para encontrar la más cercana (31/10/2026). Ver NitbusStopsMap. */}
+        {category === "nitbus" && essentials.length > 0 && (
+          <section className="mx-auto mt-5 max-w-7xl px-4">
+            <NitbusStopsMap
+              id="nitbus-map"
+              className="h-[58dvh] min-h-[380px] scroll-mt-20 md:h-[560px]"
+              stops={nbStops}
+              selected={nbSelected}
+              onSelect={(id) => setSelected(id == null ? null : essentials.find((e) => e.id === id) ?? null)}
+              user={userLocation ? { lat: userLocation.lat, lng: userLocation.lng, accuracy: userAccuracy } : null}
+              nearest={nbNearestStops}
+              fitKey={nbFitKey}
+              userFitNonce={nbFar ? 0 : userFixNonce}
+              locating={locating}
+              onLocate={locateMe}
+            >
+              {selected && (
+                <div className="absolute inset-x-3 bottom-9 z-10 max-h-[52%] overflow-y-auto rounded-2xl border border-white/10 bg-night/95 p-4 backdrop-blur-xl">
+                  <div className="flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-base font-black leading-snug text-white">{selected.name}</p>
+                      {(() => {
+                        const d = distMeters(selected)
+                        return d != null ? <p className="mt-0.5 text-xs font-semibold text-brand-soft">{distanceText(d)}</p> : null
+                      })()}
+                    </div>
+                    <button
+                      onClick={() => setSelected(null)}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-black/40 text-white"
+                      aria-label={t("clubPage.close")}
+                    >
+                      <Icon name="close" className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <p className="mt-3 text-xs font-semibold text-zinc-400">{t("essentialsPage.nitbusLinesHere")}</p>
+                  {renderTransitInfo(selected)}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {selected.latitude && selected.longitude && (
+                      <a
+                        href={`${directionsFor(selected)}&travelmode=walking`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => trackEssentialClick("essential_directions", selected)}
+                        className="flex items-center gap-1.5 rounded-ctl bg-brand px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-brand-strong"
+                      >
+                        <Icon name="map" className="h-3.5 w-3.5" /> {t("clubPage.directions")}
+                      </a>
+                    )}
+                    {selected.id > 0 && <AdminEditButton kind="essential" id={selected.id} inline />}
+                  </div>
+                </div>
+              )}
+            </NitbusStopsMap>
+
+            {locationDenied && <p className="mt-3 text-sm text-warn">{t("geo.denied")}</p>}
+            {locationFail && <p className="mt-3 text-sm text-warn">{t("geo.error")}</p>}
+            {userAccuracy != null && userAccuracy > 150 && (
+              <p className="mt-3 text-sm text-zinc-400">{t("geo.approximate").replace("{n}", String(Math.round(userAccuracy / 10) * 10))}</p>
+            )}
+            {nbFar && <p className="mt-3 text-sm text-zinc-400">{t("essentialsPage.farAway")}</p>}
+
+            {/* Tus 3 paradas más cercanas, con las líneas que paran en cada una. */}
+            {userLocation && nbNearest.length > 0 ? (
+              <div className="mt-4">
+                <p className="mb-2 text-sm font-semibold text-ink">{t("essentialsPage.nitbusNearest")}</p>
+                <div className="grid gap-2.5 sm:grid-cols-3">
+                  {nbNearest.map(({ s: stop, d }, i) => (
+                    <button
+                      key={stop.id}
+                      type="button"
+                      onClick={() => {
+                        setSelected(essentials.find((e) => e.id === stop.id) ?? null)
+                        document.getElementById("nitbus-map")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                      }}
+                      className={`flex items-start gap-3 rounded-card border p-3 text-left transition ${
+                        selected?.id === stop.id ? "border-brand/60 bg-brand/10" : "border-white/10 bg-surface hover:border-white/25"
+                      }`}
+                    >
+                      <span
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black"
+                        style={{ background: NITBUS_PLATE.fg, color: NITBUS_PLATE.bg }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold leading-snug text-ink">{stop.name}</span>
+                        <span className="mt-0.5 block text-xs font-semibold text-brand-soft">{distanceText(d)}</span>
+                        <span className="mt-1.5 flex flex-wrap items-center gap-1">
+                          {stop.lines.slice(0, 5).map((c) => (
+                            <NitbusBadge key={c} code={c} />
+                          ))}
+                          {stop.lines.length > 5 && <span className="text-xs text-zinc-400">+{stop.lines.length - 5}</span>}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-zinc-400">{t("essentialsPage.nitbusLocateHint")}</p>
+            )}
+          </section>
+        )}
+
+        {/* Content: lista + mapa lado a lado en escritorio. En Nitbus el mapa es otro (NitbusStopsMap,
+            arriba) y aquí solo queda la lista de paradas, a todo el ancho. El mapa de esta página
+            nunca llegaba a crearse en Nitbus: su contenedor aparece cuando cargan las paradas y el
+            mapa se crea una sola vez al montar la página. */}
         {(category !== "nitbus" || essentials.length > 0) && (
         <section className="mx-auto mt-6 max-w-7xl px-4">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
             <div className={category === "nitbus" ? "md:col-span-12" : `md:col-span-5 ${mobileView === "map" ? "hidden md:block" : ""}`}>
+              {category === "nitbus" && (
+                <h2 className="mb-3 text-lg font-semibold text-ink">
+                  {t("essentialsPage.nitbusAllStops")} <span className="text-sm font-normal text-zinc-400">· {filteredEssentials.length}</span>
+                </h2>
+              )}
               {loading ? (
                 <div className="grid gap-3">
                   {[0, 1, 2, 3].map((i) => <div key={i} className="h-28 animate-pulse rounded-card bg-surface" />)}
@@ -947,13 +1181,25 @@ export default function EssentialCategoryPage() {
                   <p className="text-lg font-semibold text-zinc-200">{t("essentialsPage.noFilterResults")}</p>
                 </div>
               ) : (
-                <div className={category === "nitbus" ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 md:max-h-[720px] md:overflow-y-auto md:pr-1 [scrollbar-width:thin]" : "grid gap-3 md:max-h-[640px] md:overflow-y-auto md:pr-1 [scrollbar-width:thin]"}>
-                  {filteredEssentials.map((item) => renderCard(item))}
-                </div>
+                <>
+                  <div className={category === "nitbus" ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-3 md:max-h-[640px] md:overflow-y-auto md:pr-1 [scrollbar-width:thin]"}>
+                    {(category === "nitbus" ? filteredEssentials.slice(0, nbLimit) : filteredEssentials).map((item) => renderCard(item))}
+                  </div>
+                  {category === "nitbus" && filteredEssentials.length > nbLimit && (
+                    <button
+                      type="button"
+                      onClick={() => setNbLimit((n) => n + NB_PAGE * 2)}
+                      className="mt-4 w-full rounded-full border border-white/10 py-3 text-sm font-semibold text-zinc-200 transition hover:bg-white/5"
+                    >
+                      {t("essentialsPage.moreStops").replace("{n}", String(filteredEssentials.length - nbLimit))}
+                    </button>
+                  )}
+                </>
               )}
             </div>
 
-            <div className={category === "nitbus" ? "hidden" : `md:col-span-7 ${mobileView === "list" ? "hidden md:block" : ""}`}>
+            {category !== "nitbus" && (
+            <div className={`md:col-span-7 ${mobileView === "list" ? "hidden md:block" : ""}`}>
               <div
                 ref={mapWrapperRef}
                 className="relative h-[58dvh] min-h-[360px] scroll-mt-20 overflow-hidden rounded-card border border-white/10 md:sticky md:top-24 md:h-[640px]"
@@ -1040,6 +1286,7 @@ export default function EssentialCategoryPage() {
                 )}
               </div>
             </div>
+            )}
           </div>
         </section>
         )}

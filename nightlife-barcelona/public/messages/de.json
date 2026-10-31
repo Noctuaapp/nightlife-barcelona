@@ -997,7 +997,12 @@
     "nitbusLinesCount": "{n} Nachtlinien",
     "nitbusHours": "Jede Nacht, 22:20–06:00 Uhr",
     "nitbusHoursNote": "Takt und genauer letzter Bus hängen von der Linie ab.",
-    "allCategories": "Alle Kategorien"
+    "allCategories": "Alle Kategorien",
+    "nitbusNearest": "Deine nächsten Haltestellen",
+    "nitbusLocateHint": "Tippe auf „In meiner Nähe“ und du siehst deine 3 nächsten Haltestellen auf der Karte.",
+    "nitbusAllStops": "Alle Haltestellen",
+    "moreStops": "Mehr Haltestellen anzeigen ({n})",
+    "nitbusLinesHere": "Linien, die hier halten"
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",
@@ -1093,7 +1098,9 @@
     "unsupported": "Dein Browser erlaubt keine Standortnutzung.",
     "denied": "Du hast den Standort blockiert. Erlaube ihn in den Browsereinstellungen für diese Website.",
     "timeout": "Die Standortbestimmung hat zu lange gedauert. Versuch es nochmal.",
-    "error": "Wir konnten deinen Standort nicht ermitteln. Versuch es nochmal."
+    "error": "Wir konnten deinen Standort nicht ermitteln. Versuch es nochmal.",
+    "approximate": "Dein Standort ist ungefähr (Spielraum von etwa {n} m). Am Computer ist er meist ungenauer: Mit dem Handy und aktiviertem GPS wird er deutlich genauer.",
+    "refining": "Wird verfeinert…"
   },
   "explorer": {
     "now": "Jetzt geöffnet",

@@ -31,3 +31,18 @@ export function walkingMinutes(meters: number): number {
 export function walkingDirectionsUrl(fromLat: number, fromLon: number, toLat: number, toLon: number): string {
   return `https://www.google.com/maps/dir/?api=1&origin=${fromLat},${fromLon}&destination=${toLat},${toLon}&travelmode=walking`
 }
+
+// Anillo de puntos [lng, lat] de un círculo de radio `radiusM` metros alrededor de un punto (para
+// dibujar en el mapa el margen de error de la ubicación del usuario). Aproximación plana: vale para
+// radios de hasta unos pocos kilómetros.
+export function circleCoords(lat: number, lng: number, radiusM: number, steps = 48): [number, number][] {
+  const dLat = radiusM / 111320
+  const dLng = radiusM / (111320 * Math.max(0.01, Math.cos((lat * Math.PI) / 180)))
+  const out: [number, number][] = []
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * 2 * Math.PI
+    out.push([lng + dLng * Math.cos(a), lat + dLat * Math.sin(a)])
+  }
+  return out
+}
+

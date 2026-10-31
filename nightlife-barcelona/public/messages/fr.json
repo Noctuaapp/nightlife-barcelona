@@ -997,7 +997,12 @@
     "nitbusLinesCount": "{n} lignes de nuit",
     "nitbusHours": "Chaque nuit, de 22h20 à 6h00",
     "nitbusHoursNote": "La fréquence et le dernier bus exact varient selon la ligne.",
-    "allCategories": "Toutes les catégories"
+    "allCategories": "Toutes les catégories",
+    "nitbusNearest": "Tes arrêts les plus proches",
+    "nitbusLocateHint": "Appuie sur « Près de moi » et tu verras sur la carte tes 3 arrêts les plus proches.",
+    "nitbusAllStops": "Tous les arrêts",
+    "moreStops": "Voir plus d'arrêts ({n})",
+    "nitbusLinesHere": "Lignes qui s'arrêtent ici"
   },
   "areas": {
     "titleBarrio": "Discothèques à {name}",
@@ -1093,7 +1098,9 @@
     "unsupported": "Ton navigateur ne permet pas d'utiliser la position.",
     "denied": "Tu as bloqué la position. Active-la dans les réglages du navigateur pour ce site.",
     "timeout": "La localisation a pris trop de temps. Réessaie.",
-    "error": "Impossible d'obtenir ta position. Réessaie."
+    "error": "Impossible d'obtenir ta position. Réessaie.",
+    "approximate": "Ta position est approximative (marge d'environ {n} m). Sur un ordinateur, elle est souvent moins précise : sur un téléphone avec le GPS activé, c'est bien meilleur.",
+    "refining": "Affinage…"
   },
   "explorer": {
     "now": "Ouvert maintenant",

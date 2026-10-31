@@ -997,7 +997,12 @@
     "nitbusLinesCount": "{n} nachtlijnen",
     "nitbusHours": "Elke nacht, van 22:20 tot 06:00",
     "nitbusHoursNote": "Frequentie en de exacte laatste bus verschillen per lijn.",
-    "allCategories": "Alle categorieën"
+    "allCategories": "Alle categorieën",
+    "nitbusNearest": "Je dichtstbijzijnde haltes",
+    "nitbusLocateHint": "Tik op ‘Bij mij in de buurt’ en je ziet je 3 dichtstbijzijnde haltes op de kaart.",
+    "nitbusAllStops": "Alle haltes",
+    "moreStops": "Meer haltes tonen ({n})",
+    "nitbusLinesHere": "Lijnen die hier stoppen"
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",
@@ -1093,7 +1098,9 @@
     "unsupported": "Je browser staat het gebruik van locatie niet toe.",
     "denied": "Je hebt je locatie geblokkeerd. Zet hem aan in de browserinstellingen voor deze site.",
     "timeout": "Het bepalen van je locatie duurde te lang. Probeer het opnieuw.",
-    "error": "We konden je locatie niet bepalen. Probeer het opnieuw."
+    "error": "We konden je locatie niet bepalen. Probeer het opnieuw.",
+    "approximate": "Je locatie is bij benadering (marge van ongeveer {n} m). Op een computer is die meestal minder nauwkeurig: op een telefoon met gps aan is het veel beter.",
+    "refining": "Verfijnen…"
   },
   "explorer": {
     "now": "Nu open",

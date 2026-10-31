@@ -51,6 +51,19 @@ describe("buildRouteRows", () => {
     expect(rows).toHaveLength(4)
   })
 
+  it("el segundo sentido es el contrario, no una variante más larga del mismo que acaba en el mismo sitio", () => {
+    // Caso N9: ida 1→2→3→4, una variante 8→2→3→4 que ACABA igual, y la vuelta 4→3→2→1 (más corta).
+    const rows = buildRouteRows([rel("N9", [1, 2, 3, 4]), rel("N9", [8, 1, 2, 3, 4]), rel("N9", [4, 3, 1])], nodes)
+    const d1 = rows.filter((r) => r.direction === 1)
+    expect(d1.map((r) => r.name)).toEqual(["El Carmel", "Pl. Catalunya", "Estació Marítima"])
+    expect(rows.filter((r) => r.direction === 0)[0].name).toBe("Variante rara")
+  })
+
+  it("si solo hay variantes del mismo sentido, deja un único sentido", () => {
+    const rows = buildRouteRows([rel("N9", [1, 2, 3, 4]), rel("N9", [8, 1, 2, 3, 4])], nodes)
+    expect(rows.every((r) => r.direction === 0)).toBe(true)
+  })
+
   it("usa los «stop» si la relación no tiene «platform»", () => {
     const rows = buildRouteRows([rel("N9", [1, 2, 4], "stop")], nodes)
     expect(rows.map((r) => r.name)).toEqual(["Estació Marítima", "Av. Paral·lel", "El Carmel"])

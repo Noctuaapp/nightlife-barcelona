@@ -264,7 +264,16 @@ export function planTrips(line: NbLine, me: { lat: number; lon: number }, spot: 
     const st = directionStats(d.stops.slice(from, to + 1), distance)
     out.push({ dir, kind, from, to, stops: to - from, minutes: st.minutes })
   })
-  return out.sort((x, y) => (x.kind === y.kind ? x.dir - y.dir : x.kind === "go" ? -1 : 1))
+  // Si los dos sentidos guardados fueran el mismo recorrido (datos mal importados), saldría la misma
+  // tarjeta dos veces: se deja una sola.
+  const seen = new Set<string>()
+  const unique = out.filter((t) => {
+    const k = `${t.kind}|${line.directions[t.dir].stops[t.from].name}|${line.directions[t.dir].stops[t.to].name}|${line.directions[t.dir].to}`
+    if (seen.has(k)) return false
+    seen.add(k)
+    return true
+  })
+  return unique.sort((x, y) => (x.kind === y.kind ? x.dir - y.dir : x.kind === "go" ? -1 : 1))
 }
 
 // Servidor: lee las dos fuentes y construye los datos. Si falla la tabla (aún no existe) sigue con

@@ -997,7 +997,12 @@
     "nitbusLinesCount": "{n} linee notturne",
     "nitbusHours": "Ogni notte, dalle 22:20 alle 06:00",
     "nitbusHoursNote": "La frequenza e l'ultimo bus esatto variano a seconda della linea.",
-    "allCategories": "Tutte le categorie"
+    "allCategories": "Tutte le categorie",
+    "nitbusNearest": "Le tue fermate più vicine",
+    "nitbusLocateHint": "Tocca «Vicino a me» e vedrai sulla mappa le tue 3 fermate più vicine.",
+    "nitbusAllStops": "Tutte le fermate",
+    "moreStops": "Mostra altre fermate ({n})",
+    "nitbusLinesHere": "Linee che fermano qui"
   },
   "areas": {
     "titleBarrio": "Discoteche a {name}",
@@ -1093,7 +1098,9 @@
     "unsupported": "Il tuo browser non permette di usare la posizione.",
     "denied": "Hai bloccato la posizione. Attivala nelle impostazioni del browser per questo sito.",
     "timeout": "La posizione ci ha messo troppo. Riprova.",
-    "error": "Non siamo riusciti a ottenere la tua posizione. Riprova."
+    "error": "Non siamo riusciti a ottenere la tua posizione. Riprova.",
+    "approximate": "La tua posizione è approssimativa (margine di circa {n} m). Da un computer di solito è meno precisa: con il telefono e il GPS attivo è molto meglio.",
+    "refining": "Sto affinando…"
   },
   "explorer": {
     "now": "Aperto ora",

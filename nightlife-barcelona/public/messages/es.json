@@ -1035,7 +1035,12 @@
     "allCategories": "Todas las categorías",
     "nitbusStops": "paradas",
     "nitbusAllLines": "Ver todas las líneas y a dónde van",
-    "nitbusSearchPlaceholder": "Busca una parada (p. ej. Pl. Catalunya)"
+    "nitbusSearchPlaceholder": "Busca una parada (p. ej. Pl. Catalunya)",
+    "nitbusNearest": "Tus paradas más cercanas",
+    "nitbusLocateHint": "Pulsa «Cerca de mí» y verás en el mapa tus 3 paradas más cercanas.",
+    "nitbusAllStops": "Todas las paradas",
+    "moreStops": "Ver más paradas ({n})",
+    "nitbusLinesHere": "Líneas que paran aquí"
   },
   "areas": {
     "titleBarrio": "Discotecas en {name}",
@@ -1131,7 +1136,9 @@
     "unsupported": "Tu navegador no permite usar la ubicación.",
     "denied": "Has bloqueado la ubicación. Actívala en los ajustes del navegador para esta web.",
     "timeout": "La ubicación ha tardado demasiado. Inténtalo de nuevo.",
-    "error": "No hemos podido obtener tu ubicación. Inténtalo de nuevo."
+    "error": "No hemos podido obtener tu ubicación. Inténtalo de nuevo.",
+    "approximate": "Tu ubicación es aproximada (margen de unos {n} m). En un ordenador suele ser menos exacta: en el móvil, con el GPS activado, afina mucho más.",
+    "refining": "Afinando…"
   },
   "explorer": {
     "now": "Abierto ahora",

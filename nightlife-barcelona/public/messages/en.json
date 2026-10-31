@@ -1022,7 +1022,12 @@
     "allCategories": "All categories",
     "nitbusStops": "stops",
     "nitbusAllLines": "See all lines and where they go",
-    "nitbusSearchPlaceholder": "Search a stop (e.g. Pl. Catalunya)"
+    "nitbusSearchPlaceholder": "Search a stop (e.g. Pl. Catalunya)",
+    "nitbusNearest": "Your nearest stops",
+    "nitbusLocateHint": "Tap “Near me” and you'll see your 3 nearest stops on the map.",
+    "nitbusAllStops": "All stops",
+    "moreStops": "Show more stops ({n})",
+    "nitbusLinesHere": "Lines that stop here"
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",
@@ -1118,7 +1123,9 @@
     "unsupported": "Your browser doesn't support location.",
     "denied": "Location is blocked. Turn it on in your browser settings for this site.",
     "timeout": "Getting your location took too long. Please try again.",
-    "error": "We couldn't get your location. Please try again."
+    "error": "We couldn't get your location. Please try again.",
+    "approximate": "Your location is approximate (about {n} m of margin). On a computer it is usually less accurate: on a phone with GPS on, it is much better.",
+    "refining": "Refining…"
   },
   "explorer": {
     "now": "Open now",
