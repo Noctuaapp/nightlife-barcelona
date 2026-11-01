@@ -44,7 +44,8 @@ export async function GET(req: Request) {
   const elements = await hedgedOverpass({ mirrors: MIRRORS, query, totalMs: 50000, staggerMs: 12000, errors })
   if (elements === null) {
     return NextResponse.json({
-      error: "Los servidores de OpenStreetMap no respondieron. Prueba otra vez en uno o dos minutos" + (cat === "all" ? ", o elige una sola categoría." : "."),
+      // El panel solo enseña el texto de «error», así que el motivo de cada servidor va dentro.
+      error: "Los servidores de OpenStreetMap no respondieron. Prueba otra vez en uno o dos minutos" + (cat === "all" ? ", o elige una sola categoría" : "") + `. Motivo: ${errors.join("; ") || "sin detalle"}`,
       detalle: errors,
     }, { status: 502 })
   }

@@ -125,7 +125,7 @@ export async function GET(req: Request) {
     const ok = tiles.length - failed
     tilesInfo = { ok, failed }
     if (ok === 0) {
-      return NextResponse.json({ error: "Ninguna cuadrícula respondió. OpenStreetMap está caído ahora mismo.", detalle: errors.slice(0, 6) }, { status: 502 })
+      return NextResponse.json({ error: `Ninguna cuadrícula respondió. OpenStreetMap está caído o saturado ahora mismo. Motivo: ${[...new Set(errors)].slice(0, 6).join("; ") || "sin detalle"}`, detalle: errors.slice(0, 6) }, { status: 502 })
     }
   } else {
     // Un municipio es una sola consulta. Se pregunta a los servidores en escalón (12 s entre uno y
@@ -134,7 +134,8 @@ export async function GET(req: Request) {
     const q = `[out:json][timeout:40];\narea["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;\n(\n  ${blocksFor("(area.a)").join("\n  ")}\n);\nout center tags;`
     const els = await hedgedOverpass({ mirrors: MIRRORS, query: q, totalMs: 50000, staggerMs: 12000, errors })
     if (els === null) {
-      return NextResponse.json({ error: "Los servidores de OpenStreetMap no respondieron. Prueba otra vez en uno o dos minutos.", detalle: errors }, { status: 502 })
+      // El panel solo enseña el texto de «error», así que el motivo de cada servidor va dentro.
+      return NextResponse.json({ error: `Los servidores de OpenStreetMap no respondieron. Prueba otra vez en uno o dos minutos. Motivo: ${errors.join("; ") || "sin detalle"}`, detalle: errors }, { status: 502 })
     }
     elements = els
   }
