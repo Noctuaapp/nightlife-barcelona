@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { NIGHT_NAME, NIGHT_NAME_OVERPASS, isNightlifeVenue, venueTypeOf, venueFlagsOf } from "../osmVenues"
+import { NIGHT_NAME, isNightlifeVenue, venueTypeOf, venueFlagsOf } from "../osmVenues"
 
 const pub = (name: string, extra: Record<string, string> = {}) => ({ amenity: "pub", name, ...extra })
 const bar = (name: string, extra: Record<string, string> = {}) => ({ amenity: "bar", name, ...extra })
@@ -15,12 +15,6 @@ describe("nombres que delatan ocio nocturno", () => {
     for (const n of ["Bar Oliver", "Bar Benito", "Platinum Café", "Bar Rocky", "Liverpool Café", "Bar Salamanca", "Cafetería Anita", "Bar Unitat"]) {
       expect(NIGHT_NAME.test(n), n).toBe(false)
     }
-  })
-
-  it("la expresión de Overpass es la misma y no usa tildes dentro de clases de caracteres", () => {
-    expect(new RegExp(NIGHT_NAME_OVERPASS, "i").test("La Nit")).toBe(true)
-    expect(/\[[^\]]*[^\x00-\x7f][^\]]*\]/.test(NIGHT_NAME_OVERPASS)).toBe(false)
-    expect(NIGHT_NAME_OVERPASS).not.toMatch(/["\\]/)
   })
 })
 

@@ -18,9 +18,10 @@ const TOKENS: { rx: string; exacta?: boolean }[] = [
 const END = "([^a-z]|$)"
 const alternatives = TOKENS.map((t) => (t.exacta ? t.rx + END : t.rx)).join("|")
 
-// Expresión para Overpass (["name"~"…",i]) y para JavaScript: es la misma, con la misma sintaxis.
-export const NIGHT_NAME_OVERPASS = `(^|[^a-z])(${alternatives})`
-export const NIGHT_NAME = new RegExp(NIGHT_NAME_OVERPASS, "i")
+// Esta expresión se aplica aquí, NUNCA dentro de la consulta a Overpass: una expresión regular con
+// clases de caracteres obliga a Overpass a recorrer todos los nombres del planeta y la consulta se
+// agota (pasó el 1 nov 2026). A Overpass solo se le piden etiquetas simples y el filtro se hace después.
+export const NIGHT_NAME = new RegExp(`(^|[^a-z])(${alternatives})`, "i")
 
 // Se descartan siempre restaurantes, granjas, tapas y centros culturales.
 export const NOT_NIGHTLIFE = /(petanca|bolera|bolos|boccia|deport|futbol|fútbol|tenis|padel|pádel|golf|caza y pesca|jubilad|restaur|granja|freidur|bocata|bocadill|cervecer|tapas|menjador|menjar|comedor|centro cultural|agrupaci|casal|panader|pasteler|helader|kebab|pizzer|hamburguesa|pollo|marisquer|mesón|meson|taberna)/i

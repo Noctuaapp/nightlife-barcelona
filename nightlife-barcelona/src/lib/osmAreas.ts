@@ -2,14 +2,17 @@
 // que se pueden importar, cómo se normaliza un nombre para detectar duplicados, la distancia entre
 // dos puntos y a qué municipio pertenece un elemento según sus etiquetas.
 
+// Los nombres van como alternativas literales entre paréntesis: Overpass las busca por índice y
+// responde en segundos; una expresión con clases de caracteres ([Ll], [^a-z]…) le obliga a recorrer
+// todos los nombres del planeta y la consulta se agota.
 export const AREAS: Record<string, { osmPattern: string; city: string }> = {
   barcelona: { osmPattern: "Barcelona", city: "Barcelona" },
-  hospitalet: { osmPattern: "[Ll].[Hh]ospitalet de [Ll]lobregat", city: "L'Hospitalet de Llobregat" },
+  hospitalet: { osmPattern: "(l'Hospitalet de Llobregat|L'Hospitalet de Llobregat|l’Hospitalet de Llobregat|L’Hospitalet de Llobregat|Hospitalet de Llobregat)", city: "L'Hospitalet de Llobregat" },
   badalona: { osmPattern: "Badalona", city: "Badalona" },
-  elprat: { osmPattern: "[Ee]l Prat de Llobregat", city: "El Prat de Llobregat" },
+  elprat: { osmPattern: "(el Prat de Llobregat|El Prat de Llobregat)", city: "El Prat de Llobregat" },
   santacoloma: { osmPattern: "Santa Coloma de Gramenet", city: "Santa Coloma de Gramenet" },
-  cornella: { osmPattern: "Cornell(à|a) de Llobregat", city: "Cornellà de Llobregat" },
-  santadria: { osmPattern: "Sant Adri(à|a) de Bes(ò|o)s", city: "Sant Adrià de Besòs" },
+  cornella: { osmPattern: "(Cornellà de Llobregat|Cornella de Llobregat)", city: "Cornellà de Llobregat" },
+  santadria: { osmPattern: "(Sant Adrià de Besòs|Sant Adria de Besos|Sant Adrià del Besòs)", city: "Sant Adrià de Besòs" },
   esplugues: { osmPattern: "Esplugues de Llobregat", city: "Esplugues de Llobregat" },
   santfeliu: { osmPattern: "Sant Feliu de Llobregat", city: "Sant Feliu de Llobregat" },
   santboi: { osmPattern: "Sant Boi de Llobregat", city: "Sant Boi de Llobregat" },

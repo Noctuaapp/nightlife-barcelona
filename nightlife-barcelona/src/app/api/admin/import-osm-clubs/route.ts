@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import { isAdminRequest } from "@/lib/adminAuth"
 import { hedgedOverpass } from "@/lib/overpassHedged"
 import { AREAS, normalize, meters, cityFor } from "@/lib/osmAreas"
-import { NIGHT_NAME_OVERPASS, isNightlifeVenue, venueTypeOf, venueFlagsOf } from "@/lib/osmVenues"
+import { isNightlifeVenue, venueTypeOf, venueFlagsOf } from "@/lib/osmVenues"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -34,16 +34,13 @@ export async function GET(req: Request) {
   if (!area) return NextResponse.json({ error: `area debe ser una de: ${Object.keys(AREAS).join(", ")}` }, { status: 400 })
   const dry = searchParams.get("dry") !== "0"
 
-  // Solo se piden discotecas, salas de música y karaokes, y pubs o bares con señales claras de noche
-  // (etiquetas de música/baile/karaoke, o un nombre tipo club/sala/lounge/jazz...). La lista de
-  // palabras del nombre está en lib/osmVenues.ts y es la misma con la que luego se filtra.
-  const nameRx = NIGHT_NAME_OVERPASS
+  // A Overpass solo se le piden etiquetas simples (discotecas, salas, karaokes y todos los pubs y
+  // bares con nombre); qué bares son de noche lo decide después isNightlifeVenue(), con la lista de
+  // palabras de lib/osmVenues.ts. Una expresión regular de nombres dentro de la consulta la hacía
+  // agotarse en todos los servidores.
   const blocksFor = (scope: string) => [
     `nwr${scope}["amenity"~"^(nightclub|music_venue|karaoke_box)$"]["name"];`,
-    `nwr${scope}["amenity"~"^(pub|bar)$"]["name"]["live_music"="yes"];`,
-    `nwr${scope}["amenity"~"^(pub|bar)$"]["name"]["dance"="yes"];`,
-    `nwr${scope}["amenity"~"^(pub|bar)$"]["name"]["karaoke"="yes"];`,
-    `nwr${scope}["amenity"~"^(pub|bar)$"]["name"~"${nameRx}",i];`,
+    `nwr${scope}["amenity"~"^(pub|bar)$"]["name"];`,
   ]
 
   const MIRRORS = [
@@ -106,8 +103,8 @@ export async function GET(req: Request) {
         const batch = pending.slice(i, i + 4)
         if (Date.now() - startedAt > BUDGET - 9000) { stillFailing.push(...batch); continue }
         const results = await Promise.all(batch.map(async (bb) => {
-          const q = `[out:json][timeout:12];\n(\n  ${blocksFor(bb).join("\n  ")}\n);\nout center tags;`
-          return { bb, els: await runQuery(q, 9000, errors) }
+          const q = `[out:json][timeout:15];\n(\n  ${blocksFor(bb).join("\n  ")}\n);\nout center tags;`
+          return { bb, els: await runQuery(q, 12000, errors) }
         }))
         for (const r of results) {
           if (r.els === null) { stillFailing.push(r.bb); continue }
