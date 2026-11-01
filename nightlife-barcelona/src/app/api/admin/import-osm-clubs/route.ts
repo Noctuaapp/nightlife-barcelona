@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isAdminRequest } from "@/lib/adminAuth"
-import { hedgedOverpass, OVERPASS_MIRRORS } from "@/lib/overpassHedged"
+import { OVERPASS_MIRRORS } from "@/lib/overpassHedged"
+import { fetchAreaElements } from "@/lib/osmAreaFetch"
 import { AREAS, normalize, meters, cityFor } from "@/lib/osmAreas"
 import { isNightlifeVenue, venueTypeOf, venueFlagsOf } from "@/lib/osmVenues"
 
@@ -121,16 +122,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: `Ninguna cuadrícula respondió. OpenStreetMap está caído o saturado ahora mismo. Motivo: ${[...new Set(errors)].slice(0, 6).join("; ") || "sin detalle"}`, detalle: errors.slice(0, 6) }, { status: 502 })
     }
   } else {
-    // Un municipio es una sola consulta. Se pregunta a los servidores en escalón (12 s entre uno y
-    // otro) y se corta a los 50 s, para quedar siempre por debajo del minuto de la función: antes un
-    // servidor colgado agotaba el minuto y la web devolvía un 504 sin explicación.
-    const q = `[out:json][timeout:30][maxsize:134217728];\narea["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;\n(\n  ${blocksFor("(area.a)").join("\n  ")}\n);\nout center tags;`
-    const els = await hedgedOverpass({ mirrors: MIRRORS, query: q, totalMs: 50000, staggerMs: 8000, errors })
-    if (els === null) {
-      // El panel solo enseña el texto de «error», así que el motivo de cada servidor va dentro.
-      return NextResponse.json({ error: `Los servidores de OpenStreetMap no respondieron. Prueba otra vez en uno o dos minutos. Motivo: ${errors.join("; ") || "sin detalle"}`, detalle: errors }, { status: 502 })
-    }
-    elements = els
+    // Un municipio: contorno + elementos de dentro, sin la función `area` de Overpass (varios
+    // servidores no la tienen o la tienen saturada). Ver lib/osmAreaFetch.ts.
+    const got = await fetchAreaElements({ pattern: area.osmPattern, label: area.city, blocks: blocksFor, errors })
+    if (!got.ok) return NextResponse.json({ error: got.error, detalle: errors }, { status: got.status })
+    elements = got.elements
   }
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)

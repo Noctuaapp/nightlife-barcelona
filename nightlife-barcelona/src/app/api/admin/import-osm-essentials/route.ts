@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isAdminRequest } from "@/lib/adminAuth"
-import { hedgedOverpass, OVERPASS_MIRRORS } from "@/lib/overpassHedged"
+import { fetchAreaElements } from "@/lib/osmAreaFetch"
 import { AREAS, cityFor, normalize } from "@/lib/osmAreas"
 import { ESSENTIAL_TYPES, essentialAddress, isDuplicateEssential, judgeEssential, osmMatches, typesFor, type ExistingEssential } from "@/lib/osmEssentials"
 
@@ -18,8 +18,6 @@ export const maxDuration = 60
 //   area = igual que el importador de locales | cat = all | pharmacy | atm | food | supermarket | gas | hospital
 //   En Barcelona conviene ir categoría a categoría: son muchos datos para una sola consulta.
 
-const MIRRORS = OVERPASS_MIRRORS
-
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   if (!(await isAdminRequest(req))) {
@@ -34,17 +32,17 @@ export async function GET(req: Request) {
   }
   const dry = searchParams.get("dry") !== "0"
 
-  const blocks = types.flatMap((t) => t.selectors.map((sel) => `nwr(area.a)${sel};`))
-  const query = `[out:json][timeout:30][maxsize:134217728];\narea["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;\n(\n  ${blocks.join("\n  ")}\n);\nout center tags;`
   const errors: string[] = []
-  const elements = await hedgedOverpass({ mirrors: MIRRORS, query, totalMs: 50000, staggerMs: 8000, errors })
-  if (elements === null) {
-    return NextResponse.json({
-      // El panel solo enseña el texto de «error», así que el motivo de cada servidor va dentro.
-      error: "Los servidores de OpenStreetMap no respondieron. Prueba otra vez en uno o dos minutos" + (cat === "all" ? ", o elige una sola categoría" : "") + `. Motivo: ${errors.join("; ") || "sin detalle"}`,
-      detalle: errors,
-    }, { status: 502 })
+  const got = await fetchAreaElements({
+    pattern: area.osmPattern,
+    label: area.city,
+    blocks: (scope) => types.flatMap((t) => t.selectors.map((sel) => `nwr${scope}${sel};`)),
+    errors,
+  })
+  if (!got.ok) {
+    return NextResponse.json({ error: got.error + (cat === "all" ? " Si vuelve a pasar, elige una sola categoría." : ""), detalle: errors }, { status: got.status })
   }
+  const elements = got.elements
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
   const existing: ExistingEssential[] = []
