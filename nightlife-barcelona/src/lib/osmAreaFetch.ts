@@ -19,13 +19,15 @@ export async function fetchAreaElements(opts: {
   blocks: (scope: string) => string[] // filtros de Overpass; reciben el rectángulo «(s,w,n,e)»
   errors: string[]
   mirrors?: string[]
+  staggerMs?: number // cada cuánto se pregunta a un servidor más si el anterior no ha contestado
 }): Promise<AreaFetch> {
   const { pattern, label, blocks, errors } = opts
   const mirrors = opts.mirrors ?? OVERPASS_MIRRORS
+  const staggerMs = opts.staggerMs ?? 1500
   const why = () => (errors.length ? ` Motivo: ${[...new Set(errors)].join("; ")}` : "")
 
-  const boundaryQuery = `[out:json][timeout:20][maxsize:67108864];\nrel["boundary"="administrative"]["admin_level"="8"]["name"~"^${pattern}$"]${METRO_BBOX};\nout geom;`
-  const rels = await hedgedOverpass({ mirrors, query: boundaryQuery, totalMs: 20000, staggerMs: 5000, errors })
+  const boundaryQuery = `[out:json][timeout:18][maxsize:67108864];\nrel["boundary"="administrative"]["admin_level"="8"]["name"~"^${pattern}$"]${METRO_BBOX};\nout geom;`
+  const rels = await hedgedOverpass({ mirrors, query: boundaryQuery, totalMs: 18000, staggerMs, errors })
   if (rels === null) {
     return { ok: false, status: 502, error: `No he podido leer el contorno de ${label} desde OpenStreetMap. Prueba otra vez en uno o dos minutos.${why()}` }
   }
@@ -36,8 +38,8 @@ export async function fetchAreaElements(opts: {
 
   const [s, w, n, e] = boundaryBbox(boundary)
   const scope = `(${s.toFixed(5)},${w.toFixed(5)},${n.toFixed(5)},${e.toFixed(5)})`
-  const dataQuery = `[out:json][timeout:30][maxsize:134217728];\n(\n  ${blocks(scope).join("\n  ")}\n);\nout center tags;`
-  const els = await hedgedOverpass({ mirrors, query: dataQuery, totalMs: 32000, staggerMs: 8000, errors })
+  const dataQuery = `[out:json][timeout:28][maxsize:134217728];\n(\n  ${blocks(scope).join("\n  ")}\n);\nout center tags;`
+  const els = await hedgedOverpass({ mirrors, query: dataQuery, totalMs: 30000, staggerMs, errors })
   if (els === null) {
     return { ok: false, status: 502, error: `Los servidores de OpenStreetMap no respondieron. Prueba otra vez en uno o dos minutos.${why()}` }
   }

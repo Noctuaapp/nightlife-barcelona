@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isAdminRequest } from "@/lib/adminAuth"
-import { OVERPASS_MIRRORS } from "@/lib/overpassHedged"
+import { hedgedOverpass, OVERPASS_MIRRORS } from "@/lib/overpassHedged"
 import { fetchAreaElements } from "@/lib/osmAreaFetch"
 import { AREAS, normalize, meters, cityFor } from "@/lib/osmAreas"
 import { isNightlifeVenue, venueTypeOf, venueFlagsOf } from "@/lib/osmVenues"
@@ -44,34 +44,9 @@ export async function GET(req: Request) {
     `nwr${scope}["amenity"~"^(pub|bar)$"]["name"];`,
   ]
 
-  const MIRRORS = OVERPASS_MIRRORS
-
-  // Una consulta con varios servidores como respaldo. Devuelve null si ninguno responde a tiempo.
-  async function runQuery(query: string, perTryMs: number, errors: string[]): Promise<any[] | null> {
-    for (const url of MIRRORS) {
-      try {
-        const ctrl = new AbortController()
-        const timer = setTimeout(() => ctrl.abort(), perTryMs)
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "NoctuaApp/1.0 (info@noctuaapp.com)" },
-          body: "data=" + encodeURIComponent(query),
-          signal: ctrl.signal,
-        })
-        clearTimeout(timer)
-        if (!res.ok) { errors.push(`${new URL(url).host}: ${res.status}`); continue }
-        const json = await res.json()
-        if (json.remark && /runtime error|timed out|out of memory/i.test(String(json.remark))) {
-          errors.push(`${new URL(url).host}: ${String(json.remark).slice(0, 120)}`)
-          continue
-        }
-        return json.elements || []
-      } catch (e: any) {
-        errors.push(`${new URL(url).host}: ${e.name === "AbortError" ? "tiempo agotado" : e.message}`)
-      }
-    }
-    return null
-  }
+  // Una consulta a varios servidores a la vez (el primero que conteste gana). null si ninguno responde a tiempo.
+  const runQuery = (query: string, totalMs: number, errors: string[]) =>
+    hedgedOverpass({ mirrors: OVERPASS_MIRRORS, query, totalMs, staggerMs: 1500, errors })
 
   const errors: string[] = []
   let elements: any[] = []

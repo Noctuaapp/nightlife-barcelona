@@ -4,12 +4,15 @@
 // ya no se come el minuto entero que Vercel da a la función (antes salía un 504 sin más detalle).
 
 // Servidores públicos de Overpass, de mayor a menor preferencia. Son gratuitos y a veces van
-// saturados (502, 429 o sin respuesta), por eso hay varios.
+// saturados (502, 429 o sin respuesta), por eso hay varios. Probado en directo: el de
+// openstreetmap.fr responde en 1-3 s aunque los demás estén colgados (sus datos van unos meses
+// por detrás y no tiene la función `area`, pero para nuestras consultas da igual), así que va
+// segundo y no el último, que era donde se quedaba sin tiempo para contestar.
 export const OVERPASS_MIRRORS = [
   "https://overpass-api.de/api/interpreter",
+  "https://overpass.openstreetmap.fr/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
   "https://overpass.private.coffee/api/interpreter",
-  "https://overpass.openstreetmap.fr/api/interpreter",
 ]
 
 // Consejo para las consultas: declarar [timeout] y [maxsize] ajustados (30 s y 128 MB, no los

@@ -61,6 +61,24 @@ describe("fetchAreaElements", () => {
     expect(seen).toContain(MIRRORS[1])
   })
 
+  it("si los tres primeros servidores se cuelgan, el último contesta a tiempo (caso real de Vercel)", async () => {
+    const M4 = ["https://a.example/api", "https://b.example/api", "https://c.example/api", "https://d.example/api"]
+    vi.stubGlobal("fetch", (url: string, init: any) =>
+      new Promise((resolve, reject) => {
+        if (url !== M4[3]) {
+          // colgado: no contesta nunca; solo termina cuando se cancela
+          init.signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })))
+          return
+        }
+        setTimeout(() => resolve(isBoundary(queryOf(init)) ? ok(SQUARE_REL) : ok([{ type: "node", id: 1, lat: 41.45, lon: 2.25, tags: {} }])), 30)
+      }),
+    )
+    const t0 = Date.now()
+    const r = await fetchAreaElements({ pattern: "Badalona", label: "Badalona", blocks, errors: [], mirrors: M4, staggerMs: 20 })
+    expect(r.ok).toBe(true)
+    expect(Date.now() - t0).toBeLessThan(2000)
+  })
+
   it("si no consigue el contorno, lo dice con el motivo", async () => {
     vi.stubGlobal("fetch", async () => bad(502))
     const errors: string[] = []
