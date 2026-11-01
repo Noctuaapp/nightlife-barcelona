@@ -9,7 +9,7 @@ import { notFound, permanentRedirect } from "next/navigation"
 import { supabase } from "../../../lib/supabase"
 import { findBySlug } from "../../../lib/slugLookup"
 import { createSlug } from "../../../lib/slug"
-import { clubMetaDescription, clubSummary, venueKind } from "../../../lib/clubSummary"
+import { clubMetaDescription, clubSummary, clubTitle } from "../../../lib/clubSummary"
 import type { DbRow } from "../../../lib/clubQueries"
 import { cleanPriceRange, safeJsonLd } from "../../../lib/structuredData"
 import { clubOpeningHoursSpec } from "../../../lib/clubHours"
@@ -31,10 +31,6 @@ type ClubPageProps = {
 // generateMetadata y otra para la página) en la misma petición. La búsqueda ya no descarga todos
 // los clubs: ver src/lib/slugLookup.ts. Los clubs ocultos desde el admin no se encuentran.
 const getClub = cache(async (slug: string) => findBySlug("club", slug))
-
-function venueKindLabel(venueType: string | null | undefined): string {
-  return venueKind(venueType).label
-}
 
 // Locales parecidos (mismo barrio y estilo, buena nota), calculados en el servidor: antes se
 // pedían en el navegador después de cargar, así que en el HTML que recibe Google no había ningún
@@ -71,8 +67,7 @@ export async function generateMetadata({ params }: ClubPageProps): Promise<Metad
 
   // Antes todas las fichas decían "Discoteca", también bares y pubs: el título ahora usa el tipo
   // de local real (lo que la gente busca: "bar de copas en Gràcia", "pub en el Born"...).
-  const kind = venueKindLabel(club.venue_type)
-  const title = `${club.name} — ${kind} en ${club.neighborhood || "Barcelona"} | Noctua`
+  const title = clubTitle(club)
   const description = clubMetaDescription(club)
   const url = `https://www.noctuaapp.com/clubs/${match.canonicalSlug}`
 

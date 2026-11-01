@@ -6,6 +6,7 @@ import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
 import Header from "../layout/Header"
 import BottomNav from "../layout/BottomNav"
 import Footer from "../layout/Footer"
+import FavoriteButton from "../favorites/FavoriteButton"
 import EventsSection from "./EventsSection"
 import SurpriseMe from "./SurpriseMe"
 import FeatureTicker from "./FeatureTicker"
@@ -24,6 +25,8 @@ import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { effectiveOpenNow, isClosedTonight } from "../../lib/scheduleNotices"
 import { matchesQuery, matchScore } from "../../lib/textSearch"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
+import { homeZoneChips, inZone } from "../../lib/homeZones"
+import { track } from "../../lib/track"
 
 // Portada. Rediseñada tras la auditoría de octubre 2026:
 // - Antes el titular, un subtítulo de 7 líneas, tres cifras y una cinta animada ocupaban la
@@ -58,13 +61,17 @@ function quality(c: Club): number {
   return (c.image ? 2 : 0) + (rating >= 4 ? rating : rating / 2) + (c.trending ? 1 : 0)
 }
 
-function ClubTile({ club, openNow, distance, compact = false }: { club: Club; openNow: boolean | null; distance?: string | null; compact?: boolean }) {
+function ClubTile({ club, openNow, distance, compact = false, section }: { club: Club; openNow: boolean | null; distance?: string | null; compact?: boolean; section: "tonight" | "featured" }) {
   const { t } = useLanguage()
   const rating = club.google_rating || club.rating
+  // El corazón va fuera del enlace (un botón dentro de un <a> no es válido): guardar un local desde
+  // el listado es el momento natural para pedir la cuenta (si no hay sesión, sale el aviso de registro).
   return (
+    <div className={`relative ${compact ? "h-48 w-[72vw] max-w-[280px] shrink-0 snap-start sm:h-56" : "h-64"}`}>
     <Link
       href={`/clubs/${club.slug || createSlug(club.name)}`}
-      className={`group relative flex flex-col justify-end overflow-hidden rounded-card border border-white/10 bg-surface ${compact ? "h-56 w-[72vw] max-w-[280px] shrink-0 snap-start" : "h-64"}`}
+      onClick={() => track("home_tile_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { section } })}
+      className="group relative flex h-full w-full flex-col justify-end overflow-hidden rounded-card border border-white/10 bg-surface"
     >
       <Image
         src={club.image || FALLBACK_IMAGE}
@@ -102,6 +109,10 @@ function ClubTile({ club, openNow, distance, compact = false }: { club: Club; op
         )}
       </div>
     </Link>
+    <div className="absolute right-3 top-3 z-10">
+      <FavoriteButton itemType="club" itemId={club.id} variant="overlay" />
+    </div>
+    </div>
   )
 }
 
@@ -124,6 +135,8 @@ export default function HomeClient({
   // primer pintado salen en orden fijo y no hay desajuste de hidratación.
   const [seed, setSeed] = useState(0)
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]["key"]>("all")
+  // Zona elegida en «Esta noche» (slug del barrio) o null = toda Barcelona / cerca de mí.
+  const [zone, setZone] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   // Sugerencias en directo mientras se escribe (antes no pasaba nada hasta pulsar Enter, y al
   // pulsarlo el listado de /clubs ni siquiera filtraba por lo escrito).
@@ -166,21 +179,46 @@ export default function HomeClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clubs, mounted])
 
+  // Zonas para elegir en la primera pantalla (los barrios con más locales).
+  const zoneChips = useMemo(() => homeZoneChips(clubs), [clubs])
+  const zoneName = zone ? zoneChips.find((z) => z.slug === zone)?.name ?? null : null
+
   // Primera pantalla: abiertos ahora (los más cercanos si hay ubicación). Si no hay ninguno
   // abierto (de día), los mejor valorados para esta noche.
   // 30/10/2026: antes salían siempre los mismos, porque solo se barajaban los 24 mejor puntuados.
   // Ahora se baraja TODO lo que está abierto, dando más opciones a los mejor puntuados pero sin
   // cerrar la puerta al resto (ver lib/rotation.ts). Con ubicación sigue mandando la distancia.
+  // 01/11/2026: con una zona elegida solo salen los locales de ese barrio: primero los abiertos
+  // ahora y, detrás, el resto del barrio (así nunca queda vacío).
   const tonight = useMemo(() => {
+    const byDistance = (arr: Club[]) =>
+      geo.pos ? [...arr].filter((c) => dist(c) !== null).sort((a, b) => (dist(a) as number) - (dist(b) as number)) : arr
+    const weighted = (arr: Club[]) => weightedOrder(arr, { seed, id: (c) => c.id, weight: (c) => Math.max(1, quality(c)) ** 1.5 })
+
+    if (zoneName && zone) {
+      const inside = ranked.filter((c) => inZone(c, zone))
+      const open = inside.filter((c) => isOpen(c) === true)
+      const rest = inside.filter((c) => isOpen(c) !== true)
+      return { anyOpen: open.length > 0, list: [...byDistance(weighted(open)), ...byDistance(rest)].slice(0, 10) }
+    }
+
     const open = ranked.filter((c) => isOpen(c) === true)
     const anyOpen = open.length >= 3
-    const pool = anyOpen
-      ? weightedOrder(open, { seed, id: (c) => c.id, weight: (c) => Math.max(1, quality(c)) ** 1.5 })
-      : ranked
-    const list = geo.pos ? [...pool].filter((c) => dist(c) !== null).sort((a, b) => (dist(a) as number) - (dist(b) as number)) : pool
-    return { anyOpen, list: list.slice(0, 10) }
+    const pool = anyOpen ? weighted(open) : ranked
+    return { anyOpen, list: byDistance(pool).slice(0, 10) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ranked, openMap, geo.pos, seed])
+  }, [ranked, openMap, geo.pos, seed, zone, zoneName])
+
+  const pickZone = (slug: string, name: string) => {
+    const next = zone === slug ? null : slug
+    setZone(next)
+    if (next) track("zone_pick", { itemType: "zone", itemName: name })
+  }
+  const pickNear = () => {
+    setZone(null)
+    if (!geo.pos && !geo.locating) geo.request()
+    track("zone_pick", { itemType: "zone", itemName: "near" })
+  }
 
   const displayed = useMemo(() => {
     let list = ranked
@@ -268,6 +306,23 @@ export default function HomeClient({
     { href: "/events", icon: "ticket", label: t("home.quickEvents"), soon: EVENTS_HIDDEN },
   ]
 
+  // Accesos rápidos: en escritorio van en la portada; en móvil bajan debajo del carrusel de
+  // «Esta noche» para que la primera pantalla enseñe locales y no botones.
+  const renderQuickLinks = (cls: string) => (
+    <nav aria-label={t("home.quickTitle")} className={cls}>
+      {quickLinks.map((q) => (
+        <Link
+          key={q.href}
+          href={q.href}
+          className="flex shrink-0 items-center gap-2 rounded-full border border-white/15 bg-black/30 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:border-cyan-300/50 hover:bg-black/45"
+        >
+          <Icon name={q.icon} className="h-4 w-4 text-cyan-300" /> {q.label}
+          {q.soon && <span className="rounded-full bg-warn px-1.5 py-px text-[10px] font-bold leading-tight text-night">{t("nav.soon")}</span>}
+        </Link>
+      ))}
+    </nav>
+  )
+
   return (
     <>
       <Header />
@@ -297,9 +352,9 @@ export default function HomeClient({
             style={{ background: "linear-gradient(90deg, rgba(7,8,20,0.88) 0%, rgba(7,8,20,0.55) 45%, rgba(7,8,20,0) 75%)" }}
           />
 
-          <FeatureTicker />
+          <FeatureTicker placement="hero" />
 
-          <div className="mx-auto max-w-7xl px-4 pb-10 pt-10 sm:px-6 sm:pb-16 sm:pt-20 lg:pb-20 lg:pt-28">
+          <div className="mx-auto max-w-7xl px-4 pb-5 pt-4 sm:px-6 sm:pb-16 sm:pt-20 lg:pb-20 lg:pt-28">
             <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-md sm:text-sm">
               <span aria-hidden="true" className="live-dot h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
               {openCount > 0
@@ -307,7 +362,7 @@ export default function HomeClient({
                 : t("home.liveTonight")}
             </p>
 
-            <h1 className="mt-5 max-w-4xl font-display text-[2.6rem] leading-[0.98] tracking-tight text-white [text-shadow:0_2px_30px_rgba(0,0,0,0.45)] sm:text-6xl lg:text-[5.25rem]">
+            <h1 className="mt-3 max-w-4xl font-display text-[2.15rem] leading-[0.98] tracking-tight text-white [text-shadow:0_2px_30px_rgba(0,0,0,0.45)] sm:mt-5 sm:text-6xl lg:text-[5.25rem]">
               {t("home.hero")}
               <span
                 className="block bg-clip-text pb-1 text-transparent"
@@ -316,9 +371,9 @@ export default function HomeClient({
                 {t("home.hero_accent")}
               </span>
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-zinc-200 sm:text-lg">{t("home.subtitle")}</p>
+            <p className="mt-5 hidden max-w-xl text-lg leading-relaxed text-zinc-200 sm:block">{t("home.subtitle")}</p>
 
-            <form onSubmit={handleSearch} role="search" className="relative z-20 mt-7 max-w-2xl">
+            <form onSubmit={handleSearch} role="search" className="relative z-20 mt-3 max-w-2xl sm:mt-7">
               <div ref={searchBoxRef}>
               <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 p-1.5 pl-5 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.8)] backdrop-blur-xl transition focus-within:border-cyan-300/60 focus-within:bg-white/[0.14]">
                 <Icon name="search" className="h-5 w-5 shrink-0 text-white/70" />
@@ -399,7 +454,7 @@ export default function HomeClient({
 
             {/* Cifras de la app: estáticas (sin animación ni contador que suba), solo para dar
                una idea rápida de tamaño antes de los accesos rápidos. */}
-            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-200">
+            <div className="mt-6 hidden flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-200 sm:flex">
               <span>
                 <strong className="font-display text-base text-white">{roughly(clubs.length)}+</strong> {t("home.statsClubs")}
               </span>
@@ -415,18 +470,7 @@ export default function HomeClient({
               </span>
             </div>
 
-            <nav aria-label={t("home.quickTitle")} className="scrollbar-none -mx-4 mt-5 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
-              {quickLinks.map((q) => (
-                <Link
-                  key={q.href}
-                  href={q.href}
-                  className="flex shrink-0 items-center gap-2 rounded-full border border-white/15 bg-black/30 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:border-cyan-300/50 hover:bg-black/45"
-                >
-                  <Icon name={q.icon} className="h-4 w-4 text-cyan-300" /> {q.label}
-                  {q.soon && <span className="rounded-full bg-warn px-1.5 py-px text-[10px] font-bold leading-tight text-night">{t("nav.soon")}</span>}
-                </Link>
-              ))}
-            </nav>
+            {renderQuickLinks("scrollbar-none -mx-4 mt-5 hidden gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex sm:flex-wrap sm:px-0")}
           </div>
         </section>
 
@@ -440,25 +484,57 @@ export default function HomeClient({
         <section className="mx-auto max-w-7xl px-4 pt-2 sm:px-6" aria-labelledby="tonight-title">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <h2 id="tonight-title" className="text-xl font-semibold">
-                {tonight.anyOpen ? (geo.pos ? t("home.openNearYou") : t("home.openNow")) : t("home.forTonight")}
+              <h2 id="tonight-title" className="text-lg font-semibold sm:text-xl">
+                {zoneName
+                  ? (tonight.anyOpen ? t("home.openNowIn") : t("home.tonightIn")).replace("{zone}", zoneName)
+                  : tonight.anyOpen
+                    ? geo.pos ? t("home.openNearYou") : t("home.openNow")
+                    : t("home.forTonight")}
               </h2>
-              {!geo.pos && (
-                <button onClick={() => geo.request()} className="mt-1 text-sm font-semibold text-brand-soft underline-offset-2 hover:underline">
-                  {geo.locating ? t("home.locating") : t("home.useLocation")}
-                </button>
-              )}
               {geo.error && <p className="mt-1 text-sm text-warn">{geo.error}</p>}
             </div>
-            <Link href={tonight.anyOpen ? "/clubs?open=1" : "/clubs"} className="shrink-0 text-sm font-semibold text-zinc-300 hover:text-ink">
+            <Link
+              href={zone ? `/barrio/${zone}` : tonight.anyOpen ? "/clubs?open=1" : "/clubs"}
+              className="shrink-0 text-sm font-semibold text-zinc-300 hover:text-ink"
+            >
               {t("home.seeAll")}
             </Link>
           </div>
+
+          {/* ZONA: «Cerca de mí» y los barrios con más locales. Al pulsar uno, el carrusel de abajo
+             enseña solo ese barrio (primero lo abierto ahora). */}
+          {zoneChips.length > 0 && (
+            <div role="group" aria-label={t("home.zonesLabel")} className="scrollbar-none -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">
+              <button
+                type="button"
+                onClick={pickNear}
+                aria-pressed={!zone && !!geo.pos}
+                className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  !zone && geo.pos ? "bg-ink text-night" : "border border-white/15 text-ink hover:bg-white/5"
+                }`}
+              >
+                {geo.locating ? t("home.locating") : t("home.tabNear")}
+              </button>
+              {zoneChips.map((z) => (
+                <button
+                  key={z.slug}
+                  type="button"
+                  onClick={() => pickZone(z.slug, z.name)}
+                  aria-pressed={zone === z.slug}
+                  className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    zone === z.slug ? "bg-ink text-night" : "border border-white/10 text-zinc-300 hover:bg-white/5"
+                  }`}
+                >
+                  {z.name}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="relative -mx-4 mt-4 sm:mx-0">
             <div className="scroll-x-thin flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:px-0">
               {tonight.list.map((club) => {
                 const d = dist(club)
-                return <ClubTile key={club.id} club={club} openNow={isOpen(club)} distance={d !== null ? formatDistance(d) : null} compact />
+                return <ClubTile key={club.id} club={club} openNow={isOpen(club)} distance={d !== null ? formatDistance(d) : null} compact section="tonight" />
               })}
             </div>
             {/* Pista visual de que hay más locales deslizando a la derecha (el móvil no siempre
@@ -467,6 +543,8 @@ export default function HomeClient({
               <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-night to-transparent sm:hidden" />
             )}
           </div>
+          {renderQuickLinks("scrollbar-none -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 sm:hidden")}
+          <FeatureTicker placement="below" />
         </section>
 
         <section className="mx-auto mt-10 max-w-7xl px-4 sm:px-6">
@@ -503,7 +581,7 @@ export default function HomeClient({
             ) : (
               displayed.map((club) => {
                 const d = dist(club)
-                return <ClubTile key={club.id} club={club} openNow={isOpen(club)} distance={activeTab === "near" && d !== null ? formatDistance(d) : null} />
+                return <ClubTile key={club.id} club={club} openNow={isOpen(club)} distance={activeTab === "near" && d !== null ? formatDistance(d) : null} section="featured" />
               })
             )}
           </div>

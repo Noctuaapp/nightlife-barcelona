@@ -91,14 +91,50 @@ export function clubSummary(club: Club): string {
   return parts.join(" ")
 }
 
-// Descripción corta para <meta name="description"> (Google corta hacia los 155-160 caracteres).
-export function clubMetaDescription(club: Club): string {
-  const own = clean(club.description)
-  // Una descripción de una frase corta se completa con los datos del local, para que el resultado
-  // en Google no sea de una línea (29/10/2026).
-  const ownEnded = own && !/[.!?…]$/.test(own) ? `${own}.` : own
-  const text = own.length >= 110 ? own : [ownEnded, clubSummary(club)].filter(Boolean).join(" ")
+// Título de la ficha para Google (01/11/2026). La gente busca el nombre del local con «horario», «precio» o
+// «cómo llegar» (Search Console: «sala tango barcelona horario», «opiniones de almodobar»), y eran
+// justo las palabras que faltaban en el título. Se añaden al final cuando caben (Google corta
+// hacia los 60-70 caracteres; si se corta, lo que se pierde es la marca, que va la última).
+export const CLUB_TITLE_MAX = 70
+
+export function clubTitle(club: Club): string {
+  const name = clean(club.name)
+  const kind = venueKind(club.venue_type).label
+  const place = clean(club.neighborhood) || "Barcelona"
+  const base = `${name} — ${kind} en ${place}`
+  const withInfo = `${base}: horario y cómo llegar | Noctua`
+  return withInfo.length <= CLUB_TITLE_MAX ? withInfo : `${base} | Noctua`
+}
+
+// Lo práctico del local en pocas palabras (horario, entrada, música y cómo volver). Es lo que
+// busca quien llega desde Google, y en la descripción corta importa más que la dirección o la edad.
+function clubMetaFacts(club: Club): string {
+  const parts: string[] = []
+  const hours = clean(club.hours)
+  const price = clean(club.price)
+  if (hours && price) parts.push(`Horario: ${hours}. Entrada: ${price}.`)
+  else if (hours) parts.push(`Horario: ${hours}.`)
+  else if (price) parts.push(`Entrada: ${price}.`)
+  const music = clean(club.music)
+  if (music && !/^karaoke$/i.test(music)) parts.push(`Música: ${music.replace(/\s*·\s*/g, ", ")}.`)
+  parts.push("Cómo llegar de noche: metro, Nitbus o taxi.")
+  return parts.join(" ")
+}
+
+function fitMeta(text: string): string {
   if (text.length <= 158) return text
   const cut = text.slice(0, 155)
   return cut.slice(0, cut.lastIndexOf(" ")) + "…"
+}
+
+// Descripción corta para <meta name="description"> (Google corta hacia los 155-160 caracteres).
+// Una descripción propia larga se respeta tal cual. Si no hay (o es corta), se completa con lo
+// práctico del local: antes se montaba con el resumen entero, que empieza por la dirección y la
+// edad mínima y dejaba el horario y la entrada fuera del recorte.
+export function clubMetaDescription(club: Club): string {
+  const own = clean(club.description)
+  if (own.length >= 110) return fitMeta(own)
+  const ownEnded = own && !/[.!?…]$/.test(own) ? `${own}.` : own
+  const intro = ownEnded || `${clean(club.name)}, ${venueKind(club.venue_type).label.toLowerCase()} en ${clubPlace(club)}.`
+  return fitMeta(`${intro} ${clubMetaFacts(club)}`)
 }

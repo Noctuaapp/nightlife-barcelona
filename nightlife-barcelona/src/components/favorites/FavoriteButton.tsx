@@ -7,12 +7,14 @@ import { useLanguage } from "../../context/LanguageContext"
 import AuthGateModal from "../ui/AuthGateModal"
 import Icon from "../ui/Icon"
 import { toast } from "../ui/Toast"
+import { track } from "../../lib/track"
 
 type FavoriteButtonProps = {
   itemType: "club" | "event" | "club_event"
   itemId: number
   // "tile": recuadro pequeño (ficha de club). "icon": solo el corazón (barra fija del móvil).
-  variant?: "full" | "tile" | "icon"
+  // "overlay": corazón redondo pequeño para ponerlo sobre la foto de una tarjeta de un listado.
+  variant?: "full" | "tile" | "icon" | "overlay"
 }
 
 const REMINDER_OPTIONS = [
@@ -35,9 +37,17 @@ export default function FavoriteButton({
   const showReminder = active && (itemType === "event" || itemType === "club_event")
   const currentReminder = getReminder(itemType, itemId)
 
+  // Se anota cuando un local queda guardado (favorite_click: es el «Guardar» de las estadísticas de
+  // los dueños) y, si no hay cuenta, que ha salido el aviso de registro (auth_gate_view): es el
+  // momento de más valor para pedirla. Quitar un favorito no cuenta.
   const handleToggle = async () => {
+    const wasSaved = active
     const ok = await toggleFavorite(itemType, itemId)
-    if (!ok) setShowAuthGate(true)
+    if (ok && !wasSaved) track("favorite_click", { itemType, itemId, meta: { from: variant } })
+    if (!ok) {
+      setShowAuthGate(true)
+      track("auth_gate_view", { itemType, itemId, meta: { reason: "favorite", from: variant } })
+    }
   }
 
   // Antes, elegir una opción de aviso actualizaba el color del botón pero no decía nada más — y
@@ -52,7 +62,23 @@ export default function FavoriteButton({
 
   return (
     <>
-      {variant === "icon" ? (
+      {variant === "overlay" ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            handleToggle()
+          }}
+          aria-pressed={active}
+          aria-label={active ? t("favorites.saved") : t("favorites.save")}
+          className={`flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-md transition ${
+            active ? "border-brand bg-brand text-white" : "border-white/25 bg-night/60 text-white hover:bg-night/80"
+          }`}
+        >
+          <Icon name="heart" className={`h-[18px] w-[18px] ${active ? "fill-current" : ""}`} />
+        </button>
+      ) : variant === "icon" ? (
         <button
           onClick={handleToggle}
           aria-pressed={active}

@@ -46,7 +46,10 @@ const MESSAGES: { icon: string; key: string }[] = [
 const INSTALL_MESSAGE = { icon: "smartphone", key: "homeTicker.msg10" }
 const PHOTOS_MESSAGE = { icon: "camera", key: "homeTicker.msg11" }
 
-export default function FeatureTicker() {
+// 01/11/2026: en móvil la frase ya no va encima del titular (ocupaba parte de la primera pantalla,
+// que ahora enseña locales): baja debajo del carrusel de «Esta noche» (placement="below"). En
+// pantallas grandes sigue siendo el chip flotante de la portada (placement="hero").
+export default function FeatureTicker({ placement = "hero" }: { placement?: "hero" | "below" }) {
   const { t } = useLanguage()
   const install = useInstallPrompt()
   const [index, setIndex] = useState(0)
@@ -82,27 +85,31 @@ export default function FeatureTicker() {
 
   return (
     <>
-      {/* Móvil: fila normal, sin "absolute" — no puede tapar nada porque empuja su propio sitio. */}
-      <div
-        aria-live="polite"
-        className="relative z-10 mx-4 mb-3 mt-3 flex items-start gap-1.5 rounded-2xl border border-white/15 bg-black/40 px-3 py-2 text-xs font-medium leading-snug text-white/90 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.7)] backdrop-blur-md sm:hidden"
-      >
-        <Icon name={current.icon} className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" />
-        <span className={`${textCls} line-clamp-2`} style={textStyle}>
-          {t(current.key)}
-        </span>
-      </div>
+      {/* Móvil (debajo del carrusel): fila normal, sin "absolute" — no puede tapar nada. */}
+      {placement === "below" && (
+        <div
+          aria-live="polite"
+          className="relative z-10 mt-4 flex items-start gap-1.5 rounded-2xl border border-white/15 bg-black/40 px-3 py-2 text-xs font-medium leading-snug text-white/90 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.7)] backdrop-blur-md sm:hidden"
+        >
+          <Icon name={current.icon} className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" />
+          <span className={`${textCls} line-clamp-2`} style={textStyle}>
+            {t(current.key)}
+          </span>
+        </div>
+      )}
 
       {/* sm+: chip flotante arriba a la derecha, con sitio de sobra. */}
-      <div
-        aria-live="polite"
-        className="absolute right-6 top-6 z-10 hidden w-[300px] items-start gap-2 rounded-2xl border border-white/15 bg-black/40 px-3.5 py-2.5 text-sm font-medium leading-snug text-white/90 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.7)] backdrop-blur-md sm:flex"
-      >
-        <Icon name={current.icon} className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
-        <span className={`${textCls} line-clamp-2`} style={textStyle}>
-          {t(current.key)}
-        </span>
-      </div>
+      {placement === "hero" && (
+        <div
+          aria-live="polite"
+          className="absolute right-6 top-6 z-10 hidden w-[300px] items-start gap-2 rounded-2xl border border-white/15 bg-black/40 px-3.5 py-2.5 text-sm font-medium leading-snug text-white/90 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.7)] backdrop-blur-md sm:flex"
+        >
+          <Icon name={current.icon} className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
+          <span className={`${textCls} line-clamp-2`} style={textStyle}>
+            {t(current.key)}
+          </span>
+        </div>
+      )}
 
       <style>{`@media (prefers-reduced-motion: reduce) { .noctua-ticker-text { transition: none !important; opacity: 1 !important; transform: none !important; } }`}</style>
     </>

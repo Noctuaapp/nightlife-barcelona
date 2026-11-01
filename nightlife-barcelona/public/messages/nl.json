@@ -57,7 +57,10 @@
     "heroImageAlt": "Barcelona bij nacht, met de verlichte Sagrada Família en Torre Glòries",
     "statsClubs": "clubs in Barcelona",
     "statsEvents": "aankomende evenementen",
-    "statsEssentials": "essentials in de buurt"
+    "statsEssentials": "essentials in de buurt",
+    "openNowIn": "Nu open in {zone}",
+    "tonightIn": "Voor vanavond in {zone}",
+    "zonesLabel": "Kies een buurt"
   },
   "filters": {
     "all": "Alle"

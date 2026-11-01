@@ -60,7 +60,10 @@
     "statsEssentials": "essencials a prop teu",
     "picksKicker": "Triats per Noctua",
     "picksTonight": "El nostre top 3 per aquesta nit",
-    "picksWeek": "El nostre top 3 de la setmana"
+    "picksWeek": "El nostre top 3 de la setmana",
+    "openNowIn": "Obert ara a {zone}",
+    "tonightIn": "Per aquesta nit a {zone}",
+    "zonesLabel": "Triar zona"
   },
   "filters": {
     "all": "Tots"

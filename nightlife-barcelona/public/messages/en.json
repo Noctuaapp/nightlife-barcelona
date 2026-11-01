@@ -60,7 +60,10 @@
     "statsEssentials": "essentials nearby",
     "picksKicker": "Picked by Noctua",
     "picksTonight": "Our top 3 for tonight",
-    "picksWeek": "Our top 3 this week"
+    "picksWeek": "Our top 3 this week",
+    "openNowIn": "Open now in {zone}",
+    "tonightIn": "For tonight in {zone}",
+    "zonesLabel": "Choose an area"
   },
   "filters": {
     "all": "All"

@@ -57,7 +57,10 @@
     "heroImageAlt": "Barcelona à noite, com a Sagrada Família e a Torre Glòries iluminadas",
     "statsClubs": "clubs em Barcelona",
     "statsEvents": "próximos eventos",
-    "statsEssentials": "essenciais perto de ti"
+    "statsEssentials": "essenciais perto de ti",
+    "openNowIn": "Aberto agora em {zone}",
+    "tonightIn": "Para esta noite em {zone}",
+    "zonesLabel": "Escolher zona"
   },
   "filters": {
     "all": "Todos"

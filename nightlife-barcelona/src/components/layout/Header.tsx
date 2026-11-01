@@ -9,6 +9,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { awardXp, XP_AMOUNTS, currentIsoWeek, madridDateStr, dayBefore, checkLevelUp } from "../../lib/xp"
 import { ADMIN_EMAIL } from "../../lib/admin"
 import { logError } from "../../lib/log"
+import { track } from "../../lib/track"
 import LevelUpModal from "../mascot/LevelUpModal"
 import InstallAppButton from "../system/InstallAppButton"
 import { Bell, ChevronLeft, User, Map, Sparkles, Heart, MessageCircle, ShieldCheck, Globe, X, Check } from "lucide-react"
@@ -462,6 +463,7 @@ export default function Header() {
   }, [])
 
   const dismissBanner = () => {
+    track("banner_dismiss", { meta: { banner: "signup" } })
     setBannerDismissed(true)
     try {
       localStorage.setItem("noctua_auth_banner_dismissed", "1")
@@ -739,6 +741,7 @@ export default function Header() {
             </p>
             <Link
               href="/signup"
+              onClick={() => track("banner_click", { meta: { banner: "signup" } })}
               className="shrink-0 rounded-full px-4 py-1.5 text-xs font-bold text-white transition hover:opacity-90 sm:text-sm"
               style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
             >
@@ -764,7 +767,7 @@ export default function Header() {
         >
           <div className="mx-auto flex max-w-5xl items-center gap-2.5 px-4 py-2 sm:px-6">
             <span aria-hidden="true" className="text-sm">{weatherTip.icon}</span>
-            <p className="line-clamp-2 min-w-0 flex-1 text-xs leading-snug text-zinc-300 sm:text-sm">{weatherTip.text}</p>
+            <p className="line-clamp-1 min-w-0 flex-1 text-xs leading-snug text-zinc-300 sm:line-clamp-2 sm:text-sm">{weatherTip.text}</p>
             <button
               onClick={dismissWeatherTip}
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-500 transition hover:text-white"

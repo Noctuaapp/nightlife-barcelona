@@ -140,6 +140,9 @@ function isProductionSite(): boolean {
 }
 
 // Registra un evento. Nunca lanza error ni bloquea la interfaz: si falla, se ignora.
+// OJO: el servidor (trigger analytics_guard, ver supabase/64_analitica_tipos_de_evento.sql) solo acepta
+// los tipos de evento de su lista y descarta los demás SIN dar error. Un evento nuevo debe añadirse
+// también allí; el test src/lib/__tests__/analyticsEvents.test.ts avisa si falta.
 export async function track(eventType: string, opts: TrackOptions = {}) {
   try {
     if (typeof window === "undefined" || !isProductionSite() || isAutomated() || isAdminDevice()) return

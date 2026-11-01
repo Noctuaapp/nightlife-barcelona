@@ -57,7 +57,10 @@
     "heroImageAlt": "Barcelona bei Nacht mit beleuchteter Sagrada Família und Torre Glòries",
     "statsClubs": "Clubs in Barcelona",
     "statsEvents": "kommende Events",
-    "statsEssentials": "Essentials in der Nähe"
+    "statsEssentials": "Essentials in der Nähe",
+    "openNowIn": "Jetzt geöffnet in {zone}",
+    "tonightIn": "Für heute Abend in {zone}",
+    "zonesLabel": "Gegend wählen"
   },
   "filters": {
     "all": "Alle"
