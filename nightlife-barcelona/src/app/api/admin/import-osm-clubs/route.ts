@@ -13,13 +13,19 @@ export const maxDuration = 60
 //   /api/admin/import-osm-clubs?area=barcelona
 //   Importar de verdad:
 //   /api/admin/import-osm-clubs?area=barcelona&dry=0
-//   area = barcelona | hospitalet | badalona
+//   area = barcelona | hospitalet | badalona | elprat | santacoloma | cornella | santadria | esplugues | santfeliu | santboi
 
 const AREAS: Record<string, { osmPattern: string; city: string }> = {
   barcelona: { osmPattern: "Barcelona", city: "Barcelona" },
   hospitalet: { osmPattern: "[Ll].[Hh]ospitalet de [Ll]lobregat", city: "L'Hospitalet de Llobregat" },
   badalona: { osmPattern: "Badalona", city: "Badalona" },
   elprat: { osmPattern: "[Ee]l Prat de Llobregat", city: "El Prat de Llobregat" },
+  santacoloma: { osmPattern: "Santa Coloma de Gramenet", city: "Santa Coloma de Gramenet" },
+  cornella: { osmPattern: "Cornell[àa] de Llobregat", city: "Cornellà de Llobregat" },
+  santadria: { osmPattern: "Sant Adri[àa] de Bes[òo]s", city: "Sant Adrià de Besòs" },
+  esplugues: { osmPattern: "Esplugues de Llobregat", city: "Esplugues de Llobregat" },
+  santfeliu: { osmPattern: "Sant Feliu de Llobregat", city: "Sant Feliu de Llobregat" },
+  santboi: { osmPattern: "Sant Boi de Llobregat", city: "Sant Boi de Llobregat" },
 }
 
 const STOP_WORDS = ["bar", "pub", "club", "discoteca", "cafe", "restaurant", "restaurante", "bcn", "barcelona", "the", "el", "la", "los", "las", "de", "del", "i", "y", "and"]

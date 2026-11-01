@@ -3,7 +3,8 @@ import { supabase } from "../lib/supabase"
 import { createSlug } from "../lib/slug"
 import type { DbRow } from "../lib/clubQueries"
 import { MIN_INDEXABLE, neighborhoodsOf, stylesOf } from "../lib/areas"
-import { zoneLinks } from "../lib/zonePages"
+import { zoneLinks, zoneSlugByName } from "../lib/zonePages"
+import { zoneOf } from "../lib/zones"
 import { EVENTS_HIDDEN } from "../lib/featureFlags"
 import { NIGHT_BUS_LINES } from "../lib/nightBuses"
 
@@ -74,7 +75,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const areaClubs = (areaRows || []) as DbRow[]
   const areaRoutes: MetadataRoute.Sitemap = [
     ...neighborhoodsOf(areaClubs)
-      .filter((n) => n.count >= MIN_INDEXABLE)
+      // Los municipios de fuera de Barcelona van por /zona (su /barrio redirige allí).
+      .filter((n) => n.count >= MIN_INDEXABLE && !zoneSlugByName(zoneOf({ neighborhood: n.name })))
       .map((n) => ({ url: `${BASE_URL}/barrio/${n.slug}`, changeFrequency: "weekly" as const, priority: 0.6 })),
     ...stylesOf(areaClubs)
       .filter((s) => s.count >= MIN_INDEXABLE)

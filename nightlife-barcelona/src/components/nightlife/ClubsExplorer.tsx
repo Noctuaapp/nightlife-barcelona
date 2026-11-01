@@ -165,6 +165,9 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         if (typeof mem.scrollY === "number" && mem.scrollY > 0) pendingScrollRef.current = mem.scrollY
       }
     }
+    // /clubs?open=1 es el «Ver todos» de la portada cuando hay locales abiertos: activa «Abierto ahora».
+    // Antes este parámetro se ignoraba y el listado salía sin filtrar.
+    if (new URLSearchParams(window.location.search).get("open") === "1") setOpenNow(true)
     const { dow, minutes } = madridClock()
     setTonight(tonightDow(dow, minutes))
     setHydrated(true)

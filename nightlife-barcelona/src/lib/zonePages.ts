@@ -1,4 +1,5 @@
 import { ZONES, zoneOf } from "./zones"
+import { createSlug } from "./slug"
 import type { AreaLink } from "./areas"
 
 // Páginas de zona (/zona/[slug]): una por municipio del área de Barcelona fuera de la ciudad
@@ -16,6 +17,7 @@ export const ZONE_SLUGS: Record<string, string> = {
   "santa-coloma": "Santa Coloma de Gramenet",
   esplugues: "Esplugues de Llobregat",
   "sant-feliu": "Sant Feliu de Llobregat",
+  "sant-boi": "Sant Boi de Llobregat",
 }
 
 export function zoneNameBySlug(slug: string): string | null {
@@ -25,6 +27,15 @@ export function zoneNameBySlug(slug: string): string | null {
 export function zoneSlugByName(name: string): string | null {
   const hit = Object.entries(ZONE_SLUGS).find(([, zone]) => zone === name)
   return hit ? hit[0] : null
+}
+
+// A dónde lleva el enlace de un «barrio»: los municipios de fuera de Barcelona (Badalona, L'Hospitalet…)
+// están guardados como barrio en los locales, pero su página buena es /zona/[slug]; /barrio/[slug]
+// de esos municipios es un duplicado (mismos locales) que redirige allí. Así los enlaces internos
+// van directos y Google ve una sola página por municipio.
+export function areaHref(neighborhood: string): string {
+  const zoneSlug = zoneSlugByName(zoneOf({ neighborhood }))
+  return zoneSlug ? `/zona/${zoneSlug}` : `/barrio/${createSlug(neighborhood)}`
 }
 
 // Las zonas que tienen página (todas menos Barcelona, que es la web entera).

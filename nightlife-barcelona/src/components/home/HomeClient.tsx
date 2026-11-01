@@ -19,6 +19,7 @@ import Icon from "../ui/Icon"
 import { useLanguage } from "../../context/LanguageContext"
 import { homeSeed, weightedOrder } from "../../lib/rotation"
 import { createSlug } from "../../lib/slug"
+import { areaHref } from "../../lib/zonePages"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
@@ -494,7 +495,7 @@ export default function HomeClient({
               {geo.error && <p className="mt-1 text-sm text-warn">{geo.error}</p>}
             </div>
             <Link
-              href={zone ? `/barrio/${zone}` : tonight.anyOpen ? "/clubs?open=1" : "/clubs"}
+              href={zone ? (zoneName ? areaHref(zoneName) : `/barrio/${zone}`) : tonight.anyOpen ? "/clubs?open=1" : "/clubs"}
               className="shrink-0 text-sm font-semibold text-zinc-300 hover:text-ink"
             >
               {t("home.seeAll")}

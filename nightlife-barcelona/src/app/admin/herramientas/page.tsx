@@ -344,6 +344,12 @@ export default function AdminToolsPage() {
                     <option value="hospitalet">L&apos;Hospitalet</option>
                     <option value="badalona">Badalona</option>
                     <option value="elprat">El Prat</option>
+                    <option value="santacoloma">Santa Coloma de Gramenet</option>
+                    <option value="cornella">Cornellà de Llobregat</option>
+                    <option value="santadria">Sant Adrià de Besòs</option>
+                    <option value="esplugues">Esplugues de Llobregat</option>
+                    <option value="santfeliu">Sant Feliu de Llobregat</option>
+                    <option value="santboi">Sant Boi de Llobregat</option>
                   </select>
                   <label className="flex items-center gap-2 text-zinc-300">
                     <input type="checkbox" checked={osmReal} onChange={(e) => setOsmReal(e.target.checked)} />

@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useLanguage } from "../../context/LanguageContext"
 import type { AreaLink } from "../../lib/areas"
+import { areaHref } from "../../lib/zonePages"
 
 // Enlaces a las páginas de barrio y de estilo al final de /clubs: dan a Google (y a quien
 // prefiera navegar así) un camino directo a "discotecas en Gràcia" o "discotecas de techno".
@@ -23,7 +24,7 @@ export default function ExploreLinks({ neighborhoods, styles }: { neighborhoods:
           <h3 className="text-sm font-semibold text-zinc-400">{t("areas.byBarrio")}</h3>
           <div className="mt-3 flex flex-wrap gap-2">
             {neighborhoods.map((n) => (
-              <Link key={n.slug} href={`/barrio/${n.slug}`} className={chip}>
+              <Link key={n.slug} href={areaHref(n.name)} className={chip}>
                 {n.name} <span className="ml-1 font-normal text-zinc-400">{n.count}</span>
               </Link>
             ))}

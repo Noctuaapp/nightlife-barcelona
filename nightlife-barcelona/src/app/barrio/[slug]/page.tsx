@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { cache } from "react"
-import { notFound } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 import Header from "../../../components/layout/Header"
 import BottomNav from "../../../components/layout/BottomNav"
 import AreaListing from "../../../components/nightlife/AreaListing"
@@ -9,7 +9,8 @@ import { MIN_INDEXABLE, neighborhoodsOf, rankClubs, stylesOf } from "../../../li
 import { createSlug } from "../../../lib/slug"
 import { safeJsonLd } from "../../../lib/structuredData"
 import { computeAreaFacts } from "../../../lib/areaFactsData"
-import { zoneLinks } from "../../../lib/zonePages"
+import { zoneLinks, zoneSlugByName } from "../../../lib/zonePages"
+import { zoneOf } from "../../../lib/zones"
 
 // /barrio/el-born, /barrio/poblenou… Una página por barrio con sus discotecas (ver src/lib/areas.ts).
 export const revalidate = 3600
@@ -52,6 +53,10 @@ export default async function BarrioPage({ params }: Props) {
   const data = await getData(slug)
   if (!data) notFound()
   const { area, clubs, neighborhoods, styles, facts, zones } = data
+  // Un municipio de fuera de Barcelona (Badalona, L'Hospitalet…) ya tiene su página en /zona/: esta
+  // es un duplicado (mismos locales y un título que dice «…, Barcelona»), así que se manda allí.
+  const zoneSlug = zoneSlugByName(zoneOf({ neighborhood: area.name }))
+  if (zoneSlug) permanentRedirect(`/zona/${zoneSlug}`)
   const url = `https://www.noctuaapp.com/barrio/${area.slug}`
 
   const jsonLd = [

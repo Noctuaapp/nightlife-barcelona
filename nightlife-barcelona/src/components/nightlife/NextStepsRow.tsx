@@ -5,6 +5,7 @@ import Icon from "../ui/Icon"
 import { useLanguage } from "../../context/LanguageContext"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { createSlug } from "../../lib/slug"
+import { areaHref } from "../../lib/zonePages"
 import { STYLES } from "../../lib/areas"
 import { track } from "../../lib/track"
 
@@ -41,7 +42,7 @@ export default function NextStepsRow({ kind, itemId, name, neighborhood, music }
       <ul className="flex flex-wrap gap-2">
         {hoodSlug && neighborhood && (
           <li>
-            <Link href={`/barrio/${hoodSlug}`} onClick={() => track_("hood")} className={pill}>
+            <Link href={areaHref(neighborhood)} onClick={() => track_("hood")} className={pill}>
               <Icon name="map" className="h-3.5 w-3.5 text-cyan-300" /> {t("nextSteps.moreInHood").replace("{name}", neighborhood)}
             </Link>
           </li>

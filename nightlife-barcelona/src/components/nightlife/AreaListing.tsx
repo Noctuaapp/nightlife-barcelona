@@ -6,6 +6,7 @@ import ClubCard from "./ClubCard"
 import { useLanguage } from "../../context/LanguageContext"
 import type { DbRow } from "../../lib/clubQueries"
 import type { AreaLink } from "../../lib/areas"
+import { areaHref } from "../../lib/zonePages"
 import type { AreaFacts } from "../../lib/areaFacts"
 
 // Listado de una página de barrio (/barrio/[slug]), de zona (/zona/[slug]) o de estilo musical
@@ -174,7 +175,7 @@ export default function AreaListing({ kind, slug, name, clubs, neighborhoods, st
             <h2 className="text-lg font-semibold">{kind === "barrio" ? t("areas.otherBarrios") : t("areas.byBarrio")}</h2>
             <div className="mt-3 flex flex-wrap gap-2">
               {otherBarrios.map((n) => (
-                <Link key={n.slug} href={`/barrio/${n.slug}`} className={chip}>
+                <Link key={n.slug} href={areaHref(n.name)} className={chip}>
                   {n.name}
                 </Link>
               ))}

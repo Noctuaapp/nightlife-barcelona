@@ -9,6 +9,7 @@ import { notFound, permanentRedirect } from "next/navigation"
 import { supabase } from "../../../lib/supabase"
 import { findBySlug } from "../../../lib/slugLookup"
 import { createSlug } from "../../../lib/slug"
+import { areaHref } from "../../../lib/zonePages"
 import { clubMetaDescription, clubSummary, clubTitle } from "../../../lib/clubSummary"
 import type { DbRow } from "../../../lib/clubQueries"
 import { cleanPriceRange, safeJsonLd } from "../../../lib/structuredData"
@@ -146,7 +147,7 @@ export default async function ClubPage({ params }: ClubPageProps) {
   const crumbs = [
     { name: "Noctua", url: "https://www.noctuaapp.com" },
     { name: "Clubs", url: "https://www.noctuaapp.com/clubs" },
-    ...(club.neighborhood ? [{ name: club.neighborhood, url: `https://www.noctuaapp.com/barrio/${createSlug(club.neighborhood)}` }] : []),
+    ...(club.neighborhood ? [{ name: club.neighborhood, url: `https://www.noctuaapp.com${areaHref(club.neighborhood)}` }] : []),
     { name: club.name, url: `https://www.noctuaapp.com/clubs/${match.canonicalSlug}` },
   ]
   const breadcrumb = {

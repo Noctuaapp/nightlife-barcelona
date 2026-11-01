@@ -32,6 +32,7 @@ import { InlineEditText, InlineEditImage } from "../admin/InlineEdit"
 import { useCanEdit } from "../admin/EditAccess"
 import { FALLBACK_IMAGE as FALLBACK_CLUB_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
+import { areaHref } from "../../lib/zonePages"
 import { clubOpensOn, madridClock } from "../../lib/clubHours"
 import { effectiveOpenNow, isClosedTonight } from "../../lib/scheduleNotices"
 import ClubNotices from "./club/ClubNotices"
@@ -416,7 +417,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
               <span className="flex items-center gap-1.5 text-zinc-300">
                 <Icon name="map" className="h-4 w-4 text-muted" />
                 {club.neighborhood ? (
-                  <Link href={`/barrio/${createSlug(club.neighborhood)}`} className="underline decoration-white/25 underline-offset-4 transition hover:text-ink hover:decoration-white">
+                  <Link href={areaHref(club.neighborhood)} className="underline decoration-white/25 underline-offset-4 transition hover:text-ink hover:decoration-white">
                     {club.neighborhood}
                   </Link>
                 ) : (
