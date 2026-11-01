@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
 import { fetchAreaElements } from "../osmAreaFetch"
+import { boundaryFromRelations } from "../osmBoundary"
 
 const g = (lat: number, lon: number) => ({ lat, lon })
 const way = (...pts: [number, number][]) => ({ type: "way", role: "outer", geometry: pts.map(([a, b]) => g(a, b)) })
@@ -77,6 +78,38 @@ describe("fetchAreaElements", () => {
     const r = await fetchAreaElements({ pattern: "Badalona", label: "Badalona", blocks, errors: [], mirrors: M4, staggerMs: 20 })
     expect(r.ok).toBe(true)
     expect(Date.now() - t0).toBeLessThan(2000)
+  })
+
+  it("con el contorno ya guardado solo hace una consulta (la de los datos)", async () => {
+    const queries: string[] = []
+    vi.stubGlobal("fetch", async (_u: string, init: any) => {
+      queries.push(queryOf(init))
+      return ok([{ type: "node", id: 1, lat: 41.45, lon: 2.25, tags: {} }, { type: "node", id: 2, lat: 41.2, lon: 2.25, tags: {} }])
+    })
+    const r = await fetchAreaElements({ pattern: "Badalona", label: "Badalona", blocks, errors: [], mirrors: MIRRORS, boundary: boundaryFromRelations(SQUARE_REL) })
+    expect(queries).toHaveLength(1)
+    expect(isBoundary(queries[0])).toBe(false)
+    expect(r.ok && r.elements.map((e) => e.id)).toEqual([1])
+  })
+
+  it("si un intento falla vuelve a probar (con el contorno guardado caben tres)", async () => {
+    let calls = 0
+    vi.stubGlobal("fetch", async () => {
+      calls++
+      return calls <= 2 ? bad(502) : ok([{ type: "node", id: 1, lat: 41.45, lon: 2.25, tags: {} }])
+    })
+    const errors: string[] = []
+    const r = await fetchAreaElements({ pattern: "X", label: "X", blocks, errors, mirrors: MIRRORS, boundary: boundaryFromRelations(SQUARE_REL), staggerMs: 10 })
+    expect(r.ok).toBe(true)
+    expect(calls).toBe(3) // 2 servidores fallan en la ronda 1; la ronda 2 acierta al primero
+  })
+
+  it("rechaza un contorno pedido a OpenStreetMap que sale incompleto (p. ej. Barcelona)", async () => {
+    vi.stubGlobal("fetch", async () => ok(SQUARE_REL)) // el cuadrado de prueba mide ~85 km²... pedimos 500
+    const r = await fetchAreaElements({ pattern: "Barcelona", label: "Barcelona", blocks, errors: [], mirrors: MIRRORS, minAreaKm2: 500 })
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.error).toMatch(/incompleto/)
   })
 
   it("si no consigue el contorno, lo dice con el motivo", async () => {

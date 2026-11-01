@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isAdminRequest } from "@/lib/adminAuth"
 import { fetchAreaElements } from "@/lib/osmAreaFetch"
+import { staticBoundary } from "@/lib/osmBoundaries"
 import { AREAS, cityFor, normalize } from "@/lib/osmAreas"
 import { ESSENTIAL_TYPES, essentialAddress, isDuplicateEssential, judgeEssential, osmMatches, typesFor, type ExistingEssential } from "@/lib/osmEssentials"
 
@@ -23,7 +24,8 @@ export async function GET(req: Request) {
   if (!(await isAdminRequest(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
-  const area = AREAS[(searchParams.get("area") || "").toLowerCase()]
+  const areaKey = (searchParams.get("area") || "").toLowerCase()
+  const area = AREAS[areaKey]
   if (!area) return NextResponse.json({ error: `area debe ser una de: ${Object.keys(AREAS).join(", ")}` }, { status: 400 })
   const cat = (searchParams.get("cat") || "all").toLowerCase()
   const types = typesFor(cat)
@@ -38,6 +40,8 @@ export async function GET(req: Request) {
     label: area.city,
     blocks: (scope) => types.flatMap((t) => t.selectors.map((sel) => `nwr${scope}${sel};`)),
     errors,
+    boundary: staticBoundary(areaKey),
+    minAreaKm2: areaKey === "barcelona" ? 60 : undefined,
   })
   if (!got.ok) {
     return NextResponse.json({ error: got.error + (cat === "all" ? " Si vuelve a pasar, elige una sola categoría." : ""), detalle: errors }, { status: got.status })
@@ -118,6 +122,7 @@ export async function GET(req: Request) {
       modo: "VISTA PREVIA (no se ha escrito nada). Marca «Importar de verdad» para guardar.",
       area: area.city,
       categoria: cat,
+      descartados_por_estar_fuera_del_municipio: got.descartados_fuera_del_municipio,
       nuevos_total: rows.length,
       por_categoria: resumen,
       muestra: rows.slice(0, 60).map((r) => `${r.category} · ${r.name} · ${r.open_hours ?? "sin horario"} · ${r.address ?? r.neighborhood}`),

@@ -1,8 +1,8 @@
 // Qué esenciales importa Noctua desde OpenStreetMap y cuáles se quedan fuera. Lo usa el importador
 // (/api/admin/import-osm-essentials). Está aparte para poder probarlo sin llamar a OpenStreetMap.
 //
-// Criterio de Noctua: sitios útiles de noche, es decir, abiertos las 24 h o que cierran pasada la
-// 1:00. Un sitio sin horario en OpenStreetMap no entra (no se puede saber), salvo cajeros de calle
+// Criterio de Noctua: sitios útiles de noche, es decir, abiertos las 24 h o que cierran a la
+// 1:00 o más tarde. Un sitio sin horario en OpenStreetMap no entra (no se puede saber), salvo cajeros de calle
 // y hospitales con urgencias, que son 24 h por naturaleza.
 
 import { meters, normalize } from "./osmAreas"

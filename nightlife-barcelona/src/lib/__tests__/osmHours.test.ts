@@ -45,16 +45,27 @@ describe("parseOsmHours", () => {
   })
 })
 
-describe("criterio de noche (24 h o cierre pasada la 1:00)", () => {
+describe("criterio de noche (24 h o abierto hasta la 1:00 o más tarde)", () => {
   it("24 h entra, también si solo es algún día", () => {
     expect(night("24/7")).toBe(true)
     expect(night("Mo-Fr 08:00-22:00; Sa 00:00-24:00")).toBe(true)
   })
 
-  it("cerrar a la 1:00 en punto NO es pasada la 1:00; a la 1:30 sí", () => {
-    expect(night("Mo-Su 09:00-01:00")).toBe(false)
+  it("cerrar a la 1:00 en punto ya cuenta; a las 00:30 o a las 24:00 no", () => {
+    expect(night("Mo-Su 09:00-01:00")).toBe(true)
+    expect(night("Fr,Sa 12:30-01:00")).toBe(true)
     expect(night("Mo-Su 09:00-01:30")).toBe(true)
     expect(night("Mo-Su 18:00-03:00")).toBe(true)
+    expect(night("Mo-Su 12:30-00:30")).toBe(false)
+    expect(night("Mo-Su 08:00-00:00")).toBe(false)
+    expect(night("Mo-Su 08:00-24:00")).toBe(false)
+  })
+
+  it("los casos reales de Sant Feliu: Burger King y La Celeste entran, Domino's y Telepizza no", () => {
+    expect(night("Su-Th,PH 12:00-23:59; Fr,Sa 12:00-01:00")).toBe(true) // Burger King
+    expect(night("We,Th 12:00-17:00,20:00-24:00; Fr,Sa 12:00-17:00,21:00-01:00; Su 12:00-17:00,20:00-24:00")).toBe(true) // La Celeste
+    expect(night("Su-Th 12:30-24:00, Fr,Sa 12:30-00:30")).toBe(false) // Domino's
+    expect(night("Mo-Th 13:00-16:00, Fr-Su,PH 13:00-16:00, Mo-Th 19:00-23:00, Fr-Su,PH 19:00-24:00")).toBe(false) // Telepizza
   })
 
   it("basta con que algún día cierre tarde", () => {
@@ -150,5 +161,27 @@ describe("el texto guardado se lee igual que el horario original", () => {
     // Que la prueba no sea vacía: hay momentos abiertos y, salvo en los de 24 h, también cerrados.
     expect(opens).toBeGreaterThan(0)
     if (!isOpen24h(week) && !/^Mo-Su 00:00-24:00$/.test(raw)) expect(closeds).toBeGreaterThan(0)
+  })
+})
+
+describe("festivos (PH) dentro de la lista de días", () => {
+  it("se ignoran en vez de hacer que el horario no se entienda (casos reales de Sant Feliu)", () => {
+    expect(parseOsmHours("PH,Mo-Su 09:00-24:00")).not.toBeNull()
+    expect(parseOsmHours("Su-Th,PH 12:00-23:59; Fr,Sa 12:00-01:00")).not.toBeNull()
+    const w = parseOsmHours("Mo-Th 13:00-16:00, Fr-Su,PH 13:00-16:00, Mo-Th 19:00-23:00, Fr-Su,PH 19:00-24:00")!
+    expect(w).not.toBeNull()
+    expect(w[0]).toEqual([[780, 960], [1140, 1380]]) // lunes: comida y cena
+    expect(w[4]).toEqual([[780, 960], [1140, 1440]]) // viernes
+  })
+
+  it("«Mo-Su,PH 12:00-02:00» cuenta como cierre pasada la 1:00", () => {
+    expect(night("Mo-Su,PH 12:00-02:00")).toBe(true)
+    expect(night("PH,Mo-Su 12:00-02:00")).toBe(true)
+    expect(night("Mo-Fr,PH,Sa 10:00-23:00")).toBe(false)
+  })
+
+  it("el horario de festivos por separado sigue ignorándose", () => {
+    expect(night("Mo-Su 12:00-02:00; PH off")).toBe(true)
+    expect(night("Mo-Su 09:00-18:00; PH 12:00-03:00")).toBe(false)
   })
 })

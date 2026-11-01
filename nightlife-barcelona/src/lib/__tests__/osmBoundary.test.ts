@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { boundaryBbox, boundaryFromRelations, insideBoundary } from "../osmBoundary"
+import { boundaryAreaKm2, boundaryBbox, boundaryFromRelations, fromCompact, insideBoundary, simplifyRing, toCompact } from "../osmBoundary"
 
 const g = (lat: number, lon: number) => ({ lat, lon })
 const way = (role: string, ...pts: [number, number][]) => ({ type: "way", role, geometry: pts.map(([a, b]) => g(a, b)) })
@@ -89,5 +89,67 @@ describe("boundaryBbox", () => {
     expect(w).toBeCloseTo(2.19, 5)
     expect(n).toBeCloseTo(41.51, 5)
     expect(e).toBeCloseTo(2.31, 5)
+  })
+})
+
+describe("contorno con tramos que faltan (copia de servidor desactualizada)", () => {
+  // El lado este queda partido con un hueco de ~55 m (0,0005° de latitud) en medio.
+  const east1 = way("outer", [41.4, 2.3], [41.449, 2.3])
+  const east2 = way("outer", [41.4495, 2.3], [41.5, 2.3])
+
+  it("cierra el hueco en línea recta si es pequeño", () => {
+    const b = boundaryFromRelations(rel(SIDES.south, east1, east2, SIDES.north, SIDES.west))
+    expect(b.outer).toHaveLength(1)
+    expect(b.gapsClosed).toBe(1)
+    expect(insideBoundary(b, 41.45, 2.25)).toBe(true)
+    expect(insideBoundary(b, 41.45, 2.35)).toBe(false)
+  })
+
+  it("también cuando un tramo viene vacío y deja dos cadenas sueltas", () => {
+    const empty = { type: "way", role: "outer", geometry: [] }
+    const b = boundaryFromRelations(rel(SIDES.south, east1, empty, east2, SIDES.north, SIDES.west))
+    expect(b.outer).toHaveLength(1)
+    expect(insideBoundary(b, 41.42, 2.22)).toBe(true)
+  })
+
+  it("no inventa nada si el hueco es enorme", () => {
+    const far = way("outer", [41.46, 2.3], [41.5, 2.3]) // falta casi un lado entero (~4 km)
+    const b = boundaryFromRelations(rel(SIDES.south, east1, far, SIDES.north, SIDES.west))
+    expect(b.outer).toHaveLength(0)
+  })
+
+  it("con el contorno completo no marca huecos", () => {
+    expect(boundaryFromRelations(rel(...Object.values(SIDES))).gapsClosed).toBeUndefined()
+  })
+})
+
+describe("simplificar, medir y guardar", () => {
+  const ring = (n: number) => {
+    // círculo de ~1 km de radio con n puntos
+    const pts = Array.from({ length: n }, (_, i) => ({ lat: 41.4 + 0.009 * Math.sin((2 * Math.PI * i) / n), lon: 2.2 + 0.012 * Math.cos((2 * Math.PI * i) / n) }))
+    return [...pts, { ...pts[0] }]
+  }
+
+  it("simplificar quita puntos casi alineados y mantiene el cierre y la superficie", () => {
+    const r = ring(360)
+    const s = simplifyRing(r, 8)
+    expect(s.length).toBeLessThan(r.length / 2)
+    expect(s[0]).toEqual(s[s.length - 1])
+    const a = boundaryAreaKm2({ outer: [r], inner: [] })
+    const b = boundaryAreaKm2({ outer: [s], inner: [] })
+    expect(b).toBeGreaterThan(a * 0.99)
+    expect(b).toBeLessThanOrEqual(a)
+  })
+
+  it("la superficie de un círculo de 1 km x 1,3 km sale cerca de π·a·b", () => {
+    const a = boundaryAreaKm2({ outer: [ring(720)], inner: [] })
+    expect(a).toBeCloseTo(Math.PI * (0.009 * 111.32) * (0.012 * 111.32 * Math.cos((41.4 * Math.PI) / 180)), 1)
+  })
+
+  it("guardar en formato compacto y volver a leer no cambia nada", () => {
+    const b = boundaryFromRelations(rel(...Object.values(SIDES)))
+    const back = fromCompact(toCompact(b))
+    expect(back.outer).toEqual(b.outer)
+    expect(back.inner).toEqual([])
   })
 })

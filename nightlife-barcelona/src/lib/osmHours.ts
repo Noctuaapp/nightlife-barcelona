@@ -43,7 +43,12 @@ function parseTimes(rest: string): Interval[] | null {
 }
 
 export function parseOsmHours(raw: string | null | undefined): WeekHours | null {
-  const text = (raw || "").trim()
+  // «Mo-Su,PH 12:00-02:00» / «PH,Mo-Su 09:00-24:00»: el «PH» (festivos) metido en una lista de días
+  // es muy habitual en España. Se quita de la lista y el horario vale también para festivos.
+  const text = (raw || "")
+    .trim()
+    .replace(/\b(Mo|Tu|We|Th|Fr|Sa|Su)\s*,\s*(?:PH|SH)\b/gi, "$1")
+    .replace(/\b(?:PH|SH)\s*,\s*(?=(?:Mo|Tu|We|Th|Fr|Sa|Su)\b)/gi, "")
   if (!text) return null
   const all = (iv: Interval[]): WeekHours => Array.from({ length: 7 }, () => iv.map((i) => [...i] as Interval))
   if (/^24\/7$/i.test(text)) return all([[0, 1440]])
@@ -90,14 +95,15 @@ export function hasFullDay(week: WeekHours): boolean {
   return week.some(FULL_DAY)
 }
 
-// ¿Sigue abierto pasada la 1:00? Es decir, está abierto a la 1:00 y cierra más tarde (o no cierra).
-// Un sitio que abre a las 5:30 de la mañana NO cuenta: no es un sitio de noche (corregido el 1 nov
-// 2026, cuando una cafetería de 5:30 a 21:30 se colaba por abrir antes de las 6:00).
+// ¿Llega a la 1:00 de la madrugada o más tarde? Es decir, está abierto a la 1:00 o cierra justo a
+// la 1:00 (Jordi lo pidió el 1 nov 2026: Burger King o La Celeste, que cierran a la 1:00 en punto
+// viernes y sábado, sí sirven de noche). Un sitio que abre a las 5:30 de la mañana NO cuenta: no es
+// un sitio de noche (corregido ese mismo día, cuando una cafetería de 5:30 a 21:30 se colaba).
 export function opensPastOne(week: WeekHours): boolean {
-  return week.some((day) => day.some(([s, e]) => (s <= 60 && e > 60) || (s <= 1500 && e > 1500)))
+  return week.some((day) => day.some(([s, e]) => (s <= 60 && e >= 60) || (s <= 1500 && e >= 1500)))
 }
 
-// «24 h o abierto pasada la 1:00»: el criterio de Noctua para un esencial de noche.
+// «24 h o abierto hasta la 1:00 o más tarde»: el criterio de Noctua para un esencial de noche.
 export function isNightEssentialHours(week: WeekHours): boolean {
   return isOpen24h(week) || hasFullDay(week) || opensPastOne(week)
 }

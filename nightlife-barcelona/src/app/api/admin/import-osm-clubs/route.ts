@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import { isAdminRequest } from "@/lib/adminAuth"
 import { hedgedOverpass, OVERPASS_MIRRORS } from "@/lib/overpassHedged"
 import { fetchAreaElements } from "@/lib/osmAreaFetch"
+import { staticBoundary } from "@/lib/osmBoundaries"
 import { AREAS, normalize, meters, cityFor } from "@/lib/osmAreas"
 import { isNightlifeVenue, venueTypeOf, venueFlagsOf } from "@/lib/osmVenues"
 
@@ -51,6 +52,7 @@ export async function GET(req: Request) {
   const errors: string[] = []
   let elements: any[] = []
   let tilesInfo: { ok: number; failed: number } | null = null
+  let outside: number | null = null
 
   if (areaKey === "barcelona") {
     // Barcelona por cuadrículas: 12 consultas pequeñas (4 x 3) en vez de una enorme.
@@ -99,9 +101,10 @@ export async function GET(req: Request) {
   } else {
     // Un municipio: contorno + elementos de dentro, sin la función `area` de Overpass (varios
     // servidores no la tienen o la tienen saturada). Ver lib/osmAreaFetch.ts.
-    const got = await fetchAreaElements({ pattern: area.osmPattern, label: area.city, blocks: blocksFor, errors })
+    const got = await fetchAreaElements({ pattern: area.osmPattern, label: area.city, blocks: blocksFor, errors, boundary: staticBoundary(areaKey), minAreaKm2: areaKey === "barcelona" ? 60 : undefined })
     if (!got.ok) return NextResponse.json({ error: got.error, detalle: errors }, { status: got.status })
     elements = got.elements
+    outside = got.descartados_fuera_del_municipio
   }
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -171,6 +174,7 @@ export async function GET(req: Request) {
       area: area.city,
       ...(tilesInfo ? { cuadriculas_ok: tilesInfo.ok, cuadriculas_fallidas: tilesInfo.failed, aviso: tilesInfo.failed ? "Faltan zonas: repite la URL para completar (no se duplica nada al importar)." : undefined } : {}),
       encontrados_en_osm: elements.length,
+      ...(outside !== null ? { descartados_por_estar_fuera_del_municipio: outside } : {}),
       pubs_y_bares_descartados_por_no_ser_nocturnos: skippedBar,
       ya_existian: skippedDup,
       nuevos: rows.length,

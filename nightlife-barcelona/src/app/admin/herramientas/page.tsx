@@ -82,7 +82,7 @@ const TOOLS: Tool[] = [
     key: "import-osm-essentials",
     path: "/api/admin/import-osm-essentials",
     title: "Importar esenciales desde OpenStreetMap",
-    description: "Farmacias, cajeros, comida, supermercados, gasolineras y hospitales abiertos las 24 h o hasta pasada la 1:00. Todo entra oculto para revisarlo en Esenciales antes de publicar. En Barcelona elige una categoría cada vez. Sin marcar «Importar de verdad» solo es una vista previa.",
+    description: "Farmacias, cajeros, comida, supermercados, gasolineras y hospitales abiertos las 24 h o hasta la 1:00 o más tarde. Todo entra oculto para revisarlo en Esenciales antes de publicar. En Barcelona elige una categoría cada vez. Sin marcar «Importar de verdad» solo es una vista previa.",
     osmEssentials: true,
   },
   {
