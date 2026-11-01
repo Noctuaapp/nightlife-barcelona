@@ -19,6 +19,7 @@ type Tool = {
   batch?: boolean // devuelve "remaining": se puede repetir hasta que llegue a 0
   osm?: boolean
   osmEssentials?: boolean // zona + categoría + vista previa / importar de verdad
+  googleEssentials?: boolean // igual, pero con Google Places (cuesta llamadas de pago)
   nitbus?: boolean // vista previa / importar de verdad, sin zona
 }
 
@@ -86,6 +87,13 @@ const TOOLS: Tool[] = [
     osmEssentials: true,
   },
   {
+    key: "import-google-essentials",
+    path: "/api/admin/import-google-essentials",
+    title: "Importar esenciales de noche desde Google",
+    description: "Supermercados, comida, gasolineras y farmacias abiertos las 24 h o hasta la 1:00 o más tarde, con el horario que da Google (OpenStreetMap y Overture no lo traen). Todo entra oculto para revisarlo en Esenciales. OJO: gasta llamadas de pago de Google (unas 6–14 por municipio para súper + comida; 35 $ cada 1.000, con 1.000 gratis al mes) y respeta el tope diario GOOGLE_PLACES_DAILY_LIMIT, que está en 20: para usarla hay que subirlo en Vercel. La vista previa también gasta llamadas: si te fías, marca «Importar de verdad» directamente.",
+    googleEssentials: true,
+  },
+  {
     key: "import-nitbus",
     path: "/api/admin/import-nitbus-stops",
     title: "Cargar paradas de Nitbus (OpenStreetMap)",
@@ -107,6 +115,9 @@ export default function AdminToolsPage() {
   const [essArea, setEssArea] = useState("badalona")
   const [essCat, setEssCat] = useState("all")
   const [essReal, setEssReal] = useState(false)
+  const [gArea, setGArea] = useState("badalona")
+  const [gCat, setGCat] = useState("supermarket,food")
+  const [gReal, setGReal] = useState(false)
   const [nitbusReal, setNitbusReal] = useState(false)
   const stopRef = useRef<Record<string, boolean>>({})
 
@@ -216,6 +227,8 @@ export default function AdminToolsPage() {
       ? `${tool.path}?area=${osmArea}${osmReal ? "&dry=0" : ""}`
       : tool.osmEssentials
       ? `${tool.path}?area=${essArea}&cat=${essCat}${essReal ? "&dry=0" : ""}`
+      : tool.googleEssentials
+      ? `${tool.path}?area=${gArea}&cat=${gCat}${gReal ? "&dry=0" : ""}`
       : tool.nitbus
       ? `${tool.path}${nitbusReal ? "?dry=0" : ""}`
       : tool.path
@@ -404,6 +417,42 @@ export default function AdminToolsPage() {
                   </select>
                   <label className="flex items-center gap-2 text-zinc-300">
                     <input type="checkbox" checked={essReal} onChange={(e) => setEssReal(e.target.checked)} />
+                    Importar de verdad
+                  </label>
+                </div>
+              )}
+
+              {tool.googleEssentials && (
+                <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+                  <select
+                    value={gArea}
+                    onChange={(e) => setGArea(e.target.value)}
+                    className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-white"
+                  >
+                    <option value="hospitalet">L&apos;Hospitalet</option>
+                    <option value="badalona">Badalona</option>
+                    <option value="elprat">El Prat</option>
+                    <option value="santacoloma">Santa Coloma de Gramenet</option>
+                    <option value="cornella">Cornellà de Llobregat</option>
+                    <option value="santadria">Sant Adrià de Besòs</option>
+                    <option value="esplugues">Esplugues de Llobregat</option>
+                    <option value="santfeliu">Sant Feliu de Llobregat</option>
+                    <option value="santboi">Sant Boi de Llobregat</option>
+                  </select>
+                  <select
+                    value={gCat}
+                    onChange={(e) => setGCat(e.target.value)}
+                    className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-white"
+                  >
+                    <option value="supermarket,food">Supermercados + comida</option>
+                    <option value="supermarket">Solo supermercados</option>
+                    <option value="food">Solo comida</option>
+                    <option value="gas">Gasolineras</option>
+                    <option value="pharmacy">Farmacias 24 h</option>
+                    <option value="all">Todas</option>
+                  </select>
+                  <label className="flex items-center gap-2 text-zinc-300">
+                    <input type="checkbox" checked={gReal} onChange={(e) => setGReal(e.target.checked)} />
                     Importar de verdad
                   </label>
                 </div>
