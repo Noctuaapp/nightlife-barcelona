@@ -8,11 +8,15 @@ import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import { useIdleVisible } from "../../lib/useIdleVisible"
 import { ADMIN_EMAIL } from "../../lib/admin"
+import { useViewAsUser } from "../../lib/viewAsUser"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 
 export default function BottomNav() {
   const pathname = usePathname()
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdminAccount, setIsAdmin] = useState(false)
+  // «Ver como usuario»: sin la pestaña Admin.
+  const viewAsUser = useViewAsUser()
+  const isAdmin = isAdminAccount && !viewAsUser
   const { t } = useLanguage()
 
   useEffect(() => {

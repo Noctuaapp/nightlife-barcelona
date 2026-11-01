@@ -16,6 +16,8 @@ import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
 import { zoneOf, zonesPresent } from "../../lib/zones"
 import { STYLES, neighborhoodsOf } from "../../lib/areas"
+import { hasOffer } from "../../lib/offers"
+import { optionsWithData } from "../../lib/filterOptions"
 import { clubOpensOn } from "../../lib/clubHours"
 import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
@@ -142,6 +144,7 @@ type Prefs = {
   dresscode: string
   lgtbi: boolean
   mature: boolean
+  offers: boolean
 }
 
 const styleMatches = (music: string | null | undefined, slug: string) => {
@@ -195,6 +198,13 @@ function scoreClub(club: any, prefs: Prefs, t: (key: string) => string): { score
   if (prefs.lgtbi && club.lgtbi_friendly) {
     score += 18
     reasons.push(t("planPage.reasonLgtbi"))
+  }
+
+  // «Priorizar ofertas» (01/11/2026): suma a los locales con promoción o entrada gratis. No excluye a
+  // los demás: si ninguno tiene oferta, el plan sale igual.
+  if (prefs.offers && hasOffer(club)) {
+    score += 22
+    reasons.push(t("planPage.reasonOffer"))
   }
 
   if (prefs.dresscode !== "any" && club.dresscode === prefs.dresscode) {
@@ -357,6 +367,7 @@ export default function PlanPage() {
   const [timeKey, setTimeKey] = useState<"early" | "peak" | "late" | "allnight">("peak")
   const [dayOffset, setDayOffset] = useState(0)
   const [lgtbi, setLgtbi] = useState(false)
+  const [offers, setOffers] = useState(false)
   // Contador que solo sube al marcar (no al desmarcar) la casilla LGTBI+ — cambiar la key del
   // emoji de la bandera fuerza que el navegador reinicie la animación cada vez, incluso si se
   // marca, desmarca y se vuelve a marcar rápido.
@@ -538,7 +549,7 @@ export default function PlanPage() {
 
   const computePlan = (maxKmOverride?: number) => {
     const pairKm = maxKmOverride ?? maxPairKm
-    const prefs: Prefs = { groupKey, budgetMax, vibeKey, musicSet, areaSet, venueTypeSet, dresscode, lgtbi, mature }
+    const prefs: Prefs = { groupKey, budgetMax, vibeKey, musicSet, areaSet, venueTypeSet, dresscode, lgtbi, mature, offers }
     // Pequeño factor aleatorio: con puntuaciones parecidas, "Rehacer plan" da variedad real.
     const jitter = () => Math.random() * 8
     const dow = planDate.getDay()
@@ -698,6 +709,7 @@ export default function PlanPage() {
     setTimeKey("peak")
     setLgtbi(false)
     setMature(false)
+    setOffers(false)
     setDayOffset(0)
     setPhase("form")
     setStep(0)
@@ -712,6 +724,13 @@ export default function PlanPage() {
     setStep(0)
     setSeenClubIds(new Set())
   }
+
+  // Solo se ofrecen tipos de local, estilos y dress codes que algún local tiene (lib/filterOptions.ts), y la
+  // casilla de ofertas solo si algún local tiene alguna.
+  const venueTypeOptions = VENUE_TYPE_OPTIONS.filter((v) => venueTypeSet.has(v.value) || optionsWithData([v.value], clubs, (c, o) => c.venue_type === o).length > 0)
+  const musicOptions = MUSIC_OPTIONS.filter((m) => musicSet.has(m) || optionsWithData([m], clubs, (c, o) => styleMatches(c.music, o)).length > 0)
+  const dresscodeOptions = DRESSCODE_OPTIONS.filter((d) => d === "any" || d === dresscode || optionsWithData([d], clubs, (c, o) => c.dresscode === o).length > 0)
+  const anyOffers = clubs.some((c) => hasOffer(c))
 
   const option = (active: boolean) =>
     `rounded-card border p-5 text-left transition ${active ? "border-brand bg-brand/15" : "border-white/10 bg-surface hover:border-white/25"}`
@@ -816,7 +835,7 @@ export default function PlanPage() {
                       <p className="mb-4 text-sm text-zinc-300">{t("planPage.venueTypeInstruction")}</p>
                       {autoDetected && <p className="mb-4 text-sm text-brand-soft">{t("planPage.autoDetectedNote")}</p>}
                       <div className="flex flex-wrap gap-2">
-                        {VENUE_TYPE_OPTIONS.map((v) => (
+                        {venueTypeOptions.map((v) => (
                           <button key={v.value} onClick={() => setVenueTypeSet((s) => toggleInSet(s, v.value))} aria-pressed={venueTypeSet.has(v.value)} className={chip(venueTypeSet.has(v.value))}>
                             {t(`planPage.${v.key}`)}
                           </button>
@@ -829,7 +848,7 @@ export default function PlanPage() {
                     <div>
                       <p className="mb-4 text-sm text-zinc-300">{t("planPage.musicInstruction")}</p>
                       <div className="flex flex-wrap gap-2">
-                        {MUSIC_OPTIONS.map((m) => (
+                        {musicOptions.map((m) => (
                           <button key={m} onClick={() => setMusicSet((s) => toggleInSet(s, m))} aria-pressed={musicSet.has(m)} className={chip(musicSet.has(m))}>
                             {styleLabel(m)}
                           </button>
@@ -900,7 +919,7 @@ export default function PlanPage() {
                       <div>
                         <p className="mb-3 text-sm font-semibold text-zinc-300">{t("planPage.dresscode")}</p>
                         <div className="flex flex-wrap gap-2">
-                          {DRESSCODE_OPTIONS.map((d) => (
+                          {dresscodeOptions.map((d) => (
                             <button key={d} onClick={() => setDresscode(d)} aria-pressed={dresscode === d} className={chip(dresscode === d)}>
                               {dressLabel(d)}
                             </button>
@@ -931,6 +950,12 @@ export default function PlanPage() {
                             </span>
                           )}
                         </label>
+                        {anyOffers && (
+                          <label className="flex cursor-pointer items-center gap-3 rounded-ctl border border-white/10 bg-surface px-4 py-3.5 text-sm font-semibold text-ink">
+                            <input type="checkbox" checked={offers} onChange={() => setOffers(!offers)} className="h-4 w-4 accent-[#7c5cff]" />
+                            {t("planPage.offersPriority")}
+                          </label>
+                        )}
                         <label className="flex cursor-pointer items-center gap-3 rounded-ctl border border-white/10 bg-surface px-4 py-3.5 text-sm font-semibold text-ink">
                           <input type="checkbox" checked={mature} onChange={() => setMature(!mature)} className="h-4 w-4 accent-[#7c5cff]" />
                           {t("planPage.mature")}

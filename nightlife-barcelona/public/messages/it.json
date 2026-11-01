@@ -593,7 +593,9 @@
     "dressAny": "Indifferente",
     "dressElegant": "Elegante",
     "mature": "Preferisco un ambiente +30",
-    "shareTitle": "Piano della serata · {date}"
+    "shareTitle": "Piano della serata · {date}",
+    "offersPriority": "Dai priorità ai locali con offerte o sconti",
+    "reasonOffer": "Ha un'offerta o uno sconto"
   },
   "favoritesPage": {
     "loading": "Caricamento preferiti...",

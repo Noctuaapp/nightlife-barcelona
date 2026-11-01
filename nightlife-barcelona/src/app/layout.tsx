@@ -7,6 +7,7 @@ import MaintenanceGate from "../components/system/MaintenanceGate"
 import TrafficSource from "../components/system/TrafficSource"
 import InstallCapture from "../components/system/InstallCapture"
 import EventsPreviewCookie from "../components/system/EventsPreviewCookie"
+import ViewAsUserSwitch from "../components/admin/ViewAsUserSwitch"
 import ToastHost from "../components/ui/Toast"
 import PartyPollPopup from "../components/fun/PartyPollPopup"
 import CookieBanner from "../components/system/CookieBanner"
@@ -142,6 +143,7 @@ export default function RootLayout({
         <TrafficSource />
         <InstallCapture />
         <EventsPreviewCookie />
+        <ViewAsUserSwitch />
         <ToastHost />
         <Analytics />
       </body>

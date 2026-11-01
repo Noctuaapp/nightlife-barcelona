@@ -10,6 +10,7 @@ import { awardXp, XP_AMOUNTS, currentIsoWeek, madridDateStr, dayBefore, checkLev
 import { ADMIN_EMAIL } from "../../lib/admin"
 import { logError } from "../../lib/log"
 import { track } from "../../lib/track"
+import { useViewAsUser } from "../../lib/viewAsUser"
 import LevelUpModal from "../mascot/LevelUpModal"
 import InstallAppButton from "../system/InstallAppButton"
 import { Bell, ChevronLeft, User, Map, Sparkles, Heart, MessageCircle, ShieldCheck, Globe, X, Check } from "lucide-react"
@@ -66,7 +67,10 @@ const WEATHER_TTL_MS = 30 * 60 * 1000
 
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdminAccount, setIsAdmin] = useState(false)
+  // «Ver como usuario» (lib/viewAsUser.ts): el admin ve la web sin sus accesos de admin.
+  const viewAsUser = useViewAsUser()
+  const isAdmin = isAdminAccount && !viewAsUser
   // Nivel al que se acaba de subir, para disparar el modal de celebración — null el resto del
   // tiempo. Ver checkNewLevel más abajo y supabase/9_niveles_y_moderacion.sql.
   const [newLevel, setNewLevel] = useState<string | null>(null)

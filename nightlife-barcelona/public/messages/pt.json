@@ -606,7 +606,9 @@
     "funTip5": "Guarda a localização do local no telemóvel antes de saíres, depois há pouca cobertura com tanta gente.",
     "funTip6": "Se mudares de planos a meio da noite, diz a alguém do teu grupo para onde vais.",
     "funTip7": "Chegar um pouco antes da hora de ponta costuma sair mais barato e sem fila.",
-    "funTip8": "Um bom pequeno-almoço depois da festa é sagrado — há sítios abertos já de madrugada."
+    "funTip8": "Um bom pequeno-almoço depois da festa é sagrado — há sítios abertos já de madrugada.",
+    "offersPriority": "Dar prioridade a locais com ofertas ou descontos",
+    "reasonOffer": "Tem oferta ou desconto"
   },
   "favoritesPage": {
     "loading": "A carregar favoritos...",

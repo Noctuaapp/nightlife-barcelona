@@ -603,7 +603,9 @@
     "dressAny": "Don't mind",
     "dressElegant": "Smart",
     "mature": "I prefer a 30+ crowd",
-    "shareTitle": "Night plan · {date}"
+    "shareTitle": "Night plan · {date}",
+    "offersPriority": "Prioritise venues with deals or discounts",
+    "reasonOffer": "Has a deal or discount"
   },
   "favoritesPage": {
     "loading": "Loading favorites...",

@@ -603,7 +603,9 @@
     "dressAny": "M'és igual",
     "dressElegant": "Elegant",
     "mature": "Prefereixo ambient +30",
-    "shareTitle": "Pla de la nit · {date}"
+    "shareTitle": "Pla de la nit · {date}",
+    "offersPriority": "Prioritzar locals amb ofertes o descomptes",
+    "reasonOffer": "Té oferta o descompte"
   },
   "favoritesPage": {
     "loading": "Carregant favorits...",

@@ -7,6 +7,8 @@ import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { isAdminEmail } from "../../../lib/admin"
 import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
+import { madridDaysAgo, madridToday } from "../../../lib/madridDay"
+import { ADMIN_RANGE_MIN, normalizeRange, rangeDays, yearRange, yearsUpTo, type AdminRange } from "../../../lib/adminRange"
 
 // Visitas (26/10/2026): «de las 84 sesiones, ¿dónde han entrado y qué han hecho?». Cada visita
 // con su origen, dispositivo, página de entrada y el recorrido completo en orden; más las páginas
@@ -157,11 +159,13 @@ const PERIODS = [
   { key: 30, label: "30 días" },
 ]
 
-const madridDay = (offset: number) => new Date(Date.now() - offset * 86400000).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" })
-
 export default function AdminVisitsPage() {
   const [checking, setChecking] = useState(true)
   const [days, setDays] = useState(7)
+  // Día, rango o año elegido a mano (01/11/2026). Si hay uno, manda sobre los botones «Hoy / 7 / 30 días».
+  const [custom, setCustom] = useState<AdminRange | null>(null)
+  const today = madridToday()
+  const range: AdminRange = custom ?? { from: madridDaysAgo(days - 1), to: today }
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
@@ -185,13 +189,14 @@ export default function AdminVisitsPage() {
     let current = true
     setData(null)
     setError(null)
-    supabase.rpc("admin_sessions", { p_from: madridDay(days - 1), p_to: madridDay(0), p_limit: 400 }).then(({ data, error }) => {
+    supabase.rpc("admin_sessions", { p_from: range.from, p_to: range.to, p_limit: 400 }).then(({ data, error }) => {
       if (!current) return
       if (error) setError(error.message || "error")
       else setData(data as Data)
     })
     return () => { current = false }
-  }, [checking, days])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checking, range.from, range.to])
 
   // Nombres reales de las fichas (vienen en los eventos page_view).
   const names = useMemo(() => {
@@ -273,12 +278,51 @@ export default function AdminVisitsPage() {
 
   return (
     <AdminShell title="Visitas" subtitle="Cada visita a la web, con o sin cuenta: de dónde llega, por qué página entra y qué hace después.">
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-3 flex flex-wrap gap-2">
         {PERIODS.map((p) => (
-          <button key={p.key} type="button" className={chip(days === p.key)} onClick={() => setDays(p.key)}>
+          <button key={p.key} type="button" className={chip(!custom && days === p.key)} onClick={() => { setCustom(null); setDays(p.key) }}>
             {p.label}
           </button>
         ))}
+        <button type="button" className={chip(custom?.from === madridDaysAgo(1) && custom?.to === madridDaysAgo(1))} onClick={() => setCustom({ from: madridDaysAgo(1), to: madridDaysAgo(1) })}>
+          Ayer
+        </button>
+        {yearsUpTo(today).map((y) => {
+          const r = yearRange(y, today)
+          return (
+            <button key={y} type="button" className={chip(!!r && custom?.from === r.from && custom?.to === r.to)} onClick={() => r && setCustom(r)}>
+              {y === Number(today.slice(0, 4)) ? `Este año (${y})` : String(y)}
+            </button>
+          )
+        })}
+      </div>
+      {/* Un día concreto o un rango: para un solo día, la misma fecha en los dos. */}
+      <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-semibold text-zinc-400">
+        <label className="flex items-center gap-2">
+          Desde
+          <input
+            type="date"
+            min={ADMIN_RANGE_MIN}
+            max={today}
+            value={range.from}
+            onChange={(e) => { const r = normalizeRange(e.target.value, range.to, today); if (r) setCustom(r) }}
+            className="rounded-full border border-white/10 bg-transparent px-3 py-1.5 text-xs text-zinc-200 [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex items-center gap-2">
+          Hasta
+          <input
+            type="date"
+            min={ADMIN_RANGE_MIN}
+            max={today}
+            value={range.to}
+            onChange={(e) => { const r = normalizeRange(range.from, e.target.value, today); if (r) setCustom(r) }}
+            className="rounded-full border border-white/10 bg-transparent px-3 py-1.5 text-xs text-zinc-200 [color-scheme:dark]"
+          />
+        </label>
+        <span className="text-zinc-500">
+          {range.from === range.to ? `Día ${range.from}` : `${rangeDays(range)} días`}
+        </span>
       </div>
 
       {error && (
@@ -353,9 +397,14 @@ export default function AdminVisitsPage() {
           ) : (
             <ul className="divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/10">
               {groups.map((g) => (
-                <VisitRow key={g[0].id + g[0].started_at} sessions={g} days={days} names={names} open={open} setOpen={setOpen} />
+                <VisitRow key={g[0].id + g[0].started_at} sessions={g} days={rangeDays(range)} names={names} open={open} setOpen={setOpen} />
               ))}
             </ul>
+          )}
+          {data.total_sessions > data.sessions.length && (
+            <p className="mt-3 text-xs text-zinc-500">
+              Se listan las {data.sessions.length} visitas más recientes de las {data.total_sessions} del periodo. Los totales de arriba cuentan todas; para ver el detalle del resto, elige un periodo más corto.
+            </p>
           )}
         </>
       ) : null}

@@ -593,7 +593,9 @@
     "dressAny": "Maakt niet uit",
     "dressElegant": "Chic",
     "mature": "Ik heb liever een 30+-sfeer",
-    "shareTitle": "Avondplan · {date}"
+    "shareTitle": "Avondplan · {date}",
+    "offersPriority": "Zaken met aanbiedingen of kortingen voorrang geven",
+    "reasonOffer": "Heeft een aanbieding of korting"
   },
   "favoritesPage": {
     "loading": "Favorieten laden...",

@@ -11,6 +11,7 @@ import { SearchIcon, CloseIcon, LocationIcon, CalendarIcon, ChevronDownIcon } fr
 import ExploreSwitch from "./ExploreSwitch"
 import Icon from "../ui/Icon"
 import { toDateLocale } from "../../lib/dateLocale"
+import { optionsWithData } from "../../lib/filterOptions"
 
 // Un evento de varios días (date_end) no se considera terminado hasta que pasa el último día,
 // no el primero.
@@ -120,6 +121,9 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
     if (key === "featured") return event.featured === true
     return false
   }
+
+  // Solo se enseñan los filtros que algún evento cumple (lib/filterOptions.ts); el ya elegido se queda.
+  const shownFilters = filters.filter((f) => selectedFilters.has(f.key) || optionsWithData([f.key], events, filterMatch).length > 0)
 
   const filteredEvents = useMemo(() => {
     return events.filter((event) => {
@@ -268,7 +272,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                 <LocationIcon className="h-4 w-4" />
                 {nearMeLoading ? t("explorer.locating") : t("explorer.near")}
               </button>
-              {filters.map((f) => (
+              {shownFilters.map((f) => (
                 <button key={f.key} onClick={() => setSelectedFilters((s) => toggleInSet(s, f.key))} aria-pressed={selectedFilters.has(f.key)} className={quick(selectedFilters.has(f.key))}>
                   {f.label}
                 </button>

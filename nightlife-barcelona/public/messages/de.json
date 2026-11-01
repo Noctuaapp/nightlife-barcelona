@@ -593,7 +593,9 @@
     "dressAny": "Egal",
     "dressElegant": "Elegant",
     "mature": "Ich bevorzuge ein Publikum 30+",
-    "shareTitle": "Plan für die Nacht · {date}"
+    "shareTitle": "Plan für die Nacht · {date}",
+    "offersPriority": "Lokale mit Angeboten oder Rabatten bevorzugen",
+    "reasonOffer": "Hat ein Angebot oder einen Rabatt"
   },
   "favoritesPage": {
     "loading": "Favoriten werden geladen...",

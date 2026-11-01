@@ -616,7 +616,9 @@
     "funTip5": "Guarda la ubicación del local en el móvil antes de salir, luego hay poca cobertura con tanta gente.",
     "funTip6": "Si cambias de planes a media noche, dile a alguien de tu grupo dónde vas.",
     "funTip7": "Llegar un poco antes de la hora punta suele salir más barato y sin cola.",
-    "funTip8": "Un buen desayuno después de la fiesta es sagrado — hay sitios abiertos ya de madrugada."
+    "funTip8": "Un buen desayuno después de la fiesta es sagrado — hay sitios abiertos ya de madrugada.",
+    "offersPriority": "Priorizar locales con ofertas o descuentos",
+    "reasonOffer": "Tiene oferta o descuento"
   },
   "favoritesPage": {
     "loading": "Cargando favoritos...",

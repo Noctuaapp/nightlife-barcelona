@@ -11,6 +11,10 @@ import { areasForPostalCode } from "../../lib/postalCodes"
 import { clubStaysOpenPast, madridClock } from "../../lib/clubHours"
 import { isClosedTonight } from "../../lib/scheduleNotices"
 import { WEEK_DOW_ORDER, tonightDow, clubMatchesDay } from "../../lib/clubDays"
+import { OFFERS_FILTER, hasOffer } from "../../lib/offers"
+import { optionsWithData } from "../../lib/filterOptions"
+import { loadFilterMemory, onlyKnown, saveFilterMemory } from "../../lib/filterMemory"
+import { Tag } from "lucide-react"
 
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T>(null)
@@ -67,11 +71,27 @@ const GENRE_FILTERS = ["Techno", "Commercial", "Cocktail Bar", "Karaoke"]
 // «Bar/pub abierto tras las 2:30» (29/10/2026): los bares y pubs que cierran más tarde de las 2:30,
 // para quien busca dónde seguir cuando ya cierra casi todo pero no quiere ir a una discoteca.
 const LATE_BAR_FILTER = "Bar/pub abierto tras las 2:30"
-const ATTRIBUTE_FILTERS = ["Trending", LATE_BAR_FILTER, "LGTBI+", "Sin cola", "Futbolín/Billar", "Descuento hoy", "Entrada gratis", ...EXTRA_FEATURES.filter((f) => f.filter).map((f) => f.filter as string)]
+const ATTRIBUTE_FILTERS = ["Trending", OFFERS_FILTER, LATE_BAR_FILTER, "LGTBI+", "Sin cola", "Futbolín/Billar", "Descuento hoy", "Entrada gratis", ...EXTRA_FEATURES.filter((f) => f.filter).map((f) => f.filter as string)]
 // Antes solo había "+18", "+21", "+25": los clubs con edad mínima de 30 (campo age_min = 30, editable
 // desde la ficha del club) no se podían filtrar por aquí, aunque el dato existiera. Se añade "+30".
 const AGE_FILTERS = ["+18", "+21", "+25", "+30"]
 const PAGE_SIZE = 9
+
+// Filtros que se recuerdan al abrir una ficha y volver (lib/filterMemory.ts). No se guarda «Cerca de mí»:
+// la ubicación hay que volver a pedirla.
+const FILTER_MEMORY_KEY = "noctua_clubs_filters_v1"
+type ClubsFilterMemory = {
+  genres: string[]
+  attributes: string[]
+  ages: string[]
+  neighborhoods: string[]
+  search: string
+  openNow: boolean
+  day: number | null
+  sortBy: string
+  visibleCount: number
+  scrollY: number | null
+}
 
 export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] }) {
   const [clubs] = useState<any[]>(initialClubs)
@@ -107,18 +127,95 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const { t } = useLanguage()
 
+  // Memoria de filtros al volver de una ficha (01/11/2026, lib/filterMemory.ts). `hydrated` pasa a true
+  // cuando ya se han recuperado (para no guardar los filtros vacíos encima de los buenos).
+  const [hydrated, setHydrated] = useState(false)
+  const pendingVisibleRef = useRef<number | null>(null)
+  const pendingScrollRef = useRef<number | null>(null)
+  const memoryStorage = () => {
+    try {
+      return window.sessionStorage
+    } catch {
+      return null
+    }
+  }
+
   // Lo que se buscó desde la portada llega como /clubs?search=... — antes este listado no leía
   // ese parámetro, así que al pulsar Enter en la portada salían TODOS los clubs sin filtrar.
+  // Una búsqueda nueva desde la portada manda sobre los filtros recordados.
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("search")
-    if (q) setSearch(q)
+    if (q) {
+      setSearch(q)
+    } else {
+      const mem = loadFilterMemory<ClubsFilterMemory>(memoryStorage(), FILTER_MEMORY_KEY)
+      if (mem) {
+        const hoods = new Set<string>(initialClubs.map((c) => c.neighborhood).filter(Boolean))
+        setSelectedGenres(new Set(onlyKnown(mem.genres, GENRE_FILTERS)))
+        setSelectedAttributes(new Set(onlyKnown(mem.attributes, ATTRIBUTE_FILTERS)))
+        setSelectedAges(new Set(onlyKnown(mem.ages, AGE_FILTERS)))
+        setSelectedNeighborhoods(new Set(onlyKnown(mem.neighborhoods, hoods)))
+        if (typeof mem.search === "string") setSearch(mem.search.slice(0, 100))
+        if (mem.openNow === true) setOpenNow(true)
+        if (typeof mem.day === "number" && mem.day >= 0 && mem.day <= 6) setSelectedDay(mem.day)
+        if (mem.sortBy === "rating" || mem.sortBy === "name") setSortBy(mem.sortBy)
+        if (typeof mem.visibleCount === "number" && Number.isFinite(mem.visibleCount)) {
+          pendingVisibleRef.current = Math.min(Math.max(Math.floor(mem.visibleCount), PAGE_SIZE), 300)
+        }
+        if (typeof mem.scrollY === "number" && mem.scrollY > 0) pendingScrollRef.current = mem.scrollY
+      }
+    }
     const { dow, minutes } = madridClock()
     setTonight(tonightDow(dow, minutes))
+    setHydrated(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Al cambiar un filtro se vuelve a las primeras 9 tarjetas; al recuperar los guardados, a las que
+  // se estaban viendo.
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE)
-  }, [selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, search, openNow, selectedDay, nearMe, sortBy])
+    if (!hydrated) return
+    const restored = pendingVisibleRef.current
+    pendingVisibleRef.current = null
+    setVisibleCount(restored ?? PAGE_SIZE)
+  }, [hydrated, selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, search, openNow, selectedDay, nearMe, sortBy])
+
+  const memorySnapshot = (scrollY: number | null): ClubsFilterMemory => ({
+    genres: Array.from(selectedGenres),
+    attributes: Array.from(selectedAttributes),
+    ages: Array.from(selectedAges),
+    neighborhoods: Array.from(selectedNeighborhoods),
+    search,
+    openNow,
+    day: selectedDay,
+    sortBy: sortBy === "distance" ? "recommended" : sortBy,
+    visibleCount,
+    scrollY,
+  })
+
+  useEffect(() => {
+    if (!hydrated) return
+    saveFilterMemory(memoryStorage(), FILTER_MEMORY_KEY, memorySnapshot(null))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, selectedGenres, selectedAttributes, selectedAges, selectedNeighborhoods, search, openNow, selectedDay, sortBy, visibleCount])
+
+  // Volver a donde se estaba en la lista (una sola vez): tras recuperar los filtros y dar tiempo a que
+  // se pinten las tarjetas.
+  useEffect(() => {
+    if (!hydrated || pendingScrollRef.current === null) return
+    const id = window.setTimeout(() => {
+      const y = pendingScrollRef.current
+      pendingScrollRef.current = null
+      if (y !== null) window.scrollTo({ top: y, left: 0, behavior: "instant" })
+    }, 220)
+    return () => window.clearTimeout(id)
+  }, [hydrated])
+
+  // Al abrir una ficha desde la lista se guarda también por dónde ibas.
+  const rememberScroll = (e: React.MouseEvent<HTMLElement>) => {
+    if (!(e.target as HTMLElement).closest("a")) return
+    saveFilterMemory(memoryStorage(), FILTER_MEMORY_KEY, memorySnapshot(window.scrollY))
+  }
 
   const isOpenNow = (hours: string): boolean => {
     if (!hours) return false
@@ -200,6 +297,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
 
   const attributeMatch = (club: any, a: string) => {
     if (a === "Trending") return club.trending === true
+    if (a === OFFERS_FILTER) return hasOffer(club)
     if (a === LATE_BAR_FILTER) return !!club.venue_type && club.venue_type !== "Discoteca" && clubStaysOpenPast(club.hours) === true
     if (a === "LGTBI+") return club.lgtbi_friendly === true
     if (a === "Sin cola") return club.queue === "No queue" || !club.queue
@@ -218,6 +316,23 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     if (age === "+30") return club.age_min === 30
     return false
   }
+
+  // Solo se enseñan los filtros que algún local cumple (lib/filterOptions.ts): antes salían todos y, al
+  // pulsar uno sin datos, aparecía «No hay clubs con estos filtros». Los ya elegidos se quedan.
+  const available = useMemo(
+    () => ({
+      genres: new Set(optionsWithData(GENRE_FILTERS, clubs, genreMatch)),
+      attributes: new Set(optionsWithData(ATTRIBUTE_FILTERS, clubs, attributeMatch)),
+      ages: new Set(optionsWithData(AGE_FILTERS, clubs, ageMatch)),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [clubs]
+  )
+  const shownGenres = GENRE_FILTERS.filter((g) => available.genres.has(g) || selectedGenres.has(g))
+  const shownAttributes = ATTRIBUTE_FILTERS.filter((a) => available.attributes.has(a) || selectedAttributes.has(a))
+  const shownAges = AGE_FILTERS.filter((a) => available.ages.has(a) || selectedAges.has(a))
+  const trendingShown = available.attributes.has("Trending") || selectedAttributes.has("Trending")
+  const offersShown = available.attributes.has(OFFERS_FILTER) || selectedAttributes.has(OFFERS_FILTER)
 
   const neighborhoods = Array.from(new Set(clubs.map((c) => c.neighborhood).filter(Boolean))).sort()
 
@@ -423,18 +538,36 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
               <LocationIcon className="h-4 w-4" />
               Cerca
             </button>
-            <button
-              onClick={() => setSelectedAttributes((s) => toggleInSet(s, "Trending"))}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
-                selectedAttributes.has("Trending")
-                  ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
-                  : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
-              }`}
-              style={selectedAttributes.has("Trending") ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
-            >
-              <FlameIcon className="h-4 w-4" />
-              Trending
-            </button>
+            {trendingShown && (
+              <button
+                onClick={() => setSelectedAttributes((s) => toggleInSet(s, "Trending"))}
+                className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
+                  selectedAttributes.has("Trending")
+                    ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
+                    : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+                }`}
+                style={selectedAttributes.has("Trending") ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
+              >
+                <FlameIcon className="h-4 w-4" />
+                Trending
+              </button>
+            )}
+            {/* «Ofertas» (01/11/2026): locales con promoción o entrada gratis; solo sale si hay alguno. */}
+            {offersShown && (
+              <button
+                onClick={() => setSelectedAttributes((s) => toggleInSet(s, OFFERS_FILTER))}
+                aria-pressed={selectedAttributes.has(OFFERS_FILTER)}
+                className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
+                  selectedAttributes.has(OFFERS_FILTER)
+                    ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
+                    : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+                }`}
+                style={selectedAttributes.has(OFFERS_FILTER) ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
+              >
+                <Tag size={16} aria-hidden="true" />
+                Ofertas
+              </button>
+            )}
 
             <div className="relative shrink-0">
               <select
@@ -502,30 +635,57 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                 onToggle={(v) => setSelectedDay((cur) => (cur === Number(v) ? null : Number(v)))}
                 hint={t("clubs.dayHint")}
               />
-              <ChipGroup
-                title="Estilo (elige varios)"
-                options={GENRE_FILTERS}
-                selected={selectedGenres}
-                onToggle={(v) => setSelectedGenres((s) => toggleInSet(s, v))}
-              />
-              <ChipGroup
-                title="Ambiente"
-                options={ATTRIBUTE_FILTERS}
-                selected={selectedAttributes}
-                onToggle={(v) => setSelectedAttributes((s) => toggleInSet(s, v))}
-              />
-              <ChipGroup
-                title="Edad mínima"
-                options={AGE_FILTERS}
-                selected={selectedAges}
-                onToggle={(v) => setSelectedAges((s) => toggleInSet(s, v))}
-              />
-              <ChipGroup
-                title="Barrio (elige varios)"
-                options={neighborhoods}
-                selected={selectedNeighborhoods}
-                onToggle={(v) => setSelectedNeighborhoods((s) => toggleInSet(s, v))}
-              />
+              {shownGenres.length > 0 && (
+                <ChipGroup
+                  title="Estilo (elige varios)"
+                  options={shownGenres}
+                  selected={selectedGenres}
+                  onToggle={(v) => setSelectedGenres((s) => toggleInSet(s, v))}
+                />
+              )}
+              {shownAttributes.length > 0 && (
+                <ChipGroup
+                  title="Ambiente"
+                  options={shownAttributes}
+                  selected={selectedAttributes}
+                  onToggle={(v) => setSelectedAttributes((s) => toggleInSet(s, v))}
+                />
+              )}
+              {shownAges.length > 0 && (
+                <ChipGroup
+                  title="Edad mínima"
+                  options={shownAges}
+                  selected={selectedAges}
+                  onToggle={(v) => setSelectedAges((s) => toggleInSet(s, v))}
+                />
+              )}
+              {neighborhoods.length > 0 && (
+                <ChipGroup
+                  title="Barrio (elige varios)"
+                  options={neighborhoods}
+                  selected={selectedNeighborhoods}
+                  onToggle={(v) => setSelectedNeighborhoods((s) => toggleInSet(s, v))}
+                />
+              )}
+
+              {/* Cierre del panel (01/11/2026): tras elegir, un botón al final para cerrarlo y ver los resultados. */}
+              <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                {activeFilters.length > 0 ? (
+                  <button type="button" onClick={clearAll} className="text-sm font-semibold text-zinc-400 underline-offset-2 transition hover:text-white hover:underline">
+                    Limpiar filtros
+                  </button>
+                ) : (
+                  <span />
+                )}
+                <button
+                  type="button"
+                  onClick={showResults}
+                  className="rounded-full px-7 py-3.5 text-sm font-bold text-white shadow-[0_10px_30px_-6px_rgba(168,85,247,0.7)] transition active:scale-95"
+                  style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+                >
+                  Cerrar y ver {sortedClubs.length} {sortedClubs.length === 1 ? "club" : "clubs"}
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -552,7 +712,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         </section>
 
         {/* Results */}
-        <section className="mx-auto mt-4 grid grid-cols-1 max-w-7xl gap-8 px-4 md:grid-cols-2 xl:grid-cols-3">
+        <section onClickCapture={rememberScroll} className="mx-auto mt-4 grid grid-cols-1 max-w-7xl gap-8 px-4 md:grid-cols-2 xl:grid-cols-3">
           {visibleClubs.length === 0 ? (
             <div className="col-span-full py-24 text-center">
               <p className="text-lg font-bold text-zinc-300">No hay clubs con estos filtros</p>
