@@ -66,8 +66,29 @@ function dayInRange(day: number, from: number, to: number): boolean {
   return from <= to ? day >= from && day <= to : day >= from || day <= to
 }
 
+// Un horario puede tener varias frases separadas por « | » («Monday to Friday 9:00 AM – 1:00 AM |
+// Saturday Open 24 hours»): está abierto si lo está cualquiera de ellas. Con una sola frase se
+// comporta exactamente igual que siempre.
 export function getOpenStatus(raw: string | null | undefined, tr?: Translate): OpenStatus {
   if (!raw || !raw.trim()) return UNKNOWN
+  const clauses = raw.split("|").map((c) => c.trim()).filter(Boolean)
+  if (clauses.length <= 1) return evalClause(raw, tr)
+
+  const results = clauses.map((c) => evalClause(c, tr))
+  const open = results.filter((r) => r.state === "open")
+  if (open.length > 0) return open.find((r) => !r.soon) ?? open[0]
+  // Cerrado: se dice la próxima apertura de hoy (la más cercana), no la primera frase que salga.
+  const now = madridNow().minutes
+  const withOpening = results.filter((r) => r.state === "closed" && r.openMin !== undefined)
+  if (withOpening.length > 0) {
+    return withOpening.reduce((best, r) => ((r.openMin! - now + 1440) % 1440 < (best.openMin! - now + 1440) % 1440 ? r : best))
+  }
+  return results.find((r) => r.state === "closed") ?? UNKNOWN
+}
+
+type ClauseStatus = OpenStatus & { openMin?: number }
+
+function evalClause(raw: string, tr?: Translate): ClauseStatus {
   try {
     const now = madridNow()
     const lower = raw.trim().toLowerCase()
@@ -107,7 +128,7 @@ export function getOpenStatus(raw: string | null | undefined, tr?: Translate): O
         }
       }
       // Solo se puede decir "abre a..." con certeza si el horario de hoy aplica.
-      return { state: "closed", soon: false, label: todayIn ? L(tr, "closedOpens", fmt(open)) : L(tr, "closed") }
+      return { state: "closed", soon: false, label: todayIn ? L(tr, "closedOpens", fmt(open)) : L(tr, "closed"), openMin: todayIn ? open : undefined }
     }
 
     const until = rest.match(/until\s+(\d{1,2}):(\d{2})\s*(am|pm)?/)

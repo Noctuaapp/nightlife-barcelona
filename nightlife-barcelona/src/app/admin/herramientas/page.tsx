@@ -18,6 +18,7 @@ type Tool = {
   description: string
   batch?: boolean // devuelve "remaining": se puede repetir hasta que llegue a 0
   osm?: boolean
+  osmEssentials?: boolean // zona + categoría + vista previa / importar de verdad
   nitbus?: boolean // vista previa / importar de verdad, sin zona
 }
 
@@ -78,6 +79,13 @@ const TOOLS: Tool[] = [
     osm: true,
   },
   {
+    key: "import-osm-essentials",
+    path: "/api/admin/import-osm-essentials",
+    title: "Importar esenciales desde OpenStreetMap",
+    description: "Farmacias, cajeros, comida, supermercados, gasolineras y hospitales abiertos las 24 h o hasta pasada la 1:00. Todo entra oculto para revisarlo en Esenciales antes de publicar. En Barcelona elige una categoría cada vez. Sin marcar «Importar de verdad» solo es una vista previa.",
+    osmEssentials: true,
+  },
+  {
     key: "import-nitbus",
     path: "/api/admin/import-nitbus-stops",
     title: "Cargar paradas de Nitbus (OpenStreetMap)",
@@ -96,6 +104,9 @@ export default function AdminToolsPage() {
   const [state, setState] = useState<Record<string, RunState>>({})
   const [osmArea, setOsmArea] = useState("barcelona")
   const [osmReal, setOsmReal] = useState(false)
+  const [essArea, setEssArea] = useState("badalona")
+  const [essCat, setEssCat] = useState("all")
+  const [essReal, setEssReal] = useState(false)
   const [nitbusReal, setNitbusReal] = useState(false)
   const stopRef = useRef<Record<string, boolean>>({})
 
@@ -203,6 +214,8 @@ export default function AdminToolsPage() {
     if (!token) throw new Error("Sesión caducada: vuelve a iniciar sesión.")
     const url = tool.osm
       ? `${tool.path}?area=${osmArea}${osmReal ? "&dry=0" : ""}`
+      : tool.osmEssentials
+      ? `${tool.path}?area=${essArea}&cat=${essCat}${essReal ? "&dry=0" : ""}`
       : tool.nitbus
       ? `${tool.path}${nitbusReal ? "?dry=0" : ""}`
       : tool.path
@@ -353,6 +366,44 @@ export default function AdminToolsPage() {
                   </select>
                   <label className="flex items-center gap-2 text-zinc-300">
                     <input type="checkbox" checked={osmReal} onChange={(e) => setOsmReal(e.target.checked)} />
+                    Importar de verdad
+                  </label>
+                </div>
+              )}
+
+              {tool.osmEssentials && (
+                <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+                  <select
+                    value={essArea}
+                    onChange={(e) => setEssArea(e.target.value)}
+                    className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-white"
+                  >
+                    <option value="barcelona">Barcelona</option>
+                    <option value="hospitalet">L&apos;Hospitalet</option>
+                    <option value="badalona">Badalona</option>
+                    <option value="elprat">El Prat</option>
+                    <option value="santacoloma">Santa Coloma de Gramenet</option>
+                    <option value="cornella">Cornellà de Llobregat</option>
+                    <option value="santadria">Sant Adrià de Besòs</option>
+                    <option value="esplugues">Esplugues de Llobregat</option>
+                    <option value="santfeliu">Sant Feliu de Llobregat</option>
+                    <option value="santboi">Sant Boi de Llobregat</option>
+                  </select>
+                  <select
+                    value={essCat}
+                    onChange={(e) => setEssCat(e.target.value)}
+                    className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-white"
+                  >
+                    <option value="all">Todas las categorías</option>
+                    <option value="pharmacy">Farmacias</option>
+                    <option value="atm">Cajeros</option>
+                    <option value="food">Comida</option>
+                    <option value="supermarket">Supermercados</option>
+                    <option value="gas">Gasolineras</option>
+                    <option value="hospital">Hospitales</option>
+                  </select>
+                  <label className="flex items-center gap-2 text-zinc-300">
+                    <input type="checkbox" checked={essReal} onChange={(e) => setEssReal(e.target.checked)} />
                     Importar de verdad
                   </label>
                 </div>
