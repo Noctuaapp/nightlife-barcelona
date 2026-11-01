@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isAdminRequest } from "@/lib/adminAuth"
+import { hedgedOverpass } from "@/lib/overpassHedged"
+import { NIGHT_NAME_OVERPASS, isNightlifeVenue, venueTypeOf, venueFlagsOf } from "@/lib/osmVenues"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -21,8 +23,8 @@ const AREAS: Record<string, { osmPattern: string; city: string }> = {
   badalona: { osmPattern: "Badalona", city: "Badalona" },
   elprat: { osmPattern: "[Ee]l Prat de Llobregat", city: "El Prat de Llobregat" },
   santacoloma: { osmPattern: "Santa Coloma de Gramenet", city: "Santa Coloma de Gramenet" },
-  cornella: { osmPattern: "Cornell[àa] de Llobregat", city: "Cornellà de Llobregat" },
-  santadria: { osmPattern: "Sant Adri[àa] de Bes[òo]s", city: "Sant Adrià de Besòs" },
+  cornella: { osmPattern: "Cornell(à|a) de Llobregat", city: "Cornellà de Llobregat" },
+  santadria: { osmPattern: "Sant Adri(à|a) de Bes(ò|o)s", city: "Sant Adrià de Besòs" },
   esplugues: { osmPattern: "Esplugues de Llobregat", city: "Esplugues de Llobregat" },
   santfeliu: { osmPattern: "Sant Feliu de Llobregat", city: "Sant Feliu de Llobregat" },
   santboi: { osmPattern: "Sant Boi de Llobregat", city: "Sant Boi de Llobregat" },
@@ -49,21 +51,6 @@ function meters(lat1: number, lon1: number, lat2: number, lon2: number): number 
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-// Los "pub" y "bar" de OpenStreetMap en España son, casi todos, bares de barrio. Solo se admiten
-// si hay una señal clara de ocio nocturno: música, baile, karaoke o un nombre tipo club/sala.
-// Se descartan siempre restaurantes, granjas, tapas y centros culturales.
-const NOT_NIGHTLIFE = /(petanca|bolera|bolos|boccia|deport|futbol|fútbol|tenis|padel|pádel|golf|caza y pesca|jubilad|restaur|granja|freidur|bocata|bocadill|cervecer|tapas|menjador|menjar|comedor|centro cultural|agrupaci|casal|panader|pasteler|helader|kebab|pizzer|hamburguesa|pollo|marisquer|mesón|meson|taberna)/i
-const NIGHT_NAME = /(music|musical|live|karaoke|lounge|disco|club|sala |cocktail|cocteler|coctel|night|noche|nit|dance|rumba|salsa|latino|latin|jazz|rock|blues|irish|chiringuito|terraza|rooftop)/i
-
-function isNightlifeBar(tags: Record<string, string>): boolean {
-  const name = tags.name || ""
-  if (NOT_NIGHTLIFE.test(name)) return false
-  if (tags.live_music === "yes" || tags.dance === "yes" || tags.karaoke === "yes") return true
-  if (tags.music || Object.keys(tags).some((k) => k.startsWith("music:"))) return true
-  return NIGHT_NAME.test(name)
-}
-
-
 // Municipio real del local (la cuadrícula de Barcelona también recoge locales de municipios vecinos).
 function cityFor(tags: Record<string, string>, fallback: string): string {
   const raw = (tags["addr:city"] || "").trim()
@@ -76,6 +63,8 @@ function cityFor(tags: Record<string, string>, fallback: string): string {
     if (/adri/i.test(raw)) return "Sant Adrià de Besòs"
     if (/esplugues/i.test(raw)) return "Esplugues de Llobregat"
     if (/santa coloma/i.test(raw)) return "Santa Coloma de Gramenet"
+    if (/sant feliu de llobregat|sant feliu\b(?!\s+de\s+(?:codines|gu[ií]xols))/i.test(raw)) return "Sant Feliu de Llobregat"
+    if (/sant boi/i.test(raw)) return "Sant Boi de Llobregat"
     return raw.slice(0, 60)
   }
   const pc = (tags["addr:postcode"] || "").trim()
@@ -86,6 +75,8 @@ function cityFor(tags: Record<string, string>, fallback: string): string {
   if (/^08940/.test(pc)) return "Cornellà de Llobregat"
   if (/^08950/.test(pc)) return "Esplugues de Llobregat"
   if (/^0892[1-4]/.test(pc)) return "Santa Coloma de Gramenet"
+  if (/^08980/.test(pc)) return "Sant Feliu de Llobregat"
+  if (/^08830/.test(pc)) return "Sant Boi de Llobregat"
   return fallback
 }
 
@@ -102,14 +93,15 @@ export async function GET(req: Request) {
   }
   const areaKey = (searchParams.get("area") || "").toLowerCase()
   const area = AREAS[areaKey]
-  if (!area) return NextResponse.json({ error: "area debe ser barcelona, hospitalet, badalona o elprat" }, { status: 400 })
+  if (!area) return NextResponse.json({ error: `area debe ser una de: ${Object.keys(AREAS).join(", ")}` }, { status: 400 })
   const dry = searchParams.get("dry") !== "0"
 
-  // Solo se piden discotecas/salas de música y pubs o bares con señales claras de noche
-  // (etiquetas de música/baile/karaoke, o un nombre tipo club/sala/lounge/jazz...).
-  const nameRx = "music|musical|live|karaoke|lounge|disco|club|sala |cocktail|cocteler|coctel|night|noche|dance|rumba|salsa|latin|jazz|rock|blues|irish|chiringuito|terraza|rooftop"
+  // Solo se piden discotecas, salas de música y karaokes, y pubs o bares con señales claras de noche
+  // (etiquetas de música/baile/karaoke, o un nombre tipo club/sala/lounge/jazz...). La lista de
+  // palabras del nombre está en lib/osmVenues.ts y es la misma con la que luego se filtra.
+  const nameRx = NIGHT_NAME_OVERPASS
   const blocksFor = (scope: string) => [
-    `nwr${scope}["amenity"~"^(nightclub|music_venue)$"]["name"];`,
+    `nwr${scope}["amenity"~"^(nightclub|music_venue|karaoke_box)$"]["name"];`,
     `nwr${scope}["amenity"~"^(pub|bar)$"]["name"]["live_music"="yes"];`,
     `nwr${scope}["amenity"~"^(pub|bar)$"]["name"]["dance"="yes"];`,
     `nwr${scope}["amenity"~"^(pub|bar)$"]["name"]["karaoke"="yes"];`,
@@ -198,8 +190,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Ninguna cuadrícula respondió. OpenStreetMap está caído ahora mismo.", detalle: errors.slice(0, 6) }, { status: 502 })
     }
   } else {
-    const q = `[out:json][timeout:45];\narea["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;\n(\n  ${blocksFor("(area.a)").join("\n  ")}\n);\nout center tags;`
-    const els = await runQuery(q, 47000, errors)
+    // Un municipio es una sola consulta. Se pregunta a los servidores en escalón (12 s entre uno y
+    // otro) y se corta a los 50 s, para quedar siempre por debajo del minuto de la función: antes un
+    // servidor colgado agotaba el minuto y la web devolvía un 504 sin explicación.
+    const q = `[out:json][timeout:40];\narea["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;\n(\n  ${blocksFor("(area.a)").join("\n  ")}\n);\nout center tags;`
+    const els = await hedgedOverpass({ mirrors: MIRRORS, query: q, totalMs: 50000, staggerMs: 12000, errors })
     if (els === null) {
       return NextResponse.json({ error: "Los servidores de OpenStreetMap no respondieron. Prueba otra vez en uno o dos minutos.", detalle: errors }, { status: 502 })
     }
@@ -236,8 +231,7 @@ export async function GET(req: Request) {
     const lat = Number(el.lat ?? el.center?.lat)
     const lon = Number(el.lon ?? el.center?.lon)
     if (!name || !isFinite(lat) || !isFinite(lon)) continue
-    const amenity = tags.amenity
-    if (amenity !== "nightclub" && amenity !== "music_venue" && !isNightlifeBar(tags)) { skippedBar++; continue }
+    if (!isNightlifeVenue(tags)) { skippedBar++; continue }
 
     const norm = normalize(name)
     if (isDup(norm, lat, lon)) { skippedDup++; continue }
@@ -248,7 +242,7 @@ export async function GET(req: Request) {
     const address = street
       ? [street + (tags["addr:housenumber"] ? ", " + tags["addr:housenumber"] : ""), tags["addr:postcode"], cityName].filter(Boolean).join(", ")
       : null
-    const venue_type = amenity === "nightclub" ? "Discoteca" : amenity === "pub" ? "Pub" : "Bar musical"
+    const venue_type = venueTypeOf(tags)
 
     rows.push({
       name: name.slice(0, 120),
@@ -258,6 +252,7 @@ export async function GET(req: Request) {
       latitude: lat,
       longitude: lon,
       venue_type,
+      ...venueFlagsOf(tags, venue_type),
       website: cleanUrl(tags.website || tags["contact:website"]),
       phone: (tags.phone || tags["contact:phone"] || "").slice(0, 30) || null,
       instagram: (tags["contact:instagram"] || "").slice(0, 100) || null,
