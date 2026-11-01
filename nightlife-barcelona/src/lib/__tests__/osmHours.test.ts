@@ -66,9 +66,21 @@ describe("criterio de noche (24 h o cierre pasada la 1:00)", () => {
     expect(night("Mo-Su 08:00-24:00")).toBe(false)
   })
 
-  it("abrir de madrugada cuenta", () => {
+  it("seguir abierto de madrugada cuenta; abrir de madrugada, no", () => {
     expect(opensPastOne(parseOsmHours("Mo-Su 00:00-06:00")!)).toBe(true)
+    expect(opensPastOne(parseOsmHours("Mo-Su 01:00-05:00")!)).toBe(true)
     expect(hasFullDay(parseOsmHours("Mo-Su 06:00-14:00")!)).toBe(false)
+  })
+
+  it("una cafetería que abre a las 5:30 y cierra a las 21:30 no es de noche", () => {
+    expect(night("Mo-Fr 05:30-21:30; Sa 06:00-21:30; Su 06:00-14:30")).toBe(false)
+    expect(night("Mo-Su 04:00-12:00")).toBe(false)
+  })
+
+  it("los que cierran pasada la 1:00 solo algunos días sí entran", () => {
+    expect(night("Mo-Fr 06:00-24:00; Sa-Su 07:00-01:30")).toBe(true)
+    expect(night("Mo-Th 10:00-01:00; Fr-Sa 10:00-03:00; Su 10:00-24:00")).toBe(true)
+    expect(night("Tu-Th 13:00-20:00; Th-Fr 22:30-02:30")).toBe(true)
   })
 })
 

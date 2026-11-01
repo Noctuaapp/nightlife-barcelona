@@ -90,9 +90,11 @@ export function hasFullDay(week: WeekHours): boolean {
   return week.some(FULL_DAY)
 }
 
-// ¿Está abierto en algún momento entre la 1:00 y las 6:00? (cierra pasada la 1:00 o abre de madrugada)
+// ¿Sigue abierto pasada la 1:00? Es decir, está abierto a la 1:00 y cierra más tarde (o no cierra).
+// Un sitio que abre a las 5:30 de la mañana NO cuenta: no es un sitio de noche (corregido el 1 nov
+// 2026, cuando una cafetería de 5:30 a 21:30 se colaba por abrir antes de las 6:00).
 export function opensPastOne(week: WeekHours): boolean {
-  return week.some((day) => day.some(([s, e]) => (s < 360 && e > 60) || (s < 1800 && e > 1500)))
+  return week.some((day) => day.some(([s, e]) => (s <= 60 && e > 60) || (s <= 1500 && e > 1500)))
 }
 
 // «24 h o abierto pasada la 1:00»: el criterio de Noctua para un esencial de noche.

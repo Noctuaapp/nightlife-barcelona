@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isAdminRequest } from "@/lib/adminAuth"
-import { hedgedOverpass } from "@/lib/overpassHedged"
+import { hedgedOverpass, OVERPASS_MIRRORS } from "@/lib/overpassHedged"
 import { AREAS, normalize, meters, cityFor } from "@/lib/osmAreas"
 import { isNightlifeVenue, venueTypeOf, venueFlagsOf } from "@/lib/osmVenues"
 
@@ -43,11 +43,7 @@ export async function GET(req: Request) {
     `nwr${scope}["amenity"~"^(pub|bar)$"]["name"];`,
   ]
 
-  const MIRRORS = [
-    "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
-    "https://overpass.private.coffee/api/interpreter",
-  ]
+  const MIRRORS = OVERPASS_MIRRORS
 
   // Una consulta con varios servidores como respaldo. Devuelve null si ninguno responde a tiempo.
   async function runQuery(query: string, perTryMs: number, errors: string[]): Promise<any[] | null> {
@@ -103,7 +99,7 @@ export async function GET(req: Request) {
         const batch = pending.slice(i, i + 4)
         if (Date.now() - startedAt > BUDGET - 9000) { stillFailing.push(...batch); continue }
         const results = await Promise.all(batch.map(async (bb) => {
-          const q = `[out:json][timeout:15];\n(\n  ${blocksFor(bb).join("\n  ")}\n);\nout center tags;`
+          const q = `[out:json][timeout:15][maxsize:67108864];\n(\n  ${blocksFor(bb).join("\n  ")}\n);\nout center tags;`
           return { bb, els: await runQuery(q, 12000, errors) }
         }))
         for (const r of results) {
@@ -128,8 +124,8 @@ export async function GET(req: Request) {
     // Un municipio es una sola consulta. Se pregunta a los servidores en escalón (12 s entre uno y
     // otro) y se corta a los 50 s, para quedar siempre por debajo del minuto de la función: antes un
     // servidor colgado agotaba el minuto y la web devolvía un 504 sin explicación.
-    const q = `[out:json][timeout:40];\narea["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;\n(\n  ${blocksFor("(area.a)").join("\n  ")}\n);\nout center tags;`
-    const els = await hedgedOverpass({ mirrors: MIRRORS, query: q, totalMs: 50000, staggerMs: 12000, errors })
+    const q = `[out:json][timeout:30][maxsize:134217728];\narea["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;\n(\n  ${blocksFor("(area.a)").join("\n  ")}\n);\nout center tags;`
+    const els = await hedgedOverpass({ mirrors: MIRRORS, query: q, totalMs: 50000, staggerMs: 8000, errors })
     if (els === null) {
       // El panel solo enseña el texto de «error», así que el motivo de cada servidor va dentro.
       return NextResponse.json({ error: `Los servidores de OpenStreetMap no respondieron. Prueba otra vez en uno o dos minutos. Motivo: ${errors.join("; ") || "sin detalle"}`, detalle: errors }, { status: 502 })

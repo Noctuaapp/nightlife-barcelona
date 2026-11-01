@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isAdminRequest } from "@/lib/adminAuth"
-import { hedgedOverpass } from "@/lib/overpassHedged"
+import { hedgedOverpass, OVERPASS_MIRRORS } from "@/lib/overpassHedged"
 import { AREAS, cityFor, normalize } from "@/lib/osmAreas"
 import { ESSENTIAL_TYPES, essentialAddress, isDuplicateEssential, judgeEssential, osmMatches, typesFor, type ExistingEssential } from "@/lib/osmEssentials"
 
@@ -18,11 +18,7 @@ export const maxDuration = 60
 //   area = igual que el importador de locales | cat = all | pharmacy | atm | food | supermarket | gas | hospital
 //   En Barcelona conviene ir categoría a categoría: son muchos datos para una sola consulta.
 
-const MIRRORS = [
-  "https://overpass-api.de/api/interpreter",
-  "https://overpass.kumi.systems/api/interpreter",
-  "https://overpass.private.coffee/api/interpreter",
-]
+const MIRRORS = OVERPASS_MIRRORS
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -39,9 +35,9 @@ export async function GET(req: Request) {
   const dry = searchParams.get("dry") !== "0"
 
   const blocks = types.flatMap((t) => t.selectors.map((sel) => `nwr(area.a)${sel};`))
-  const query = `[out:json][timeout:40];\narea["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;\n(\n  ${blocks.join("\n  ")}\n);\nout center tags;`
+  const query = `[out:json][timeout:30][maxsize:134217728];\narea["boundary"="administrative"]["admin_level"="8"]["name"~"^${area.osmPattern}$"]->.a;\n(\n  ${blocks.join("\n  ")}\n);\nout center tags;`
   const errors: string[] = []
-  const elements = await hedgedOverpass({ mirrors: MIRRORS, query, totalMs: 50000, staggerMs: 12000, errors })
+  const elements = await hedgedOverpass({ mirrors: MIRRORS, query, totalMs: 50000, staggerMs: 8000, errors })
   if (elements === null) {
     return NextResponse.json({
       // El panel solo enseña el texto de «error», así que el motivo de cada servidor va dentro.

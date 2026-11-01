@@ -3,6 +3,18 @@
 // al segundo (y así). Gana el primero que responda bien y el resto se cancelan. Un servidor colgado
 // ya no se come el minuto entero que Vercel da a la función (antes salía un 504 sin más detalle).
 
+// Servidores públicos de Overpass, de mayor a menor preferencia. Son gratuitos y a veces van
+// saturados (502, 429 o sin respuesta), por eso hay varios.
+export const OVERPASS_MIRRORS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
+  "https://overpass.openstreetmap.fr/api/interpreter",
+]
+
+// Consejo para las consultas: declarar [timeout] y [maxsize] ajustados (30 s y 128 MB, no los
+// valores por defecto) hace que un servidor ocupado las acepte antes.
+
 export type OverpassFetch = (
   url: string,
   init: { method: string; headers: Record<string, string>; body: string; signal: AbortSignal },
