@@ -78,11 +78,16 @@ export default function EssentialsPage() {
     .filter((c) => c !== "Taxi" && c !== "Transport")
     .sort((a, b) => categoryRank(a) - categoryRank(b))
   const itemsByCategory = (cat: string) => essentials.filter((e) => e.category === cat)
+  // «Cerca de ti» (2/11/2026): no sugiere Metro ni Nitbus. Una parada o estación se busca en su propia
+  // página o en Maps, y con cientos de paradas llenaban la lista y tapaban farmacias, súper, comida…
+  // Siguen en su sección «Transporte» y en la búsqueda por nombre.
+  const NEAR_EXCLUDED = new Set(["Metro", "Nitbus"])
+  const nearCategories = categories.filter((c) => !NEAR_EXCLUDED.has(c))
   const openCount = (cat: string) => itemsByCategory(cat).filter((e) => getOpenStatus(e.open_hours).state === "open").length
 
   const nearby = userLocation
     ? essentials
-        .filter((e) => e.latitude && e.longitude)
+        .filter((e) => e.latitude && e.longitude && !NEAR_EXCLUDED.has(e.category))
         .map((e) => ({ ...e, _dist: distanceInMeters(userLocation.lat, userLocation.lng, Number(e.latitude), Number(e.longitude)) }))
         .sort((a, b) => a._dist - b._dist)
         .slice(0, 8)
@@ -126,6 +131,7 @@ export default function EssentialsPage() {
     ? userLocation
       ? textMatches
           .filter((e) => e.latitude && e.longitude)
+          .filter((e) => !NEAR_EXCLUDED.has(e.category))
           .filter((e) => nearMeCategory === "All" || e.category === nearMeCategory)
           .map((e) => ({ ...e, _dist: distanceInMeters(userLocation.lat, userLocation.lng, Number(e.latitude), Number(e.longitude)) }))
           .sort((a, b) => a._dist - b._dist)
@@ -184,7 +190,7 @@ export default function EssentialsPage() {
           <section className="mx-auto mt-8 max-w-7xl px-4">
             {nearMe && userLocation && (
               <div className="mb-4 flex gap-2.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {["All", ...categories].map((c) => (
+                {["All", ...nearCategories].map((c) => (
                   <button
                     key={c}
                     onClick={() => setNearMeCategory(c)}
