@@ -37,6 +37,16 @@ describe("isNightlifeVenue", () => {
     expect(isNightlifeVenue(bar("Club de Fútbol Badalona"))).toBe(false)
     expect(isNightlifeVenue(bar("Restaurante Night"))).toBe(false)
   })
+
+  it("descarta las salas VIP y los locales de los aeropuertos, aunque lleven «sala» o «lounge»", () => {
+    for (const n of ["Sala VIP Canudas", "Sala VIP Pau Casals", "Salón VIP Joan Miró", "Iberia VIP Lounge", "Business Lounge T1", "Lounge Aeropuerto El Prat", "Airport Club Bar", "Sala Terminal 2", "Terminal 1 Music Bar"]) {
+      expect(isNightlifeVenue(bar(n)), n).toBe(false)
+      expect(isNightlifeVenue(pub(n)), n).toBe(false)
+    }
+    // un bar normal con «sala» o «lounge» sigue entrando
+    expect(isNightlifeVenue(bar("Sala Apolo Lounge"))).toBe(true)
+    expect(isNightlifeVenue(bar("Terminus Club"))).toBe(true)
+  })
 })
 
 describe("venueTypeOf", () => {

@@ -13,9 +13,10 @@ const BASE_URL = "https://www.noctuaapp.com"
 // Categorías fijas de /essentials/[category] — vienen de categoryConfig en esa página, no de una
 // tabla, así que se listan aquí a mano en vez de consultarlas. Hotel y casino no se incluyen: esas
 // páginas siguen existiendo pero llevan noindex (no son esenciales de la noche).
+// parking (2/11/2026): parkings públicos gratuitos, con los clubs que quedan a pie desde cada uno.
 const ESSENTIAL_CATEGORIES = [
   "pharmacy", "atm", "food", "transport", "metro", "nitbus", "taxi",
-  "supermarket", "gas-station", "hospital",
+  "supermarket", "gas-station", "hospital", "parking",
 ]
 
 // Antes no existía sitemap.xml: Google tenía que descubrir cada club y cada evento navegando

@@ -23,8 +23,10 @@ const alternatives = TOKENS.map((t) => (t.exacta ? t.rx + END : t.rx)).join("|")
 // agota (pasó el 1 nov 2026). A Overpass solo se le piden etiquetas simples y el filtro se hace después.
 export const NIGHT_NAME = new RegExp(`(^|[^a-z])(${alternatives})`, "i")
 
-// Se descartan siempre restaurantes, granjas, tapas y centros culturales.
-export const NOT_NIGHTLIFE = /(petanca|bolera|bolos|boccia|deport|futbol|fútbol|tenis|padel|pádel|golf|caza y pesca|jubilad|restaur|granja|freidur|bocata|bocadill|cervecer|tapas|menjador|menjar|comedor|centro cultural|agrupaci|casal|panader|pasteler|helader|kebab|pizzer|hamburguesa|pollo|marisquer|mesón|meson|taberna)/i
+// Se descartan siempre restaurantes, granjas, tapas y centros culturales, y las salas VIP y
+// negocios de los aeropuertos (el 2/11/2026 se coló «Sala VIP Canudas», una sala de la Terminal 2 del
+// Prat que tiene «Sala» en el nombre, y salía en el mapa como un club dentro del aeropuerto).
+export const NOT_NIGHTLIFE = /(petanca|bolera|bolos|boccia|deport|futbol|fútbol|tenis|padel|pádel|golf|caza y pesca|jubilad|restaur|granja|freidur|bocata|bocadill|cervecer|tapas|menjador|menjar|comedor|centro cultural|agrupaci|casal|panader|pasteler|helader|kebab|pizzer|hamburguesa|pollo|marisquer|mesón|meson|taberna|sala vip|salon vip|salón vip|vip lounge|business lounge|aeroport|aeropuerto|airport|terminal [12t]([^a-z0-9]|$))/i
 
 export type OsmTags = Record<string, string>
 
