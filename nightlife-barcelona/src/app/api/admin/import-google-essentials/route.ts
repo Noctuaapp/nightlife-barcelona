@@ -45,9 +45,11 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const areaKey = (searchParams.get("area") || "").toLowerCase()
   const area = AREAS[areaKey]
-  const boundary = staticBoundary(areaKey)
+  // Barcelona tiene contorno guardado (para el importador de OpenStreetMap), pero aquí sigue sin estar
+  // disponible: son muchas más búsquedas de pago.
+  const boundary = areaKey === "barcelona" ? null : staticBoundary(areaKey)
   if (!area || !boundary) {
-    return NextResponse.json({ error: `area debe ser una de: ${STATIC_BOUNDARY_KEYS.join(", ")}. Barcelona no está disponible en esta herramienta.` }, { status: 400 })
+    return NextResponse.json({ error: `area debe ser una de: ${STATIC_BOUNDARY_KEYS.filter((k) => k !== "barcelona").join(", ")}. Barcelona no está disponible en esta herramienta.` }, { status: 400 })
   }
   const cats = googleCategoriesFor(searchParams.get("cat") || "all")
   if (cats.length === 0) {

@@ -98,7 +98,8 @@ describe("parkings gratuitos", () => {
   })
 
   it("descarta los de camiones y autobuses, que no son para un coche", () => {
-    for (const tags of [{ name: "Truck Parking" }, { name: "Aparcament de camions" }, { name: "Aparcamiento autobuses" }, { hgv: "designated" }, { hgv: "only" }]) {
+    const casos: Record<string, string>[] = [{ name: "Truck Parking" }, { name: "Aparcament de camions" }, { name: "Aparcamiento autobuses" }, { hgv: "designated" }, { hgv: "only" }]
+    for (const tags of casos) {
       expect(judgeEssential(parking, { amenity: "parking", fee: "no", ...tags })).toEqual({ ok: false, reason: "no_es_para_coches" })
     }
     // un parking normal que también admite camiones (hgv=yes), o con «bus» dentro de otra palabra, sigue entrando

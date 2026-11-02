@@ -36,6 +36,11 @@ import { getPrecisePosition } from "../../../lib/precisePosition"
 // Un solo color (el de la marca) para todas las categorías; antes eran doce colores y emojis.
 const BRAND = "#7c5cff"
 
+// Símbolo de parking (círculo con la P, el mismo icono CircleParking de lucide que usa la categoría)
+// para la chincheta del mapa: no lleva datos de nadie, es un texto fijo.
+const PARKING_MARKER_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg>'
+
 const METRO_LINE_ORDER = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"]
 
 // En Taxi, además de paradas reales, se cuelan oficinas/apps (Uber, Cabify, Bolt...) que no son
@@ -573,6 +578,12 @@ export default function EssentialCategoryPage() {
         const el = document.createElement("div")
         el.style.cssText = `width:40px;height:40px;border-radius:9999px;border:2px solid ${config.color};background:#16141f;color:#f4f3f7;overflow:hidden;display:flex;align-items:center;justify-content:center;font:600 15px/1 system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.55)`
         const initial = (item.name || "?").trim().charAt(0).toUpperCase()
+        // Parkings: casi todos se llaman «Aparcamiento gratuito · …», así que la inicial (A, P…) no dice
+        // nada y despista. Todos llevan el mismo símbolo de parking (el círculo con la P de lucide).
+        const fillFallback = () => {
+          if (category === "parking") el.innerHTML = PARKING_MARKER_SVG
+          else el.textContent = initial
+        }
         if (item.image) {
           const img = document.createElement("img")
           img.src = item.image
@@ -580,7 +591,7 @@ export default function EssentialCategoryPage() {
           img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block"
           img.onerror = () => {
             img.remove()
-            el.textContent = initial
+            fillFallback()
           }
           el.appendChild(img)
         } else if (category === "nitbus" && item.subcategory) {
@@ -589,7 +600,7 @@ export default function EssentialCategoryPage() {
           el.style.fontSize = "12px"
           el.style.fontWeight = "800"
         } else {
-          el.textContent = initial
+          fillFallback()
         }
         const marker = new mapboxgl.Marker({ element: el }).setLngLat([Number(item.longitude), Number(item.latitude)]).addTo(map.current!)
 
