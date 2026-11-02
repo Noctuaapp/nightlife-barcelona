@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, type ChangeEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { fetchAllPages } from "../../../lib/fetchAll"
@@ -8,10 +8,20 @@ import { ADMIN_EMAIL } from "../../../lib/admin"
 import { logError } from "../../../lib/log"
 import { toast } from "../../../components/ui/Toast"
 import CoordsField from "../../../components/admin/CoordsField"
-import { coordsPayload, coordToInput, parseCoords } from "../../../lib/coords"
+import { coordsPayload, coordToInput, googleMapsUrl, parseCoords } from "../../../lib/coords"
 import { touchCache, essentialPaths } from "../../../lib/touchCache"
-import { ESSENTIAL_CATEGORIES } from "../../../lib/essentialCategories"
+import { ESSENTIAL_CATEGORIES, categoryInfo, essentialSlugLabelEs } from "../../../lib/essentialCategories"
 import { prepareImageForUpload, uploadFileName } from "../../../lib/compressImage"
+
+// Rediseño (2/11/2026): esta pantalla era la más pobre del admin. Con miles de esenciales (las
+// paradas de Nitbus y lo importado de OpenStreetMap) solo tenía filtro por categoría, el
+// formulario de alta siempre abierto ocupando media pantalla, botones en inglés, "Mostrar todos" /
+// "Ocultar todos" sobre TODA la tabla y borrar sin preguntar. Ahora, como la de clubs:
+//   - buscador (nombre, dirección, barrio, categoría, número de ficha) que ignora tildes,
+//   - filtros por categoría y por estado, cada uno con cuántos hay (y que se cruzan entre sí),
+//   - alta plegable, edición con todos los campos rotulados, insignias de estado,
+//   - "Publicar / Ocultar" solo sobre lo que se está viendo, y confirmación al borrar,
+//   - la lista se pinta de 40 en 40 (con 3.000 fichas pintarlas todas hacía lenta la página).
 
 type Essential = {
   id: number
@@ -27,6 +37,7 @@ type Essential = {
   latitude: number | null
   longitude: number | null
   hidden: boolean | null
+  import_source?: string | null
 }
 
 const emptyForm = {
@@ -42,11 +53,31 @@ const emptyForm = {
   latitude: "",
   longitude: "",
 }
+type EssentialForm = typeof emptyForm
 
-// Antes esta lista vivía por su cuenta y se había desincronizado de ESSENTIAL_CATEGORIES (le
-// faltaban Gas Station y Hospital, y tenía un "Other" que la web pública no reconoce). Ahora sale
-// de la misma fuente que usa la página pública, así que no pueden volver a desincronizarse.
+const PAGE_SIZE = 40
+
+// Misma fuente que la web pública (antes esta lista vivía por su cuenta y se desincronizó).
 const categories = ESSENTIAL_CATEGORIES.map((c) => c.key)
+
+const CATEGORY_SINGULAR_ES: Record<string, string> = {
+  Pharmacy: "Farmacia",
+  ATM: "Cajero",
+  Food: "Comida",
+  Supermarket: "Supermercado",
+  Metro: "Metro",
+  Nitbus: "Nitbus",
+  Hospital: "Hospital",
+  "Gas Station": "Gasolinera",
+  Parking: "Parking",
+  Hotel: "Hotel",
+  Casino: "Casino",
+}
+const categorySingular = (key: string) => CATEGORY_SINGULAR_ES[key] || key
+const categoryPlural = (key: string) => {
+  const known = ESSENTIAL_CATEGORIES.find((c) => c.key === key)
+  return known ? essentialSlugLabelEs(known.slug) : key
+}
 
 // Sugerencias rápidas de subcategoría según la categoría elegida — campo libre, así que esto
 // es solo una ayuda para escribir rápido desde el móvil, no una lista cerrada.
@@ -59,17 +90,73 @@ const SUBCATEGORY_HINTS: Record<string, string[]> = {
   // Línea(s) de metro/FGC que paran aquí (p. ej. "L3" o "L3, L5" si es un intercambiador).
   Metro: ["L1", "L2", "L3", "L4", "L5", "L9N", "L9S", "L10N", "L10S", "L11", "L6", "L7", "L8", "L12"],
 }
+const SUBCATEGORY_LABEL: Record<string, string> = {
+  ATM: "Banco",
+  Food: "Tipo de comida",
+  Nitbus: "Línea(s) de bus",
+  Metro: "Línea(s) de metro",
+}
+const SUBCATEGORY_PLACEHOLDER: Record<string, string> = {
+  ATM: "CaixaBank",
+  Food: "Pizza",
+  Nitbus: "N6 o N6, N9",
+  Metro: "L3",
+}
+
+type StatusKey = "all" | "visible" | "hidden" | "nophoto" | "nocoords" | "nohours" | "osm" | "google"
+const STATUS_TESTS: Record<StatusKey, (e: Essential) => boolean> = {
+  all: () => true,
+  visible: (e) => !e.hidden,
+  hidden: (e) => !!e.hidden,
+  nophoto: (e) => !e.image,
+  nocoords: (e) => e.latitude == null || e.longitude == null,
+  nohours: (e) => !(e.open_hours || "").trim(),
+  osm: (e) => e.import_source === "osm",
+  google: (e) => e.import_source === "google",
+}
+const STATUS_LABEL: Record<StatusKey, string> = {
+  all: "Todos",
+  visible: "Publicados",
+  hidden: "Ocultos (sin publicar)",
+  nophoto: "Sin foto",
+  nocoords: "Sin ubicación en el mapa",
+  nohours: "Sin horario",
+  osm: "Importados de OpenStreetMap",
+  google: "Importados de Google",
+}
+const STATUS_ORDER: StatusKey[] = ["all", "visible", "hidden", "nophoto", "nocoords", "nohours", "osm", "google"]
+
+type SortKey = "category" | "recent" | "name"
+
+// Sin tildes ni mayúsculas: «farmacia» encuentra «Farmàcia».
+const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+
+const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-purple-500/50 transition placeholder:text-zinc-400"
+const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1.5"
+const selectClass = "rounded-2xl border border-white/10 bg-surface px-4 py-4 text-sm font-semibold text-white outline-none transition focus:border-purple-500/50"
 
 export default function AdminEssentialsPage() {
   const [essentials, setEssentials] = useState<Essential[]>([])
-  const [newEssential, setNewEssential] = useState(emptyForm)
-  const [editEssential, setEditEssential] = useState(emptyForm)
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [uploading, setUploading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [checkingAdmin, setCheckingAdmin] = useState(true)
-  const [filterCategory, setFilterCategory] = useState("All")
-  const [onlyNoPhoto, setOnlyNoPhoto] = useState(false)
+
+  const [search, setSearch] = useState("")
+  const [category, setCategory] = useState("all")
+  const [status, setStatus] = useState<StatusKey>("all")
+  const [sort, setSort] = useState<SortKey>("category")
+  const [limit, setLimit] = useState(PAGE_SIZE)
+  // Ficha que se enseña siempre arriba, aunque los filtros la dejarían fuera: la que se acaba de
+  // crear o la que se abre desde el botón «Editar» de la web (?edit=ID).
+  const [focusId, setFocusId] = useState<number | null>(null)
+
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newEssential, setNewEssential] = useState<EssentialForm>(emptyForm)
+  const [editEssential, setEditEssential] = useState<EssentialForm>(emptyForm)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [photoBusyId, setPhotoBusyId] = useState<number | null>(null)
+  const [bulkBusy, setBulkBusy] = useState(false)
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -87,49 +174,108 @@ export default function AdminEssentialsPage() {
 
   const fetchEssentials = async () => {
     const data = await fetchAllPages((from, to) => supabase.from("essentials").select("*").order("category").order("name").order("id").range(from, to))
-    if (data) setEssentials(data)
+    setEssentials((data || []) as Essential[])
+    setLoading(false)
   }
 
-  const uploadImage = async (file: File) => {
+  // Al cambiar de búsqueda o de filtro se vuelve a las primeras 40 y se suelta la ficha fijada.
+  useEffect(() => {
+    setLimit(PAGE_SIZE)
+    setFocusId(null)
+  }, [search, category, status, sort])
+
+  // ---------- Datos derivados (búsqueda, filtros y contadores) ----------
+  const rows = useMemo(
+    () =>
+      essentials.map((e) => ({
+        e,
+        hay: fold([e.name, e.category, categorySingular(e.category), categoryPlural(e.category), e.subcategory, e.address, e.neighborhood, e.description, e.open_hours].filter(Boolean).join(" ")),
+      })),
+    [essentials]
+  )
+
+  const { filtered, catCounts, statusCounts } = useMemo(() => {
+    const tokens = fold(search).split(/\s+/).filter(Boolean)
+    const matchSearch = (r: { e: Essential; hay: string }) =>
+      tokens.every((t) => r.hay.includes(t) || String(r.e.id) === t.replace(/^#/, ""))
+    const matchCat = (e: Essential) => category === "all" || e.category === category
+    const matchStatus = (e: Essential) => STATUS_TESTS[status](e)
+
+    // Cada contador tiene en cuenta los otros dos filtros (no el suyo): al elegir «Parking», los
+    // estados dicen cuántos parkings están ocultos, no cuántos esenciales en total.
+    const catCounts = new Map<string, number>()
+    const statusCounts = Object.fromEntries(STATUS_ORDER.map((k) => [k, 0])) as Record<StatusKey, number>
+    let list: Essential[] = []
+    for (const r of rows) {
+      const okSearch = matchSearch(r)
+      if (!okSearch) continue
+      const okCat = matchCat(r.e)
+      const okStatus = matchStatus(r.e)
+      if (okStatus) catCounts.set(r.e.category, (catCounts.get(r.e.category) || 0) + 1)
+      if (okCat) for (const k of STATUS_ORDER) if (STATUS_TESTS[k](r.e)) statusCounts[k]++
+      if (okCat && okStatus) list.push(r.e)
+    }
+    if (sort === "recent") list = [...list].sort((a, b) => b.id - a.id)
+    else if (sort === "name") list = [...list].sort((a, b) => a.name.localeCompare(b.name, "es"))
+    return { filtered: list, catCounts, statusCounts }
+  }, [rows, search, category, status, sort])
+
+  const totals = useMemo(
+    () => ({
+      total: essentials.length,
+      visible: essentials.filter(STATUS_TESTS.visible).length,
+      hidden: essentials.filter(STATUS_TESTS.hidden).length,
+      nophoto: essentials.filter(STATUS_TESTS.nophoto).length,
+    }),
+    [essentials]
+  )
+
+  const extraCategories = useMemo(() => [...new Set(essentials.map((e) => e.category).filter((c) => c && !categories.includes(c)))].sort(), [essentials])
+
+  const isFiltered = !!search.trim() || category !== "all" || status !== "all"
+  const clearFilters = () => { setSearch(""); setCategory("all"); setStatus("all") }
+
+  // ---------- Fotos ----------
+  // Sube la foto (reducida y enderezada como las de los clubs, lib/compressImage) al bucket
+  // essential-images, así que el cron de Google no la pisa (solo sustituye imágenes vacías o de essential-photos).
+  const uploadToBucket = async (file: File, prefix: string): Promise<string | null> => {
+    const prepared = await prepareImageForUpload(file)
+    const filePath = `essentials/${uploadFileName(prefix, prepared.ext)}`
+    const { error } = await supabase.storage.from("essential-images").upload(filePath, prepared.blob, { contentType: prepared.contentType })
+    if (error) {
+      logError("PHOTO UPLOAD ERROR:", error)
+      toast(`No se ha podido subir la foto: ${error.message}`, 5000)
+      return null
+    }
+    return supabase.storage.from("essential-images").getPublicUrl(filePath).data.publicUrl
+  }
+
+  // Foto del formulario (alta o edición): se sube y se pone en el formulario; se guarda con el resto.
+  const uploadFormImage = async (e: ChangeEvent<HTMLInputElement>, apply: (url: string) => void) => {
+    const input = e.target
+    const file = input.files?.[0]
+    input.value = "" // permite volver a elegir la misma foto
+    if (!file) return
     setUploading(true)
-    const fileExt = file.name.split(".").pop()
-    const fileName = `${Date.now()}.${fileExt}`
-    const filePath = `essentials/${fileName}`
-    const { error } = await supabase.storage.from("essential-images").upload(filePath, file)
-    setUploading(false)
-    if (error) { logError("UPLOAD ERROR:", error); return null }
-    const { data } = supabase.storage.from("essential-images").getPublicUrl(filePath)
-    return data.publicUrl
+    try {
+      const url = await uploadToBucket(file, "e")
+      if (url) apply(url)
+    } catch (err) {
+      logError("PHOTO ERROR:", err)
+      toast("No se ha podido subir la foto", 5000)
+    } finally {
+      setUploading(false)
+    }
   }
 
-  const handleNewImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const publicUrl = await uploadImage(file)
-    if (publicUrl) setNewEssential((prev) => ({ ...prev, image: publicUrl }))
-  }
-
-  const handleEditImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const publicUrl = await uploadImage(file)
-    if (publicUrl) setEditEssential((prev) => ({ ...prev, image: publicUrl }))
-  }
-
-  // Cambiar la foto de un esencial sin abrir el formulario de edición (pedido el 2/11/2026): se elige
-  // la foto (en el móvil, de la cámara o de la galería), se reduce y endereza como las de los clubs
-  // (lib/compressImage), se sube y se guarda en la ficha al momento. Va al bucket essential-images,
-  // así que el cron de Google no la pisa (solo sustituye imágenes vacías o de essential-photos).
+  // Cambiar la foto de un esencial sin abrir el formulario de edición: se sube y se guarda en la ficha al momento.
   const changePhoto = async (item: Essential, file: File | undefined) => {
     if (!file) return
     setPhotoBusyId(item.id)
     try {
-      const prepared = await prepareImageForUpload(file)
-      const filePath = `essentials/${uploadFileName(`e${item.id}`, prepared.ext)}`
-      const { error: uploadError } = await supabase.storage.from("essential-images").upload(filePath, prepared.blob, { contentType: prepared.contentType })
-      if (uploadError) { logError("PHOTO UPLOAD ERROR:", uploadError); toast(`No se ha podido subir la foto: ${uploadError.message}`, 5000); return }
-      const { data: pub } = supabase.storage.from("essential-images").getPublicUrl(filePath)
-      const { data, error } = await supabase.from("essentials").update({ image: pub.publicUrl }).eq("id", item.id).select().single()
+      const url = await uploadToBucket(file, `e${item.id}`)
+      if (!url) return
+      const { data, error } = await supabase.from("essentials").update({ image: url }).eq("id", item.id).select().single()
       if (error) { logError("PHOTO SAVE ERROR:", error); toast(`La foto se subió pero no se pudo guardar en la ficha: ${error.message}`, 5000); return }
       if (data) setEssentials((prev) => prev.map((e) => (e.id === item.id ? data : e)))
       touchCache(essentialPaths())
@@ -142,23 +288,56 @@ export default function AdminEssentialsPage() {
     }
   }
 
+  // ---------- Crear, editar, borrar ----------
+  const formToPayload = (f: EssentialForm) => ({
+    name: f.name.trim(),
+    category: f.category,
+    subcategory: f.subcategory.trim() || null,
+    address: f.address.trim(),
+    neighborhood: f.neighborhood.trim(),
+    description: f.description.trim(),
+    image: f.image.trim(),
+    open_hours: f.open_hours.trim(),
+    maps_link: f.maps_link.trim(),
+    ...coordsPayload(f.latitude, f.longitude),
+  })
+
+  const scrollToItem = (id: number) => {
+    let tries = 0
+    const timer = window.setInterval(() => {
+      tries++
+      const el = document.getElementById(`essential-${id}`)
+      if (el) {
+        window.clearInterval(timer)
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 110, behavior: "smooth" })
+      } else if (tries > 40) {
+        window.clearInterval(timer)
+      }
+    }, 150)
+  }
+
   const addEssential = async () => {
-    if (!newEssential.name || !newEssential.category) return
-    const { data, error } = await supabase.from("essentials").insert({
-      ...newEssential,
-      subcategory: newEssential.subcategory.trim() || null,
-      ...coordsPayload(newEssential.latitude, newEssential.longitude),
-    }).select().single()
+    if (!newEssential.name.trim() || !newEssential.category) {
+      toast("Pon al menos el nombre y la categoría", 4000)
+      return
+    }
+    setSaving(true)
+    const { data, error } = await supabase.from("essentials").insert(formToPayload(newEssential)).select().single()
+    setSaving(false)
     if (error) { logError("ADD ERROR:", error); toast(`No se ha podido crear: ${error.message}`, 5000); return }
     if (data) {
       setEssentials((prev) => [data, ...prev])
       touchCache(essentialPaths())
+      setFocusId(data.id)
+      scrollToItem(data.id)
     }
     toast("Esencial creado")
     setNewEssential(emptyForm)
+    setShowAddForm(false)
   }
 
   const startEditing = (item: Essential) => {
+    setShowAddForm(false)
     setEditingId(item.id)
     setEditEssential({
       name: item.name || "", category: item.category || "", subcategory: item.subcategory || "", address: item.address || "",
@@ -167,6 +346,8 @@ export default function AdminEssentialsPage() {
       latitude: coordToInput(item.latitude), longitude: coordToInput(item.longitude),
     })
   }
+
+  const cancelEditing = () => { setEditingId(null); setEditEssential(emptyForm) }
 
   // Llegando desde el botón "Editar" de la ficha pública (?edit=ID).
   const autoEditDone = useRef(false)
@@ -178,264 +359,428 @@ export default function AdminEssentialsPage() {
     const found = essentials.find((x) => String(x.id) === wanted)
     if (!found) return
     startEditing(found)
-    let tries = 0
-    const timer = setInterval(() => {
-      tries++
-      const el = document.getElementById(`essential-${found.id}`)
-      if (el) {
-        clearInterval(timer)
-        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 110, behavior: "smooth" })
-      } else if (tries > 40) {
-        clearInterval(timer)
-      }
-    }, 150)
+    setFocusId(found.id)
+    scrollToItem(found.id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [essentials])
 
-  const cancelEditing = () => { setEditingId(null); setEditEssential(emptyForm) }
-
   const saveEditing = async (id: number) => {
-    if (!editEssential.name) return
-    const { data, error } = await supabase.from("essentials").update({
-      ...editEssential,
-      subcategory: editEssential.subcategory.trim() || null,
-      ...coordsPayload(editEssential.latitude, editEssential.longitude),
-    }).eq("id", id).select().single()
+    if (!editEssential.name.trim() || !editEssential.category) {
+      toast("Pon al menos el nombre y la categoría", 4000)
+      return
+    }
+    setSaving(true)
+    const { data, error } = await supabase.from("essentials").update(formToPayload(editEssential)).eq("id", id).select().single()
+    setSaving(false)
     if (error) { logError("EDIT ERROR:", error); toast(`No se ha podido guardar: ${error.message}`, 5000); return }
     toast("Cambios guardados")
     if (data) {
-      setEssentials((prev) => prev.map((e) => e.id === id ? data : e))
+      setEssentials((prev) => prev.map((e) => (e.id === id ? data : e)))
       touchCache(essentialPaths())
     }
     cancelEditing()
   }
 
-  const deleteEssential = async (id: number) => {
-    const { error } = await supabase.from("essentials").delete().eq("id", id)
-    if (error) return
-    setEssentials((prev) => prev.filter((e) => e.id !== id))
+  const deleteEssential = async (item: Essential) => {
+    if (!window.confirm(`¿Borrar «${item.name}»? No se puede deshacer.`)) return
+    const { error } = await supabase.from("essentials").delete().eq("id", item.id)
+    if (error) { logError("DELETE ERROR:", error); toast(`No se ha podido borrar: ${error.message}`, 5000); return }
+    setEssentials((prev) => prev.filter((e) => e.id !== item.id))
+    if (editingId === item.id) cancelEditing()
+    touchCache(essentialPaths())
+    toast("Esencial borrado")
   }
+
   const toggleHidden = async (item: Essential) => {
-    const newValue = !(item as any).hidden
+    const newValue = !item.hidden
     const { error } = await supabase.from("essentials").update({ hidden: newValue }).eq("id", item.id)
-    if (error) return
-    setEssentials((prev) => prev.map((e) => e.id === item.id ? { ...e, hidden: newValue } : e))
-  }
-  // Antes "Mostrar todos" / "Ocultar todos" actuaban al instante, sin preguntar: un toque sin
-  // querer escondía (o publicaba) todos los esenciales de golpe. Ahora: ocultar todo pide escribir OCULTAR, y
-  // mostrar todo avisa de lo que se publicaría sin revisar.
-  const confirmHideAll = () =>
-    (window.prompt(`Vas a OCULTAR todos los esenciales de la web (${essentials.length}). Nadie podrá verlos hasta que los vuelvas a mostrar.\n\nEscribe OCULTAR para confirmar.`) || "").trim().toUpperCase() === "OCULTAR"
-  const confirmShowAll = () =>
-    window.confirm(`Vas a PUBLICAR todos los esenciales (${essentials.length}), también los que están ocultos a propósito.\n\n¿Seguro?`)
-  const showAll = async () => {
-    if (!confirmShowAll()) return
-    const { error } = await supabase.from("essentials").update({ hidden: false }).neq("id", 0)
-    if (error) return
-    setEssentials((prev) => prev.map((e) => ({ ...e, hidden: false })))
+    if (error) { logError("HIDDEN ERROR:", error); toast(`No se ha podido cambiar: ${error.message}`, 5000); return }
+    setEssentials((prev) => prev.map((e) => (e.id === item.id ? { ...e, hidden: newValue } : e)))
+    touchCache(essentialPaths())
   }
 
-  const hideAll = async () => {
-    if (!confirmHideAll()) return
-    const { error } = await supabase.from("essentials").update({ hidden: true }).neq("id", 0)
-    if (error) return
-    setEssentials((prev) => prev.map((e) => ({ ...e, hidden: true })))
+  // ---------- Publicar / ocultar en bloque ----------
+  // Antes «Mostrar todos» / «Ocultar todos» actuaban sobre TODA la tabla aunque se estuviera mirando
+  // una sola categoría. Ahora actúan solo sobre lo que sale con el filtro y la búsqueda actuales
+  // (los que ya están como se pide no se tocan), siempre con confirmación.
+  const scopeText = () => {
+    const parts: string[] = []
+    if (category !== "all") parts.push(categoryPlural(category))
+    if (status !== "all") parts.push(STATUS_LABEL[status].toLowerCase())
+    if (search.trim()) parts.push(`búsqueda «${search.trim()}»`)
+    return parts.length ? parts.join(" · ") : "toda la web"
   }
 
-  const inCategory = (e: Essential) => (filterCategory === "All" ? true : e.category === filterCategory)
-  const noPhotoCount = essentials.filter((e) => inCategory(e) && !e.image).length
-  const filteredEssentials = essentials.filter((e) => inCategory(e) && (!onlyNoPhoto || !e.image))
+  const bulkSetHidden = async (hidden: boolean) => {
+    const targets = filtered.filter((e) => !!e.hidden !== hidden)
+    if (targets.length === 0) {
+      toast(hidden ? "Todo lo que ves ya está oculto" : "Todo lo que ves ya está publicado")
+      return
+    }
+    const scope = scopeText()
+    if (hidden) {
+      const msg = `Vas a OCULTAR ${targets.length} esenciales (${scope}). Nadie podrá verlos en la web hasta que los publiques otra vez.`
+      if (targets.length >= 10) {
+        if ((window.prompt(`${msg}\n\nEscribe OCULTAR para confirmar.`) || "").trim().toUpperCase() !== "OCULTAR") return
+      } else if (!window.confirm(`${msg}\n\n¿Seguro?`)) return
+    } else if (!window.confirm(`Vas a PUBLICAR ${targets.length} esenciales (${scope}), también los que estén ocultos a propósito o sin revisar, como los importados de OpenStreetMap.\n\n¿Seguro?`)) {
+      return
+    }
+    setBulkBusy(true)
+    const done = new Set<number>()
+    try {
+      const ids = targets.map((e) => e.id)
+      for (let i = 0; i < ids.length; i += 100) {
+        const chunk = ids.slice(i, i + 100)
+        const { error } = await supabase.from("essentials").update({ hidden }).in("id", chunk)
+        if (error) {
+          logError("BULK HIDDEN ERROR:", error)
+          toast(`Error tras ${done.size} de ${ids.length}: ${error.message}`, 6000)
+          break
+        }
+        chunk.forEach((id) => done.add(id))
+      }
+    } finally {
+      setBulkBusy(false)
+    }
+    if (done.size > 0) {
+      setEssentials((prev) => prev.map((e) => (done.has(e.id) ? { ...e, hidden } : e)))
+      touchCache(essentialPaths())
+      if (done.size === targets.length) toast(`${done.size} esenciales ${hidden ? "ocultados" : "publicados"}`)
+    }
+  }
 
   if (checkingAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-sm text-zinc-400">Cargando…</p>
+        <p className="text-sm text-zinc-400">Verificando acceso…</p>
       </main>
     )
   }
 
+  // ---------- Lista que se pinta ----------
+  const focus = focusId != null ? essentials.find((e) => e.id === focusId) : undefined
+  const rest = filtered.filter((e) => e.id !== focus?.id)
+  const shown = [...(focus ? [focus] : []), ...rest.slice(0, limit)]
+  const remaining = Math.max(0, rest.length - limit)
+
   // Función (no componente): definida como componente dentro de la página se volvía a montar en
   // cada tecla y el campo perdía el foco al escribir.
-  const renderFormFields = (data: typeof emptyForm, setData: (d: typeof emptyForm) => void) => (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} placeholder="Nombre *" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-
-      <select value={data.category} onChange={(e) => setData({ ...data, category: e.target.value })} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none text-white">
-        <option value="">Categoría *</option>
-        {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-      </select>
-
-      {(data.category === "ATM" || data.category === "Food" || data.category === "Nitbus" || data.category === "Metro") && (
-        <input
-          value={data.subcategory}
-          onChange={(e) => setData({ ...data, subcategory: e.target.value })}
-          list="subcategory-hints"
-          placeholder={
-            data.category === "ATM"
-              ? "Banco (p. ej. CaixaBank)"
-              : data.category === "Food"
-              ? "Tipo de comida (p. ej. Pizza)"
-              : data.category === "Nitbus"
-              ? "Línea(s), ej. N6 o N6, N9"
-              : "Línea de metro (p. ej. L3)"
-          }
-          className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
-        />
-      )}
-      <datalist id="subcategory-hints">
-        {(SUBCATEGORY_HINTS[data.category] || []).map((s) => <option key={s} value={s} />)}
-      </datalist>
-
-      <input value={data.neighborhood} onChange={(e) => setData({ ...data, neighborhood: e.target.value })} placeholder="Barrio" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-      <input value={data.address} onChange={(e) => setData({ ...data, address: e.target.value })} placeholder="Dirección" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-      <input value={data.open_hours} onChange={(e) => setData({ ...data, open_hours: e.target.value })} placeholder="Horario (p. ej. 24h)" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-      <input
-        value={data.maps_link}
-        onChange={(e) => {
-          // Si el enlace de Google Maps lleva coordenadas y aún no hay, se rellenan solas.
-          const p = parseCoords(e.target.value)
-          const fill = p && !data.latitude && !data.longitude ? { latitude: String(p.lat), longitude: String(p.lng) } : {}
-          setData({ ...data, maps_link: e.target.value, ...fill })
-        }}
-        placeholder="Enlace de Google Maps"
-        className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none"
-      />
-      <input value={data.description} onChange={(e) => setData({ ...data, description: e.target.value })} placeholder="Descripción" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-      <div className="lg:col-span-3">
-        <CoordsField
-          latitude={data.latitude}
-          longitude={data.longitude}
-          address={data.address}
-          onChange={(latitude, longitude) => setData({ ...data, latitude, longitude })}
-        />
+  const renderForm = (data: EssentialForm, setData: (d: EssentialForm) => void, setImage: (url: string) => void) => {
+    const knownCategory = categories.includes(data.category)
+    const showSub = !!SUBCATEGORY_LABEL[data.category] || !!data.subcategory
+    return (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <label className={labelClass}>Nombre *</label>
+          <input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} placeholder="Farmacia Central" className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Categoría *</label>
+          <select value={data.category} onChange={(e) => setData({ ...data, category: e.target.value })} style={{ colorScheme: "dark" }} className={`${inputClass} bg-surface`}>
+            <option value="">Elige una categoría</option>
+            {!knownCategory && data.category && <option value={data.category}>{data.category}</option>}
+            {categories.map((c) => <option key={c} value={c}>{categorySingular(c)}</option>)}
+          </select>
+        </div>
+        {showSub && (
+          <div>
+            <label className={labelClass}>{SUBCATEGORY_LABEL[data.category] || "Subcategoría"}</label>
+            <input
+              value={data.subcategory}
+              onChange={(e) => setData({ ...data, subcategory: e.target.value })}
+              list="subcategory-hints"
+              placeholder={SUBCATEGORY_PLACEHOLDER[data.category] || ""}
+              className={inputClass}
+            />
+            <datalist id="subcategory-hints">
+              {(SUBCATEGORY_HINTS[data.category] || []).map((s) => <option key={s} value={s} />)}
+            </datalist>
+          </div>
+        )}
+        <div>
+          <label className={labelClass}>Barrio o municipio</label>
+          <input value={data.neighborhood} onChange={(e) => setData({ ...data, neighborhood: e.target.value })} placeholder="Gràcia, Badalona…" className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Dirección</label>
+          <input value={data.address} onChange={(e) => setData({ ...data, address: e.target.value })} placeholder="Carrer de Còrsega, 327" className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Horario</label>
+          <input value={data.open_hours} onChange={(e) => setData({ ...data, open_hours: e.target.value })} placeholder="Open 24 hours" className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Enlace de Google Maps</label>
+          <input
+            value={data.maps_link}
+            onChange={(e) => {
+              // Si el enlace de Google Maps lleva coordenadas y aún no hay, se rellenan solas.
+              const p = parseCoords(e.target.value)
+              const fill = p && !data.latitude && !data.longitude ? { latitude: String(p.lat), longitude: String(p.lng) } : {}
+              setData({ ...data, maps_link: e.target.value, ...fill })
+            }}
+            placeholder="https://www.google.com/maps/…"
+            className={inputClass}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className={labelClass}>Descripción</label>
+          <textarea value={data.description} onChange={(e) => setData({ ...data, description: e.target.value })} rows={3} placeholder="Opcional" className={`${inputClass} resize-y`} />
+        </div>
+        <div className="md:col-span-2">
+          <CoordsField
+            latitude={data.latitude}
+            longitude={data.longitude}
+            address={data.address}
+            onChange={(latitude, longitude) => setData({ ...data, latitude, longitude })}
+            inputClassName={inputClass}
+            labelClassName={labelClass}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className={labelClass}>Foto</label>
+          <div className="flex flex-wrap items-center gap-4">
+            {data.image ? (
+              <img src={data.image} alt="Vista previa" className="h-20 w-20 rounded-xl object-cover" />
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-dashed border-white/20 bg-white/5 text-center text-[11px] font-semibold leading-tight text-zinc-400">Sin<br />foto</div>
+            )}
+            <label className={`cursor-pointer rounded-full border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-xs font-bold text-amber-200 transition hover:bg-amber-300 hover:text-black ${uploading ? "pointer-events-none opacity-50" : ""}`}>
+              {uploading ? "Subiendo…" : data.image ? "📷 Cambiar foto" : "📷 Subir foto"}
+              <input type="file" accept="image/*" className="sr-only" disabled={uploading} onChange={(e) => void uploadFormImage(e, setImage)} />
+            </label>
+            {data.image && (
+              <button type="button" onClick={() => setImage("")} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-zinc-300 transition hover:bg-white/10">
+                Quitar foto
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
+
+  const renderItem = (item: Essential) => {
+    const Icon = categoryInfo(item.category).icon
+    const hasCoords = item.latitude != null && item.longitude != null
+    const mapsHref = /^https?:\/\//i.test((item.maps_link || "").trim())
+      ? (item.maps_link || "").trim()
+      : hasCoords
+      ? googleMapsUrl({ lat: Number(item.latitude), lng: Number(item.longitude) })
+      : null
+    const editing = editingId === item.id
+    return (
+      <div
+        key={item.id}
+        id={`essential-${item.id}`}
+        className={`rounded-card border p-5 transition ${item.hidden ? "border-white/5 bg-white/[0.01] opacity-50" : "border-white/10 bg-white/[0.03]"} ${editing ? "!border-purple-500/40 !bg-purple-500/[0.04] !opacity-100" : ""}`}
+      >
+        {editing ? (
+          <div>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <h3 className="text-lg font-black">Editando: {item.name}</h3>
+              <span className="text-xs text-zinc-500">ficha n.º {item.id}</span>
+              {mapsHref && (
+                <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-zinc-300 transition hover:bg-white hover:text-black">
+                  Ver en Google Maps ↗
+                </a>
+              )}
+            </div>
+            {renderForm(editEssential, setEditEssential, (url) => setEditEssential((prev) => ({ ...prev, image: url })))}
+            <div className="mt-5 flex gap-3">
+              <button onClick={() => saveEditing(item.id)} disabled={saving || uploading} className="rounded-full bg-purple-500 px-6 py-3 text-sm font-black text-white transition hover:bg-purple-400 disabled:opacity-50">
+                {saving ? "Guardando…" : "Guardar cambios"}
+              </button>
+              <button onClick={cancelEditing} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              {item.image ? (
+                <img src={item.image} alt={item.name} className="h-14 w-14 flex-shrink-0 rounded-xl object-cover" />
+              ) : (
+                <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border border-dashed border-white/20 bg-white/5 text-zinc-500">
+                  <Icon size={20} aria-hidden="true" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-black text-white">{item.name}</h3>
+                  <span className="rounded-full border border-teal-500/30 bg-teal-500/10 px-2 py-0.5 text-xs font-bold text-teal-300">{categorySingular(item.category)}</span>
+                  {item.subcategory && <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs font-bold text-zinc-300">{item.subcategory}</span>}
+                  {item.hidden && <span className="rounded-full border border-zinc-500/30 bg-zinc-500/20 px-2 py-0.5 text-xs font-bold text-zinc-400">Oculto</span>}
+                  {item.import_source === "osm" && <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs font-bold text-sky-300">OpenStreetMap</span>}
+                  {item.import_source === "google" && <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs font-bold text-sky-300">Google</span>}
+                  {!item.image && <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs font-bold text-amber-300">Sin foto</span>}
+                  {!hasCoords && <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-xs font-bold text-red-300">Sin ubicación</span>}
+                </div>
+                <p className="mt-0.5 text-xs text-zinc-400">
+                  {[item.neighborhood, item.address].filter(Boolean).join(" · ") || "Sin dirección"}
+                  {item.open_hours ? ` · 🕒 ${item.open_hours}` : ""}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => startEditing(item)} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:bg-white hover:text-black">
+                ✏️ Editar
+              </button>
+              <label className={`cursor-pointer rounded-full border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-xs font-bold text-amber-200 transition hover:bg-amber-300 hover:text-black ${photoBusyId !== null ? "pointer-events-none opacity-50" : ""}`}>
+                {photoBusyId === item.id ? "Subiendo…" : item.image ? "📷 Cambiar foto" : "📷 Subir foto"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  disabled={photoBusyId !== null}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    e.target.value = "" // permite volver a elegir la misma foto
+                    void changePhoto(item, file)
+                  }}
+                />
+              </label>
+              <button onClick={() => toggleHidden(item)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${!item.hidden ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
+                👁️ {item.hidden ? "Oculto" : "Visible"}
+              </button>
+              {mapsHref && (
+                <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/10">
+                  🗺️ Mapa ↗
+                </a>
+              )}
+              <button onClick={() => deleteEssential(item)} className="rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-400 transition hover:bg-red-500 hover:text-white">
+                🗑️ Borrar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const statCards: { label: string; value: number; color: string; apply: () => void }[] = [
+    { label: "Total", value: totals.total, color: "text-white", apply: () => setStatus("all") },
+    { label: "Publicados", value: totals.visible, color: "text-emerald-400", apply: () => setStatus("visible") },
+    { label: "Ocultos", value: totals.hidden, color: "text-zinc-300", apply: () => setStatus("hidden") },
+    { label: "Sin foto", value: totals.nophoto, color: "text-amber-300", apply: () => setStatus("nophoto") },
+  ]
 
   return (
     <AdminShell title="Esenciales" subtitle="Farmacias, cajeros, comida, transporte, metro y demás servicios para la noche.">
       <>
-        {/* ADD FORM */}
-        <section className="mx-auto max-w-7xl">
-          <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
-            <p className="text-sm text-zinc-400 mb-6">Añadir esencial</p>
-            {renderFormFields(newEssential, setNewEssential)}
-            <div className="mt-4">
-              <input type="file" accept="image/*" onChange={handleNewImageUpload} className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none" />
-              {newEssential.image && <img src={newEssential.image} alt="Preview" className="mt-4 h-40 w-full rounded-2xl object-cover" />}
+        {/* Resumen (cada tarjeta filtra la lista) */}
+        <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+          {statCards.map((s) => (
+            <button key={s.label} onClick={s.apply} className="rounded-card border border-white/10 bg-white/[0.03] p-5 text-center transition hover:bg-white/[0.06]">
+              <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
+              <p className="mt-1 text-xs text-zinc-400">{s.label}</p>
+            </button>
+          ))}
+        </div>
+
+        {/* Alta plegable */}
+        <div className="mb-6">
+          <button
+            onClick={() => { setShowAddForm((v) => !v); cancelEditing() }}
+            className={`w-full rounded-2xl px-6 py-4 text-sm font-black transition md:w-auto ${showAddForm ? "bg-white text-black" : "bg-purple-500 text-white hover:bg-purple-400"}`}
+          >
+            {showAddForm ? "✕ Cerrar formulario" : "+ Añadir esencial"}
+          </button>
+          {showAddForm && (
+            <div className="mt-4 rounded-card border border-purple-500/30 bg-purple-500/[0.04] p-6">
+              <h3 className="mb-4 text-lg font-black">Nuevo esencial</h3>
+              {renderForm(newEssential, setNewEssential, (url) => setNewEssential((prev) => ({ ...prev, image: url })))}
+              <div className="mt-5 flex gap-3">
+                <button onClick={addEssential} disabled={saving || uploading} className="rounded-full bg-purple-500 px-6 py-3 text-sm font-black text-white transition hover:bg-purple-400 disabled:opacity-50">
+                  {saving ? "Guardando…" : "Guardar esencial"}
+                </button>
+                <button onClick={() => { setShowAddForm(false); setNewEssential(emptyForm) }} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10">
+                  Cancelar
+                </button>
+              </div>
             </div>
-            <button onClick={addEssential} disabled={uploading} className="mt-4 w-full rounded-2xl bg-white px-8 py-4 font-bold text-black disabled:opacity-50">
-              {uploading ? "Uploading..." : "Add essential"}
-            </button>
-          </div>
-        </section>
+          )}
+        </div>
 
-        {/* FILTER */}
-        <section className="mx-auto mt-6 max-w-7xl px-4">
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            <button
-              onClick={() => setOnlyNoPhoto((v) => !v)}
-              className={`rounded-full px-5 py-3 text-sm font-medium whitespace-nowrap transition ${
-                onlyNoPhoto ? "bg-amber-300 text-black" : "border border-amber-300/30 bg-amber-300/10 text-amber-200 hover:bg-amber-300/20"
-              }`}
-            >
-              📷 Sin foto ({noPhotoCount})
-            </button>
-            {["All", ...categories].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setFilterCategory(cat)}
-                className={`rounded-full px-5 py-3 text-sm font-medium whitespace-nowrap transition ${
-                  filterCategory === cat ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                }`}
-              >
-                {cat}
-              </button>
+        {/* Búsqueda y filtros */}
+        <div className="mb-3 flex flex-col gap-3 lg:flex-row">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar nombre, dirección, barrio…"
+            aria-label="Buscar esenciales"
+            className="flex-1 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 outline-none transition focus:border-purple-500/50"
+          />
+          <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Filtrar por categoría" style={{ colorScheme: "dark" }} className={`${selectClass} lg:w-60`}>
+            <option value="all">Todas las categorías ({[...catCounts.values()].reduce((a, b) => a + b, 0)})</option>
+            {categories.map((c) => <option key={c} value={c}>{categoryPlural(c)} ({catCounts.get(c) || 0})</option>)}
+            {extraCategories.map((c) => <option key={c} value={c}>{c} ({catCounts.get(c) || 0})</option>)}
+          </select>
+          <select value={status} onChange={(e) => setStatus(e.target.value as StatusKey)} aria-label="Filtrar por estado" style={{ colorScheme: "dark" }} className={`${selectClass} lg:w-64`}>
+            {STATUS_ORDER.filter((k) => ((k !== "osm" && k !== "google") ? true : (statusCounts[k] > 0 || status === k))).map((k) => (
+              <option key={k} value={k}>{STATUS_LABEL[k]} ({statusCounts[k]})</option>
             ))}
-          </div>
-        </section>
+          </select>
+          <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Ordenar" style={{ colorScheme: "dark" }} className={`${selectClass} lg:w-48`}>
+            <option value="category">Por categoría</option>
+            <option value="name">Por nombre (A-Z)</option>
+            <option value="recent">Últimos añadidos</option>
+          </select>
+        </div>
 
-        {/* LIST */}
-        <section className="mx-auto mt-6 max-w-7xl px-4">
-          <div className="flex gap-3 mb-4">
-            <button onClick={showAll} className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300 hover:bg-emerald-500 hover:text-white transition">
-              👁️ Show all
+        {/* Acciones sobre lo que se ve */}
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => bulkSetHidden(false)}
+            disabled={bulkBusy || filtered.length === 0}
+            className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500 hover:text-white disabled:opacity-40"
+          >
+            ✓ Publicar {isFiltered ? `los ${filtered.length} filtrados` : "todos"}
+          </button>
+          <button
+            onClick={() => bulkSetHidden(true)}
+            disabled={bulkBusy || filtered.length === 0}
+            className="rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-300 transition hover:bg-red-500 hover:text-white disabled:opacity-40"
+          >
+            ✕ Ocultar {isFiltered ? `los ${filtered.length} filtrados` : "todos"}
+          </button>
+          {bulkBusy && <span className="text-xs text-zinc-400">Aplicando…</span>}
+          {isFiltered && (
+            <button onClick={clearFilters} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-zinc-300 transition hover:bg-white/10">
+              Quitar filtros
             </button>
-            <button onClick={hideAll} className="rounded-full border border-zinc-500/30 bg-zinc-500/10 px-5 py-3 text-sm font-bold text-zinc-300 hover:bg-zinc-600 hover:text-white transition">
-              🙈 Hide all
-            </button>
-          </div>
-          <div className="grid gap-6">
-            {filteredEssentials.map((item) => (
-              <div key={item.id} id={`essential-${item.id}`} className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-                {editingId === item.id ? (
-                  <div>
-                    {renderFormFields(editEssential, setEditEssential)}
-                    <div className="mt-4">
-                      <input type="file" accept="image/*" onChange={handleEditImageUpload} className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none" />
-                      {editEssential.image && <img src={editEssential.image} alt="Preview" className="mt-4 h-40 w-full rounded-2xl object-cover" />}
-                    </div>
-                    <div className="mt-4 flex gap-3">
-                      <button onClick={() => saveEditing(item.id)} className="rounded-2xl bg-emerald-400 px-8 py-4 font-bold text-black">Save</button>
-                      <button onClick={cancelEditing} className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 font-bold">Cancel</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="flex gap-5 items-start">
-                      {item.image ? (
-                        <img src={item.image} alt={item.name} className="h-20 w-20 rounded-2xl object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-2xl border border-dashed border-white/20 bg-white/5 text-center text-[11px] font-semibold leading-tight text-zinc-400">Sin<br />foto</div>
-                      )}
-                      <div>
-                        <div className="flex items-center gap-3">
-                          <span className="rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 text-xs font-semibold text-teal-300">{item.category}</span>
-                          {item.subcategory && <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-300">{item.subcategory}</span>}
-                          {item.neighborhood && <span className="text-sm text-zinc-400">📍 {item.neighborhood}</span>}
-                        </div>
-                        <h2 className="mt-2 text-2xl font-black text-white">{item.name}</h2>
-                        {item.address && <p className="mt-1 text-sm text-zinc-400">{item.address}</p>}
-                        {item.open_hours && <p className="mt-1 text-sm text-zinc-400">🕒 {item.open_hours}</p>}
-                        {item.latitude && item.longitude && (
-                          <p className="mt-1 text-xs text-zinc-400">{item.latitude}, {item.longitude}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-3">
-                      <button onClick={() => startEditing(item)} className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold hover:bg-white hover:text-black transition">
-                        ✏️ Edit
-                      </button>
-                      <label className={`cursor-pointer rounded-full border border-amber-300/30 bg-amber-300/10 px-5 py-3 text-sm font-bold text-amber-200 transition hover:bg-amber-300 hover:text-black ${photoBusyId !== null ? "pointer-events-none opacity-50" : ""}`}>
-                        {photoBusyId === item.id ? "Subiendo…" : item.image ? "📷 Cambiar foto" : "📷 Subir foto"}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="sr-only"
-                          disabled={photoBusyId !== null}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0]
-                            e.target.value = "" // permite volver a elegir la misma foto
-                            void changePhoto(item, file)
-                          }}
-                        />
-                      </label>
-                      <button onClick={() => toggleHidden(item)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${(item as any).hidden ? "bg-zinc-600 text-white" : "border border-white/10 bg-white/5 text-white"}`}>
-                        {(item as any).hidden ? "👁️ Hidden" : "👁️ Visible"}
-                      </button>
-                      <button onClick={() => deleteEssential(item.id)} className="rounded-full border border-red-500/20 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-400 hover:bg-red-500 hover:text-white transition">
-                        Delete
-                      </button>
-                    </div>
-                  </div>
+          )}
+          <p className="ml-auto self-center text-xs text-zinc-400">
+            {filtered.length} de {essentials.length} esenciales
+          </p>
+        </div>
+
+        {/* Lista */}
+        {loading ? (
+          <p className="py-20 text-center text-sm text-zinc-400">Cargando esenciales…</p>
+        ) : (
+          <div className="grid gap-4">
+            {shown.map(renderItem)}
+            {remaining > 0 && (
+              <button onClick={() => setLimit((l) => l + PAGE_SIZE)} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10">
+                Ver {Math.min(PAGE_SIZE, remaining)} más (quedan {remaining})
+              </button>
+            )}
+            {shown.length === 0 && (
+              <div className="py-20 text-center">
+                <p className="text-sm text-zinc-400">No hay esenciales con este filtro.</p>
+                {isFiltered && (
+                  <button onClick={clearFilters} className="mt-4 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-xs font-bold text-white transition hover:bg-white/10">
+                    Quitar filtros
+                  </button>
                 )}
               </div>
-            ))}
-            {filteredEssentials.length === 0 && (
-              <p className="text-center text-zinc-400 py-10">No essentials in this category yet.</p>
             )}
           </div>
-        </section>
+        )}
       </>
     </AdminShell>
   )
