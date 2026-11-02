@@ -17,6 +17,10 @@ import { useLanguage } from "../../../context/LanguageContext"
 import ArrowIcon from "../../../components/ui/ArrowIcon"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../../lib/geo"
 import { getOpenStatus } from "../../../lib/openStatus"
+import { qualifiesOnDay, tonightIndex } from "../../../lib/essentialNight"
+import { fetchVisibleClubs } from "../../../lib/clubQueries"
+import { clubsNear, type ClubPoint } from "../../../lib/parkingNearClubs"
+import { createSlug } from "../../../lib/slug"
 import AdminEditButton from "../../../components/admin/AdminEditButton"
 import EssentialPhoto from "../../../components/essentials/EssentialPhoto"
 import Icon from "../../../components/ui/Icon"
@@ -167,6 +171,40 @@ export default function EssentialCategoryPage() {
   const [sortByDistance, setSortByDistance] = useState(false)
   const [mobileView, setMobileView] = useState<"list" | "map">("list")
   const [openOnly, setOpenOnly] = useState(false)
+  // Selector de día (2/11/2026). En farmacias, comida, supermercados y gasolineras solo se enseña lo
+  // que está «de noche» la noche elegida: abierto 24 h ese día, o abierto a la 1:00 de la madrugada,
+  // o que cierra a la 1:00 o más tarde. Por defecto, la noche de hoy (hasta las 6:00 todavía cuenta
+  // la del día anterior). Un sitio que solo cumple viernes y sábado sale esos días y no los demás; y
+  // si su horario no se entiende o no está puesto, no sale (mejor no enseñar que enseñar algo cerrado).
+  // Se calcula tras montar porque depende de la hora del visitante.
+  const isNightCategory = category === "pharmacy" || category === "food" || category === "supermarket" || category === "gas-station"
+  const [tonight, setTonight] = useState<number | null>(null)
+  const [nightDay, setNightDay] = useState<number | null>(null)
+  useEffect(() => {
+    setTonight(tonightIndex())
+  }, [])
+  const activeNight = isNightCategory ? nightDay ?? tonight : null
+  const nightOk = (e: Essential) => activeNight === null || qualifiesOnDay(e.open_hours, activeNight)
+
+  // Parkings (2/11/2026): solo públicos y gratuitos (los trae el importador de OpenStreetMap, ya
+  // filtrados). Cada uno enseña los clubs que tiene a pie: se calcula aquí con las coordenadas de los
+  // clubs publicados, así que no hay nada que mantener a mano. Solo se piden los clubs en esta categoría.
+  const isParking = category === "parking"
+  const [parkingClubs, setParkingClubs] = useState<ClubPoint[]>([])
+  useEffect(() => {
+    if (!isParking) return
+    let cancelled = false
+    fetchVisibleClubs("id, name, slug, latitude, longitude")
+      .then((rows) => { if (!cancelled) setParkingClubs(rows as unknown as ClubPoint[]) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [isParking])
+  const nearClubsById = useMemo(() => {
+    const m = new Map<number, ReturnType<typeof clubsNear>>()
+    if (!isParking) return m
+    for (const e of essentials) m.set(e.id, clubsNear(e.latitude, e.longitude, parkingClubs))
+    return m
+  }, [isParking, essentials, parkingClubs])
   const [mapHint, setMapHint] = useState(false)
   const [locating, setLocating] = useState(false)
   const [locationDenied, setLocationDenied] = useState(false)
@@ -491,6 +529,7 @@ export default function EssentialCategoryPage() {
 
     const nearest = essentials
       .filter((e) => e.latitude && e.longitude)
+      .filter(nightOk)
       .map((e) => ({ e, d: distanceInMeters(userLocation.lat, userLocation.lng, Number(e.latitude), Number(e.longitude)) }))
       .sort((a, b) => a.d - b.d)
       .slice(0, 5)
@@ -524,6 +563,7 @@ export default function EssentialCategoryPage() {
 
     essentials
       .filter((e) => e.latitude && e.longitude)
+      .filter(nightOk)
       .filter((e) => category !== "taxi" || !NOT_A_RANK.test(e.name || ""))
       .filter((e) => !isLineCategory || selectedMetroLine === "All" || (e.subcategory || "").split(",").some((l) => l.trim().toUpperCase() === selectedMetroLine.toUpperCase()))
       .filter((e) => !isLineCategory || !metroSearch.trim() || e.name.toLowerCase().includes(metroSearch.trim().toLowerCase()))
@@ -560,7 +600,8 @@ export default function EssentialCategoryPage() {
 
         markersRef.current.push(marker)
       })
-  }, [mapReady, essentials, config.color, category, selectedMetroLine, metroSearch])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapReady, essentials, config.color, category, selectedMetroLine, metroSearch, activeNight])
 
   const distMeters = (item: Essential): number | null =>
     userLocation && item.latitude && item.longitude
@@ -622,9 +663,16 @@ export default function EssentialCategoryPage() {
     .filter((e) => (selectedNeighborhood === "All" ? true : e.neighborhood === selectedNeighborhood))
     .filter((e) => (selectedSubcategory === "All" ? true : subcategoryKey(e.subcategory || "") === subcategoryKey(selectedSubcategory)))
     .filter((e) => !openOnly || getOpenStatus(e.open_hours).state === "open")
+    .filter(nightOk)
     .slice()
     .sort((a, b) => {
-      if (!sortByDistance || !userLocation) return 0
+      if (!sortByDistance || !userLocation) {
+        // Parkings: primero los que tienen un club más cerca andando.
+        if (!isParking) return 0
+        const na = nearClubsById.get(a.id)?.[0]?.meters ?? Infinity
+        const nb = nearClubsById.get(b.id)?.[0]?.meters ?? Infinity
+        return na === nb ? 0 : na - nb
+      }
       const da = distMeters(a) ?? Infinity
       const db = distMeters(b) ?? Infinity
       return da - db
@@ -711,6 +759,35 @@ export default function EssentialCategoryPage() {
     return null
   }
 
+  // «Gratis» + clubs a pie desde este parking (tarjeta de la lista y ficha del mapa).
+  const renderParkingInfo = (item: Essential, stop?: (e: React.MouseEvent) => void) => {
+    if (!isParking) return null
+    const near = nearClubsById.get(item.id) || []
+    return (
+      <div className="mt-2 text-xs">
+        <span className="inline-block rounded-full bg-open/15 px-2.5 py-0.5 font-semibold text-open">{t("essentialsPage.parkingFree")}</span>
+        {parkingClubs.length > 0 &&
+          (near.length > 0 ? (
+            <div className="mt-1.5">
+              <p className="font-semibold text-zinc-400">{t("essentialsPage.parkingNear")}</p>
+              <ul className="mt-0.5 space-y-0.5 text-zinc-300">
+                {near.map((c) => (
+                  <li key={c.id}>
+                    <Link href={`/clubs/${c.slug || createSlug(c.name)}`} onClick={stop} className="font-semibold text-brand-soft hover:underline">
+                      {c.name}
+                    </Link>{" "}
+                    <span className="text-zinc-400">· {t("essentialsPage.walkMin").replace("{n}", String(c.minutes))}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="mt-1.5 text-zinc-400">{t("essentialsPage.parkingNoClubs")}</p>
+          ))}
+      </div>
+    )
+  }
+
   const renderCard = (item: Essential) => {
     const hasCoords = Boolean(item.latitude && item.longitude)
 
@@ -762,6 +839,7 @@ export default function EssentialCategoryPage() {
             {distanceLabel && <span className="text-brand-soft">{distanceLabel}</span>}
           </div>
           {renderTransitInfo(item, stopPropagation)}
+          {renderParkingInfo(item, stopPropagation)}
           {item.description && <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-zinc-400">{item.description}</p>}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {hasCoords && (
@@ -969,6 +1047,17 @@ export default function EssentialCategoryPage() {
         {category !== "nitbus" && (
         <section className="mx-auto mt-6 max-w-7xl px-4">
           <div className="flex flex-wrap items-center gap-3">
+            {/* Día (2/11/2026): primera opción = la noche de hoy; después, los otros seis días. */}
+            {isNightCategory && tonight !== null && (
+              <FilterSelect
+                value={String(activeNight ?? tonight)}
+                onChange={(v) => setNightDay(Number(v))}
+                options={[0, 1, 2, 3, 4, 5, 6].map((k) => {
+                  const d = (tonight + k) % 7
+                  return { value: String(d), label: t("clubs.day" + ((d + 1) % 7)) + (k === 0 ? ` (${t("clubs.dayToday")})` : "") }
+                })}
+              />
+            )}
             {/* En Metro el barrio/zona de cada estación no es un dato útil para filtrar: la red
                 cubre toda Barcelona y el filtro no "lleva a nada" (deja la lista casi vacía o
                 igual, porque las estaciones del catálogo no tienen barrio asignado). Para eso ya
@@ -1014,7 +1103,7 @@ export default function EssentialCategoryPage() {
               </button>
               {/* En Nitbus no hay «Abierto ahora» (31/10/2026): una parada no tiene horario, el filtro
                   no servía para nada. */}
-              {category !== "nitbus" && (
+              {category !== "nitbus" && category !== "parking" && (
                 <button
                   onClick={() => setOpenOnly(!openOnly)}
                   aria-pressed={openOnly}
@@ -1241,6 +1330,7 @@ export default function EssentialCategoryPage() {
                     </div>
                     <div className="px-4 pb-4 pt-2">
                       {renderTransitInfo(selected)}
+                      {renderParkingInfo(selected)}
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                         {(() => {
                           const st = getOpenStatus(selected.open_hours, t)

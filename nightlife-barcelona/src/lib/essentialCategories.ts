@@ -1,4 +1,4 @@
-import { Pill, Banknote, UtensilsCrossed, TrainFront, Bus, ShoppingCart, BedDouble, Dices, Fuel, Hospital, MapPin, type LucideIcon } from "lucide-react"
+import { Pill, Banknote, UtensilsCrossed, TrainFront, Bus, ShoppingCart, BedDouble, Dices, Fuel, Hospital, MapPin, CircleParking, type LucideIcon } from "lucide-react"
 
 // Categorías de esenciales: el valor de la columna `category` → URL e icono. Antes cada página
 // tenía su copia con un emoji y un color distinto por categoría (doce colores compitiendo con el
@@ -16,6 +16,7 @@ export const ESSENTIAL_CATEGORIES: { key: string; slug: string; icon: LucideIcon
   { key: "Nitbus", slug: "nitbus", icon: Bus },
   { key: "Hospital", slug: "hospital", icon: Hospital },
   { key: "Gas Station", slug: "gas-station", icon: Fuel },
+  { key: "Parking", slug: "parking", icon: CircleParking },
   { key: "Hotel", slug: "hotel", icon: BedDouble },
   { key: "Casino", slug: "casino", icon: Dices },
 ]
@@ -40,6 +41,7 @@ const SLUG_LABEL_ES: Record<string, string> = {
   nitbus: "Nitbus",
   hospital: "Hospitales",
   "gas-station": "Gasolineras",
+  parking: "Parkings gratis",
   hotel: "Hoteles",
   casino: "Casinos",
 }

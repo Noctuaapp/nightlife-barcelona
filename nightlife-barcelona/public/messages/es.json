@@ -168,7 +168,8 @@
       "Hotel": "Hotel",
       "Casino": "Casino",
       "GasStation": "Gasolinera",
-      "Hospital": "Hospital"
+      "Hospital": "Hospital",
+      "Parking": "Parking gratis"
     },
     "categories": {
       "Pharmacy": "Farmacias 24h en Barcelona",
@@ -182,7 +183,8 @@
       "Hotel": "Hoteles y alojamiento",
       "Casino": "Casinos y entretenimiento",
       "GasStation": "Gasolineras abiertas toda la noche",
-      "Hospital": "Hospitales y urgencias 24h"
+      "Hospital": "Hospitales y urgencias 24h",
+      "Parking": "Aparcamientos públicos gratuitos cerca de los clubs"
     }
   },
   "plan": {
@@ -1045,7 +1047,10 @@
     "nitbusLocateHint": "Pulsa «Cerca de mí» y verás en el mapa tus 3 paradas más cercanas.",
     "nitbusAllStops": "Todas las paradas",
     "moreStops": "Ver más paradas ({n})",
-    "nitbusLinesHere": "Líneas que paran aquí"
+    "nitbusLinesHere": "Líneas que paran aquí",
+    "parkingFree": "Aparcamiento gratuito",
+    "parkingNear": "Clubs a pie",
+    "parkingNoClubs": "Ningún club a menos de 15 min a pie"
   },
   "areas": {
     "titleBarrio": "Discotecas en {name}",

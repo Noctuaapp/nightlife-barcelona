@@ -164,7 +164,8 @@
       "Hotel": "Hotel",
       "Casino": "Casino",
       "GasStation": "Tankstation",
-      "Hospital": "Ziekenhuis"
+      "Hospital": "Ziekenhuis",
+      "Parking": "Gratis parkeren"
     },
     "categories": {
       "Pharmacy": "24u apotheken in Barcelona",
@@ -178,7 +179,8 @@
       "Hotel": "Hotels en accommodatie",
       "Casino": "Casino's en entertainment",
       "GasStation": "Tankstations de hele nacht open",
-      "Hospital": "Ziekenhuizen en 24u spoedeisende hulp"
+      "Hospital": "Ziekenhuizen en 24u spoedeisende hulp",
+      "Parking": "Gratis openbare parkeerplaatsen bij de clubs"
     }
   },
   "plan": {
@@ -1007,7 +1009,10 @@
     "nitbusLocateHint": "Tik op ‘Bij mij in de buurt’ en je ziet je 3 dichtstbijzijnde haltes op de kaart.",
     "nitbusAllStops": "Alle haltes",
     "moreStops": "Meer haltes tonen ({n})",
-    "nitbusLinesHere": "Lijnen die hier stoppen"
+    "nitbusLinesHere": "Lijnen die hier stoppen",
+    "parkingFree": "Gratis parkeren",
+    "parkingNear": "Clubs te voet",
+    "parkingNoClubs": "Geen club binnen 15 min lopen"
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",

@@ -11,6 +11,7 @@ import CoordsField from "../../../components/admin/CoordsField"
 import { coordsPayload, coordToInput, parseCoords } from "../../../lib/coords"
 import { touchCache, essentialPaths } from "../../../lib/touchCache"
 import { ESSENTIAL_CATEGORIES } from "../../../lib/essentialCategories"
+import { prepareImageForUpload, uploadFileName } from "../../../lib/compressImage"
 
 type Essential = {
   id: number
@@ -67,6 +68,8 @@ export default function AdminEssentialsPage() {
   const [uploading, setUploading] = useState(false)
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [filterCategory, setFilterCategory] = useState("All")
+  const [onlyNoPhoto, setOnlyNoPhoto] = useState(false)
+  const [photoBusyId, setPhotoBusyId] = useState<number | null>(null)
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -111,6 +114,32 @@ export default function AdminEssentialsPage() {
     if (!file) return
     const publicUrl = await uploadImage(file)
     if (publicUrl) setEditEssential((prev) => ({ ...prev, image: publicUrl }))
+  }
+
+  // Cambiar la foto de un esencial sin abrir el formulario de edición (pedido el 2/11/2026): se elige
+  // la foto (en el móvil, de la cámara o de la galería), se reduce y endereza como las de los clubs
+  // (lib/compressImage), se sube y se guarda en la ficha al momento. Va al bucket essential-images,
+  // así que el cron de Google no la pisa (solo sustituye imágenes vacías o de essential-photos).
+  const changePhoto = async (item: Essential, file: File | undefined) => {
+    if (!file) return
+    setPhotoBusyId(item.id)
+    try {
+      const prepared = await prepareImageForUpload(file)
+      const filePath = `essentials/${uploadFileName(`e${item.id}`, prepared.ext)}`
+      const { error: uploadError } = await supabase.storage.from("essential-images").upload(filePath, prepared.blob, { contentType: prepared.contentType })
+      if (uploadError) { logError("PHOTO UPLOAD ERROR:", uploadError); toast(`No se ha podido subir la foto: ${uploadError.message}`, 5000); return }
+      const { data: pub } = supabase.storage.from("essential-images").getPublicUrl(filePath)
+      const { data, error } = await supabase.from("essentials").update({ image: pub.publicUrl }).eq("id", item.id).select().single()
+      if (error) { logError("PHOTO SAVE ERROR:", error); toast(`La foto se subió pero no se pudo guardar en la ficha: ${error.message}`, 5000); return }
+      if (data) setEssentials((prev) => prev.map((e) => (e.id === item.id ? data : e)))
+      touchCache(essentialPaths())
+      toast("Foto cambiada")
+    } catch (e) {
+      logError("PHOTO ERROR:", e)
+      toast("No se ha podido cambiar la foto", 5000)
+    } finally {
+      setPhotoBusyId(null)
+    }
   }
 
   const addEssential = async () => {
@@ -213,9 +242,9 @@ export default function AdminEssentialsPage() {
     setEssentials((prev) => prev.map((e) => ({ ...e, hidden: true })))
   }
 
-  const filteredEssentials = essentials.filter((e) =>
-    filterCategory === "All" ? true : e.category === filterCategory
-  )
+  const inCategory = (e: Essential) => (filterCategory === "All" ? true : e.category === filterCategory)
+  const noPhotoCount = essentials.filter((e) => inCategory(e) && !e.image).length
+  const filteredEssentials = essentials.filter((e) => inCategory(e) && (!onlyNoPhoto || !e.image))
 
   if (checkingAdmin) {
     return (
@@ -304,6 +333,14 @@ export default function AdminEssentialsPage() {
         {/* FILTER */}
         <section className="mx-auto mt-6 max-w-7xl px-4">
           <div className="flex gap-3 overflow-x-auto pb-2">
+            <button
+              onClick={() => setOnlyNoPhoto((v) => !v)}
+              className={`rounded-full px-5 py-3 text-sm font-medium whitespace-nowrap transition ${
+                onlyNoPhoto ? "bg-amber-300 text-black" : "border border-amber-300/30 bg-amber-300/10 text-amber-200 hover:bg-amber-300/20"
+              }`}
+            >
+              📷 Sin foto ({noPhotoCount})
+            </button>
             {["All", ...categories].map((cat) => (
               <button
                 key={cat}
@@ -346,7 +383,11 @@ export default function AdminEssentialsPage() {
                 ) : (
                   <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex gap-5 items-start">
-                      {item.image && <img src={item.image} alt={item.name} className="h-20 w-20 rounded-2xl object-cover flex-shrink-0" />}
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} className="h-20 w-20 rounded-2xl object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-2xl border border-dashed border-white/20 bg-white/5 text-center text-[11px] font-semibold leading-tight text-zinc-400">Sin<br />foto</div>
+                      )}
                       <div>
                         <div className="flex items-center gap-3">
                           <span className="rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 text-xs font-semibold text-teal-300">{item.category}</span>
@@ -365,6 +406,20 @@ export default function AdminEssentialsPage() {
                       <button onClick={() => startEditing(item)} className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold hover:bg-white hover:text-black transition">
                         ✏️ Edit
                       </button>
+                      <label className={`cursor-pointer rounded-full border border-amber-300/30 bg-amber-300/10 px-5 py-3 text-sm font-bold text-amber-200 transition hover:bg-amber-300 hover:text-black ${photoBusyId !== null ? "pointer-events-none opacity-50" : ""}`}>
+                        {photoBusyId === item.id ? "Subiendo…" : item.image ? "📷 Cambiar foto" : "📷 Subir foto"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          disabled={photoBusyId !== null}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            e.target.value = "" // permite volver a elegir la misma foto
+                            void changePhoto(item, file)
+                          }}
+                        />
+                      </label>
                       <button onClick={() => toggleHidden(item)} className={`rounded-full px-5 py-3 text-sm font-bold transition ${(item as any).hidden ? "bg-zinc-600 text-white" : "border border-white/10 bg-white/5 text-white"}`}>
                         {(item as any).hidden ? "👁️ Hidden" : "👁️ Visible"}
                       </button>

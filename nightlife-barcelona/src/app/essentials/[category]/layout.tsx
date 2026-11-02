@@ -19,6 +19,7 @@ const META: Record<string, { title: string; description: string }> = {
   hotel: { title: "Hoteles cerca de la fiesta en Barcelona", description: "Hoteles cerca de las zonas de ocio nocturno de Barcelona." },
   casino: { title: "Casinos en Barcelona", description: "Casinos y salas de juego en Barcelona: horarios y cómo llegar." },
   "gas-station": { title: "Gasolineras 24 h en Barcelona", description: "Gasolineras abiertas por la noche en Barcelona." },
+  parking: { title: "Parkings gratis cerca de clubs en Barcelona", description: "Aparcamientos públicos gratuitos para dejar el coche en Barcelona, con los clubs que tienes a pie desde cada uno." },
   hospital: { title: "Urgencias y hospitales en Barcelona", description: "Hospitales con urgencias 24 h en Barcelona y cómo llegar." },
 }
 

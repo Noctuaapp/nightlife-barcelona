@@ -164,7 +164,8 @@
       "Hotel": "Hôtel",
       "Casino": "Casino",
       "GasStation": "Station-service",
-      "Hospital": "Hôpital"
+      "Hospital": "Hôpital",
+      "Parking": "Parking gratuit"
     },
     "categories": {
       "Pharmacy": "Pharmacies 24h à Barcelone",
@@ -178,7 +179,8 @@
       "Hotel": "Hôtels et hébergement",
       "Casino": "Casinos et divertissement",
       "GasStation": "Stations-service ouvertes la nuit",
-      "Hospital": "Hôpitaux et urgences 24h"
+      "Hospital": "Hôpitaux et urgences 24h",
+      "Parking": "Parkings publics gratuits près des clubs"
     }
   },
   "plan": {
@@ -1007,7 +1009,10 @@
     "nitbusLocateHint": "Appuie sur « Près de moi » et tu verras sur la carte tes 3 arrêts les plus proches.",
     "nitbusAllStops": "Tous les arrêts",
     "moreStops": "Voir plus d'arrêts ({n})",
-    "nitbusLinesHere": "Lignes qui s'arrêtent ici"
+    "nitbusLinesHere": "Lignes qui s'arrêtent ici",
+    "parkingFree": "Parking gratuit",
+    "parkingNear": "Clubs à pied",
+    "parkingNoClubs": "Aucun club à moins de 15 min à pied"
   },
   "areas": {
     "titleBarrio": "Discothèques à {name}",

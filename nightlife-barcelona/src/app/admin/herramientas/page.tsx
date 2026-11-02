@@ -414,6 +414,7 @@ export default function AdminToolsPage() {
                     <option value="supermarket">Supermercados</option>
                     <option value="gas">Gasolineras</option>
                     <option value="hospital">Hospitales</option>
+                    <option value="parking">Parkings gratuitos (aparte, no entra en «Todas»)</option>
                   </select>
                   <label className="flex items-center gap-2 text-zinc-300">
                     <input type="checkbox" checked={essReal} onChange={(e) => setEssReal(e.target.checked)} />

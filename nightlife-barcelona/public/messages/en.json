@@ -167,7 +167,8 @@
       "Hotel": "Hotel",
       "Casino": "Casino",
       "GasStation": "Gas Station",
-      "Hospital": "Hospital"
+      "Hospital": "Hospital",
+      "Parking": "Free parking"
     },
     "categories": {
       "Pharmacy": "24h pharmacies across Barcelona",
@@ -181,7 +182,8 @@
       "Hotel": "Hotels and accommodation",
       "Casino": "Casinos and entertainment",
       "GasStation": "Gas stations open all night",
-      "Hospital": "Hospitals and 24h emergency services"
+      "Hospital": "Hospitals and 24h emergency services",
+      "Parking": "Free public parking near the clubs"
     }
   },
   "plan": {
@@ -1032,7 +1034,10 @@
     "nitbusLocateHint": "Tap “Near me” and you'll see your 3 nearest stops on the map.",
     "nitbusAllStops": "All stops",
     "moreStops": "Show more stops ({n})",
-    "nitbusLinesHere": "Lines that stop here"
+    "nitbusLinesHere": "Lines that stop here",
+    "parkingFree": "Free parking",
+    "parkingNear": "Clubs on foot",
+    "parkingNoClubs": "No club within 15 min on foot"
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",

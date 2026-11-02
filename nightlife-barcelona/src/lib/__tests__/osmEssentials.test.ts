@@ -69,6 +69,43 @@ describe("isDuplicateEssential", () => {
   })
 })
 
+describe("parkings gratuitos", () => {
+  const parking = type("parking")
+
+  it("admite un parking público con fee=no, sin horario", () => {
+    expect(judgeEssential(parking, { amenity: "parking", fee: "no", name: "Aparcament Fòrum" })).toEqual({ ok: true, name: "Aparcament Fòrum", openHours: null })
+    expect(judgeEssential(parking, { amenity: "parking", fee: "no", access: "yes", parking: "surface" })).toEqual({ ok: true, name: "Aparcamiento gratuito", openHours: null })
+  })
+
+  it("sin nombre usa la calle si la hay, y nunca la marca o el operador", () => {
+    expect(judgeEssential(parking, { amenity: "parking", fee: "no", "addr:street": "Carrer de Llull", operator: "Ajuntament de Barcelona" })).toEqual({
+      ok: true, name: "Aparcamiento gratuito · Carrer de Llull", openHours: null,
+    })
+  })
+
+  it("sin fee=no explícito no entra (no se sabe si es gratis)", () => {
+    expect(judgeEssential(parking, { amenity: "parking", name: "Parking Plaza" })).toEqual({ ok: false, reason: "no_es_gratis" })
+    expect(judgeEssential(parking, { amenity: "parking", fee: "yes", name: "Parking Plaza" })).toEqual({ ok: false, reason: "no_es_gratis" })
+  })
+
+  it("descarta los que no son de uso general", () => {
+    for (const access of ["private", "customers", "permit", "residents", "employees", "delivery"]) {
+      expect(judgeEssential(parking, { amenity: "parking", fee: "no", access })).toEqual({ ok: false, reason: "no_es_publico" })
+    }
+    expect(judgeEssential(parking, { amenity: "parking", fee: "no", name: "Parking privado Mercadona" })).toEqual({ ok: false, reason: "no_es_publico" })
+    expect(judgeEssential(parking, { amenity: "parking", fee: "no", name: "Pàrquing clients" })).toEqual({ ok: false, reason: "no_es_publico" })
+    expect(judgeEssential(parking, { amenity: "parking", fee: "no", motorcar: "no" })).toEqual({ ok: false, reason: "no_es_para_coches" })
+  })
+
+  it("se reconoce en OpenStreetMap, no entra en «all» y se pide con cat=parking", () => {
+    expect(osmMatches("parking", { amenity: "parking" })).toBe(true)
+    expect(osmMatches("parking", { amenity: "fuel" })).toBe(false)
+    expect(typesFor("all").map((t) => t.key)).not.toContain("parking")
+    expect(typesFor("parking").map((t) => t.category)).toEqual(["Parking"])
+    expect(parking.selectors).toEqual([`["amenity"="parking"]["fee"="no"]`])
+  })
+})
+
 describe("tipos", () => {
   it("«all» da los seis y una categoría suelta da solo esa", () => {
     expect(typesFor("all")).toHaveLength(6)
