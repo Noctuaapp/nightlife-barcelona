@@ -47,6 +47,8 @@ const RESTRICTED_ACCESS = new Set(["private", "customers", "no", "permit"])
 const PARKING_RESTRICTED_ACCESS = new Set([...RESTRICTED_ACCESS, "delivery", "residents", "employees", "staff", "students", "members", "military", "agricultural", "forestry", "emergency"])
 // Nombres que delatan un parking que no es de uso general («Parking privado», «solo clientes»…).
 const PARKING_PRIVATE_NAME = /privad|privat|client|customer|residen|reservad|exclusiv|empleado|treballador|\bstaff\b|abonad|socio/i
+// Aparcamientos de camiones o autobuses: son públicos y gratis, pero no son para un coche.
+const PARKING_NOT_FOR_CARS_NAME = /truck|camion|camió|lorry|\bhgv\b|autocar|autob[uú]s|\bbus\b/i
 
 // Nombre que se mostrará: el del local, o la marca/operador (en cajeros: «CaixaBank», «Euronet»).
 export function essentialName(tags: Record<string, string>): string | null {
@@ -65,6 +67,9 @@ function judgeParking(tags: Record<string, string>): Verdict {
   }
   const named = (tags.name || "").replace(/\s+/g, " ").trim()
   if (PARKING_PRIVATE_NAME.test(named)) return { ok: false, reason: "no_es_publico" }
+  if (["designated", "only"].includes((tags.hgv || "").toLowerCase()) || PARKING_NOT_FOR_CARS_NAME.test(named)) {
+    return { ok: false, reason: "no_es_para_coches" }
+  }
   const street = (tags["addr:street"] || "").replace(/\s+/g, " ").trim()
   const name = (named || (street ? `Aparcamiento gratuito · ${street}` : "Aparcamiento gratuito")).slice(0, 120)
   return { ok: true, name, openHours: null }

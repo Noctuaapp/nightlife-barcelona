@@ -97,6 +97,15 @@ describe("parkings gratuitos", () => {
     expect(judgeEssential(parking, { amenity: "parking", fee: "no", motorcar: "no" })).toEqual({ ok: false, reason: "no_es_para_coches" })
   })
 
+  it("descarta los de camiones y autobuses, que no son para un coche", () => {
+    for (const tags of [{ name: "Truck Parking" }, { name: "Aparcament de camions" }, { name: "Aparcamiento autobuses" }, { hgv: "designated" }, { hgv: "only" }]) {
+      expect(judgeEssential(parking, { amenity: "parking", fee: "no", ...tags })).toEqual({ ok: false, reason: "no_es_para_coches" })
+    }
+    // un parking normal que también admite camiones (hgv=yes), o con «bus» dentro de otra palabra, sigue entrando
+    expect(judgeEssential(parking, { amenity: "parking", fee: "no", hgv: "yes", name: "Aparcament Fòrum" }).ok).toBe(true)
+    expect(judgeEssential(parking, { amenity: "parking", fee: "no", name: "Parc de Bellvitge" }).ok).toBe(true)
+  })
+
   it("se reconoce en OpenStreetMap, no entra en «all» y se pide con cat=parking", () => {
     expect(osmMatches("parking", { amenity: "parking" })).toBe(true)
     expect(osmMatches("parking", { amenity: "fuel" })).toBe(false)
