@@ -5,6 +5,7 @@ import { fetchAreaElements } from "@/lib/osmAreaFetch"
 import { staticBoundary } from "@/lib/osmBoundaries"
 import { AREAS, cityFor, normalize } from "@/lib/osmAreas"
 import { ESSENTIAL_TYPES, essentialAddress, isDuplicateEssential, judgeEssential, osmMatches, typesFor, type ExistingEssential } from "@/lib/osmEssentials"
+import { clubsNearCount, type ClubPoint } from "@/lib/parkingNearClubs"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -16,8 +17,12 @@ export const maxDuration = 60
 //
 //   Vista previa (no escribe nada):  /api/admin/import-osm-essentials?area=badalona&cat=all
 //   Importar de verdad:              /api/admin/import-osm-essentials?area=badalona&cat=all&dry=0
-//   area = igual que el importador de locales | cat = all | pharmacy | atm | food | supermarket | gas | hospital
+//   area = igual que el importador de locales | cat = all | pharmacy | atm | food | supermarket | gas | hospital | parking
 //   En Barcelona conviene ir categoría a categoría: son muchos datos para una sola consulta.
+//
+// Parkings (2/11/2026): solo gratuitos y públicos, y solo los que tienen algún club publicado a menos de
+// 1.200 m (unos 15 min andando): un parking gratis a 5 km de cualquier club no sirve para salir de
+// fiesta y llenaría la lista. Para traerlos todos, añade &clubs=0. «cat=all» no incluye parkings.
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -49,6 +54,19 @@ export async function GET(req: Request) {
   const elements = got.elements
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+  // Clubs publicados, solo si se importan parkings (para quedarse con los que tienen un club a pie).
+  const onlyNearClubs = types.some((t) => t.key === "parking") && searchParams.get("clubs") !== "0"
+  const clubPoints: ClubPoint[] = []
+  if (onlyNearClubs) {
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase.from("clubs").select("id, name, slug, latitude, longitude").eq("hidden", false).order("id").range(from, from + 999)
+      if (error) return NextResponse.json({ error: `No he podido leer los clubs: ${error.message}` }, { status: 500 })
+      clubPoints.push(...((data || []) as ClubPoint[]))
+      if (!data || data.length < 1000) break
+    }
+  }
+
   const existing: ExistingEssential[] = []
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabase
@@ -95,6 +113,11 @@ export async function GET(req: Request) {
     const verdict = judgeEssential(type, tags)
     if (!verdict.ok) { tally.descartados[verdict.reason] = (tally.descartados[verdict.reason] || 0) + 1; continue }
 
+    if (type.key === "parking" && onlyNearClubs && clubsNearCount(lat, lon, clubPoints) === 0) {
+      tally.descartados.sin_club_cerca = (tally.descartados.sin_club_cerca || 0) + 1
+      continue
+    }
+
     if (isDuplicateEssential(existing, { category: type.category, name: verdict.name, lat, lon })) { tally.ya_existian++; continue }
     existing.push({ category: type.category, norm: normalize(verdict.name), lat, lon })
 
@@ -123,6 +146,7 @@ export async function GET(req: Request) {
       area: area.city,
       categoria: cat,
       descartados_por_estar_fuera_del_municipio: got.descartados_fuera_del_municipio,
+      ...(onlyNearClubs ? { parkings_solo_con_club_a_menos_de_1200_m: `${clubPoints.length} clubs publicados mirados` } : {}),
       nuevos_total: rows.length,
       por_categoria: resumen,
       muestra: rows.slice(0, 60).map((r) => `${r.category} · ${r.name} · ${r.open_hours ?? "sin horario"} · ${r.address ?? r.neighborhood}`),
