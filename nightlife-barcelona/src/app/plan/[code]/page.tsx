@@ -11,7 +11,8 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
   let title = "Plan de la noche en Barcelona"
   let description = "Te han invitado a un plan. Apúntate sin crear cuenta."
   try {
-    if (/^[a-f0-9]{8}$/.test(code)) {
+    // Los planes antiguos tienen 8 caracteres; los nuevos, 12 (más difíciles de adivinar).
+    if (/^[a-f0-9]{8,12}$/.test(code)) {
       const { data } = await supabase.rpc("get_night_plan", { p_code: code })
       if (data?.title) {
         title = data.title
