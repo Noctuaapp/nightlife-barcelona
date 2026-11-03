@@ -1,10 +1,17 @@
 // Después de guardar algo en Supabase desde el admin o "mi club", avisa a Next para que las
 // páginas públicas afectadas dejen de servir la versión en caché. Ver src/app/api/revalidate.
+// Desde la auditoría del 2/11/2026 el endpoint exige sesión: se manda el token de quien guarda
+// (admin o dueño). Sin sesión no hay nada que refrescar, así que ni se llama.
+import { supabase } from "./supabase"
+
 export async function touchCache(paths: string[]): Promise<void> {
   try {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) return
     await fetch("/api/revalidate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ paths }),
     })
   } catch {

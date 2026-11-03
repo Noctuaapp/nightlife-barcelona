@@ -6,6 +6,8 @@ import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
+import CaptchaBox from "../../components/auth/CaptchaBox"
+import { captchaEnabled, captchaOptions, CAPTCHA_PENDING_MESSAGE } from "../../lib/captcha"
 
 // «¿Has olvidado tu contraseña?» (26/10/2026). Antes no existía: quien la olvidaba no tenía forma
 // de volver a entrar salvo escribir a soporte. Ahora se pide un enlace por email (lo envía
@@ -18,6 +20,9 @@ export default function RecoverPasswordPage() {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState("")
+  // Verificación anti-robots (solo si está configurada: ver lib/captcha.ts). El token vale una vez.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaRound, setCaptchaRound] = useState(0)
 
   const send = async () => {
     setError("")
@@ -26,11 +31,18 @@ export default function RecoverPasswordPage() {
       setError(t("recover.invalidEmail"))
       return
     }
+    if (captchaEnabled() && !captchaToken) {
+      setError(CAPTCHA_PENDING_MESSAGE)
+      return
+    }
     setSending(true)
     const { error } = await supabase.auth.resetPasswordForEmail(clean, {
       redirectTo: `${window.location.origin}/profile/change-password?recovery=1`,
+      ...captchaOptions(captchaToken),
     })
     setSending(false)
+    setCaptchaToken(null)
+    setCaptchaRound((r) => r + 1)
     // Límite de envíos de Supabase (varios intentos seguidos): sí se avisa, es útil y no revela nada.
     if (error && /rate|seconds|too many/i.test(error.message)) {
       setError(t("recover.tooMany"))
@@ -76,6 +88,9 @@ export default function RecoverPasswordPage() {
                   className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none transition focus:border-brand"
                   placeholder="tu@email.com"
                 />
+                <div className="mt-4 empty:hidden">
+                  <CaptchaBox onToken={setCaptchaToken} resetKey={captchaRound} />
+                </div>
                 {error && <p className="mt-3 text-sm font-semibold text-red-300">{error}</p>}
                 <button
                   type="button"

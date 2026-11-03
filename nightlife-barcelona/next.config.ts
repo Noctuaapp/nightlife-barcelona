@@ -13,6 +13,12 @@ const nextConfig: NextConfig = {
   //   - al pinchar un enlace externo solo se envía el dominio, no la URL completa;
   //   - solo Noctua puede pedir la ubicación; cámara y micrófono, desactivados;
   //   - siempre por HTTPS.
+  // Auditoría 2/11/2026: la política de contenido (CSP) pasa de solo «frame-ancestors» a incluir
+  //   - object-src 'none': nada de plugins ni <object>/<embed> (no se usan);
+  //   - base-uri 'self': nadie puede cambiar hacia dónde apuntan los enlaces relativos con un <base>;
+  //   - form-action 'self': ningún formulario inyectado puede enviar datos a otra web.
+  // No se restringen los scripts (Next.js, Mapbox y Vercel Analytics necesitan los suyos): eso
+  // requeriría un CSP con «nonce» y se probaría antes en modo solo-informe.
   async headers() {
     return [
       // El service worker (public/sw.js) no debe quedarse en la caché del navegador ni de Vercel:
@@ -28,7 +34,7 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: [
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
-          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "geolocation=(self), camera=(), microphone=(), payment=()" },

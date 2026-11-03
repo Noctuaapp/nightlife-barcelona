@@ -10,6 +10,8 @@ import { useLanguage } from "../../context/LanguageContext"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import GoogleButton from "../../components/auth/GoogleButton"
+import CaptchaBox from "../../components/auth/CaptchaBox"
+import { captchaEnabled, captchaOptions, CAPTCHA_PENDING_MESSAGE } from "../../lib/captcha"
 
 // Dominios de correo temporal/desechable más usados (10 minutos, buzones de un solo uso, etc.).
 // Confirmar el correo ya filtra direcciones inventadas o mal escritas (el enlace nunca llega),
@@ -71,6 +73,9 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [confirmedAge, setConfirmedAge] = useState(false)
+  // Verificación anti-robots (solo si está configurada: ver lib/captcha.ts). El token vale una vez.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaRound, setCaptchaRound] = useState(0)
   // Si el proyecto de Supabase tiene activado "Confirm email" (Authentication → Providers →
   // Email), signUp() no deja sesión abierta hasta que se pulsa el enlace del correo — antes aquí
   // se redirigía igualmente a la web como si ya hubiera entrado, y la persona se encontraba sin
@@ -133,6 +138,10 @@ export default function SignupPage() {
       fail("age_check", t("signup.error_age"))
       return
     }
+    if (captchaEnabled() && !captchaToken) {
+      fail("captcha", CAPTCHA_PENDING_MESSAGE)
+      return
+    }
 
     track("signup_submit")
     setLoading(true)
@@ -146,10 +155,13 @@ export default function SignupPage() {
         // (no hay sesión todavía) — así el username/país/género no se pierden: confirm-age los
         // recupera de aquí la primera vez que la persona entra tras confirmar.
         data: { username, country, gender },
+        ...captchaOptions(captchaToken),
       },
     })
 
     if (signUpError) {
+      setCaptchaToken(null)
+      setCaptchaRound((r) => r + 1)
       setError(signUpError.message)
       track("signup_error", { meta: { step: "auth", reason: signUpError.message.slice(0, 80) } })
       setLoading(false)
@@ -340,6 +352,10 @@ export default function SignupPage() {
                   Confirmo que soy mayor de 18 años.
                 </span>
               </label>
+
+              <div className="empty:hidden">
+                <CaptchaBox onToken={setCaptchaToken} resetKey={captchaRound} />
+              </div>
 
               {error && <p className="text-sm font-bold text-red-400">{error}</p>}
 

@@ -8,20 +8,31 @@ import { supabase } from "../../lib/supabase"
 import { safeNextPath } from "../../lib/nextPath"
 import { useLanguage } from "../../context/LanguageContext"
 import GoogleButton from "../../components/auth/GoogleButton"
+import CaptchaBox from "../../components/auth/CaptchaBox"
+import { captchaEnabled, captchaOptions, CAPTCHA_PENDING_MESSAGE } from "../../lib/captcha"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  // Verificación anti-robots (solo si está configurada: ver lib/captcha.ts). El token vale una vez.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaRound, setCaptchaRound] = useState(0)
   const { t } = useLanguage()
 
   const login = async () => {
     setError("")
+    if (captchaEnabled() && !captchaToken) {
+      setError(CAPTCHA_PENDING_MESSAGE)
+      return
+    }
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({ email, password, options: captchaOptions(captchaToken) })
     setLoading(false)
     if (error) {
+      setCaptchaToken(null)
+      setCaptchaRound((r) => r + 1)
       // Los mensajes de Supabase vienen en inglés ("Invalid login credentials"...): se traducen
       // los habituales y se deja el original solo para lo raro.
       const m = error.message || ""
@@ -85,6 +96,10 @@ export default function LoginPage() {
                 {t("login.forgot")}
               </Link>
             </p>
+
+            <div className="mt-4 empty:hidden">
+              <CaptchaBox onToken={setCaptchaToken} resetKey={captchaRound} />
+            </div>
 
             {error && <p className="mt-4 text-sm font-semibold text-red-300">{error}</p>}
 
