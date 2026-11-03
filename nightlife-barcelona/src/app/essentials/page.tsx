@@ -7,6 +7,7 @@ import { ESSENTIAL_SUGGESTION_XP } from "../../lib/xp"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import ExploreSwitch from "../../components/nightlife/ExploreSwitch"
+import SectionHero from "../../components/ui/SectionHero"
 import EssentialPhoto from "../../components/essentials/EssentialPhoto"
 import { supabase } from "../../lib/supabase"
 import { fetchAllPages } from "../../lib/fetchAll"
@@ -150,41 +151,42 @@ export default function EssentialsPage() {
     <>
       <Header />
       <main className="min-h-screen bg-night pb-40 text-ink">
-        <section className="px-4 pt-8 sm:pt-12">
-          <div className="mx-auto max-w-7xl">
-            <ExploreSwitch active="essentials" />
-            <h1 className="font-display mt-6 max-w-3xl text-[2rem] leading-[1.06] sm:text-5xl">{t("essentials.subtitle")}</h1>
-            <p className="mt-3 max-w-xl text-base text-zinc-300">{t("essentialsPage.intro")}</p>
-
-            <div className="mt-6 flex max-w-2xl flex-col gap-3 sm:flex-row">
-              <div className="group flex flex-1 items-center gap-3 rounded-full border border-white/15 bg-surface px-5 py-3 transition focus-within:border-brand">
-                <Search size={18} className="shrink-0 text-zinc-400 group-focus-within:text-brand-soft" />
-                <input
-                  type="search"
-                  placeholder={t("essentialsPage.searchPlaceholder")}
-                  aria-label={t("essentialsPage.searchPlaceholder")}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-transparent text-base text-ink outline-none focus-visible:outline-none placeholder:text-zinc-400"
-                />
-                {search && (
-                  <button onClick={() => setSearch("")} className="text-zinc-400 hover:text-ink" aria-label={t("explorer.clearSearch")}>
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
-              <button
-                onClick={toggleNearMe}
-                aria-pressed={nearMe}
-                className={`flex shrink-0 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition ${
-                  nearMe ? "bg-brand text-white" : "border border-white/15 text-zinc-200 hover:bg-white/5"
-                }`}
-              >
-                <LocateFixed size={16} /> {t("explorer.near")}
-              </button>
+        {/* PORTADA con la foto de la web (03/11/2026), igual que Clubs y Eventos. */}
+        <SectionHero
+          section="essentials"
+          title={t("essentials.subtitle")}
+          subtitle={t("essentialsPage.intro")}
+          pill={t("home.liveTonight")}
+          switcher={<ExploreSwitch active="essentials" />}
+        >
+          <div className="mt-6 flex max-w-2xl flex-col gap-3 sm:flex-row">
+            <div className="group flex flex-1 items-center gap-3 rounded-full border border-white/20 bg-black/40 px-5 py-3 backdrop-blur-md transition focus-within:border-brand">
+              <Search size={18} className="shrink-0 text-zinc-300 group-focus-within:text-brand-soft" />
+              <input
+                type="search"
+                placeholder={t("essentialsPage.searchPlaceholder")}
+                aria-label={t("essentialsPage.searchPlaceholder")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-transparent text-base text-ink outline-none focus-visible:outline-none placeholder:text-zinc-300"
+              />
+              {search && (
+                <button onClick={() => setSearch("")} className="text-zinc-300 hover:text-ink" aria-label={t("explorer.clearSearch")}>
+                  <X size={16} />
+                </button>
+              )}
             </div>
+            <button
+              onClick={toggleNearMe}
+              aria-pressed={nearMe}
+              className={`flex shrink-0 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition ${
+                nearMe ? "bg-brand text-white" : "border border-white/20 bg-black/40 text-zinc-100 backdrop-blur-md hover:bg-white/10"
+              }`}
+            >
+              <LocateFixed size={16} /> {t("explorer.near")}
+            </button>
           </div>
-        </section>
+        </SectionHero>
 
         {showResults ? (
           <section className="mx-auto mt-8 max-w-7xl px-4">

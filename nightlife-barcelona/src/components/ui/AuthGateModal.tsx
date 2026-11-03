@@ -8,6 +8,31 @@ import { useLanguage } from "../../context/LanguageContext"
 import { Check, X } from "lucide-react"
 import NocOwl from "../mascot/NocOwl"
 import GoogleButton from "../auth/GoogleButton"
+import { XP_AMOUNTS } from "../../lib/xp"
+
+// Acciones que piden cuenta desde una ficha (03/11/2026). Cada una enseña un título propio («Crea tu
+// cuenta para guardarlo») y solo lo que de verdad se gana con ella: XP del check-in (XP_AMOUNTS), el
+// primer reto de bienvenida (guardar 3 sitios) y «Tu mes en Noctua» (que cuenta check-ins y «voy»).
+// Nada de promesas que la web no cumpla.
+export type AuthGateReason = "favorite" | "attend" | "checkin"
+
+const REASONS: Record<AuthGateReason, { title: string; subtitle: string; benefits: string[] }> = {
+  favorite: {
+    title: "authGate.titleFavorite",
+    subtitle: "authGate.subtitleFavorites",
+    benefits: ["authGate.benefitChallenge", "authGate.benefitXp", "authGate.benefitMonth"],
+  },
+  attend: {
+    title: "authGate.titleAttend",
+    subtitle: "authGate.subtitleAttend",
+    benefits: ["authGate.benefitGoing", "authGate.benefitXp", "authGate.benefitMonth"],
+  },
+  checkin: {
+    title: "authGate.titleCheckin",
+    subtitle: "authGate.subtitleCheckin",
+    benefits: ["authGate.benefitXp", "authGate.benefitMonth", "authGate.benefitChallenge"],
+  },
+}
 
 type AuthGateModalProps = {
   open: boolean
@@ -15,6 +40,8 @@ type AuthGateModalProps = {
   // Clave i18n del subtítulo específico de la función que abre el modal (favoritos, plan con
   // IA, locales cercanos...). Si no se pasa, se muestra solo el título genérico.
   subtitleKey?: string
+  // Si se indica, el modal habla de esa acción concreta (título, subtítulo y ventajas propios).
+  reason?: AuthGateReason
 }
 
 // Modal reutilizable de "Regístrate y disfruta de todo Noctua". Sustituye al patrón anterior de
@@ -23,19 +50,20 @@ type AuthGateModalProps = {
 // de golpe de lo que estaba mirando. Portal a document.body por la misma razón que
 // NearbyVenuesSheet: un ancestro con backdrop-blur crea un containing block para position:fixed
 // y el modal quedaría atrapado dentro de esa tarjeta en vez de cubrir la pantalla.
-export default function AuthGateModal({ open, onClose, subtitleKey }: AuthGateModalProps) {
+export default function AuthGateModal({ open, onClose, subtitleKey, reason }: AuthGateModalProps) {
   const { t } = useLanguage()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
   if (!open || !mounted) return null
 
-  const benefits = [
-    t("authGate.benefit1"),
-    t("authGate.benefit2"),
-    t("authGate.benefit3"),
-    t("authGate.benefit4"),
-  ]
+  const ctx = reason ? REASONS[reason] : null
+  const fill = (text: string) => text.replace("{xp}", String(XP_AMOUNTS.checkin))
+  const title = t(ctx ? ctx.title : "authGate.title")
+  const subtitle = subtitleKey ? t(subtitleKey) : ctx ? fill(t(ctx.subtitle)) : null
+  const benefits = ctx
+    ? ctx.benefits.map((key) => fill(t(key)))
+    : [t("authGate.benefit1"), t("authGate.benefit2"), t("authGate.benefit3"), t("authGate.benefit4")]
 
   return createPortal(
     <div
@@ -57,8 +85,8 @@ export default function AuthGateModal({ open, onClose, subtitleKey }: AuthGateMo
           </button>
         </div>
 
-        <h2 className="mt-4 text-2xl font-black leading-tight text-white">{t("authGate.title")}</h2>
-        {subtitleKey && <p className="mt-2 text-sm text-zinc-400">{t(subtitleKey)}</p>}
+        <h2 className="mt-4 text-2xl font-black leading-tight text-white">{title}</h2>
+        {subtitle && <p className="mt-2 text-sm text-zinc-400">{subtitle}</p>}
 
         <ul className="mt-5 space-y-2.5">
           {benefits.map((b) => (

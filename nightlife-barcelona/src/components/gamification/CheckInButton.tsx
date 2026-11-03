@@ -8,7 +8,9 @@ import BadgeToast from "../mascot/BadgeToast"
 import { evaluateBadges } from "../../lib/badges"
 import { useLanguage } from "../../context/LanguageContext"
 import Icon from "../ui/Icon"
+import AuthGateModal from "../ui/AuthGateModal"
 import { logError } from "../../lib/log"
+import { track } from "../../lib/track"
 
 type CheckInButtonProps = {
   clubId: number
@@ -51,6 +53,9 @@ export default function CheckInButton({ clubId, latitude, longitude, variant = "
   const [error, setError] = useState("")
   const [justEarned, setJustEarned] = useState(false)
   const [newBadges, setNewBadges] = useState<string[]>([])
+  // Sin cuenta, el check-in abre el aviso de registro (con los XP que se ganan) en vez de mandar a
+  // /login de golpe (03/11/2026).
+  const [showAuthGate, setShowAuthGate] = useState(false)
 
   // Nota del check-in: lo único de verdad "en directo" que puede dejar alguien que ACABA de
   // comprobarlo con el GPS — distinto de una reseña de Google, que puede ser de hace meses.
@@ -145,9 +150,14 @@ export default function CheckInButton({ clubId, latitude, longitude, variant = "
     }
   }
 
+  const openAuthGate = () => {
+    setShowAuthGate(true)
+    track("auth_gate_view", { itemType: "club", itemId: clubId, meta: { reason: "checkin", from: variant } })
+  }
+
   const handleCheckIn = () => {
     if (!userId) {
-      window.location.href = "/login"
+      openAuthGate()
       return
     }
     if (!navigator.geolocation) {
@@ -192,7 +202,8 @@ export default function CheckInButton({ clubId, latitude, longitude, variant = "
             blocked: t("checkin.blocked"),
           }
           if (res.reason === "login") {
-            window.location.href = "/login"
+            setWorking(false)
+            openAuthGate()
             return
           }
           setError(messages[res.reason || ""] || t("checkin.error"))
@@ -244,6 +255,7 @@ export default function CheckInButton({ clubId, latitude, longitude, variant = "
         {tile && !checkedInToday && <span className="text-[11px] font-medium text-brand-soft">+{XP_AMOUNTS.checkin} XP</span>}
       </button>
       <XpBurst show={justEarned} amount={XP_AMOUNTS.checkin} />
+      <AuthGateModal open={showAuthGate} onClose={() => setShowAuthGate(false)} reason="checkin" />
       {checkedInToday && !noteSaved && (
         <div className={`mt-3 rounded-ctl border border-white/10 bg-white/[0.03] p-3 ${tile ? "col-span-full mt-0" : ""}`}>
           <p className="text-xs font-semibold text-zinc-300">{t("checkin.notePrompt")}</p>

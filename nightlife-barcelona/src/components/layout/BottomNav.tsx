@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Home, Martini, Ticket, Shield, Backpack } from "lucide-react"
+import { Home, Shield } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
@@ -10,6 +10,7 @@ import { useIdleVisible } from "../../lib/useIdleVisible"
 import { ADMIN_EMAIL } from "../../lib/admin"
 import { useViewAsUser } from "../../lib/viewAsUser"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
+import { SECTION_ICONS } from "../../lib/sectionIcons"
 
 export default function BottomNav() {
   const pathname = usePathname()
@@ -35,10 +36,10 @@ export default function BottomNav() {
 
   const navItems = [
     { label: t("nav.home"), href: "/", icon: Home },
-    { label: t("nav.clubs"), href: "/clubs", icon: Martini },
+    { label: t("nav.clubs"), href: "/clubs", icon: SECTION_ICONS.clubs },
     // Con Eventos cerrado (lib/featureFlags.ts) el botón sigue ahí, con la etiqueta «Próximamente», y lleva al aviso.
-    { label: t("nav.events"), href: "/events", icon: Ticket },
-    { label: t("nav.essentials"), href: "/essentials", icon: Backpack },
+    { label: t("nav.events"), href: "/events", icon: SECTION_ICONS.events },
+    { label: t("nav.essentials"), href: "/essentials", icon: SECTION_ICONS.essentials },
     // Al entrar en admin se va directo al dashboard, no a la gestión de clubs (que sigue en /admin).
     ...(isAdmin ? [{ label: "Admin", href: "/admin/dashboard", icon: Shield }] : []),
   ]

@@ -74,7 +74,7 @@ export function clubSummary(club: Club): string {
     ...EXTRA_FEATURES.map((f) => club[f.field] && f.summary),
   ].filter(Boolean) as string[]
   if (extras.length) parts.push(`Tiene ${listEs(extras)}.`)
-  if (club.lgtbi_friendly) parts.push("Es un local LGTBI+ friendly.")
+  if (club.lgtbi_friendly) parts.push("Es un local de ambiente LGTBI+.")
 
   const rating = Number(club.google_rating || club.rating || 0)
   const reviews = Number(club.google_review_count || club.review_count || 0)

@@ -11,6 +11,7 @@ import ViewAsUserSwitch from "../components/admin/ViewAsUserSwitch"
 import ToastHost from "../components/ui/Toast"
 import PartyPollPopup from "../components/fun/PartyPollPopup"
 import CookieBanner from "../components/system/CookieBanner"
+import JoinNoctuaPrompt from "../components/nightlife/JoinNoctuaPrompt"
 import "./globals.css"
 import { safeJsonLd } from "../lib/structuredData"
 
@@ -108,6 +109,8 @@ export default function RootLayout({
               <PartyPollPopup />
               {/* Permiso para lo opcional que se guarda en el dispositivo (ver lib/consent.ts) */}
               <CookieBanner />
+              {/* Aviso de registro fuera de las fichas (las fichas llevan el suyo). Los tres avisos salen de uno en uno: ver lib/popupGate.ts */}
+              <JoinNoctuaPrompt />
             </MaintenanceGate>
           </FavoritesProvider>
         </LanguageProvider>

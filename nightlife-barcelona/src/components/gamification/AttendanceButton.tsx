@@ -6,7 +6,9 @@ import BadgeToast from "../mascot/BadgeToast"
 import { evaluateBadges } from "../../lib/badges"
 import { useLanguage } from "../../context/LanguageContext"
 import Icon from "../ui/Icon"
+import AuthGateModal from "../ui/AuthGateModal"
 import { logError } from "../../lib/log"
+import { track } from "../../lib/track"
 
 type AttendanceButtonProps = {
   itemType: "event" | "club_event" | "club"
@@ -55,6 +57,9 @@ export default function AttendanceButton({ itemType, itemId, variant = "full", d
   const [loading, setLoading] = useState(true)
   const [newBadges, setNewBadges] = useState<string[]>([])
   const [count, setCount] = useState(0)
+  // Quien no tiene cuenta ya no sale de golpe hacia /login: se le explica qué gana y se le ofrece
+  // Google o email sin sacarle de la ficha (03/11/2026), igual que con Guardar.
+  const [showAuthGate, setShowAuthGate] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -84,7 +89,8 @@ export default function AttendanceButton({ itemType, itemId, variant = "full", d
   const toggleAttendance = async () => {
     if (disabled) return
     if (!userId) {
-      window.location.href = "/login"
+      setShowAuthGate(true)
+      track("auth_gate_view", { itemType, itemId, meta: { reason: "attend", from: variant } })
       return
     }
 
@@ -124,6 +130,8 @@ export default function AttendanceButton({ itemType, itemId, variant = "full", d
 
   if (loading) return null
 
+  const authGate = <AuthGateModal open={showAuthGate} onClose={() => setShowAuthGate(false)} reason="attend" />
+
   if (variant === "tile") {
     const shownCount = count >= 10 ? Math.floor(count / 10) * 10 : 0
     return (
@@ -146,6 +154,7 @@ export default function AttendanceButton({ itemType, itemId, variant = "full", d
           {disabled ? t("attendance.closedTonight") : attending ? t("attendance.goingShort") : t("attendance.willGoShort")}
           {!disabled && shownCount > 0 && <span className="text-[11px] font-medium opacity-80">+{shownCount}</span>}
         </button>
+        {authGate}
       </div>
     )
   }
@@ -173,6 +182,7 @@ export default function AttendanceButton({ itemType, itemId, variant = "full", d
           {(itemType === "club" ? t("attendance.countTonight") : t("attendance.count")).replace("{n}", String(Math.floor(count / 10) * 10))}
         </p>
       )}
+      {authGate}
     </div>
   )
 }

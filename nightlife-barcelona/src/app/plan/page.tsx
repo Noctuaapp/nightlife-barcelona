@@ -14,6 +14,7 @@ import { supabase } from "../../lib/supabase"
 import { track } from "../../lib/track"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
+import { SECTION_ICONS } from "../../lib/sectionIcons"
 import { zoneOf, zonesPresent } from "../../lib/zones"
 import { STYLES, neighborhoodsOf } from "../../lib/areas"
 import { hasOffer } from "../../lib/offers"
@@ -1060,7 +1061,7 @@ export default function PlanPage() {
                         {stops.map((stop) => (
                           <li key={stop.id} className="relative">
                             <span className="absolute -left-[37px] top-4 flex h-6 w-6 items-center justify-center rounded-full border border-white/15 bg-night text-brand-soft">
-                              {stop.kind === "event" ? <Ticket size={13} /> : <Disc3 size={13} />}
+                              {stop.kind === "event" ? <Ticket size={13} /> : <SECTION_ICONS.clubs size={13} />}
                             </span>
                             <Link href={stop.href} className="flex gap-4 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25">
                               {stop.image && (

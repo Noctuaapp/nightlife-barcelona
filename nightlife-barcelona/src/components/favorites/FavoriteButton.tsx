@@ -139,6 +139,7 @@ export default function FavoriteButton({
         open={showAuthGate}
         onClose={() => setShowAuthGate(false)}
         subtitleKey="authGate.subtitleFavorites"
+        reason="favorite"
       />
     </>
   )

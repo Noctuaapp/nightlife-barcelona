@@ -15,7 +15,8 @@ import ArrowIcon from "../../components/ui/ArrowIcon"
 import { zoneOf, zonesPresent } from "../../lib/zones"
 import { categoryRank, categoryNameKey, categoryInfo } from "../../lib/essentialCategories"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
-import { Disc3, CalendarDays, MapPin, Footprints, X, List, LocateFixed, Search, type LucideIcon } from "lucide-react"
+import { MapPin, Footprints, X, List, LocateFixed, Search, type LucideIcon } from "lucide-react"
+import { SECTION_ICONS } from "../../lib/sectionIcons"
 import { logError } from "../../lib/log"
 import { getOpenStatus } from "../../lib/openStatus"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
@@ -76,12 +77,8 @@ const COLORS: Record<Filter, string> = {
   essentials: "#7c5cff",
 }
 
-// Iconos de línea por tipo (antes emojis).
-const FILTER_ICONS: Record<Filter, LucideIcon> = {
-  clubs: Disc3,
-  events: CalendarDays,
-  essentials: MapPin,
-}
+// Iconos de línea por tipo (antes emojis). Los mismos que la barra inferior (lib/sectionIcons.ts).
+const FILTER_ICONS: Record<Filter, LucideIcon> = SECTION_ICONS
 const FilterIcon = ({ f, size = 14 }: { f: Filter; size?: number }) => {
   const I = FILTER_ICONS[f]
   return <I size={size} aria-hidden="true" />

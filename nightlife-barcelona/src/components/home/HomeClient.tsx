@@ -16,6 +16,7 @@ import TopPicks from "./TopPicks"
 import type { ActivePicks } from "../../lib/picks"
 import AreasSection from "./AreasSection"
 import Icon from "../ui/Icon"
+import { SECTION_ICONS } from "../../lib/sectionIcons"
 import { useLanguage } from "../../context/LanguageContext"
 import { homeSeed, weightedOrder } from "../../lib/rotation"
 import { createSlug } from "../../lib/slug"
@@ -299,12 +300,13 @@ export default function HomeClient({
     ? { none: "Ningún local coincide con", all: "Ver todos los resultados", one: "resultado", many: "resultados" }
     : { none: "No venues match", all: "See all results", one: "result", many: "results" }
 
-  const quickLinks: { href: string; icon: string; label: string; soon?: boolean }[] = [
+  // Esenciales y Eventos llevan el mismo icono que en la barra inferior y en el mapa (lib/sectionIcons.ts).
+  const quickLinks: { href: string; icon?: string; Glyph?: (typeof SECTION_ICONS)[keyof typeof SECTION_ICONS]; label: string; soon?: boolean }[] = [
     { href: "/map", icon: "map", label: t("home.quickMap") },
-    { href: "/essentials", icon: "globe", label: t("home.quickEssentials") },
+    { href: "/essentials", Glyph: SECTION_ICONS.essentials, label: t("home.quickEssentials") },
     { href: "/plan", icon: "calendar", label: t("home.quickPlan") },
     // Con Eventos cerrado (lib/featureFlags.ts) el acceso sigue, con la etiqueta «Próximamente», y lleva al aviso.
-    { href: "/events", icon: "ticket", label: t("home.quickEvents"), soon: EVENTS_HIDDEN },
+    { href: "/events", Glyph: SECTION_ICONS.events, label: t("home.quickEvents"), soon: EVENTS_HIDDEN },
   ]
 
   // Accesos rápidos: en escritorio van en la portada; en móvil bajan debajo del carrusel de
@@ -317,7 +319,7 @@ export default function HomeClient({
           href={q.href}
           className="flex shrink-0 items-center gap-2 rounded-full border border-white/15 bg-black/30 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:border-cyan-300/50 hover:bg-black/45"
         >
-          <Icon name={q.icon} className="h-4 w-4 text-cyan-300" /> {q.label}
+          {q.Glyph ? <q.Glyph className="h-4 w-4 text-cyan-300" aria-hidden="true" /> : <Icon name={q.icon ?? ""} className="h-4 w-4 text-cyan-300" />} {q.label}
           {q.soon && <span className="rounded-full bg-warn px-1.5 py-px text-[10px] font-bold leading-tight text-night">{t("nav.soon")}</span>}
         </Link>
       ))}

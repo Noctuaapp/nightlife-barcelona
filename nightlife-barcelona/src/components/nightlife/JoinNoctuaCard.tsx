@@ -9,37 +9,47 @@ import GoogleButton from "../auth/GoogleButton"
 import { useLanguage } from "../../context/LanguageContext"
 import { supabase } from "../../lib/supabase"
 import { track } from "../../lib/track"
+import { setPopupState, usePopupSlot } from "../../lib/popupGate"
 
-// Aviso de registro de las fichas de club y de evento (29/10/2026).
+// Aviso de registro (29/10/2026; más frecuente y en cola desde el 03/11/2026).
 //
-// Antes era una banda fija dentro de la ficha («Esto es solo un local…», con «Crear cuenta gratis»).
-// Ahora es un aviso emergente: aparece abajo y centrado (también en ordenador), sin tapar la pantalla (no hay fondo oscuro ni
-// bloquea nada), con «Continuar con Google» como botón principal y una cruz para quitarlo.
+// Es un aviso emergente: aparece abajo y centrado (también en ordenador), sin tapar la pantalla (no hay
+// fondo oscuro ni bloquea nada), con «Continuar con Google» como botón principal y una cruz para quitarlo.
+// Sale en las fichas de club y de evento y, desde el 03/11/2026, también en la portada, la lista de
+// clubs, los esenciales y las páginas de barrio, zona y música (ver JoinNoctuaPrompt).
 //
 // Para no molestar —y para no parecer un «intersticial intrusivo», que Google penaliza en las
 // visitas que llegan desde el buscador— no sale nada más llegar:
-//   · espera 12 s en la ficha, o a que se haya leído más de la mitad (lo que pase antes, y nunca
-//     antes de 5 s);
+//   · espera 12 s en la página, o a que se haya leído más de la mitad (lo que pase antes, y nunca
+//     antes de 5 s). Si en esta visita ya se han mirado 2 páginas o más, espera solo 4 s: quien ya
+//     está curioseando es quien más probabilidades tiene de querer guardar algo;
 //   · sale una sola vez por visita;
-//   · si se cierra con la cruz, no vuelve a salir en 7 días en ese navegador (se guarda solo la
-//     fecha de cierre, para respetar lo que la persona ha decidido);
-//   · solo lo ve quien no tiene sesión, y nunca un navegador automatizado.
+//   · si se cierra con la cruz, no vuelve a salir en 3 días; con «Ahora no» o Escape, en 1 día, en ese
+//     navegador (antes: 7 días para todo). Se guarda solo la fecha hasta la que descansa, para respetar
+//     lo que la persona ha decidido;
+//   · solo lo ve quien no tiene sesión, y nunca un navegador automatizado;
+//   · cola de avisos (lib/popupGate.ts): nunca a la vez que el banner de cookies o la encuesta del día;
+//     espera su turno, el último.
 // Se anota cuándo se ve (join_view), cada pulsación (join_click: google | signup | login) y cada
 // cierre (join_dismiss) para medir el embudo en Admin › Visitas.
 
-type Kind = "club" | "event"
+type Kind = "club" | "event" | "page"
 
-const DISMISS_KEY = "noctua_join_dismissed" // fecha (ms) del último cierre con la cruz
+const SNOOZE_KEY = "noctua_join_snooze_until" // fecha (ms) hasta la que no vuelve a salir
 const SHOWN_KEY = "noctua_join_shown" // sessionStorage: ya salió en esta visita
-const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000
+const VIEWS_KEY = "noctua_join_views" // sessionStorage: páginas con aviso vistas en esta visita
+const SNOOZE_X_MS = 3 * 24 * 60 * 60 * 1000
+const SNOOZE_LATER_MS = 24 * 60 * 60 * 1000
 const SHOW_AFTER_MS = 12_000
+const SHOW_AFTER_ENGAGED_MS = 4_000
+const ENGAGED_AFTER_VIEWS = 2
 const MIN_BEFORE_SCROLL_MS = 5_000
 const SCROLL_DEPTH = 0.55
 
-function recentlyDismissed(): boolean {
+function snoozed(): boolean {
   try {
-    const at = Number(window.localStorage.getItem(DISMISS_KEY) || 0)
-    return at > 0 && Date.now() - at < SNOOZE_MS
+    const until = Number(window.localStorage.getItem(SNOOZE_KEY) || 0)
+    return until > Date.now()
   } catch {
     return false
   }
@@ -51,22 +61,40 @@ function alreadyShownThisVisit(): boolean {
     return false
   }
 }
-function remember(store: "local" | "session") {
+function rememberShown() {
   try {
-    if (store === "local") window.localStorage.setItem(DISMISS_KEY, String(Date.now()))
-    else window.sessionStorage.setItem(SHOWN_KEY, "1")
+    window.sessionStorage.setItem(SHOWN_KEY, "1")
   } catch {
     /* sin almacenamiento (modo privado): el aviso saldrá igual, solo una vez por carga */
   }
 }
+function rememberSnooze(ms: number) {
+  try {
+    window.localStorage.setItem(SNOOZE_KEY, String(Date.now() + ms))
+  } catch {
+    /* sin almacenamiento: saldrá igual en la próxima visita */
+  }
+}
+// Cuenta una página más con aviso en esta visita y devuelve el total.
+function bumpViews(): number {
+  try {
+    const n = Number(window.sessionStorage.getItem(VIEWS_KEY) || 0) + 1
+    window.sessionStorage.setItem(VIEWS_KEY, String(n))
+    return n
+  } catch {
+    return 1
+  }
+}
 
-export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; itemId: number; name: string }) {
+export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; itemId: number | null; name: string }) {
   const { t } = useLanguage()
   const pathname = usePathname()
   const [anon, setAnon] = useState(false)
+  const [armed, setArmed] = useState(false) // ya toca enseñarlo (pasó la espera o se leyó la página)
   const [open, setOpen] = useState(false)
   const [visible, setVisible] = useState(false) // para la animación de entrada
-  const openedRef = useRef(false)
+  const armedRef = useRef(false)
+  const slot = usePopupSlot("join")
 
   useEffect(() => {
     let alive = true
@@ -83,32 +111,49 @@ export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; ite
     }
   }, [])
 
-  // Cuándo sale: a los 12 s o al haber leído más de la mitad de la ficha (nunca antes de 5 s).
+  // Cuándo toca: a los 12 s (4 s si ya se han mirado 2 páginas) o al haber leído más de la mitad de la
+  // página (nunca antes de 5 s).
   useEffect(() => {
     if (!anon || typeof window === "undefined") return
-    if (navigator.webdriver || recentlyDismissed() || alreadyShownThisVisit()) return
+    if (navigator.webdriver || snoozed() || alreadyShownThisVisit()) return
     const started = Date.now()
+    const views = bumpViews()
+    const delay = views >= ENGAGED_AFTER_VIEWS ? SHOW_AFTER_ENGAGED_MS : SHOW_AFTER_MS
 
-    const reveal = () => {
-      if (openedRef.current) return
-      openedRef.current = true
-      remember("session")
-      setOpen(true)
-      track("join_view", { itemType: kind, itemId, itemName: name })
+    const arm = () => {
+      if (armedRef.current) return
+      armedRef.current = true
+      setArmed(true)
     }
-    const timer = window.setTimeout(reveal, SHOW_AFTER_MS)
+    const timer = window.setTimeout(arm, delay)
     const onScroll = () => {
       if (Date.now() - started < MIN_BEFORE_SCROLL_MS) return
       const doc = document.documentElement
       const depth = (window.scrollY + window.innerHeight) / Math.max(doc.scrollHeight, 1)
-      if (depth >= SCROLL_DEPTH) reveal()
+      if (depth >= SCROLL_DEPTH) arm()
     }
     window.addEventListener("scroll", onScroll, { passive: true })
     return () => {
       window.clearTimeout(timer)
       window.removeEventListener("scroll", onScroll)
     }
-  }, [anon, kind, itemId, name])
+  }, [anon])
+
+  // Sale cuando toca Y le toca en la cola de avisos (después de cookies y encuesta).
+  useEffect(() => {
+    if (!anon || !armed || open || !slot) return
+    if (alreadyShownThisVisit()) return
+    rememberShown()
+    setOpen(true)
+    track("join_view", { itemType: kind, itemId, itemName: name })
+  }, [anon, armed, open, slot, kind, itemId, name])
+
+  // Le cuenta a la cola que está en pantalla (el banner de cookies se aparta mientras tanto).
+  useEffect(() => {
+    if (!open) return
+    setPopupState("join", { open: true })
+    return () => setPopupState("join", { open: false })
+  }, [open])
 
   // Entrada suave: primero se pinta fuera de sitio y un instante después se coloca.
   useEffect(() => {
@@ -121,7 +166,7 @@ export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; ite
   }, [open])
 
   const dismiss = (via: "x" | "later" | "esc") => {
-    remember("local")
+    rememberSnooze(via === "x" ? SNOOZE_X_MS : SNOOZE_LATER_MS)
     setOpen(false)
     track("join_dismiss", { itemType: kind, itemId, itemName: name, meta: { via } })
   }
@@ -139,7 +184,7 @@ export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; ite
   if (!anon || !open) return null
 
   const click = (to: "google" | "signup" | "login") => track("join_click", { itemType: kind, itemId, itemName: name, meta: { to } })
-  // Tras registrarse o entrar, vuelve a la ficha en la que estaba.
+  // Tras registrarse o entrar, vuelve a la página en la que estaba.
   const back = pathname || "/"
   const next = `?next=${encodeURIComponent(back)}`
 

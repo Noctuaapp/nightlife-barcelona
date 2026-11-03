@@ -8,6 +8,7 @@ import { supabase } from "../../lib/supabase"
 import ExploreSwitch from "./ExploreSwitch"
 import EventsExplorer from "./EventsExplorer"
 import NocOwl from "../mascot/NocOwl"
+import SectionHero from "../ui/SectionHero"
 
 // Pantalla de /events mientras Eventos está cerrado (EVENTS_HIDDEN en lib/featureFlags.ts; app/events/page.tsx):
 // - Visitantes (y buscadores): solo ven «Próximamente» y un acceso a los clubs. La agenda ni se pide.
@@ -47,24 +48,20 @@ export default function EventsComingSoon() {
 
   return (
     <main className="relative min-h-screen bg-night pb-40 text-ink">
-      <section className="px-4 pt-8 sm:pt-12">
-        <div className="mx-auto max-w-7xl">
-          <ExploreSwitch active="events" />
-          <div className="mx-auto mt-16 max-w-xl text-center">
-            <div className="mx-auto w-fit">
-              <NocOwl size={96} mood="sleepy" />
-            </div>
-            <h1 className="font-display mt-6 break-words text-[2rem] leading-[1.1] text-ink sm:text-5xl">{t("events.soonTitle")}</h1>
-            <p className="mx-auto mt-4 max-w-md text-base leading-relaxed text-zinc-300">{t("events.soonBody")}</p>
-            <Link
-              href="/clubs"
-              className="mt-8 inline-flex items-center justify-center rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong"
-            >
-              {t("events.soonCta")}
-            </Link>
+      {/* PORTADA a pantalla casi completa con la foto de la web (03/11/2026): antes era un búho sobre fondo negro. */}
+      <SectionHero section="events" title={t("events.soonTitle")} subtitle={t("events.soonBody")} switcher={<ExploreSwitch active="events" />} tall>
+        <div className="mt-6 flex items-center gap-4">
+          <Link
+            href="/clubs"
+            className="inline-flex items-center justify-center rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong"
+          >
+            {t("events.soonCta")}
+          </Link>
+          <div className="shrink-0 rounded-full bg-black/35 p-1.5 backdrop-blur-md">
+            <NocOwl size={44} mood="sleepy" />
           </div>
         </div>
-      </section>
+      </SectionHero>
     </main>
   )
 }

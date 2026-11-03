@@ -6,7 +6,8 @@ import { supabase } from "../../lib/supabase"
 import NocOwl from "../mascot/NocOwl"
 import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
-import { Clock, Ticket, Disc3, Check, Link2 } from "lucide-react"
+import { Clock, Ticket, Check, Link2 } from "lucide-react"
+import { SECTION_ICONS } from "../../lib/sectionIcons"
 
 type Stop = { kind?: string; title?: string; subtitle?: string; time?: string; image?: string | null; href?: string }
 type Plan = { title: string; plan_date: string | null; stops: Stop[]; rsvps: string[] }
@@ -110,7 +111,7 @@ export default function SharedPlanClient({ code }: { code: string }) {
           return (
             <li key={i} className="relative">
               <span className="absolute -left-[37px] top-4 flex h-6 w-6 items-center justify-center rounded-full border border-white/15 bg-night text-brand-soft">
-                {s.kind === "event" ? <Ticket size={13} /> : <Disc3 size={13} />}
+                {s.kind === "event" ? <Ticket size={13} /> : <SECTION_ICONS.clubs size={13} />}
               </span>
               {href ? <Link href={href} className="flex transition hover:opacity-90">{inner}</Link> : inner}
             </li>

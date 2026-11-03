@@ -106,7 +106,10 @@
     "error_age": "Je moet bevestigen dat je ouder dan 18 bent om door te gaan.",
     "gender_unspecified": "Zeg ik liever niet",
     "optional": "optioneel",
-    "withEmail": "Ik registreer liever met e-mail"
+    "withEmail": "Ik registreer liever met e-mail",
+    "moreOptional": "Land en geslacht toevoegen (optioneel)",
+    "showPassword": "Wachtwoord tonen",
+    "hidePassword": "Wachtwoord verbergen"
   },
   "clubs": {
     "title": "Clubs",
@@ -124,7 +127,14 @@
     "day4": "Donderdag",
     "day5": "Vrijdag",
     "day6": "Zaterdag",
-    "explore": "Alle clubs bekijken →"
+    "explore": "Alle clubs bekijken →",
+    "nudgeKeep": "Blijf ontdekken",
+    "nudgePlanTitle": "Plan je avond",
+    "nudgePlanSub": "Vertel ons waar je zin in hebt en we stellen de beste plekken voor vanavond voor.",
+    "nudgeMapTitle": "Bekijk ze op de kaart",
+    "nudgeMapSub": "Zie wat er nu bij jou in de buurt open is.",
+    "nudgeEssentialsTitle": "Essentials voor je avond",
+    "nudgeEssentialsSub": "24-uursapotheken, geldautomaten, eten en nachtvervoer."
   },
   "events": {
     "title": "Evenementen",
@@ -707,7 +717,16 @@
     "ctaEmail": "Account maken met e-mail",
     "haveAccount": "Heb je al een account?",
     "loginLink": "Inloggen",
-    "googleHint": "Geen wachtwoorden of lange formulieren"
+    "googleHint": "Geen wachtwoorden of lange formulieren",
+    "titleFavorite": "Maak je account aan om het op te slaan",
+    "titleAttend": "Maak je account aan om je aan te melden",
+    "titleCheckin": "Maak je account aan om in te checken",
+    "subtitleAttend": "Geef aan dat je vanavond gaat. Gratis en in een paar seconden klaar.",
+    "subtitleCheckin": "Bevestig dat je er bent en verdien +{xp} XP. Gratis en in een paar seconden klaar.",
+    "benefitChallenge": "Eerste uitdaging: bewaar 3 plekken en je plannen zijn één tik weg",
+    "benefitXp": "Verdien +{xp} XP bij elke check-in en stijg in level",
+    "benefitMonth": "«Jouw maand op Noctua»: het overzicht van je avonden uit",
+    "benefitGoing": "Jouw «ik ga» telt mee voor de nachtbrakers van vanavond"
   },
   "changePassword": {
     "eyebrow": "Accountbeveiliging",
@@ -855,6 +874,8 @@
     "nearbyTitle": "In de buurt",
     "nearbyClosedTitle": "Nu gesloten · open in de buurt",
     "nearbySeeMap": "Bekijk op de kaart",
+    "readMore": "Meer lezen",
+    "readLess": "Toon minder",
     "fCocktails": "Cocktails",
     "fGames": "Bord- of drankspellen",
     "tempClosed": "Tijdelijk gesloten",
@@ -1336,6 +1357,7 @@
     "birthDateRequired": "Vul je geboortedatum in.",
     "under18": "Noctua is alleen voor mensen van 18 jaar en ouder.",
     "checkBoth": "Vink beide vakjes aan om door te gaan.",
+    "checkOne": "Vink het vakje aan om door te gaan.",
     "title": "Voordat je verdergaat",
     "body": "Om Noctua te gebruiken, moet je het volgende bevestigen.",
     "continue": "Doorgaan"

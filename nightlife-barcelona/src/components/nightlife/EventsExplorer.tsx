@@ -9,6 +9,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { createSlug } from "../../lib/slug"
 import { SearchIcon, CloseIcon, LocationIcon, CalendarIcon, ChevronDownIcon } from "../ui/FilterIcons"
 import ExploreSwitch from "./ExploreSwitch"
+import SectionHero from "../ui/SectionHero"
 import Icon from "../ui/Icon"
 import { toDateLocale } from "../../lib/dateLocale"
 import { optionsWithData } from "../../lib/filterOptions"
@@ -235,15 +236,11 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
     <>
       <main className="relative min-h-screen bg-night pb-40 text-ink">
 
-        <section className="px-4 pt-8 sm:pt-12">
-          <div className="mx-auto max-w-7xl">
-            <ExploreSwitch active="events" />
-            <h1 className="font-display mt-6 break-words text-[2rem] leading-[1.06] text-ink sm:text-5xl md:text-6xl">{t("events.subtitle")}</h1>
-          </div>
-        </section>
+        {/* PORTADA con la foto de la web (03/11/2026), igual que Clubs y Esenciales. */}
+        <SectionHero section="events" title={t("events.subtitle")} pill={t("home.liveTonight")} switcher={<ExploreSwitch active="events" />} />
 
         {/* Fija solo en pantallas grandes (lg+); en móvil se va con el scroll para no tapar los resultados. */}
-        <div className="relative z-30 mt-6 border-y border-white/10 bg-night/90 py-3 backdrop-blur-xl lg:sticky lg:top-20">
+        <div className="relative z-30 border-y border-white/10 bg-night/90 py-3 backdrop-blur-xl lg:sticky lg:top-20">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 lg:flex-row lg:items-center">
             <div className="group flex min-w-0 flex-1 items-center gap-3 rounded-full border border-white/15 bg-surface px-5 py-3 transition focus-within:border-brand">
               <SearchIcon className="h-5 w-5 shrink-0 text-zinc-400 transition group-focus-within:text-brand-soft" />

@@ -1,61 +1,85 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import ClubCard from "./ClubCard"
+import ClubTile from "./ClubTile"
 import ExploreSwitch from "./ExploreSwitch"
+import { ClubsNudge, ClubsNudgeRow, NUDGE_ORDER } from "./ClubsNudge"
 import { useLanguage } from "../../context/LanguageContext"
 import { matchesQuery } from "../../lib/textSearch"
 import { EXTRA_FEATURES } from "../../lib/extraFeatures"
 import { SearchIcon, CloseIcon, LocationIcon, FlameIcon, SlidersIcon, ChevronDownIcon } from "../ui/FilterIcons"
 import { areasForPostalCode } from "../../lib/postalCodes"
 import { clubStaysOpenPast, madridClock } from "../../lib/clubHours"
-import { isClosedTonight } from "../../lib/scheduleNotices"
+import { effectiveOpenNow, isClosedTonight } from "../../lib/scheduleNotices"
+import SectionHero from "../ui/SectionHero"
 import { WEEK_DOW_ORDER, tonightDow, clubMatchesDay } from "../../lib/clubDays"
 import { OFFERS_FILTER, hasOffer } from "../../lib/offers"
 import { optionsWithData } from "../../lib/filterOptions"
 import { loadFilterMemory, onlyKnown, saveFilterMemory } from "../../lib/filterMemory"
 import { Tag } from "lucide-react"
 
-function useReveal<T extends HTMLElement>() {
-  const ref = useRef<T>(null)
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.1 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-  return { ref, visible }
-}
+// Rediseño del listado (03/11/2026). Antes: cabecera de 230 px con título gigante, una barra con seis
+// botones y un desplegable, un fondo animado fijo y tarjetas de 300 px una debajo de otra en el móvil.
+// Ahora: cabecera de una línea, buscador + «Filtros» en una fila, una fila de atajos que se desliza
+// (Ahora, Cerca, Trending, Ofertas y estilos), tarjetas de foto de dos en dos (tres y cuatro en
+// pantallas grandes), y cada 12 tarjetas y al final de la lista, accesos al plan, al mapa y a los
+// esenciales para que la lista no sea un callejón sin salida. La lógica de filtros, la memoria de
+// filtros y el orden no cambian.
 
-function Reveal({
+// Botón-etiqueta de los atajos y del panel de filtros.
+function Chip({
+  active,
+  onClick,
   children,
-  className = "",
-  style,
+  tone = "brand",
 }: {
+  active: boolean
+  onClick: () => void
   children: React.ReactNode
-  className?: string
-  style?: React.CSSProperties
+  tone?: "brand" | "open"
 }) {
-  const { ref, visible } = useReveal<HTMLDivElement>()
+  const on = tone === "open" ? "border-open/40 bg-open/15 text-open" : "border-brand bg-brand text-white"
   return (
-    <div
-      ref={ref}
-      style={style}
-      className={`transition-all duration-700 ease-out motion-reduce:transition-none ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-      } ${className}`}
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-[13px] font-semibold transition active:scale-95 sm:px-3.5 ${
+        active ? on : "border-white/10 bg-surface text-zinc-200 hover:border-white/25 hover:text-ink"
+      }`}
     >
       {children}
+    </button>
+  )
+}
+
+// labels: texto a enseñar si es distinto del valor (el filtro de día guarda "5" y enseña "Viernes").
+function ChipGroup({
+  title,
+  options,
+  selected,
+  onToggle,
+  labels,
+  hint,
+}: {
+  title: string
+  options: string[]
+  selected: Set<string>
+  onToggle: (value: string) => void
+  labels?: Record<string, string>
+  hint?: string
+}) {
+  return (
+    <div>
+      <p className="mb-2 text-xs font-semibold text-zinc-400">{title}</p>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => (
+          <Chip key={opt} active={selected.has(opt)} onClick={() => onToggle(opt)}>
+            {labels?.[opt] ?? opt}
+          </Chip>
+        ))}
+      </div>
+      {hint && <p className="mt-2 text-xs text-zinc-500">{hint}</p>}
     </div>
   )
 }
@@ -75,7 +99,8 @@ const ATTRIBUTE_FILTERS = ["Trending", OFFERS_FILTER, LATE_BAR_FILTER, "LGTBI+",
 // Antes solo había "+18", "+21", "+25": los clubs con edad mínima de 30 (campo age_min = 30, editable
 // desde la ficha del club) no se podían filtrar por aquí, aunque el dato existiera. Se añade "+30".
 const AGE_FILTERS = ["+18", "+21", "+25", "+30"]
-const PAGE_SIZE = 9
+// 12 = múltiplo de 2, 3 y 4 columnas: los avisos que salen cada 12 tarjetas nunca dejan huecos.
+const PAGE_SIZE = 12
 
 // Filtros que se recuerdan al abrir una ficha y volver (lib/filterMemory.ts). No se guarda «Cerca de mí»:
 // la ubicación hay que volver a pedirla.
@@ -107,6 +132,9 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [tonight, setTonight] = useState<number | null>(null)
   const [nearMe, setNearMe] = useState(false)
+  // Locales abiertos ahora para la portada: depende de la hora, así que se calcula tras montar (la página
+  // se sirve ya hecha) y se refresca cada minuto.
+  const [openCount, setOpenCount] = useState<number | null>(null)
   const [userLat, setUserLat] = useState<number | null>(null)
   const [userLng, setUserLng] = useState<number | null>(null)
   const [sortBy, setSortBy] = useState<"recommended" | "rating" | "name" | "distance">("recommended")
@@ -174,7 +202,17 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Al cambiar un filtro se vuelve a las primeras 9 tarjetas; al recuperar los guardados, a las que
+  useEffect(() => {
+    const count = () =>
+      setOpenCount(
+        clubs.filter((c) => c.temporarily_closed !== true && effectiveOpenNow({ hours: c.hours, open_days: c.open_days, schedule_notices: c.schedule_notices }) === true).length
+      )
+    count()
+    const id = window.setInterval(count, 60000)
+    return () => window.clearInterval(id)
+  }, [clubs])
+
+  // Al cambiar un filtro se vuelve a las primeras tarjetas; al recuperar los guardados, a las que
   // se estaban viendo.
   useEffect(() => {
     if (!hydrated) return
@@ -387,24 +425,18 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
 
   const visibleClubs = sortedClubs.slice(0, visibleCount)
 
+  // Etiquetas que se quitan de un toque bajo el buscador. Ahora, Cerca, Trending, Ofertas y los estilos
+  // ya tienen su propio botón (encendido) en la fila de atajos, y la búsqueda se ve en su campo: aquí
+  // solo van los demás atributos, la edad, los barrios y el día.
+  const QUICK_ATTRIBUTES = ["Trending", OFFERS_FILTER]
   const activeFilters: { label: string; onRemove: () => void }[] = [
-    ...Array.from(selectedGenres).map((g) => ({ label: g, onRemove: () => setSelectedGenres((s) => toggleInSet(s, g)) })),
-    ...Array.from(selectedAttributes).map((a) => ({ label: a, onRemove: () => setSelectedAttributes((s) => toggleInSet(s, a)) })),
+    ...Array.from(selectedAttributes)
+      .filter((a) => !QUICK_ATTRIBUTES.includes(a))
+      .map((a) => ({ label: a, onRemove: () => setSelectedAttributes((s) => toggleInSet(s, a)) })),
     ...Array.from(selectedAges).map((age) => ({ label: age, onRemove: () => setSelectedAges((s) => toggleInSet(s, age)) })),
     ...Array.from(selectedNeighborhoods).map((n) => ({ label: n, onRemove: () => setSelectedNeighborhoods((s) => toggleInSet(s, n)) })),
   ]
-  if (openNow) activeFilters.push({ label: "Abierto ahora", onRemove: () => setOpenNow(false) })
   if (selectedDay !== null) activeFilters.push({ label: `${t("clubs.dayOpens")}: ${t(`clubs.day${selectedDay}`)}`, onRemove: () => setSelectedDay(null) })
-  if (nearMe)
-    activeFilters.push({
-      label: "Cerca de mí",
-      onRemove: () => {
-        setNearMe(false)
-        setUserLat(null)
-        setUserLng(null)
-      },
-    })
-  if (search) activeFilters.push({ label: `"${search}"`, onRemove: () => setSearch("") })
 
   const clearAll = () => {
     setSelectedGenres(new Set())
@@ -431,355 +463,274 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
   const activeFilterCount =
     selectedGenres.size + selectedAttributes.size + selectedAges.size + selectedNeighborhoods.size + (selectedDay !== null ? 1 : 0)
 
-  // labels: texto a enseñar si es distinto del valor (el filtro de día guarda "5" y enseña "Viernes").
-  const ChipGroup = ({
-    title,
-    options,
-    selected,
-    onToggle,
-    labels,
-    hint,
-  }: {
-    title: string
-    options: string[]
-    selected: Set<string>
-    onToggle: (value: string) => void
-    labels?: Record<string, string>
-    hint?: string
-  }) => (
-    <div>
-      <p className="mb-3 text-xs uppercase tracking-widest text-zinc-500">{title}</p>
-      <div className="flex flex-wrap gap-3">
-        {options.map((opt) => (
-          <button
-            key={opt}
-            onClick={() => onToggle(opt)}
-            className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium transition active:scale-95 ${
-              selected.has(opt)
-                ? "text-white shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
-                : "border border-white/10 bg-white/[0.04] text-white hover:border-purple-400/30 hover:bg-white/[0.08]"
-            }`}
-            style={selected.has(opt) ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
-          >
-            {labels?.[opt] ?? opt}
-          </button>
-        ))}
-      </div>
-      {hint && <p className="mt-3 text-xs text-zinc-500">{hint}</p>}
-    </div>
-  )
+  const toggleNearMe = () => {
+    if (nearMe) {
+      setNearMe(false)
+      setUserLat(null)
+      setUserLng(null)
+    } else requestNearMe()
+  }
+  const anyActive = activeFilterCount > 0 || openNow || nearMe || search.trim() !== ""
+  const clubsWord = sortedClubs.length === 1 ? "club" : "clubs"
 
   return (
-    <>
-      <main className="relative min-h-screen pb-40 text-white">
-        <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#050308]">
-          <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-purple-600/20 blur-[120px] animate-[float_18s_ease-in-out_infinite]" />
-          <div className="absolute -right-40 top-1/3 h-[450px] w-[450px] rounded-full bg-amber-500/10 blur-[130px] animate-[float_22s_ease-in-out_infinite_reverse]" />
-          <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)",
-              backgroundSize: "56px 56px",
-            }}
-          />
-        </div>
+    <main className="relative min-h-[60vh] pb-12 text-ink">
+      {/* PORTADA con la foto de la web (03/11/2026): selector Clubs · Eventos · Esenciales (30/10/2026),
+          cuántos locales están abiertos ahora (dato real, se calcula en el navegador) y el título. */}
+      <SectionHero
+        section="clubs"
+        title={t("clubs.subtitle")}
+        pill={openCount === null || openCount === 0 ? t("home.liveTonight") : (openCount === 1 ? t("home.liveOpenOne") : t("home.liveOpenMany")).replace("{n}", String(openCount))}
+        switcher={<ExploreSwitch active="clubs" />}
+      />
 
-        <section className="px-4 pt-14">
-          <div className="mx-auto max-w-7xl">
-            {/* Selector Clubs · Eventos · Esenciales: ya salía en Eventos y Esenciales, pero no aquí (30/10/2026). */}
-            <ExploreSwitch active="clubs" />
-            <p className="mt-6 text-sm uppercase tracking-[0.3em] text-zinc-500">{t("clubs.title")}</p>
-            <h1 className="font-display mt-4 text-5xl font-black text-white md:text-6xl">{t("clubs.subtitle")}</h1>
-          </div>
-        </section>
-
-        {/* BUSCADOR + ACCIONES RÁPIDAS. Solo se queda fijo al hacer scroll en pantallas grandes
-            (lg+), donde ocupa una sola fila y se pega justo debajo de la cabecera (que mide 72 px
-            en móvil y 80 px desde sm). En el móvil se partía en 4 o 5 filas y, al ir fijo, tapaba
-            un tercio de la pantalla mientras se miraban los resultados (27/10/2026): ahora se va
-            con el scroll como el resto de la página. */}
-        <div className="relative z-30 mt-8 border-y border-white/10 bg-black/70 py-4 backdrop-blur-xl lg:sticky lg:top-20">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4">
-            <div className="group flex min-w-[200px] flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3.5 backdrop-blur-xl transition focus-within:border-purple-400/50 focus-within:bg-white/[0.08]">
-              <SearchIcon className="h-4 w-4 shrink-0 text-zinc-500 transition group-focus-within:text-purple-300" />
-              <input
-                type="text"
-                placeholder={t("clubs.search")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
-              />
-              {search && (
-                <button onClick={() => setSearch("")} className="text-zinc-500 transition hover:text-white" aria-label="Limpiar búsqueda">
-                  <CloseIcon className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-
-            <button
-              onClick={() => setOpenNow(!openNow)}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold transition active:scale-95 ${
-                openNow
-                  ? "border border-emerald-400/40 bg-emerald-400/15 text-emerald-300"
-                  : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
-              }`}
-            >
-              <span className="relative flex h-2 w-2 shrink-0">
-                {openNow && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />}
-                <span className={`relative inline-flex h-2 w-2 rounded-full ${openNow ? "bg-emerald-400" : "bg-zinc-600"}`} />
-              </span>
-              Ahora
-            </button>
-            <button
-              onClick={nearMe ? () => { setNearMe(false); setUserLat(null); setUserLng(null) } : requestNearMe}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
-                nearMe ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
-              }`}
-              style={nearMe ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
-            >
-              <LocationIcon className="h-4 w-4" />
-              Cerca
-            </button>
-            {trendingShown && (
-              <button
-                onClick={() => setSelectedAttributes((s) => toggleInSet(s, "Trending"))}
-                className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
-                  selectedAttributes.has("Trending")
-                    ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
-                    : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
-                }`}
-                style={selectedAttributes.has("Trending") ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
-              >
-                <FlameIcon className="h-4 w-4" />
-                Trending
+      {/* BUSCADOR + ATAJOS. Solo se queda fijo al hacer scroll en pantallas grandes (lg+), donde cabe en
+          una sola fila y se pega justo debajo de la cabecera (72 px en móvil, 80 px desde sm). En el
+          móvil ocupa dos filas y, si fuera fijo, taparía un tercio de la pantalla (27/10/2026). */}
+      <div className="relative z-30 border-y border-white/10 bg-night/90 py-3 backdrop-blur-xl lg:sticky lg:top-20">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2.5 px-4 lg:flex-nowrap lg:gap-3">
+          <div className="group order-1 flex min-w-0 flex-1 items-center gap-2.5 rounded-ctl border border-white/10 bg-surface px-3.5 py-2.5 transition focus-within:border-brand lg:max-w-sm">
+            <SearchIcon className="h-4 w-4 shrink-0 text-zinc-500 transition group-focus-within:text-brand-soft" />
+            <input
+              type="text"
+              enterKeyHint="search"
+              aria-label={t("clubs.search")}
+              placeholder={t("clubs.search")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full min-w-0 bg-transparent text-base text-ink outline-none placeholder:text-zinc-500 sm:text-sm"
+            />
+            {search && (
+              <button type="button" onClick={() => setSearch("")} className="text-zinc-500 transition hover:text-ink" aria-label="Limpiar búsqueda">
+                <CloseIcon className="h-3.5 w-3.5" />
               </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(!filtersOpen)}
+            aria-expanded={filtersOpen}
+            className={`order-2 flex shrink-0 items-center gap-2 rounded-ctl border px-3.5 py-2.5 text-sm font-semibold transition active:scale-95 lg:order-3 ${
+              filtersOpen || activeFilterCount > 0 ? "border-brand bg-brand/15 text-ink" : "border-white/10 bg-surface text-zinc-200 hover:border-white/25"
+            }`}
+          >
+            <SlidersIcon className="h-4 w-4" />
+            Filtros
+            {activeFilterCount > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1 text-[11px] font-bold text-white">{activeFilterCount}</span>
+            )}
+          </button>
+
+          {/* Fila que se desliza. En el móvil los iconos se quitan para que Ahora, Cerca, Trending y Ofertas
+              quepan enteros sin cortarse (03/11/2026); lo que sigue (los estilos) se desvanece por la
+              derecha para que se note que hay más. */}
+          <div
+            role="group"
+            aria-label="Filtros rápidos"
+            className="scrollbar-none order-3 -mx-4 flex w-[calc(100%+2rem)] gap-2 overflow-x-auto pl-4 pr-6 [mask-image:linear-gradient(to_right,#000_calc(100%_-_24px),transparent)] lg:order-2 lg:mx-0 lg:w-auto lg:min-w-0 lg:flex-1 lg:pl-0"
+          >
+            <Chip active={openNow} tone="open" onClick={() => setOpenNow(!openNow)}>
+              <span className={`h-2 w-2 shrink-0 rounded-full ${openNow ? "live-dot bg-open" : "bg-zinc-500"}`} />
+              Ahora
+            </Chip>
+            <Chip active={nearMe} onClick={toggleNearMe}>
+              <LocationIcon className="hidden h-3.5 w-3.5 sm:block" />
+              Cerca
+            </Chip>
+            {trendingShown && (
+              <Chip active={selectedAttributes.has("Trending")} onClick={() => setSelectedAttributes((s) => toggleInSet(s, "Trending"))}>
+                <FlameIcon className="hidden h-3.5 w-3.5 sm:block" />
+                Trending
+              </Chip>
             )}
             {/* «Ofertas» (01/11/2026): locales con promoción o entrada gratis; solo sale si hay alguno. */}
             {offersShown && (
-              <button
-                onClick={() => setSelectedAttributes((s) => toggleInSet(s, OFFERS_FILTER))}
-                aria-pressed={selectedAttributes.has(OFFERS_FILTER)}
-                className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
-                  selectedAttributes.has(OFFERS_FILTER)
-                    ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]"
-                    : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
-                }`}
-                style={selectedAttributes.has(OFFERS_FILTER) ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
-              >
-                <Tag size={16} aria-hidden="true" />
+              <Chip active={selectedAttributes.has(OFFERS_FILTER)} onClick={() => setSelectedAttributes((s) => toggleInSet(s, OFFERS_FILTER))}>
+                <Tag size={14} aria-hidden="true" className="hidden sm:block" />
                 Ofertas
-              </button>
+              </Chip>
             )}
-
-            <div className="relative shrink-0">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="appearance-none rounded-full border border-white/10 bg-white/[0.04] py-3.5 pl-4 pr-9 text-sm font-medium text-white outline-none"
-              >
-                <option value="recommended" className="bg-black">Recomendado</option>
-                <option value="rating" className="bg-black">Mejor valorados</option>
-                <option value="name" className="bg-black">A-Z</option>
-                {nearMe && <option value="distance" className="bg-black">Más cercanos</option>}
-              </select>
-              <ChevronDownIcon className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
-            </div>
-
-            <button
-              onClick={() => setFiltersOpen(!filtersOpen)}
-              className={`flex shrink-0 items-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold text-white transition active:scale-95 ${
-                filtersOpen ? "shadow-[0_6px_20px_-4px_rgba(168,85,247,0.55)]" : "border border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
-              }`}
-              style={filtersOpen ? { background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" } : undefined}
-            >
-              <SlidersIcon className="h-4 w-4" />
-              Filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-            </button>
+            {shownGenres.length > 0 && <span aria-hidden="true" className="mx-0.5 h-5 w-px shrink-0 self-center bg-white/10" />}
+            {shownGenres.map((g) => (
+              <Chip key={g} active={selectedGenres.has(g)} onClick={() => setSelectedGenres((s) => toggleInSet(s, g))}>
+                {g}
+              </Chip>
+            ))}
           </div>
-
-          {activeFilters.length > 0 && (
-            <div className="mx-auto mt-3 flex max-w-7xl flex-wrap items-center gap-2 px-4">
-              {activeFilters.map((f, i) => (
-                <button
-                  key={`${f.label}-${i}`}
-                  onClick={f.onRemove}
-                  className="flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-400/10 px-3 py-1.5 text-xs font-semibold text-purple-200 transition hover:bg-purple-400/20"
-                >
-                  {f.label} <CloseIcon className="h-3 w-3 text-purple-300" />
-                </button>
-              ))}
-              <button onClick={clearAll} className="text-xs font-semibold text-zinc-500 underline-offset-2 hover:text-white hover:underline">
-                Limpiar todo
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* ADVANCED FILTERS PANEL — todos multi-selección y combinables entre sí. Se queda
-            siempre montado y anima su propia altura (grid-template-rows 0fr→1fr) en vez de
-            aparecer/desaparecer de golpe: la animación responde directamente a pulsar "Filtros",
-            no es un efecto suelto. */}
-        <section
-          className={`mx-auto grid max-w-7xl px-4 transition-[grid-template-rows,opacity] duration-300 ease-out ${
-            filtersOpen ? "grid-rows-[1fr] pb-20 pt-6 opacity-100" : "grid-rows-[0fr] opacity-0"
-          }`}
-        >
-          <div className="overflow-hidden">
-            <div className="space-y-6 rounded-[28px] border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl">
-              {/* «Elige un día»: un solo día a la vez; pulsar el elegido lo quita. */}
-              <ChipGroup
-                title={t("clubs.dayTitle")}
-                options={WEEK_DOW_ORDER.map(String)}
-                labels={Object.fromEntries(
-                  WEEK_DOW_ORDER.map((d) => [String(d), t(`clubs.day${d}`) + (tonight === d ? ` (${t("clubs.dayToday")})` : "")])
-                )}
-                selected={new Set(selectedDay === null ? [] : [String(selectedDay)])}
-                onToggle={(v) => setSelectedDay((cur) => (cur === Number(v) ? null : Number(v)))}
-                hint={t("clubs.dayHint")}
-              />
-              {shownGenres.length > 0 && (
-                <ChipGroup
-                  title="Estilo (elige varios)"
-                  options={shownGenres}
-                  selected={selectedGenres}
-                  onToggle={(v) => setSelectedGenres((s) => toggleInSet(s, v))}
-                />
-              )}
-              {shownAttributes.length > 0 && (
-                <ChipGroup
-                  title="Ambiente"
-                  options={shownAttributes}
-                  selected={selectedAttributes}
-                  onToggle={(v) => setSelectedAttributes((s) => toggleInSet(s, v))}
-                />
-              )}
-              {shownAges.length > 0 && (
-                <ChipGroup
-                  title="Edad mínima"
-                  options={shownAges}
-                  selected={selectedAges}
-                  onToggle={(v) => setSelectedAges((s) => toggleInSet(s, v))}
-                />
-              )}
-              {neighborhoods.length > 0 && (
-                <ChipGroup
-                  title="Barrio (elige varios)"
-                  options={neighborhoods}
-                  selected={selectedNeighborhoods}
-                  onToggle={(v) => setSelectedNeighborhoods((s) => toggleInSet(s, v))}
-                />
-              )}
-
-              {/* Cierre del panel (01/11/2026): tras elegir, un botón al final para cerrarlo y ver los resultados. */}
-              <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                {activeFilters.length > 0 ? (
-                  <button type="button" onClick={clearAll} className="text-sm font-semibold text-zinc-400 underline-offset-2 transition hover:text-white hover:underline">
-                    Limpiar filtros
-                  </button>
-                ) : (
-                  <span />
-                )}
-                <button
-                  type="button"
-                  onClick={showResults}
-                  className="rounded-full px-7 py-3.5 text-sm font-bold text-white shadow-[0_10px_30px_-6px_rgba(168,85,247,0.7)] transition active:scale-95"
-                  style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
-                >
-                  Cerrar y ver {sortedClubs.length} {sortedClubs.length === 1 ? "club" : "clubs"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Botón flotante mientras los filtros están abiertos: se ve siempre, sin tener que bajar. */}
-        {filtersOpen && (
-          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(92px+env(safe-area-inset-bottom))] z-40 flex justify-center px-4 md:bottom-8">
-            <button
-              type="button"
-              onClick={showResults}
-              className="pointer-events-auto rounded-full px-7 py-3.5 text-sm font-bold text-white shadow-[0_10px_30px_-6px_rgba(168,85,247,0.7)] transition active:scale-95"
-              style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
-            >
-              Ver {sortedClubs.length} {sortedClubs.length === 1 ? "club" : "clubs"}
-            </button>
+        {activeFilters.length > 0 && (
+          <div className="mx-auto mt-2.5 flex max-w-7xl flex-wrap items-center gap-2 px-4">
+            {activeFilters.map((f, i) => (
+              <button
+                key={`${f.label}-${i}`}
+                type="button"
+                onClick={f.onRemove}
+                className="flex items-center gap-1.5 rounded-full border border-brand/40 bg-brand/15 px-3 py-1.5 text-xs font-semibold text-brand-soft transition hover:bg-brand/25"
+              >
+                {f.label} <CloseIcon className="h-3 w-3" />
+              </button>
+            ))}
           </div>
         )}
+      </div>
 
-        {/* Results count */}
-        <section ref={resultsRef} className="mx-auto max-w-7xl px-4 pt-8">
-          <p className="text-sm text-zinc-500">
-            {sortedClubs.length} {sortedClubs.length === 1 ? "club encontrado" : "clubs encontrados"}
-          </p>
-        </section>
+      {/* PANEL DE FILTROS — todos multi-selección y combinables entre sí. Se queda siempre montado y
+          anima su propia altura (grid-template-rows 0fr→1fr) en vez de aparecer de golpe; cerrado, no
+          se puede tabular a sus botones (inert). */}
+      <section
+        className={`mx-auto grid max-w-7xl px-4 transition-[grid-template-rows,opacity] duration-300 ease-out ${
+          filtersOpen ? "grid-rows-[1fr] pt-4 opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden" inert={!filtersOpen}>
+          <div className="space-y-5 rounded-card border border-white/10 bg-surface/60 p-4 md:p-5">
+            {/* «Elige un día»: un solo día a la vez; pulsar el elegido lo quita. */}
+            <ChipGroup
+              title={t("clubs.dayTitle")}
+              options={WEEK_DOW_ORDER.map(String)}
+              labels={Object.fromEntries(WEEK_DOW_ORDER.map((d) => [String(d), t(`clubs.day${d}`) + (tonight === d ? ` (${t("clubs.dayToday")})` : "")]))}
+              selected={new Set(selectedDay === null ? [] : [String(selectedDay)])}
+              onToggle={(v) => setSelectedDay((cur) => (cur === Number(v) ? null : Number(v)))}
+              hint={t("clubs.dayHint")}
+            />
+            {shownGenres.length > 0 && (
+              <ChipGroup title="Estilo (elige varios)" options={shownGenres} selected={selectedGenres} onToggle={(v) => setSelectedGenres((s) => toggleInSet(s, v))} />
+            )}
+            {shownAttributes.length > 0 && (
+              <ChipGroup title="Ambiente" options={shownAttributes} selected={selectedAttributes} onToggle={(v) => setSelectedAttributes((s) => toggleInSet(s, v))} />
+            )}
+            {shownAges.length > 0 && (
+              <ChipGroup title="Edad mínima" options={shownAges} selected={selectedAges} onToggle={(v) => setSelectedAges((s) => toggleInSet(s, v))} />
+            )}
+            {neighborhoods.length > 0 && (
+              <ChipGroup title="Barrio (elige varios)" options={neighborhoods} selected={selectedNeighborhoods} onToggle={(v) => setSelectedNeighborhoods((s) => toggleInSet(s, v))} />
+            )}
 
-        {/* Results */}
-        <section onClickCapture={rememberScroll} className="mx-auto mt-4 grid grid-cols-1 max-w-7xl gap-8 px-4 md:grid-cols-2 xl:grid-cols-3">
-          {visibleClubs.length === 0 ? (
-            <div className="col-span-full py-24 text-center">
-              <p className="text-lg font-bold text-zinc-300">No hay clubs con estos filtros</p>
-              <p className="mt-2 text-sm text-zinc-500">Prueba a quitar algún filtro o busca otro barrio.</p>
-              {activeFilters.length > 0 && (
-                <button
-                  onClick={clearAll}
-                  className="mt-6 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-black"
-                >
+            {/* Cierre del panel (01/11/2026): tras elegir, un botón al final para cerrarlo y ver los resultados. */}
+            <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              {anyActive ? (
+                <button type="button" onClick={clearAll} className="text-sm font-semibold text-zinc-400 underline-offset-2 transition hover:text-ink hover:underline">
                   Limpiar filtros
                 </button>
+              ) : (
+                <span />
               )}
+              <button type="button" onClick={showResults} className="rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-95">
+                Cerrar y ver {sortedClubs.length} {clubsWord}
+              </button>
             </div>
-          ) : (
-            visibleClubs.map((club, index) => (
-              <Reveal key={club.id} style={{ transitionDelay: `${Math.min(index, 8) * 60}ms` }}>
-                <ClubCard
-                  id={club.id}
-                  name={club.name}
-                  slug={club.slug}
-                  music={club.music}
-                  area={club.neighborhood}
-                  price={club.price}
-                  hours={club.hours}
-                  openDays={club.open_days}
-                  image={club.image}
-                  rating={club.rating}
-                  lgtbi_friendly={club.lgtbi_friendly}
-                  verified={club.verified}
-                  discountInfo={club.discount_info}
-                  freeEntryInfo={club.free_entry_info}
-                  liveStatus={club.live_status}
-                  liveStatusUpdatedAt={club.live_status_updated_at}
-                  temporarilyClosed={club.temporarily_closed === true}
-                  scheduleNotices={club.schedule_notices}
-                />
-              </Reveal>
-            ))
-          )}
-        </section>
-
-        {visibleCount < sortedClubs.length && (
-          <div className="mt-12 text-center">
-            <button
-              onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-              className="rounded-2xl border border-white/15 bg-white/[0.03] px-8 py-4 font-bold text-white transition hover:bg-white hover:text-black"
-            >
-              Mostrar más ({sortedClubs.length - visibleCount} más)
-            </button>
           </div>
-        )}
-      </main>
+        </div>
+      </section>
 
-      <style jsx global>{`
-        @keyframes float {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          50% {
-            transform: translate(30px, -20px) scale(1.08);
-          }
-        }
-      `}</style>
-    </>
+      {/* Botón flotante mientras los filtros están abiertos: se ve siempre, sin tener que bajar. */}
+      {filtersOpen && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(92px+env(safe-area-inset-bottom))] z-40 flex justify-center px-4 md:bottom-8">
+          <button
+            type="button"
+            onClick={showResults}
+            className="pointer-events-auto rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-black/50 transition hover:bg-brand-strong active:scale-95"
+          >
+            Ver {sortedClubs.length} {clubsWord}
+          </button>
+        </div>
+      )}
+
+      {/* Cuántos hay + orden */}
+      <section ref={resultsRef} className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 pt-5">
+        <div className="flex min-w-0 items-center gap-3 text-sm text-zinc-400">
+          <p>
+            <span className="font-semibold text-ink">{sortedClubs.length}</span> {clubsWord}
+          </p>
+          {anyActive && (
+            <button type="button" onClick={clearAll} className="font-semibold text-brand-soft underline-offset-2 hover:underline">
+              Limpiar
+            </button>
+          )}
+        </div>
+        <div className="relative shrink-0">
+          <select
+            aria-label="Ordenar"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+            className="appearance-none rounded-full border border-white/10 bg-surface py-2 pl-3.5 pr-8 text-[13px] font-medium text-zinc-200 outline-none focus-visible:border-brand"
+          >
+            <option value="recommended" className="bg-night">Recomendado</option>
+            <option value="rating" className="bg-night">Mejor valorados</option>
+            <option value="name" className="bg-night">A-Z</option>
+            {nearMe && <option value="distance" className="bg-night">Más cercanos</option>}
+          </select>
+          <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+        </div>
+      </section>
+
+      {/* Resultados */}
+      <section onClickCapture={rememberScroll} className="mx-auto mt-3 grid max-w-7xl grid-cols-2 gap-3 px-4 md:grid-cols-3 md:gap-4 xl:grid-cols-4">
+        {visibleClubs.length === 0 ? (
+          <div className="col-span-full rounded-card border border-white/10 bg-surface px-6 py-12 text-center">
+            <p className="text-base font-semibold text-ink">No hay clubs con estos filtros</p>
+            <p className="mt-1.5 text-sm text-zinc-400">Prueba a quitar algún filtro o busca otro barrio.</p>
+            {anyActive && (
+              <button type="button" onClick={clearAll} className="mt-5 rounded-ctl bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong">
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+        ) : (
+          visibleClubs.flatMap((club, index) => {
+            const tile = (
+              <ClubTile
+                key={club.id}
+                name={club.name}
+                slug={club.slug}
+                music={club.music}
+                area={club.neighborhood}
+                price={club.price}
+                hours={club.hours}
+                openDays={club.open_days}
+                image={club.image}
+                rating={club.rating}
+                lgtbi_friendly={club.lgtbi_friendly}
+                verified={club.verified}
+                discountInfo={club.discount_info}
+                freeEntryInfo={club.free_entry_info}
+                liveStatus={club.live_status}
+                liveStatusUpdatedAt={club.live_status_updated_at}
+                temporarilyClosed={club.temporarily_closed === true}
+                scheduleNotices={club.schedule_notices}
+                priority={index < 4}
+              />
+            )
+            // Un aviso de «sigue explorando» entre cada 12 tarjetas (nunca al final: ahí va la fila de tres).
+            if ((index + 1) % PAGE_SIZE === 0 && index + 1 < visibleClubs.length) {
+              const kind = NUDGE_ORDER[((index + 1) / PAGE_SIZE - 1) % NUDGE_ORDER.length]
+              return [
+                tile,
+                <div key={`nudge-${index}`} className="col-span-full">
+                  <ClubsNudge kind={kind} />
+                </div>,
+              ]
+            }
+            return [tile]
+          })
+        )}
+      </section>
+
+      {visibleCount < sortedClubs.length && (
+        <div className="mx-auto mt-6 flex max-w-7xl justify-center px-4">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            className="w-full rounded-ctl border border-white/15 bg-surface px-6 py-3.5 text-sm font-semibold text-ink transition hover:border-white/30 sm:w-auto sm:min-w-[280px]"
+          >
+            Mostrar más ({sortedClubs.length - visibleCount} más)
+          </button>
+        </div>
+      )}
+
+      <ClubsNudgeRow />
+    </main>
   )
 }

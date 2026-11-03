@@ -13,6 +13,7 @@ import { track } from "../../lib/track"
 import { useConsent } from "../../lib/useConsent"
 import { hasOptionalConsent } from "../../lib/consent"
 import { readLocalVotes, recordLocalVote, votedOnDay } from "../../lib/partyPollLocal"
+import { setPopupState, usePopupSlot } from "../../lib/popupGate"
 
 // Juego "¿Qué prefieres?" (pedido por Jordi: "encuestas rollo el juego que preferirías... ambiente
 // fiesta y cachondeo"). Decisiones: sale como popup al entrar y NO da XP, es solo por diversión.
@@ -35,6 +36,9 @@ import { readLocalVotes, recordLocalVote, votedOnDay } from "../../lib/partyPoll
 //     noche) y al iniciar sesión. Antes solo se miraba una vez por carga de la web: con la app
 //     abierta desde el día anterior no salía hasta cerrar sesión y volver a entrar (25/10/2026).
 //   - Tras votar ve los porcentajes de todo el mundo. Nada de "Otra": mañana, la siguiente.
+//   - Cola de avisos (03/11/2026, lib/popupGate.ts): ya no sale a la vez que el banner de cookies ni
+//     que el aviso de registro. Pasados los segundos de espera, espera su turno: después de las
+//     cookies y antes del registro, y con una pausa entre uno y otro.
 
 const EXCLUDED_PREFIXES = ["/admin", "/login", "/signup", "/confirm-age", "/blocked", "/profile/change-password", "/recuperar"]
 const SHOW_DELAY_MS = 6000
@@ -79,6 +83,11 @@ export default function PartyPollPopup() {
   const levelColor = useOwnLevelColor()
   // Sube cada vez que hay que volver a mirar (pestaña visible otra vez, sesión iniciada).
   const [recheck, setRecheck] = useState(0)
+  // Cola de avisos: `waiting` = ya está preparada y va a salir; `armed` = ya pasaron los segundos de
+  // espera; `slot` = le toca (no hay otro aviso en pantalla).
+  const slot = usePopupSlot("poll")
+  const [waiting, setWaiting] = useState(false)
+  const [armed, setArmed] = useState(false)
 
   useEffect(() => {
     const bump = () => {
@@ -110,15 +119,15 @@ export default function PartyPollPopup() {
     let timer: ReturnType<typeof setTimeout> | undefined
     // El día solo se da por comprobado cuando la encuesta ya salió o no hay nada que enseñar. Si se
     // marcara al preparar, cambiar de página antes de que pasen los segundos de espera cancelaba el
-    // aviso y ya no volvía a salir ese día (corregido el 30/10/2026).
-    const schedule = (todays: PartyPoll, today: number) => {
+    // aviso y ya no volvía a salir ese día (corregido el 30/10/2026). Ahora, al acabar la espera solo se
+    // «arma»: sale cuando le toca en la cola de avisos (ver más abajo).
+    const schedule = (todays: PartyPoll) => {
       setPoll(todays)
       setChoice(null)
       setResults(null)
+      setWaiting(true)
       timer = setTimeout(() => {
-        if (cancelled) return
-        checkedDay = today
-        setOpen(true)
+        if (!cancelled) setArmed(true)
       }, SHOW_DELAY_MS)
     }
 
@@ -145,7 +154,7 @@ export default function PartyPollPopup() {
         }
         setUserId(null)
         setAnon(true)
-        schedule(todays, today)
+        schedule(todays)
         return
       }
 
@@ -177,15 +186,32 @@ export default function PartyPollPopup() {
       }
       setUserId(uid)
       setAnon(false)
-      schedule(todays, today)
+      schedule(todays)
     }
     prepare()
     return () => {
       cancelled = true
       if (timer) clearTimeout(timer)
+      setWaiting(false)
+      setArmed(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, recheck, consent.ready, consent.optional])
+
+  // Sale cuando ya pasó la espera Y le toca en la cola de avisos.
+  useEffect(() => {
+    if (!armed || !slot || open) return
+    checkedDay = madridDayNumber()
+    setArmed(false)
+    setWaiting(false)
+    setOpen(true)
+  }, [armed, slot, open])
+
+  // Le cuenta a la cola si está abierta o a punto de salir (el aviso de registro espera por ella).
+  useEffect(() => {
+    setPopupState("poll", { open, pending: waiting && !open })
+  }, [open, waiting])
+  useEffect(() => () => setPopupState("poll", { open: false, pending: false }), [])
 
   // Si quien juega sin cuenta retira el permiso con la encuesta abierta, se cierra.
   useEffect(() => {

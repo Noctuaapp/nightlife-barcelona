@@ -8,6 +8,7 @@ import TermsText from "../../components/ui/TermsText"
 import CountrySelect from "../../components/ui/CountrySelect"
 import { useLanguage } from "../../context/LanguageContext"
 import { track } from "../../lib/track"
+import { safeNextPath } from "../../lib/nextPath"
 
 export default function ConfirmAgePage() {
   const router = useRouter()
@@ -27,6 +28,9 @@ export default function ConfirmAgePage() {
   const [username, setUsername] = useState("")
   const [gender, setGender] = useState("")
   const [country, setCountry] = useState("")
+  // País y género son opcionales: van plegados tras un enlace para que la pantalla sea más corta
+  // (03/11/2026). Si ya vienen rellenos (alta con email), se enseñan abiertos.
+  const [showMore, setShowMore] = useState(false)
 
   useEffect(() => {
     const check = async () => {
@@ -61,7 +65,7 @@ export default function ConfirmAgePage() {
       // Solo se salta esta pantalla si ya aceptó los términos Y tiene la edad guardada (las cuentas
       // antiguas sin año de nacimiento pasan por aquí una vez para confirmarla).
       if (profile?.terms_accepted_at && profile?.birth_year) {
-        router.replace("/")
+        router.replace(safeNextPath())
         return
       }
       // Sin usuario (típico de entrar con Google, que no lo da) — se pide aquí mismo, junto con
@@ -70,6 +74,10 @@ export default function ConfirmAgePage() {
         setNeedsProfile(true)
         setGender(profile?.gender || meta?.gender || "")
         setCountry(profile?.country || meta?.country || "")
+        // Nombre de usuario ya sugerido (editable): quien entra con Google no lo ha escrito nunca, y
+        // pedirlo en blanco es un paso más. Es genérico a propósito: el usuario se enseña en público,
+        // así que no se saca del nombre ni del correo de Google.
+        setUsername(`noctambulo${Math.floor(1000 + Math.random() * 9000)}`)
       }
       setUserId(user.id)
       setChecking(false)
@@ -85,7 +93,7 @@ export default function ConfirmAgePage() {
       return
     }
     if (!acceptedTerms || !confirmedAge) {
-      setError(t("consent.checkBoth"))
+      setError(t("consent.checkOne"))
       return
     }
     if (!birthDate) {
@@ -116,7 +124,8 @@ export default function ConfirmAgePage() {
       return
     }
     track("confirm_age_done")
-    router.replace("/")
+    // Vuelve a la página en la que estaba cuando se registró (Header pasa ?next=), no a la portada.
+    router.replace(safeNextPath())
   }
 
   if (checking) {
@@ -142,52 +151,53 @@ export default function ConfirmAgePage() {
               onChange={(e) => setUsername(e.target.value)}
               className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand transition"
             />
-            <CountrySelect value={country} onChange={setCountry} locale={locale} placeholder={`${t("signup.country")} (${t("signup.optional")})`} />
-            <select
-              value={gender}
-              onChange={(e) => setGender(e.target.value)}
-              style={{ colorScheme: "dark" }}
-              className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-zinc-300 outline-none focus:border-brand transition"
-            >
-              <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">
-                {`${t("signup.gender")} (${t("signup.optional")})`}
-              </option>
-              <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">
-                {t("signup.gender_male")}
-              </option>
-              <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Mujer">
-                {t("signup.gender_female")}
-              </option>
-              <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Prefiero no decirlo">
-                {t("signup.gender_unspecified")}
-              </option>
-            </select>
+            {showMore || country || gender ? (
+              <>
+                <CountrySelect value={country} onChange={setCountry} locale={locale} placeholder={`${t("signup.country")} (${t("signup.optional")})`} />
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                  style={{ colorScheme: "dark" }}
+                  className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-zinc-300 outline-none focus:border-brand transition"
+                >
+                  <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">
+                    {`${t("signup.gender")} (${t("signup.optional")})`}
+                  </option>
+                  <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">
+                    {t("signup.gender_male")}
+                  </option>
+                  <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Mujer">
+                    {t("signup.gender_female")}
+                  </option>
+                  <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Prefiero no decirlo">
+                    {t("signup.gender_unspecified")}
+                  </option>
+                </select>
+              </>
+            ) : (
+              <button type="button" onClick={() => setShowMore(true)} className="px-1 text-sm font-semibold text-zinc-400 underline-offset-4 transition hover:text-ink hover:underline">
+                {t("signup.moreOptional")}
+              </button>
+            )}
           </div>
         )}
 
-        <div className="space-y-4">
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
-              checked={acceptedTerms}
-              onChange={(e) => setAcceptedTerms(e.target.checked)}
-              className="mt-1 h-4 w-4 flex-shrink-0 rounded accent-[#7c5cff]"
-            />
-            <span className="text-sm leading-relaxed text-zinc-400">
-              <TermsText newTab />
-            </span>
-          </label>
-
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
-              checked={confirmedAge}
-              onChange={(e) => setConfirmedAge(e.target.checked)}
-              className="mt-1 h-4 w-4 flex-shrink-0 rounded accent-[#7c5cff]"
-            />
-            <span className="text-sm leading-relaxed text-zinc-400">{t("consent.ageConfirm")}</span>
-          </label>
-        </div>
+        {/* Una sola casilla (03/11/2026): términos + mayoría de edad. La edad se sigue comprobando con la
+            fecha de nacimiento de abajo (los menores de 18 no pasan). */}
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            checked={acceptedTerms && confirmedAge}
+            onChange={(e) => {
+              setAcceptedTerms(e.target.checked)
+              setConfirmedAge(e.target.checked)
+            }}
+            className="mt-1 h-4 w-4 flex-shrink-0 rounded accent-[#7c5cff]"
+          />
+          <span className="text-sm leading-relaxed text-zinc-400">
+            <TermsText newTab /> {t("consent.ageConfirm")}
+          </span>
+        </label>
 
         <div className="mt-5">
           <label className="mb-2 block px-1 text-sm text-zinc-300">{t("consent.birthDate")}</label>

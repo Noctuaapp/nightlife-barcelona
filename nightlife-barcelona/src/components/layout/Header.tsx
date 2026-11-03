@@ -9,7 +9,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { awardXp, XP_AMOUNTS, currentIsoWeek, madridDateStr, dayBefore, checkLevelUp } from "../../lib/xp"
 import { ADMIN_EMAIL } from "../../lib/admin"
 import { logError } from "../../lib/log"
-import { track } from "../../lib/track"
+import { safeNextPath } from "../../lib/nextPath"
 import { useViewAsUser } from "../../lib/viewAsUser"
 import LevelUpModal from "../mascot/LevelUpModal"
 import InstallAppButton from "../system/InstallAppButton"
@@ -78,10 +78,6 @@ export default function Header() {
   const [langOpen, setLangOpen] = useState(false)
   // Barcelona es la única ciudad por ahora (se usa para el tiempo del menú).
   const [selectedCity] = useState(cities[0])
-  // Barra de registro en el header: solo para quien no tiene sesión, y se puede cerrar (se
-  // recuerda en localStorage, igual que las notificaciones leídas). Empieza en "true" (oculta)
-  // para no hacerla parpadear un instante antes de comprobar localStorage tras montar.
-  const [bannerDismissed, setBannerDismissed] = useState(true)
   const [weather, setWeather] = useState<{
     temp: number
     icon: string
@@ -124,7 +120,11 @@ export default function Header() {
         .maybeSingle()
       // También sin año de nacimiento (26/10/2026): cuentas de antes de que se guardara la edad.
       if (!profile?.terms_accepted_at || !profile?.birth_year) {
-        router.push("/confirm-age")
+        // Se pasa la página en la que estaba (03/11/2026) para volver a ella al terminar, en vez de
+        // acabar en la portada: quien se registra desde un club quiere seguir en ese club.
+        const here = window.location.pathname
+        const back = here === "/login" || here === "/signup" ? safeNextPath() : here + window.location.search
+        router.push(back && back !== "/" ? `/confirm-age?next=${encodeURIComponent(back)}` : "/confirm-age")
       }
     }
 
@@ -458,24 +458,6 @@ export default function Header() {
     return () => clearInterval(interval)
   }, [isLoggedIn])
 
-  useEffect(() => {
-    try {
-      setBannerDismissed(localStorage.getItem("noctua_auth_banner_dismissed") === "1")
-    } catch (e) {
-      logError("LOCALSTORAGE ERROR:", e)
-    }
-  }, [])
-
-  const dismissBanner = () => {
-    track("banner_dismiss", { meta: { banner: "signup" } })
-    setBannerDismissed(true)
-    try {
-      localStorage.setItem("noctua_auth_banner_dismissed", "1")
-    } catch (e) {
-      logError("LOCALSTORAGE ERROR:", e)
-    }
-  }
-
   // Clave con la fecha de hoy: el aviso vuelve a poder salir al día siguiente aunque ayer se
   // cerrara (el tiempo de hoy no es el de ayer).
   const weatherTipKey = () => `noctua_weather_tip_dismissed_${new Date().toISOString().slice(0, 10)}`
@@ -737,34 +719,9 @@ export default function Header() {
         </div>
       </header>
 
-      {!isLoggedIn && !bannerDismissed && (
-        <div className="sticky top-[72px] z-40 border-b border-white/[0.06] backdrop-blur-2xl sm:top-20" style={{ background: "linear-gradient(90deg, #141034, #0a0c1e)" }}>
-          <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2.5 sm:px-6">
-            <p className="min-w-0 flex-1 truncate text-xs text-zinc-300 sm:text-sm">
-              <span className="text-white">{t("authGate.bannerText")}</span>
-            </p>
-            <Link
-              href="/signup"
-              onClick={() => track("banner_click", { meta: { banner: "signup" } })}
-              className="shrink-0 rounded-full px-4 py-1.5 text-xs font-bold text-white transition hover:opacity-90 sm:text-sm"
-              style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
-            >
-              {t("authGate.bannerCta")}
-            </Link>
-            <button
-              onClick={dismissBanner}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-500 transition hover:text-white"
-              aria-label="Cerrar"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
       {weatherTip && !weatherTipDismissed && (
-        // Sin "sticky": si la barra de registro también está visible, esta simplemente va
-        // justo debajo en el flujo normal, sin pelearse por la misma posición al hacer scroll.
+        // Va en el flujo normal, justo debajo de la cabecera. La barra de registro que había encima
+        // se quitó el 03/11/2026: el aviso de registro sale ahora como tarjeta (JoinNoctuaCard).
         <div
           className="border-b border-white/[0.06]"
           style={{ background: "linear-gradient(90deg, #141034, #0a0c1e)" }}

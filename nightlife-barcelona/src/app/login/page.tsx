@@ -74,6 +74,14 @@ export default function LoginPage() {
               <div className="h-px flex-1 bg-white/10" />
             </div>
 
+            {/* En un <form> (03/11/2026): la tecla «Ir/Enter» del móvil entra directamente, y el navegador
+                y el gestor de contraseñas reconocen el formulario y rellenan solos. */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                login()
+              }}
+            >
             <div className="space-y-4">
               <input
                 value={email}
@@ -81,11 +89,17 @@ export default function LoginPage() {
                 className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand transition"
                 placeholder={t("login.email")}
                 type="email"
+                autoComplete="username"
+                inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
               />
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 type="password"
+                autoComplete="current-password"
                 className="w-full rounded-ctl border border-white/15 bg-night px-4 py-3.5 text-base text-ink outline-none focus:border-brand transition"
                 placeholder={t("login.password")}
               />
@@ -104,12 +118,13 @@ export default function LoginPage() {
             {error && <p className="mt-4 text-sm font-semibold text-red-300">{error}</p>}
 
             <button
-              onClick={login}
+              type="submit"
               disabled={loading}
               className="mt-6 w-full rounded-ctl bg-brand px-6 py-4 font-semibold text-white transition hover:bg-brand-strong disabled:opacity-50"
             >
               {loading ? t("login.signing_in") : t("login.signin")}
             </button>
+            </form>
 
             <p className="mt-6 text-center text-sm text-zinc-400">
               <Link href="/signup" className="font-semibold text-ink underline-offset-4 hover:underline">

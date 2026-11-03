@@ -67,17 +67,17 @@ export default function ClubFeatures({ club, capacity, isAdmin }: { club: Club; 
   return (
     <>
       {active.length + extra.length > 0 && (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <ul className="grid grid-cols-2 gap-2 sm:gap-3">
           {active.map((f) => (
-            <li key={f.field} className="flex items-center gap-3 rounded-ctl border border-white/10 px-4 py-3">
+            <li key={f.field} className="flex min-w-0 items-center gap-2.5 rounded-ctl border border-white/10 px-3 py-2.5 sm:px-4 sm:py-3">
               <Icon name={f.icon} className="h-4 w-4 shrink-0 text-brand-soft" />
-              <span className="text-sm font-semibold text-ink">{t(f.labelKey)}</span>
+              <span className="min-w-0 break-words text-[13px] font-semibold leading-snug text-ink sm:text-sm">{t(f.labelKey)}</span>
             </li>
           ))}
           {extra.map((f) => (
-            <li key={f.key} className="flex items-center gap-3 rounded-ctl border border-white/10 px-4 py-3">
+            <li key={f.key} className="flex min-w-0 items-center gap-2.5 rounded-ctl border border-white/10 px-3 py-2.5 sm:px-4 sm:py-3">
               <Icon name={f.icon} className="h-4 w-4 shrink-0 text-brand-soft" />
-              <span className="text-sm font-semibold text-ink">{f.label}</span>
+              <span className="min-w-0 break-words text-[13px] font-semibold leading-snug text-ink sm:text-sm">{f.label}</span>
             </li>
           ))}
         </ul>

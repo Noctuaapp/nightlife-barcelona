@@ -21,9 +21,10 @@ import NearbyStrip from "./club/NearbyStrip"
 import JoinNoctuaCard from "./JoinNoctuaCard"
 import WelcomeChallenge from "./WelcomeChallenge"
 import NextStepsRow from "./NextStepsRow"
+import ClubTile from "./ClubTile"
+import { ClubsNudgeRow } from "./ClubsNudge"
 import SocialLinks, { socialUrl } from "./club/SocialLinks"
 import ClubFeatures, { activeFeatureCount } from "./club/ClubFeatures"
-import ClubInsider from "./club/ClubInsider"
 import Stars from "./club/Stars"
 import Icon from "../ui/Icon"
 import { toast } from "../ui/Toast"
@@ -31,7 +32,6 @@ import { supabase } from "../../lib/supabase"
 import { InlineEditText, InlineEditImage } from "../admin/InlineEdit"
 import { useCanEdit } from "../admin/EditAccess"
 import { FALLBACK_IMAGE as FALLBACK_CLUB_IMAGE } from "../../lib/fallbackImage"
-import { createSlug } from "../../lib/slug"
 import { areaHref } from "../../lib/zonePages"
 import { clubOpensOn, madridClock } from "../../lib/clubHours"
 import { effectiveOpenNow, isClosedTonight } from "../../lib/scheduleNotices"
@@ -61,11 +61,11 @@ const CHECKINS_MIN_FOR_LIVE = 3
 const CHECKINS_FOR_FULL = 10
 
 function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-card border border-white/10 bg-surface p-6 sm:p-7 ${className}`}>{children}</div>
+  return <div className={`rounded-card border border-white/10 bg-surface p-4 sm:p-7 ${className}`}>{children}</div>
 }
 
 function PanelTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="mb-5 text-lg font-semibold text-ink">{children}</h2>
+  return <h2 className="mb-3 text-base font-semibold text-ink sm:mb-5 sm:text-lg">{children}</h2>
 }
 
 export default function ClubPageContent({ club, clubEvents, clubSessions = [], initialRelated }: { club: any; clubEvents: any[]; clubSessions?: any[]; initialRelated?: any[] }) {
@@ -80,6 +80,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
   // Vienen ya del servidor (enlaces en el HTML para Google); si no, se piden aquí como antes.
   const [related, setRelated] = useState<any[]>(() => (initialRelated || []).slice(0, 3))
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const [liveCheckins, setLiveCheckins] = useState(0)
   const [userId, setUserId] = useState<string | null>(null)
   type LiveNote = { id: number; note: string; note_created_at: string; upvotes: number; downvotes: number; myVote: 1 | -1 | 0; reported: boolean }
@@ -358,6 +359,12 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
     document.getElementById("club-content")?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
+  // «Sobre»: en el móvil, 4 líneas y «Leer más» si hay bastante texto; el texto entero sigue en el HTML.
+  const summary = clubSummary(club)
+  const descText = String(club.description || "").trim()
+  const hasSecondary = !!club.description && descText.length < 280
+  const canCollapse = !isAdmin && ((club.description ? descText.length : summary.length) > 200 || hasSecondary)
+
   const secondaryBtn =
     "flex items-center justify-center gap-2 rounded-ctl border border-white/15 bg-white/5 px-5 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/10"
   // Botón cuadrado solo con icono. Antes se hacía con secondaryBtn + "px-0", pero el px-5 de
@@ -368,12 +375,13 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
     "flex items-center justify-center gap-2 rounded-ctl bg-brand px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-strong"
 
   return (
-    <main className="relative min-h-screen bg-night pb-40 text-ink lg:pb-16">
-      {/* PORTADA */}
+    <main className="relative min-h-screen bg-night pb-28 text-ink lg:pb-16">
+      {/* PORTADA (03/11/2026): más baja, con el nombre, la valoración y si está abierto encima de la foto.
+          Antes el título quedaba debajo, en otro bloque, y entre la foto y los datos había 700 px. */}
       <section className="relative">
-        <div className={`relative h-[46vh] max-h-[560px] min-h-[320px] w-full overflow-hidden ${tempClosed ? "[&_img]:opacity-60 [&_img]:grayscale" : ""}`}>
+        <div className={`relative h-[40vh] max-h-[500px] min-h-[280px] w-full overflow-hidden lg:h-[46vh] ${tempClosed ? "[&_img]:opacity-60 [&_img]:grayscale" : ""}`}>
           <HeroImage src={club.image} alt={club.name} fallback={FALLBACK_CLUB_IMAGE} />
-          <div className="absolute inset-0 bg-gradient-to-t from-night via-night/40 to-transparent" />
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-night from-[3%] via-night/60 via-45% to-night/10" />
           {/* Cerrado temporalmente (30/10/2026): banda ámbar sobre la foto, a primera vista (no es un popup). */}
           {tempClosed && (
             <div className="absolute inset-x-0 top-0 flex items-center justify-center gap-2 bg-warn px-4 py-2.5 text-center text-sm font-bold text-night" role="status">
@@ -381,114 +389,92 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
               {t("clubPage.tempClosed")}
             </div>
           )}
-          <InlineEditImage table="clubs" id={club.id} field="image" bucket="club-images" label="Cambiar foto" />
-        </div>
 
-        <div className="relative -mt-28 px-4 sm:-mt-36 sm:px-6">
-          <div className="mx-auto max-w-6xl">
-            {(club.trending || club.sold_out || club.verified) && (
-              <div className="mb-3 flex flex-wrap gap-2">
-                {club.verified && (
-                  <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-night/70 px-3 py-1.5 text-xs font-semibold text-ink">
-                    <Icon name="check" className="h-3.5 w-3.5 text-brand-soft" /> {t("clubPage.verified")}
-                  </span>
-                )}
-                {club.trending && (
-                  <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-night/70 px-3 py-1.5 text-xs font-semibold text-ink">
-                    <Icon name="flame" className="h-3.5 w-3.5 text-warn" /> {t("club.trending")}
-                  </span>
-                )}
-                {club.sold_out && (
-                  <span className="flex items-center gap-1.5 rounded-full border border-red-400/30 bg-red-400/15 px-3 py-1.5 text-xs font-semibold text-red-200">
-                    <Icon name="ban" className="h-3.5 w-3.5" /> {t("club.sold_out")}
-                  </span>
-                )}
-              </div>
-            )}
-
-            <p className="text-sm font-semibold text-brand-soft empty:hidden">
-              <InlineEditText table="clubs" id={club.id} field="music" value={club.music} emptyLabel="añadir estilo musical" />
-            </p>
-            <h1 className="font-display mt-1 break-words text-[2.4rem] leading-[1.02] text-ink sm:text-6xl md:text-7xl">
-              <InlineEditText table="clubs" id={club.id} field="name" value={club.name} />
-            </h1>
-
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              <span className="flex items-center gap-1.5 text-zinc-300">
-                <Icon name="map" className="h-4 w-4 text-muted" />
-                {club.neighborhood ? (
-                  <Link href={areaHref(club.neighborhood)} className="underline decoration-white/25 underline-offset-4 transition hover:text-ink hover:decoration-white">
-                    {club.neighborhood}
-                  </Link>
-                ) : (
-                  "Barcelona"
-                )}
-              </span>
-              {displayRating && (
-                <button type="button" onClick={() => goToTab("reviews")} className="flex items-center gap-1.5 text-zinc-300 hover:underline">
-                  <Stars rating={displayRating} />
-                  <span className="font-semibold text-ink">{Number(displayRating).toFixed(1)}</span>
-                  {reviewCount ? <span className="text-zinc-400">({reviewCount.toLocaleString("es-ES")})</span> : null}
-                </button>
-              )}
-              {tempClosed ? null : openNow !== null && (
-                <span className={`flex items-center gap-1.5 font-semibold ${openNow ? "text-open" : "text-zinc-400"}`}>
-                  <span className={`h-2 w-2 rounded-full ${openNow ? "live-dot bg-open" : "bg-off"}`} />
-                  {openNow ? t("clubPage.openNow") : t("clubPage.closedNow")}
-                </span>
-              )}
-            </div>
-
-            {tempClosed && (
-              <div className="mt-5 flex max-w-2xl items-start gap-3 rounded-card border border-warn/50 bg-warn/[0.14] px-4 py-3.5" role="note">
-                <Icon name="hourglass" className="mt-0.5 h-5 w-5 shrink-0 text-warn" />
-                <div>
-                  <p className="text-base font-bold text-warn">{t("clubPage.tempClosed")}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-zinc-100">{t("clubPage.tempClosedNote")}</p>
+          <div className="absolute inset-x-0 bottom-0 pb-5 sm:pb-7">
+            <div className="mx-auto max-w-6xl px-4 sm:px-6">
+              {(club.trending || club.sold_out || club.verified) && (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {club.verified && (
+                    <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-night/70 px-2.5 py-1 text-[11px] font-semibold text-ink">
+                      <Icon name="check" className="h-3 w-3 text-brand-soft" /> {t("clubPage.verified")}
+                    </span>
+                  )}
+                  {club.trending && (
+                    <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-night/70 px-2.5 py-1 text-[11px] font-semibold text-ink">
+                      <Icon name="flame" className="h-3 w-3 text-warn" /> {t("club.trending")}
+                    </span>
+                  )}
+                  {club.sold_out && (
+                    <span className="flex items-center gap-1.5 rounded-full border border-red-400/30 bg-red-400/15 px-2.5 py-1 text-[11px] font-semibold text-red-200">
+                      <Icon name="ban" className="h-3 w-3" /> {t("club.sold_out")}
+                    </span>
+                  )}
                 </div>
-              </div>
-            )}
-            {/* Avisos del dueño: «hoy cerramos», horario especial, próximos cierres (supabase/60). */}
-            {!tempClosed && <ClubNotices notices={club.schedule_notices} />}
+              )}
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              {ticketUrl ? (
-                <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={primaryBtn}>
-                  <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
-                </a>
-              ) : directionsUrl ? (
-                <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={primaryBtn}>
-                  <Icon name="map" className="h-4 w-4" /> {t("clubPage.directions")}
-                </a>
-              ) : null}
-              {ticketUrl && directionsUrl && (
-                <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={secondaryBtn}>
-                  <Icon name="map" className="h-4 w-4" /> {t("clubPage.directions")}
-                </a>
-              )}
-              {website && (
-                <a href={website} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("website_click")} className={secondaryBtn}>
-                  <Icon name="globe" className="h-4 w-4" /> {t("clubPage.website")}
-                </a>
-              )}
-              <button onClick={shareClub} className={`${iconBtn} h-auto min-h-[50px] w-[52px]`} aria-label={t("clubPage.share")}>
-                <Icon name="share" className="h-5 w-5" />
-              </button>
+              <p className="text-[13px] font-semibold text-brand-soft empty:hidden sm:text-sm">
+                <InlineEditText table="clubs" id={club.id} field="music" value={club.music} emptyLabel="añadir estilo musical" />
+              </p>
+              <h1 className="font-display mt-0.5 break-words text-[2rem] leading-[1.04] text-ink [text-shadow:0_2px_24px_rgba(0,0,0,0.55)] sm:text-5xl lg:text-6xl">
+                <InlineEditText table="clubs" id={club.id} field="name" value={club.name} />
+              </h1>
+
+              <div className="mt-2.5 flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-[13px] sm:text-sm">
+                <span className="flex items-center gap-1.5 text-zinc-200">
+                  <Icon name="map" className="h-4 w-4 text-zinc-400" />
+                  {club.neighborhood ? (
+                    <Link href={areaHref(club.neighborhood)} className="underline decoration-white/25 underline-offset-4 transition hover:text-ink hover:decoration-white">
+                      {club.neighborhood}
+                    </Link>
+                  ) : (
+                    "Barcelona"
+                  )}
+                </span>
+                {displayRating && (
+                  <button type="button" onClick={() => goToTab("reviews")} className="flex items-center gap-1.5 text-zinc-200 hover:underline">
+                    <Stars rating={displayRating} />
+                    <span className="font-semibold text-ink">{Number(displayRating).toFixed(1)}</span>
+                    {reviewCount ? <span className="text-zinc-400">({reviewCount.toLocaleString("es-ES")})</span> : null}
+                  </button>
+                )}
+                {tempClosed ? null : openNow !== null && (
+                  <span className={`flex items-center gap-1.5 font-semibold ${openNow ? "text-open" : "text-zinc-300"}`}>
+                    <span className={`h-2 w-2 rounded-full ${openNow ? "live-dot bg-open" : "bg-off"}`} />
+                    {openNow ? t("clubPage.openNow") : t("clubPage.closedNow")}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
+
+          <InlineEditImage table="clubs" id={club.id} field="image" bucket="club-images" label="Cambiar foto" />
         </div>
       </section>
 
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        {tempClosed && (
+          <div className="mt-4 flex max-w-2xl items-start gap-3 rounded-card border border-warn/50 bg-warn/[0.14] px-4 py-3" role="note">
+            <Icon name="hourglass" className="mt-0.5 h-5 w-5 shrink-0 text-warn" />
+            <div>
+              <p className="text-base font-bold text-warn">{t("clubPage.tempClosed")}</p>
+              <p className="mt-1 text-sm leading-relaxed text-zinc-100">{t("clubPage.tempClosedNote")}</p>
+            </div>
+          </div>
+        )}
+        {/* Avisos del dueño: «hoy cerramos», horario especial, próximos cierres (supabase/60). */}
+        {!tempClosed && <ClubNotices notices={club.schedule_notices} />}
+      </div>
+
       {/* DATOS PRÁCTICOS */}
       {quickFacts.length > 0 && (
-        <section className="mx-auto mt-8 max-w-6xl px-4 sm:px-6">
+        <section className="mx-auto mt-4 max-w-6xl px-4 sm:px-6">
           <dl className={factsGridClass(quickFacts.length)}>
             {quickFacts.map((f, i) => (
-              <div key={f.key} className={`flex items-start gap-3 bg-surface p-4 ${factCellClass(i, quickFacts.length)}`}>
+              <div key={f.key} className={`flex items-start gap-2.5 bg-surface p-3 sm:gap-3 sm:p-4 ${factCellClass(i, quickFacts.length)}`}>
                 <Icon name={f.icon} className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" />
                 <div className="min-w-0">
-                  <dt className="text-xs text-zinc-400">{f.label}</dt>
-                  <dd className="mt-0.5 break-words text-sm font-semibold leading-snug text-ink">
+                  <dt className="text-[11px] text-zinc-400 sm:text-xs">{f.label}</dt>
+                  <dd className="mt-0.5 break-words text-[13px] font-semibold leading-snug text-ink sm:text-sm">
                     {f.field ? (
                       <>
                         {f.key === "age" && "+"}
@@ -505,160 +491,242 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
         </section>
       )}
 
-      {/* FOTOS (29/10/2026): antes estaban al final de la ficha, tras el mapa y las opiniones; casi
-          nadie llegaba. Ahora van justo bajo los datos prácticos (sin fotos extra, no se pinta nada). */}
-      <ClubGallery
-        compact
-        images={allImages}
-        name={club.name}
-        edit={{ table: "clubs", id: club.id, bucket: "club-photos", gallery: Array.isArray(club.gallery) ? club.gallery : [] }}
-      />
-
-      {/* REGISTRO: solo lo ve quien no tiene sesión (ver JoinNoctuaCard). En su mismo hueco, quien
-          acaba de crear la cuenta ve el primer reto (ver WelcomeChallenge). */}
-      <JoinNoctuaCard kind="club" itemId={club.id} name={club.name} />
-      <WelcomeChallenge />
-
-      {/* SIGUE LA NOCHE: WhatsApp al grupo, más del barrio y del estilo, plan (ver NextStepsRow) */}
-      <NextStepsRow kind="club" itemId={club.id} name={club.name} neighborhood={club.neighborhood} music={club.music} />
-
-      {/* CERCA DE AQUÍ: para que quien llega desde Google siga la noche en Noctua */}
-      <NearbyStrip
-        club={club}
-        openNow={openNow}
-        onPick={(to) => track("nearby_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { to } })}
-      />
-
-      {/* ESTA NOCHE: solo con datos reales (el local o check-ins de las últimas 3 h) */}
-      {(vibe || liveNotes.length > 0) && (
-        <section className="mx-auto mt-6 max-w-6xl px-4 sm:px-6">
-          <div className="rounded-card border border-open/25 bg-open/[0.06] p-5 sm:p-6">
-            {vibe && (
-              <p className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="live-dot h-2 w-2 rounded-full bg-open" />
-                <span className="font-semibold text-ink">{vibe}</span>
-                {liveDetail && <span className="text-zinc-300">· {liveDetail}</span>}
-              </p>
-            )}
-            {liveNotes.length > 0 && !notesHidden && (
-              <div className={vibe ? "mt-4" : ""}>
-                <div className="flex items-center justify-end">
-                  <button
-                    onClick={() => setNotesHidden(true)}
-                    aria-label={t("clubPage.notesHide")}
-                    className="-m-1.5 rounded-full p-1.5 text-zinc-500 transition hover:bg-white/5 hover:text-ink"
-                  >
-                    <Icon name="close" className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${liveNotes.length > 4 ? "max-h-[420px] overflow-y-auto pr-1" : ""}`}>
-                  {liveNotes.map((n) => {
-                    const mins = Math.max(0, Math.round((Date.now() - new Date(n.note_created_at).getTime()) / 60000))
-                    const ago = mins < 1 ? t("clubPage.justNow") : mins < 60 ? t("clubPage.minAgo").replace("{n}", String(mins)) : t("clubPage.hoursAgo").replace("{n}", String(Math.round(mins / 60)))
-                    return (
-                      <blockquote key={n.id} className="rounded-ctl border border-white/10 bg-night/40 p-4">
-                        <p className="text-sm leading-relaxed text-ink">“{n.note}”</p>
-                        <footer className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-xs text-zinc-400">
-                            {t("clubPage.noteFromDoor")} · {ago}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <button
-                              onClick={() => handleNoteVote(n.id, 1)}
-                              aria-label={t("clubPage.noteUpvote")}
-                              className={`flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition ${
-                                n.myVote === 1 ? "border-open/50 bg-open/15 text-open" : "border-white/10 text-zinc-400 hover:text-ink"
-                              }`}
-                            >
-                              <Icon name="thumbsUp" className="h-3.5 w-3.5" />
-                              {n.upvotes > 0 && n.upvotes}
-                            </button>
-                            <button
-                              onClick={() => handleNoteVote(n.id, -1)}
-                              aria-label={t("clubPage.noteDownvote")}
-                              className={`flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition ${
-                                n.myVote === -1 ? "border-red-500/50 bg-red-500/15 text-red-400" : "border-white/10 text-zinc-400 hover:text-ink"
-                              }`}
-                            >
-                              <Icon name="thumbsDown" className="h-3.5 w-3.5" />
-                              {n.downvotes > 0 && n.downvotes}
-                            </button>
-                            {n.reported ? (
-                              <span className="text-[11px] text-zinc-500">{t("clubPage.noteReportedShort")}</span>
-                            ) : (
+      {/* ESTA NOCHE (solo con datos reales: el local o check-ins de las últimas horas) y PRÓXIMA NOCHE */}
+      {(vibe || liveNotes.length > 0 || nextEvent) && (
+        <section className="mx-auto mt-3 max-w-6xl space-y-3 px-4 sm:px-6">
+          {(vibe || liveNotes.length > 0) && (
+            <div className="rounded-card border border-open/25 bg-open/[0.06] p-4 sm:p-5">
+              {vibe && (
+                <p className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="live-dot h-2 w-2 rounded-full bg-open" />
+                  <span className="font-semibold text-ink">{vibe}</span>
+                  {liveDetail && <span className="text-zinc-300">· {liveDetail}</span>}
+                </p>
+              )}
+              {liveNotes.length > 0 && !notesHidden && (
+                <div className={vibe ? "mt-3" : ""}>
+                  <div className="flex items-center justify-end">
+                    <button
+                      onClick={() => setNotesHidden(true)}
+                      aria-label={t("clubPage.notesHide")}
+                      className="-m-1.5 rounded-full p-1.5 text-zinc-500 transition hover:bg-white/5 hover:text-ink"
+                    >
+                      <Icon name="close" className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${liveNotes.length > 4 ? "max-h-[420px] overflow-y-auto pr-1" : ""}`}>
+                    {liveNotes.map((n) => {
+                      const mins = Math.max(0, Math.round((Date.now() - new Date(n.note_created_at).getTime()) / 60000))
+                      const ago = mins < 1 ? t("clubPage.justNow") : mins < 60 ? t("clubPage.minAgo").replace("{n}", String(mins)) : t("clubPage.hoursAgo").replace("{n}", String(Math.round(mins / 60)))
+                      return (
+                        <blockquote key={n.id} className="rounded-ctl border border-white/10 bg-night/40 p-4">
+                          <p className="text-sm leading-relaxed text-ink">“{n.note}”</p>
+                          <footer className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-xs text-zinc-400">
+                              {t("clubPage.noteFromDoor")} · {ago}
+                            </span>
+                            <span className="flex items-center gap-1.5">
                               <button
-                                onClick={() => handleNoteReport(n.id)}
-                                aria-label={t("clubPage.noteReport")}
-                                className="rounded-full border border-white/10 p-1.5 text-zinc-500 transition hover:border-red-500/40 hover:text-red-400"
+                                onClick={() => handleNoteVote(n.id, 1)}
+                                aria-label={t("clubPage.noteUpvote")}
+                                className={`flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition ${
+                                  n.myVote === 1 ? "border-open/50 bg-open/15 text-open" : "border-white/10 text-zinc-400 hover:text-ink"
+                                }`}
                               >
-                                <Icon name="flag" className="h-3.5 w-3.5" />
+                                <Icon name="thumbsUp" className="h-3.5 w-3.5" />
+                                {n.upvotes > 0 && n.upvotes}
                               </button>
-                            )}
-                          </span>
-                        </footer>
-                      </blockquote>
-                    )
-                  })}
+                              <button
+                                onClick={() => handleNoteVote(n.id, -1)}
+                                aria-label={t("clubPage.noteDownvote")}
+                                className={`flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition ${
+                                  n.myVote === -1 ? "border-red-500/50 bg-red-500/15 text-red-400" : "border-white/10 text-zinc-400 hover:text-ink"
+                                }`}
+                              >
+                                <Icon name="thumbsDown" className="h-3.5 w-3.5" />
+                                {n.downvotes > 0 && n.downvotes}
+                              </button>
+                              {n.reported ? (
+                                <span className="text-[11px] text-zinc-500">{t("clubPage.noteReportedShort")}</span>
+                              ) : (
+                                <button
+                                  onClick={() => handleNoteReport(n.id)}
+                                  aria-label={t("clubPage.noteReport")}
+                                  className="rounded-full border border-white/10 p-1.5 text-zinc-500 transition hover:border-red-500/40 hover:text-red-400"
+                                >
+                                  <Icon name="flag" className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </span>
+                          </footer>
+                        </blockquote>
+                      )
+                    })}
+                  </div>
                 </div>
+              )}
+            </div>
+          )}
+
+          {nextEvent && (
+            <button
+              onClick={() => goToTab("nights")}
+              className="flex w-full items-center justify-between gap-4 rounded-card border border-white/10 bg-surface p-3.5 text-left transition hover:border-white/20 sm:p-4"
+            >
+              <span className="min-w-0">
+                <span className="block text-[11px] text-zinc-400 sm:text-xs">{t("clubPage.nextNight")}</span>
+                <span className="mt-0.5 block truncate text-[15px] font-semibold text-ink">{nextEvent.name || nextEvent.title || club.name}</span>
+                {nextEventDate && <span className="block text-[13px] text-zinc-300">{nextEventDate}</span>}
+              </span>
+              <Icon name="arrow" className="h-5 w-5 shrink-0 text-muted" />
+            </button>
+          )}
+        </section>
+      )}
+
+      <section id="club-content" className="mx-auto max-w-6xl scroll-mt-24 px-4 pt-4 sm:px-6 lg:pt-8">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-8">
+          {/* ACCIONES — en el móvil «contents» las reparte en la misma rejilla que el contenido: guardar,
+              asistiré y check-in van justo bajo los datos (antes, al final de la página) y el resto
+              (¿no te dejan entrar?, redes, avisar de un error) después del contenido. En escritorio
+              forman la columna fija de la derecha. Los botones se montan una sola vez. */}
+          <div className="contents lg:col-start-3 lg:row-start-1 lg:block lg:space-y-4 lg:self-start lg:sticky lg:top-24">
+            <div className="order-1 rounded-card border border-white/10 bg-surface p-3 sm:p-4">
+              {(ticketUrl || directionsUrl) && (
+                <div className="mb-3 hidden space-y-2 lg:block">
+                  {ticketUrl ? (
+                    <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} w-full`}>
+                      <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
+                    </a>
+                  ) : (
+                    <a href={directionsUrl!} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${primaryBtn} w-full`}>
+                      <Icon name="map" className="h-4 w-4" /> {t("clubPage.directions")}
+                    </a>
+                  )}
+                  <div className={`grid gap-2 ${ticketUrl && directionsUrl ? "grid-cols-2" : "grid-cols-1"}`}>
+                    {ticketUrl && directionsUrl && (
+                      <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${secondaryBtn} !px-3 !py-3`}>
+                        <Icon name="map" className="h-4 w-4" /> {t("clubPage.directions")}
+                      </a>
+                    )}
+                    <button type="button" onClick={shareClub} className={`${secondaryBtn} !px-3 !py-3`}>
+                      <Icon name="share" className="h-4 w-4" /> {t("clubPage.share")}
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-3 gap-2">
+                <FavoriteButton itemType="club" itemId={club.id} variant="tile" />
+                <AttendanceButton itemType="club" itemId={club.id} title={club.name} variant="tile" disabled={!opensTonight} />
+                <CheckInButton clubId={club.id} latitude={club.latitude} longitude={club.longitude} variant="tile" />
               </div>
+            </div>
+
+            <div className="order-3 rounded-card border border-white/10 bg-surface p-4">
+              <NearbyVenuesSheet
+                compact
+                excludeClubId={club.id}
+                venueType="club"
+                venueId={club.id}
+                name={club.name}
+                latitude={club.latitude}
+                longitude={club.longitude}
+              />
+              <SocialLinks
+                table="clubs"
+                id={club.id}
+                instagram={instagram}
+                tiktok={club.tiktok}
+                website={club.website}
+                showWebsite
+                onClick={(k) => trackClick(k)}
+                className="mt-4"
+              />
+              <a
+                href={"/contact?type=report_issue&subject=" + encodeURIComponent("Reporte: " + club.name)}
+                className="mt-3 flex items-center justify-center gap-2 text-xs font-semibold text-zinc-400 transition hover:text-ink"
+              >
+                <Icon name="flag" className="h-3.5 w-3.5" /> {t("clubPage.report")}
+              </a>
+            </div>
+
+            {hasCoords && (
+              <button
+                onClick={() => goToTab("location")}
+                className="group hidden w-full overflow-hidden rounded-card border border-white/10 bg-surface text-left lg:block"
+              >
+                <div className="pointer-events-none h-40">
+                  <ClubMap latitude={club.latitude} longitude={club.longitude} name={club.name} />
+                </div>
+                <span className="flex items-center justify-between px-5 py-4 text-sm font-semibold text-ink">
+                  {t("clubPage.mapAndTransport")} <Icon name="arrow" className="h-4 w-4 text-muted" />
+                </span>
+              </button>
             )}
           </div>
-        </section>
-      )}
 
-      {/* PRÓXIMA NOCHE */}
-      {nextEvent && (
-        <section className="mx-auto mt-6 max-w-6xl px-4 sm:px-6">
-          <button
-            onClick={() => goToTab("nights")}
-            className="flex w-full items-center justify-between gap-4 rounded-card border border-white/10 bg-surface p-5 text-left transition hover:border-white/20"
-          >
-            <span className="min-w-0">
-              <span className="block text-xs text-zinc-400">{t("clubPage.nextNight")}</span>
-              <span className="mt-1 block truncate text-base font-semibold text-ink">{nextEvent.name || nextEvent.title || club.name}</span>
-              {nextEventDate && <span className="mt-0.5 block text-sm text-zinc-300">{nextEventDate}</span>}
-            </span>
-            <Icon name="arrow" className="h-5 w-5 shrink-0 text-muted" />
-          </button>
-        </section>
-      )}
+          {/* COLUMNA PRINCIPAL */}
+          <div className="order-2 flex min-w-0 flex-col gap-4 lg:col-span-2 lg:col-start-1 lg:row-start-1 lg:gap-6">
+            {/* FOTOS: tira de miniaturas (ver ClubGallery «dense»). Sin fotos extra no se pinta nada. */}
+            <div className="-mx-4 sm:-mx-6 [&>section]:mt-0">
+              <ClubGallery
+                compact
+                dense
+                images={allImages}
+                name={club.name}
+                edit={{ table: "clubs", id: club.id, bucket: "club-photos", gallery: Array.isArray(club.gallery) ? club.gallery : [] }}
+              />
+            </div>
 
-      <section id="club-content" className="mx-auto max-w-6xl scroll-mt-24 px-4 pt-10 sm:px-6">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          {/* COLUMNA PRINCIPAL — en móvil va primero; las acciones (guardar, asistiré, check-in)
-              quedan debajo, en una fila compacta, para no cortar la información */}
-          <div className="min-w-0 space-y-6 lg:col-span-2">
+            {/* REGISTRO: solo lo ve quien no tiene sesión (ver JoinNoctuaCard). En su mismo hueco, quien
+                acaba de crear la cuenta ve el primer reto (ver WelcomeChallenge). */}
+            <div className="-mx-4 sm:-mx-6 [&>section]:mt-0 empty:hidden">
+              <JoinNoctuaCard kind="club" itemId={club.id} name={club.name} />
+              <WelcomeChallenge />
+            </div>
+
             {/* Sin descripción escrita: un resumen con los datos reales del local (ver lib/clubSummary),
                 para que la ficha tenga texto propio en el HTML que lee Google. Está en español,
-                el idioma del sitio para Google; el admin sigue viendo el campo para escribir una. */}
+                el idioma del sitio para Google; el admin sigue viendo el campo para escribir una.
+                En el móvil se enseñan unas líneas y «Leer más» (el texto entero sigue en el HTML). */}
             <Panel>
               <PanelTitle>{t("clubPage.about").replace("{name}", club.name)}</PanelTitle>
-              <p className="text-base leading-relaxed text-zinc-200">
+              <p className={`text-[15px] leading-relaxed text-zinc-200 sm:text-base ${canCollapse && !aboutOpen ? "line-clamp-4 lg:line-clamp-none" : ""}`}>
                 {club.description || isAdmin ? (
                   <InlineEditText table="clubs" id={club.id} field="description" value={club.description} multiline emptyLabel="añadir descripción" />
                 ) : (
-                  clubSummary(club)
+                  summary
                 )}
               </p>
               {!club.description && isAdmin && (
-                <p className="mt-3 text-xs leading-relaxed text-zinc-500">Sin descripción, el público ve: {clubSummary(club)}</p>
+                <p className="mt-3 text-xs leading-relaxed text-zinc-500">Sin descripción, el público ve: {summary}</p>
               )}
               {/* Descripción de una sola frase (29/10/2026): Google la veía igual que la meta descripción y
                   la ficha quedaba con muy poco texto propio. Se completa con los datos reales del local
                   (horario, precio, edad, cómo llegar). Una descripción larga ya se basta sola. */}
-              {club.description && String(club.description).trim().length < 280 && (
-                <p className="mt-3 text-sm leading-relaxed text-zinc-400">{clubSummary(club)}</p>
+              {hasSecondary && (
+                <p className={`mt-3 text-sm leading-relaxed text-zinc-400 ${canCollapse && !aboutOpen ? "hidden lg:block" : ""}`}>{summary}</p>
+              )}
+              {canCollapse && (
+                <button
+                  type="button"
+                  onClick={() => setAboutOpen((v) => !v)}
+                  aria-expanded={aboutOpen}
+                  className="mt-2 text-sm font-semibold text-brand-soft hover:underline lg:hidden"
+                >
+                  {aboutOpen ? t("clubPage.readLess") : t("clubPage.readMore")}
+                </button>
               )}
             </Panel>
 
-            <div role="tablist" className="scrollbar-none sticky top-[72px] z-20 sm:top-20 -mx-4 flex gap-2 overflow-x-auto bg-night/95 px-4 py-3 backdrop-blur sm:mx-0 sm:px-0">
+            <div role="tablist" className="scrollbar-none sticky top-[72px] z-20 sm:top-20 -mx-4 flex gap-2 overflow-x-auto bg-night/95 px-4 py-2.5 backdrop-blur sm:mx-0 sm:px-0">
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
                   role="tab"
                   aria-selected={activeTab === tab.key}
                   onClick={() => openTab(tab.key)}
-                  className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                  className={`shrink-0 rounded-full px-4 py-2 text-[13px] font-semibold transition sm:px-5 sm:py-2.5 sm:text-sm ${
                     activeTab === tab.key ? "bg-ink text-night" : "border border-white/10 text-zinc-300 hover:bg-white/5"
                   }`}
                 >
@@ -668,12 +736,10 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
             </div>
 
             {activeTab === "about" && (
-              <div className="space-y-6">
-                {/* Antes de ir (29/10/2026): lo mejor, ojo con esto, hora punta, público y consejo.
-                    Solo sale si alguien ha escrito algo (ver club/ClubInsider). Sin recuadro de
-                    edición desde el 30/10/2026. */}
-                <ClubInsider club={club} />
-
+              <div className="flex flex-col gap-4 lg:gap-6">
+                {/* «Antes de ir» (club/ClubInsider) ya no sale en la ficha (03/11/2026: «lo quitamos»). El
+                    componente, las columnas de supabase/52 y lib/clubInsider.ts siguen en el proyecto por si
+                    se recupera: basta con volver a poner <ClubInsider club={club} /> aquí. */}
                 {(featureCount > 0 || isAdmin) && (
                   <Panel>
                     <PanelTitle>{t("clubPage.features")}</PanelTitle>
@@ -704,7 +770,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                     <PanelTitle>{t("clubPage.faq")}</PanelTitle>
                     <div className="divide-y divide-white/10">
                       {faqs.map((f, i) => (
-                        <div key={i} className="py-3.5">
+                        <div key={i} className="py-3">
                           <button
                             onClick={() => setOpenFaq(openFaq === i ? null : i)}
                             aria-expanded={openFaq === i}
@@ -824,104 +890,67 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
               </Panel>
             )}
           </div>
-
-          {/* ACCIONES */}
-          <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
-            <div className="rounded-card border border-white/10 bg-surface p-4">
-              {ticketUrl && (
-                <a
-                  href={ticketUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => trackClick("tickets_click")}
-                  className={`${primaryBtn} mb-3 hidden w-full lg:flex`}
-                >
-                  <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
-                </a>
-              )}
-              <div className="grid grid-cols-3 gap-2">
-                <FavoriteButton itemType="club" itemId={club.id} variant="tile" />
-                <AttendanceButton itemType="club" itemId={club.id} title={club.name} variant="tile" disabled={!opensTonight} />
-                <CheckInButton clubId={club.id} latitude={club.latitude} longitude={club.longitude} variant="tile" />
-              </div>
-              <NearbyVenuesSheet
-                compact
-                excludeClubId={club.id}
-                venueType="club"
-                venueId={club.id}
-                name={club.name}
-                latitude={club.latitude}
-                longitude={club.longitude}
-              />
-              <SocialLinks
-                table="clubs"
-                id={club.id}
-                instagram={instagram}
-                tiktok={club.tiktok}
-                website={club.website}
-                onClick={(k) => trackClick(k)}
-                className="mt-4"
-              />
-              <a
-                href={"/contact?type=report_issue&subject=" + encodeURIComponent("Reporte: " + club.name)}
-                className="mt-4 flex items-center justify-center gap-2 text-xs font-semibold text-zinc-400 transition hover:text-ink"
-              >
-                <Icon name="flag" className="h-3.5 w-3.5" /> {t("clubPage.report")}
-              </a>
-            </div>
-
-            {hasCoords && (
-              <button
-                onClick={() => goToTab("location")}
-                className="group hidden w-full overflow-hidden rounded-card border border-white/10 bg-surface text-left lg:block"
-              >
-                <div className="pointer-events-none h-40">
-                  <ClubMap latitude={club.latitude} longitude={club.longitude} name={club.name} />
-                </div>
-                <span className="flex items-center justify-between px-5 py-4 text-sm font-semibold text-ink">
-                  {t("clubPage.mapAndTransport")} <Icon name="arrow" className="h-4 w-4 text-muted" />
-                </span>
-              </button>
-            )}
-          </aside>
         </div>
       </section>
 
-      <div className="mt-16" aria-hidden="true" />
-
+      {/* SIGUE EXPLORANDO (03/11/2026): lo que pasa después de leer la ficha. Locales parecidos con la
+          misma tarjeta que el listado, lo que hay cerca, más del barrio y del estilo, y los accesos al
+          mapa y a los esenciales. Cada toque se anota (related_click, nearby_click, next_click). */}
       {related.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">
-          <h2 className="mb-5 text-lg font-semibold text-ink">{t("clubPage.related")}</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {related.map((r) => {
-              const rRating = r.google_rating || r.rating || null
-              return (
-                <Link
-                  key={r.id}
-                  href={`/clubs/${r.slug || createSlug(r.name)}`}
-                  onClick={() => track("related_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { to: r.name } })}
-                  className="group overflow-hidden rounded-card border border-white/10 bg-surface transition hover:border-white/25"
-                >
-                  <div className="relative h-40">
-                    <Image src={r.image || FALLBACK_CLUB_IMAGE} alt={r.name} fill sizes="(max-width: 640px) 100vw, 33vw" unoptimized={!r.image} className="object-cover" />
-                  </div>
-                  <div className="flex items-center justify-between gap-3 p-4">
-                    <div className="min-w-0">
-                      <p className="truncate text-base font-semibold text-ink">{r.name}</p>
-                      <p className="truncate text-xs text-zinc-400">{r.neighborhood || "Barcelona"}</p>
-                    </div>
-                    {rRating && (
-                      <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-ink">
-                        <Icon name="star" className="h-3.5 w-3.5 text-warn" /> {Number(rRating).toFixed(1)}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              )
-            })}
+        <section className="mx-auto mt-10 max-w-6xl px-4 sm:px-6" aria-label={t("clubPage.related")}>
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <h2 className="text-base font-semibold text-ink sm:text-lg">{t("clubPage.related")}</h2>
+            <Link
+              href="/clubs"
+              onClick={() => track("related_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { to: "all" } })}
+              className="shrink-0 text-xs font-semibold text-brand-soft hover:underline"
+            >
+              {t("home.seeAll")}
+            </Link>
           </div>
+          <ul className="scrollbar-none -mx-4 flex scroll-pl-4 snap-x gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
+            {related.map((r) => (
+              <li
+                key={r.id}
+                className="w-[44vw] max-w-[220px] shrink-0 snap-start sm:w-auto sm:max-w-none"
+                onClickCapture={() => track("related_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { to: r.name } })}
+              >
+                <ClubTile
+                  name={r.name}
+                  slug={r.slug}
+                  music={r.music}
+                  area={r.neighborhood}
+                  image={r.image}
+                  rating={r.google_rating || r.rating || null}
+                  temporarilyClosed={r.temporarily_closed === true}
+                />
+              </li>
+            ))}
+            <li className="w-[44vw] max-w-[220px] shrink-0 snap-start sm:w-auto sm:max-w-none">
+              <Link
+                href="/clubs"
+                onClick={() => track("related_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { to: "all" } })}
+                className="flex aspect-[4/5] flex-col items-center justify-center gap-3 rounded-card border border-brand/30 bg-brand/10 p-4 text-center transition hover:border-brand/60 hover:bg-brand/15 md:aspect-square"
+              >
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand/20 text-brand-soft">
+                  <Icon name="arrow" className="h-5 w-5" />
+                </span>
+                <span className="text-sm font-semibold leading-snug text-ink">{t("clubs.explore")}</span>
+              </Link>
+            </li>
+          </ul>
         </section>
       )}
+
+      <NearbyStrip
+        club={club}
+        openNow={openNow}
+        onPick={(to) => track("nearby_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { to } })}
+      />
+
+      <NextStepsRow kind="club" itemId={club.id} name={club.name} neighborhood={club.neighborhood} music={club.music} />
+
+      <ClubsNudgeRow source="club_page" kinds={["map", "essentials"]} className="mt-6 max-w-6xl px-4 sm:px-6" />
 
       {/* BARRA FIJA EN MÓVIL — pegada abajo; la barra de navegación flotante pasa por encima un
           momento al tocar y se esconde sola */}

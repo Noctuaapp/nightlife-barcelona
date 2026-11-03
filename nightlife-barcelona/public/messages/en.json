@@ -109,7 +109,10 @@
     "error_age": "You must confirm you are over 18 to continue.",
     "gender_unspecified": "Prefer not to say",
     "optional": "optional",
-    "withEmail": "I'd rather sign up with email"
+    "withEmail": "I'd rather sign up with email",
+    "moreOptional": "Add country and gender (optional)",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "clubs": {
     "title": "Clubs",
@@ -127,7 +130,14 @@
     "day4": "Thursday",
     "day5": "Friday",
     "day6": "Saturday",
-    "explore": "Explore all clubs →"
+    "explore": "Explore all clubs →",
+    "nudgeKeep": "Keep exploring",
+    "nudgePlanTitle": "Plan your night",
+    "nudgePlanSub": "Tell us what you feel like and we'll suggest the best spots for tonight.",
+    "nudgeMapTitle": "See them on the map",
+    "nudgeMapSub": "Find out what's open near you right now.",
+    "nudgeEssentialsTitle": "Essentials for your night",
+    "nudgeEssentialsSub": "24h pharmacies, ATMs, food and night transport."
   },
   "events": {
     "title": "Events",
@@ -717,7 +727,16 @@
     "ctaEmail": "Create account with email",
     "haveAccount": "Already have an account?",
     "loginLink": "Log in",
-    "googleHint": "No passwords or long forms"
+    "googleHint": "No passwords or long forms",
+    "titleFavorite": "Create your account to save it",
+    "titleAttend": "Create your account to say you're going",
+    "titleCheckin": "Create your account to check in",
+    "subtitleAttend": "Mark that you're going tonight. It's free and takes a few seconds.",
+    "subtitleCheckin": "Confirm you're at the venue and earn +{xp} XP. It's free and takes a few seconds.",
+    "benefitChallenge": "First challenge: save 3 spots and your plans are one tap away",
+    "benefitXp": "Earn +{xp} XP on every check-in and level up",
+    "benefitMonth": "«Your month on Noctua»: a recap of your nights out",
+    "benefitGoing": "Your «going» counts toward tonight's night owls"
   },
   "changePassword": {
     "eyebrow": "Account security",
@@ -877,6 +896,8 @@
     "nearbyTitle": "Nearby",
     "nearbyClosedTitle": "Closed right now · open nearby",
     "nearbySeeMap": "See on the map",
+    "readMore": "Read more",
+    "readLess": "Show less",
     "fCocktails": "Cocktails",
     "fGames": "Board or drinking games",
     "tempClosed": "Temporarily closed",
@@ -1436,6 +1457,7 @@
     "birthDateRequired": "Please enter your date of birth.",
     "under18": "Noctua is only for people over 18.",
     "checkBoth": "Tick both boxes to continue.",
+    "checkOne": "Tick the box to continue.",
     "title": "Before you continue",
     "body": "To use Noctua we need you to confirm the following.",
     "continue": "Continue"

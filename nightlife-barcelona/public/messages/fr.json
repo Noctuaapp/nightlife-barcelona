@@ -106,7 +106,10 @@
     "error_age": "Tu dois confirmer que tu as plus de 18 ans pour continuer.",
     "gender_unspecified": "Je préfère ne pas le dire",
     "optional": "facultatif",
-    "withEmail": "Je préfère m'inscrire avec e-mail"
+    "withEmail": "Je préfère m'inscrire avec e-mail",
+    "moreOptional": "Ajouter pays et genre (facultatif)",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe"
   },
   "clubs": {
     "title": "Clubs",
@@ -124,7 +127,14 @@
     "day4": "Jeudi",
     "day5": "Vendredi",
     "day6": "Samedi",
-    "explore": "Explorer tous les clubs →"
+    "explore": "Explorer tous les clubs →",
+    "nudgeKeep": "Continuez à explorer",
+    "nudgePlanTitle": "Planifiez votre soirée",
+    "nudgePlanSub": "Dites-nous ce qui vous tente et nous vous proposons les meilleures adresses pour ce soir.",
+    "nudgeMapTitle": "Voir sur la carte",
+    "nudgeMapSub": "Découvrez ce qui est ouvert près de vous en ce moment.",
+    "nudgeEssentialsTitle": "Les essentiels de votre soirée",
+    "nudgeEssentialsSub": "Pharmacies 24h/24, distributeurs, restauration et transports de nuit."
   },
   "events": {
     "title": "Événements",
@@ -707,7 +717,16 @@
     "ctaEmail": "Créer un compte avec e-mail",
     "haveAccount": "Tu as déjà un compte ?",
     "loginLink": "Se connecter",
-    "googleHint": "Sans mot de passe ni long formulaire"
+    "googleHint": "Sans mot de passe ni long formulaire",
+    "titleFavorite": "Crée ton compte pour l'enregistrer",
+    "titleAttend": "Crée ton compte pour t'inscrire",
+    "titleCheckin": "Crée ton compte pour faire un check-in",
+    "subtitleAttend": "Indique que tu y vas ce soir. C'est gratuit et ça prend quelques secondes.",
+    "subtitleCheckin": "Confirme que tu es sur place et gagne +{xp} XP. C'est gratuit et ça prend quelques secondes.",
+    "benefitChallenge": "Premier défi : enregistre 3 adresses et tes plans sont à portée de main",
+    "benefitXp": "Gagne +{xp} XP à chaque check-in et monte de niveau",
+    "benefitMonth": "« Ton mois sur Noctua » : le résumé de tes sorties",
+    "benefitGoing": "Ton « j'y vais » compte parmi les noctambules de ce soir"
   },
   "changePassword": {
     "eyebrow": "Sécurité du compte",
@@ -855,6 +874,8 @@
     "nearbyTitle": "À proximité",
     "nearbyClosedTitle": "Fermé en ce moment · ouverts à proximité",
     "nearbySeeMap": "Voir sur la carte",
+    "readMore": "Lire la suite",
+    "readLess": "Voir moins",
     "fCocktails": "Cocktails",
     "fGames": "Jeux de société ou à boire",
     "tempClosed": "Fermé temporairement",
@@ -1336,6 +1357,7 @@
     "birthDateRequired": "Indique ta date de naissance.",
     "under18": "Noctua est réservé aux plus de 18 ans.",
     "checkBoth": "Coche les deux cases pour continuer.",
+    "checkOne": "Coche la case pour continuer.",
     "title": "Avant de continuer",
     "body": "Pour utiliser Noctua, nous avons besoin que tu confirmes ce qui suit.",
     "continue": "Continuer"

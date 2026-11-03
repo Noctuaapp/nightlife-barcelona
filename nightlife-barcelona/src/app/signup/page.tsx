@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { Check, Eye, EyeOff } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { safeNextPath } from "../../lib/nextPath"
 import { track } from "../../lib/track"
@@ -12,6 +13,7 @@ import BottomNav from "../../components/layout/BottomNav"
 import GoogleButton from "../../components/auth/GoogleButton"
 import CaptchaBox from "../../components/auth/CaptchaBox"
 import { captchaEnabled, captchaOptions, CAPTCHA_PENDING_MESSAGE } from "../../lib/captcha"
+import { XP_AMOUNTS } from "../../lib/xp"
 
 // Dominios de correo temporal/desechable más usados (10 minutos, buzones de un solo uso, etc.).
 // Confirmar el correo ya filtra direcciones inventadas o mal escritas (el enlace nunca llega),
@@ -71,8 +73,12 @@ export default function SignupPage() {
   const [birthDate, setBirthDate] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  // Una sola casilla (03/11/2026): términos + «soy mayor de 18». La edad se sigue comprobando con la
+  // fecha de nacimiento (los menores de 18 no pasan), así que no se pierde ninguna comprobación.
   const [acceptedTerms, setAcceptedTerms] = useState(false)
-  const [confirmedAge, setConfirmedAge] = useState(false)
+  // País y género son opcionales: van plegados tras un enlace para acortar el formulario.
+  const [showMore, setShowMore] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   // Verificación anti-robots (solo si está configurada: ver lib/captcha.ts). El token vale una vez.
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [captchaRound, setCaptchaRound] = useState(0)
@@ -132,10 +138,6 @@ export default function SignupPage() {
     }
     if (!acceptedTerms) {
       fail("terms", t("signup.error_terms"))
-      return
-    }
-    if (!confirmedAge) {
-      fail("age_check", t("signup.error_age"))
       return
     }
     if (captchaEnabled() && !captchaToken) {
@@ -232,6 +234,25 @@ export default function SignupPage() {
           <div className="relative mx-auto max-w-md text-center">
             <h1 className="text-5xl font-black tracking-tight">{t("signup.title")}</h1>
             <p className="mt-4 text-zinc-400">{t("signup.subtitle")}</p>
+            {/* Lo que se gana de verdad al registrarse (03/11/2026): XP del check-in, el primer reto y el
+                resumen mensual. Sin promesas que la web no cumpla. */}
+            <ul className="mx-auto mt-6 max-w-xs space-y-2.5 text-left">
+              {[
+                t("authGate.benefitXp").replace("{xp}", String(XP_AMOUNTS.checkin)),
+                t("authGate.benefitChallenge"),
+                t("authGate.benefitMonth"),
+              ].map((b) => (
+                <li key={b} className="flex items-start gap-2.5 text-sm text-zinc-300">
+                  <span
+                    className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" }}
+                  >
+                    <Check size={12} strokeWidth={3} className="text-white" aria-hidden="true" />
+                  </span>
+                  {b}
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
@@ -269,6 +290,10 @@ export default function SignupPage() {
                 placeholder={t("signup.username")}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
               />
               <input
@@ -276,37 +301,67 @@ export default function SignupPage() {
                 placeholder={t("signup.email")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
               />
-              <input
-                type="password"
-                placeholder={t("signup.password")}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition"
-              />
-              <CountrySelect value={country} onChange={setCountry} locale={locale} placeholder={`${t("signup.country")} (${t("signup.optional")})`} />
+              {/* Con ojo para ver lo que se escribe: no hay campo de repetir contraseña, y en el móvil
+                  equivocarse al teclearla a ciegas es de lo que más hace abandonar. */}
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder={t("signup.password")}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="w-full rounded-2xl border border-white/10 bg-black/40 py-4 pl-5 pr-14 outline-none focus:border-purple-500/50 transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? t("signup.hidePassword") : t("signup.showPassword")}
+                  aria-pressed={showPassword}
+                  className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-zinc-400 transition hover:text-white"
+                >
+                  {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                </button>
+              </div>
               {/* País y género son opcionales (27/10/2026): se pueden dejar vacíos, y la primera opción
-                  (vacía) permite volver a quitarlos. */}
-              <select
-                value={gender}
-                onChange={(e) => setGender(e.target.value)}
-                style={{ colorScheme: "dark" }}
-                className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition text-zinc-300"
-              >
-                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">
-                  {`${t("signup.gender")} (${t("signup.optional")})`}
-                </option>
-                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">
-                  {t("signup.gender_male")}
-                </option>
-                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Mujer">
-                  {t("signup.gender_female")}
-                </option>
-                <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Prefiero no decirlo">
-                  {t("signup.gender_unspecified")}
-                </option>
-              </select>
+                  (vacía) permite volver a quitarlos. Desde el 03/11/2026 van plegados tras un enlace. */}
+              {showMore || country || gender ? (
+                <>
+                  <CountrySelect value={country} onChange={setCountry} locale={locale} placeholder={`${t("signup.country")} (${t("signup.optional")})`} />
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    style={{ colorScheme: "dark" }}
+                    className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none focus:border-purple-500/50 transition text-zinc-300"
+                  >
+                    <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">
+                      {`${t("signup.gender")} (${t("signup.optional")})`}
+                    </option>
+                    <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">
+                      {t("signup.gender_male")}
+                    </option>
+                    <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Mujer">
+                      {t("signup.gender_female")}
+                    </option>
+                    <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Prefiero no decirlo">
+                      {t("signup.gender_unspecified")}
+                    </option>
+                  </select>
+                </>
+              ) : (
+                <button type="button" onClick={() => setShowMore(true)} className="px-1 text-sm font-semibold text-zinc-400 underline-offset-4 transition hover:text-white hover:underline">
+                  {t("signup.moreOptional")}
+                </button>
+              )}
 
               <div>
                 <label className="mb-2 block px-1 text-xs text-zinc-400">Fecha de nacimiento</label>
@@ -337,19 +392,7 @@ export default function SignupPage() {
                   <a href="/terms" className="text-purple-400 hover:text-purple-300 transition">términos y condiciones</a>
                   {" "}y la{" "}
                   <a href="/privacy" className="text-purple-400 hover:text-purple-300 transition">política de privacidad</a>
-                  {" "}de Noctua, incluyendo el uso de mi ubicación para mostrar contenido relevante.
-                </span>
-              </label>
-
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={confirmedAge}
-                  onChange={(e) => setConfirmedAge(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded accent-purple-500 flex-shrink-0"
-                />
-                <span className="text-sm text-zinc-400 leading-relaxed">
-                  Confirmo que soy mayor de 18 años.
+                  {" "}de Noctua, incluyendo el uso de mi ubicación para mostrar contenido relevante. Confirmo que soy mayor de 18 años.
                 </span>
               </label>
 

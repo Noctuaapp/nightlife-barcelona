@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { useLanguage } from "../../context/LanguageContext"
 import { useConsent } from "../../lib/useConsent"
 import { OPEN_CONSENT_EVENT, saveConsent } from "../../lib/consent"
+import { setPopupState, useCookiesYield } from "../../lib/popupGate"
 
 // Banner de cookies (30/10/2026). Pide permiso solo para lo opcional: la marca que recuerda qué se
 // votó en la encuesta del día cuando no hay cuenta (lib/consent.ts). Lo imprescindible (sesión,
@@ -18,11 +19,19 @@ import { OPEN_CONSENT_EVENT, saveConsent } from "../../lib/consent"
 // ocupaba casi todo el ancho del móvil y tapaba contenido. Los botones siguen siendo iguales entre sí.
 // No sale en el admin. Hasta que se lee el navegador (`ready`) no se pinta nada, para no romper la
 // hidratación ni parpadear a quien ya decidió.
+//
+// Cola de avisos (03/11/2026, lib/popupGate.ts): la primera vez es lo primero que sale. Si la persona lo
+// ignora, a los 20 s cede el sitio a la encuesta o al aviso de registro y se esconde mientras estén
+// en pantalla (no se da por decidido: vuelve cuando se cierren). Si se abre a propósito desde
+// «Preferencias de cookies», se ve siempre.
 export default function CookieBanner() {
   const { t } = useLanguage()
   const pathname = usePathname() || ""
   const consent = useConsent()
   const [reopened, setReopened] = useState(false)
+  const yielding = useCookiesYield()
+  // Primera vez, sin decidir: el banner cuenta como aviso abierto para la cola.
+  const firstTime = consent.ready && !consent.decided && !pathname.startsWith("/admin")
 
   useEffect(() => {
     const open = () => setReopened(true)
@@ -30,8 +39,15 @@ export default function CookieBanner() {
     return () => window.removeEventListener(OPEN_CONSENT_EVENT, open)
   }, [])
 
+  useEffect(() => {
+    if (!firstTime) return
+    setPopupState("cookies", { open: true })
+    return () => setPopupState("cookies", { open: false })
+  }, [firstTime])
+
   if (!consent.ready || pathname.startsWith("/admin")) return null
   if (consent.decided && !reopened) return null
+  if (yielding && !reopened) return null
 
   const choose = (optional: boolean) => {
     saveConsent(optional)

@@ -22,7 +22,21 @@ import { ownerFolder, prepareImageForUpload, uploadFileName } from "../../../lib
 type GalleryEdit = { table: string; id: number; bucket: string; gallery: string[]; heroField?: string }
 
 // compact: la galería sube justo bajo los datos prácticos de la ficha (menos margen inferior).
-export default function ClubGallery({ images, name, edit, compact = false }: { images: string[]; name: string; edit?: GalleryEdit; compact?: boolean }) {
+// dense (03/11/2026, ficha de club rediseñada): fotos más pequeñas (tira de miniaturas en el móvil, mosaico
+// más bajo en escritorio) y título más discreto, para que la galería no ocupe media pantalla.
+export default function ClubGallery({
+  images,
+  name,
+  edit,
+  compact = false,
+  dense = false,
+}: {
+  images: string[]
+  name: string
+  edit?: GalleryEdit
+  compact?: boolean
+  dense?: boolean
+}) {
   const { t } = useLanguage()
   const isAdmin = useCanEdit() // admin, o el dueño de esta ficha
   const router = useRouter()
@@ -159,12 +173,12 @@ export default function ClubGallery({ images, name, edit, compact = false }: { i
   }
 
   return (
-    <section className={`mx-auto max-w-6xl px-4 sm:px-6 ${compact ? "mt-8" : "mb-16"}`} aria-label={t("clubPage.gallery")}>
-      <h2 className="mb-4 text-lg font-semibold text-ink">{t("clubPage.gallery")}</h2>
+    <section className={`mx-auto max-w-6xl px-4 sm:px-6 ${dense ? "mt-5" : compact ? "mt-8" : "mb-16"}`} aria-label={t("clubPage.gallery")}>
+      <h2 className={dense ? "mb-2.5 text-base font-semibold text-ink" : "mb-4 text-lg font-semibold text-ink"}>{t("clubPage.gallery")}</h2>
 
       {displayImages.length >= 2 && (
         <>
-          <div className="hidden h-[420px] grid-cols-4 grid-rows-2 gap-3 sm:grid">
+          <div className={`hidden grid-cols-4 grid-rows-2 gap-3 sm:grid ${dense ? "h-[300px]" : "h-[420px]"}`}>
             {displayImages.slice(0, 5).map((src, i) => (
               <button
                 key={src + i}
@@ -182,15 +196,15 @@ export default function ClubGallery({ images, name, edit, compact = false }: { i
             ))}
           </div>
 
-          <div className="scrollbar-none -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 sm:hidden">
+          <div className={`scrollbar-none -mx-4 flex snap-x snap-mandatory overflow-x-auto px-4 sm:hidden ${dense ? "scroll-pl-4 gap-2" : "gap-3"}`}>
             {displayImages.map((src, i) => (
               <button
                 key={src + i}
                 onClick={() => setOpen(i)}
-                className="relative h-[56vw] w-[78vw] shrink-0 snap-center overflow-hidden rounded-card"
+                className={`relative shrink-0 overflow-hidden ${dense ? "h-[34vw] w-[48vw] snap-start rounded-ctl" : "h-[56vw] w-[78vw] snap-center rounded-card"}`}
                 aria-label={`${t("clubPage.openPhoto")} ${i + 1}`}
               >
-                <Image src={src} alt={`${name} ${i + 1}`} fill sizes="78vw" className="object-cover" />
+                <Image src={src} alt={`${name} ${i + 1}`} fill sizes={dense ? "48vw" : "78vw"} className="object-cover" />
               </button>
             ))}
           </div>

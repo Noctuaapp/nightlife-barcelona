@@ -106,7 +106,10 @@
     "error_age": "Devi confermare di avere più di 18 anni per continuare.",
     "gender_unspecified": "Preferisco non dirlo",
     "optional": "facoltativo",
-    "withEmail": "Preferisco registrarmi con email"
+    "withEmail": "Preferisco registrarmi con email",
+    "moreOptional": "Aggiungi paese e genere (facoltativo)",
+    "showPassword": "Mostra password",
+    "hidePassword": "Nascondi password"
   },
   "clubs": {
     "title": "Club",
@@ -124,7 +127,14 @@
     "day4": "Giovedì",
     "day5": "Venerdì",
     "day6": "Sabato",
-    "explore": "Esplora tutti i club →"
+    "explore": "Esplora tutti i club →",
+    "nudgeKeep": "Continua a esplorare",
+    "nudgePlanTitle": "Pianifica la tua notte",
+    "nudgePlanSub": "Dicci cosa ti va e ti proponiamo i posti migliori per stasera.",
+    "nudgeMapTitle": "Guardali sulla mappa",
+    "nudgeMapSub": "Scopri cosa è aperto vicino a te in questo momento.",
+    "nudgeEssentialsTitle": "Gli essenziali per la tua notte",
+    "nudgeEssentialsSub": "Farmacie 24 ore, bancomat, cibo e trasporti notturni."
   },
   "events": {
     "title": "Eventi",
@@ -707,7 +717,16 @@
     "ctaEmail": "Crea un account con email",
     "haveAccount": "Hai già un account?",
     "loginLink": "Accedi",
-    "googleHint": "Senza password né moduli lunghi"
+    "googleHint": "Senza password né moduli lunghi",
+    "titleFavorite": "Crea il tuo account per salvarlo",
+    "titleAttend": "Crea il tuo account per iscriverti",
+    "titleCheckin": "Crea il tuo account per fare il check-in",
+    "subtitleAttend": "Segna che ci vai stasera. È gratis e richiede pochi secondi.",
+    "subtitleCheckin": "Conferma di essere nel locale e guadagna +{xp} XP. È gratis e richiede pochi secondi.",
+    "benefitChallenge": "Prima sfida: salva 3 posti e i tuoi piani saranno a un tocco",
+    "benefitXp": "Guadagna +{xp} XP a ogni check-in e sali di livello",
+    "benefitMonth": "«Il tuo mese su Noctua»: il riepilogo delle tue uscite",
+    "benefitGoing": "Il tuo «ci vado» conta tra i nottambuli di stasera"
   },
   "changePassword": {
     "eyebrow": "Sicurezza dell'account",
@@ -855,6 +874,8 @@
     "nearbyTitle": "Qui vicino",
     "nearbyClosedTitle": "Ora è chiuso · aperti qui vicino",
     "nearbySeeMap": "Vedi sulla mappa",
+    "readMore": "Leggi tutto",
+    "readLess": "Vedi meno",
     "fCocktails": "Cocktail",
     "fGames": "Giochi da tavolo o da bere",
     "tempClosed": "Chiuso temporaneamente",
@@ -1336,6 +1357,7 @@
     "birthDateRequired": "Indica la tua data di nascita.",
     "under18": "Noctua è solo per maggiorenni.",
     "checkBoth": "Spunta entrambe le caselle per continuare.",
+    "checkOne": "Spunta la casella per continuare.",
     "title": "Prima di continuare",
     "body": "Per usare Noctua abbiamo bisogno che tu confermi quanto segue.",
     "continue": "Continua"
