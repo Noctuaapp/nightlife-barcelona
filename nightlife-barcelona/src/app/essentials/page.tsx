@@ -180,7 +180,7 @@ export default function EssentialsPage() {
               onClick={toggleNearMe}
               aria-pressed={nearMe}
               className={`flex shrink-0 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition ${
-                nearMe ? "bg-brand text-white" : "border border-white/20 bg-black/40 text-zinc-100 backdrop-blur-md hover:bg-white/10"
+                nearMe ? "bg-white text-[#0a0910]" : "border border-white/20 bg-black/40 text-zinc-100 backdrop-blur-md hover:bg-white/10"
               }`}
             >
               <LocateFixed size={16} /> {t("explorer.near")}
@@ -197,7 +197,7 @@ export default function EssentialsPage() {
                     key={c}
                     onClick={() => setNearMeCategory(c)}
                     className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
-                      nearMeCategory === c ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
+                      nearMeCategory === c ? "bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
                     }`}
                   >
                     {c === "All" ? t("essentialsPage.allSubcategories") : t(categoryNameKey(c))}
@@ -347,7 +347,7 @@ export default function EssentialsPage() {
                     {t("essentialsSuggest.boxBody").replace("{xp}", String(ESSENTIAL_SUGGESTION_XP))}
                   </span>
                 </span>
-                <span className="hidden shrink-0 rounded-ctl bg-brand px-4 py-2.5 text-sm font-semibold text-white sm:block">
+                <span className="btn-pill btn-primary hidden shrink-0 px-4 py-2.5 text-sm sm:block">
                   {t("essentialsSuggest.boxButton")}
                 </span>
               </Link>

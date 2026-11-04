@@ -60,7 +60,7 @@ export default function DeniedVenuesCard({ cardClass, titleClass }: { cardClass:
                 type="button"
                 onClick={() => restore(v)}
                 disabled={busy === key}
-                className="shrink-0 rounded-ctl border border-white/15 px-4 py-2 text-sm font-semibold text-ink transition hover:bg-white/5 disabled:opacity-50"
+                className="btn-pill btn-secondary shrink-0 px-4 py-2 text-sm disabled:opacity-50"
               >
                 {busy === key ? "…" : t("profilePage.deniedRestore")}
               </button>

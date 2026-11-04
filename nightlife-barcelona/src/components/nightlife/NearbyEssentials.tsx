@@ -89,7 +89,7 @@ export default function NearbyEssentials({ latitude, longitude }: { latitude: nu
               onClick={() => track("essential_nearby", { itemType: "essential_nearby", itemName: r.name, meta: { category: cat.key } })}
               title={`${catName}: ${r.name}`}
               aria-label={`${catName}: ${r.name}, ${formatDistance(r.distanceMeters)}`}
-              className="flex max-w-full items-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm text-ink transition hover:bg-white/5"
+              className="btn-pill btn-secondary flex max-w-full items-center gap-2 px-4 py-2.5 text-sm"
             >
               <CatIcon size={16} className="shrink-0 text-brand-soft" />
               <span className="min-w-0 truncate font-semibold">{r.name}</span>

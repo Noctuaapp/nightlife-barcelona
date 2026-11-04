@@ -72,9 +72,7 @@ export default function FavoriteButton({
           }}
           aria-pressed={active}
           aria-label={active ? t("favorites.saved") : t("favorites.save")}
-          className={`flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-md transition ${
-            active ? "border-brand bg-brand text-white" : "border-white/25 bg-night/60 text-white hover:bg-night/80"
-          }`}
+          className={`act act-save act-solo flex h-10 w-10 items-center justify-center rounded-full ${active ? "act-on" : ""}`}
         >
           <Icon name="heart" className={`h-[18px] w-[18px] ${active ? "fill-current" : ""}`} />
         </button>
@@ -83,9 +81,7 @@ export default function FavoriteButton({
           onClick={handleToggle}
           aria-pressed={active}
           aria-label={active ? t("favorites.saved") : t("favorites.save")}
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl border transition ${
-            active ? "border-brand bg-brand text-white" : "border-white/15 bg-white/5 text-ink hover:bg-white/10"
-          }`}
+          className={`act act-save act-solo flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl ${active ? "act-on" : ""}`}
         >
           <Icon name="heart" className={`h-5 w-5 ${active ? "fill-current" : ""}`} />
         </button>
@@ -93,9 +89,7 @@ export default function FavoriteButton({
         <button
           onClick={handleToggle}
           aria-pressed={active}
-          className={`flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-ctl px-2 py-3 text-xs font-semibold transition ${
-            active ? "bg-brand text-white hover:bg-brand-strong" : "border border-white/10 bg-white/5 text-ink hover:bg-white/10"
-          }`}
+          className={`act act-save flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-ctl px-2 py-3 text-xs font-semibold ${active ? "act-on" : ""}`}
         >
           <Icon name="heart" className={`h-5 w-5 ${active ? "fill-current" : ""}`} />
           {active ? t("favorites.savedShort") : t("favorites.saveShort")}
@@ -104,9 +98,7 @@ export default function FavoriteButton({
         <button
           onClick={handleToggle}
           aria-pressed={active}
-          className={`flex w-full items-center justify-center gap-2 rounded-ctl px-6 py-3.5 text-sm font-semibold transition ${
-            active ? "bg-brand text-white hover:bg-brand-strong" : "border border-white/10 bg-white/5 text-ink hover:bg-white/10"
-          }`}
+          className={`act act-save flex w-full items-center justify-center gap-2 rounded-ctl px-6 py-3.5 text-sm font-semibold ${active ? "act-on" : ""}`}
         >
           <Icon name="heart" className={`h-4 w-4 ${active ? "fill-current" : ""}`} />
           {active ? t("favorites.saved") : t("favorites.save")}

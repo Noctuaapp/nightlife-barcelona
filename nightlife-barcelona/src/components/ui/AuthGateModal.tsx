@@ -109,7 +109,7 @@ export default function AuthGateModal({ open, onClose, subtitleKey, reason }: Au
           <p className="-mt-1 text-center text-xs text-zinc-400">{t("authGate.googleHint")}</p>
           <Link
             href={`/signup?next=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "/")}`}
-            className="rounded-2xl border border-white/10 bg-white/5 py-3.5 text-center text-sm font-bold text-white transition hover:bg-white/10"
+            className="btn-pill btn-secondary py-3.5 text-center text-sm"
           >
             {t("authGate.ctaEmail")}
           </Link>

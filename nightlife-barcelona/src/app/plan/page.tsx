@@ -736,9 +736,9 @@ export default function PlanPage() {
   const option = (active: boolean) =>
     `rounded-card border p-5 text-left transition ${active ? "border-brand bg-brand/15" : "border-white/10 bg-surface hover:border-white/25"}`
   const chip = (active: boolean) =>
-    `rounded-full px-4 py-2.5 text-sm font-semibold transition ${active ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"}`
-  const primaryBtn = "flex-1 rounded-ctl bg-brand py-4 text-sm font-semibold text-white transition hover:bg-brand-strong"
-  const secondaryBtn = "rounded-ctl border border-white/15 bg-white/5 px-6 py-4 text-sm font-semibold text-ink transition hover:bg-white/10"
+    `rounded-full px-4 py-2.5 text-sm font-semibold transition ${active ? "bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"}`
+  const primaryBtn = "btn-pill btn-primary flex-1 py-4 text-sm"
+  const secondaryBtn = "btn-pill btn-secondary px-6 py-4 text-sm"
 
   const selectedVibe = VIBE_PRESETS.find((v) => v.key === vibeKey)
 

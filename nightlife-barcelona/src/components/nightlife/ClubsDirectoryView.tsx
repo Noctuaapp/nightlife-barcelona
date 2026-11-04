@@ -66,7 +66,7 @@ export default function ClubsDirectoryView({ groups, total }: { groups: Director
               onClick={() => select(g.letter)}
               onKeyDown={(e) => onKeyDown(e, i)}
               className={`flex h-11 items-center justify-center rounded-ctl text-base font-bold transition sm:w-11 ${
-                on ? "bg-ink text-night" : "border border-white/10 text-zinc-200 hover:bg-white/5"
+                on ? "bg-ink text-night" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
               }`}
             >
               {g.letter}
@@ -105,7 +105,7 @@ export default function ClubsDirectoryView({ groups, total }: { groups: Director
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
                 aria-expanded={expanded}
-                className="mt-3 w-full rounded-ctl border border-white/15 px-4 py-3 text-sm font-semibold text-zinc-100 transition hover:bg-white/5"
+                className="btn-pill btn-secondary mt-3 w-full px-4 py-3 text-sm"
               >
                 {expanded ? t("directory.showLess") : t("directory.showAll").replace("{n}", String(g.items.length))}
               </button>

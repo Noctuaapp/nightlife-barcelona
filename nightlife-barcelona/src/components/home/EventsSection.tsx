@@ -159,7 +159,7 @@ export default function EventsSection() {
             aria-selected={selectedCategory === category.key}
             onClick={() => selectCategory(category.key)}
             className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
-              selectedCategory === category.key ? "bg-ink text-night" : "border border-white/10 text-zinc-300 hover:bg-white/5"
+              selectedCategory === category.key ? "bg-ink text-night" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
             }`}
           >
             {category.label}
@@ -234,7 +234,7 @@ export default function EventsSection() {
 
       {!EVENTS_HIDDEN && (
         <div className="mt-8 text-center">
-          <Link href="/events" className="inline-flex items-center gap-2 rounded-ctl border border-white/15 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/5">
+          <Link href="/events" className="btn-pill btn-secondary inline-flex items-center gap-2 px-6 py-3 text-sm">
             {t("homeEvents.seeAll")} <Icon name="arrow" className="h-4 w-4" />
           </Link>
         </div>

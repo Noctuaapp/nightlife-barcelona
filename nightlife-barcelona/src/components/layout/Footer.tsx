@@ -24,7 +24,7 @@ export default function Footer() {
             <p className="font-display text-xl leading-tight text-ink sm:text-2xl">{t("footer.venueTitle")}</p>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-200">{t("footer.venueText")}</p>
           </div>
-          <span className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(124,92,255,0.9)] transition group-hover:bg-brand-strong sm:self-auto">
+          <span className="btn-pill btn-primary inline-flex shrink-0 items-center justify-center gap-2 self-start px-6 py-3 text-sm sm:self-auto">
             {t("footer.venueButton")}
             <span aria-hidden="true" className="transition group-hover:translate-x-0.5">→</span>
           </span>

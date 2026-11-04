@@ -67,7 +67,7 @@ export default function LoginWall({ titleKey, subtitleKey, next }: LoginWallProp
 
         <Link
           href={`/signup${q}`}
-          className="flex w-full items-center justify-center rounded-ctl border border-white/15 bg-white/5 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/10"
+          className="btn-pill btn-secondary flex w-full items-center justify-center py-3.5 text-sm"
         >
           {t("authGate.ctaEmail")}
         </Link>

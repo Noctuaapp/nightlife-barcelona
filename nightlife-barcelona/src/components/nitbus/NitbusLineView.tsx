@@ -190,7 +190,7 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
             <p className="text-base leading-relaxed text-zinc-200">{t("nitbusPage.noStops")}</p>
             <Link
               href={`/essentials/nitbus?line=${code}`}
-              className="mt-4 inline-flex items-center gap-2 rounded-ctl border border-white/20 px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
+              className="btn-pill btn-secondary mt-4 inline-flex items-center gap-2 px-5 py-3 text-sm"
             >
               <MapIcon size={16} aria-hidden="true" /> {t("nitbusPage.viewMap")}
             </Link>
@@ -215,7 +215,7 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                       setFocus(null)
                     }}
                     className={`min-w-0 rounded-ctl border px-3 py-3 text-left text-sm font-semibold transition ${
-                      dir === i ? "border-brand bg-brand text-white" : "border-white/15 text-zinc-200 hover:bg-white/5"
+                      dir === i ? "border-white bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
                     }`}
                   >
                     <span className="block text-xs font-normal opacity-80">{t("nitbusPage.towardLabel")}</span>
@@ -239,7 +239,7 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
               <button
                 onClick={findMine}
                 disabled={geo.locating}
-                className="inline-flex shrink-0 items-center gap-2 rounded-ctl border border-white/20 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-white/5 disabled:opacity-60"
+                className="btn-pill btn-secondary inline-flex shrink-0 items-center gap-2 px-4 py-3 text-sm disabled:opacity-60"
               >
                 <LocateFixed size={16} aria-hidden="true" />
                 {geo.locating ? t("nitbusPage.locating") : t("nitbusPage.nearest")}

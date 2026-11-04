@@ -52,7 +52,7 @@ export default function AreaListing({ kind, slug, name, clubs, neighborhoods, st
   const otherStyles = styles.filter((s) => !(kind === "musica" && s.slug === slug))
   const otherZones = zones.filter((z) => !(kind === "zona" && z.slug === slug))
 
-  const chip = "rounded-full border border-white/10 px-3.5 py-2 text-sm font-semibold text-zinc-200 transition hover:border-white/30 hover:bg-white/5"
+  const chip = "btn-pill btn-secondary px-3.5 py-2 text-sm"
 
   // Líneas del bloque de datos. Solo salen las que tienen dato; nunca se rellena con algo inventado.
   // Metro, Nitbus y estilos solo en barrios y zonas: en una página de estilo (toda Barcelona) no dicen nada.
@@ -195,10 +195,10 @@ export default function AreaListing({ kind, slug, name, clubs, neighborhoods, st
           </div>
         )}
         <div className="flex flex-wrap gap-3 pt-2">
-          <Link href="/clubs" className="rounded-ctl bg-brand px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong">
+          <Link href="/clubs" className="btn-pill btn-primary px-5 py-3 text-sm">
             {t("areas.seeAll")}
           </Link>
-          <Link href="/map" className="rounded-ctl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white/10">
+          <Link href="/map" className="btn-pill btn-secondary px-5 py-3 text-sm">
             {t("areas.seeMap")}
           </Link>
         </div>

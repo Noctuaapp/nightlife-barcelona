@@ -244,15 +244,13 @@ export default function CheckInButton({ clubId, latitude, longitude, variant = "
           tile
             ? "relative flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-ctl px-2 py-3 text-xs"
             : "flex w-full items-center justify-center gap-2 rounded-ctl px-6 py-3.5 text-sm"
-        } font-semibold transition ${
-          checkedInToday ? "bg-brand/20 text-brand-soft" : "border border-white/10 bg-white/5 text-ink hover:bg-white/10"
-        }`}
+        } act act-checkin font-semibold ${checkedInToday ? "act-on" : working ? "opacity-70" : ""}`}
       >
         <Icon name={checkedInToday ? "check" : "map"} className={tile ? "h-5 w-5" : "h-4 w-4"} />
         {tile
           ? checkedInToday ? t("checkin.doneShort") : working ? t("checkin.locating") : t("checkin.ctaShort")
           : checkedInToday ? t("checkin.done") : working ? t("checkin.locating") : t("checkin.cta")}
-        {tile && !checkedInToday && <span className="text-[11px] font-medium text-brand-soft">+{XP_AMOUNTS.checkin} XP</span>}
+        {tile && !checkedInToday && <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-extrabold text-[#0a0910]">+{XP_AMOUNTS.checkin} XP</span>}
       </button>
       <XpBurst show={justEarned} amount={XP_AMOUNTS.checkin} />
       <AuthGateModal open={showAuthGate} onClose={() => setShowAuthGate(false)} reason="checkin" />
@@ -270,7 +268,7 @@ export default function CheckInButton({ clubId, latitude, longitude, variant = "
             <button
               onClick={handleSaveNote}
               disabled={savingNote || !note.trim()}
-              className="rounded-ctl bg-brand px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-strong disabled:opacity-50"
+              className="btn-pill btn-primary px-3 py-2 text-xs disabled:opacity-50"
             >
               {savingNote ? "..." : t("checkin.notePublish")}
             </button>

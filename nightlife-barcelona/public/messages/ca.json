@@ -517,7 +517,9 @@
     "myLocation": "La meva ubicació",
     "searchPlaceholder": "Cercar {type} al mapa…",
     "useLocation": "Fer servir la meva ubicació per veure el més proper",
-    "noResultsFor": "Sense resultats per a «{q}»."
+    "noResultsFor": "Sense resultats per a «{q}».",
+    "legendUnknown": "Sense horari",
+    "showOnMap": "Veure {n} al mapa"
   },
   "planPage": {
     "notLoggedInSubtitle": "Registra't per crear el teu pla perfecte a Barcelona, a mida i sense gastar ni un euro de més.",

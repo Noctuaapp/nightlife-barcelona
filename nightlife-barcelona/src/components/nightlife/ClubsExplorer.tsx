@@ -38,14 +38,14 @@ function Chip({
   children: React.ReactNode
   tone?: "brand" | "open"
 }) {
-  const on = tone === "open" ? "border-open/40 bg-open/15 text-open" : "border-brand bg-brand text-white"
+  const on = tone === "open" ? "border-open/40 bg-open/15 text-open" : "border-white bg-white text-[#0a0910]"
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
       className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-[13px] font-semibold transition active:scale-95 sm:px-3.5 ${
-        active ? on : "border-white/10 bg-surface text-zinc-200 hover:border-white/25 hover:text-ink"
+        active ? on : "border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
       }`}
     >
       {children}
@@ -617,7 +617,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
               ) : (
                 <span />
               )}
-              <button type="button" onClick={showResults} className="rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-95">
+              <button type="button" onClick={showResults} className="btn-pill btn-primary px-6 py-3 text-sm active:scale-95">
                 Cerrar y ver {sortedClubs.length} {clubsWord}
               </button>
             </div>
@@ -631,7 +631,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
           <button
             type="button"
             onClick={showResults}
-            className="pointer-events-auto rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-black/50 transition hover:bg-brand-strong active:scale-95"
+            className="btn-pill btn-primary pointer-events-auto px-6 py-3 text-sm active:scale-95"
           >
             Ver {sortedClubs.length} {clubsWord}
           </button>
@@ -673,7 +673,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
             <p className="text-base font-semibold text-ink">No hay clubs con estos filtros</p>
             <p className="mt-1.5 text-sm text-zinc-400">Prueba a quitar algún filtro o busca otro barrio.</p>
             {anyActive && (
-              <button type="button" onClick={clearAll} className="mt-5 rounded-ctl bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong">
+              <button type="button" onClick={clearAll} className="btn-pill btn-primary mt-5 px-5 py-2.5 text-sm">
                 Limpiar filtros
               </button>
             )}

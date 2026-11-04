@@ -73,7 +73,7 @@ export default function SharedPlanClient({ code }: { code: string }) {
         <div className="mx-auto w-fit"><NocOwl size={80} mood="sleepy" /></div>
         <h1 className="font-display mt-4 text-2xl">{t("sharedPlan.missingTitle")}</h1>
         <p className="mt-2 text-sm text-zinc-400">{t("sharedPlan.missingBody")}</p>
-        <Link href="/plan" className="mt-6 inline-block rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white">{t("planPage.generatePlanCta")}</Link>
+        <Link href="/plan" className="btn-pill btn-primary mt-6 inline-block px-6 py-3 text-sm">{t("planPage.generatePlanCta")}</Link>
       </div>
     )
   }
@@ -135,7 +135,7 @@ export default function SharedPlanClient({ code }: { code: string }) {
                 placeholder={t("sharedPlan.namePlaceholder")}
                 className="min-w-0 flex-1 rounded-ctl border border-white/15 bg-night px-4 py-3 text-base text-ink outline-none focus:border-brand"
               />
-              <button onClick={join} disabled={busy || !name.trim()} className="shrink-0 rounded-ctl bg-brand px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-95 disabled:opacity-50">
+              <button onClick={join} disabled={busy || !name.trim()} className="btn-pill btn-primary shrink-0 px-5 py-3 text-sm active:scale-95 disabled:opacity-50">
                 {busy ? "…" : t("sharedPlan.joinCta")}
               </button>
             </div>
@@ -153,7 +153,7 @@ export default function SharedPlanClient({ code }: { code: string }) {
         <button onClick={copy} className="flex items-center justify-center gap-2 rounded-ctl border border-white/15 py-3 text-sm font-semibold text-ink">
           {copied ? <><Check size={16} /> {t("clubPage.linkCopied")}</> : <><Link2 size={16} /> {t("sharedPlan.copyLink")}</>}
         </button>
-        <Link href="/plan" className="rounded-ctl bg-brand py-3 text-center text-sm font-semibold text-white">
+        <Link href="/plan" className="btn-pill btn-primary py-3 text-center text-sm">
           {t("planPage.generatePlanCta")}
         </Link>
       </div>

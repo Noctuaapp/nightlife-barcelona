@@ -145,9 +145,7 @@ export default function AttendanceButton({ itemType, itemId, variant = "full", d
           className={`flex h-full w-full flex-col items-center justify-center gap-1.5 rounded-ctl px-2 py-3 text-xs font-semibold transition ${
             disabled
               ? "cursor-not-allowed border border-white/5 bg-white/[0.02] text-zinc-500"
-              : attending
-                ? "bg-open text-night"
-                : "border border-white/10 bg-white/5 text-ink hover:bg-white/10"
+              : `act act-going ${attending ? "act-on" : ""}`
           }`}
         >
           <Icon name={attending ? "check" : "calendar"} className="h-5 w-5" />
@@ -169,9 +167,7 @@ export default function AttendanceButton({ itemType, itemId, variant = "full", d
         className={`mt-3 flex w-full items-center justify-center gap-2 rounded-ctl px-6 py-3.5 text-sm font-semibold transition ${
           disabled
             ? "cursor-not-allowed border border-white/5 bg-white/[0.02] text-zinc-500"
-            : attending
-              ? "bg-open text-night"
-              : "border border-white/10 bg-white/5 text-ink hover:bg-white/10"
+            : `act act-going ${attending ? "act-on" : ""}`
         }`}
       >
         <Icon name={attending ? "check" : "calendar"} className="h-4 w-4" />

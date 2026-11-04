@@ -56,7 +56,7 @@ export default function InvitarPage() {
             <div className="mx-auto w-fit"><NocOwl size={80} mood="wink" /></div>
             <h1 className="font-display mt-4 text-2xl">{t("invite.title")}</h1>
             <p className="mt-2 text-sm text-zinc-400">{t("invite.loginHint")}</p>
-            <Link href="/login?next=/invitar" className="mt-6 inline-block rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white">{t("nav.login")}</Link>
+            <Link href="/login?next=/invitar" className="btn-pill btn-primary mt-6 inline-block px-6 py-3 text-sm">{t("nav.login")}</Link>
           </div>
         )}
 
@@ -75,7 +75,7 @@ export default function InvitarPage() {
             <div className="mt-6 rounded-card border border-white/10 bg-surface p-5">
               <p className="text-sm font-semibold text-ink">{t("invite.yourLink")}</p>
               <p className="mt-2 break-all rounded-ctl bg-night px-3 py-3 text-sm text-zinc-300">{link}</p>
-              <button onClick={share} className="mt-3 flex w-full items-center justify-center gap-2 rounded-ctl bg-brand py-3 text-sm font-semibold text-white active:scale-95">
+              <button onClick={share} className="btn-pill btn-primary mt-3 flex w-full items-center justify-center gap-2 py-3 text-sm active:scale-95">
                 {copied ? <><Check size={16} /> {t("clubPage.linkCopied")}</> : <><Share2 size={16} /> {t("invite.shareLink")}</>}
               </button>
             </div>

@@ -518,7 +518,9 @@
     "myLocation": "Mi ubicación",
     "searchPlaceholder": "Buscar {type} en el mapa…",
     "useLocation": "Usar mi ubicación para ver lo más cercano",
-    "noResultsFor": "Sin resultados para «{q}»."
+    "noResultsFor": "Sin resultados para «{q}».",
+    "legendUnknown": "Sin horario",
+    "showOnMap": "Ver {n} en el mapa"
   },
   "planPage": {
     "notLoggedInSubtitle": "Regístrate para crear tu plan perfecto en Barcelona, a tu medida y sin gastar un euro de más.",

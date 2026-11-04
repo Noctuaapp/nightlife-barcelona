@@ -42,7 +42,7 @@ export default function LevelUpModal({ levelKey, onDone }: { levelKey: string | 
         <Link
           href="/club-noctua"
           onClick={onDone}
-          className="mt-6 w-full rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-95"
+          className="btn-pill btn-primary mt-6 w-full px-6 py-3 text-sm active:scale-95"
         >
           {t("levels.viewMine")}
         </Link>

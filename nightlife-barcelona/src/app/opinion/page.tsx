@@ -101,7 +101,7 @@ export default function OpinionPage() {
             <button
               onClick={submit}
               disabled={sending}
-              className="mt-5 w-full rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-95 disabled:opacity-50"
+              className="btn-pill btn-primary mt-5 w-full px-6 py-3 text-sm active:scale-95 disabled:opacity-50"
             >
               {sending ? t("opinion.sending") : t("opinion.submit")}
             </button>

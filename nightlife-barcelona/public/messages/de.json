@@ -510,7 +510,12 @@
     "myLocation": "Mein Standort",
     "searchPlaceholder": "{type} auf der Karte suchen…",
     "useLocation": "Meinen Standort nutzen, um das Nächste zu sehen",
-    "noResultsFor": "Keine Ergebnisse für „{q}“."
+    "noResultsFor": "Keine Ergebnisse für „{q}“.",
+    "legendOpen": "Geöffnet",
+    "legendSoon": "Schließt bald",
+    "legendClosed": "Geschlossen",
+    "legendUnknown": "Keine Zeiten",
+    "showOnMap": "{n} auf der Karte zeigen"
   },
   "planPage": {
     "notLoggedInSubtitle": "Registriere dich, um deinen perfekten Abend in Barcelona zu planen, ganz nach deinem Geschmack und ohne einen Euro zu viel auszugeben.",

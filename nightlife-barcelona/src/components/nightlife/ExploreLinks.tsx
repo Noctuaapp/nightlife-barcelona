@@ -15,7 +15,7 @@ export default function ExploreLinks({ neighborhoods, styles }: { neighborhoods:
     const out = v === `areas.style.${slug}` ? fallback : v
     return out.charAt(0).toUpperCase() + out.slice(1)
   }
-  const chip = "rounded-full border border-white/10 px-3.5 py-2 text-sm font-semibold text-zinc-200 transition hover:border-white/30 hover:bg-white/5"
+  const chip = "btn-pill btn-secondary px-3.5 py-2 text-sm"
   return (
     <section className="mx-auto max-w-7xl space-y-6 border-t border-white/10 bg-night px-4 pb-40 pt-10">
       <h2 className="text-xl font-semibold text-ink">{t("areas.exploreTitle")}</h2>

@@ -51,31 +51,32 @@ export default function RideButtons({
     openRideApp(app)
   }
 
-  const btn =
-    "flex items-center justify-center gap-1.5 rounded-ctl border border-white/10 bg-white/5 px-2 py-3 text-xs font-semibold text-ink transition hover:bg-white/10"
+  // Estilo «píldora» (04/11/2026, ver .act en globals.css) con el logo oficial de cada app
+  // (public/brands/, a partir de los logos que pasó Jordi).
+  const btn = "act act-ride flex flex-col items-center justify-center gap-1.5 rounded-ctl px-1.5 py-3 text-xs font-semibold"
 
   return (
     <div>
       <div className="grid grid-cols-3 gap-2">
-        <button type="button" onClick={openUber} className={btn}>
-          <Icon name="car" className="h-4 w-4 text-muted" />
+        <button type="button" onClick={openUber} className={`${btn} act-uber`}>
+          <img src="/brands/uber.png" alt="" className="brand-logo" />
           Uber
         </button>
-        <button type="button" onClick={() => openOther("cabify")} className={btn}>
-          <Icon name="car" className="h-4 w-4 text-muted" />
+        <button type="button" onClick={() => openOther("cabify")} className={`${btn} act-cabify`}>
+          <img src="/brands/cabify.png" alt="" className="brand-logo" />
           Cabify
         </button>
-        <button type="button" onClick={() => openOther("freenow")} className={btn}>
-          <Icon name="car" className="h-4 w-4 text-muted" />
+        <button type="button" onClick={() => openOther("freenow")} className={`${btn} act-freenow`}>
+          <img src="/brands/freenow.png" alt="" className="brand-logo" />
           FREE NOW
         </button>
       </div>
       <p className="mt-2 text-center text-xs text-zinc-400">{t("clubPage.rideHint")}</p>
       <a
         href="tel:933033033"
-        className="mt-2 flex items-center justify-center gap-2 rounded-ctl border border-white/10 px-4 py-3 text-xs font-semibold text-ink transition hover:bg-white/5"
+        className="act act-ride act-taxi mt-3 flex items-center justify-center gap-2 rounded-ctl px-4 py-3 text-xs font-semibold"
       >
-        <Icon name="phone" className="h-4 w-4 text-muted" />
+        <Icon name="phone" className="h-4 w-4" />
         {t("clubPage.callTaxi")}
       </a>
     </div>

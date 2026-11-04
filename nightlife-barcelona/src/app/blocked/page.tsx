@@ -74,7 +74,7 @@ export default function BlockedPage() {
           </a>
           <button
             onClick={handleLogout}
-            className="w-full rounded-2xl border border-white/10 bg-white/5 py-3.5 font-bold text-white transition hover:bg-white/10"
+            className="btn-pill btn-secondary w-full py-3.5"
           >
             {t("blocked.logout")}
           </button>

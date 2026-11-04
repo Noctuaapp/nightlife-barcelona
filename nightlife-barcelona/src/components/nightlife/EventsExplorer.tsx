@@ -229,7 +229,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
   const quick = (active: boolean) =>
     `flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition active:scale-95 disabled:opacity-60 ${
-      active ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
+      active ? "bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
     }`
 
   return (
@@ -332,7 +332,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
               <p className="text-lg font-semibold text-zinc-200">{t("eventsExplorer.emptyTitle")}</p>
               <p className="mt-2 text-sm text-zinc-400">{t("eventsExplorer.emptyBody")}</p>
               {activeFilters.length > 0 && (
-                <button onClick={clearAll} className="mt-6 rounded-ctl border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/10">
+                <button onClick={clearAll} className="btn-pill btn-secondary mt-6 px-6 py-3 text-sm">
                   {t("explorer.clearFilters")}
                 </button>
               )}
@@ -402,7 +402,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
           <div className="mt-10 text-center">
             <button
               onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-              className="rounded-ctl border border-white/15 bg-white/5 px-8 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/10"
+              className="btn-pill btn-secondary px-8 py-3.5 text-sm"
             >
               {t("explorer.showMore").replace("{n}", String(Math.min(PAGE_SIZE, sortedEvents.length - visibleCount)))}
             </button>

@@ -854,12 +854,12 @@ export default function EssentialCategoryPage() {
           {item.description && <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-zinc-400">{item.description}</p>}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {hasCoords && (
-              <a href={directionsHref} target="_blank" rel="noopener noreferrer" onClick={(e) => { stopPropagation(e); trackEssentialClick("essential_directions", item) }} className="flex items-center gap-1.5 rounded-ctl bg-brand px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-brand-strong">
+              <a href={directionsHref} target="_blank" rel="noopener noreferrer" onClick={(e) => { stopPropagation(e); trackEssentialClick("essential_directions", item) }} className="btn-pill btn-primary flex items-center gap-1.5 px-3.5 py-2 text-xs">
                 <Icon name="map" className="h-3.5 w-3.5" /> {t("clubPage.directions")}
               </a>
             )}
             {item.maps_link && (
-              <a href={item.maps_link} target="_blank" rel="noopener noreferrer" onClick={(e) => { stopPropagation(e); trackEssentialClick("essential_maps", item) }} className="flex items-center gap-1 rounded-ctl border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:bg-white/5">
+              <a href={item.maps_link} target="_blank" rel="noopener noreferrer" onClick={(e) => { stopPropagation(e); trackEssentialClick("essential_maps", item) }} className="btn-pill btn-secondary flex items-center gap-1 px-3 py-2 text-xs">
                 Google Maps <ArrowIcon className="h-3 w-3" />
               </a>
             )}
@@ -910,7 +910,7 @@ export default function EssentialCategoryPage() {
                     href={app.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 rounded-ctl border border-white/15 px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-white/5"
+                    className="btn-pill btn-secondary flex items-center gap-1.5 px-4 py-2.5 text-sm"
                   >
                     {app.name} <ArrowIcon className="h-3.5 w-3.5" />
                   </a>
@@ -919,7 +919,7 @@ export default function EssentialCategoryPage() {
                   <a
                     key={p.name}
                     href={`tel:${p.phone}`}
-                    className="flex items-center gap-1.5 rounded-ctl bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong"
+                    className="btn-pill btn-primary flex items-center gap-1.5 px-4 py-2.5 text-sm"
                   >
                     <Icon name="phone" className="h-4 w-4" /> {p.name}
                   </a>
@@ -957,7 +957,7 @@ export default function EssentialCategoryPage() {
                 <span className="block text-base font-semibold text-ink">{t("nitbusPage.ctaTitle")}</span>
                 <span className="mt-1 block text-sm leading-snug text-zinc-300">{t("nitbusPage.ctaBody")}</span>
               </span>
-              <span className="shrink-0 rounded-ctl bg-brand px-4 py-2.5 text-sm font-semibold text-white">{t("nitbusPage.ctaButton")}</span>
+              <span className="btn-pill btn-primary shrink-0 px-4 py-2.5 text-sm">{t("nitbusPage.ctaButton")}</span>
             </Link>
             <div className="rounded-card border border-white/10 bg-surface p-5">
               <p className="mb-2 text-sm font-semibold text-ink">{t("essentialsPage.nitbusLine")}</p>
@@ -996,7 +996,7 @@ export default function EssentialCategoryPage() {
               <button
                 onClick={() => setSelectedMetroLine("All")}
                 className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  selectedMetroLine === "All" ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
+                  selectedMetroLine === "All" ? "bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
                 }`}
               >
                 {t("essentialsPage.allLines")}
@@ -1033,7 +1033,7 @@ export default function EssentialCategoryPage() {
               <button
                 onClick={() => setSelectedMetroLine("All")}
                 className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  selectedMetroLine === "All" ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
+                  selectedMetroLine === "All" ? "bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
                 }`}
               >
                 {t("essentialsPage.allLines")}
@@ -1107,7 +1107,7 @@ export default function EssentialCategoryPage() {
                 onClick={() => (userLocation ? setSortByDistance(!sortByDistance) : locateMe())}
                 disabled={locating}
                 className={`h-11 flex-1 shrink-0 whitespace-nowrap rounded-full px-4 text-center text-sm font-semibold transition sm:flex-none ${
-                  userLocation && sortByDistance ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
+                  userLocation && sortByDistance ? "bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
                 }`}
               >
                 {locating ? t("explorer.locating") : userLocation ? t("explorer.sortDistance") : t("explorer.near")}
@@ -1119,7 +1119,7 @@ export default function EssentialCategoryPage() {
                   onClick={() => setOpenOnly(!openOnly)}
                   aria-pressed={openOnly}
                   className={`h-11 flex-1 shrink-0 whitespace-nowrap rounded-full px-4 text-center text-sm font-semibold transition sm:flex-none ${
-                    openOnly ? "bg-brand text-white" : "border border-white/10 text-zinc-200 hover:bg-white/5"
+                    openOnly ? "bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
                   }`}
                 >
                   {t("explorer.now")}
@@ -1198,7 +1198,7 @@ export default function EssentialCategoryPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => trackEssentialClick("essential_directions", selected)}
-                        className="flex items-center gap-1.5 rounded-ctl bg-brand px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-brand-strong"
+                        className="btn-pill btn-primary flex items-center gap-1.5 px-3.5 py-2 text-xs"
                       >
                         <Icon name="map" className="h-3.5 w-3.5" /> {t("clubPage.directions")}
                       </a>
@@ -1363,7 +1363,7 @@ export default function EssentialCategoryPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => trackEssentialClick("essential_directions", selected)}
-                            className="flex items-center gap-1.5 rounded-ctl bg-brand px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-brand-strong"
+                            className="btn-pill btn-primary flex items-center gap-1.5 px-3.5 py-2 text-xs"
                           >
                             <Icon name="map" className="h-3.5 w-3.5" /> {t("clubPage.directions")}
                           </a>
@@ -1376,7 +1376,7 @@ export default function EssentialCategoryPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => trackEssentialClick("essential_maps", selected)}
-                            className="rounded-ctl border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:bg-white/5"
+                            className="btn-pill btn-secondary px-3 py-2 text-xs"
                           >
                             Google Maps
                           </a>

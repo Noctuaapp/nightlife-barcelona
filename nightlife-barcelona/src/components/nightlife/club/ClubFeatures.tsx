@@ -97,7 +97,7 @@ export default function ClubFeatures({ club, capacity, isAdmin }: { club: Club; 
                   disabled={busy === f.field}
                   aria-pressed={on}
                   className={`flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-bold transition disabled:opacity-50 ${
-                    on ? "bg-brand text-white" : "border border-white/15 bg-white/[0.04] text-zinc-300 hover:bg-white/10"
+                    on ? "bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
                   }`}
                 >
                   <Icon name={f.icon} className="h-3.5 w-3.5" />

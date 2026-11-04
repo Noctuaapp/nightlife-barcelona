@@ -61,6 +61,13 @@ function oncePerSession(key: string): boolean {
   }
 }
 
+// Noche actual en Madrid (YYYY-MM-DD): hasta las 06:00 sigue contando como la noche del día anterior.
+function tipNight(): string {
+  return new Date(Date.now() - 6 * 3600 * 1000).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" })
+}
+const WEATHER_TIP_STORE = "noctua_weather_tip_closed" // noche (ver tipNight) en la que se cerró el mensaje del tiempo
+let weatherTipClosedMem: string | null = null // lo mismo, en memoria, por si el almacenamiento está bloqueado
+
 // El tiempo se guarda 30 min por pestaña (antes se pedía a open-meteo en cada página).
 const WEATHER_CACHE_KEY = "noctua_weather_v5" // v5: también el viento por hora
 const WEATHER_TTL_MS = 30 * 60 * 1000
@@ -458,22 +465,28 @@ export default function Header() {
     return () => clearInterval(interval)
   }, [isLoggedIn])
 
-  // Clave con la fecha de hoy: el aviso vuelve a poder salir al día siguiente aunque ayer se
-  // cerrara (el tiempo de hoy no es el de ayer).
-  const weatherTipKey = () => `noctua_weather_tip_dismissed_${new Date().toISOString().slice(0, 10)}`
+  // Al cerrar el mensaje del tiempo no vuelve hasta mañana (04/11/2026). Se guarda la «noche» en la que se
+  // cerró, con la hora de Madrid y contando hasta las 06:00 como la noche anterior (el mensaje habla de la
+  // franja 23h-06h): cerrarlo a la una de la madrugada lo deja cerrado esa noche entera, y a la tarde
+  // siguiente vuelve a salir con el tiempo nuevo. Antes la fecha era la UTC (se adelantaba o atrasaba
+  // 1-2 h respecto a Madrid) y, si el navegador bloqueaba el almacenamiento, no se recordaba nada: ahora
+  // se guarda también en memoria para que al menos aguante mientras se navega.
   useEffect(() => {
+    let closed = weatherTipClosedMem
     try {
-      setWeatherTipDismissed(localStorage.getItem(weatherTipKey()) === "1")
+      closed = localStorage.getItem(WEATHER_TIP_STORE) || closed
     } catch (e) {
       logError("LOCALSTORAGE ERROR:", e)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setWeatherTipDismissed(closed === tipNight())
   }, [])
 
   const dismissWeatherTip = () => {
+    const night = tipNight()
+    weatherTipClosedMem = night
     setWeatherTipDismissed(true)
     try {
-      localStorage.setItem(weatherTipKey(), "1")
+      localStorage.setItem(WEATHER_TIP_STORE, night)
     } catch (e) {
       logError("LOCALSTORAGE ERROR:", e)
     }
@@ -726,12 +739,13 @@ export default function Header() {
           className="border-b border-white/[0.06]"
           style={{ background: "linear-gradient(90deg, #141034, #0a0c1e)" }}
         >
-          <div className="mx-auto flex max-w-5xl items-center gap-2.5 px-4 py-2 sm:px-6">
-            <span aria-hidden="true" className="text-sm">{weatherTip.icon}</span>
-            <p className="line-clamp-1 min-w-0 flex-1 text-xs leading-snug text-zinc-300 sm:line-clamp-2 sm:text-sm">{weatherTip.text}</p>
+          {/* El texto sale entero (hasta 3 líneas): antes en el móvil se cortaba en una sola línea con «…». */}
+          <div className="mx-auto flex max-w-5xl items-start gap-2.5 px-4 py-2.5 sm:px-6">
+            <span aria-hidden="true" className="mt-px text-base leading-snug">{weatherTip.icon}</span>
+            <p className="min-w-0 flex-1 text-[13px] leading-snug text-zinc-200 sm:text-sm">{weatherTip.text}</p>
             <button
               onClick={dismissWeatherTip}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-500 transition hover:text-white"
+              className="-mr-1.5 -mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-400 transition hover:text-white"
               aria-label="Cerrar"
             >
               ✕
@@ -849,7 +863,7 @@ export default function Header() {
         <div className="px-4 pb-3">
           <button
             onClick={() => setLangOpen(!langOpen)}
-            className="w-full flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 transition"
+            className="btn-pill btn-secondary w-full flex items-center justify-between px-4 py-3 text-sm"
           >
             <div className="flex items-center gap-2">
               <Globe size={16} strokeWidth={1.7} className="text-purple-300" aria-hidden="true" />
@@ -885,13 +899,13 @@ export default function Header() {
                 setMenuOpen(false)
                 window.location.href = "/login"
               }}
-              className="w-full flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-white/10"
+              className="btn-pill btn-secondary w-full flex items-center justify-center px-4 py-3.5 text-sm"
             >
               {t("nav.logout")}
             </button>
           ) : (
             <div className="flex flex-col gap-3">
-              <Link href="/login" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">{t("nav.login")}</Link>
+              <Link href="/login" onClick={() => setMenuOpen(false)} className="btn-pill btn-secondary flex items-center justify-center px-4 py-3.5 text-sm">{t("nav.login")}</Link>
               <Link href="/signup" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-2xl bg-white px-4 py-3.5 text-sm font-bold text-black transition hover:scale-[1.02]">{t("nav.signup")}</Link>
             </div>
           )}

@@ -202,7 +202,7 @@ export default function FavoritesPage() {
               <Heart size={36} className="mx-auto text-brand-soft" />
               <h2 className="mt-5 text-xl font-semibold text-ink">{t("favoritesPage.emptyTitle")}</h2>
               <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-400">{t("favoritesPage.emptySubtitle")}</p>
-              <Link href="/clubs" className="mt-6 inline-flex rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong">
+              <Link href="/clubs" className="btn-pill btn-primary mt-6 inline-flex px-6 py-3 text-sm">
                 {t("favoritesPage.discoverClubs")}
               </Link>
             </div>

@@ -244,7 +244,7 @@ export default function MiMesPage() {
             <div className="mx-auto w-fit"><NocOwl size={80} mood="wink" /></div>
             <h1 className="font-display mt-4 text-2xl">{t("miMes.title")}</h1>
             <p className="mt-2 text-sm text-zinc-400">{t("miMes.loginHint")}</p>
-            <Link href="/login?next=/mi-mes" className="mt-6 inline-block rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white">{t("nav.login")}</Link>
+            <Link href="/login?next=/mi-mes" className="btn-pill btn-primary mt-6 inline-block px-6 py-3 text-sm">{t("nav.login")}</Link>
           </div>
         )}
 
@@ -264,7 +264,7 @@ export default function MiMesPage() {
                 <div className="mx-auto w-fit"><NocOwl size={90} mood="sleepy" /></div>
                 <p className="mt-4 text-lg font-semibold text-ink">{t("miMes.emptyTitle").replace("{month}", monthLabel(recap))}</p>
                 <p className="mt-1 text-sm text-zinc-400">{t("miMes.emptyBody")}</p>
-                <Link href="/clubs" className="mt-6 inline-block rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white">{t("miMes.explore")}</Link>
+                <Link href="/clubs" className="btn-pill btn-primary mt-6 inline-block px-6 py-3 text-sm">{t("miMes.explore")}</Link>
               </div>
             ) : (
               <>
@@ -308,7 +308,7 @@ export default function MiMesPage() {
                   <button onClick={preview} disabled={busy} className="flex items-center justify-center gap-2 rounded-ctl border border-white/15 py-3 text-sm font-semibold text-ink disabled:opacity-60">
                     <Eye size={16} /> {t("miMes.preview")}
                   </button>
-                  <button onClick={share} disabled={busy} className="flex items-center justify-center gap-2 rounded-ctl bg-brand py-3 text-sm font-semibold text-white active:scale-95 disabled:opacity-60">
+                  <button onClick={share} disabled={busy} className="btn-pill btn-primary flex items-center justify-center gap-2 py-3 text-sm active:scale-95 disabled:opacity-60">
                     <Share2 size={16} /> {busy ? "…" : t("miMes.share")}
                   </button>
                 </div>

@@ -48,8 +48,8 @@ export default function SocialLinks({
   const tt = socialUrl("tiktok", tiktok)
   const web = showWebsite ? socialUrl("website", website) : null
 
-  const btn =
-    "flex flex-1 items-center justify-center gap-2 rounded-ctl border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-ink transition hover:bg-white/10"
+  // Cada red con su color (04/11/2026, ver .act en globals.css): Instagram rosa, TikTok turquesa, web verde azulado.
+  const btn = "act flex flex-1 items-center justify-center gap-2 rounded-ctl px-4 py-3 text-sm font-semibold"
 
   if (!ig && !tt && !web && !canEdit) return null
 
@@ -57,20 +57,32 @@ export default function SocialLinks({
     <div className={className}>
       {(ig || tt || web) && (
         <>
+          {/* Degradado de Instagram para su icono (lo usa .act-ig en globals.css). */}
+          <svg width="0" height="0" className="absolute" aria-hidden="true">
+            <defs>
+              <linearGradient id="noctua-ig-grad" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0" stopColor="#fdc468" />
+                <stop offset="0.35" stopColor="#fa7e1e" />
+                <stop offset="0.6" stopColor="#d62976" />
+                <stop offset="0.85" stopColor="#962fbf" />
+                <stop offset="1" stopColor="#4f5bd5" />
+              </linearGradient>
+            </defs>
+          </svg>
           <p className="mb-2 text-xs font-semibold text-zinc-400">{t("clubPage.followThem")}</p>
           <div className="flex flex-wrap gap-2">
             {ig && (
-              <a href={ig} target="_blank" rel="noopener noreferrer" onClick={() => onClick?.("instagram_click")} className={btn}>
+              <a href={ig} target="_blank" rel="noopener noreferrer" onClick={() => onClick?.("instagram_click")} className={`${btn} act-ig`}>
                 <Icon name="instagram" className="h-4 w-4" /> Instagram
               </a>
             )}
             {tt && (
-              <a href={tt} target="_blank" rel="noopener noreferrer" onClick={() => onClick?.("tiktok_click")} className={btn}>
+              <a href={tt} target="_blank" rel="noopener noreferrer" onClick={() => onClick?.("tiktok_click")} className={`${btn} act-tt`}>
                 <Icon name="tiktok" className="h-4 w-4" /> TikTok
               </a>
             )}
             {web && (
-              <a href={web} target="_blank" rel="noopener noreferrer" onClick={() => onClick?.("website_click")} className={btn}>
+              <a href={web} target="_blank" rel="noopener noreferrer" onClick={() => onClick?.("website_click")} className={`${btn} act-web`}>
                 <Icon name="globe" className="h-4 w-4" /> {t("clubPage.website")}
               </a>
             )}

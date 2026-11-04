@@ -53,7 +53,7 @@ export default function EventsComingSoon() {
         <div className="mt-6 flex items-center gap-4">
           <Link
             href="/clubs"
-            className="inline-flex items-center justify-center rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong"
+            className="btn-pill btn-primary inline-flex items-center justify-center px-6 py-3 text-sm"
           >
             {t("events.soonCta")}
           </Link>

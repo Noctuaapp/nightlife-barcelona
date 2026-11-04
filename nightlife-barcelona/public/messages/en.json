@@ -517,7 +517,9 @@
     "myLocation": "My location",
     "searchPlaceholder": "Search {type} on the map…",
     "useLocation": "Use my location to see what's nearest",
-    "noResultsFor": "No results for “{q}”."
+    "noResultsFor": "No results for “{q}”.",
+    "legendUnknown": "No hours",
+    "showOnMap": "Show {n} on the map"
   },
   "planPage": {
     "notLoggedInSubtitle": "Sign up to build your perfect night in Barcelona, tailored to you and without spending a euro more than you need.",

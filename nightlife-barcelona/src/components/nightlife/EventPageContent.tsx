@@ -127,9 +127,12 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
   ].filter(Boolean) as { key: string; field: string | null; icon: string; label: string; value: string }[]
 
   const secondaryBtn =
-    "flex items-center justify-center gap-2 rounded-ctl border border-white/15 bg-white/5 px-5 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/10"
+    "act flex items-center justify-center gap-2 rounded-ctl px-5 py-3.5 text-sm font-semibold"
   const primaryBtn =
-    "flex items-center justify-center gap-2 rounded-ctl bg-brand px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-brand-strong"
+    "act act-primary flex items-center justify-center gap-2 rounded-ctl px-6 py-3.5 text-sm font-semibold"
+  // Botones de acción: principal blanca y secundarios con el icono en el color de su función (04/11/2026, ver .act en globals.css).
+  const ticketsTone = "act-tickets"
+  const routeTone = "act-route"
 
   return (
     <main className="relative min-h-screen bg-night pb-40 text-ink lg:pb-16">
@@ -190,20 +193,20 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
 
             <div className="mt-6 flex flex-wrap gap-3">
               {ticketUrl ? (
-                <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={primaryBtn}>
+                <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone}`}>
                   <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
                 </a>
               ) : directionsUrl ? (
-                <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={primaryBtn}>
+                <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${primaryBtn} ${routeTone}`}>
                   <Icon name="map" className="h-4 w-4" /> {t("clubPage.directions")}
                 </a>
               ) : null}
               {ticketUrl && directionsUrl && (
-                <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={secondaryBtn}>
+                <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${secondaryBtn} ${routeTone}`}>
                   <Icon name="map" className="h-4 w-4" /> {t("clubPage.directions")}
                 </a>
               )}
-              <button onClick={shareEvent} className={`${secondaryBtn} px-4`} aria-label={t("clubPage.share")}>
+              <button onClick={shareEvent} className={`${secondaryBtn} act-share px-4`} aria-label={t("clubPage.share")}>
                 <Icon name="share" className="h-4 w-4" />
               </button>
             </div>
@@ -287,7 +290,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                   </div>
                 )}
                 {directionsUrl && (
-                  <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${primaryBtn} mt-4 w-full`}>
+                  <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${primaryBtn} ${routeTone} mt-4 w-full`}>
                     <Icon name="map" className="h-4 w-4" /> {t("clubPage.openRoute")}
                   </a>
                 )}
@@ -349,7 +352,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => trackClick("tickets_click")}
-                            className={`${primaryBtn} mt-3 w-full py-3`}
+                            className={`${primaryBtn} ${ticketsTone} mt-3 w-full py-3`}
                           >
                             <Icon name="ticket" className="h-4 w-4" /> {t("event.buy")}
                           </a>
@@ -357,7 +360,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                       </div>
                     ))
                   : ticketUrl && (
-                      <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} hidden w-full lg:flex`}>
+                      <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone} hidden w-full lg:flex`}>
                         <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
                       </a>
                     )}
@@ -428,20 +431,20 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-night/95 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-md items-center gap-2">
           {ticketUrl ? (
-            <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} flex-1 py-3`}>
+            <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone} flex-1 py-3`}>
               <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
             </a>
           ) : directionsUrl ? (
-            <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${primaryBtn} flex-1 py-3`}>
+            <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${primaryBtn} ${routeTone} flex-1 py-3`}>
               <Icon name="map" className="h-4 w-4" /> {t("clubPage.directions")}
             </a>
           ) : null}
           {ticketUrl && directionsUrl && (
-            <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl border border-white/15 bg-white/5 text-ink transition hover:bg-white/10" aria-label={t("clubPage.directions")}>
+            <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className="act act-solo act-route flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl" aria-label={t("clubPage.directions")}>
               <Icon name="map" className="h-4 w-4" />
             </a>
           )}
-          <button onClick={shareEvent} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl border border-white/15 bg-white/5 text-ink transition hover:bg-white/10" aria-label={t("clubPage.share")}>
+          <button onClick={shareEvent} className="act act-solo act-share flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl" aria-label={t("clubPage.share")}>
             <Icon name="share" className="h-4 w-4" />
           </button>
         </div>

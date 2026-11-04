@@ -220,7 +220,7 @@ export default function ConfirmAgePage() {
         <button
           onClick={handleConfirm}
           disabled={saving}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-ctl bg-brand py-4 font-semibold text-white transition hover:bg-brand-strong disabled:opacity-50"
+          className="btn-pill btn-primary mt-6 flex w-full items-center justify-center gap-2 py-4 disabled:opacity-50"
         >
           {saving ? t("profile.saving") : (<>{t("consent.continue")} <ArrowIcon className="h-4 w-4" /></>)}
         </button>

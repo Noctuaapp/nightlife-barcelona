@@ -510,7 +510,12 @@
     "myLocation": "Ma position",
     "searchPlaceholder": "Rechercher {type} sur la carte…",
     "useLocation": "Utiliser ma position pour voir le plus proche",
-    "noResultsFor": "Aucun résultat pour « {q} »."
+    "noResultsFor": "Aucun résultat pour « {q} ».",
+    "legendOpen": "Ouvert",
+    "legendSoon": "Ferme bientôt",
+    "legendClosed": "Fermé",
+    "legendUnknown": "Horaires inconnus",
+    "showOnMap": "Voir {n} sur la carte"
   },
   "planPage": {
     "notLoggedInSubtitle": "Inscris-toi pour créer ton plan parfait à Barcelone, sur mesure et sans dépenser un euro de trop.",

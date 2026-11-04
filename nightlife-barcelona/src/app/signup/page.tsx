@@ -270,7 +270,7 @@ export default function SignupPage() {
                   setShowEmail(true)
                   track("signup_email_open")
                 }}
-                className="mt-6 w-full rounded-2xl border border-white/10 px-6 py-3.5 text-sm font-semibold text-zinc-300 transition hover:bg-white/5 hover:text-white"
+                className="btn-pill btn-secondary mt-6 w-full px-6 py-3.5 text-sm hover:text-white"
               >
                 {t("signup.withEmail")}
               </button>
@@ -405,7 +405,7 @@ export default function SignupPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-2xl bg-brand py-4 font-bold text-white transition hover:bg-brand-strong disabled:opacity-50"
+                className="btn-pill btn-primary w-full py-4 disabled:opacity-50"
               >
                 {loading ? t("signup.creating") : t("signup.create")}
               </button>

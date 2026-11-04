@@ -135,7 +135,7 @@ export default function ChangePasswordPage() {
             <button
               onClick={changePassword}
               disabled={saving}
-              className="mt-6 w-full rounded-ctl bg-brand px-6 py-4 font-semibold text-white transition hover:bg-brand-strong disabled:opacity-60"
+              className="btn-pill btn-primary mt-6 w-full px-6 py-4 disabled:opacity-60"
             >
               {saving ? t("changePassword.updating") : t("changePassword.update")}
             </button>

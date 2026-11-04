@@ -163,7 +163,7 @@ export default function AreaCard({
 
           </a>
 
-          <button className="rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-medium text-white transition hover:bg-white/10">
+          <button className="btn-pill btn-secondary px-5 py-3 text-sm font-medium">
 
             Save
 

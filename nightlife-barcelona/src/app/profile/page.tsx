@@ -515,8 +515,8 @@ function ProfileInner() {
   const card = "rounded-card border border-white/10 bg-surface p-5 sm:p-6"
   const h2 = "text-lg font-semibold text-ink"
   const pill = (active: boolean) =>
-    `rounded-full px-4 py-2 text-sm font-semibold transition ${active ? "bg-white text-night" : "border border-white/10 text-zinc-200 hover:bg-white/5"}`
-  const ghostBtn = "rounded-ctl border border-white/15 px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-white/5"
+    `rounded-full px-4 py-2 text-sm font-semibold transition ${active ? "bg-white text-night" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"}`
+  const ghostBtn = "btn-pill btn-secondary px-5 py-2.5 text-sm"
   const iconBtn = "rounded-ctl p-1.5 transition"
 
   const hub = [
@@ -585,18 +585,18 @@ function ProfileInner() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 border-t border-white/10 p-3 sm:grid-cols-4">
-                <Link href="/mi-club" className="rounded-ctl bg-brand px-3 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-brand-strong">
+                <Link href="/mi-club" className="btn-pill btn-primary px-3 py-2.5 text-center text-sm">
                   {t("profilePage.ownerCardManage")}
                 </Link>
-                <Link href="/mi-club#avisos" className="rounded-ctl border border-white/15 px-3 py-2.5 text-center text-sm font-semibold text-ink transition hover:bg-white/5">
+                <Link href="/mi-club#avisos" className="btn-pill btn-secondary px-3 py-2.5 text-center text-sm">
                   {t("profilePage.ownerCardNotice")}
                 </Link>
-                <Link href="/mi-club#noches" className="rounded-ctl border border-white/15 px-3 py-2.5 text-center text-sm font-semibold text-ink transition hover:bg-white/5">
+                <Link href="/mi-club#noches" className="btn-pill btn-secondary px-3 py-2.5 text-center text-sm">
                   {t("profilePage.ownerCardNights")}
                 </Link>
                 <Link
                   href={`/clubs/${ownerClub.slug || createSlug(ownerClub.name)}`}
-                  className="rounded-ctl border border-white/15 px-3 py-2.5 text-center text-sm font-semibold text-ink transition hover:bg-white/5"
+                  className="btn-pill btn-secondary px-3 py-2.5 text-center text-sm"
                 >
                   {t("profilePage.ownerCardView")}
                 </Link>
@@ -870,7 +870,7 @@ function ProfileInner() {
                 <p className="mt-2 text-xs text-zinc-400">{t("profile.username_hint")}</p>
                 {usernameError && <p className="mt-2 text-sm text-red-300">{usernameError}</p>}
                 <div className="mt-3 flex gap-2">
-                  <button onClick={saveUsername} disabled={savingUsername} className="rounded-ctl bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong disabled:opacity-50">
+                  <button onClick={saveUsername} disabled={savingUsername} className="btn-pill btn-primary px-5 py-2.5 text-sm disabled:opacity-50">
                     {savingUsername ? t("profile.saving") : t("profile.save")}
                   </button>
                   <button onClick={() => { setEditingUsername(false); setNewUsername(username); setUsernameError("") }} className={ghostBtn}>
@@ -956,7 +956,7 @@ function ProfileInner() {
                 <button onClick={confirmDeleteAccount} disabled={deleting} className="rounded-ctl bg-red-500 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-red-600 disabled:opacity-50">
                   {deleting ? t("profile.deleting") : t("profile.delete_confirm_yes")}
                 </button>
-                <button onClick={() => setShowDeleteModal(false)} disabled={deleting} className="rounded-ctl border border-white/15 px-6 py-3.5 text-sm font-semibold text-ink transition hover:bg-white/5">
+                <button onClick={() => setShowDeleteModal(false)} disabled={deleting} className="btn-pill btn-secondary px-6 py-3.5 text-sm">
                   {t("common.cancel")}
                 </button>
               </div>

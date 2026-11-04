@@ -152,7 +152,7 @@ export default function BadgesAndChallenges() {
                 {isClaimed ? (
                   <span className="shrink-0 rounded-full bg-open/15 px-3 py-1.5 text-xs font-semibold text-open">+{c.xp} XP</span>
                 ) : done ? (
-                  <button onClick={() => claim(c.n, c.xp)} className="shrink-0 rounded-full bg-brand px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-strong active:scale-95">
+                  <button onClick={() => claim(c.n, c.xp)} className="btn-pill btn-primary shrink-0 px-3 py-1.5 text-xs active:scale-95">
                     {t("challenges.claim").replace("{n}", String(c.xp))}
                   </button>
                 ) : (

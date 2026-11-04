@@ -145,7 +145,7 @@ export default function SuggestEssentialPage() {
             <button
               type="button"
               onClick={() => setDone(false)}
-              className="mt-4 rounded-ctl border border-white/20 px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-white/5"
+              className="btn-pill btn-secondary mt-4 px-4 py-2.5 text-sm"
             >
               {t("essentialsSuggest.another")}
             </button>
@@ -167,7 +167,7 @@ export default function SuggestEssentialPage() {
                       aria-pressed={on}
                       onClick={() => setCategory(on ? "" : key)}
                       className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold transition ${
-                        on ? "border-brand bg-brand text-white" : "border-white/15 text-zinc-200 hover:bg-white/5"
+                        on ? "border-white bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
                       }`}
                     >
                       {Icon && <Icon size={16} aria-hidden="true" />}
@@ -216,7 +216,7 @@ export default function SuggestEssentialPage() {
             <button
               type="submit"
               disabled={sending}
-              className="w-full rounded-ctl bg-brand px-6 py-3.5 text-base font-semibold text-white transition hover:bg-brand-strong disabled:opacity-60"
+              className="btn-pill btn-primary w-full px-6 py-3.5 text-base disabled:opacity-60"
             >
               {sending ? t("essentialsSuggest.sending") : t("essentialsSuggest.submit")}
             </button>

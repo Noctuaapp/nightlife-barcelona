@@ -19,6 +19,8 @@ import { MapPin, Footprints, X, List, LocateFixed, Search, type LucideIcon } fro
 import { SECTION_ICONS } from "../../lib/sectionIcons"
 import { logError } from "../../lib/log"
 import { getOpenStatus } from "../../lib/openStatus"
+import { clubOpenNow, clubHoursStatus, madridClock } from "../../lib/clubHours"
+import { useVisibleBelow } from "../../lib/useVisibleBelow"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { renderToStaticMarkup } from "react-dom/server"
 
@@ -36,6 +38,7 @@ type Club = {
   neighborhood: string | null
   music: string | null
   hours: string | null
+  open_days?: string[] | null
   price: string | null
   latitude: number | null
   longitude: number | null
@@ -68,8 +71,36 @@ type Essential = {
 
 type Filter = "clubs" | "events" | "essentials"
 
-// Semáforo de los esenciales en el mapa.
-const STATUS_COLORS = { open: "#16a34a", soon: "#eab308", closed: "#dc2626" }
+// Semáforo de las chinchetas del mapa (clubs y esenciales): verde = abierto, amarillo = cierra en menos de
+// una hora, rojo = cerrado, gris = sin horario conocido (metro, algún local sin horario...). Antes solo
+// lo tenían los esenciales y los clubs salían todos en lila (04/11/2026).
+const STATUS_COLORS = { open: "#16a34a", soon: "#eab308", closed: "#dc2626", unknown: "#6b7280" }
+type PinState = keyof typeof STATUS_COLORS
+
+// Minutos que faltan para una hora "HH:MM" (con la hora de Madrid), pasando de largo la medianoche.
+const minutesUntil = (hhmm: string): number => {
+  const [h, m] = hhmm.split(":").map(Number)
+  return (((h * 60 + m - madridClock().minutes) % 1440) + 1440) % 1440
+}
+
+// Estado de apertura de un club o de un esencial; null para los eventos (no tienen horario).
+const pinStateOf = (item: Club | Event | Essential): PinState | null => {
+  if ("category" in item) {
+    const st = getOpenStatus(item.open_hours)
+    return st.state === "open" ? (st.soon ? "soon" : "open") : st.state === "closed" ? "closed" : "unknown"
+  }
+  if ("music" in item) {
+    const open = clubOpenNow(item.hours, item.open_days)
+    if (open === null) return "unknown"
+    if (!open) return "closed"
+    const st = clubHoursStatus(item.hours, item.open_days)
+    return st && st.open && minutesUntil(st.at) <= 60 ? "soon" : "open"
+  }
+  return null
+}
+
+// «Eventos» está oculto de momento (lib/featureFlags.ts): tampoco se ofrece en el mapa, que salía vacío.
+const MAP_FILTERS: Filter[] = EVENTS_HIDDEN ? ["clubs", "essentials"] : ["clubs", "events", "essentials"]
 
 const COLORS: Record<Filter, string> = {
   clubs: "#7c5cff",
@@ -147,15 +178,15 @@ const SearchInput = ({ value, onChange, accent }: { value: string; onChange: (v:
 // en blanco, sin seguir el tema oscuro de la app, y en móvil tapaba la lista de resultados de
 // forma rara. Este es un desplegable propio (botón + lista flotante) con el mismo estilo que el
 // resto del mapa, para que combine igual en todos los navegadores.
-const FilterSelect = ({ value, options, onChange, placeholder, accent }: { value: string; options: { value: string; label: string }[]; onChange: (v: string) => void; placeholder: string; accent: string }) => {
+const FilterSelect = ({ value, options, onChange, placeholder, accent, big = false }: { value: string; options: { value: string; label: string }[]; onChange: (v: string) => void; placeholder: string; accent: string; big?: boolean }) => {
   const [open, setOpen] = useState(false)
   const current = options.find((o) => o.value === value)
   return (
     <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
       <button type="button" onClick={() => setOpen((o) => !o)}
-        style={{ width: "100%", textAlign: "left", borderRadius: "10px", border: open ? `1px solid ${accent}` : "1px solid rgba(255,255,255,0.12)",
-          background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: "12px", fontWeight: 600,
-          padding: "7px 24px 7px 10px", cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis",
+        style={{ width: "100%", textAlign: "left", borderRadius: big ? "12px" : "10px", border: open ? `1px solid ${accent}` : "1px solid rgba(255,255,255,0.12)",
+          background: "rgba(255,255,255,0.04)", color: "#fff", fontSize: big ? "15px" : "12px", fontWeight: 600,
+          padding: big ? "13px 32px 13px 14px" : "7px 24px 7px 10px", cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis",
           whiteSpace: "nowrap", position: "relative", boxSizing: "border-box" }}>
         {current ? current.label : placeholder}
         <span style={{ position: "absolute", right: "8px", top: "50%", transform: open ? "translateY(-50%) rotate(180deg)" : "translateY(-50%)", pointerEvents: "none", fontSize: "9px", color: "rgba(255,255,255,0.5)", transition: "transform 0.15s ease" }}>▾</span>
@@ -329,6 +360,9 @@ export default function MapPage() {
   const [mapQuery, setMapQuery] = useState("")
   const [mapSearchOpen, setMapSearchOpen] = useState(false)
   const mapSearchRef = useRef<HTMLDivElement>(null)
+  // Alto que queda entre el buscador y el teclado: la lista de resultados no pasa de ahí (hace scroll por dentro).
+  const mapInputWrapRef = useRef<HTMLDivElement>(null)
+  const mapListMax = useVisibleBelow(mapInputWrapRef, mapSearchOpen)
   useEffect(() => { setZone(""); setCategory("") }, [filter])
   // El buscador flotante se quedaba abierto para siempre: antes solo se cerraba al borrar el
   // texto o elegir un resultado, así que si lo abrías sin escribir nada (p. ej. para "usar mi
@@ -405,7 +439,7 @@ export default function MapPage() {
   useEffect(() => {
     const fetchData = async () => {
       const [{ data: clubsData }, { data: eventsData }, { data: essentialsData }] = await Promise.all([
-        supabase.from("clubs").select("id, name, slug, neighborhood, music, hours, price, latitude, longitude, address, image").eq("hidden", false),
+        supabase.from("clubs").select("id, name, slug, neighborhood, music, hours, open_days, price, latitude, longitude, address, image").eq("hidden", false),
         // Eventos oculto (lib/featureFlags.ts): no salen en el mapa.
         EVENTS_HIDDEN ? Promise.resolve({ data: [] as any[] }) : supabase.from("events").select("id, title, slug, date, price, image, latitude, longitude, address").eq("hidden", false),
         // Sin las paradas de Nitbus (más de mil chinchetas): tienen su propio mapa en Esenciales › Nitbus.
@@ -435,17 +469,14 @@ export default function MapPage() {
       const initials = getInitials(label)
       const isEssential = "category" in item
 
-      // Esenciales: el color del pin dice si está abierto (verde), cierra en menos de una hora
-      // (amarillo) o ya está cerrado (rojo). Sin horario conocido (metro, Nitbus...), lila.
+      // Clubs y esenciales: el color del pin dice si está abierto (verde), cierra en menos de una hora
+      // (amarillo), ya está cerrado (rojo) o no se sabe su horario (gris). Los eventos, en lila.
       let pinColor = color
       let ring = "#fff"
-      if (isEssential) {
-        const st = getOpenStatus((item as Essential).open_hours)
-        const sc = st.state === "open" ? (st.soon ? STATUS_COLORS.soon : STATUS_COLORS.open) : st.state === "closed" ? STATUS_COLORS.closed : null
-        if (sc) { pinColor = sc; ring = sc }
-      }
+      const state = pinStateOf(item)
+      if (state) { pinColor = STATUS_COLORS[state]; ring = pinColor }
       const el = document.createElement("div")
-      el.style.cssText = `width: 34px; height: 34px; border-radius: 50%; border: 2.5px solid ${image ? ring : "#fff"}; box-shadow: 0 2px 10px rgba(0,0,0,0.5); cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center; background: ${pinColor}; font-size: 11px; font-weight: 800; color: #fff; font-family: inherit;`
+      el.style.cssText = `width: 34px; height: 34px; border-radius: 50%; border: ${image ? 3.5 : 2.5}px solid ${image ? ring : "#fff"}; box-shadow: 0 2px 10px rgba(0,0,0,0.5); cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center; background: ${pinColor}; font-size: 11px; font-weight: 800; color: #fff; font-family: inherit;`
       if (image) {
         const img = document.createElement("img")
         img.src = image
@@ -475,11 +506,21 @@ export default function MapPage() {
     if (filter === "clubs") clubs.filter((c) => c.latitude && c.longitude && inZone(c)).forEach((c) => addMarker(c.latitude!, c.longitude!, c))
     else if (filter === "events") events.filter((e) => e.latitude && e.longitude && inZone(e)).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
     else if (filter === "essentials") essentials.filter((e) => e.latitude && e.longitude && inZone(e) && (!category || e.category === category)).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
+
+    // Al elegir un área o una categoría, el mapa se encuadra solo en lo que ha quedado (filtrar rápido, sin
+    // tener que buscarlo a mano).
+    if ((zone || category) && markersRef.current.length > 0) {
+      const bounds = new mapboxgl.LngLatBounds()
+      markersRef.current.forEach((m) => bounds.extend(m.getLngLat()))
+      map.current.fitBounds(bounds, { padding: 70, maxZoom: 15, duration: 700 })
+    }
   }, [filter, mapReady, clubs, events, essentials, zone, category])
 
   useEffect(() => {
     if (urlHandledRef.current || !mapReady) return
-    const typeParam = searchParams.get("type") as Filter | null
+    const rawType = searchParams.get("type") as Filter | null
+    // Un enlace antiguo a un evento en el mapa ya no lleva a una pantalla vacía mientras Eventos está oculto.
+    const typeParam = rawType === "events" && EVENTS_HIDDEN ? null : rawType
     const idParam = searchParams.get("id")
     if (!typeParam || !idParam) { urlHandledRef.current = true; return }
     if (typeParam !== filter) { setFilter(typeParam); return }
@@ -619,6 +660,47 @@ export default function MapPage() {
       </div>
     ) : null
   )
+  // Esenciales: el panel no lista los miles de sitios (agobiaba). Solo deja elegir área y categoría; el mapa se
+  // encuadra solo en lo que queda y los sitios se ven en el propio mapa o con el buscador flotante.
+  const essentialsPanel = (mobile: boolean) => {
+    const count = filter === "essentials" ? essentials.filter((e) => e.latitude && e.longitude && (!zone || zoneOf(e) === zone) && (!category || e.category === category)).length : 0
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        {zonesAvail.length > 1 && (
+          <div>
+            <FilterSelect
+              big
+              accent={COLORS[filter]}
+              placeholder={t("essentialsPage.allArea")}
+              value={zone}
+              onChange={setZone}
+              options={[{ value: "", label: t("essentialsPage.allArea") }, ...zonesAvail.map((z) => ({ value: z, label: z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", "") }))]}
+            />
+          </div>
+        )}
+        {categoriesAvail.length > 1 && (
+          <div>
+            <FilterSelect
+              big
+              accent={COLORS[filter]}
+              placeholder={t("essentialsPage.allCategories")}
+              value={category}
+              onChange={setCategory}
+              options={[{ value: "", label: t("essentialsPage.allCategories") }, ...categoriesAvail.map((c) => ({ value: c, label: t(categoryNameKey(c)) }))]}
+            />
+          </div>
+        )}
+        <p style={{ fontSize: "12px", color: "#a19fad" }}>{count} {t("map.results")}</p>
+        {mobile && (
+          <button type="button" onClick={() => setShowList(false)}
+            style={{ width: "100%", borderRadius: "999px", border: "none", background: COLORS[filter], color: "#fff", fontSize: "14px", fontWeight: 800, padding: "13px 16px", cursor: "pointer", boxShadow: `0 14px 30px -12px ${COLORS[filter]}99` }}>
+            {t("map.showOnMap").replace("{n}", String(count))}
+          </button>
+        )}
+      </div>
+    )
+  }
+
   const currentList = rawList.filter((item) => {
     if (zone && zoneOf(item as { neighborhood?: string | null; address?: string | null }) !== zone) return false
     if (filter === "essentials" && category && (item as Essential).category !== category) return false
@@ -710,7 +792,7 @@ export default function MapPage() {
             (el último botón) quedaba fuera de la pantalla, sin poder pulsarlo. Ahora hace scroll
             horizontal y el contenedor puede encogerse (minWidth:0) en vez de desbordar. */}
         <div style={{ display: "flex", gap: "6px", flexWrap: "nowrap", overflowX: "auto", WebkitOverflowScrolling: "touch", minWidth: 0 }}>
-          {(["clubs", "events", "essentials"] as Filter[]).map((f) => (
+          {MAP_FILTERS.map((f) => (
             <button key={f} onClick={() => { setFilter(f); setSearch("") }}
               style={{
                 padding: "7px 13px", borderRadius: "999px",
@@ -729,6 +811,9 @@ export default function MapPage() {
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0, minWidth: 0 }}>
       <aside className="hidden lg:flex" style={{ width: showList === false ? "0px" : "320px", borderRight: showList === false ? "none" : "1px solid rgba(255,255,255,0.1)", background: "#0a0910", flexDirection: "column", overflow: "hidden", flexShrink: 0, transition: "width 0.3s ease", minWidth: 0 }}>
+          {filter === "essentials" ? (
+            <div style={{ padding: "14px" }}>{essentialsPanel(false)}</div>
+          ) : (<>
           <div style={{ padding: "14px 14px 0" }}>
             <SearchInput value={search} onChange={setSearch} accent={COLORS[filter]} />
             {filterChips}
@@ -757,16 +842,17 @@ export default function MapPage() {
               )}
             </div>
           </div>
+          </>)}
         </aside>
 
         <div style={{ flex: 1, position: "relative", minWidth: 0, minHeight: 0 }}>
           <div ref={mapContainer} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
-          {filter === "essentials" && (
+          {(filter === "essentials" || filter === "clubs") && (
             <div
               aria-label="Leyenda"
               style={{ position: "absolute", left: "12px", bottom: "96px", zIndex: 10, display: "flex", gap: "10px", padding: "7px 11px", borderRadius: "999px", background: "rgba(10,9,16,0.85)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(8px)", fontSize: "11px", fontWeight: 600, color: "#d4d4d8" }}
             >
-              {([["open", t("map.legendOpen")], ["soon", t("map.legendSoon")], ["closed", t("map.legendClosed")]] as const).map(([k, label]) => (
+              {([["open", t("map.legendOpen")], ["soon", t("map.legendSoon")], ["closed", t("map.legendClosed")], ["unknown", t("map.legendUnknown")]] as const).map(([k, label]) => (
                 <span key={k} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                   <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: STATUS_COLORS[k] }} />
                   {label}
@@ -790,7 +876,7 @@ export default function MapPage() {
           {/* Buscador flotante: escribe un nombre y salta directo a ese sitio; con tu ubicación
               activada ordena por cercanía y la ruta a pie se dibuja al seleccionarlo. */}
           <div ref={mapSearchRef} style={{ position: "absolute", top: "58px", left: "12px", right: "12px", maxWidth: "420px", zIndex: 15 }}>
-            <div style={{ position: "relative" }}>
+            <div ref={mapInputWrapRef} style={{ position: "relative" }}>
               <input
                 value={mapQuery}
                 onChange={(e) => { setMapQuery(e.target.value); setMapSearchOpen(true) }}
@@ -806,7 +892,7 @@ export default function MapPage() {
               )}
             </div>
             {mapSearchOpen && (
-              <div style={{ marginTop: "8px", borderRadius: "18px", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(13,10,28,0.97)", backdropFilter: "blur(16px)", overflow: "hidden", boxShadow: "0 20px 50px -20px rgba(0,0,0,0.8)" }}>
+              <div style={{ marginTop: "8px", borderRadius: "18px", border: "1px solid rgba(255,255,255,0.12)", background: "rgba(13,10,28,0.97)", backdropFilter: "blur(16px)", overflowY: "auto", overflowX: "hidden", maxHeight: mapListMax ?? undefined, overscrollBehavior: "contain", boxShadow: "0 20px 50px -20px rgba(0,0,0,0.8)" }}>
                 {!mapQ && !userLocation && (
                   <button onClick={startTracking} style={{ display: "block", width: "100%", textAlign: "left", padding: "13px 16px", background: "none", border: "none", color: "#fff", fontSize: "14px", cursor: "pointer" }}>
                     <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><LocateFixed size={16} /> {t("map.useLocation")}</span>
@@ -843,6 +929,7 @@ export default function MapPage() {
                   <p style={{ fontWeight: 600, color: "#fff", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}><FilterIcon f={filter} /> {t(`nav.${filter}`)}</p>
                   <button onClick={() => setShowList(false)} aria-label={t("clubPage.close")} style={{ color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 8px", cursor: "pointer", display: "flex" }}><X size={16} /></button>
                 </div>
+                {filter === "essentials" ? essentialsPanel(true) : (<>
                 <div style={{ marginBottom: "10px" }}><SearchInput value={search} onChange={setSearch} accent={COLORS[filter]} />{filterChips}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {(currentList as (Club | Event | Essential)[]).filter((item) => item.latitude && item.longitude).map((item) => (
@@ -860,6 +947,7 @@ export default function MapPage() {
                     <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)", padding: "16px", textAlign: "center" }}>{t("map.noResults")}</p>
                   )}
                 </div>
+                </>)}
               </div>
             </div>
           )}

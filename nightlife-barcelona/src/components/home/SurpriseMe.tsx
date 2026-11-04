@@ -308,7 +308,7 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
   const toggleExtra = (k: keyof Extras) => setExtras((e) => ({ ...e, [k]: !e[k] }))
 
   const chip = (on: boolean) =>
-    `rounded-full px-4 py-2.5 text-sm font-bold transition ${on ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`
+    `rounded-full px-4 py-2.5 text-sm font-bold transition ${on ? "bg-white text-black" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"}`
 
   const announce =
     phase === "spin" ? t("surprise.thinking") : phase === "result" && card ? t("surprise.announce").replace("{name}", card.name) : ""
@@ -413,7 +413,7 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
                     onClick={toggleNear}
                     aria-pressed={near}
                     className={`mt-5 flex w-full items-center justify-center gap-2 rounded-ctl px-4 py-3 text-sm font-bold transition ${
-                      near ? "bg-brand text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                      near ? "bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
                     }`}
                   >
                     <MapPin size={16} aria-hidden="true" /> {locating ? t("surprise.locating") : near ? t("surprise.nearOn") : t("surprise.nearOff")}
@@ -432,7 +432,7 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
                   <div className="sticky bottom-0 -mx-6 -mb-6 mt-5 bg-gradient-to-t from-zinc-950 via-zinc-950 to-transparent px-6 pb-6 pt-4">
                     <button
                       onClick={draw}
-                      className="flex w-full items-center justify-center gap-2 rounded-ctl bg-brand px-6 py-4 text-base font-black text-white transition hover:bg-brand-strong active:scale-95 motion-reduce:transition-none"
+                      className="btn-pill btn-primary flex w-full items-center justify-center gap-2 px-6 py-4 text-base active:scale-95 motion-reduce:transition-none"
                     >
                       <Dices size={20} aria-hidden="true" /> {t("surprise.go")}
                     </button>
@@ -503,7 +503,7 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
                             href={directions}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center gap-1.5 rounded-ctl border border-white/15 bg-white/5 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+                            className="btn-pill btn-secondary inline-flex items-center justify-center gap-1.5 px-4 py-3 text-sm"
                           >
                             <Navigation size={15} aria-hidden="true" /> {t("surprise.directions")}
                           </a>
@@ -530,14 +530,14 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
                         {trail.at > 0 && (
                           <button
                             onClick={back}
-                            className="inline-flex items-center justify-center gap-1 rounded-ctl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+                            className="btn-pill btn-secondary inline-flex items-center justify-center gap-1 px-4 py-3 text-sm"
                           >
                             <ChevronLeft size={16} aria-hidden="true" /> {t("surprise.previous")}
                           </button>
                         )}
                         <button
                           onClick={draw}
-                          className="flex flex-1 items-center justify-center gap-2 rounded-ctl bg-brand px-4 py-3 text-sm font-black text-white transition hover:bg-brand-strong active:scale-95 motion-reduce:transition-none"
+                          className="btn-pill btn-primary flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm active:scale-95 motion-reduce:transition-none"
                         >
                           <Dices size={17} aria-hidden="true" /> {t("surprise.another")}
                         </button>

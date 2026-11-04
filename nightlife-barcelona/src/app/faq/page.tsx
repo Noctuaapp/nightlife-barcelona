@@ -98,7 +98,7 @@ export default function FAQPage() {
           <p className="text-white/40 text-sm mb-5">{t("faq.teamHelp")}</p>
 
           <a href="/contact"
-            className="inline-block px-6 py-2.5 rounded-full text-sm font-medium text-white border border-white/20 hover:bg-white/10 transition-colors"
+            className="btn-pill btn-secondary inline-block px-6 py-2.5 text-sm font-medium transition-colors"
           >
             {t("faq.contactButton")}
           </a>

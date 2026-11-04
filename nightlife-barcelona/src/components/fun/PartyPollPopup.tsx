@@ -36,12 +36,18 @@ import { setPopupState, usePopupSlot } from "../../lib/popupGate"
 //     noche) y al iniciar sesión. Antes solo se miraba una vez por carga de la web: con la app
 //     abierta desde el día anterior no salía hasta cerrar sesión y volver a entrar (25/10/2026).
 //   - Tras votar ve los porcentajes de todo el mundo. Nada de "Otra": mañana, la siguiente.
+//   - Toques sin querer (04/11/2026): tocar fuera de la tarjeta YA NO la cierra (antes un toque suelto al
+//     aparecer la hacía desaparecer y ese día no volvía), y durante los primeros instantes los botones
+//     no responden, para que el toque que iba dirigido a la página de debajo no se cuele como un voto o
+//     un cierre. Se cierra con la X, con Escape o con «Cerrar» después de votar.
 //   - Cola de avisos (03/11/2026, lib/popupGate.ts): ya no sale a la vez que el banner de cookies ni
 //     que el aviso de registro. Pasados los segundos de espera, espera su turno: después de las
 //     cookies y antes del registro, y con una pausa entre uno y otro.
 
 const EXCLUDED_PREFIXES = ["/admin", "/login", "/signup", "/confirm-age", "/blocked", "/profile/change-password", "/recuperar"]
 const SHOW_DELAY_MS = 6000
+// Tiempo tras aparecer en el que los botones aún no responden (el dedo suele seguir en la pantalla).
+const TOUCH_GUARD_MS = 700
 
 // Día (de Barcelona) en que ya se comprobó, en memoria: navegar entre páginas el mismo día no lo
 // vuelve a disparar, pero al día siguiente sí.
@@ -78,6 +84,8 @@ export default function PartyPollPopup() {
   const [results, setResults] = useState<Results | null>(null)
   const [sending, setSending] = useState(false)
   const [mounted, setMounted] = useState(false)
+  // false durante los primeros instantes tras abrirse (ver TOUCH_GUARD_MS).
+  const [touchReady, setTouchReady] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
   // Noc con el color del nivel de Club Noctua de quien juega (antes salía siempre gris).
   const levelColor = useOwnLevelColor()
@@ -221,6 +229,15 @@ export default function PartyPollPopup() {
   const close = useCallback(() => setOpen(false), [])
 
   useEffect(() => {
+    if (!open) {
+      setTouchReady(false)
+      return
+    }
+    const id = window.setTimeout(() => setTouchReady(true), TOUCH_GUARD_MS)
+    return () => window.clearTimeout(id)
+  }, [open])
+
+  useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close()
@@ -266,7 +283,7 @@ export default function PartyPollPopup() {
       <button
         type="button"
         onClick={() => vote(idx)}
-        disabled={choice !== null}
+        disabled={choice !== null || !touchReady}
         aria-pressed={mine}
         className={`relative w-full overflow-hidden rounded-ctl border px-4 py-4 text-left text-[15px] font-semibold leading-snug transition active:scale-[0.98] disabled:active:scale-100 ${
           mine ? "border-brand bg-brand/10 text-ink" : showing ? "border-white/10 bg-white/[0.03] text-zinc-300" : "border-white/15 bg-white/[0.05] text-ink hover:border-brand-soft hover:bg-white/[0.08]"
@@ -291,7 +308,6 @@ export default function PartyPollPopup() {
   return createPortal(
     <div
       className="fixed inset-0 z-[1100] flex items-end justify-center bg-night/70 p-4 backdrop-blur-sm sm:items-center"
-      onClick={close}
       style={{ animation: "pollFade 0.25s ease-out" }}
     >
       <div
@@ -306,7 +322,7 @@ export default function PartyPollPopup() {
         // morado global de :focus-visible alrededor de toda la tarjeta.
         style={{ animation: "pollRise 0.45s cubic-bezier(.2,1.2,.4,1)", outline: "none" }}
       >
-        <button type="button" onClick={close} aria-label={ui.close} className="absolute right-4 top-4 rounded-full p-1 text-zinc-400 transition hover:text-ink">
+        <button type="button" onClick={close} disabled={!touchReady} aria-label={ui.close} className="absolute right-4 top-4 rounded-full p-2 text-zinc-400 transition hover:text-ink disabled:opacity-60">
           <X className="h-5 w-5" />
         </button>
 
@@ -331,7 +347,7 @@ export default function PartyPollPopup() {
                 <button
                   type="button"
                   onClick={close}
-                  className="shrink-0 rounded-ctl bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-strong active:scale-95"
+                  className="btn-pill btn-primary shrink-0 px-5 py-2.5 text-sm active:scale-95"
                 >
                   {ui.close}
                 </button>

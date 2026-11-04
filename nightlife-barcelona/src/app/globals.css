@@ -230,3 +230,82 @@ button, a {
   background: rgba(255, 255, 255, 0.22);
   border-radius: 999px;
 }
+
+/* =====================================================================
+   BOTONES — ESTILO «PÍLDORA» (04/11/2026)
+   Elegido por Jordi entre cuatro propuestas (Grafito, Píldora, Noche, Editorial). Referencia: Apple,
+   Revolut, Spotify. Reglas de toda la web:
+     · Formas llenas y redondas (píldora; los recuadros de acción, esquinas de 22 px), letra gruesa.
+     · UNA acción principal por pantalla: blanca con letra oscura (`btn-primary`, o `act act-primary`).
+       De noche es lo que más contrasta y la que más clics se lleva.
+     · El resto, secundarios: gris oscuro lleno con un filo de luz (`btn-secondary`, o `act`).
+     · En los botones de acción el icono va dentro de un círculo suave.
+     · Activo (guardado, vas, check-in hecho): el botón se vuelve blanco entero.
+     · Marcas: solo su color en el icono (Instagram, TikTok) o su logo oficial (Uber, Cabify, FREE NOW).
+   Clases:
+     btn-pill + btn-primary | btn-secondary   → botones normales de cualquier página
+     act [+ act-primary | act-solo | act-on]  → botones de acción de las fichas (club, evento)
+   Sin @layer: así ganan a los colores sueltos de Tailwind que quedasen en cada botón.
+   ===================================================================== */
+.btn-pill { border-radius: 999px; font-weight: 700; letter-spacing: -0.012em; transition: background-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease; }
+.btn-pill:active:not(:disabled) { transform: translateY(1px) scale(0.985); }
+.btn-pill:focus-visible, .act:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
+.btn-primary {
+  background: linear-gradient(180deg, #ffffff 0%, #ebe9f3 100%);
+  color: #0a0910;
+  border: 0;
+  box-shadow: inset 0 -2px 0 rgb(10 9 16 / 0.08), 0 10px 24px -12px rgb(255 255 255 / 0.45);
+}
+@media (hover: hover) { .btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #ffffff 0%, #e2dfec 100%); } }
+.btn-secondary {
+  background: linear-gradient(180deg, #26232f, #1f1c28);
+  color: #ffffff;
+  border: 0;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07), inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+@media (hover: hover) { .btn-secondary:hover:not(:disabled) { background: #2c2937; } }
+.btn-primary:disabled, .btn-secondary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Botones de acción de las fichas */
+.act {
+  position: relative;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #26232f, #1f1c28);
+  color: #ffffff;
+  border: 0;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07), inset 0 1px 0 rgb(255 255 255 / 0.06);
+  font-weight: 700;
+  letter-spacing: -0.012em;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+.act.flex-col { border-radius: 22px; }
+.act svg { flex: none; transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.act:not(.act-solo):not(.act-primary) svg,
+.act .act-ico {
+  box-sizing: content-box;
+  padding: 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.075);
+}
+@media (hover: hover) { .act:hover:not(:disabled):not(.act-on):not(.act-primary) { background: #2c2937; } }
+.act:active:not(:disabled) { transform: translateY(1px) scale(0.985); }
+.act-on, .act-on:hover:not(:disabled) {
+  background: #ffffff;
+  color: #0a0910;
+  box-shadow: 0 8px 20px -12px rgb(255 255 255 / 0.5);
+}
+.act-on svg { transform: scale(1.06); }
+.act.act-on:not(.act-solo) svg { background: rgb(10 9 16 / 0.07); }
+.act.act-primary {
+  background: linear-gradient(180deg, #ffffff 0%, #ebe9f3 100%);
+  color: #0a0910;
+  box-shadow: inset 0 -2px 0 rgb(10 9 16 / 0.08), 0 10px 24px -12px rgb(255 255 255 / 0.45);
+}
+@media (hover: hover) { .act.act-primary:hover:not(:disabled) { background: linear-gradient(180deg, #ffffff 0%, #e2dfec 100%); } }
+@media (prefers-reduced-motion: reduce) { .act, .act svg, .btn-pill { transition: none; } }
+
+/* Marcas */
+.act-ig svg { stroke: url(#noctua-ig-grad); }
+.act-tt svg { filter: drop-shadow(1px 0.6px 0 #25f4ee) drop-shadow(-1px -0.6px 0 #fe2c55); }
+.act-taxi svg { color: #facc15; }
+.act .brand-logo { width: 36px; height: 36px; border-radius: 999px; object-fit: cover; flex: none; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12), 0 4px 10px -4px rgb(0 0 0 / 0.7); }

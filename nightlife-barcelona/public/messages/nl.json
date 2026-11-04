@@ -510,7 +510,12 @@
     "myLocation": "Mijn locatie",
     "searchPlaceholder": "Zoek {type} op de kaart…",
     "useLocation": "Gebruik mijn locatie om het dichtstbijzijnde te zien",
-    "noResultsFor": "Geen resultaten voor ‘{q}’."
+    "noResultsFor": "Geen resultaten voor ‘{q}’.",
+    "legendOpen": "Open",
+    "legendSoon": "Sluit binnenkort",
+    "legendClosed": "Gesloten",
+    "legendUnknown": "Geen openingstijden",
+    "showOnMap": "Toon {n} op de kaart"
   },
   "planPage": {
     "notLoggedInSubtitle": "Meld je aan om je perfecte avond in Barcelona samen te stellen, op maat en zonder een euro te veel uit te geven.",

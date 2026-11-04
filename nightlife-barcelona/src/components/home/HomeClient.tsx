@@ -29,6 +29,7 @@ import { matchesQuery, matchScore } from "../../lib/textSearch"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { homeZoneChips, inZone } from "../../lib/homeZones"
 import { track } from "../../lib/track"
+import { useVisibleBelow } from "../../lib/useVisibleBelow"
 
 // Portada. Rediseñada tras la auditoría de octubre 2026:
 // - Antes el titular, un subtítulo de 7 líneas, tres cifras y una cinta animada ocupaban la
@@ -263,6 +264,10 @@ export default function HomeClient({
     }
   }, [suggestOpen])
 
+  // Las sugerencias no pasan del alto que queda entre el buscador y el teclado (04/11/2026): en el móvil el
+  // teclado tapaba la mitad de la lista. Si hay más, la lista hace scroll por dentro.
+  const suggestMax = useVisibleBelow(searchBoxRef, suggestOpen && search.trim().length > 0)
+
   const clubHref = (c: Club) => `/clubs/${c.slug || createSlug(c.name)}`
   const allResultsHref = `/clubs${search.trim() ? `?search=${encodeURIComponent(search.trim())}` : ""}`
 
@@ -377,7 +382,7 @@ export default function HomeClient({
             <p className="mt-5 hidden max-w-xl text-lg leading-relaxed text-zinc-200 sm:block">{t("home.subtitle")}</p>
 
             <form onSubmit={handleSearch} role="search" className="relative z-20 mt-3 max-w-2xl sm:mt-7">
-              <div ref={searchBoxRef}>
+              <div ref={searchBoxRef} className="scroll-mt-24">
               <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 p-1.5 pl-5 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.8)] backdrop-blur-xl transition focus-within:border-cyan-300/60 focus-within:bg-white/[0.14]">
                 <Icon name="search" className="h-5 w-5 shrink-0 text-white/70" />
                 <label htmlFor="home-search" className="sr-only">
@@ -387,7 +392,14 @@ export default function HomeClient({
                   id="home-search"
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setSuggestOpen(true) }}
-                  onFocus={() => setSuggestOpen(true)}
+                  onFocus={() => {
+                    setSuggestOpen(true)
+                    // En el móvil se sube el buscador hasta debajo de la cabecera (cuando el teclado ya ha
+                    // salido), para que las sugerencias quepan entre él y el teclado.
+                    if (window.matchMedia("(max-width: 767px)").matches) {
+                      window.setTimeout(() => searchBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 350)
+                    }
+                  }}
                   onKeyDown={onSearchKey}
                   role="combobox"
                   aria-expanded={suggestOpen && search.trim().length > 0}
@@ -413,7 +425,8 @@ export default function HomeClient({
                 <div
                   id="home-search-suggestions"
                   role="listbox"
-                  className="absolute inset-x-0 top-full mt-2 overflow-hidden rounded-card border border-white/10 bg-surface/95 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.85)] backdrop-blur-xl"
+                  className="absolute inset-x-0 top-full mt-2 overflow-y-auto overscroll-contain rounded-card border border-white/10 bg-surface/95 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.85)] backdrop-blur-xl"
+                  style={{ maxHeight: suggestMax ?? undefined }}
                 >
                   {suggestions.length === 0 ? (
                     <p className="px-5 py-4 text-sm text-zinc-400">
@@ -513,7 +526,7 @@ export default function HomeClient({
                 onClick={pickNear}
                 aria-pressed={!zone && !!geo.pos}
                 className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  !zone && geo.pos ? "bg-ink text-night" : "border border-white/15 text-ink hover:bg-white/5"
+                  !zone && geo.pos ? "bg-ink text-night" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
                 }`}
               >
                 {geo.locating ? t("home.locating") : t("home.tabNear")}
@@ -525,7 +538,7 @@ export default function HomeClient({
                   onClick={() => pickZone(z.slug, z.name)}
                   aria-pressed={zone === z.slug}
                   className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    zone === z.slug ? "bg-ink text-night" : "border border-white/10 text-zinc-300 hover:bg-white/5"
+                    zone === z.slug ? "bg-ink text-night" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
                   }`}
                 >
                   {z.name}
@@ -568,7 +581,7 @@ export default function HomeClient({
                 aria-selected={activeTab === tab.key}
                 onClick={() => selectTab(tab.key)}
                 className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  activeTab === tab.key ? "bg-ink text-night" : "border border-white/10 text-zinc-300 hover:bg-white/5"
+                  activeTab === tab.key ? "bg-ink text-night" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
                 }`}
               >
                 {t(tab.label)}
@@ -592,7 +605,7 @@ export default function HomeClient({
           <div className="mt-8 text-center">
             <Link
               href="/clubs"
-              className="inline-flex items-center gap-2 rounded-ctl border border-white/15 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
+              className="btn-pill btn-secondary inline-flex items-center gap-2 px-6 py-3 text-sm"
             >
               {t("home.exploreAll").replace("{n}", String(clubs.length))} <Icon name="arrow" className="h-4 w-4" />
             </Link>

@@ -100,7 +100,7 @@ export default function RightsPage() {
           <p className="mt-4 max-w-xl text-lg leading-relaxed text-zinc-300">{t("rights.subtitle")}</p>
           <a
             href="#denegada"
-            className="mt-6 inline-flex items-center gap-2 rounded-ctl bg-brand px-6 py-3.5 text-base font-semibold text-white transition hover:bg-brand-strong"
+            className="btn-pill btn-primary mt-6 inline-flex items-center gap-2 px-6 py-3.5 text-base"
           >
             {t("rights.jump")}
           </a>
@@ -191,10 +191,10 @@ export default function RightsPage() {
             </ul>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Link href="/contact" className="rounded-ctl bg-brand px-6 py-3.5 text-center text-base font-semibold text-white transition hover:bg-brand-strong">
+              <Link href="/contact" className="btn-pill btn-primary px-6 py-3.5 text-center text-base">
                 {t("rights.tellUs")}
               </Link>
-              <Link href="/clubs" className="rounded-ctl border border-white/20 px-6 py-3.5 text-center text-base font-semibold text-ink transition hover:bg-white/5">
+              <Link href="/clubs" className="btn-pill btn-secondary px-6 py-3.5 text-center text-base">
                 {t("rights.tryElsewhere")}
               </Link>
             </div>

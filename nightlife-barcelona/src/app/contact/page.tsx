@@ -188,10 +188,10 @@ export default function ContactPage() {
                     <p className="text-xl font-semibold">{t("contact.loginTitle")}</p>
                     <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-zinc-300">{t("contact.loginBody")}</p>
                     <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                      <a href={`/login?next=${encodeURIComponent("/contact" + (typeof window !== "undefined" ? window.location.search : ""))}`} className="rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong">
+                      <a href={`/login?next=${encodeURIComponent("/contact" + (typeof window !== "undefined" ? window.location.search : ""))}`} className="btn-pill btn-primary px-6 py-3 text-sm">
                         {t("nav.login")}
                       </a>
-                      <a href={`/signup?next=${encodeURIComponent("/contact" + (typeof window !== "undefined" ? window.location.search : ""))}`} className="rounded-ctl border border-white/15 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/5">
+                      <a href={`/signup?next=${encodeURIComponent("/contact" + (typeof window !== "undefined" ? window.location.search : ""))}`} className="btn-pill btn-secondary px-6 py-3 text-sm">
                         {t("nav.signup")}
                       </a>
                     </div>
@@ -209,14 +209,14 @@ export default function ContactPage() {
                       <button
                         type="button"
                         onClick={() => (window.history.length > 1 ? window.history.back() : (window.location.href = "/"))}
-                        className="rounded-ctl bg-brand px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-strong"
+                        className="btn-pill btn-primary px-6 py-3 text-sm"
                       >
                         {t("contact.back")}
                       </button>
                       <button
                         type="button"
                         onClick={() => { setSentType(null); setSuccess("") }}
-                        className="rounded-ctl border border-white/15 px-6 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
+                        className="btn-pill btn-secondary px-6 py-3 text-sm"
                       >
                         {t("contact.sendAnother")}
                       </button>
@@ -268,7 +268,7 @@ export default function ContactPage() {
                 <button
                   onClick={sendMessage}
                   disabled={sending}
-                  className="mt-6 rounded-ctl bg-brand px-8 py-4 font-semibold text-white transition hover:bg-brand-strong disabled:opacity-60"
+                  className="btn-pill btn-primary mt-6 px-8 py-4 disabled:opacity-60"
                 >
                   {sending ? t("contact.sending") : t("contact.sendButton")}
                 </button>
