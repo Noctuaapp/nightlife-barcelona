@@ -23,13 +23,17 @@ export default function GoogleButton({
   next?: string
   className?: string
   // Para que quien lo usa anote la pulsación a su manera (p. ej. el aviso de registro de las fichas).
-  onBeforeGo?: () => void
+  // Si devuelve una promesa, se espera (ver `go`).
+  onBeforeGo?: () => void | Promise<void>
 }) {
   const { t } = useLanguage()
 
   const go = async () => {
-    track("google_click", { meta: { from } })
-    onBeforeGo?.()
+    // Justo después de este clic el navegador se va a Google: si el aviso de analítica aún no ha salido,
+    // la salida de la página lo cancela y la pulsación se perdía de Admin › Visitas (05/11/2026).
+    // Se espera a que se envíe, con tope de 1 s para no retrasar el inicio de sesión si la red va lenta.
+    const sent = Promise.all([track("google_click", { meta: { from } }), onBeforeGo?.()])
+    await Promise.race([sent, new Promise((resolve) => setTimeout(resolve, 1000))])
     const back = next ?? safeNextPath()
     await supabase.auth.signInWithOAuth({
       provider: "google",

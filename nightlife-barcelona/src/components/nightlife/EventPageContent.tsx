@@ -283,7 +283,6 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                     <ClubMap latitude={event.latitude} longitude={event.longitude} name={event.title} />
                   </div>
                 )}
-                {event.address && <p className="mt-4 text-sm text-zinc-300">{event.address}</p>}
                 {hasCoords && (
                   <div className="mt-5">
                     <NitbusNearby lat={Number(event.latitude)} lng={Number(event.longitude)} />

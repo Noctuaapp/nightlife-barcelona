@@ -15,10 +15,14 @@ import type { DbRow } from "../../../lib/clubQueries"
 import { cleanPriceRange, safeJsonLd } from "../../../lib/structuredData"
 import { clubOpeningHoursSpec } from "../../../lib/clubHours"
 
-// ISR: la ficha se genera la primera vez que alguien la pide y se sirve ya hecha durante 5 min
-// (antes se generaba de cero en cada visita, consultando la base de datos cada vez). Los cambios
-// del admin o del dueño tardan como mucho 5 min en verse.
-export const revalidate = 300
+// ISR: la ficha se genera la primera vez que alguien la pide y se sirve ya hecha durante 6 h
+// (antes se generaba de cero en cada visita, consultando la base de datos cada vez).
+// 05/11/2026: antes 300 s. Vercel avisó de que las «ISR Writes» del plan gratuito (200.000 al mes) estaban al
+// 100 %: cada vez que una página caducada recibe una visita (también las de buscadores y robots) se regenera y
+// cuenta como una escritura, y con cientos de fichas a 5 min salían decenas de miles al día. Subido a 6 h. Los
+// cambios del admin y de «mi club» se ven al momento igualmente: guardan con touchCache (lib/touchCache.ts), que
+// refresca esa página en concreto.
+export const revalidate = 21600
 export async function generateStaticParams() {
   return []
 }

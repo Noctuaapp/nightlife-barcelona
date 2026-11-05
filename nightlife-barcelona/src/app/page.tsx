@@ -11,7 +11,8 @@ import { EVENTS_HIDDEN } from "../lib/featureFlags"
 // un Server Component async, los clubs se piden en el servidor antes de enviar la respuesta: el
 // HTML que llega de entrada ya trae los datos reales. La parte interactiva (pestañas, buscador,
 // animaciones) sigue viviendo en HomeClient, que recibe esos datos ya listos como prop.
-export const revalidate = 3600
+// 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
+export const revalidate = 21600
 
 // Solo para la cinta de cifras ("180+ clubs" etc.): un recuento exacto (head: true, no descarga
 // filas) de esenciales visibles. Los clubs ya los tenemos de fetchVisibleClubs, así que no hace

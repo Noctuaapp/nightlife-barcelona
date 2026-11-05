@@ -256,6 +256,13 @@ export default function AdminPage() {
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("all")
+  // Etiqueta en bloque (05/11/2026): poner o quitar UNA etiqueta a muchos clubs de golpe.
+  const [bulkOpen, setBulkOpen] = useState(false)
+  const [bulkTag, setBulkTag] = useState("")
+  const [bulkValue, setBulkValue] = useState(true)
+  const [bulkScope, setBulkScope] = useState<"list" | "all">("list")
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [lastBulk, setLastBulk] = useState<{ key: string; label: string; ids: number[]; value: boolean } | null>(null)
 
   const [showAddForm, setShowAddForm] = useState(false)
   const [newClub, setNewClub] = useState<ClubFormData>(emptyForm)
@@ -558,6 +565,65 @@ export default function AdminPage() {
     trending: clubs.filter(c => c.trending).length,
   }
 
+  // Etiquetas que se pueden poner o quitar en bloque: las de ambiente, entretenimiento, comida, celebraciones
+  // y zonas (columnas sí/no de public.clubs). El estado de la ficha (verificado, trending, oculto, cerrado
+  // temporalmente...) no entra: para ocultar o mostrar hay sus botones, y lo demás se decide club a club.
+  const bulkGroups = TAG_GROUPS.filter((g) => g.title !== "Estado de la ficha")
+    .map((g) => ({ ...g, tags: g.tags.filter((t) => !t.closed && (!t.extra || clubs.some((c) => t.key in (c as unknown as Record<string, unknown>)))) }))
+    .filter((g) => g.tags.length > 0)
+  const bulkTagRef = bulkGroups.flatMap((g) => g.tags).find((t) => t.key === bulkTag) || null
+  const bulkTargets = (bulkScope === "all" ? clubs : filteredClubs).filter(
+    (c) => !!(c as unknown as Record<string, unknown>)[bulkTag] !== bulkValue
+  )
+  const bulkScopeCount = bulkScope === "all" ? clubs.length : filteredClubs.length
+
+  const applyBulkTag = async () => {
+    if (!bulkTagRef || bulkTargets.length === 0) return
+    const n = bulkTargets.length
+    const verb = bulkValue ? "PONER" : "QUITAR"
+    if (!window.confirm(`Vas a ${verb} la etiqueta «${bulkTagRef.label}» ${bulkValue ? "a" : "de"} ${n} club${n === 1 ? "" : "s"}.\n\nPodrás deshacerlo justo después con el botón «Deshacer». ¿Seguro?`)) return
+    setBulkBusy(true)
+    const ids = bulkTargets.map((c) => c.id)
+    let failed: string | null = null
+    for (let i = 0; i < ids.length && !failed; i += 200) {
+      const { error } = await supabase.from("clubs").update({ [bulkTag]: bulkValue }).in("id", ids.slice(i, i + 200))
+      if (error) failed = error.message
+    }
+    setBulkBusy(false)
+    if (failed) {
+      toast("No se pudo aplicar: " + failed, 6000)
+      // Lo que sí llegó a cambiar se ve al recargar; se refresca la lista para no enseñar datos falsos.
+      const { data } = await supabase.from("clubs").select("*").order("name")
+      if (data) setClubs(data)
+      return
+    }
+    const idSet = new Set(ids)
+    setClubs((prev) => prev.map((c) => (idSet.has(c.id) ? { ...c, [bulkTag]: bulkValue } : c)))
+    setLastBulk({ key: bulkTag, label: bulkTagRef.label, ids, value: bulkValue })
+    touchCache(clubPaths())
+    toast(`${bulkValue ? "Etiqueta puesta" : "Etiqueta quitada"} en ${n} club${n === 1 ? "" : "s"}`)
+  }
+
+  const undoBulkTag = async () => {
+    if (!lastBulk) return
+    setBulkBusy(true)
+    let failed: string | null = null
+    for (let i = 0; i < lastBulk.ids.length && !failed; i += 200) {
+      const { error } = await supabase.from("clubs").update({ [lastBulk.key]: !lastBulk.value }).in("id", lastBulk.ids.slice(i, i + 200))
+      if (error) failed = error.message
+    }
+    setBulkBusy(false)
+    if (failed) {
+      toast("No se pudo deshacer: " + failed, 6000)
+      return
+    }
+    const idSet = new Set(lastBulk.ids)
+    setClubs((prev) => prev.map((c) => (idSet.has(c.id) ? { ...c, [lastBulk.key]: !lastBulk.value } : c)))
+    touchCache(clubPaths())
+    toast("Deshecho")
+    setLastBulk(null)
+  }
+
   if (checkingAdmin) return (
     <main className="flex min-h-screen items-center justify-center bg-black text-white">
       <p className="text-sm text-zinc-400">Verificando acceso...</p>
@@ -849,11 +915,100 @@ export default function AdminPage() {
           </div>
 
           {/* Bulk actions */}
-          <div className="flex gap-3 mb-6">
-            <button onClick={showAll} className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-500 hover:text-white transition">✓ Mostrar todos</button>
-            <button onClick={hideAll} className="rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-300 hover:bg-red-500 hover:text-white transition">✕ Ocultar todos</button>
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <button onClick={showAll} className="whitespace-nowrap rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-500 hover:text-white transition">✓ Mostrar todos</button>
+            <button onClick={hideAll} className="whitespace-nowrap rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-300 hover:bg-red-500 hover:text-white transition">✕ Ocultar todos</button>
+            <button
+              type="button"
+              onClick={() => setBulkOpen((o) => !o)}
+              aria-expanded={bulkOpen}
+              className="whitespace-nowrap rounded-full border border-white/10 px-4 py-2 text-xs font-bold text-zinc-200 hover:bg-white/10 transition"
+            >
+              Etiqueta en bloque
+            </button>
             <p className="ml-auto text-xs text-zinc-400 self-center">{filteredClubs.length} clubs</p>
           </div>
+
+          {bulkOpen && (
+            <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <p className="text-sm font-bold text-white">Poner o quitar una etiqueta a muchos clubs de golpe</p>
+              <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
+                <select
+                  value={bulkTag}
+                  onChange={(e) => setBulkTag(e.target.value)}
+                  aria-label="Etiqueta"
+                  style={{ colorScheme: "dark" }}
+                  className="rounded-xl border border-white/10 bg-surface px-4 py-3 text-sm font-semibold text-white outline-none focus:border-purple-500/50 md:w-64"
+                >
+                  <option value="">Elige la etiqueta…</option>
+                  {bulkGroups.map((g) => (
+                    <optgroup key={g.title} label={g.title}>
+                      {g.tags.map((t) => (
+                        <option key={t.key} value={t.key}>
+                          {t.emoji} {t.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                <div className="flex rounded-xl border border-white/10 p-1">
+                  {([[true, "Poner"], [false, "Quitar"]] as const).map(([v, label]) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => setBulkValue(v)}
+                      aria-pressed={bulkValue === v}
+                      className={`rounded-lg px-4 py-2 text-sm font-bold transition ${bulkValue === v ? "bg-white text-black" : "text-zinc-300 hover:bg-white/5"}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex rounded-xl border border-white/10 p-1">
+                  {([["list", `La lista actual (${filteredClubs.length})`], ["all", `Todos los clubs (${clubs.length})`]] as const).map(([v, label]) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setBulkScope(v)}
+                      aria-pressed={bulkScope === v}
+                      className={`rounded-lg px-4 py-2 text-sm font-bold transition ${bulkScope === v ? "bg-white text-black" : "text-zinc-300 hover:bg-white/5"}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={applyBulkTag}
+                  disabled={!bulkTagRef || bulkTargets.length === 0 || bulkBusy}
+                  className="rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-black transition hover:bg-zinc-200 disabled:opacity-40"
+                >
+                  {bulkBusy ? "Aplicando…" : bulkTagRef ? `${bulkValue ? "Poner" : "Quitar"} a ${bulkTargets.length} club${bulkTargets.length === 1 ? "" : "s"}` : "Elige una etiqueta"}
+                </button>
+                {bulkTagRef && (
+                  <p className="text-xs text-zinc-400">
+                    {bulkScopeCount - bulkTargets.length} de {bulkScopeCount} {bulkValue ? "ya la tienen" : "ya no la tienen"}; cambian {bulkTargets.length}.
+                  </p>
+                )}
+                {lastBulk && (
+                  <button
+                    type="button"
+                    onClick={undoBulkTag}
+                    disabled={bulkBusy}
+                    className="ml-auto rounded-xl border border-white/10 px-4 py-2.5 text-sm font-bold text-zinc-200 hover:bg-white/10 disabled:opacity-40"
+                  >
+                    Deshacer: {lastBulk.value ? "puesta" : "quitada"} «{lastBulk.label}» en {lastBulk.ids.length}
+                  </button>
+                )}
+              </div>
+              <p className="mt-3 text-xs text-zinc-500">
+                «La lista actual» respeta la búsqueda y el filtro de arriba. La web pública y el mapa se refrescan al momento; las fichas de cada club pueden tardar hasta 6 horas en reflejarlo (o se actualizan al guardarlas).
+              </p>
+            </div>
+          )}
 
           {/* Clubs list */}
           {loading ? (

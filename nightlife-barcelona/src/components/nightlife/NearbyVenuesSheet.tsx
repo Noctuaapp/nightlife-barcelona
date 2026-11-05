@@ -10,7 +10,7 @@ import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { useLanguage } from "../../context/LanguageContext"
 import AuthGateModal from "../ui/AuthGateModal"
-import { DoorClosed, X, Map as MapIcon, Navigation, Lock } from "lucide-react"
+import { DoorClosed, X, Map as MapIcon, Navigation, Lock, ChevronRight } from "lucide-react"
 import { logError } from "../../lib/log"
 
 type NearbyVenuesSheetProps = {
@@ -207,15 +207,20 @@ export default function NearbyVenuesSheet({
 
   return (
     <>
+      {/* Botón con aspecto de botón (04/11/2026): antes era un enlace gris casi invisible. Icono, texto
+          y una línea que explica qué pasa al tocarlo. */}
       <button
         onClick={handleOpen}
-        className={
-          compact
-            ? "mt-3 flex w-full items-center justify-center gap-2 rounded-ctl px-3 py-2 text-xs font-semibold text-zinc-300 transition hover:bg-white/5 hover:text-ink"
-            : "flex w-full items-center justify-center gap-2 rounded-ctl border border-white/15 px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white/5"
-        }
+        className={`group flex w-full items-center gap-3 rounded-ctl bg-[#23202d] text-left text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] transition hover:bg-[#2c2937] active:scale-[0.99] ${compact ? "mt-3 px-3.5 py-3" : "px-4 py-3.5"}`}
       >
-        <DoorClosed size={16} /> {t("nearby.triggerButton")}
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10">
+          <DoorClosed size={18} className="text-ink" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-ink">{t("nearby.triggerButton")}</span>
+          <span className="mt-0.5 block text-xs font-normal leading-snug text-zinc-400">{t("nearby.triggerHint")}</span>
+        </span>
+        <ChevronRight size={18} className="shrink-0 text-zinc-400 transition group-hover:translate-x-0.5" />
       </button>
 
       {open && mounted && createPortal(
@@ -263,7 +268,7 @@ export default function NearbyVenuesSheet({
                     className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
                       reason === r.key
                         ? "border-white bg-white text-[#0a0910]"
-                        : "border-white/10 text-zinc-200 hover:bg-white/5"
+                        : "border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
                     }`}
                   >
                     {r.label}

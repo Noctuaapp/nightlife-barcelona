@@ -3,7 +3,8 @@ import NitbusIndexView from "../../components/nitbus/NitbusIndexView"
 import { loadNitbusData } from "../../lib/nitbusRoutes"
 
 // /nitbus: todas las líneas de autobús nocturno y buscador de parada. Se regenera cada hora.
-export const revalidate = 3600
+// 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
+export const revalidate = 21600
 
 export const metadata: Metadata = {
   title: "Nitbus Barcelona: líneas, paradas y recorrido | Noctua",

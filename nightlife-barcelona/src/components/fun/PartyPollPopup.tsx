@@ -3,17 +3,18 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { usePathname } from "next/navigation"
-import { X } from "lucide-react"
+import { Share2, X } from "lucide-react"
 import NocOwl from "../mascot/NocOwl"
 import { useOwnLevelColor } from "../mascot/NocSays"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
-import { madridDayNumber, pollOfTheDay, pollText, type PartyPoll } from "../../lib/partyPolls"
+import { isAlcoholPoll, madridDayNumber, pollOfTheDay, pollText, type PartyPoll } from "../../lib/partyPolls"
 import { track } from "../../lib/track"
 import { useConsent } from "../../lib/useConsent"
 import { hasOptionalConsent } from "../../lib/consent"
 import { readLocalVotes, recordLocalVote, votedOnDay } from "../../lib/partyPollLocal"
 import { setPopupState, usePopupSlot } from "../../lib/popupGate"
+import { DOTS, dotsFilled, shareText, verdictOwlMood, verdictText } from "../../lib/pollVerdict"
 
 // Juego "¿Qué prefieres?" (pedido por Jordi: "encuestas rollo el juego que preferirías... ambiente
 // fiesta y cachondeo"). Decisiones: sale como popup al entrar y NO da XP, es solo por diversión.
@@ -36,6 +37,10 @@ import { setPopupState, usePopupSlot } from "../../lib/popupGate"
 //     noche) y al iniciar sesión. Antes solo se miraba una vez por carga de la web: con la app
 //     abierta desde el día anterior no salía hasta cerrar sesión y volver a entrar (25/10/2026).
 //   - Tras votar ve los porcentajes de todo el mundo. Nada de "Otra": mañana, la siguiente.
+//   - El veredicto (05/11/2026, lib/pollVerdict.ts): además de los porcentajes, Noc le dice cómo le ha ido
+//     contra el resto («eres de los raros», «ciudad dividida»…), con 20 puntos que muestran qué parte
+//     de la gente piensa como él/ella, y un botón para compartirlo (el enlace lleva ?utm_source=poll
+//     para saber cuánta gente llega por ahí). Con menos de 8 votos solo dice que es de los primeros.
 //   - Toques sin querer (04/11/2026): tocar fuera de la tarjeta YA NO la cierra (antes un toque suelto al
 //     aparecer la hacía desaparecer y ese día no volvía), y durante los primeros instantes los botones
 //     no responden, para que el toque que iba dirigido a la página de debajo no se cuele como un voto o
@@ -54,9 +59,9 @@ const TOUCH_GUARD_MS = 700
 let checkedDay: number | null = null
 
 const UI = {
-  es: { title: "¿Qué preferirías?", or: "o", close: "Cerrar", votes: "votos", vote: "voto", yours: "Tu elección", fun: "La encuesta de hoy. Nadie ve lo que votas, solo el total.", tomorrow: "Mañana, otra." },
-  ca: { title: "Què preferiries?", or: "o", close: "Tancar", votes: "vots", vote: "vot", yours: "La teva tria", fun: "L'enquesta d'avui. Ningú veu què votes, només el total.", tomorrow: "Demà, una altra." },
-  en: { title: "Would you rather?", or: "or", close: "Close", votes: "votes", vote: "vote", yours: "Your pick", fun: "Today's poll. Nobody sees your vote, only the totals.", tomorrow: "New one tomorrow." },
+  es: { title: "¿Qué preferirías?", or: "VS", adult: "+18 · sin filtro", close: "Cerrar", yours: "Tu elección", fun: "La de hoy. Nadie ve lo que votas, solo el total. Sé sincero/a.", tomorrow: "Vuelve mañana, que la próxima es peor.", share: "Compartir", copied: "Enlace copiado", likeYou: "piensa como tú" },
+  ca: { title: "Què preferiries?", or: "VS", adult: "+18 · sense filtre", close: "Tancar", yours: "La teva tria", fun: "La d'avui. Ningú veu què votes, només el total. Sigues sincer/a.", tomorrow: "Torna demà, que la propera és pitjor.", share: "Compartir", copied: "Enllaç copiat", likeYou: "pensa com tu" },
+  en: { title: "Would you rather?", or: "VS", adult: "18+ · no filter", close: "Close", yours: "Your pick", fun: "Today's one. Nobody sees your vote, only the totals. Be honest.", tomorrow: "Come back tomorrow, the next one's worse.", share: "Share", copied: "Link copied", likeYou: "think like you" },
 }
 
 type Results = { a: number; b: number }
@@ -84,6 +89,10 @@ export default function PartyPollPopup() {
   const [results, setResults] = useState<Results | null>(null)
   const [sending, setSending] = useState(false)
   const [mounted, setMounted] = useState(false)
+  // Puntos del veredicto encendidos (se encienden uno a uno un instante después de votar) y aviso de
+  // «enlace copiado» cuando el móvil no tiene menú de compartir.
+  const [dotsOn, setDotsOn] = useState(false)
+  const [copied, setCopied] = useState(false)
   // false durante los primeros instantes tras abrirse (ver TOUCH_GUARD_MS).
   const [touchReady, setTouchReady] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -228,6 +237,16 @@ export default function PartyPollPopup() {
 
   const close = useCallback(() => setOpen(false), [])
 
+  // Los puntos del veredicto se encienden después de que las barras se hayan movido.
+  useEffect(() => {
+    if (!results) {
+      setDotsOn(false)
+      return
+    }
+    const id = window.setTimeout(() => setDotsOn(true), 450)
+    return () => window.clearTimeout(id)
+  }, [results])
+
   useEffect(() => {
     if (!open) {
       setTouchReady(false)
@@ -273,6 +292,26 @@ export default function PartyPollPopup() {
   const text = poll ? pollText(poll, locale) : null
   const total = results ? results.a + results.b : 0
   const pct = (n: number) => (total ? Math.round((n / total) * 100) : 0)
+  const mineCount = results && choice !== null ? (choice === 0 ? results.a : results.b) : 0
+  const verdict = results && poll && choice !== null ? verdictText(locale, mineCount, total, poll.id) : null
+
+  const shareVerdict = async () => {
+    if (!verdict || !text || choice === null || !poll) return
+    const message = shareText(locale, choice === 0 ? text.a : text.b, verdict.bucket, verdict.pct)
+    const url = `${window.location.origin}/?utm_source=poll`
+    track("share_click", { itemType: "poll", itemName: poll.id })
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Noctua", text: message, url })
+        return
+      }
+      await navigator.clipboard.writeText(`${message} ${url}`)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2500)
+    } catch {
+      /* quien cierra el menú de compartir no ha hecho nada malo */
+    }
+  }
 
   const option = (idx: 0 | 1, label: string) => {
     const count = results ? (idx === 0 ? results.a : results.b) : 0
@@ -285,29 +324,34 @@ export default function PartyPollPopup() {
         onClick={() => vote(idx)}
         disabled={choice !== null || !touchReady}
         aria-pressed={mine}
-        className={`relative w-full overflow-hidden rounded-ctl border px-4 py-4 text-left text-[15px] font-semibold leading-snug transition active:scale-[0.98] disabled:active:scale-100 ${
-          mine ? "border-brand bg-brand/10 text-ink" : showing ? "border-white/10 bg-white/[0.03] text-zinc-300" : "border-white/15 bg-white/[0.05] text-ink hover:border-brand-soft hover:bg-white/[0.08]"
+        className={`relative flex w-full items-center gap-3 overflow-hidden rounded-[20px] px-4 py-4 text-left text-[16px] font-extrabold leading-snug tracking-tight transition active:scale-[0.98] disabled:active:scale-100 ${
+          mine
+            ? "bg-white text-[#0a0910]"
+            : showing
+              ? "bg-[#1b1824] text-zinc-400 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]"
+              : "bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] hover:bg-[#2c2937]"
         }`}
       >
         {showing && (
           <span
             aria-hidden="true"
-            className={`absolute inset-y-0 left-0 ${mine ? "bg-brand/30" : "bg-white/[0.07]"}`}
+            className={`absolute inset-y-0 left-0 ${mine ? "bg-[#0a0910]/10" : "bg-white/[0.06]"}`}
             style={{ width: `${percent}%`, transition: "width 0.7s cubic-bezier(.2,.8,.2,1)" }}
           />
         )}
-        <span className="relative flex items-center justify-between gap-3">
-          <span>{label}</span>
-          {showing && <span className="shrink-0 font-display text-lg tabular-nums">{percent}%</span>}
+        <span className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${mine ? "bg-[#0a0910] text-white" : "bg-white/10 text-white"}`}>{idx === 0 ? "A" : "B"}</span>
+        <span className="relative min-w-0 flex-1">
+          <span className="block">{label}</span>
+          {showing && mine && <span className="mt-0.5 block text-xs font-bold text-[#0a0910]/60">{ui.yours}</span>}
         </span>
-        {showing && mine && <span className="relative mt-1 block text-xs font-semibold text-brand-soft">{ui.yours}</span>}
+        {showing && <span className="relative shrink-0 font-display text-xl tabular-nums">{percent}%</span>}
       </button>
     )
   }
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[1100] flex items-end justify-center bg-night/70 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-[1100] flex items-end justify-center bg-night/80 p-4 sm:items-center"
       style={{ animation: "pollFade 0.25s ease-out" }}
     >
       <div
@@ -317,7 +361,7 @@ export default function PartyPollPopup() {
         aria-labelledby="party-poll-title"
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-md rounded-card border border-white/10 bg-surface p-6 shadow-2xl"
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-card border border-white/10 bg-surface p-6 shadow-2xl"
         // El foco va al diálogo al abrirse (para Escape y lectores de pantalla), pero sin el anillo
         // morado global de :focus-visible alrededor de toda la tarjeta.
         style={{ animation: "pollRise 0.45s cubic-bezier(.2,1.2,.4,1)", outline: "none" }}
@@ -327,32 +371,70 @@ export default function PartyPollPopup() {
         </button>
 
         <div className="flex items-center gap-3">
-          <NocOwl size={56} mood={results ? "wow" : "party"} levelColor={levelColor} />
-          <h2 id="party-poll-title" className="font-display text-2xl text-ink">{ui.title}</h2>
+          <NocOwl size={56} mood={verdict ? verdictOwlMood(verdict.bucket) : "party"} levelColor={levelColor} />
+          <div className="min-w-0">
+            <h2 id="party-poll-title" className="font-display text-2xl text-ink">{ui.title}</h2>
+            {poll && isAlcoholPoll(poll) && (
+              <span className="mt-1 inline-block rounded-full bg-white px-2.5 py-0.5 text-[11px] font-black text-[#0a0910]">{ui.adult}</span>
+            )}
+          </div>
         </div>
 
         {text && (
           <>
             <div className="mt-5 flex flex-col gap-2">
               {option(0, text.a)}
-              <span className="text-center text-xs font-semibold text-zinc-500">{ui.or}</span>
+              <span className="flex items-center gap-3 text-zinc-500" aria-hidden="true">
+                <span className="h-px flex-1 bg-white/10" />
+                <span className="text-xs font-black tracking-widest">{ui.or}</span>
+                <span className="h-px flex-1 bg-white/10" />
+              </span>
               {option(1, text.b)}
             </div>
 
-            <div className="mt-4 flex min-h-[40px] items-center justify-between gap-3">
-              <p className="text-xs leading-snug text-muted">
-                {results ? `${total} ${total === 1 ? ui.vote : ui.votes} · ${ui.tomorrow}` : ui.fun}
-              </p>
-              {results && (
-                <button
-                  type="button"
-                  onClick={close}
-                  className="btn-pill btn-primary shrink-0 px-5 py-2.5 text-sm active:scale-95"
-                >
-                  {ui.close}
-                </button>
-              )}
-            </div>
+            {verdict ? (
+              <div className="mt-4">
+                <div className="rounded-2xl border border-white/10 bg-[#14111c] p-4" style={{ animation: "pollRise 0.5s cubic-bezier(.2,1.2,.4,1)" }}>
+                  <p className="font-display text-xl leading-tight text-white">{verdict.title}</p>
+                  <p className="mt-1.5 text-[13px] leading-snug text-zinc-300">{verdict.line}</p>
+                  {verdict.bucket !== "early" && (
+                    <div className="mt-4 flex flex-col gap-3 min-[360px]:flex-row min-[360px]:items-center min-[360px]:gap-4" aria-hidden="true">
+                      <div className="grid w-full grid-cols-10 gap-1.5 min-[360px]:flex-1">
+                        {Array.from({ length: DOTS }, (_, i) => (
+                          <span
+                            key={i}
+                            className={`aspect-square rounded-full transition-colors duration-300 motion-reduce:transition-none ${dotsOn && i < dotsFilled(verdict.pct) ? "bg-white" : "bg-white/[0.12]"}`}
+                            style={{ transitionDelay: `${i * 35}ms` }}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex shrink-0 items-baseline gap-2 min-[360px]:block min-[360px]:text-right">
+                        <p className="font-display text-3xl leading-none tabular-nums text-white">{verdict.pct}%</p>
+                        <p className="text-[11px] font-semibold text-zinc-400 min-[360px]:mt-1">{ui.likeYou}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={shareVerdict}
+                    className="btn-pill btn-secondary inline-flex items-center justify-center gap-2 px-4 py-3 text-sm active:scale-95"
+                  >
+                    <Share2 size={15} aria-hidden="true" className="shrink-0" /> {copied ? ui.copied : ui.share}
+                  </button>
+                  <button type="button" onClick={close} className="btn-pill btn-primary px-4 py-3 text-sm active:scale-95">
+                    {ui.close}
+                  </button>
+                </div>
+                <p className="mt-3 text-center text-xs leading-snug text-muted">
+                  {ui.tomorrow}
+                </p>
+              </div>
+            ) : (
+              <p className="mt-4 min-h-[40px] text-xs leading-snug text-muted">{ui.fun}</p>
+            )}
           </>
         )}
       </div>

@@ -14,22 +14,21 @@ import { useLanguage } from "../../context/LanguageContext"
 import ArrowIcon from "../../components/ui/ArrowIcon"
 import { zoneOf, zonesPresent } from "../../lib/zones"
 import { categoryRank, categoryNameKey, categoryInfo } from "../../lib/essentialCategories"
+import { availabilityOf } from "../../lib/availability"
+import { isShownEssential } from "../../lib/essentials"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
-import { MapPin, Footprints, X, List, LocateFixed, Search, type LucideIcon } from "lucide-react"
+import { MapPin, Footprints, X, List, LocateFixed, Search, Phone, type LucideIcon } from "lucide-react"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
 import { logError } from "../../lib/log"
-import { getOpenStatus } from "../../lib/openStatus"
 import { clubOpenNow, clubHoursStatus, madridClock } from "../../lib/clubHours"
 import { useVisibleBelow } from "../../lib/useVisibleBelow"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { renderToStaticMarkup } from "react-dom/server"
 
-// "Taxi" y "Transport" ya no son categorías de esenciales (ver essentialCategories.ts y
-// ClubTransport.tsx): no informaban de nada útil como sitio al que ir a pie (Taxi solo oficinas
-// de Uber/Cabify/Bolt; Transport solo el Aerobus) y pedir un taxi ya funciona desde la ficha de
-// cada club. La lista de categorías y la ficha de club ya las excluían, pero este mapa general
-// cargaba `essentials` sin filtrar nada — mismo filtro aquí.
-const NOT_A_RANK = /cabify|uber|bolt|free\s?now|oficina|office|headquarter/i
+// Qué esenciales se enseñan lo decide lib/essentials.ts (isShownEssential): solo las categorías del
+// catálogo (essentialCategories.ts), sin Hotel y sin las oficinas de Uber/Cabify que se guardaron como
+// «Taxi». Las paradas de taxi de verdad vuelven a salir (05/11/2026). Una categoría con menos sitios
+// publicados que su mínimo (minPlaces) tampoco sale: no se enseñan categorías casi vacías.
 
 type Club = {
   id: number
@@ -67,6 +66,11 @@ type Essential = {
   latitude: number | null
   longitude: number | null
   address: string | null
+  phone?: string | null
+  is_24h?: boolean | null
+  verification_status?: string | null
+  last_verified_at?: string | null
+  attrs?: Record<string, unknown> | null
 }
 
 type Filter = "clubs" | "events" | "essentials"
@@ -86,8 +90,10 @@ const minutesUntil = (hhmm: string): number => {
 // Estado de apertura de un club o de un esencial; null para los eventos (no tienen horario).
 const pinStateOf = (item: Club | Event | Essential): PinState | null => {
   if ("category" in item) {
-    const st = getOpenStatus(item.open_hours)
-    return st.state === "open" ? (st.soon ? "soon" : "open") : st.state === "closed" ? "closed" : "unknown"
+    // Misma regla que las listas de Esenciales: lo que no está confirmado (Hospital, aseos, máquinas…) o
+    // no tiene horario sale en gris, no en verde.
+    const a = availabilityOf(item)
+    return a.state === "open_verified" || a.state === "open_listed" ? (a.soon ? "soon" : "open") : a.state === "closed" ? "closed" : "unknown"
   }
   if ("music" in item) {
     const open = clubOpenNow(item.hours, item.open_days)
@@ -215,10 +221,17 @@ const normQ = (v: string) =>
   (v || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim()
 
 const getName = (item: Club | Event | Essential) => ("name" in item ? item.name : item.title)
-const getSub = (item: Club | Event | Essential) => {
+const getSub = (item: Club | Event | Essential, t?: (key: string) => string) => {
   if ("music" in item) return item.neighborhood || ""
   if ("title" in item && "date" in item) return (item as Event).date || ""
-  if ("category" in item) return (item as Essential).category || ""
+  if ("category" in item) {
+    // El nombre de la categoría en el idioma de la persona (antes salía la clave en inglés: «Gas Station»).
+    const key = (item as Essential).category || ""
+    if (!t || !key) return key
+    const path = categoryNameKey(key)
+    const name = t(path)
+    return name && name !== path ? name : key
+  }
   return ""
 }
 
@@ -253,10 +266,16 @@ const DetailCard = ({
 }) => {
   const color = COLORS[filter]
   const name = getName(item)
-  const sub = getSub(item)
+  const sub = getSub(item, t)
   const image = getImage(item)
   const address = "address" in item ? item.address : null
   const meta = getMeta(item, filter)
+  // Esenciales: si el horario no está confirmado lo dice (en gris/amarillo, nunca en verde) y, si hay teléfono, se puede llamar.
+  const essential = filter === "essentials" && "category" in item ? (item as Essential) : null
+  const avail = essential ? availabilityOf(essential, t) : null
+  const availColor = avail ? (avail.tone === "open" ? STATUS_COLORS.open : avail.tone === "warn" ? STATUS_COLORS.soon : avail.tone === "closed" ? STATUS_COLORS.closed : "#a19fad") : null
+  const phone = essential?.phone ? essential.phone.trim() : ""
+  const phoneHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : ""
 
   return (
     <>
@@ -301,6 +320,16 @@ const DetailCard = ({
         <p style={{ marginTop: "13px", fontSize: "13px", fontWeight: 600, color: "#d4d3dc" }}>
           {meta}
         </p>
+      )}
+      {avail && avail.label && (
+        <p style={{ marginTop: meta ? "4px" : "13px", fontSize: "13px", fontWeight: 600, color: availColor || "#a19fad" }}>
+          {avail.label}
+        </p>
+      )}
+      {phoneHref && (
+        <a href={phoneHref} style={{ marginTop: "10px", display: "inline-flex", alignItems: "center", gap: "6px", borderRadius: "999px", background: "#fff", color: "#0a0910", fontSize: "13px", fontWeight: 700, padding: "9px 16px", textDecoration: "none" }}>
+          <Phone size={14} aria-hidden="true" /> {t("essentialsPage.call")} · {phone}
+        </a>
       )}
 
       {(address || walkingTime) && (
@@ -443,11 +472,16 @@ export default function MapPage() {
         // Eventos oculto (lib/featureFlags.ts): no salen en el mapa.
         EVENTS_HIDDEN ? Promise.resolve({ data: [] as any[] }) : supabase.from("events").select("id, title, slug, date, price, image, latitude, longitude, address").eq("hidden", false),
         // Sin las paradas de Nitbus (más de mil chinchetas): tienen su propio mapa en Esenciales › Nitbus.
-        supabase.from("essentials").select("id, name, category, neighborhood, open_hours, latitude, longitude, address").eq("hidden", false).neq("category", "Nitbus").limit(5000),
+        supabase.from("essentials").select("id, name, category, neighborhood, open_hours, latitude, longitude, address, phone, is_24h, verification_status, last_verified_at, attrs").eq("hidden", false).neq("category", "Nitbus").limit(5000),
       ])
       if (clubsData) setClubs(clubsData)
       if (eventsData) setEvents(eventsData)
-      if (essentialsData) setEssentials(essentialsData.filter((e) => e.category !== "Taxi" && e.category !== "Transport" && !NOT_A_RANK.test(e.name || "")))
+      if (essentialsData) {
+        const shown = essentialsData.filter(isShownEssential)
+        const perCategory: Record<string, number> = {}
+        for (const e of shown) perCategory[e.category] = (perCategory[e.category] || 0) + 1
+        setEssentials(shown.filter((e) => perCategory[e.category] >= categoryInfo(e.category).minPlaces))
+      }
     }
     fetchData()
   }, [])
@@ -647,16 +681,15 @@ export default function MapPage() {
     )
   ) : (
     zonesAvail.length > 1 ? (
-      <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingTop: "10px", paddingBottom: "2px" }}>
-        {["", ...zonesAvail].map((z) => (
-          <button key={z || "all"} onClick={() => setZone(z)}
-            style={{ flexShrink: 0, borderRadius: "9999px", padding: "5px 11px", fontSize: "11px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
-              border: zone === z ? `1px solid ${COLORS[filter]}` : "1px solid rgba(255,255,255,0.12)",
-              background: zone === z ? `${COLORS[filter]}33` : "rgba(255,255,255,0.04)",
-              color: zone === z ? "#fff" : "rgba(255,255,255,0.55)" }}>
-            {z === "" ? t("essentialsPage.allArea") : z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", "")}
-          </button>
-        ))}
+      <div style={{ paddingTop: "10px", paddingBottom: "2px" }}>
+        <FilterSelect
+          big
+          accent={COLORS[filter]}
+          placeholder={t("essentialsPage.allArea")}
+          value={zone}
+          onChange={setZone}
+          options={[{ value: "", label: t("essentialsPage.allArea") }, ...zonesAvail.map((z) => ({ value: z, label: z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", "") }))]}
+        />
       </div>
     ) : null
   )
@@ -706,7 +739,7 @@ export default function MapPage() {
     if (filter === "essentials" && category && (item as Essential).category !== category) return false
     if (!search) return true
     const name = getName(item).toLowerCase()
-    const sub = getSub(item).toLowerCase()
+    const sub = getSub(item, t).toLowerCase()
     return name.includes(search.toLowerCase()) || sub.includes(search.toLowerCase())
   })
 
@@ -733,7 +766,7 @@ export default function MapPage() {
     return base
       .map((i) => {
         const name = normQ(getName(i))
-        const sub = normQ(getSub(i))
+        const sub = normQ(getSub(i, t))
         let score = 0
         if (name === mapQ) score = 100
         else if (name.startsWith(mapQ)) score = 80
@@ -832,7 +865,7 @@ export default function MapPage() {
                     {renderAvatar(item, 38)}
                     <div style={{ minWidth: 0 }}>
                       <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getName(item)}</p>
-                      <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getSub(item)}</p>
+                      <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getSub(item, t)}</p>
                     </div>
                   </button>
                 )
@@ -860,22 +893,28 @@ export default function MapPage() {
               ))}
             </div>
           )}
+          {/* Controles de arriba (04/11/2026): Lista · Mi ubicación y, debajo, el buscador, en UN solo bloque
+              que se apila solo. Antes cada uno estaba colocado a mano (buscador a 58 px) y con la letra
+              del móvil grande o el botón en dos líneas se solapaban. */}
+          <div style={{ position: "absolute", top: "12px", left: "12px", right: "12px", zIndex: 15, display: "flex", flexDirection: "column", gap: "10px", pointerEvents: "none" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
           <button className="lg:hidden" onClick={() => setShowList(!showList)}
-            style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", padding: "9px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)" }}>
+            style={{ pointerEvents: "auto", flexShrink: 0, whiteSpace: "nowrap", borderRadius: "999px", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", padding: "9px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)" }}>
             <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>{showList ? <X size={14} /> : <List size={14} />} {showList ? t("map.close") : t("map.list")}</span>
           </button>
           <button className="hidden lg:block" onClick={() => setShowList(showList === false ? true : false)}
-            style={{ position: "absolute", top: "12px", left: "12px", zIndex: 10, borderRadius: "999px", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", padding: "6px 10px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            style={{ pointerEvents: "auto", flexShrink: 0, borderRadius: "999px", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", padding: "6px 10px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {showList === false ? <List size={16} /> : <X size={16} />}
           </button>
           <button onClick={startTracking}
-            style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, borderRadius: "999px", background: trackingActive ? "rgba(59,130,246,0.9)" : "rgba(0,0,0,0.75)", border: trackingActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.2)", padding: "9px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)" }}>
+            style={{ pointerEvents: "auto", flexShrink: 0, whiteSpace: "nowrap", marginLeft: "auto", borderRadius: "999px", background: trackingActive ? "rgba(59,130,246,0.9)" : "rgba(0,0,0,0.75)", border: trackingActive ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.2)", padding: "9px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)" }}>
             <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><LocateFixed size={14} /> {trackingActive ? t("map.following") : t("map.myLocation")}</span>
           </button>
+          </div>
 
           {/* Buscador flotante: escribe un nombre y salta directo a ese sitio; con tu ubicación
               activada ordena por cercanía y la ruta a pie se dibuja al seleccionarlo. */}
-          <div ref={mapSearchRef} style={{ position: "absolute", top: "58px", left: "12px", right: "12px", maxWidth: "420px", zIndex: 15 }}>
+          <div ref={mapSearchRef} style={{ pointerEvents: "auto", width: "100%", maxWidth: "420px" }}>
             <div ref={mapInputWrapRef} style={{ position: "relative" }}>
               <input
                 value={mapQuery}
@@ -912,7 +951,7 @@ export default function MapPage() {
                       {renderAvatar(i, 34)}
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getName(i)}</p>
-                        <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getSub(i)}</p>
+                        <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getSub(i, t)}</p>
                       </div>
                       {dist !== null && <span style={{ fontSize: "12px", fontWeight: 700, color: COLORS[filter], flexShrink: 0 }}>{formatDistance(dist)}</span>}
                     </button>
@@ -920,6 +959,8 @@ export default function MapPage() {
                 })}
               </div>
             )}
+          </div>
+
           </div>
 
           {showList && (
@@ -939,7 +980,7 @@ export default function MapPage() {
                       {renderAvatar(item, 38)}
                       <div style={{ minWidth: 0 }}>
                         <p style={{ fontWeight: 700, color: "#fff", fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getName(item)}</p>
-                        <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getSub(item)}</p>
+                        <p style={{ marginTop: "2px", fontSize: "12px", color: "rgba(255,255,255,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getSub(item, t)}</p>
                       </div>
                     </button>
                   ))}

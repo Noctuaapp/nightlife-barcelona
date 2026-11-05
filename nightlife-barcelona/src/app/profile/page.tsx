@@ -7,6 +7,7 @@ import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { isAdminEmail } from "../../lib/admin"
 import { useFavorites } from "../../context/FavoritesContext"
+import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { useLanguage } from "../../context/LanguageContext"
 import { getLevelStatus } from "../../lib/xp"
 import { Heart, Trophy, CalendarDays, Gift, Building2, Music2, Camera, Pin, Trash2, MessageSquare, Megaphone, AlarmClock, Bell, ChevronRight } from "lucide-react"
@@ -243,6 +244,31 @@ function ProfileInner() {
       setLoadingCalendar(false)
     }
     loadCalendar()
+  }, [favorites])
+
+  // Cuántos favoritos hay de verdad (04/11/2026). El contador de arriba usaba favorites.length, que
+  // incluye eventos ocultos y favoritos de locales que ya no existen; /favorites solo enseña los que
+  // existen, y por eso el perfil decía 6 y la lista tenía 2. Ahora se cuentan igual que allí.
+  const [favShown, setFavShown] = useState<number | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    const countShown = async () => {
+      const ids = (type: string) => favorites.filter((f) => f.item_type === type).map((f) => f.item_id)
+      const clubIds = ids("club")
+      const clubEventIds = ids("club_event")
+      const eventIds = EVENTS_HIDDEN ? [] : ids("event")
+      const count = async (table: string, list: number[]) => {
+        if (list.length === 0) return 0
+        const { data } = await supabase.from(table).select("id").in("id", list)
+        return (data || []).length
+      }
+      const [a, b, c] = await Promise.all([count("clubs", clubIds), count("club_events", clubEventIds), count("events", eventIds)])
+      if (!cancelled) setFavShown(a + b + c)
+    }
+    countShown()
+    return () => {
+      cancelled = true
+    }
   }, [favorites])
 
   useEffect(() => {
@@ -520,7 +546,7 @@ function ProfileInner() {
   const iconBtn = "rounded-ctl p-1.5 transition"
 
   const hub = [
-    { href: "/favorites", icon: Heart, title: t("profile.favorites"), sub: t("profilePage.favCount").replace("{n}", String(favorites.length)) },
+    { href: "/favorites", icon: Heart, title: t("profile.favorites"), sub: t("profilePage.favCount").replace("{n}", String(favShown ?? favorites.filter((f) => f.item_type === "club").length)) },
     { href: "/club-noctua", icon: Trophy, title: "Club Noctua", sub: t("profilePage.clubSub") },
     { href: "/mi-mes", icon: CalendarDays, title: t("profilePage.monthTitle"), sub: t("profilePage.monthSub") },
     { href: "/invitar", icon: Gift, title: t("profilePage.inviteTitle"), sub: t("profilePage.inviteSub") },

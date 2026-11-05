@@ -2,9 +2,11 @@
 //
 // - Uber: su enlace universal (m.uber.com/ul) abre la app si está instalada, con el destino ya
 //   puesto; si no, la web de Uber.
-// - Cabify y FREE NOW no tienen un enlace público fiable con destino. En el móvil se abre su app
-//   (Android: "intent" con el paquete; iPhone: su esquema propio) y, si no está instalada, la
-//   tienda para descargarla. En el ordenador, su web.
+// - Cabify: su esquema documentado cabify://cabify/journey?json={"stops":[...]} abre la app con el
+//   destino ya puesto (Android: "intent" con el paquete; iPhone: el esquema directo). Si no está
+//   instalada, la tienda. Sin coordenadas se abre la app sin destino.
+// - FREE NOW no publica ningún enlace con destino: se abre su app (o la tienda) y la dirección se
+//   copia para pegarla. En el ordenador, la web de cada una.
 
 export type RideApp = "uber" | "cabify" | "freenow"
 export type Platform = "android" | "ios" | "desktop"
@@ -41,16 +43,27 @@ export function uberLink(name: string, address?: string | null, lat?: number | n
     : `https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]=${encodeURIComponent(address || name)}`
 }
 
-// Enlace "intent" de Android: abre la app si está instalada; si no, Chrome va a la tienda.
-export function androidIntent(app: "cabify" | "freenow"): string {
-  const a = APPS[app]
-  const store = `https://play.google.com/store/apps/details?id=${a.androidPackage}`
-  return `intent://${a.host}#Intent;scheme=${a.scheme};package=${a.androidPackage};S.browser_fallback_url=${encodeURIComponent(store)};end`
+export type RideDestination = { name: string; lat?: number | null; lng?: number | null }
+
+// Ruta + consulta del destino para cada app ("" si la app no admite destino o faltan coordenadas).
+export function destinationPath(app: "cabify" | "freenow", dest?: RideDestination): string {
+  if (app !== "cabify" || !dest || !dest.lat || !dest.lng) return ""
+  const json = JSON.stringify({
+    stops: [{ loc: { latitude: String(dest.lat), longitude: String(dest.lng) }, name: dest.name }],
+  })
+  return `/journey?json=${encodeURIComponent(json)}`
 }
 
-export function iosScheme(app: "cabify" | "freenow"): string {
+// Enlace "intent" de Android: abre la app si está instalada; si no, Chrome va a la tienda.
+export function androidIntent(app: "cabify" | "freenow", dest?: RideDestination): string {
   const a = APPS[app]
-  return `${a.scheme}://${a.host}`
+  const store = `https://play.google.com/store/apps/details?id=${a.androidPackage}`
+  return `intent://${a.host}${destinationPath(app, dest)}#Intent;scheme=${a.scheme};package=${a.androidPackage};S.browser_fallback_url=${encodeURIComponent(store)};end`
+}
+
+export function iosScheme(app: "cabify" | "freenow", dest?: RideDestination): string {
+  const a = APPS[app]
+  return `${a.scheme}://${a.host}${destinationPath(app, dest)}`
 }
 
 export function webLink(app: "cabify" | "freenow"): string {
@@ -60,10 +73,10 @@ export function webLink(app: "cabify" | "freenow"): string {
 // Abre la app en el móvil. En iPhone, si la app no está instalada, Safari no navega: a los
 // ~1,5 s se manda a la App Store (si la app se abrió, la página ya está en segundo plano y no
 // se hace nada).
-export function openRideApp(app: "cabify" | "freenow"): void {
+export function openRideApp(app: "cabify" | "freenow", dest?: RideDestination): void {
   const platform = detectPlatform(navigator.userAgent, navigator.maxTouchPoints || 0)
   if (platform === "android") {
-    window.location.href = androidIntent(app)
+    window.location.href = androidIntent(app, dest)
     return
   }
   if (platform === "ios") {
@@ -74,7 +87,7 @@ export function openRideApp(app: "cabify" | "freenow"): void {
       if (document.visibilityState === "hidden") window.clearTimeout(timer)
     }
     document.addEventListener("visibilitychange", onHide, { once: true })
-    window.location.href = iosScheme(app)
+    window.location.href = iosScheme(app, dest)
     return
   }
   window.open(webLink(app), "_blank", "noopener,noreferrer")

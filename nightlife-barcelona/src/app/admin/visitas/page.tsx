@@ -52,6 +52,7 @@ const SOURCE_LABELS: Record<string, string> = {
   social: "Redes",
   messaging: "WhatsApp / Telegram",
   invite: "Invitación",
+  poll: "Encuesta compartida",
   pwa: "App instalada",
 }
 const sourceLabel = (s: string | null) => (s ? SOURCE_LABELS[s] || s.replace(/^other:/, "") : "—")
@@ -77,6 +78,10 @@ const EVENT_LABELS: Record<string, string> = {
   related_click: "Va a un local parecido:",
   join_click: "Aviso de registro, pulsa:",
   join_view: "Ve el aviso de registro",
+  auth_gate_view: "Le sale «necesitas cuenta»",
+  home_tile_click: "Abre un local desde la portada",
+  zone_pick: "Elige zona en la portada",
+  phone_click: "Pulsa llamar",
   join_dismiss: "Cierra el aviso de registro",
   signup_view: "Abre el registro",
   signup_email_open: "Elige registrarse con email",
@@ -116,6 +121,8 @@ function extraDetail(e: Ev): string | null {
   if (e.type === "next_click") return NEXT_TO[to] || to
   if (e.type === "welcome_click") return WELCOME_TO[to] || to
   if (e.type === "signup_error") return e.meta?.step === "auth" ? `el servidor dice «${reason}»` : SIGNUP_REASONS[reason] || reason
+  if (e.type === "zone_pick") return e.name === "near" ? "cerca de mí" : e.name || ""
+  if (e.type === "auth_gate_view") return ({ favorite: "(al guardar un favorito)", attend: "(al apuntarse)", checkin: "(al hacer check-in)" } as Record<string, string>)[String(e.meta?.reason ?? "")] ?? ""
   if (e.type === "signup_ok") return e.meta?.confirm_email ? "(debe confirmar el correo)" : "(ya con sesión)"
   if (e.type === "google_click") return ({ login: "(en Iniciar sesión)", wall: "(en una zona privada)", modal: "(en el aviso de registro)", join: "(en el aviso de la ficha)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? "(en Crear cuenta)"
   if (e.type === "share_click" && e.meta?.via === "whatsapp") return "por WhatsApp"

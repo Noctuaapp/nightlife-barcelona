@@ -11,6 +11,7 @@ import CoordsField from "../../../components/admin/CoordsField"
 import { coordsPayload, coordToInput, googleMapsUrl, parseCoords } from "../../../lib/coords"
 import { touchCache, essentialPaths } from "../../../lib/touchCache"
 import { ESSENTIAL_CATEGORIES, categoryInfo, essentialSlugLabelEs } from "../../../lib/essentialCategories"
+import { isVerificationCurrent } from "../../../lib/availability"
 import { prepareImageForUpload, uploadFileName } from "../../../lib/compressImage"
 
 // Rediseño (2/11/2026): esta pantalla era la más pobre del admin. Con miles de esenciales (las
@@ -38,6 +39,14 @@ type Essential = {
   longitude: number | null
   hidden: boolean | null
   import_source?: string | null
+  // SQL 82 (5/11/2026). Opcionales: si la migración aún no se ha ejecutado, la fila no trae estos campos.
+  phone?: string | null
+  website?: string | null
+  is_24h?: boolean | null
+  source?: string | null
+  source_url?: string | null
+  verification_status?: string | null
+  last_verified_at?: string | null
 }
 
 const emptyForm = {
@@ -52,6 +61,9 @@ const emptyForm = {
   maps_link: "",
   latitude: "",
   longitude: "",
+  phone: "",
+  website: "",
+  is_24h: false,
 }
 type EssentialForm = typeof emptyForm
 
@@ -72,6 +84,14 @@ const CATEGORY_SINGULAR_ES: Record<string, string> = {
   Parking: "Parking",
   Hotel: "Hotel",
   Casino: "Casino",
+  Taxi: "Parada de taxi",
+  Veterinary: "Veterinario",
+  Toilets: "Aseo público",
+  Vending: "Máquina expendedora",
+  Bicing: "Estación de Bicing",
+  Luggage: "Consigna",
+  Police: "Comisaría",
+  LostFound: "Objetos perdidos",
 }
 const categorySingular = (key: string) => CATEGORY_SINGULAR_ES[key] || key
 const categoryPlural = (key: string) => {
@@ -89,21 +109,27 @@ const SUBCATEGORY_HINTS: Record<string, string[]> = {
   Nitbus: ["N0", "N1", "N2", "N3", "N4", "N5", "N6", "N7", "N8", "N9", "N11", "N12", "N13", "N14", "N15", "N16", "N17", "N18", "N19", "N20", "N23", "N24", "N28"],
   // Línea(s) de metro/FGC que paran aquí (p. ej. "L3" o "L3, L5" si es un intercambiador).
   Metro: ["L1", "L2", "L3", "L4", "L5", "L9N", "L9S", "L10N", "L10S", "L11", "L6", "L7", "L8", "L12"],
+  Vending: ["Bebidas", "Comida y snacks", "Café", "Higiene", "Tecnología"],
+  Police: ["Guardia Urbana", "Mossos d'Esquadra", "Policía Nacional", "Guardia Civil"],
 }
 const SUBCATEGORY_LABEL: Record<string, string> = {
   ATM: "Banco",
   Food: "Tipo de comida",
   Nitbus: "Línea(s) de bus",
   Metro: "Línea(s) de metro",
+  Vending: "Qué vende",
+  Police: "Cuerpo",
 }
 const SUBCATEGORY_PLACEHOLDER: Record<string, string> = {
   ATM: "CaixaBank",
   Food: "Pizza",
   Nitbus: "N6 o N6, N9",
   Metro: "L3",
+  Vending: "Bebidas",
+  Police: "Guardia Urbana",
 }
 
-type StatusKey = "all" | "visible" | "hidden" | "nophoto" | "nocoords" | "nohours" | "osm" | "google"
+type StatusKey = "all" | "visible" | "hidden" | "nophoto" | "nocoords" | "nohours" | "nophone" | "unverified" | "verified" | "osm" | "google"
 const STATUS_TESTS: Record<StatusKey, (e: Essential) => boolean> = {
   all: () => true,
   visible: (e) => !e.hidden,
@@ -111,6 +137,10 @@ const STATUS_TESTS: Record<StatusKey, (e: Essential) => boolean> = {
   nophoto: (e) => !e.image,
   nocoords: (e) => e.latitude == null || e.longitude == null,
   nohours: (e) => !(e.open_hours || "").trim(),
+  nophone: (e) => !(e.phone || "").trim(),
+  // «Verificado» solo si la verificación sigue vigente (cada categoría tiene su plazo, ver essentialCategories.ts).
+  verified: (e) => isVerificationCurrent(e),
+  unverified: (e) => !isVerificationCurrent(e),
   osm: (e) => e.import_source === "osm",
   google: (e) => e.import_source === "google",
 }
@@ -121,10 +151,13 @@ const STATUS_LABEL: Record<StatusKey, string> = {
   nophoto: "Sin foto",
   nocoords: "Sin ubicación en el mapa",
   nohours: "Sin horario",
+  nophone: "Sin teléfono",
+  unverified: "Sin verificar o caducado",
+  verified: "Verificados",
   osm: "Importados de OpenStreetMap",
   google: "Importados de Google",
 }
-const STATUS_ORDER: StatusKey[] = ["all", "visible", "hidden", "nophoto", "nocoords", "nohours", "osm", "google"]
+const STATUS_ORDER: StatusKey[] = ["all", "visible", "hidden", "nophoto", "nocoords", "nohours", "nophone", "unverified", "verified", "osm", "google"]
 
 type SortKey = "category" | "recent" | "name"
 
@@ -289,18 +322,28 @@ export default function AdminEssentialsPage() {
   }
 
   // ---------- Crear, editar, borrar ----------
-  const formToPayload = (f: EssentialForm) => ({
-    name: f.name.trim(),
-    category: f.category,
-    subcategory: f.subcategory.trim() || null,
-    address: f.address.trim(),
-    neighborhood: f.neighborhood.trim(),
-    description: f.description.trim(),
-    image: f.image.trim(),
-    open_hours: f.open_hours.trim(),
-    maps_link: f.maps_link.trim(),
-    ...coordsPayload(f.latitude, f.longitude),
-  })
+  // Los campos de la migración 82 (teléfono, web, 24 h) solo se mandan si tienen valor o la ficha ya los
+  // traía: así guardar sigue funcionando aunque la migración aún no se haya ejecutado.
+  const formToPayload = (f: EssentialForm, original?: Essential) => {
+    const known = (k: keyof Essential) => !!original && k in original
+    const extra: Record<string, unknown> = {}
+    if (f.phone.trim() || known("phone")) extra.phone = f.phone.trim() || null
+    if (f.website.trim() || known("website")) extra.website = f.website.trim() || null
+    if (f.is_24h || known("is_24h")) extra.is_24h = f.is_24h ? true : null
+    return {
+      name: f.name.trim(),
+      category: f.category,
+      subcategory: f.subcategory.trim() || null,
+      address: f.address.trim(),
+      neighborhood: f.neighborhood.trim(),
+      description: f.description.trim(),
+      image: f.image.trim(),
+      open_hours: f.open_hours.trim(),
+      maps_link: f.maps_link.trim(),
+      ...coordsPayload(f.latitude, f.longitude),
+      ...extra,
+    }
+  }
 
   const scrollToItem = (id: number) => {
     let tries = 0
@@ -344,6 +387,7 @@ export default function AdminEssentialsPage() {
       neighborhood: item.neighborhood || "", description: item.description || "",
       image: item.image || "", open_hours: item.open_hours || "", maps_link: item.maps_link || "",
       latitude: coordToInput(item.latitude), longitude: coordToInput(item.longitude),
+      phone: item.phone || "", website: item.website || "", is_24h: !!item.is_24h,
     })
   }
 
@@ -370,7 +414,7 @@ export default function AdminEssentialsPage() {
       return
     }
     setSaving(true)
-    const { data, error } = await supabase.from("essentials").update(formToPayload(editEssential)).eq("id", id).select().single()
+    const { data, error } = await supabase.from("essentials").update(formToPayload(editEssential, essentials.find((x) => x.id === id))).eq("id", id).select().single()
     setSaving(false)
     if (error) { logError("EDIT ERROR:", error); toast(`No se ha podido guardar: ${error.message}`, 5000); return }
     toast("Cambios guardados")
@@ -397,6 +441,19 @@ export default function AdminEssentialsPage() {
     if (error) { logError("HIDDEN ERROR:", error); toast(`No se ha podido cambiar: ${error.message}`, 5000); return }
     setEssentials((prev) => prev.map((e) => (e.id === item.id ? { ...e, hidden: newValue } : e)))
     touchCache(essentialPaths())
+  }
+
+  // «Verificado hoy»: alguien de Noctua ha comprobado el horario (llamando o con la fuente oficial). Mientras no se
+  // hace, Hospital, Veterinario, aseos, máquinas, consignas y comisarías salen como «horario sin confirmar».
+  const setVerified = async (item: Essential, verified: boolean) => {
+    const patch = verified
+      ? { verification_status: "verified", last_verified_at: new Date().toISOString() }
+      : { verification_status: "unverified", last_verified_at: null }
+    const { data, error } = await supabase.from("essentials").update(patch).eq("id", item.id).select().single()
+    if (error) { logError("VERIFY ERROR:", error); toast(`No se ha podido guardar la verificación: ${error.message}`, 5000); return }
+    if (data) setEssentials((prev) => prev.map((e) => (e.id === item.id ? data : e)))
+    touchCache(essentialPaths())
+    toast(verified ? "Marcado como verificado hoy" : "Verificación quitada")
   }
 
   // ---------- Publicar / ocultar en bloque ----------
@@ -509,6 +566,18 @@ export default function AdminEssentialsPage() {
         <div>
           <label className={labelClass}>Horario</label>
           <input value={data.open_hours} onChange={(e) => setData({ ...data, open_hours: e.target.value })} placeholder="Open 24 hours" className={inputClass} />
+          <label className="mt-2 flex items-center gap-2 text-xs text-zinc-300">
+            <input type="checkbox" checked={data.is_24h} onChange={(e) => setData({ ...data, is_24h: e.target.checked })} />
+            Abierto las 24 h (se usa si el horario está vacío)
+          </label>
+        </div>
+        <div>
+          <label className={labelClass}>Teléfono</label>
+          <input value={data.phone} onChange={(e) => setData({ ...data, phone: e.target.value })} inputMode="tel" placeholder="933 03 30 33" className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Web</label>
+          <input value={data.website} onChange={(e) => setData({ ...data, website: e.target.value })} inputMode="url" placeholder="https://…" className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Enlace de Google Maps</label>
@@ -570,6 +639,9 @@ export default function AdminEssentialsPage() {
       ? googleMapsUrl({ lat: Number(item.latitude), lng: Number(item.longitude) })
       : null
     const editing = editingId === item.id
+    const verifiedNow = isVerificationCurrent(item)
+    const verifiedDate = item.last_verified_at ? new Date(item.last_verified_at).toLocaleDateString("es-ES", { day: "numeric", month: "short" }) : ""
+    const strictCategory = categoryInfo(item.category).trust === "strict"
     return (
       <div
         key={item.id}
@@ -615,12 +687,20 @@ export default function AdminEssentialsPage() {
                   {item.hidden && <span className="rounded-full border border-zinc-500/30 bg-zinc-500/20 px-2 py-0.5 text-xs font-bold text-zinc-400">Oculto</span>}
                   {item.import_source === "osm" && <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs font-bold text-sky-300">OpenStreetMap</span>}
                   {item.import_source === "google" && <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs font-bold text-sky-300">Google</span>}
+                  {verifiedNow ? (
+                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-bold text-emerald-300">Verificado {verifiedDate}</span>
+                  ) : item.verification_status === "verified" ? (
+                    <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs font-bold text-amber-300">Verificación caducada ({verifiedDate})</span>
+                  ) : strictCategory ? (
+                    <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs font-bold text-amber-300">Sin verificar</span>
+                  ) : null}
                   {!item.image && <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs font-bold text-amber-300">Sin foto</span>}
                   {!hasCoords && <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-xs font-bold text-red-300">Sin ubicación</span>}
                 </div>
                 <p className="mt-0.5 text-xs text-zinc-400">
                   {[item.neighborhood, item.address].filter(Boolean).join(" · ") || "Sin dirección"}
-                  {item.open_hours ? ` · 🕒 ${item.open_hours}` : ""}
+                  {item.open_hours ? ` · 🕒 ${item.open_hours}` : item.is_24h ? " · 🕒 24 h" : ""}
+                  {item.phone ? ` · 📞 ${item.phone}` : ""}
                 </p>
               </div>
             </div>
@@ -643,12 +723,25 @@ export default function AdminEssentialsPage() {
                   }}
                 />
               </label>
+              <button onClick={() => setVerified(item, true)} className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500 hover:text-white">
+                ✅ {verifiedNow ? "Verificar otra vez hoy" : "Verificado hoy"}
+              </button>
+              {item.verification_status === "verified" && (
+                <button onClick={() => setVerified(item, false)} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-zinc-300 transition hover:bg-white/10">
+                  Quitar verificación
+                </button>
+              )}
               <button onClick={() => toggleHidden(item)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${!item.hidden ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
                 👁️ {item.hidden ? "Oculto" : "Visible"}
               </button>
               {mapsHref && (
                 <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/10">
                   🗺️ Mapa ↗
+                </a>
+              )}
+              {/^https?:\/\//i.test(item.source_url || "") && (
+                <a href={item.source_url!} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/10">
+                  Fuente ↗
                 </a>
               )}
               <button onClick={() => deleteEssential(item)} className="rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-400 transition hover:bg-red-500 hover:text-white">
@@ -669,7 +762,7 @@ export default function AdminEssentialsPage() {
   ]
 
   return (
-    <AdminShell title="Esenciales" subtitle="Farmacias, cajeros, comida, transporte, metro y demás servicios para la noche.">
+    <AdminShell title="Esenciales" subtitle="Farmacias, cajeros, comida, transporte, taxi, aseos, máquinas, consignas y demás servicios para la noche.">
       <>
         {/* Resumen (cada tarjeta filtra la lista) */}
         <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">

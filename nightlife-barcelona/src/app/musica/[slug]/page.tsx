@@ -12,7 +12,8 @@ import { computeAreaFacts } from "../../../lib/areaFactsData"
 import { zoneLinks } from "../../../lib/zonePages"
 
 // /musica/techno, /musica/reggaeton… Una página por estilo con los locales que lo pinchan.
-export const revalidate = 3600
+// 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
+export const revalidate = 21600
 export function generateStaticParams() {
   return STYLES.map((s) => ({ slug: s.slug }))
 }

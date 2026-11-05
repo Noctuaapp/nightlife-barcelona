@@ -16,11 +16,18 @@ const META: Record<string, { title: string; description: string }> = {
   // 29/10/2026: era la página con más impresiones en Google (2.456) y solo 8 clics; la gente busca
   // "supermercado 24 horas", y el título no lo decía.
   supermarket: { title: "Supermercados 24 h y abiertos de noche en Barcelona", description: "Supermercados abiertos 24 horas y hasta tarde en Barcelona, con mapa, horarios y cuáles están abiertos ahora." },
-  hotel: { title: "Hoteles cerca de la fiesta en Barcelona", description: "Hoteles cerca de las zonas de ocio nocturno de Barcelona." },
   casino: { title: "Casinos en Barcelona", description: "Casinos y salas de juego en Barcelona: horarios y cómo llegar." },
   "gas-station": { title: "Gasolineras 24 h en Barcelona", description: "Gasolineras abiertas por la noche en Barcelona." },
   parking: { title: "Parkings gratis cerca de clubs en Barcelona", description: "Aparcamientos públicos gratuitos para dejar el coche en Barcelona, con los clubs que tienes a pie desde cada uno." },
   hospital: { title: "Urgencias y hospitales en Barcelona", description: "Hospitales con urgencias 24 h en Barcelona y cómo llegar." },
+  // 05/11/2026: categorías nuevas. Llevan noindex hasta que tengan sitios verificados (ver NOINDEX).
+  veterinary: { title: "Veterinarios de urgencia en Barcelona", description: "Veterinarios de urgencia y hospitales veterinarios en Barcelona: horario, teléfono y cómo llegar." },
+  toilets: { title: "Aseos públicos en Barcelona", description: "Aseos públicos en Barcelona con su horario y condiciones de acceso." },
+  vending: { title: "Máquinas expendedoras en Barcelona", description: "Máquinas expendedoras de bebidas, snacks, café y más en Barcelona, accesibles desde la calle." },
+  bicing: { title: "Estaciones de Bicing en Barcelona", description: "Estaciones de Bicing en Barcelona con mapa y la más cercana a ti." },
+  luggage: { title: "Consignas y taquillas en Barcelona", description: "Consignas y taquillas para dejar equipaje o abrigos en Barcelona, con horario y cómo llegar." },
+  police: { title: "Comisarías y policía en Barcelona", description: "Comisarías de la Guardia Urbana, Mossos d'Esquadra y Policía Nacional en Barcelona, con teléfono y cómo llegar." },
+  "lost-found": { title: "Objetos perdidos en Barcelona", description: "Oficinas de objetos perdidos en Barcelona y qué hacer si pierdes el móvil o la cartera." },
 }
 
 // Las 12 categorías se generan al compilar (antes cada visita se renderizaba de cero) y cualquier
@@ -33,11 +40,14 @@ export const dynamicParams = false
 // La lista de cada categoría la pinta el navegador después de cargar, así que Google veía una página
 // casi vacía ("Cargando…"). El texto de abajo se genera en el servidor con los datos reales y se
 // refresca cada hora.
-export const revalidate = 3600
+// 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
+export const revalidate = 21600
 
-// Hoteles y casinos se mantienen accesibles, pero no se promocionan ni se piden indexar: no son
-// "esenciales" de la noche y diluyen la relevancia del resto para Google.
-const NOINDEX = new Set(["hotel", "casino"])
+// Casinos se mantiene accesible, pero no se promociona ni se pide indexar: no es un "esencial" de la
+// noche y diluye la relevancia del resto para Google. Hotel se retiró el 05/11/2026 (da 404).
+// Las categorías nuevas tampoco se indexan hasta tener sitios verificados: una página casi vacía
+// perjudica más que ayuda. Cuando una tenga datos, se quita de aquí y se añade a sitemap.ts.
+const NOINDEX = new Set(["casino", "veterinary", "toilets", "vending", "bicing", "luggage", "police", "lost-found"])
 
 export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
   const { category } = await params

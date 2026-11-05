@@ -3,12 +3,14 @@ import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import EventsExplorer from "../../components/nightlife/EventsExplorer"
 import EventsComingSoon from "../../components/nightlife/EventsComingSoon"
+import MananeoSection from "../../components/nightlife/MananeoSection"
 import { supabase } from "../../lib/supabase"
 import { EVENT_IMAGE_FALLBACK, parsePriceEUR, safeJsonLd } from "../../lib/structuredData"
 import { createSlug } from "../../lib/slug"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 
-export const revalidate = 3600
+// 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
+export const revalidate = 21600
 
 export const metadata: Metadata = {
   // Con Eventos cerrado (lib/featureFlags.ts) esta dirección solo enseña el aviso «Próximamente»: no se indexa.
@@ -96,6 +98,8 @@ export default async function EventsPage() {
     <>
       <Header />
       <EventsExplorer initialEvents={events || []} />
+      {/* Mañaneo (afterhours): oculto para los visitantes mientras MANANEO_HIDDEN sea true (lib/featureFlags.ts). */}
+      <MananeoSection />
       <BottomNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
     </>

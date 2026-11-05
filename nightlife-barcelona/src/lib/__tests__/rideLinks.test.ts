@@ -1,24 +1,23 @@
-import { describe, expect, it } from "vitest"
-import { androidIntent, detectPlatform, iosScheme, uberLink } from "../rideLinks"
+import { describe, it, expect } from "vitest"
+import { androidIntent, destinationPath, iosScheme } from "../rideLinks"
 
-describe("rideLinks", () => {
-  it("detecta la plataforma", () => {
-    expect(detectPlatform("Mozilla/5.0 (Linux; Android 14; Pixel 8)")).toBe("android")
-    expect(detectPlatform("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)")).toBe("ios")
-    expect(detectPlatform("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)", 5)).toBe("ios")
-    expect(detectPlatform("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")).toBe("desktop")
+describe("rideLinks · destino", () => {
+  const dest = { name: "Sala Apolo", lat: 41.374, lng: 2.1699 }
+  it("Cabify lleva el destino con las coordenadas", () => {
+    const path = decodeURIComponent(destinationPath("cabify", dest))
+    expect(path.startsWith("/journey?json=")).toBe(true)
+    const json = JSON.parse(path.replace("/journey?json=", ""))
+    expect(json.stops[0].loc).toEqual({ latitude: "41.374", longitude: "2.1699" })
+    expect(json.stops[0].name).toBe("Sala Apolo")
   })
-
-  it("arma el intent de Android con paquete y tienda de respaldo", () => {
-    const url = androidIntent("cabify")
-    expect(url.startsWith("intent://cabify#Intent;scheme=cabify;package=com.cabify.rider;")).toBe(true)
-    expect(url).toContain(encodeURIComponent("https://play.google.com/store/apps/details?id=com.cabify.rider"))
-    expect(url.endsWith(";end")).toBe(true)
-    expect(iosScheme("cabify")).toBe("cabify://cabify")
+  it("sin coordenadas o en FREE NOW no se manda destino", () => {
+    expect(destinationPath("cabify", { name: "X" })).toBe("")
+    expect(destinationPath("freenow", dest)).toBe("")
+    expect(iosScheme("freenow", dest)).toBe("freenow://")
   })
-
-  it("Uber lleva el destino", () => {
-    expect(uberLink("KU", null, 41.38, 2.19)).toContain("dropoff[latitude]=41.38")
-    expect(uberLink("KU", "Pg. Marítim 38", null, null)).toContain(encodeURIComponent("Pg. Marítim 38"))
+  it("el enlace de iPhone y el de Android incluyen el destino de Cabify", () => {
+    expect(iosScheme("cabify", dest)).toContain("cabify://cabify/journey?json=")
+    expect(androidIntent("cabify", dest)).toContain("intent://cabify/journey?json=")
+    expect(androidIntent("cabify", dest)).toContain("package=com.cabify.rider")
   })
 })

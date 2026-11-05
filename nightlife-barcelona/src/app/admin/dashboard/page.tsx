@@ -28,6 +28,8 @@ type Pending = { messages: number; ownerMessages: number; reports: number; denia
 type System = { maintenance: boolean | null; clubNoctua: boolean | null; season: string | null }
 type Upcoming = { id: number; title: string; date: string; kind: "Evento" | "Noche de club"; href: string }
 type Signup = { id: string; email: string; username: string | null; created_at: string; last_sign_in_at: string | null }
+// Resumen por usuario de admin_users_activity (supabase/24): solo lo que hace falta aquí.
+type ActivityRow = { user_id: string; last_seen: string | null }
 
 function delta(now: number, before: number) {
   if (!before) return now ? "Sin datos de la semana anterior" : "—"
@@ -79,7 +81,7 @@ export default function AdminDashboardPage() {
     const load = async () => {
       const [
         msgs, reports, denials, review,
-        ov, ovPrev, list,
+        ov, ovPrev, list, activity,
         maint, club, season,
         clubsVisibleRes, clubsHiddenRes, events30, nights7, nextEvents, nextNights, ownerChanges, ownerMessages,
       ] = await Promise.all([
@@ -92,6 +94,8 @@ export default function AdminDashboardPage() {
         supabase.rpc("admin_data_overview", { p_from: daysAgo(6), p_to: today }),
         supabase.rpc("admin_data_overview", { p_from: daysAgo(13), p_to: daysAgo(7) }),
         supabase.rpc("admin_list_users"),
+        // Cuentas con actividad en la web estos 7 días (misma fuente que Admin › Visitas y Actividad).
+        supabase.rpc("admin_users_activity", { p_from: daysAgo(6), p_to: today }),
         supabase.from("app_settings").select("maintenance_mode").eq("id", true).maybeSingle(),
         supabase.from("club_noctua_settings").select("enabled").eq("id", 1).maybeSingle(),
         supabase.from("noc_seasonal_settings").select("mode").eq("id", 1).maybeSingle(),
@@ -122,10 +126,20 @@ export default function AdminDashboardPage() {
 
       const all = (list.data || []) as Signup[]
       const weekAgo = Date.now() - 7 * 86400000
+      // 05/11/2026: «activos» contaba las cuentas con un inicio de sesión esta semana (last_sign_in_at), pero
+      // quien ya tiene la sesión abierta entra cada día sin «iniciar sesión» y no contaba. Ahora cuenta las
+      // cuentas con actividad registrada en la web en los últimos 7 días (como Admin › Visitas). Si esa función
+      // falla, se usa el criterio antiguo. Tu propia cuenta no cuenta (tus pruebas inflaban las cifras).
+      const others = all.filter((u) => u.email !== ADMIN_EMAIL)
+      const otherIds = new Set(others.map((u) => u.id))
+      const activeByActivity = activity.error
+        ? null
+        : new Set(((activity.data || []) as ActivityRow[]).filter((r) => otherIds.has(r.user_id)).map((r) => r.user_id)).size
       setUsers({
         total: all.length,
-        new7: all.filter((u) => new Date(u.created_at).getTime() >= weekAgo).length,
-        active7: all.filter((u) => u.last_sign_in_at && new Date(u.last_sign_in_at).getTime() >= weekAgo).length,
+        new7: others.filter((u) => new Date(u.created_at).getTime() >= weekAgo).length,
+        active7:
+          activeByActivity ?? others.filter((u) => u.last_sign_in_at && new Date(u.last_sign_in_at).getTime() >= weekAgo).length,
       })
       setSignups([...all].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 5))
 

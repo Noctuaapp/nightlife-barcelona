@@ -130,7 +130,7 @@
     "day4": "Dijous",
     "day5": "Divendres",
     "day6": "Dissabte",
-    "explore": "Veure tots els clubs →",
+    "explore": "Veure tots els clubs",
     "nudgeKeep": "Segueix explorant",
     "nudgePlanTitle": "Planifica la teva nit",
     "nudgePlanSub": "Digue'ns què et ve de gust i et proposem els millors llocs per a aquesta nit.",
@@ -156,7 +156,13 @@
     "soonNote": "Aviat: estem preparant l'agenda completa d'esdeveniments i festivals.",
     "soonTitle": "Els esdeveniments arriben aviat",
     "soonBody": "Noctua està treballant per oferir informació veraç sobre tots els festivals, festes de barri i sessions que estan passant a Barcelona. Molt aviat podràs gaudir d'aquesta funció.",
-    "soonCta": "Explorar clubs"
+    "soonCta": "Explorar clubs",
+    "catConcert": "Concerts",
+    "catFestival": "Festivals",
+    "catNeighborhood": "Festes de barri",
+    "catConcertSub": "Directes i concerts",
+    "catFestivalSub": "Música i cultura",
+    "catNeighborhoodSub": "Les festes majors de Barcelona"
   },
   "essentials": {
     "title": "Essencials",
@@ -172,13 +178,20 @@
       "Transport": "Transport",
       "Metro": "Metro",
       "Nitbus": "Nitbus (bus nocturn)",
-      "Taxi": "Taxi",
+      "Taxi": "Taxi i VTC",
       "Supermarket": "Supermercat",
       "Hotel": "Hotel",
       "Casino": "Casino",
       "GasStation": "Gasolinera",
-      "Hospital": "Hospital",
-      "Parking": "Aparcament gratuït"
+      "Hospital": "Urgències i hospitals",
+      "Parking": "Aparcament gratuït",
+      "Veterinary": "Veterinaris",
+      "Toilets": "Lavabos públics",
+      "Vending": "Màquines expenedores",
+      "Bicing": "Bicing",
+      "Luggage": "Consignes",
+      "Police": "Comissaries i policia",
+      "LostFound": "Objectes perduts"
     },
     "categories": {
       "Pharmacy": "Farmàcies 24h a Barcelona",
@@ -187,13 +200,20 @@
       "Transport": "Aerobús i transport a l'aeroport",
       "Metro": "Estacions de metro i horaris",
       "Nitbus": "Parades principals dels autobusos nocturns",
-      "Taxi": "Taxis i apps de VTC (Uber, Cabify, FreeNow)",
+      "Taxi": "Parades de taxi, telèfons i apps de VTC",
       "Supermarket": "Supermercats 24h i botigues de conveniència",
       "Hotel": "Hotels i allotjament",
       "Casino": "Casinos i entreteniment",
       "GasStation": "Gasolineres obertes tota la nit",
-      "Hospital": "Hospitals i urgències 24h",
-      "Parking": "Aparcaments públics gratuïts a prop dels clubs"
+      "Hospital": "Urgències 24 h, CUAP i hospitals",
+      "Parking": "Aparcaments públics gratuïts a prop dels clubs",
+      "Veterinary": "Veterinaris d'urgència i hospitals veterinaris",
+      "Toilets": "Lavabos públics i el seu horari",
+      "Vending": "Màquines de begudes, snacks i més",
+      "Bicing": "Estacions, sense bicis lliures en directe",
+      "Luggage": "Consignes i taquilles, amb el seu horari",
+      "Police": "Guàrdia Urbana, Mossos i Policia Nacional",
+      "LostFound": "Oficines d'objectes perduts i què fer si perds alguna cosa"
     }
   },
   "plan": {
@@ -433,7 +453,8 @@
     "hintFull": "Si el local està ple, poden no deixar-te passar.",
     "hintGroup": "Limitar els grups grans pot ser vàlid si és una norma visible i igual per a tothom.",
     "hintOther": "Si creus que ha estat pel teu origen, el sexe, l'orientació o una altra condició personal, tens drets.",
-    "rightsLink": "Veure els meus drets si no em deixen entrar"
+    "rightsLink": "Veure els meus drets si no em deixen entrar",
+    "triggerHint": "Et mostrem on continuar a prop"
   },
   "clubCard": {
     "vipTable": "Taula VIP",
@@ -628,7 +649,7 @@
     "noList": "Sense llista",
     "notePlaceholder": "✏️ Afegeix una nota (p. ex. anar amb en Marc, pel seu aniversari...)",
     "title": "La teva col·lecció nocturna",
-    "subtitle": "Clubs, esdeveniments i nits desades — organitza-les en llistes i afegeix notes per no oblidar res.",
+    "subtitle": "Els teus clubs, nits i esdeveniments desats, amb el que importa a la vista.",
     "saved": "Desats",
     "all": "Tots",
     "renameHint": "Doble clic per canviar el nom",
@@ -647,7 +668,15 @@
     "eventsSavedTitle": "Esdeveniments",
     "listsExplainer": "Agrupa els teus preferits en llistes (per exemple \"Per al cap de setmana\" o \"Amb amics\") per trobar-los més ràpid — és opcional, no cal fer-lo servir.",
     "gateTitle": "Desa els teus llocs preferits",
-    "gateSubtitle": "Crea un compte gratis i tingues a mà els locals i esdeveniments que no et vols perdre."
+    "gateSubtitle": "Crea un compte gratis i tingues a mà els locals i esdeveniments que no et vols perdre.",
+    "today": "Avui",
+    "tomorrow": "Demà",
+    "past": "Ja ha passat",
+    "openUntil": "Obert fins a les {t}",
+    "openNow": "Obert ara",
+    "opensAt": "Obre a les {t}",
+    "closedNow": "Tancat ara",
+    "openNowFilter": "Oberts ara"
   },
   "attendance": {
     "willGo": "Hi seré aquesta nit",
@@ -868,7 +897,7 @@
     "walk": "Anar-hi a peu",
     "website": "Web oficial",
     "rideCopied": "Adreça copiada: enganxa-la a l'app",
-    "rideHint": "S'obre l'app si la tens instal·lada; si no, la botiga per descarregar-la.",
+    "rideHint": "Uber i Cabify s'obren amb la destinació posada. A FREE NOW enganxa l'adreça: ja la tens copiada.",
     "noteUpvote": "Em sembla útil",
     "noteDownvote": "No em sembla útil",
     "noteReport": "Denunciar",
@@ -906,7 +935,9 @@
     "tempClosedNote": "Aquest local està tancat per ara. Mira el seu Instagram o la seva web per saber quan torna a obrir.",
     "fBirthdays": "Aniversaris",
     "fPrivateEvents": "Esdeveniments privats",
-    "fVenueRental": "Lloguer del local"
+    "fVenueRental": "Lloguer del local",
+    "rideTo": "Destinació",
+    "ticketsAdvance": "Entrades anticipades"
   },
   "eventPage": {
     "dateTbc": "Data per confirmar",
@@ -979,7 +1010,15 @@
     "reasonLive": "Música en directe",
     "reasonCocktails": "Còctels",
     "reasonsTitle": "Per què aquest",
-    "openCount": "{n} oberts ara"
+    "openCount": "{n} oberts ara",
+    "tileAny": "Tot",
+    "tileDance": "Ballar",
+    "tileChat": "Xerrar",
+    "tileChill": "Chill",
+    "tileLive": "Directe",
+    "filters": "Filtres",
+    "clearFilters": "Treure filtres",
+    "shareShort": "Compartir pla"
   },
   "cookieBanner": {
     "title": "Galetes",
@@ -1060,7 +1099,16 @@
     "nitbusLinesHere": "Línies que hi paren",
     "parkingFree": "Aparcament gratuït",
     "parkingNear": "Clubs a peu",
-    "parkingNoClubs": "Cap club a menys de 15 min a peu"
+    "parkingNoClubs": "Cap club a menys de 15 min a peu",
+    "groups": {
+      "health": "Urgències i salut",
+      "move": "Moure's",
+      "food": "Menjar i comprar",
+      "personal": "Necessitats personals",
+      "other": "Altres"
+    },
+    "call": "Trucar",
+    "website": "Web"
   },
   "areas": {
     "titleBarrio": "Discoteques a {name}",
@@ -2019,5 +2067,57 @@
     "many": "{n} locals",
     "showAll": "Veure els {n} locals",
     "showLess": "Veure'n menys"
+  },
+  "mananeo": {
+    "title": "Matinada",
+    "subtitle": "Llocs per continuar quan surt el sol: afterhours i ressaca.",
+    "directions": "Com arribar",
+    "openUntil": "Obert fins a les {t}",
+    "openNow": "Obert ara",
+    "opensAt": "Obre a les {t}",
+    "closedNow": "Tancat ara"
+  },
+  "availability": {
+    "unverified": "Horari sense confirmar · truca abans d'anar-hi",
+    "onCall": "Urgències per trucada",
+    "listedHint": "Segons el seu horari publicat, sense confirmar",
+    "verifiedOn": "Verificat el {date}",
+    "sourceLabel": "Font: {source}",
+    "source": {
+      "osm": "OpenStreetMap",
+      "google": "Google",
+      "overture": "Overture Maps",
+      "manual": "Noctua",
+      "official": "Font oficial",
+      "business": "Web del negoci",
+      "user": "Aportació d'usuaris"
+    },
+    "unverifiedShort": "Horari sense confirmar"
+  },
+  "essentialsHelp": {
+    "button": "M'ha passat alguna cosa",
+    "call112": "Trucar al 112",
+    "title": "Què ha passat?",
+    "note": "Si hi ha perill per a la vida, truca al 112. Noctua no substitueix els serveis d'emergència.",
+    "close": "Tancar",
+    "home": "Tornar a casa",
+    "homeHint": "Taxi, Nitbus i metro d'aquesta nit",
+    "pharmacy": "Necessito una farmàcia",
+    "pharmacyHint": "La més propera oberta ara",
+    "medical": "Necessito assistència mèdica",
+    "medicalHint": "Urgències i hospitals a prop teu",
+    "pet": "La meva mascota necessita un veterinari",
+    "petHint": "Urgències veterinàries",
+    "food": "Necessito trobar menjar",
+    "foodHint": "Oberta ara, la més propera",
+    "phone092": "Guàrdia Urbana",
+    "phone088": "Mossos d'Esquadra",
+    "toilets": "Necessito un lavabo",
+    "toiletsHint": "Lavabos públics, els més propers primer",
+    "police": "Necessito la policia",
+    "policeHint": "Comissaria més propera",
+    "lost": "He perdut el mòbil o la cartera",
+    "lostHint": "Oficines d'objectes perduts",
+    "buttonNote": "Ajuda ràpida si alguna cosa va malament aquesta nit: farmàcia, urgències, taxi, lavabo o policia a prop teu. El 112 és a dins, per si és greu."
   }
 }

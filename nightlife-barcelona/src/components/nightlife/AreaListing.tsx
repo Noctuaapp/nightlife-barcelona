@@ -112,23 +112,8 @@ export default function AreaListing({ kind, slug, name, clubs, neighborhoods, st
 
         <h1 className="font-display mt-4 max-w-3xl text-[2rem] leading-[1.08] sm:text-5xl">{title}</h1>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-300">{intro}</p>
-        {!facts && <p className="mt-3 text-sm text-zinc-400">{t("areas.count").replace("{n}", String(clubs.length))}</p>}
+        <p className="mt-3 text-sm text-zinc-400">{t("areas.count").replace("{n}", String(clubs.length))}</p>
       </section>
-
-      {facing.length > 0 && (
-        <section aria-labelledby="area-facts-title" className="mx-auto mt-6 max-w-6xl px-4 sm:px-6">
-          <div className="max-w-3xl rounded-card border border-white/10 bg-surface p-5 sm:p-6">
-            <h2 id="area-facts-title" className="text-lg font-semibold">
-              {t("areas.facts.title").replace("{name}", displayName)}
-            </h2>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-zinc-300 marker:text-zinc-600">
-              {facing.map((line, i) => (
-                <li key={i}>{line}</li>
-              ))}
-            </ul>
-          </div>
-        </section>
-      )}
 
       <section className="mx-auto mt-8 grid grid-cols-1 max-w-6xl gap-5 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-3">
         {clubs.map((club) => (
@@ -156,6 +141,26 @@ export default function AreaListing({ kind, slug, name, clubs, neighborhoods, st
           />
         ))}
       </section>
+
+      {/* Los datos de la zona van DEBAJO de los locales y plegados (04/11/2026): quien llega desde el
+          buscador quiere ver discotecas, no una lista larga de datos. El texto sigue en el HTML. */}
+      {facing.length > 0 && (
+        <section aria-labelledby="area-facts-title" className="mx-auto mt-10 max-w-6xl px-4 sm:px-6">
+          <details className="group max-w-3xl rounded-card border border-white/10 bg-surface">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 sm:px-6 [&::-webkit-details-marker]:hidden">
+              <h2 id="area-facts-title" className="text-base font-semibold">
+                {t("areas.facts.title").replace("{name}", displayName)}
+              </h2>
+              <span className="shrink-0 text-xl leading-none text-zinc-400 transition-transform group-open:rotate-45">+</span>
+            </summary>
+            <ul className="list-disc space-y-2 px-5 pb-5 pl-10 pr-5 text-sm leading-relaxed text-zinc-300 marker:text-zinc-600 sm:pl-11">
+              {facing.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          </details>
+        </section>
+      )}
 
       <section className="mx-auto mt-14 max-w-6xl space-y-8 px-4 sm:px-6">
         {otherStyles.length > 0 && (

@@ -13,6 +13,7 @@ import SectionHero from "../ui/SectionHero"
 import Icon from "../ui/Icon"
 import { toDateLocale } from "../../lib/dateLocale"
 import { optionsWithData } from "../../lib/filterOptions"
+import { classifyEvent, EVENT_CATEGORIES, type EventCategory } from "../../lib/eventCategories"
 
 // Un evento de varios días (date_end) no se considera terminado hasta que pasa el último día,
 // no el primero.
@@ -73,7 +74,16 @@ function searchScore(event: any, rawQuery: string): number {
 }
 
 export default function EventsExplorer({ initialEvents }: { initialEvents: any[] }) {
-  const [events] = useState<any[]>(initialEvents)
+  // Cada evento lleva su categoría (Conciertos · Festivales · Fiestas de barrio, ver lib/eventCategories.ts).
+  // Las «fiestas mayores» de barrios que no son de las principales no se enseñan.
+  const [events] = useState<any[]>(() =>
+    initialEvents.map((e) => ({ ...e, _cls: classifyEvent(e) })).filter((e) => !e._cls.hidden)
+  )
+  const [cat, setCat] = useState<EventCategory>(() => {
+    const upcoming = (e: any) => !isEventPast(e.date, e.date_end)
+    const items = initialEvents.map((e) => ({ e, c: classifyEvent(e) })).filter((x) => !x.c.hidden)
+    return EVENT_CATEGORIES.find((c) => items.some((x) => x.c.category === c && upcoming(x.e))) || "concert"
+  })
   const [selectedFilters, setSelectedFilters] = useState<Set<string>>(new Set())
   const [selectedZones, setSelectedZones] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState("")
@@ -83,8 +93,8 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   const [nearMeLoading, setNearMeLoading] = useState(false)
   const [nearMeError, setNearMeError] = useState("")
   // Los eventos pasados se ocultan por defecto (antes salían mezclados, solo atenuados).
-  // Como antes: se ven todos los eventos (los pasados, atenuados) y "Solo próximos" los filtra.
-  const [hidePast, setHidePast] = useState(false)
+  // Por defecto solo los próximos (04/11/2026, con las categorías los pasados se colaban arriba); el chip «Solo próximos» los vuelve a mostrar.
+  const [hidePast, setHidePast] = useState(true)
   const [sortBy, setSortBy] = useState<"date" | "date_desc" | "featured">("date")
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const { t, locale } = useLanguage()
@@ -92,15 +102,13 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   const availableZones = zonesPresent(events)
 
   const filters = [
-    { key: "festival", label: t("events.festival") },
-    { key: "neighborhood", label: t("events.neighborhood") },
     { key: "free", label: t("events.free") },
     { key: "featured", label: t("events.featured") },
   ]
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
-  }, [selectedFilters, selectedZones, search, nearMe, hidePast, sortBy])
+  }, [cat, selectedFilters, selectedZones, search, nearMe, hidePast, sortBy])
 
   const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371
@@ -113,11 +121,6 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   }
 
   const filterMatch = (event: any, key: string) => {
-    const title = event.title?.toLowerCase() || ""
-    if (key === "festival")
-      return ["festival", "primavera", "sonar", "cruïlla", "mira", "beach festival"].some((w) => title.includes(w))
-    if (key === "neighborhood")
-      return ["festa major", "festes majors", "fiesta mayor", "la mercè", "grec"].some((w) => title.includes(w))
     if (key === "free") return event.price?.toLowerCase() === "gratis"
     if (key === "featured") return event.featured === true
     return false
@@ -128,6 +131,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
   const filteredEvents = useMemo(() => {
     return events.filter((event) => {
+      if (event._cls.category !== cat) return false
       const matchesFilters = selectedFilters.size === 0 || Array.from(selectedFilters).every((key) => filterMatch(event, key))
 
       const matchesSearch = searchScore(event, search) > 0
@@ -145,7 +149,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
       return matchesFilters && matchesZone && matchesSearch && matchesNearMe && matchesPast
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [events, selectedFilters, selectedZones, search, nearMe, userLat, userLng, hidePast])
+  }, [events, cat, selectedFilters, selectedZones, search, nearMe, userLat, userLng, hidePast])
 
   const sortedEvents = useMemo(() => {
     const arr = [...filteredEvents]
@@ -227,6 +231,20 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
     )
   }
 
+  // Cuántos eventos próximos hay en cada categoría (para los números de las pestañas).
+  const catCounts = useMemo(() => {
+    const c: Record<EventCategory, number> = { concert: 0, festival: 0, neighborhood: 0 }
+    events.forEach((e) => {
+      if (!isEventPast(e.date, e.date_end)) c[e._cls.category as EventCategory]++
+    })
+    return c
+  }, [events])
+  const catMeta: Record<EventCategory, { label: string; sub: string; icon: string }> = {
+    concert: { label: t("events.catConcert"), sub: t("events.catConcertSub"), icon: "mic" },
+    festival: { label: t("events.catFestival"), sub: t("events.catFestivalSub"), icon: "ticket" },
+    neighborhood: { label: t("events.catNeighborhood"), sub: t("events.catNeighborhoodSub"), icon: "users" },
+  }
+
   const quick = (active: boolean) =>
     `flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition active:scale-95 disabled:opacity-60 ${
       active ? "bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
@@ -239,8 +257,37 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
         {/* PORTADA con la foto de la web (03/11/2026), igual que Clubs y Esenciales. */}
         <SectionHero section="events" title={t("events.subtitle")} pill={t("home.liveTonight")} switcher={<ExploreSwitch active="events" />} />
 
+        {/* CATEGORÍAS (04/11/2026): lo primero que eliges es qué tipo de plan buscas. */}
+        <nav aria-label={t("events.title")} className="mx-auto max-w-7xl px-4 pt-5">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {EVENT_CATEGORIES.map((c) => {
+              const on = cat === c
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCat(c)}
+                  aria-pressed={on}
+                  className={`flex flex-col items-start gap-1 rounded-[20px] px-3.5 py-3 text-left transition active:scale-[0.98] sm:px-5 sm:py-4 ${
+                    on
+                      ? "bg-white text-[#0a0910]"
+                      : "bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
+                  }`}
+                >
+                  <span className="flex w-full items-center justify-between gap-2">
+                    <Icon name={catMeta[c].icon} className={`h-5 w-5 ${on ? "text-[#0a0910]" : "text-zinc-300"}`} />
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${on ? "bg-[#0a0910]/10" : "bg-white/10 text-zinc-200"}`}>{catCounts[c]}</span>
+                  </span>
+                  <span className="text-[13px] font-bold leading-tight sm:text-base">{catMeta[c].label}</span>
+                  <span className={`hidden text-xs font-normal leading-snug sm:block ${on ? "text-[#0a0910]/65" : "text-zinc-400"}`}>{catMeta[c].sub}</span>
+                </button>
+              )
+            })}
+          </div>
+        </nav>
+
         {/* Fija solo en pantallas grandes (lg+); en móvil se va con el scroll para no tapar los resultados. */}
-        <div className="relative z-30 border-y border-white/10 bg-night/90 py-3 backdrop-blur-xl lg:sticky lg:top-20">
+        <div className="relative z-30 mt-5 border-y border-white/10 bg-night/90 py-3 backdrop-blur-xl lg:sticky lg:top-20">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 lg:flex-row lg:items-center">
             <div className="group flex min-w-0 flex-1 items-center gap-3 rounded-full border border-white/15 bg-surface px-5 py-3 transition focus-within:border-brand">
               <SearchIcon className="h-5 w-5 shrink-0 text-zinc-400 transition group-focus-within:text-brand-soft" />
@@ -326,7 +373,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
           </p>
         </section>
 
-        <section className="mx-auto mt-4 grid grid-cols-1 max-w-7xl gap-5 px-4 md:grid-cols-2 xl:grid-cols-3">
+        <section className={`mx-auto mt-4 grid max-w-7xl grid-cols-1 gap-5 px-4 md:grid-cols-2 ${cat === "neighborhood" ? "" : "xl:grid-cols-3"}`}>
           {visibleEvents.length === 0 ? (
             <div className="col-span-full py-20 text-center">
               <p className="text-lg font-semibold text-zinc-200">{t("eventsExplorer.emptyTitle")}</p>
@@ -341,18 +388,47 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
             visibleEvents.map((event) => {
               const past = isEventPast(event.date, event.date_end)
               const soon = !past && isUpcomingSoon(event.date)
-              const fmt = (d: string) => dateOnly(d).toLocaleDateString(toDateLocale(locale), { weekday: "short", day: "numeric", month: "short" })
-              const dateLabel = event.date
-                ? event.date_end && event.date_end !== event.date
-                  ? `${fmt(event.date)} – ${fmt(event.date_end)}`
-                  : fmt(event.date)
-                : t("eventPage.dateTbc")
+              // Bloque de fecha grande (día + mes) para leer el calendario de un vistazo.
+              const start = event.date ? dateOnly(event.date) : null
+              const dayNum = start ? start.getDate() : null
+              const monthTxt = start ? start.toLocaleDateString(toDateLocale(locale), { month: "short" }).replace(".", "") : ""
+              const endDay = event.date_end && event.date_end !== event.date ? dateOnly(event.date_end).getDate() : null
+              const href = `/event/${event.slug || createSlug(event.title)}`
+              const dateBlock = (
+                <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-white py-2 text-[#0a0910]">
+                  <span className="text-xl font-extrabold leading-none">{dayNum ?? "–"}{endDay ? <span className="text-sm font-bold">–{endDay}</span> : null}</span>
+                  <span className="mt-1 text-[11px] font-bold leading-none">{monthTxt}</span>
+                </div>
+              )
+
+              // FIESTAS DE BARRIO: fila compacta, con el barrio por delante.
+              if (event._cls.category === "neighborhood") {
+                return (
+                  <Link
+                    key={event.id}
+                    href={href}
+                    className={`group flex items-center gap-4 rounded-card border bg-surface p-3.5 transition hover:border-white/25 ${past ? "border-white/5 opacity-60" : "border-white/10"}`}
+                  >
+                    {dateBlock}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-base font-bold text-ink">{event._cls.barrio || event.title}</p>
+                      <p className="mt-0.5 truncate text-sm text-zinc-400">{event._cls.barrio ? event.title : event.club_name || "Barcelona"}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                        {soon && <span className="rounded-full bg-white px-2.5 py-1 font-bold text-[#0a0910]">{t("eventsExplorer.thisWeek")}</span>}
+                        {past && <span className="rounded-full border border-white/10 px-2.5 py-1 font-semibold text-zinc-300">{t("event.finishedValue")}</span>}
+                        {event.price && <span className="rounded-full border border-white/10 px-2.5 py-1 font-semibold text-zinc-200">{event.price}</span>}
+                      </div>
+                    </div>
+                    <Icon name="arrow" className="h-5 w-5 shrink-0 text-zinc-500 transition group-hover:translate-x-0.5 group-hover:text-ink" />
+                  </Link>
+                )
+              }
+
+              // CONCIERTOS Y FESTIVALES: foto grande con la fecha encima.
               return (
-                // Tarjeta compacta con el mismo esquema que la de club (antes medía 500 px, con
-                // emojis en cada etiqueta y un "talón" de entrada decorativo).
                 <Link
                   key={event.id}
-                  href={`/event/${event.slug || createSlug(event.title)}`}
+                  href={href}
                   className={`group block overflow-hidden rounded-card border bg-surface transition hover:border-white/25 ${past ? "border-white/5 opacity-60" : "border-white/10"}`}
                 >
                   <div className="relative h-48 overflow-hidden">
@@ -364,19 +440,20 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
-                    <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-                      <span className="rounded-full bg-night/80 px-2.5 py-1 text-xs font-semibold text-ink">{past ? t("event.finishedValue") : dateLabel}</span>
-                      {soon && <span className="rounded-full bg-brand px-2.5 py-1 text-xs font-semibold text-white">{t("eventsExplorer.thisWeek")}</span>}
-                      {event.sold_out && !past && <span className="rounded-full bg-red-500/80 px-2.5 py-1 text-xs font-semibold text-white">{t("event.soldOut")}</span>}
+                    <div className="absolute left-3 top-3 flex items-start gap-2">
+                      {dateBlock}
+                      <div className="flex flex-col items-start gap-1.5">
+                        {past && <span className="rounded-full bg-night/80 px-2.5 py-1 text-xs font-semibold text-ink">{t("event.finishedValue")}</span>}
+                        {soon && <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-[#0a0910]">{t("eventsExplorer.thisWeek")}</span>}
+                        {event.sold_out && !past && <span className="rounded-full bg-red-500/85 px-2.5 py-1 text-xs font-semibold text-white">{t("event.soldOut")}</span>}
+                      </div>
                     </div>
                   </div>
                   <div className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <h2 className="min-w-0 text-lg font-semibold leading-snug text-ink">
-                        {event.title}
-                        {event.featured && !past && <Icon name="star" className="ml-1.5 inline h-4 w-4 align-[-2px] text-warn" />}
-                      </h2>
-                    </div>
+                    <h2 className="min-w-0 text-lg font-semibold leading-snug text-ink">
+                      {event.title}
+                      {event.featured && !past && <Icon name="star" className="ml-1.5 inline h-4 w-4 align-[-2px] text-warn" />}
+                    </h2>
                     <p className="mt-0.5 truncate text-sm text-zinc-400">
                       {[event.club_name || "Barcelona", event.music].filter(Boolean).join(" · ")}
                     </p>

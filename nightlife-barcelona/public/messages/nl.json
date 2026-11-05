@@ -127,7 +127,7 @@
     "day4": "Donderdag",
     "day5": "Vrijdag",
     "day6": "Zaterdag",
-    "explore": "Alle clubs bekijken →",
+    "explore": "Alle clubs bekijken",
     "nudgeKeep": "Blijf ontdekken",
     "nudgePlanTitle": "Plan je avond",
     "nudgePlanSub": "Vertel ons waar je zin in hebt en we stellen de beste plekken voor vanavond voor.",
@@ -153,7 +153,13 @@
     "soonNote": "Binnenkort: we werken aan de volledige agenda met evenementen en festivals.",
     "soonTitle": "Evenementen komen binnenkort",
     "soonBody": "Noctua werkt eraan om betrouwbare informatie te geven over alle festivals, buurtfeesten en sessies in Barcelona. Heel binnenkort kun je van deze functie genieten.",
-    "soonCta": "Clubs ontdekken"
+    "soonCta": "Clubs ontdekken",
+    "catConcert": "Concerten",
+    "catFestival": "Festivals",
+    "catNeighborhood": "Buurtfeesten",
+    "catConcertSub": "Live muziek en optredens",
+    "catFestivalSub": "Muziek en cultuur",
+    "catNeighborhoodSub": "De grote buurtfeesten van Barcelona"
   },
   "essentials": {
     "title": "Essentials",
@@ -169,13 +175,20 @@
       "Transport": "Transport",
       "Metro": "Metro",
       "Nitbus": "Nitbus (nachtbus)",
-      "Taxi": "Taxi",
+      "Taxi": "Taxi en rideshare",
       "Supermarket": "Supermarkt",
       "Hotel": "Hotel",
       "Casino": "Casino",
       "GasStation": "Tankstation",
-      "Hospital": "Ziekenhuis",
-      "Parking": "Gratis parkeren"
+      "Hospital": "Spoed en ziekenhuizen",
+      "Parking": "Gratis parkeren",
+      "Veterinary": "Dierenartsen",
+      "Toilets": "Openbare toiletten",
+      "Vending": "Automaten",
+      "Bicing": "Bicing",
+      "Luggage": "Bagagekluizen",
+      "Police": "Politiebureaus",
+      "LostFound": "Gevonden voorwerpen"
     },
     "categories": {
       "Pharmacy": "24u apotheken in Barcelona",
@@ -184,13 +197,20 @@
       "Transport": "Aerobus en luchthavenvervoer",
       "Metro": "Metrostations en dienstregeling",
       "Nitbus": "Belangrijkste haltes van de nachtbussen",
-      "Taxi": "Taxi's en ride-apps (Uber, Cabify, FreeNow)",
+      "Taxi": "Taxistandplaatsen, telefoonnummers en rideshare-apps",
       "Supermarket": "24u supermarkten",
       "Hotel": "Hotels en accommodatie",
       "Casino": "Casino's en entertainment",
       "GasStation": "Tankstations de hele nacht open",
-      "Hospital": "Ziekenhuizen en 24u spoedeisende hulp",
-      "Parking": "Gratis openbare parkeerplaatsen bij de clubs"
+      "Hospital": "Spoedeisende hulp 24 u, CUAP en ziekenhuizen",
+      "Parking": "Gratis openbare parkeerplaatsen bij de clubs",
+      "Veterinary": "Spoeddierenartsen en dierenziekenhuizen",
+      "Toilets": "Openbare toiletten en hun openingstijden",
+      "Vending": "Automaten voor drankjes, snacks en meer",
+      "Bicing": "Stations, zonder live vrije fietsen",
+      "Luggage": "Bagagekluizen en lockers, met openingstijden",
+      "Police": "Guardia Urbana, Mossos en Policía Nacional",
+      "LostFound": "Gevonden voorwerpen en wat te doen als je iets kwijt bent"
     }
   },
   "plan": {
@@ -429,7 +449,8 @@
     "hintFull": "Als de zaak vol is, mogen ze je weigeren.",
     "hintGroup": "Grote groepen beperken kan geldig zijn als de regel zichtbaar is en voor iedereen hetzelfde.",
     "hintOther": "Denk je dat het kwam door je afkomst, geslacht, geaardheid of een ander persoonlijk kenmerk, dan heb je rechten.",
-    "rightsLink": "Mijn rechten als ik niet binnenkom"
+    "rightsLink": "Mijn rechten als ik niet binnenkom",
+    "triggerHint": "We tonen je alternatieven in de buurt"
   },
   "clubCard": {
     "vipTable": "VIP-tafel",
@@ -621,7 +642,7 @@
     "noList": "Geen lijst",
     "notePlaceholder": "✏️ Voeg een notitie toe (bijv. gaan met Marc, voor zijn verjaardag...)",
     "title": "Jouw nachtlevencollectie",
-    "subtitle": "Opgeslagen clubs, evenementen en avonden — organiseer ze in lijsten en voeg notities toe zodat je niets vergeet.",
+    "subtitle": "Je opgeslagen clubs, avonden en evenementen, met het belangrijkste in één oogopslag.",
     "saved": "Opgeslagen",
     "all": "Alle",
     "renameHint": "Dubbelklik om te hernoemen",
@@ -640,7 +661,15 @@
     "eventsSavedTitle": "Evenementen",
     "listsExplainer": "Groepeer je favorieten in lijsten (bijv. \"Voor het weekend\" of \"Met vrienden\") om ze sneller terug te vinden — dit is optioneel, je hoeft het niet te gebruiken.",
     "gateTitle": "Bewaar je favoriete plekken",
-    "gateSubtitle": "Maak een gratis account en houd de locaties en evenementen die je niet wilt missen bij de hand."
+    "gateSubtitle": "Maak een gratis account en houd de locaties en evenementen die je niet wilt missen bij de hand.",
+    "today": "Vandaag",
+    "tomorrow": "Morgen",
+    "past": "Al voorbij",
+    "openUntil": "Open tot {t}",
+    "openNow": "Nu open",
+    "opensAt": "Opent om {t}",
+    "closedNow": "Nu gesloten",
+    "openNowFilter": "Nu open"
   },
   "attendance": {
     "willGo": "Ik ben er vanavond bij",
@@ -859,7 +888,7 @@
     "walk": "Lopen",
     "website": "Officiële website",
     "rideCopied": "Adres gekopieerd: plak het in de app",
-    "rideHint": "Opent de app als je die hebt; anders de winkel om hem te downloaden.",
+    "rideHint": "Uber en Cabify openen met de bestemming al ingevuld. In FREE NOW plak je het adres: het is al gekopieerd.",
     "noteUpvote": "Nuttig",
     "noteDownvote": "Niet nuttig",
     "noteReport": "Melden",
@@ -887,7 +916,9 @@
     "tempClosedNote": "Deze zaak is voorlopig gesloten. Check Instagram of de website om te zien wanneer hij weer opent.",
     "fBirthdays": "Verjaardagen",
     "fPrivateEvents": "Privéfeesten",
-    "fVenueRental": "Zaalverhuur"
+    "fVenueRental": "Zaalverhuur",
+    "rideTo": "Bestemming",
+    "ticketsAdvance": "Voorverkoop tickets"
   },
   "eventPage": {
     "dateTbc": "Datum nog niet bekend",
@@ -960,7 +991,15 @@
     "reasonLive": "Live muziek",
     "reasonCocktails": "Cocktails",
     "reasonsTitle": "Waarom deze",
-    "openCount": "{n} nu open"
+    "openCount": "{n} nu open",
+    "tileAny": "Alles",
+    "tileDance": "Dansen",
+    "tileChat": "Kletsen",
+    "tileChill": "Chill",
+    "tileLive": "Live",
+    "filters": "Filters",
+    "clearFilters": "Filters wissen",
+    "shareShort": "Plan delen"
   },
   "cookieBanner": {
     "title": "Cookies",
@@ -1038,7 +1077,16 @@
     "nitbusLinesHere": "Lijnen die hier stoppen",
     "parkingFree": "Gratis parkeren",
     "parkingNear": "Clubs te voet",
-    "parkingNoClubs": "Geen club binnen 15 min lopen"
+    "parkingNoClubs": "Geen club binnen 15 min lopen",
+    "groups": {
+      "health": "Spoed en gezondheid",
+      "move": "Onderweg",
+      "food": "Eten en kopen",
+      "personal": "Persoonlijke behoeften",
+      "other": "Overig"
+    },
+    "call": "Bel",
+    "website": "Website"
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",
@@ -1970,5 +2018,57 @@
     "many": "{n} locaties",
     "showAll": "Toon alle {n} locaties",
     "showLess": "Toon minder"
+  },
+  "mananeo": {
+    "title": "De ochtend erna",
+    "subtitle": "Plekken om door te gaan als de zon opkomt: afterhours en kater.",
+    "directions": "Route",
+    "openUntil": "Open tot {t}",
+    "openNow": "Nu open",
+    "opensAt": "Opent om {t}",
+    "closedNow": "Nu gesloten"
+  },
+  "availability": {
+    "unverified": "Openingstijden niet bevestigd · bel eerst",
+    "onCall": "Spoed alleen na bellen",
+    "listedHint": "Volgens gepubliceerde tijden, niet bevestigd",
+    "verifiedOn": "Gecontroleerd op {date}",
+    "sourceLabel": "Bron: {source}",
+    "source": {
+      "osm": "OpenStreetMap",
+      "google": "Google",
+      "overture": "Overture Maps",
+      "manual": "Noctua",
+      "official": "Officiële bron",
+      "business": "Website van het bedrijf",
+      "user": "Bijdrage van gebruikers"
+    },
+    "unverifiedShort": "Openingstijden niet bevestigd"
+  },
+  "essentialsHelp": {
+    "button": "Er is iets gebeurd",
+    "call112": "Bel 112",
+    "title": "Wat is er gebeurd?",
+    "note": "Is er levensgevaar, bel dan 112. Noctua vervangt de hulpdiensten niet.",
+    "close": "Sluiten",
+    "home": "Naar huis",
+    "homeHint": "Taxi, nachtbus en metro van vanavond",
+    "pharmacy": "Ik heb een apotheek nodig",
+    "pharmacyHint": "De dichtstbijzijnde, nu open",
+    "medical": "Ik heb medische hulp nodig",
+    "medicalHint": "Spoed en ziekenhuizen bij jou in de buurt",
+    "pet": "Mijn huisdier heeft een dierenarts nodig",
+    "petHint": "Spoeddierenartsen",
+    "food": "Ik zoek eten",
+    "foodHint": "Nu open, dichtstbij eerst",
+    "phone092": "Guardia Urbana",
+    "phone088": "Mossos d'Esquadra",
+    "toilets": "Ik zoek een toilet",
+    "toiletsHint": "Openbare toiletten, dichtstbij eerst",
+    "police": "Ik heb de politie nodig",
+    "policeHint": "Dichtstbijzijnde politiebureau",
+    "lost": "Ik ben mijn telefoon of portemonnee kwijt",
+    "lostHint": "Gevonden voorwerpen",
+    "buttonNote": "Snelle hulp als er vanavond iets misgaat: apotheek, spoed, taxi, toilet of politie bij jou in de buurt. Het 112 staat erin, voor als het ernstig is."
   }
 }

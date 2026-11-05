@@ -83,7 +83,7 @@ const TOOLS: Tool[] = [
     key: "import-osm-essentials",
     path: "/api/admin/import-osm-essentials",
     title: "Importar esenciales desde OpenStreetMap",
-    description: "Farmacias, cajeros, comida, supermercados, gasolineras y hospitales abiertos las 24 h o hasta la 1:00 o más tarde. Todo entra oculto para revisarlo en Esenciales antes de publicar. En Barcelona elige una categoría cada vez. Sin marcar «Importar de verdad» solo es una vista previa.",
+    description: "Farmacias, cajeros, comida, supermercados, gasolineras y hospitales abiertos las 24 h o hasta la 1:00 o más tarde. Y, de una en una: paradas de taxi, veterinarios de urgencias, aseos, máquinas expendedoras, consignas, comisarías y estaciones de Bicing (sin bicis libres en directo). Todo entra oculto y «sin confirmar» para revisarlo en Esenciales antes de publicar. Necesita el SQL 82. En Barcelona elige una categoría cada vez. Sin marcar «Importar de verdad» solo es una vista previa.",
     osmEssentials: true,
   },
   {
@@ -415,6 +415,15 @@ export default function AdminToolsPage() {
                     <option value="gas">Gasolineras</option>
                     <option value="hospital">Hospitales</option>
                     <option value="parking">Parkings gratuitos (aparte, no entra en «Todas»)</option>
+                    <optgroup label="Nuevas (de una en una, no entran en «Todas»)">
+                      <option value="taxi">Paradas de taxi</option>
+                      <option value="veterinary">Veterinarios de urgencias</option>
+                      <option value="toilets">Aseos públicos</option>
+                      <option value="vending">Máquinas expendedoras</option>
+                      <option value="luggage">Consignas</option>
+                      <option value="police">Comisarías y policía</option>
+                      <option value="bicing">Estaciones de Bicing</option>
+                    </optgroup>
                   </select>
                   <label className="flex items-center gap-2 text-zinc-300">
                     <input type="checkbox" checked={essReal} onChange={(e) => setEssReal(e.target.checked)} />

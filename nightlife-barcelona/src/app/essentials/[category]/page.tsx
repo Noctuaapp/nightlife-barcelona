@@ -16,7 +16,7 @@ import { fetchAllPages } from "../../../lib/fetchAll"
 import { useLanguage } from "../../../context/LanguageContext"
 import ArrowIcon from "../../../components/ui/ArrowIcon"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../../lib/geo"
-import { getOpenStatus } from "../../../lib/openStatus"
+import { availabilityOf, availabilityClass, type Availability } from "../../../lib/availability"
 import { qualifiesOnDay, tonightIndex } from "../../../lib/essentialNight"
 import { fetchVisibleClubs } from "../../../lib/clubQueries"
 import { clubsNear, type ClubPoint } from "../../../lib/parkingNearClubs"
@@ -77,6 +77,15 @@ type Essential = {
   // el tipo de comida en un local de Food (Pizza, Kebab, Hamburguesas...). Opcional: si un local
   // no la tiene puesta, simplemente no entra en ningún chip de subcategoría.
   subcategory: string | null
+  // Campos de verificación y contacto (supabase/82). Opcionales: antes de ejecutar el SQL no existen.
+  phone?: string | null
+  website?: string | null
+  is_24h?: boolean | null
+  source?: string | null
+  source_url?: string | null
+  verification_status?: string | null
+  last_verified_at?: string | null
+  attrs?: Record<string, unknown> | null
 }
 
 
@@ -116,7 +125,7 @@ function FilterSelect({
 }
 
 export default function EssentialCategoryPage() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   // Horario del metro de esta noche (con vísperas de festivo). Se calcula tras montar: depende de la hora.
   const [metroLabel, setMetroLabel] = useState("")
   useEffect(() => {
@@ -314,6 +323,15 @@ export default function EssentialCategoryPage() {
         setLocating(false)
       })
   }
+
+  // Atajos de «Me ha pasado algo» (?now=1 → solo abiertos ahora; ?near=1 → más cercanos primero).
+  // Llegan desde un botón que la persona acaba de pulsar, así que pedir la ubicación aquí es lo esperado.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    if (p.get("now") === "1") setOpenOnly(true)
+    if (p.get("near") === "1") locateMe()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     const fetchEssentials = async () => {
@@ -673,7 +691,7 @@ export default function EssentialCategoryPage() {
     .filter((e) => (selectedZone === "All" ? true : zoneOf(e) === selectedZone))
     .filter((e) => (selectedNeighborhood === "All" ? true : e.neighborhood === selectedNeighborhood))
     .filter((e) => (selectedSubcategory === "All" ? true : subcategoryKey(e.subcategory || "") === subcategoryKey(selectedSubcategory)))
-    .filter((e) => !openOnly || getOpenStatus(e.open_hours).state === "open")
+    .filter((e) => !openOnly || availabilityOf(e).counts)
     .filter(nightOk)
     .slice()
     .sort((a, b) => {
@@ -799,6 +817,25 @@ export default function EssentialCategoryPage() {
     )
   }
 
+  // Línea de confianza del dato (05/11/2026): de dónde sale y cuándo se verificó. Si el horario es de una
+  // fuente sin verificar, en las categorías de siempre se avisa con una frase corta para no esconderlo.
+  const SOURCE_KEY: Record<string, string> = {
+    osm: "osm", google: "google", overture: "overture", manual: "manual",
+    official_municipal: "official", official_operator: "official",
+    business: "business", business_site: "business", user: "user",
+  }
+  const renderTrustLine = (item: Essential, status: Availability) => {
+    const parts: string[] = []
+    if (status.state === "open_listed") parts.push(t("availability.listedHint"))
+    if (item.source && SOURCE_KEY[item.source]) parts.push(t("availability.sourceLabel").replace("{source}", t(`availability.source.${SOURCE_KEY[item.source]}`)))
+    if (item.verification_status === "verified" && item.last_verified_at) {
+      const d = new Date(item.last_verified_at)
+      if (isFinite(d.getTime())) parts.push(t("availability.verifiedOn").replace("{date}", d.toLocaleDateString(locale, { day: "numeric", month: "short" })))
+    }
+    if (parts.length === 0) return null
+    return <p className="mt-1 text-[11px] leading-snug text-zinc-500">{parts.join(" · ")}</p>
+  }
+
   const renderCard = (item: Essential) => {
     const hasCoords = Boolean(item.latitude && item.longitude)
 
@@ -824,7 +861,7 @@ export default function EssentialCategoryPage() {
 
     const stopPropagation = (e: React.MouseEvent) => e.stopPropagation()
 
-    const status = getOpenStatus(item.open_hours, t)
+    const status = availabilityOf(item, t)
 
     // Fila compacta (antes una tarjeta con foto de 160 px por sitio: con 40 farmacias, metros de
     // scroll para encontrar la más cercana).
@@ -846,9 +883,10 @@ export default function EssentialCategoryPage() {
             <p className="mt-0.5 truncate text-sm text-zinc-400">{[item.neighborhood, item.address].filter(Boolean).join(" · ")}</p>
           )}
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold">
-            {status.label && <span className={status.state === "open" ? (status.soon ? "text-warn" : "text-open") : "text-zinc-400"}>{status.label}</span>}
+            {status.label && <span className={availabilityClass(status)}>{status.label}</span>}
             {distanceLabel && <span className="text-brand-soft">{distanceLabel}</span>}
           </div>
+          {renderTrustLine(item, status)}
           {renderTransitInfo(item, stopPropagation)}
           {renderParkingInfo(item, stopPropagation)}
           {item.description && <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-zinc-400">{item.description}</p>}
@@ -856,6 +894,11 @@ export default function EssentialCategoryPage() {
             {hasCoords && (
               <a href={directionsHref} target="_blank" rel="noopener noreferrer" onClick={(e) => { stopPropagation(e); trackEssentialClick("essential_directions", item) }} className="btn-pill btn-primary flex items-center gap-1.5 px-3.5 py-2 text-xs">
                 <Icon name="map" className="h-3.5 w-3.5" /> {t("clubPage.directions")}
+              </a>
+            )}
+            {item.phone && (
+              <a href={`tel:${item.phone.replace(/[^\d+]/g, "")}`} onClick={stopPropagation} className="btn-pill btn-secondary flex items-center gap-1.5 px-3.5 py-2 text-xs">
+                <Icon name="phone" className="h-3.5 w-3.5" /> {t("essentialsPage.call")}
               </a>
             )}
             {item.maps_link && (
@@ -1344,9 +1387,9 @@ export default function EssentialCategoryPage() {
                       {renderParkingInfo(selected)}
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                         {(() => {
-                          const st = getOpenStatus(selected.open_hours, t)
+                          const st = availabilityOf(selected, t)
                           if (!st.label) return null
-                          const cls = st.state === "open" ? (st.soon ? "bg-warn/15 text-warn" : "bg-open/15 text-open") : "bg-white/10 text-zinc-300"
+                          const cls = st.tone === "open" ? "bg-open/15 text-open" : st.tone === "warn" ? "bg-warn/15 text-warn" : "bg-white/10 text-zinc-300"
                           return <span className={`rounded-full px-2.5 py-1 font-semibold ${cls}`}>{st.label}</span>
                         })()}
                         {(() => {
@@ -1356,7 +1399,13 @@ export default function EssentialCategoryPage() {
                           ) : null
                         })()}
                       </div>
+                      {renderTrustLine(selected, availabilityOf(selected, t))}
                       <div className="mt-3 flex flex-wrap gap-2">
+                        {selected.phone && (
+                          <a href={`tel:${selected.phone.replace(/[^\d+]/g, "")}`} className="btn-pill btn-primary flex items-center gap-1.5 px-3.5 py-2 text-xs">
+                            <Icon name="phone" className="h-3.5 w-3.5" /> {t("essentialsPage.call")}
+                          </a>
+                        )}
                         {selected.latitude && selected.longitude && (
                           <a
                             href={directionsFor(selected)}

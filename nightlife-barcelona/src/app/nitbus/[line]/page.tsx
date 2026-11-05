@@ -8,7 +8,8 @@ import { safeJsonLd } from "../../../lib/structuredData"
 
 // /nitbus/N24: esquema de la línea con todas sus paradas en orden. Se genera al pedirla y se
 // regenera cada hora (igual que /barrio/[slug]).
-export const revalidate = 3600
+// 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
+export const revalidate = 21600
 export async function generateStaticParams() {
   return []
 }

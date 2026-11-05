@@ -4,7 +4,7 @@ import { isAdminRequest } from "@/lib/adminAuth"
 import { fetchAreaElements } from "@/lib/osmAreaFetch"
 import { staticBoundary } from "@/lib/osmBoundaries"
 import { AREAS, cityFor, normalize } from "@/lib/osmAreas"
-import { ESSENTIAL_TYPES, essentialAddress, isDuplicateEssential, judgeEssential, osmMatches, typesFor, type ExistingEssential } from "@/lib/osmEssentials"
+import { ESSENTIAL_TYPES, essentialAddress, essentialContact, isDuplicateEssential, judgeEssential, osmMatches, osmSourceUrl, typesFor, type ExistingEssential } from "@/lib/osmEssentials"
 import { clubsNearCount, type ClubPoint } from "@/lib/parkingNearClubs"
 
 export const dynamic = "force-dynamic"
@@ -17,8 +17,16 @@ export const maxDuration = 60
 //
 //   Vista previa (no escribe nada):  /api/admin/import-osm-essentials?area=badalona&cat=all
 //   Importar de verdad:              /api/admin/import-osm-essentials?area=badalona&cat=all&dry=0
-//   area = igual que el importador de locales | cat = all | pharmacy | atm | food | supermarket | gas | hospital | parking
+//   area = igual que el importador de locales
+//   cat  = all | pharmacy | atm | food | supermarket | gas | hospital | parking
+//          | taxi | veterinary | toilets | vending | luggage | police | bicing
+//   «all» son solo las seis primeras de la lista (las de siempre); parking y las nuevas se piden de una en una.
 //   En Barcelona conviene ir categoría a categoría: son muchos datos para una sola consulta.
+//
+// Categorías nuevas (5/11/2026): taxi, veterinary, toilets, vending, luggage, police y bicing. Necesitan el
+// SQL 82 (columnas phone, website, source, source_url, attrs…). Entran ocultas y con verification_status
+// «unverified»: en la web salen como «horario sin confirmar» hasta que se verifican en Admin › Esenciales.
+// Bicing trae solo la ubicación de las estaciones (no las bicis libres en directo).
 //
 // Parkings (2/11/2026): solo gratuitos y públicos, y solo los que tienen algún club publicado a menos de
 // 1.200 m (unos 15 min andando): un parking gratis a 5 km de cualquier club no sirve para salir de
@@ -90,9 +98,11 @@ export async function GET(req: Request) {
   // Todas las filas llevan las mismas columnas: al insertar varias de golpe, una que falte en una
   // fila se rellena con null y la base de datos la rechaza.
   type Row = {
-    name: string; category: string; subcategory: null; address: string | null; neighborhood: string
+    name: string; category: string; subcategory: string | null; address: string | null; neighborhood: string
     description: null; image: null; open_hours: string | null; maps_link: null
     latitude: number; longitude: number; hidden: true; import_source: "osm"
+    phone: string | null; website: string | null; is_24h: boolean | null
+    source: "osm"; source_url: string | null; verification_status: "unverified"; attrs: Record<string, unknown>
   }
   const rows: Row[] = []
   type Tally = { encontrados_en_osm: number; ya_existian: number; nuevos: number; descartados: Record<string, number> }
@@ -122,11 +132,12 @@ export async function GET(req: Request) {
     existing.push({ category: type.category, norm: normalize(verdict.name), lat, lon })
 
     const cityName = cityFor(tags, area.city)
+    const contact = essentialContact(tags)
     tally.nuevos++
     rows.push({
       name: verdict.name,
       category: type.category,
-      subcategory: null,
+      subcategory: verdict.subcategory ?? null,
       address: essentialAddress(tags, cityName),
       neighborhood: tags["addr:suburb"] || tags["addr:district"] || cityName,
       description: null,
@@ -137,6 +148,13 @@ export async function GET(req: Request) {
       longitude: lon,
       hidden: true,
       import_source: "osm",
+      phone: contact.phone,
+      website: contact.website,
+      is_24h: verdict.openHours === "Open 24 hours" ? true : null,
+      source: "osm",
+      source_url: osmSourceUrl(el),
+      verification_status: "unverified",
+      attrs: verdict.attrs ?? {},
     })
   }
 

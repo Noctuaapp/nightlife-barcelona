@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, BarChart3, BadgeCheck, Headphones, Users, Vote,
-  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, History, Bell, Footprints, TrendingUp, Inbox, Lightbulb, Moon, type LucideIcon,
+  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, History, Bell, Footprints, TrendingUp, Inbox, Lightbulb, Moon, Sunrise, type LucideIcon,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
@@ -40,6 +40,7 @@ const ADMIN_NAV: NavGroup[] = [
       { href: "/admin/club-sessions", label: "Sesiones semanales", icon: Repeat },
       { href: "/admin/club-events", label: "Noches de club", icon: Headphones },
       { href: "/admin/events", label: "Eventos y festivales", icon: SECTION_ICONS.events },
+      { href: "/admin/mananeo", label: "Mañaneo", icon: Sunrise },
       { href: "/admin/essentials", label: "Esenciales", icon: SECTION_ICONS.essentials },
       { href: "/admin/sugerencias", label: "Sugerencias de esenciales", icon: Lightbulb },
       { href: "/admin/calidad", label: "Calidad de fichas", icon: BadgeCheck },

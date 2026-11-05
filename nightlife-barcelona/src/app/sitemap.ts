@@ -11,8 +11,8 @@ import { NIGHT_BUS_LINES } from "../lib/nightBuses"
 const BASE_URL = "https://www.noctuaapp.com"
 
 // Categorías fijas de /essentials/[category] — vienen de categoryConfig en esa página, no de una
-// tabla, así que se listan aquí a mano en vez de consultarlas. Hotel y casino no se incluyen: esas
-// páginas siguen existiendo pero llevan noindex (no son esenciales de la noche).
+// tabla, así que se listan aquí a mano en vez de consultarlas. Casino no se incluye (lleva noindex) y Hotel se
+// retiró el 05/11/2026. Veterinario, aseos y máquinas se añaden aquí cuando tengan sitios verificados.
 // parking (2/11/2026): parkings públicos gratuitos, con los clubs que quedan a pie desde cada uno.
 const ESSENTIAL_CATEGORIES = [
   "pharmacy", "atm", "food", "transport", "metro", "nitbus", "taxi",
@@ -23,7 +23,8 @@ const ESSENTIAL_CATEGORIES = [
 // enlace a enlace desde la home, lo que tarda semanas y deja fuera páginas nuevas o poco
 // enlazadas. Con esto, cada club y evento visible (no oculto) queda declarado explícitamente.
 // Se regenera cada hora (revalidate) para no golpear la base de datos en cada rastreo de Google.
-export const revalidate = 3600
+// 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
+export const revalidate = 21600
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [

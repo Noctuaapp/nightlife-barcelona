@@ -13,7 +13,8 @@ import { zoneLinks, zoneSlugByName } from "../../../lib/zonePages"
 import { zoneOf } from "../../../lib/zones"
 
 // /barrio/el-born, /barrio/poblenou… Una página por barrio con sus discotecas (ver src/lib/areas.ts).
-export const revalidate = 3600
+// 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
+export const revalidate = 21600
 export async function generateStaticParams() {
   return []
 }

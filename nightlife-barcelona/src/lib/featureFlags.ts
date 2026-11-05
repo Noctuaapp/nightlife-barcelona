@@ -17,6 +17,15 @@
 // (Tipado como boolean para que TypeScript no trate el valor como una constante fija.)
 export const EVENTS_HIDDEN: boolean = true
 
+// MANANEO_HIDDEN (05/11/2026): el apartado «Mañaneo» (sitios de afterhour para seguir cuando sale el sol) vive
+// dentro de Eventos y está en construcción. Mientras valga true:
+//   - Solo lo ve el admin, al final de /events (aviso «solo lo ves tú»); se rellena en Admin › Mañaneo.
+//   - Los visitantes no lo ven, y aunque pidieran la tabla, la base de datos solo les devuelve los sitios
+//     con hidden = false (supabase/80_mananeo.sql); todos nacen ocultos.
+// Para abrirlo: pon false aquí y deja visibles (no ocultos) los sitios que quieras en Admin › Mañaneo.
+// Ojo: mientras EVENTS_HIDDEN siga en true, los visitantes siguen viendo solo «Próximamente» en /events.
+export const MANANEO_HIDDEN: boolean = true
+
 // Marca que se guarda solo en el navegador del admin para dejarle ver las fichas /event/... mientras Eventos
 // está cerrado. No es seguridad (los datos de eventos son públicos): solo evita que los visitantes entren.
 export const EVENTS_PREVIEW_COOKIE = "noctua_events_preview"

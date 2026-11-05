@@ -9,6 +9,7 @@ import ExploreSwitch from "./ExploreSwitch"
 import EventsExplorer from "./EventsExplorer"
 import NocOwl from "../mascot/NocOwl"
 import SectionHero from "../ui/SectionHero"
+import MananeoSection from "./MananeoSection"
 
 // Pantalla de /events mientras Eventos está cerrado (EVENTS_HIDDEN en lib/featureFlags.ts; app/events/page.tsx):
 // - Visitantes (y buscadores): solo ven «Próximamente» y un acceso a los clubs. La agenda ni se pide.
@@ -42,6 +43,7 @@ export default function EventsComingSoon() {
           Vista de admin: los visitantes ven la pantalla «Próximamente».
         </p>
         <EventsExplorer initialEvents={events} />
+        <MananeoSection />
       </>
     )
   }

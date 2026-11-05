@@ -17,7 +17,6 @@ import ClubTransport from "./club/ClubTransport"
 import ClubGallery from "./club/ClubGallery"
 import ClubReviews, { googleMapsReviewsUrl } from "./club/ClubReviews"
 import VenueReviews from "./club/VenueReviews"
-import NearbyStrip from "./club/NearbyStrip"
 import JoinNoctuaCard from "./JoinNoctuaCard"
 import WelcomeChallenge from "./WelcomeChallenge"
 import NextStepsRow from "./NextStepsRow"
@@ -54,7 +53,7 @@ const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 // directo, un nivel de ambiente inventado y efectos (paralaje, foco que sigue al ratón,
 // contadores animados) que no ayudaban a decidir nada.
 
-type Tab = "about" | "nights" | "sessions" | "location" | "reviews"
+type Tab = "about" | "nights" | "sessions" | "reviews"
 
 const LIVE_STATUS_MAX_AGE_MS = 4 * 60 * 60 * 1000
 const CHECKINS_MIN_FOR_LIVE = 3
@@ -75,7 +74,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
   // ?tab=reviews (enlaces de los avisos del admin, "ver opiniones"...) abre directamente esa pestaña.
   useEffect(() => {
     const wanted = new URLSearchParams(window.location.search).get("tab")
-    if (wanted === "reviews" || wanted === "location") setActiveTab(wanted)
+    if (wanted === "reviews") setActiveTab(wanted)
   }, [])
   // Vienen ya del servidor (enlaces en el HTML para Google); si no, se piden aquí como antes.
   const [related, setRelated] = useState<any[]>(() => (initialRelated || []).slice(0, 3))
@@ -343,7 +342,6 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
     { key: "about", label: t("clubPage.tabAbout") },
     ...(hasSessions ? [{ key: "sessions" as Tab, label: t("clubPage.tabSessions") }] : []),
     ...(hasNights ? [{ key: "nights" as Tab, label: t("clubPage.tabNights") }] : []),
-    { key: "location", label: t("clubPage.tabLocation") },
     // Opiniones (25/10/2026): las de Noctua y, debajo, las de Google (antes al final de la página).
     { key: "reviews", label: t("clubPage.tabReviews") },
   ]
@@ -601,7 +599,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                 <div className="mb-3 hidden space-y-2 lg:block">
                   {ticketUrl ? (
                     <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone} w-full`}>
-                      <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
+                      <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.ticketsAdvance")}
                     </a>
                   ) : (
                     <a href={directionsUrl!} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${primaryBtn} ${routeTone} w-full`}>
@@ -656,8 +654,11 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
             </div>
 
             {hasCoords && (
-              <button
-                onClick={() => goToTab("location")}
+              <a
+                href={directionsUrl || undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackClick("directions_click")}
                 className="group hidden w-full overflow-hidden rounded-card border border-white/10 bg-surface text-left lg:block"
               >
                 <div className="pointer-events-none h-40">
@@ -666,7 +667,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                 <span className="flex items-center justify-between px-5 py-4 text-sm font-semibold text-ink">
                   {t("clubPage.mapAndTransport")} <Icon name="arrow" className="h-4 w-4 text-muted" />
                 </span>
-              </button>
+              </a>
             )}
           </div>
 
@@ -770,6 +771,12 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                   <ClubTransport club={club} />
                 </Panel>
 
+                {hasCoords && (
+                  <Panel>
+                    <NearbyEssentials latitude={Number(club.latitude)} longitude={Number(club.longitude)} />
+                  </Panel>
+                )}
+
                 {faqs.length > 0 && (
                   <Panel>
                     <PanelTitle>{t("clubPage.faq")}</PanelTitle>
@@ -793,11 +800,6 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                   </Panel>
                 )}
 
-                {hasCoords && (
-                  <Panel>
-                    <NearbyEssentials latitude={Number(club.latitude)} longitude={Number(club.longitude)} />
-                  </Panel>
-                )}
               </div>
             )}
 
@@ -852,31 +854,6 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
             {activeTab === "nights" && hasNights && (
               <Panel>
                 <ClubNightsCalendar clubEvents={clubEvents} clubName={club.name} />
-              </Panel>
-            )}
-
-            {activeTab === "location" && (
-              <Panel>
-                <PanelTitle>{t("club.location")}</PanelTitle>
-                {hasCoords && (
-                  <div className="overflow-hidden rounded-ctl">
-                    <ClubMap latitude={club.latitude} longitude={club.longitude} name={club.name} />
-                  </div>
-                )}
-                {club.address && <p className="mt-4 text-sm text-zinc-300">{club.address}</p>}
-                {directionsUrl ? (
-                  <a
-                    href={directionsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => trackClick("directions_click")}
-                    className={`${primaryBtn} ${routeTone} mt-4 w-full`}
-                  >
-                    <Icon name="map" className="h-4 w-4" /> {t("clubPage.openRoute")}
-                  </a>
-                ) : (
-                  <p className="text-sm text-zinc-400">{t("clubPage.noLocation")}</p>
-                )}
               </Panel>
             )}
 
@@ -935,9 +912,10 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
               <Link
                 href="/clubs"
                 onClick={() => track("related_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { to: "all" } })}
-                className="flex aspect-[4/5] flex-col items-center justify-center gap-3 rounded-card border border-brand/30 bg-brand/10 p-4 text-center transition hover:border-brand/60 hover:bg-brand/15 md:aspect-square"
+                className="flex aspect-[4/5] flex-col items-center justify-center gap-3 rounded-card border border-white/10 bg-surface p-4 text-center transition hover:border-white/25 md:aspect-square"
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand/20 text-brand-soft">
+                {/* 05/11/2026: la flecha va solo en el círculo (antes el texto traía otra «→» y salían dos) y sin tinte morado. */}
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#0a0910]">
                   <Icon name="arrow" className="h-5 w-5" />
                 </span>
                 <span className="text-sm font-semibold leading-snug text-ink">{t("clubs.explore")}</span>
@@ -946,12 +924,6 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
           </ul>
         </section>
       )}
-
-      <NearbyStrip
-        club={club}
-        openNow={openNow}
-        onPick={(to) => track("nearby_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { to } })}
-      />
 
       <NextStepsRow kind="club" itemId={club.id} name={club.name} neighborhood={club.neighborhood} music={club.music} />
 
@@ -962,8 +934,8 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-night/95 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-md items-center gap-2">
           {ticketUrl ? (
-            <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone} flex-1 py-3`}>
-              <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
+            <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone} flex-1 whitespace-nowrap !px-3 py-3`}>
+              <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.ticketsAdvance")}
             </a>
           ) : directionsUrl ? (
             <a href={directionsUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("directions_click")} className={`${primaryBtn} ${routeTone} flex-1 py-3`}>

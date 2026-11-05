@@ -9,14 +9,15 @@ import { cleanEssential } from "../../lib/essentials"
 import { categoryInfo, categoryNameKey } from "../../lib/essentialCategories"
 import { useLanguage } from "../../context/LanguageContext"
 import { track } from "../../lib/track"
+import { Navigation } from "lucide-react"
 
-// Tres chips con lo más cercano al local (comida, súper, cajero), sacados de la tabla essentials
-// (la misma que alimenta /essentials), y un enlace a todos los esenciales. Cada chip abre la ruta
-// andando desde el local.
+// «Cerca de este local»: lo que te hace falta antes o después de la noche. Supermercados y comida
+// (los dos más cercanos de cada uno) y el cajero más cercano, sacados de la tabla essentials (la
+// misma que alimenta /essentials). Cada fila abre la ruta andando desde el local.
 const CATS = [
-  { key: "food", cat: "Food", maxMeters: 1500 },
-  { key: "supermarket", cat: "Supermarket", maxMeters: 1500 },
-  { key: "atm", cat: "ATM", maxMeters: 1200 },
+  { key: "supermarket", cat: "Supermarket", maxMeters: 2000, count: 2 },
+  { key: "food", cat: "Food", maxMeters: 2000, count: 2 },
+  { key: "atm", cat: "ATM", maxMeters: 1500, count: 1 },
 ]
 
 type Nearest = {
@@ -29,7 +30,7 @@ type Nearest = {
 }
 
 export default function NearbyEssentials({ latitude, longitude }: { latitude: number; longitude: number }) {
-  const [items, setItems] = useState<Record<string, Nearest | null> | null>(null)
+  const [items, setItems] = useState<Record<string, Nearest[]> | null>(null)
   const { t } = useLanguage()
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function NearbyEssentials({ latitude, longitude }: { latitude: nu
           .select("name, open_hours, latitude, longitude")
           .ilike("category", cat.key)
           .eq("hidden", false)
-        // Los cajeros con comisión alta (Euronet) no se sugieren como "el más cercano".
+        // Los cajeros con comisión alta (Euronet) no se sugieren como «el más cercano».
         const nearest = ((data || []) as any[])
           .map((e) => cleanEssential({ ...e, category: cat.key }))
           .filter((e) => e.latitude && e.longitude && !e.highFee)
@@ -54,8 +55,9 @@ export default function NearbyEssentials({ latitude, longitude }: { latitude: nu
             distanceMeters: distanceInMeters(latitude, longitude, Number(e.latitude), Number(e.longitude)),
           }))
           .filter((r) => r.distanceMeters <= cat.maxMeters)
-          .sort((a, b) => a.distanceMeters - b.distanceMeters)[0]
-        return [cat.key, nearest || null] as const
+          .sort((a, b) => a.distanceMeters - b.distanceMeters)
+          .slice(0, cat.count)
+        return [cat.key, nearest] as const
       })
     ).then((pairs) => {
       if (!cancelled) setItems(Object.fromEntries(pairs))
@@ -65,50 +67,68 @@ export default function NearbyEssentials({ latitude, longitude }: { latitude: nu
     }
   }, [latitude, longitude])
 
-  const found = items ? CATS.filter((c) => items[c.key]) : []
+  const found = items ? CATS.filter((c) => items[c.key]?.length) : []
 
   return (
     <div>
-      <p className="mb-3 text-sm font-semibold text-ink">{t("nearbyEssentials.title")}</p>
+      <p className="mb-4 text-base font-semibold text-ink">{t("nearbyEssentials.title")}</p>
 
-      <div className="flex flex-wrap gap-2.5">
-        {items === null &&
-          CATS.map((c) => <div key={c.key} className="h-11 w-44 animate-pulse rounded-full bg-white/5" />)}
+      {items === null && (
+        <div className="space-y-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-14 animate-pulse rounded-ctl bg-white/5" />
+          ))}
+        </div>
+      )}
 
+      <div className="space-y-4">
         {found.map((cat) => {
-          const r = items![cat.key]!
-          const st = getOpenStatus(r.open_hours, t)
           const CatIcon = categoryInfo(cat.cat).icon
           const catName = t(categoryNameKey(cat.cat))
           return (
-            <a
-              key={cat.key}
-              href={walkingDirectionsUrl(latitude, longitude, r.latitude, r.longitude)}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => track("essential_nearby", { itemType: "essential_nearby", itemName: r.name, meta: { category: cat.key } })}
-              title={`${catName}: ${r.name}`}
-              aria-label={`${catName}: ${r.name}, ${formatDistance(r.distanceMeters)}`}
-              className="btn-pill btn-secondary flex max-w-full items-center gap-2 px-4 py-2.5 text-sm"
-            >
-              <CatIcon size={16} className="shrink-0 text-brand-soft" />
-              <span className="min-w-0 truncate font-semibold">{r.name}</span>
-              <span className="shrink-0 text-xs text-zinc-400">
-                {formatDistance(r.distanceMeters)} · {walkingMinutes(r.distanceMeters)} min
-              </span>
-              {st.state !== "unknown" && (
-                <span className={`h-2 w-2 shrink-0 rounded-full ${st.state === "open" ? "bg-open" : "bg-off"}`} title={st.label} />
-              )}
-            </a>
+            <div key={cat.key}>
+              <p className="mb-2 flex items-center gap-2 text-xs font-semibold text-zinc-400">
+                <CatIcon size={14} className="shrink-0" /> {catName}
+              </p>
+              <ul className="space-y-2">
+                {items![cat.key].map((r) => {
+                  const st = getOpenStatus(r.open_hours, t)
+                  return (
+                    <li key={r.name + r.latitude}>
+                      <a
+                        href={walkingDirectionsUrl(latitude, longitude, r.latitude, r.longitude)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => track("essential_nearby", { itemType: "essential_nearby", itemName: r.name, meta: { category: cat.key } })}
+                        aria-label={`${catName}: ${r.name}, ${formatDistance(r.distanceMeters)}`}
+                        className="flex items-center gap-3 rounded-ctl bg-white/[0.04] px-3.5 py-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] transition hover:bg-white/[0.07]"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold text-ink">{r.name}</span>
+                          <span className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-400">
+                            {formatDistance(r.distanceMeters)} · {walkingMinutes(r.distanceMeters)} min
+                            {st.state !== "unknown" && (
+                              <>
+                                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${st.state === "open" ? "bg-open" : "bg-off"}`} />
+                                <span className="truncate">{st.label}</span>
+                              </>
+                            )}
+                          </span>
+                        </span>
+                        <Navigation size={16} className="shrink-0 text-zinc-400" />
+                      </a>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
           )
         })}
 
-        {items !== null && found.length === 0 && (
-          <p className="text-sm text-zinc-400">{t("nearbyEssentials.none")}</p>
-        )}
+        {items !== null && found.length === 0 && <p className="text-sm text-zinc-400">{t("nearbyEssentials.none")}</p>}
       </div>
 
-      <Link href="/essentials" className="mt-3 inline-block text-sm font-semibold text-zinc-300 underline underline-offset-4 hover:text-ink">
+      <Link href="/essentials" className="mt-4 inline-block text-sm font-semibold text-zinc-300 underline underline-offset-4 hover:text-ink">
         {t("nearbyEssentials.more")}
       </Link>
     </div>

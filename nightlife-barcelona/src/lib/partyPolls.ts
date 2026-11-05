@@ -463,11 +463,49 @@ const MORE_3: PollRow[] = [
   ["coctel-show", "Un cóctel que cambia de color", "Un cóctel que sale echando humo", "Un còctel que canvia de color", "Un còctel que surt traient fum", "A cocktail that changes colour", "A cocktail that arrives smoking"],
 ]
 
-for (const [id, esA, esB, caA, caB, enA, enB] of [...MORE, ...MORE_3]) {
+// ── Tanda 4 (04/11/2026): «más macarras y picantonas, estilo noche de fiesta». Ligar, exes, besos,
+// vergüenzas de madrugada. Nada explícito. Todas van marcadas en ALCOHOL_POLL_IDS (solo con cuenta, es
+// decir, con mayoría de edad confirmada), igual que las de bebida.
+const MORE_4: PollRow[] = [
+  ["pica-ex-pista", "Morrearte con tu ex en medio de la pista", "Que tu ex te vea morreándote con otro/a", "Fer-te un petó amb el teu ex enmig de la pista", "Que el teu ex et vegi morrejant-te amb algú altre", "Make out with your ex in the middle of the floor", "Your ex sees you kissing someone else"],
+  ["pica-numero-bano", "Que te pidan el número en la cola del baño", "Que te lo pidan en la barra pagándote la copa", "Que et demanin el número a la cua del lavabo", "Que te'l demanin a la barra pagant-te la copa", "Get asked for your number in the toilet queue", "Get asked for it at the bar, drink paid for"],
+  ["pica-perrear-slow", "Perrear pegado/a a un desconocido/a hasta el suelo", "Bailar un lento con tu crush delante de todos", "Perrejar enganxat/da a un/a desconegut/da fins a terra", "Ballar un lent amb el teu crush davant de tothom", "Grind to the floor with a stranger", "Slow-dance with your crush in front of everyone"],
+  ["pica-beso-pista-bano", "Primer beso en plena pista, con público", "Primer beso en la cola del baño, con prisa", "Primer petó en plena pista, amb públic", "Primer petó a la cua del lavabo, amb pressa", "First kiss on the dance floor, with an audience", "First kiss in the toilet queue, in a rush"],
+  ["pica-mensaje-3am", "Mandarle un mensaje a tu ex a las 3 de la mañana", "Que te lo mande él/ella a ti", "Enviar-li un missatge al teu ex a les 3 de la matinada", "Que te'l enviï ell/ella a tu", "Text your ex at 3am", "Your ex texts you at 3am"],
+  ["pica-amigo-liga", "Ligar con el amigo de tu mejor amigo", "Ligar con la ex de tu mejor amigo", "Lligar amb l'amic del teu millor amic", "Lligar amb l'ex del teu millor amic", "Hook up with your best friend's friend", "Hook up with your best friend's ex"],
+  ["pica-after-casa", "Acabar la noche en una casa que no conoces", "Acabar la noche en el after sin saber cómo llegaste", "Acabar la nit a una casa que no coneixes", "Acabar la nit a l'after sense saber com hi has arribat", "End the night at a house you don't know", "End up at the afterparty with no idea how you got there"],
+  ["pica-camiseta-torso", "Salir sin camiseta en el reservado", "Salir con ropa transparente toda la noche", "Sortir sense samarreta al reservat", "Sortir amb roba transparent tota la nit", "Go shirtless in the VIP booth", "Wear see-through clothes all night"],
+  ["pica-quien-paga", "Que te inviten a todo y deberle un favor", "Pagarte tú todo y no deberle nada a nadie", "Que et convidin a tot i deure'n un favor", "Pagar-te tu tot i no deure res a ningú", "Everything paid for, but you owe a favour", "Pay for everything, owe nobody a thing"],
+  ["pica-ojos-barra", "Cruzar miradas con alguien toda la noche y no hablarle", "Hablarle y que te dé calabazas delante de todos", "Creuar mirades amb algú tota la nit i no parlar-hi", "Parlar-hi i que et doni carabasses davant de tothom", "Lock eyes with someone all night and never talk", "Go over and get shot down in front of everyone"],
+  ["pica-mejor-peor", "La mejor noche de tu vida y no acordarte de nada", "Una noche normalita que recuerdas entera", "La millor nit de la teva vida i no recordar-te de res", "Una nit normaleta que recordes sencera", "The best night of your life, remembering nothing", "An average night you remember in full"],
+  ["pica-mirada-dj", "Ligarte al DJ", "Ligarte al camarero/a que te pone las copas", "Lligar-te el DJ", "Lligar-te el cambrer/a que et posa les copes", "Pull the DJ", "Pull the bartender pouring your drinks"],
+  ["pica-foto-story", "Que te hagan una foto bailando fatal y la suban", "Que te graben besándote y lo vea todo el mundo", "Que et facin una foto ballant fatal i la pugin", "Que et gravin fent-te un petó i ho vegi tothom", "Someone posts a photo of your worst dancing", "Someone films you kissing and everyone sees"],
+  ["pica-pareja-grupo", "Ir de sujetavelas con una pareja que se enrolla", "Ir con tu ex y su nueva pareja", "Anar de sosteniment amb una parella que s'enrolla", "Anar amb el teu ex i la seva nova parella", "Be the third wheel next to a couple making out", "Go out with your ex and their new partner"],
+  ["pica-baile-prohibido", "Bailar pegado/a con alguien con pareja", "Que alguien con pareja baile pegado/a a ti", "Ballar enganxat/da amb algú que té parella", "Que algú amb parella balli enganxat/da a tu", "Dance close with someone who has a partner", "Someone with a partner dances close to you"],
+  ["pica-puerta-lista", "Entrar a la lista VIP y que te miren mal", "Entrar normal y ligar más que nadie", "Entrar a la llista VIP i que et mirin malament", "Entrar normal i lligar més que ningú", "Get on the VIP list and get dirty looks", "Get in normally and pull more than anyone"],
+  ["pica-tacones-descalzo", "Volver descalzo/a por Barcelona a las 6 de la mañana", "Volver en un patinete ajeno con un desconocido", "Tornar descalç/a per Barcelona a les 6 del matí", "Tornar en un patinet aliè amb un desconegut", "Walk home barefoot across Barcelona at 6am", "Ride home on a stranger's scooter"],
+  ["pica-ex-fiesta", "Una fiesta donde están todos tus ex", "Una fiesta donde no conoces a nadie y todos son guapísimos", "Una festa on hi són tots els teus ex", "Una festa on no coneixes ningú i tots són guapíssims", "A party where all your exes are", "A party where you know nobody and everyone is gorgeous"],
+  ["pica-confesion", "Confesarle a tu crush lo que sientes a las 4 de la mañana", "Esperar a mañana y arriesgarte a que se vaya", "Confessar al teu crush el que sents a les 4 de la matinada", "Esperar a demà i arriscar-te que marxi", "Confess to your crush at 4am", "Wait until tomorrow and risk them leaving"],
+  ["pica-vip-chupito", "Un chupito de la boca de un desconocido/a", "Un chupito del ombligo de tu mejor amigo/a", "Un xupito de la boca d'un/a desconegut/da", "Un xupito del melic del teu millor amic/a", "A shot from a stranger's mouth", "A shot from your best friend's belly button"],
+  ["pica-nombre-equivocado", "Llamar por el nombre de tu ex a quien estás ligando", "Que te llamen por el nombre de su ex mientras ligas", "Anomenar pel nom del teu ex a qui estàs lligant", "Que et diguin pel nom del seu ex mentre lligues", "Call your date by your ex's name", "Get called by their ex's name mid-flirt"],
+  ["pica-toalla-piscina", "Fiesta en una piscina a medianoche, sin bañador", "Fiesta en un yate, pero sin poder volver hasta el amanecer", "Festa en una piscina a mitjanit, sense banyador", "Festa en un iot, però sense poder tornar fins a l'alba", "Midnight pool party, no swimsuit", "Yacht party, no way back until sunrise"],
+  ["pica-lista-negra", "Que te veten de tu club favorito por algo que no recuerdas", "Que te veten y todos sepan por qué", "Que et vetin del teu club preferit per alguna cosa que no recordes", "Que et vetin i tothom sàpiga per què", "Get banned from your favourite club for something you can't remember", "Get banned and everyone knows why"],
+  ["pica-dos-citas", "Dos planes la misma noche, y mentirle a uno", "Quedarte con uno solo y que el otro lo sepa", "Dos plans la mateixa nit, i mentir a un", "Quedar-te amb un de sol i que l'altre ho sàpiga", "Two dates in one night, lying to one", "Pick one and the other finds out"],
+  ["pica-mirada-espejo", "Verte en el espejo del baño a las 5 y llorar de risa", "Encontrarte a quien te gusta justo en ese momento", "Veure't al mirall del lavabo a les 5 i plorar de riure", "Trobar-te qui t'agrada just en aquell moment", "See yourself in the toilet mirror at 5am and cry laughing", "Run into your crush at that exact moment"],
+  ["pica-guarda-secreto", "Saber el secreto más fuerte de tu grupo", "Que todo el grupo sepa el tuyo", "Saber el secret més fort del teu grup", "Que tot el grup sàpiga el teu", "Know your friend group's biggest secret", "Everyone knows yours"],
+  ["pica-jefe-pista", "Que tu jefe te vea perreando", "Que tu madre te vea besándote", "Que el teu cap et vegi perrejant", "Que la teva mare et vegi fent un petó", "Your boss sees you twerking", "Your mum sees you kissing"],
+  ["pica-caja-ropero", "Perder la ropa interior y no saber dónde", "Volver con la camiseta de otra persona", "Perdre la roba interior i no saber on", "Tornar amb la samarreta d'una altra persona", "Lose your underwear and not know where", "Come home in someone else's T-shirt"],
+  ["pica-reservado-chat", "Un reservado con tu crush y nadie más", "Un reservado con todos tus amigos y nadie guapo", "Un reservat amb el teu crush i ningú més", "Un reservat amb tots els teus amics i ningú guapo", "A VIP booth with just you and your crush", "A VIP booth with all your friends and nobody hot"],
+  ["pica-baile-ultima", "El último baile de la noche con alguien que acabas de conocer", "El último baile con tu ex de siempre", "L'últim ball de la nit amb algú que acabes de conèixer", "L'últim ball amb el teu ex de sempre", "The last dance with someone you just met", "The last dance with your forever ex"],
+]
+
+for (const [id, esA, esB, caA, caB, enA, enB] of [...MORE, ...MORE_3, ...MORE_4]) {
   PARTY_POLLS.push({ id, es: { a: esA, b: esB }, ca: { a: caA, b: caB }, en: { a: enA, b: enB } })
 }
 
 // Preguntas que hablan de alcohol: solo se enseñan a quien tiene cuenta (mayores de edad confirmados).
+const ADULT_ONLY_POLL_IDS = ["pica-ex-pista", "pica-numero-bano", "pica-perrear-slow", "pica-beso-pista-bano", "pica-mensaje-3am", "pica-amigo-liga", "pica-after-casa", "pica-camiseta-torso", "pica-quien-paga", "pica-ojos-barra", "pica-mejor-peor", "pica-mirada-dj", "pica-foto-story", "pica-pareja-grupo", "pica-baile-prohibido", "pica-puerta-lista", "pica-tacones-descalzo", "pica-ex-fiesta", "pica-confesion", "pica-vip-chupito", "pica-nombre-equivocado", "pica-toalla-piscina", "pica-lista-negra", "pica-dos-citas", "pica-mirada-espejo", "pica-guarda-secreto", "pica-jefe-pista", "pica-caja-ropero", "pica-reservado-chat", "pica-baile-ultima"]
+
 export const ALCOHOL_POLL_IDS: ReadonlySet<string> = new Set([
   "cubata-golpe", "chupito", "rondas-chofer", "bueno-garrafon",
   "agua-bailar", "botellon-vip", "vermut-ultimo", "chupito-misterio",
@@ -483,6 +521,7 @@ export const ALCOHOL_POLL_IDS: ReadonlySet<string> = new Set([
   "barra-cola-libre", "resaca-noche", "camarero-error", "hielo-carga",
   "playa-lujo-bebida", "dos-por-uno", "camarero-fijo", "litro-playa",
   "brindis-grupo", "carta-chupitos", "coctel-show",
+  ...ADULT_ONLY_POLL_IDS,
 ])
 
 export function isAlcoholPoll(poll: PartyPoll): boolean {

@@ -17,8 +17,13 @@ type ClubEventPageProps = {
 // Noches de club (las que publica cada local desde /mi-club). Antes estaban bloqueadas en
 // robots.txt y sin título propio, así que Google no podía mostrar "Viernes en X" aunque fuera
 // justo lo que la gente busca. Ahora tienen título, descripción, datos estructurados de evento y
-// se generan con ISR (una vez cada 5 min como mucho).
-export const revalidate = 300
+// se generan con ISR (una vez cada 6 h como mucho).
+// 05/11/2026: antes 300 s. Vercel avisó de que las «ISR Writes» del plan gratuito (200.000 al mes) estaban al
+// 100 %: cada vez que una página caducada recibe una visita (también las de buscadores y robots) se regenera y
+// cuenta como una escritura, y con cientos de fichas a 5 min salían decenas de miles al día. Subido a 6 h. Los
+// cambios del admin y de «mi club» se ven al momento igualmente: guardan con touchCache (lib/touchCache.ts), que
+// refresca esa página en concreto.
+export const revalidate = 21600
 export async function generateStaticParams() {
   return []
 }

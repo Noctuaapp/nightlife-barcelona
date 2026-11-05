@@ -131,7 +131,7 @@
     "day4": "Jueves",
     "day5": "Viernes",
     "day6": "Sábado",
-    "explore": "Ver todos los clubs →",
+    "explore": "Ver todos los clubs",
     "nudgeKeep": "Sigue explorando",
     "nudgePlanTitle": "Planifica tu noche",
     "nudgePlanSub": "Dinos qué te apetece y te proponemos los mejores sitios para esta noche.",
@@ -157,7 +157,13 @@
     "soonNote": "Próximamente: estamos preparando la agenda completa de eventos y festivales.",
     "soonTitle": "Los eventos llegan pronto",
     "soonBody": "Noctua está trabajando para ofrecer información veraz sobre todos los festivales, fiestas de barrio y sesiones que están ocurriendo en Barcelona. Muy pronto podrás disfrutar de esta función.",
-    "soonCta": "Explorar clubs"
+    "soonCta": "Explorar clubs",
+    "catConcert": "Conciertos",
+    "catFestival": "Festivales",
+    "catNeighborhood": "Fiestas de barrio",
+    "catConcertSub": "Directos y conciertos",
+    "catFestivalSub": "Música y cultura",
+    "catNeighborhoodSub": "Las fiestas mayores de Barcelona"
   },
   "essentials": {
     "title": "Esenciales",
@@ -173,13 +179,20 @@
       "Transport": "Transporte",
       "Metro": "Metro",
       "Nitbus": "Nitbus (bus nocturno)",
-      "Taxi": "Taxi",
+      "Taxi": "Taxi y VTC",
       "Supermarket": "Supermercado",
       "Hotel": "Hotel",
       "Casino": "Casino",
       "GasStation": "Gasolinera",
-      "Hospital": "Hospital",
-      "Parking": "Parking gratis"
+      "Hospital": "Urgencias y hospitales",
+      "Parking": "Parking gratis",
+      "Veterinary": "Veterinarios",
+      "Toilets": "Aseos públicos",
+      "Vending": "Máquinas expendedoras",
+      "Bicing": "Bicing",
+      "Luggage": "Consignas",
+      "Police": "Comisarías y policía",
+      "LostFound": "Objetos perdidos"
     },
     "categories": {
       "Pharmacy": "Farmacias 24h en Barcelona",
@@ -188,13 +201,20 @@
       "Transport": "Aerobus y transporte al aeropuerto",
       "Metro": "Estaciones de metro y horarios",
       "Nitbus": "Paradas principales de los autobuses nocturnos",
-      "Taxi": "Taxis y apps de VTC (Uber, Cabify, FreeNow)",
+      "Taxi": "Paradas de taxi, teléfonos y apps de VTC",
       "Supermarket": "Supermercados 24h y tiendas de conveniencia",
       "Hotel": "Hoteles y alojamiento",
       "Casino": "Casinos y entretenimiento",
       "GasStation": "Gasolineras abiertas toda la noche",
-      "Hospital": "Hospitales y urgencias 24h",
-      "Parking": "Aparcamientos públicos gratuitos cerca de los clubs"
+      "Hospital": "Urgencias 24 h, CUAP y hospitales",
+      "Parking": "Aparcamientos públicos gratuitos cerca de los clubs",
+      "Veterinary": "Veterinarios de urgencia y hospitales veterinarios",
+      "Toilets": "Aseos públicos y su horario",
+      "Vending": "Máquinas de bebidas, snacks y más",
+      "Bicing": "Estaciones, sin bicis libres en directo",
+      "Luggage": "Consignas y taquillas, con su horario",
+      "Police": "Guardia Urbana, Mossos y Policía Nacional",
+      "LostFound": "Oficinas de objetos perdidos y qué hacer si pierdes algo"
     }
   },
   "plan": {
@@ -434,7 +454,8 @@
     "hintFull": "Si el local está lleno, pueden no dejarte pasar.",
     "hintGroup": "Limitar los grupos grandes puede ser válido si es una norma visible y igual para todos.",
     "hintOther": "Si crees que ha sido por tu origen, tu sexo, tu orientación u otra condición personal, tienes derechos.",
-    "rightsLink": "Ver mis derechos si no me dejan entrar"
+    "rightsLink": "Ver mis derechos si no me dejan entrar",
+    "triggerHint": "Te enseñamos dónde seguir cerca"
   },
   "clubCard": {
     "vipTable": "Mesa VIP",
@@ -641,7 +662,7 @@
     "noList": "Sin lista",
     "notePlaceholder": "✏️ Añadir una nota (ej. ir con Marc, para su cumple...)",
     "title": "Tu colección nocturna",
-    "subtitle": "Clubs, eventos y noches guardadas — organízalos en listas y añade notas para no olvidar nada.",
+    "subtitle": "Tus clubs, noches y eventos guardados, con lo que importa a la vista.",
     "saved": "Guardados",
     "all": "Todos",
     "renameHint": "Doble clic para renombrar",
@@ -660,7 +681,15 @@
     "eventsSavedTitle": "Eventos",
     "listsExplainer": "Agrupa tus favoritos en listas (por ejemplo \"Para el finde\" o \"Con amigos\") para encontrarlos más rápido — es opcional, no hace falta usarlo si no te aporta nada.",
     "gateTitle": "Guarda tus sitios favoritos",
-    "gateSubtitle": "Crea una cuenta gratis y ten a mano los locales y eventos que no te quieres perder."
+    "gateSubtitle": "Crea una cuenta gratis y ten a mano los locales y eventos que no te quieres perder.",
+    "today": "Hoy",
+    "tomorrow": "Mañana",
+    "past": "Ya pasó",
+    "openUntil": "Abierto hasta las {t}",
+    "openNow": "Abierto ahora",
+    "opensAt": "Abre a las {t}",
+    "closedNow": "Cerrado ahora",
+    "openNowFilter": "Abiertos ahora"
   },
   "attendance": {
     "willGo": "Asistiré esta noche",
@@ -881,7 +910,7 @@
     "walk": "Ir andando",
     "website": "Web oficial",
     "rideCopied": "Dirección copiada: pégala en la app",
-    "rideHint": "Se abre la app si la tienes instalada; si no, la tienda para descargarla.",
+    "rideHint": "Uber y Cabify se abren con el destino puesto. En FREE NOW pega la dirección: ya la tienes copiada.",
     "noteUpvote": "Me parece útil",
     "noteDownvote": "No me parece útil",
     "noteReport": "Denunciar",
@@ -919,7 +948,9 @@
     "tempClosedNote": "Este local está cerrado por ahora. Mira su Instagram o su web para saber cuándo vuelve a abrir.",
     "fBirthdays": "Cumpleaños",
     "fPrivateEvents": "Eventos privados",
-    "fVenueRental": "Alquiler del local"
+    "fVenueRental": "Alquiler del local",
+    "rideTo": "Destino",
+    "ticketsAdvance": "Entradas anticipadas"
   },
   "eventPage": {
     "dateTbc": "Fecha por confirmar",
@@ -992,7 +1023,15 @@
     "reasonLive": "Música en directo",
     "reasonCocktails": "Cócteles",
     "reasonsTitle": "Por qué este",
-    "openCount": "{n} abiertos ahora"
+    "openCount": "{n} abiertos ahora",
+    "tileAny": "Todo",
+    "tileDance": "Bailar",
+    "tileChat": "Charlar",
+    "tileChill": "Chill",
+    "tileLive": "Directo",
+    "filters": "Filtros",
+    "clearFilters": "Quitar filtros",
+    "shareShort": "Compartir plan"
   },
   "cookieBanner": {
     "title": "Cookies",
@@ -1073,7 +1112,16 @@
     "nitbusLinesHere": "Líneas que paran aquí",
     "parkingFree": "Aparcamiento gratuito",
     "parkingNear": "Clubs a pie",
-    "parkingNoClubs": "Ningún club a menos de 15 min a pie"
+    "parkingNoClubs": "Ningún club a menos de 15 min a pie",
+    "groups": {
+      "health": "Urgencias y salud",
+      "move": "Moverse",
+      "food": "Comer y comprar",
+      "personal": "Necesidades personales",
+      "other": "Otros"
+    },
+    "call": "Llamar",
+    "website": "Web"
   },
   "areas": {
     "titleBarrio": "Discotecas en {name}",
@@ -2032,5 +2080,57 @@
     "many": "{n} locales",
     "showAll": "Ver los {n} locales",
     "showLess": "Ver menos"
+  },
+  "mananeo": {
+    "title": "Mañaneo",
+    "subtitle": "Sitios para seguir cuando sale el sol: afterhours y resaca.",
+    "directions": "Cómo llegar",
+    "openUntil": "Abierto hasta las {t}",
+    "openNow": "Abierto ahora",
+    "opensAt": "Abre a las {t}",
+    "closedNow": "Cerrado ahora"
+  },
+  "availability": {
+    "unverified": "Horario sin confirmar · llama antes de ir",
+    "onCall": "Urgencias por llamada",
+    "listedHint": "Según su horario publicado, sin confirmar",
+    "verifiedOn": "Verificado el {date}",
+    "sourceLabel": "Fuente: {source}",
+    "source": {
+      "osm": "OpenStreetMap",
+      "google": "Google",
+      "overture": "Overture Maps",
+      "manual": "Noctua",
+      "official": "Fuente oficial",
+      "business": "Web del negocio",
+      "user": "Aportación de usuarios"
+    },
+    "unverifiedShort": "Horario sin confirmar"
+  },
+  "essentialsHelp": {
+    "button": "Me ha pasado algo",
+    "call112": "Llamar al 112",
+    "title": "¿Qué ha pasado?",
+    "note": "Si hay peligro para la vida, llama al 112. Noctua no sustituye a los servicios de emergencia.",
+    "close": "Cerrar",
+    "home": "Volver a casa",
+    "homeHint": "Taxi, Nitbus y metro de esta noche",
+    "pharmacy": "Necesito una farmacia",
+    "pharmacyHint": "La más cercana abierta ahora",
+    "medical": "Necesito asistencia médica",
+    "medicalHint": "Urgencias y hospitales cerca de ti",
+    "pet": "Mi mascota necesita un veterinario",
+    "petHint": "Urgencias veterinarias",
+    "food": "Necesito encontrar comida",
+    "foodHint": "Abierta ahora, la más cercana",
+    "phone092": "Guardia Urbana",
+    "phone088": "Mossos d'Esquadra",
+    "toilets": "Necesito un baño",
+    "toiletsHint": "Aseos públicos, los más cercanos primero",
+    "police": "Necesito a la policía",
+    "policeHint": "Comisaría más cercana",
+    "lost": "He perdido el móvil o la cartera",
+    "lostHint": "Oficinas de objetos perdidos",
+    "buttonNote": "Ayuda rápida si algo va mal esta noche: farmacia, urgencias, taxi, baño o policía cerca de ti. El 112 está dentro, por si es grave."
   }
 }

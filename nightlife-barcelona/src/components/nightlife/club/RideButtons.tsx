@@ -8,8 +8,9 @@ import { detectPlatform, openRideApp, uberLink } from "../../../lib/rideLinks"
 // Pedir un coche o un taxi desde la ficha. Antes Cabify y FREE NOW llevaban a su web aunque
 // tuvieras la app instalada. Ahora en el móvil se abre la app (ver src/lib/rideLinks.ts):
 // - Uber, con el destino ya puesto.
-// - Cabify y FREE NOW, que no aceptan el destino desde fuera: se copia la dirección del local
-//   para pegarla en la app.
+// - Cabify, con el destino ya puesto (su enlace documentado cabify://cabify/journey). Además se
+//   copia la dirección, por si la versión instalada no lo lee.
+// - FREE NOW, que no tiene enlace con destino: se copia la dirección para pegarla en la app.
 // El 033 llama a Radio Taxi.
 //
 // Se registra qué app de VTC/taxi se pulsa (evento "ride_click" con el proveedor en `meta`, ver
@@ -48,7 +49,7 @@ export default function RideButtons({
     } catch {
       /* sin portapapeles: se abre la app igualmente */
     }
-    openRideApp(app)
+    openRideApp(app, { name, lat, lng })
   }
 
   // Estilo «píldora» (04/11/2026, ver .act en globals.css) con el logo oficial de cada app
@@ -57,6 +58,15 @@ export default function RideButtons({
 
   return (
     <div>
+      {address && (
+        <div className="mb-3 flex items-start gap-2.5 rounded-ctl bg-white/[0.04] px-3.5 py-3">
+          <Icon name="map" className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
+          <div className="min-w-0">
+            <p className="text-[11px] text-zinc-400">{t("clubPage.rideTo")}</p>
+            <p className="text-sm font-semibold leading-snug text-ink">{address}</p>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-2">
         <button type="button" onClick={openUber} className={`${btn} act-uber`}>
           <img src="/brands/uber.png" alt="" className="brand-logo" />

@@ -16,7 +16,8 @@ import { safeJsonLd } from "../../../lib/structuredData"
 // Barcelona fuera de la ciudad. La gente busca «discotecas en Hospitalet» o «bares en Badalona» y
 // hasta ahora esos locales solo salían dentro del filtro de /clubs, que Google no ve. La zona de
 // cada local sale de lib/zones.ts (la misma lógica de los filtros de la web).
-export const revalidate = 3600
+// 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
+export const revalidate = 21600
 export async function generateStaticParams() {
   return []
 }

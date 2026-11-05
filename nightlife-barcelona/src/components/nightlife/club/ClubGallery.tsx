@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "../../ui/SafeImage" // <Image> que nunca deja una foto rota
 import Icon from "../../ui/Icon"
@@ -59,9 +59,41 @@ export default function ClubGallery({
   const basePhotos = edit ? (Array.from(new Set([images[0], ...edit.gallery].filter(Boolean))) as string[]) : images
   const displayImages = canManage ? (photosOverride ?? basePhotos) : images
 
-  if (displayImages.length < 2 && !canManage) return null
-
   const go = (delta: number) => setOpen((i) => (i === null ? null : (i + delta + displayImages.length) % displayImages.length))
+
+  // Visor a pantalla completa: deslizar el dedo a izquierda/derecha cambia de foto (05/11/2026; antes solo
+  // se podía con las flechas, y en el móvil el gesto no hacía nada). Cuenta como deslizar si el movimiento
+  // es sobre todo horizontal y de más de 45 px; un toque normal o un gesto vertical no hacen nada.
+  const swipeStart = useRef<{ x: number; y: number } | null>(null)
+  const onSwipeStart = (e: React.TouchEvent) => {
+    const p = e.touches[0]
+    swipeStart.current = e.touches.length === 1 && p ? { x: p.clientX, y: p.clientY } : null
+  }
+  const onSwipeEnd = (e: React.TouchEvent) => {
+    const s = swipeStart.current
+    swipeStart.current = null
+    const p = e.changedTouches[0]
+    if (!s || !p) return
+    const dx = p.clientX - s.x
+    const dy = p.clientY - s.y
+    if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.3) return
+    go(dx < 0 ? 1 : -1)
+  }
+
+  // Teclado en el visor: flechas para cambiar de foto y Esc para cerrar.
+  useEffect(() => {
+    if (open === null) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(null)
+      else if (e.key === "ArrowRight") go(1)
+      else if (e.key === "ArrowLeft") go(-1)
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, displayImages.length])
+
+  if (displayImages.length < 2 && !canManage) return null
 
   // Guarda la lista completa reordenada: la posición 0 pasa a ser la portada de verdad (columna
   // `heroField`) y el resto, la galería (columna `gallery`).
@@ -256,7 +288,10 @@ export default function ClubGallery({
           role="dialog"
           aria-modal="true"
           onClick={() => setOpen(null)}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4"
+          onTouchStart={onSwipeStart}
+          onTouchEnd={onSwipeEnd}
+          style={{ touchAction: "pan-y" }}
+          className="fixed inset-0 z-[100] flex select-none items-center justify-center overscroll-contain bg-black/95 p-4"
         >
           <button onClick={() => setOpen(null)} className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white" aria-label={t("clubPage.close")}>
             <Icon name="close" className="h-5 w-5" />

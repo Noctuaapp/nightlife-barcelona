@@ -9,14 +9,15 @@ import BottomNav from "../../components/layout/BottomNav"
 import ExploreSwitch from "../../components/nightlife/ExploreSwitch"
 import SectionHero from "../../components/ui/SectionHero"
 import EssentialPhoto from "../../components/essentials/EssentialPhoto"
+import EmergencyBar from "../../components/essentials/EmergencyBar"
 import { supabase } from "../../lib/supabase"
 import { fetchAllPages } from "../../lib/fetchAll"
-import { cleanEssential } from "../../lib/essentials"
+import { cleanEssential, isShownEssential } from "../../lib/essentials"
 import { useLanguage } from "../../context/LanguageContext"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../lib/geo"
-import { getOpenStatus } from "../../lib/openStatus"
+import { availabilityOf, availabilityClass } from "../../lib/availability"
 import { getMetroTonight } from "../../lib/transitHours"
-import { categoryInfo, categoryRank, categoryNameKey, categoryDescKey } from "../../lib/essentialCategories"
+import { categoryInfo, categoryRank, categoryNameKey, categoryDescKey, groupNameKey, ESSENTIAL_GROUPS } from "../../lib/essentialCategories"
 
 // Portada de Esenciales. Rehecha tras la auditoría de octubre 2026: antes eran cuatro bloques con
 // doce colores (uno por categoría), emojis como iconos, contadores de relleno ("12 categorías",
@@ -42,7 +43,7 @@ export default function EssentialsPage() {
   useEffect(() => {
     // Por páginas: con las paradas de Nitbus hay más de 1.000 esenciales (ver lib/fetchAll).
     fetchAllPages((from, to) => supabase.from("essentials").select("*").eq("hidden", false).order("id").range(from, to)).then((data) => {
-      setEssentials(data.map(cleanEssential))
+      setEssentials(data.map(cleanEssential).filter(isShownEssential))
       setLoading(false)
     })
 
@@ -71,20 +72,16 @@ export default function EssentialsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale])
 
-  // Taxi y Transport ya no son categorías de esenciales: no informaban de nada útil como sitio al
-  // que ir a pie (Taxi solo tenía oficinas de Uber/Cabify; Transport solo el Aerobus) y moverse de
-  // noche ya funciona bien desde la ficha de cada club. Si queda alguna fila vieja con esa
-  // categoría en la base, se oculta aquí también.
-  const categories = Array.from(new Set(essentials.map((e) => e.category)))
-    .filter((c) => c !== "Taxi" && c !== "Transport")
-    .sort((a, b) => categoryRank(a) - categoryRank(b))
+  // Solo las categorías del catálogo (lib/essentialCategories.ts): Hotel y Transport ya no salen aunque
+  // queden filas en la base, y de Taxi se descartan las oficinas de Uber/Cabify (isShownEssential).
+  const categories = Array.from(new Set(essentials.map((e) => e.category))).sort((a, b) => categoryRank(a) - categoryRank(b))
   const itemsByCategory = (cat: string) => essentials.filter((e) => e.category === cat)
   // «Cerca de ti» (2/11/2026): no sugiere Metro ni Nitbus. Una parada o estación se busca en su propia
   // página o en Maps, y con cientos de paradas llenaban la lista y tapaban farmacias, súper, comida…
   // Siguen en su sección «Transporte» y en la búsqueda por nombre.
   const NEAR_EXCLUDED = new Set(["Metro", "Nitbus"])
   const nearCategories = categories.filter((c) => !NEAR_EXCLUDED.has(c))
-  const openCount = (cat: string) => itemsByCategory(cat).filter((e) => getOpenStatus(e.open_hours).state === "open").length
+  const openCount = (cat: string) => itemsByCategory(cat).filter((e) => availabilityOf(e).counts).length
 
   const nearby = userLocation
     ? essentials
@@ -93,6 +90,18 @@ export default function EssentialsPage() {
         .sort((a, b) => a._dist - b._dist)
         .slice(0, 8)
     : []
+
+  // Lo más cercano de cada categoría de uso diario (04/11/2026): con tu ubicación, cada tarjeta de
+  // «Ahora» enseña el sitio abierto más cercano (o, si no hay ninguno abierto, el más cercano) en vez
+  // de un recuento. Es lo que se usa entre semana: farmacia, cajero, comida, súper.
+  const closestOf = (cat: string) => {
+    if (!userLocation) return null
+    const list = itemsByCategory(cat)
+      .filter((e) => e.latitude && e.longitude)
+      .map((e) => ({ ...e, _dist: distanceInMeters(userLocation.lat, userLocation.lng, Number(e.latitude), Number(e.longitude)), _open: availabilityOf(e).counts }))
+      .sort((a, b) => a._dist - b._dist)
+    return list.find((e) => e._open) || list[0] || null
+  }
 
   const toggleNearMe = () => {
     if (nearMe) {
@@ -142,7 +151,11 @@ export default function EssentialsPage() {
     ? textMatches.slice(0, 60)
     : []
 
-  const statusClass = (state: string, soon: boolean) => (state === "open" ? (soon ? "text-warn" : "text-open") : "text-zinc-400")
+  // Sitios publicados por categoría: el botón «Me ha pasado algo» solo ofrece atajos con datos, y la lista
+  // de categorías solo enseña las que llegan a su mínimo (no se enseñan categorías de relleno).
+  const countsByCategory: Record<string, number> = {}
+  for (const e of essentials) countsByCategory[e.category] = (countsByCategory[e.category] || 0) + 1
+  const listedCategories = categories.filter((c) => (countsByCategory[c] || 0) >= categoryInfo(c).minPlaces)
 
   const sectionTitle = "mb-4 text-lg font-semibold text-ink"
   const tile = "flex flex-col gap-3 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25"
@@ -188,6 +201,8 @@ export default function EssentialsPage() {
           </div>
         </SectionHero>
 
+        <EmergencyBar counts={countsByCategory} />
+
         {showResults ? (
           <section className="mx-auto mt-8 max-w-7xl px-4">
             {nearMe && userLocation && (
@@ -228,7 +243,7 @@ export default function EssentialsPage() {
                 {searchResults.map((item) => {
                   const info = categoryInfo(item.category)
                   const CatIcon = info.icon
-                  const st = getOpenStatus(item.open_hours, t)
+                  const st = availabilityOf(item, t)
                   return (
                     <Link
                       key={item.id}
@@ -242,11 +257,11 @@ export default function EssentialsPage() {
                           {[t(categoryNameKey(item.category)), item.neighborhood].filter(Boolean).join(" · ")}
                         </p>
                         {item._dist != null && (
-                          <p className="mt-1 text-sm font-semibold text-brand-soft">
+                          <p className="mt-1 text-sm font-semibold text-ink">
                             {formatDistance(item._dist)} · {t("essentialsPage.walkMin").replace("{n}", String(walkingMinutes(item._dist)))}
                           </p>
                         )}
-                        {st.label && <p className={`mt-1 text-xs font-semibold ${statusClass(st.state, st.soon)}`}>{st.label}</p>}
+                        {st.label && <p className={`mt-1 text-xs font-semibold ${availabilityClass(st)}`}>{st.label}</p>}
                         {item.highFee && <p className="mt-1 text-xs font-semibold text-warn">{t("essentialsPage.highFee")}</p>}
                       </div>
                     </Link>
@@ -267,16 +282,28 @@ export default function EssentialsPage() {
                     const info = categoryInfo(cat)
                     const CatIcon = info.icon
                     const open = openCount(cat)
+                    const close = closestOf(cat)
                     return (
-                      <Link key={cat} href={`/essentials/${info.slug}`} className={tile}>
-                        <CatIcon size={22} className="text-brand-soft" />
-                        <span>
+                      <Link key={cat} href={close ? `/essentials/${info.slug}?id=${close.id}` : `/essentials/${info.slug}`} className={tile}>
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-ink">
+                          <CatIcon size={20} />
+                        </span>
+                        <span className="min-w-0">
                           <span className="block text-sm font-semibold text-ink">{t(categoryNameKey(cat))}</span>
-                          <span className={`mt-0.5 block text-xs font-semibold ${open > 0 ? "text-open" : "text-zinc-400"}`}>
-                            {open > 0
-                              ? (open === 1 ? t("essentialsPage.openNowOne") : t("essentialsPage.openNowCount")).replace("{n}", String(open))
-                              : (items.length === 1 ? t("essentialsPage.placesOne") : t("essentialsPage.placesCount")).replace("{n}", String(items.length))}
-                          </span>
+                          {close ? (
+                            <>
+                              <span className="mt-0.5 block truncate text-xs text-zinc-300">{close.name}</span>
+                              <span className={`mt-0.5 block text-xs font-semibold ${close._open ? "text-open" : "text-zinc-400"}`}>
+                                {formatDistance(close._dist)} · {t("essentialsPage.walkMin").replace("{n}", String(walkingMinutes(close._dist)))}
+                              </span>
+                            </>
+                          ) : (
+                            <span className={`mt-0.5 block text-xs font-semibold ${open > 0 ? "text-open" : "text-zinc-400"}`}>
+                              {open > 0
+                                ? (open === 1 ? t("essentialsPage.openNowOne") : t("essentialsPage.openNowCount")).replace("{n}", String(open))
+                                : (items.length === 1 ? t("essentialsPage.placesOne") : t("essentialsPage.placesCount")).replace("{n}", String(items.length))}
+                            </span>
+                          )}
                         </span>
                       </Link>
                     )
@@ -291,12 +318,14 @@ export default function EssentialsPage() {
                 {[
                   { cat: "Metro", line: metroLabel },
                   { cat: "Nitbus", line: t("essentialsPage.nitbusLine") },
+                  // El taxi vuelve cuando hay paradas de verdad publicadas (mínimo en essentialCategories.ts).
+                  ...((countsByCategory.Taxi || 0) >= categoryInfo("Taxi").minPlaces ? [{ cat: "Taxi", line: t("essentialsPage.taxiLine") }] : []),
                 ].map(({ cat, line }) => {
                   const info = categoryInfo(cat)
                   const CatIcon = info.icon
                   return (
                     <Link key={cat} href={`/essentials/${info.slug}`} className="flex items-center gap-4 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25">
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl bg-brand/15 text-brand-soft">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 text-ink">
                         <CatIcon size={22} />
                       </span>
                       <span className="min-w-0">
@@ -336,9 +365,9 @@ export default function EssentialsPage() {
             <section className="mx-auto mt-10 max-w-7xl px-4">
               <Link
                 href="/essentials/sugerir"
-                className="flex items-center gap-4 rounded-card border border-brand/40 bg-brand/[0.08] p-5 transition hover:border-brand/70"
+                className="flex items-center gap-4 rounded-card border border-white/10 bg-surface p-5 transition hover:border-white/25"
               >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl bg-brand/20 text-brand-soft">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-[#0a0910]">
                   <Plus size={22} aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -361,25 +390,36 @@ export default function EssentialsPage() {
                     <div key={i} className="h-20 animate-pulse rounded-card bg-surface" />
                   ))}
                 </div>
-              ) : categories.length === 0 ? (
+              ) : listedCategories.length === 0 ? (
                 <p className="py-12 text-center text-zinc-400">{t("essentialsPage.empty")}</p>
               ) : (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {categories.map((cat) => {
-                    const info = categoryInfo(cat)
-                    const CatIcon = info.icon
-                    const count = itemsByCategory(cat).length
+                <div className="flex flex-col gap-7">
+                  {ESSENTIAL_GROUPS.map((g) => {
+                    const cats = listedCategories.filter((c) => categoryInfo(c).group === g)
+                    if (cats.length === 0) return null
                     return (
-                      <Link key={cat} href={`/essentials/${info.slug}`} className="flex items-center gap-4 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25">
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-ctl bg-white/5 text-brand-soft">
-                          <CatIcon size={22} />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-semibold text-ink">{t(categoryNameKey(cat))}</span>
-                          <span className="mt-0.5 block truncate text-xs text-zinc-400">{t(categoryDescKey(cat))}</span>
-                        </span>
-                        <span className="shrink-0 text-xs font-semibold text-zinc-400">{count}</span>
-                      </Link>
+                      <div key={g}>
+                        <h3 className="mb-3 text-sm font-semibold text-zinc-300">{t(groupNameKey(g))}</h3>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {cats.map((cat) => {
+                            const info = categoryInfo(cat)
+                            const CatIcon = info.icon
+                            const count = itemsByCategory(cat).length
+                            return (
+                              <Link key={cat} href={`/essentials/${info.slug}`} className="flex items-center gap-4 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25">
+                                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 text-ink">
+                                  <CatIcon size={22} />
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block text-sm font-semibold text-ink">{t(categoryNameKey(cat))}</span>
+                                  <span className="mt-0.5 block truncate text-xs text-zinc-400">{t(categoryDescKey(cat))}</span>
+                                </span>
+                                <span className="shrink-0 text-xs font-semibold text-zinc-400">{count}</span>
+                              </Link>
+                            )
+                          })}
+                        </div>
+                      </div>
                     )
                   })}
                 </div>

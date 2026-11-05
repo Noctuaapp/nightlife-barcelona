@@ -9,7 +9,8 @@ import { MIN_INDEXABLE, neighborhoodsOf, stylesOf } from "../../lib/areas"
 import { cleanPriceRange, safeJsonLd } from "../../lib/structuredData"
 import { createSlug } from "../../lib/slug"
 
-export const revalidate = 3600
+// 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
+export const revalidate = 21600
 
 export const metadata: Metadata = {
   title: "Discotecas y clubs en Barcelona | Noctua",
