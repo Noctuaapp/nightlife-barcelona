@@ -33,23 +33,28 @@ const ADMIN_NAV: NavGroup[] = [
     ],
   },
   {
+    // Las secciones van en el mismo orden que la web (Clubs, Eventos, Esenciales) y cada una lleva pegadas las
+    // pantallas que dependen de ella.
     label: "Contenido",
     items: [
       { href: "/admin", label: "Clubs", icon: SECTION_ICONS.clubs },
-      { href: "/admin/recomendados", label: "Top 3 de Noctua", icon: Trophy },
       { href: "/admin/club-sessions", label: "Sesiones semanales", icon: Repeat },
       { href: "/admin/club-events", label: "Noches de club", icon: Headphones },
+      { href: "/admin/calidad", label: "Calidad de fichas", icon: BadgeCheck },
+      { href: "/admin/recomendados", label: "Top 3 de Noctua", icon: Trophy },
       { href: "/admin/events", label: "Eventos y festivales", icon: SECTION_ICONS.events },
       { href: "/admin/mananeo", label: "Mañaneo", icon: Sunrise },
       { href: "/admin/essentials", label: "Esenciales", icon: SECTION_ICONS.essentials },
       { href: "/admin/sugerencias", label: "Sugerencias de esenciales", icon: Lightbulb },
-      { href: "/admin/calidad", label: "Calidad de fichas", icon: BadgeCheck },
     ],
   },
   {
+    // Primero las personas (cuentas y lo que hacen), luego lo que mandan (mensajes y buzón), luego la moderación
+    // y por último las valoraciones.
     label: "Comunidad",
     items: [
       { href: "/admin/users", label: "Usuarios", icon: Users },
+      { href: "/admin/actividad", label: "Actividad por usuario", icon: Activity },
       { href: "/admin/messages", label: "Mensajes", icon: MessageSquare, badge: "messages" },
       { href: "/admin/buzon", label: "Buzón de propietarios", icon: Inbox, badge: "owners" },
       { href: "/admin/notas", label: "Notas denunciadas", icon: Flag, badge: "reports" },
@@ -58,6 +63,7 @@ const ADMIN_NAV: NavGroup[] = [
     ],
   },
   {
+    // Datos agregados, de lo que pasa en la web a lo que se puede enseñar a clubs y compradores de datos.
     label: "Datos",
     items: [
       { href: "/admin/visitas", label: "Visitas", icon: Footprints },
@@ -65,7 +71,6 @@ const ADMIN_NAV: NavGroup[] = [
       { href: "/admin/afluencia", label: "Cuándo sale la gente", icon: Moon },
       { href: "/admin/encuestas", label: "Encuestas", icon: Vote },
       { href: "/admin/datos", label: "Datos de negocio", icon: BarChart3 },
-      { href: "/admin/actividad", label: "Actividad por usuario", icon: Activity },
     ],
   },
   {
