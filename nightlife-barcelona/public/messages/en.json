@@ -2022,7 +2022,15 @@
     "tripDirection": "Towards {to}",
     "tripStops": "{n} stops",
     "tripStopOne": "1 stop",
-    "tripMin": "≈ {min} min"
+    "tripMin": "≈ {min} min",
+    "segTitle": "My trip",
+    "segFrom": "I board at",
+    "segTo": "I get off at",
+    "segPickFrom": "Choose where you board",
+    "segPickTo": "Choose where you get off",
+    "segClear": "See the whole line",
+    "segBoardHere": "Board here",
+    "segAlightHere": "Get off here"
   },
   "essentialsSuggest": {
     "boxTitle": "We might be missing some essentials. Can you help?",

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { buildNitbusData, compareLineCodes, directionStats, nearestStop, normStopName, planTrips, summarizeRoutes, type RouteRow, type LooseStop } from "../nitbusRoutes"
+import { alightOptions, buildNitbusData, compareLineCodes, directionStats, lineStopNames, nearestStop, normStopName, planTrips, resolveSegment, summarizeRoutes, type RouteRow, type LooseStop } from "../nitbusRoutes"
 import { distanceInMeters } from "../geo"
 
 // El módulo importa el cliente de Supabase (necesita variables de entorno); aquí solo se prueba lo puro.
@@ -187,5 +187,69 @@ describe("planTrips", () => {
     for (const d of [0, 1]) for (let i = 0; i < 10; i++) dup.push(r("N9", d, i + 1, `A${i + 1}`, 41.38 + i * 0.002, 2.17))
     const l = buildNitbusData(dup, []).lines.N9
     expect(planTrips(l, me, spot, distanceInMeters)).toHaveLength(1)
+  })
+})
+
+describe("Mi trayecto: lineStopNames, alightOptions y resolveSegment", () => {
+  // Ida A→B→C→D y vuelta D→C→B→A, con las paradas separadas ~0,9 km para que haya tiempo estimado.
+  const rows: RouteRow[] = [
+    r("N4", 0, 1, "Pl. Catalunya", 41.38, 2.1),
+    r("N4", 0, 2, "Av. Paral·lel", 41.38, 2.11),
+    r("N4", 0, 3, "Sants Estació", 41.38, 2.12),
+    r("N4", 0, 4, "El Carmel", 41.38, 2.13),
+    r("N4", 1, 1, "El Carmel", 41.38, 2.13),
+    r("N4", 1, 2, "Sants Estació", 41.38, 2.12),
+    r("N4", 1, 3, "Av. Paral·lel", 41.38, 2.11),
+    r("N4", 1, 4, "Pl. Catalunya", 41.38, 2.1),
+  ]
+  const line = buildNitbusData(rows, []).lines.N4
+
+  it("lista cada parada una sola vez, en el orden del primer sentido", () => {
+    expect(lineStopNames(line)).toEqual(["Pl. Catalunya", "Av. Paral·lel", "Sants Estació", "El Carmel"])
+  })
+
+  it("solo ofrece bajar en las paradas que vienen después de la de subida", () => {
+    expect(alightOptions(line, "Av. Paral·lel")).toEqual(["Sants Estació", "El Carmel", "Pl. Catalunya"])
+    // En la última parada del sentido de ida solo se puede ir hacia el otro lado.
+    expect(alightOptions(line, "El Carmel")).toEqual(["Sants Estació", "Av. Paral·lel", "Pl. Catalunya"])
+    expect(alightOptions(line, "No existe")).toEqual([])
+  })
+
+  it("deduce el sentido de en cuál de los dos va la subida antes que la bajada", () => {
+    const ida = resolveSegment(line, "Pl. Catalunya", "Sants Estació", distanceInMeters)
+    expect(ida).toMatchObject({ dir: 0, from: 0, to: 2, stops: 2 })
+    expect(ida!.minutes).toBeGreaterThanOrEqual(5)
+    const vuelta = resolveSegment(line, "Sants Estació", "Pl. Catalunya", distanceInMeters)
+    expect(vuelta).toMatchObject({ dir: 1, from: 1, to: 3, stops: 2 })
+  })
+
+  it("no distingue acentos, mayúsculas ni signos", () => {
+    expect(resolveSegment(line, "PL CATALUNYA", "sants estacio", distanceInMeters)).toMatchObject({ dir: 0, from: 0, to: 2 })
+  })
+
+  it("devuelve null si no hay trayecto o las paradas son la misma", () => {
+    expect(resolveSegment(line, "Sants Estació", "Sants Estació", distanceInMeters)).toBeNull()
+    expect(resolveSegment(line, "Pl. Catalunya", "No existe", distanceInMeters)).toBeNull()
+    expect(resolveSegment(line, "", "El Carmel", distanceInMeters)).toBeNull()
+  })
+
+  it("en una línea circular elige el tramo más corto", () => {
+    const circular = buildNitbusData(
+      [r("N9", 0, 1, "A"), r("N9", 0, 2, "B"), r("N9", 0, 3, "C"), r("N9", 0, 4, "A")],
+      []
+    ).lines.N9
+    expect(resolveSegment(circular, "B", "A", distanceInMeters)).toMatchObject({ dir: 0, from: 1, to: 3, stops: 2 })
+    expect(resolveSegment(circular, "A", "C", distanceInMeters)).toMatchObject({ dir: 0, from: 0, to: 2, stops: 2 })
+  })
+
+  it("sin el recorrido en orden (lista alfabética) no hay tramo", () => {
+    const loose: LooseStop[] = [
+      { name: "Pl. Catalunya", subcategory: "N7", latitude: 41.38, longitude: 2.1 },
+      { name: "Sants Estació", subcategory: "N7", latitude: 41.38, longitude: 2.12 },
+    ]
+    const unordered = buildNitbusData([], loose).lines.N7
+    expect(unordered.ordered).toBe(false)
+    expect(alightOptions(unordered, "Pl. Catalunya")).toEqual([])
+    expect(resolveSegment(unordered, "Pl. Catalunya", "Sants Estació", distanceInMeters)).toBeNull()
   })
 })

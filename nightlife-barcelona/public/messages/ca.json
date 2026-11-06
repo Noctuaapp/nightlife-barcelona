@@ -2022,7 +2022,15 @@
     "tripDirection": "Direcció {to}",
     "tripStops": "{n} parades",
     "tripStopOne": "1 parada",
-    "tripMin": "≈ {min} min"
+    "tripMin": "≈ {min} min",
+    "segTitle": "El meu trajecte",
+    "segFrom": "Pujo a",
+    "segTo": "Baixo a",
+    "segPickFrom": "Tria la parada de pujada",
+    "segPickTo": "Tria la parada de baixada",
+    "segClear": "Veure tota la línia",
+    "segBoardHere": "Puges aquí",
+    "segAlightHere": "Baixes aquí"
   },
   "essentialsSuggest": {
     "boxTitle": "Pot ser que ens faltin essencials. Ens ajudes?",

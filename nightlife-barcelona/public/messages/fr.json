@@ -1973,7 +1973,15 @@
     "tripDirection": "Direction {to}",
     "tripStops": "{n} arrêts",
     "tripStopOne": "1 arrêt",
-    "tripMin": "≈ {min} min"
+    "tripMin": "≈ {min} min",
+    "segTitle": "Mon trajet",
+    "segFrom": "Je monte à",
+    "segTo": "Je descends à",
+    "segPickFrom": "Choisis l’arrêt de montée",
+    "segPickTo": "Choisis l’arrêt de descente",
+    "segClear": "Voir toute la ligne",
+    "segBoardHere": "Tu montes ici",
+    "segAlightHere": "Tu descends ici"
   },
   "essentialsSuggest": {
     "boxTitle": "Il nous manque peut-être des essentiels. Tu nous aides ?",

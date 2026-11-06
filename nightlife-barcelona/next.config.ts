@@ -48,6 +48,9 @@ const nextConfig: NextConfig = {
       { source: "/account", destination: "/profile", permanent: true },
       { source: "/ayuda", destination: "/faq", permanent: true },
       { source: "/venue-details", destination: "/clubs", permanent: true },
+      // /barrio/barcelona era el cajón de los locales sin barrio concreto (06/11/2026 se repartieron
+      // en su barrio real): la página ya no existe y su contenido es el listado general.
+      { source: "/barrio/barcelona", destination: "/clubs", permanent: true },
       // La analítica antigua del admin se sustituyó por Actividad por usuario.
       { source: "/admin/analytics", destination: "/admin/actividad", permanent: false },
     ]

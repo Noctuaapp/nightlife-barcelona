@@ -985,9 +985,10 @@ export default function EssentialCategoryPage() {
           </section>
         )}
 
-        {/* Red completa de Nitbus (todas las líneas, con destino real) — siempre visible, no
-            depende de que haya paradas cargadas en el admin, porque esa información (a dónde va
-            cada línea) no cambia según la parada. */}
+        {/* Nitbus: horario general y entrada a /nitbus (todas las líneas, con su destino real). No
+            depende de que haya paradas cargadas en el admin. La lista de las 23 líneas que había
+            aquí en un desplegable («Ver todas las líneas y a dónde van») se quitó el 06/11/2026:
+            repetía lo que ya enseña el botón de arriba. */}
         {category === "nitbus" && (
           <section className="mx-auto mt-6 max-w-7xl px-4">
             {/* Entrada a las paradas por línea, en orden (31/10/2026): el mapa de más de mil
@@ -1006,19 +1007,6 @@ export default function EssentialCategoryPage() {
               <p className="mb-2 text-sm font-semibold text-ink">{t("essentialsPage.nitbusLine")}</p>
               <p className="text-lg font-semibold text-ink">{t("essentialsPage.nitbusHours")}</p>
               <p className="mt-1 text-xs text-zinc-400">{t("essentialsPage.nitbusHoursNote")}</p>
-              {/* Con paradas cargadas, lo importante es el buscador y el mapa de abajo: la lista de
-                  las 23 líneas queda plegada para no empujarlos fuera de la pantalla. */}
-              <details open={essentials.length === 0} className="group mt-4">
-                <summary className="cursor-pointer list-none text-sm font-semibold text-brand-soft">
-                  {t("essentialsPage.nitbusAllLines")} <span className="inline-block transition group-open:rotate-90">›</span>
-                </summary>
-                <div className="mt-4 grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2">
-                  {Object.values(NIGHT_BUS_LINES).map((line) => (
-                    <NitbusRouteRow key={line.code} code={line.code} seeStopsLabel={t("clubPage.seeStops")} unknownLabel={t("clubPage.lineUnknown")} />
-                  ))}
-                </div>
-                <p className="mt-4 text-xs text-zinc-400">{t("essentialsPage.nitbusBody")}</p>
-              </details>
             </div>
           </section>
         )}

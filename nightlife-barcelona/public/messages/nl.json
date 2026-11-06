@@ -1973,7 +1973,15 @@
     "tripDirection": "Richting {to}",
     "tripStops": "{n} haltes",
     "tripStopOne": "1 halte",
-    "tripMin": "≈ {min} min"
+    "tripMin": "≈ {min} min",
+    "segTitle": "Mijn rit",
+    "segFrom": "Ik stap in bij",
+    "segTo": "Ik stap uit bij",
+    "segPickFrom": "Kies je instaphalte",
+    "segPickTo": "Kies je uitstaphalte",
+    "segClear": "Bekijk de hele lijn",
+    "segBoardHere": "Hier instappen",
+    "segAlightHere": "Hier uitstappen"
   },
   "essentialsSuggest": {
     "boxTitle": "Misschien missen we wat essentials. Help je ons?",

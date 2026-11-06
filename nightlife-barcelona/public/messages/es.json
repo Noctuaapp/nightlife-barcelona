@@ -2035,7 +2035,15 @@
     "tripDirection": "Sentido {to}",
     "tripStops": "{n} paradas",
     "tripStopOne": "1 parada",
-    "tripMin": "≈ {min} min"
+    "tripMin": "≈ {min} min",
+    "segTitle": "Mi trayecto",
+    "segFrom": "Subo en",
+    "segTo": "Bajo en",
+    "segPickFrom": "Elige la parada de subida",
+    "segPickTo": "Elige la parada de bajada",
+    "segClear": "Ver toda la línea",
+    "segBoardHere": "Subes aquí",
+    "segAlightHere": "Bajas aquí"
   },
   "essentialsSuggest": {
     "boxTitle": "Es posible que nos falten esenciales. ¿Nos ayudas?",

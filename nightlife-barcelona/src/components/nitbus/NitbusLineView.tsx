@@ -7,11 +7,12 @@ import Header from "../layout/Header"
 import Footer from "../layout/Footer"
 import BottomNav from "../layout/BottomNav"
 import { NitbusBadge } from "../ui/TransitBadge"
+import StopPicker from "./StopPicker"
 import { useLanguage } from "../../context/LanguageContext"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { NITBUS_PLATE, NITBUS_RAIL } from "../../lib/transitColors"
-import { directionStats, nearestStop, normStopName, planTrips, type NbLine, type NbStop } from "../../lib/nitbusRoutes"
+import { alightOptions, directionStats, lineStopNames, nearestStop, normStopName, planTrips, resolveSegment, type NbLine, type NbStop } from "../../lib/nitbusRoutes"
 
 // Esquema de una línea de Nitbus (31/10/2026): una barra vertical con todas sus paradas en orden,
 // cabeceras marcadas, transbordos con otras líneas nocturnas y «parada más cercana». Sustituye al
@@ -67,10 +68,43 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
   const [me, setMe] = useState<Point | null>(null) // la posición de la persona («Cerca de mí»)
   const [named, setNamed] = useState<{ dir: number; index: number } | null>(null) // ?stop=Nombre
   const [focus, setFocus] = useState<Focus | null>(null) // a qué parada llevar la pantalla
+  const [fromName, setFromName] = useState("") // «Subo en»
+  const [toName, setToName] = useState("") // «Bajo en»
 
   const directions = line?.directions ?? []
   const current = directions[Math.min(dir, Math.max(directions.length - 1, 0))]
   const stops: NbStop[] = current?.stops ?? []
+  const ordered = !!line?.ordered
+
+  // «Mi trayecto» (06/11/2026): subo en una parada y bajo en otra, y la lista se queda con ese tramo.
+  // Las paradas de bajada salen de la de subida (solo las que vienen después), así que nunca se elige
+  // un par sin trayecto; el sentido se deduce solo.
+  const fromOptions = useMemo(() => (line && ordered ? lineStopNames(line) : []), [line, ordered])
+  const toOptions = useMemo(() => (line && fromName ? alightOptions(line, fromName) : []), [line, fromName])
+  const segFound = useMemo(
+    () => (line && fromName && toName ? resolveSegment(line, fromName, toName, distanceInMeters) : null),
+    [line, fromName, toName]
+  )
+  const seg = segFound && segFound.dir === dir ? segFound : null
+  const clearSeg = () => {
+    setFromName("")
+    setToName("")
+  }
+  const pickFrom = (name: string) => {
+    setFromName(name)
+    setFocus(null)
+    if (!line || !toName) return
+    // Si la bajada que ya había no se alcanza desde la nueva subida, se borra.
+    const s = resolveSegment(line, name, toName, distanceInMeters)
+    if (s) setDir(s.dir)
+    else setToName("")
+  }
+  const pickTo = (name: string) => {
+    setToName(name)
+    setFocus(null)
+    const s = line && fromName ? resolveSegment(line, fromName, name, distanceInMeters) : null
+    if (s) setDir(s.dir)
+  }
 
   // Enlaces desde otras páginas: ?stop=Nombre (parada concreta) o ?lat=..&lon=.. (la más cercana a
   // un local que se estaba mirando).
@@ -112,6 +146,7 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
     if (!line) return
     const pos = await geo.request()
     if (!pos) return
+    clearSeg()
     setQuery("")
     setMe({ lat: pos.lat, lon: pos.lng })
     // Con un sitio ya marcado se queda en el sentido que se estaba viendo, para que las dos paradas
@@ -129,11 +164,13 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
 
   const q = normStopName(query)
   const rows = useMemo(
-    () => stops.map((s, index) => ({ s, index })).filter(({ s }) => !q || normStopName(s.name).includes(q)),
-    [stops, q]
+    () =>
+      stops
+        .map((s, index) => ({ s, index }))
+        .filter(({ s, index }) => (!seg || (index >= seg.from && index <= seg.to)) && (!q || normStopName(s.name).includes(q))),
+    [stops, q, seg]
   )
   const filtering = q.length > 0
-  const ordered = !!line?.ordered
   // La parada de ESTE sentido más cercana a cada punto: al cambiar de sentido se recalculan solas.
   const spotHi: Nearest | null = useMemo(() => {
     const n = spot && current ? nearestStop(current.stops, spot.lat, spot.lon, distanceInMeters) : null
@@ -147,7 +184,7 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
   const trips = useMemo(() => (line && me && spot ? planTrips(line, me, spot, distanceInMeters) : []), [line, me, spot])
   // Tiempo aproximado de punta a punta del sentido que se está viendo (solo con el recorrido en orden).
   const dirStats = useMemo(() => (ordered && stops.length > 1 ? directionStats(stops, distanceInMeters) : null), [ordered, stops])
-  const approxMinutes = !filtering && dirStats?.minutes != null ? dirStats.minutes : null
+  const approxMinutes = !filtering && !seg && dirStats?.minutes != null ? dirStats.minutes : null
 
   const title = `Nitbus ${code}`
 
@@ -213,6 +250,7 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                     onClick={() => {
                       setDir(i)
                       setFocus(null)
+                      clearSeg()
                     }}
                     className={`min-w-0 rounded-ctl border px-3 py-3 text-left text-sm font-semibold transition ${
                       dir === i ? "border-white bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
@@ -223,6 +261,59 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                   </button>
                 ))}
               </div>
+            )}
+
+            {ordered && (
+              <section aria-label={t("nitbusPage.segTitle")} className="mt-4 rounded-card border border-white/10 bg-surface p-4">
+                <h2 className="text-sm font-semibold text-ink">{t("nitbusPage.segTitle")}</h2>
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <StopPicker
+                    label={t("nitbusPage.segFrom")}
+                    placeholder={t("nitbusPage.segPickFrom")}
+                    searchPlaceholder={t("nitbusPage.findStop")}
+                    noMatch={(x) => t("nitbusPage.noMatch").replace("{q}", x)}
+                    value={fromName}
+                    options={fromOptions}
+                    onChange={pickFrom}
+                  />
+                  <StopPicker
+                    label={t("nitbusPage.segTo")}
+                    placeholder={t("nitbusPage.segPickTo")}
+                    searchPlaceholder={t("nitbusPage.findStop")}
+                    noMatch={(x) => t("nitbusPage.noMatch").replace("{q}", x)}
+                    value={toName}
+                    options={toOptions}
+                    onChange={pickTo}
+                    disabled={!fromName}
+                  />
+                </div>
+                {seg && current && (
+                  <div aria-live="polite" className="mt-3 rounded-ctl border border-brand/40 bg-brand/[0.08] p-3">
+                    <p className="text-sm text-ink">
+                      {t("nitbusPage.tripBoard")
+                        .replace("{from}", `«${stops[seg.from].name}»`)
+                        .replace("{end}", `«${stops[seg.to].name}»`)}
+                    </p>
+                    <p className="mt-0.5 text-xs text-zinc-300">
+                      {[
+                        t("nitbusPage.tripDirection").replace("{to}", current.to),
+                        seg.stops === 1 ? t("nitbusPage.tripStopOne") : t("nitbusPage.tripStops").replace("{n}", String(seg.stops)),
+                        seg.minutes != null ? t("nitbusPage.tripMin").replace("{min}", String(seg.minutes)) : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                    {seg.minutes != null && <p className="mt-1 text-xs text-zinc-500">{t("nitbusPage.estimateNote")}</p>}
+                    <button
+                      type="button"
+                      onClick={clearSeg}
+                      className="mt-2 text-sm font-semibold text-brand-soft underline underline-offset-4 hover:text-ink"
+                    >
+                      {t("nitbusPage.segClear")}
+                    </button>
+                  </div>
+                )}
+              </section>
             )}
 
             <div className="mt-4 flex gap-2">
@@ -253,7 +344,10 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                   {spotHi && current && (
                     <button
                       type="button"
-                      onClick={() => setFocus({ dir, index: spotHi.index, tick: Date.now() })}
+                      onClick={() => {
+                        clearSeg()
+                        setFocus({ dir, index: spotHi.index, tick: Date.now() })
+                      }}
                       className="flex w-full items-start gap-3 rounded-card border border-warn/40 bg-warn/[0.08] p-3 text-left text-sm leading-snug text-zinc-100"
                     >
                       <span aria-hidden="true" className="mt-1 h-3 w-3 shrink-0 rounded-full bg-warn" />
@@ -267,7 +361,10 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                   {meHi && current && (
                     <button
                       type="button"
-                      onClick={() => setFocus({ dir, index: meHi.index, tick: Date.now() })}
+                      onClick={() => {
+                        clearSeg()
+                        setFocus({ dir, index: meHi.index, tick: Date.now() })
+                      }}
                       className="flex w-full items-start gap-3 rounded-card border border-brand/50 bg-brand/[0.10] p-3 text-left text-sm leading-snug text-zinc-100"
                     >
                       <span aria-hidden="true" className="mt-1 h-3 w-3 shrink-0 rounded-full bg-brand" />
@@ -302,6 +399,7 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                           key={`${tr.kind}-${tr.dir}`}
                           type="button"
                           onClick={() => {
+                            clearSeg()
                             setDir(tr.dir)
                             setFocus({ dir: tr.dir, index: tr.from, tick: Date.now() })
                           }}
@@ -322,20 +420,25 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
               )}
             </div>
 
-            <p className="mt-6 text-sm text-zinc-400">
-              {t("nitbusPage.stopsCount").replace("{n}", String(filtering ? rows.length : stops.length))}
-              {current?.to && !filtering && ordered ? ` · ${current.from} → ${current.to}` : ""}
-              {approxMinutes != null ? ` · ${t("nitbusPage.approxTime").replace("{min}", String(approxMinutes))}` : ""}
-            </p>
-            {approxMinutes != null && <p className="mt-1 text-xs text-zinc-500">{t("nitbusPage.estimateNote")}</p>}
+            {!seg && (
+              <>
+                <p className="mt-6 text-sm text-zinc-400">
+                  {t("nitbusPage.stopsCount").replace("{n}", String(filtering ? rows.length : stops.length))}
+                  {current?.to && !filtering && ordered ? ` · ${current.from} → ${current.to}` : ""}
+                  {approxMinutes != null ? ` · ${t("nitbusPage.approxTime").replace("{min}", String(approxMinutes))}` : ""}
+                </p>
+                {approxMinutes != null && <p className="mt-1 text-xs text-zinc-500">{t("nitbusPage.estimateNote")}</p>}
+              </>
+            )}
 
             {rows.length === 0 ? (
               <p className="mt-4 text-base text-zinc-300">{t("nitbusPage.noMatch").replace("{q}", query)}</p>
             ) : (
-              <ol className="mt-3">
+              <ol className={seg ? "mt-5" : "mt-3"}>
                 {rows.map(({ s, index }) => {
-                  const isFirst = index === 0
-                  const isLast = index === stops.length - 1
+                  // Con un tramo elegido, la «primera» y la «última» son donde subo y donde bajo.
+                  const isFirst = index === (seg ? seg.from : 0)
+                  const isLast = index === (seg ? seg.to : stops.length - 1)
                   const terminal = ordered && (isFirst || isLast)
                   const hub = !terminal && s.others.length >= HUB_MIN_LINES
                   const isSpot = spotHi?.index === index
@@ -372,9 +475,12 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                         >
                           {s.name}
                         </p>
-                        {terminal && (
-                          <p className="text-xs text-zinc-400">{isFirst ? t("nitbusPage.start") : t("nitbusPage.end")}</p>
-                        )}
+                        {terminal &&
+                          (seg ? (
+                            <p className="text-xs font-semibold text-brand-soft">{isFirst ? t("nitbusPage.segBoardHere") : t("nitbusPage.segAlightHere")}</p>
+                          ) : (
+                            <p className="text-xs text-zinc-400">{isFirst ? t("nitbusPage.start") : t("nitbusPage.end")}</p>
+                          ))}
                         {isSpot && spotHi && (
                           <p className="text-xs font-semibold text-warn">{t("nitbusPage.spotHere").replace("{dist}", formatDistance(spotHi.meters))}</p>
                         )}

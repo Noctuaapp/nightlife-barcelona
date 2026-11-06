@@ -1973,7 +1973,15 @@
     "tripDirection": "Richtung {to}",
     "tripStops": "{n} Haltestellen",
     "tripStopOne": "1 Haltestelle",
-    "tripMin": "≈ {min} Min."
+    "tripMin": "≈ {min} Min.",
+    "segTitle": "Meine Fahrt",
+    "segFrom": "Ich steige ein bei",
+    "segTo": "Ich steige aus bei",
+    "segPickFrom": "Wähle die Einstiegshaltestelle",
+    "segPickTo": "Wähle die Ausstiegshaltestelle",
+    "segClear": "Ganze Linie anzeigen",
+    "segBoardHere": "Hier einsteigen",
+    "segAlightHere": "Hier aussteigen"
   },
   "essentialsSuggest": {
     "boxTitle": "Uns fehlen vielleicht ein paar Essentials. Hilfst du uns?",

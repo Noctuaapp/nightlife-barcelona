@@ -276,6 +276,77 @@ export function planTrips(line: NbLine, me: { lat: number; lon: number }, spot: 
   return unique.sort((x, y) => (x.kind === y.kind ? x.dir - y.dir : x.kind === "go" ? -1 : 1))
 }
 
+// «Mi trayecto» (06/11/2026): la persona elige la parada donde sube y la donde baja y ve solo ese tramo
+// de la línea. El sentido no se pregunta: se deduce de en cuál de los dos sentidos la parada de subida
+// va antes que la de bajada. Solo con el recorrido en orden; con la lista alfabética no tiene sentido.
+export type Segment = {
+  dir: number
+  from: number // índice de la parada donde se sube
+  to: number // índice de la parada donde se baja
+  stops: number // paradas que se recorren (subir en la 3.ª y bajar en la 8.ª = 5)
+  minutes: number | null
+}
+
+// Nombres de todas las paradas de la línea, sin repetir, en el orden del primer sentido que las trae.
+export function lineStopNames(line: NbLine): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const d of line.directions) {
+    for (const s of d.stops) {
+      const key = normStopName(s.name)
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push(s.name)
+    }
+  }
+  return out
+}
+
+// Paradas donde se puede bajar si se sube en `fromName`: las que vienen después en algún sentido (la
+// propia parada no se ofrece). Así nunca se puede elegir un par de paradas sin trayecto.
+export function alightOptions(line: NbLine, fromName: string): string[] {
+  if (!line.ordered) return []
+  const fromKey = normStopName(fromName)
+  if (!fromKey) return []
+  const seen = new Set<string>([fromKey])
+  const out: string[] = []
+  for (const d of line.directions) {
+    const i = d.stops.findIndex((s) => normStopName(s.name) === fromKey)
+    if (i < 0) continue
+    for (let j = i + 1; j < d.stops.length; j++) {
+      const key = normStopName(d.stops[j].name)
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push(d.stops[j].name)
+    }
+  }
+  return out
+}
+
+// Tramo entre la parada de subida y la de bajada. Si sirve más de un sentido (líneas circulares o que
+// repiten parada), se elige el tramo más corto. null si no hay trayecto de una a otra.
+export function resolveSegment(line: NbLine, fromName: string, toName: string, distance: Distance): Segment | null {
+  if (!line.ordered) return null
+  const fromKey = normStopName(fromName)
+  const toKey = normStopName(toName)
+  if (!fromKey || !toKey || fromKey === toKey) return null
+  let best: Segment | null = null
+  for (let dir = 0; dir < line.directions.length; dir++) {
+    const stops = line.directions[dir].stops
+    for (let i = 0; i < stops.length; i++) {
+      if (normStopName(stops[i].name) !== fromKey) continue
+      for (let j = i + 1; j < stops.length; j++) {
+        if (normStopName(stops[j].name) !== toKey) continue
+        if (!best || j - i < best.stops) {
+          best = { dir, from: i, to: j, stops: j - i, minutes: directionStats(stops.slice(i, j + 1), distance).minutes }
+        }
+        break
+      }
+    }
+  }
+  return best
+}
+
 // Servidor: lee las dos fuentes y construye los datos. Si falla la tabla (aún no existe) sigue con
 // las paradas sueltas; si falla todo, devuelve vacío y la página lo explica.
 export async function loadNitbusData(): Promise<NbData> {

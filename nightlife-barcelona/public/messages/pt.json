@@ -1986,7 +1986,15 @@
     "tripDirection": "Direção {to}",
     "tripStops": "{n} paragens",
     "tripStopOne": "1 paragem",
-    "tripMin": "≈ {min} min"
+    "tripMin": "≈ {min} min",
+    "segTitle": "O meu trajeto",
+    "segFrom": "Subo em",
+    "segTo": "Desço em",
+    "segPickFrom": "Escolhe a paragem de subida",
+    "segPickTo": "Escolhe a paragem de descida",
+    "segClear": "Ver toda a linha",
+    "segBoardHere": "Sobes aqui",
+    "segAlightHere": "Desces aqui"
   },
   "essentialsSuggest": {
     "boxTitle": "Pode ser que nos faltem essenciais. Ajudas-nos?",
