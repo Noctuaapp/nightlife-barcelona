@@ -62,7 +62,7 @@ export default function EmergencyBar({ counts }: { counts: Record<string, number
 
   return (
     <>
-      <section className="mx-auto mt-6 max-w-7xl px-4" aria-label={t("essentialsHelp.title")}>
+      <section className="mx-auto mt-12 max-w-7xl px-4 pb-8" aria-label={t("essentialsHelp.title")}>
         <button
           type="button"
           onClick={() => setOpen(true)}

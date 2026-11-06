@@ -360,8 +360,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
   // «Sobre»: en el móvil, 4 líneas y «Leer más» si hay bastante texto; el texto entero sigue en el HTML.
   const summary = clubSummary(club)
   const descText = String(club.description || "").trim()
-  const hasSecondary = !!club.description && descText.length < 280
-  const canCollapse = !isAdmin && ((club.description ? descText.length : summary.length) > 200 || hasSecondary)
+  const canCollapse = !isAdmin && (club.description ? descText.length : summary.length) > 200
 
   // Botones de acción (04/11/2026, ver .act en globals.css): una acción principal blanca (Entradas o, si no
   // hay, Cómo llegar) y el resto secundarios con el icono en el color de su función. Antes eran un
@@ -707,12 +706,8 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
               {!club.description && isAdmin && (
                 <p className="mt-3 text-xs leading-relaxed text-zinc-500">Sin descripción, el público ve: {summary}</p>
               )}
-              {/* Descripción de una sola frase (29/10/2026): Google la veía igual que la meta descripción y
-                  la ficha quedaba con muy poco texto propio. Se completa con los datos reales del local
-                  (horario, precio, edad, cómo llegar). Una descripción larga ya se basta sola. */}
-              {hasSecondary && (
-                <p className={`mt-3 text-sm leading-relaxed text-zinc-400 ${canCollapse && !aboutOpen ? "hidden lg:block" : ""}`}>{summary}</p>
-              )}
+              {/* Desde el 06/11/2026 una descripción escrita se enseña sola: ya no se le añade debajo el resumen
+                  automático (antes salía un segundo párrafo con los datos del local si la descripción era corta). */}
               {canCollapse && (
                 <button
                   type="button"

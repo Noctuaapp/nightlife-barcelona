@@ -540,7 +540,9 @@
     "useLocation": "Fer servir la meva ubicació per veure el més proper",
     "noResultsFor": "Sense resultats per a «{q}».",
     "legendUnknown": "Sense horari",
-    "showOnMap": "Veure {n} al mapa"
+    "showOnMap": "Veure {n} al mapa",
+    "essentialsSampleHint": "Es veuen els {n} més propers de cada categoria. Tria una categoria per veure'ls tots.",
+    "allBarrios": "Tots els barris"
   },
   "planPage": {
     "notLoggedInSubtitle": "Registra't per crear el teu pla perfecte a Barcelona, a mida i sense gastar ni un euro de més.",
@@ -937,7 +939,8 @@
     "fPrivateEvents": "Esdeveniments privats",
     "fVenueRental": "Lloguer del local",
     "rideTo": "Destinació",
-    "ticketsAdvance": "Entrades anticipades"
+    "ticketsAdvance": "Entrades anticipades",
+    "fCapacityLabel": "Aforament"
   },
   "eventPage": {
     "dateTbc": "Data per confirmar",

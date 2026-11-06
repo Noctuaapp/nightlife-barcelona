@@ -17,7 +17,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../lib/geo"
 import { availabilityOf, availabilityClass } from "../../lib/availability"
 import { getMetroTonight } from "../../lib/transitHours"
-import { categoryInfo, categoryRank, categoryNameKey, categoryDescKey, groupNameKey, ESSENTIAL_GROUPS } from "../../lib/essentialCategories"
+import { categoryInfo, categoryRank, categoryNameKey, categoryDescKey, groupNameKey, usesOwnPhoto, ESSENTIAL_GROUPS } from "../../lib/essentialCategories"
 
 // Portada de Esenciales. Rehecha tras la auditoría de octubre 2026: antes eran cuatro bloques con
 // doce colores (uno por categoría), emojis como iconos, contadores de relleno ("12 categorías",
@@ -79,7 +79,8 @@ export default function EssentialsPage() {
   // «Cerca de ti» (2/11/2026): no sugiere Metro ni Nitbus. Una parada o estación se busca en su propia
   // página o en Maps, y con cientos de paradas llenaban la lista y tapaban farmacias, súper, comida…
   // Siguen en su sección «Transporte» y en la búsqueda por nombre.
-  const NEAR_EXCLUDED = new Set(["Metro", "Nitbus"])
+  // Bicing tiene cientos de estaciones y llenaban "Cerca de ti" (06/11/2026); sigue en su propia categoría.
+  const NEAR_EXCLUDED = new Set(["Metro", "Nitbus", "Bicing"])
   const nearCategories = categories.filter((c) => !NEAR_EXCLUDED.has(c))
   const openCount = (cat: string) => itemsByCategory(cat).filter((e) => availabilityOf(e).counts).length
 
@@ -201,8 +202,6 @@ export default function EssentialsPage() {
           </div>
         </SectionHero>
 
-        <EmergencyBar counts={countsByCategory} />
-
         {showResults ? (
           <section className="mx-auto mt-8 max-w-7xl px-4">
             {nearMe && userLocation && (
@@ -250,7 +249,7 @@ export default function EssentialsPage() {
                       href={`/essentials/${info.slug}`}
                       className="flex items-start gap-4 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25"
                     >
-                      <EssentialPhoto src={item.image} alt={item.name} icon={<CatIcon size={26} />} color="#7c5cff" className="h-16 w-16 shrink-0 rounded-ctl" />
+                      <EssentialPhoto src={usesOwnPhoto(item.category) ? item.image : null} alt={item.name} icon={<CatIcon size={26} />} color="#7c5cff" className="h-16 w-16 shrink-0 rounded-ctl" />
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-ink">{item.name}</p>
                         <p className="mt-0.5 truncate text-sm text-zinc-400">
@@ -427,6 +426,9 @@ export default function EssentialsPage() {
             </section>
           </>
         )}
+
+        {/* «Me ha pasado algo» va abajo del todo (06/11/2026): arriba descolocaba la portada. */}
+        <EmergencyBar counts={countsByCategory} />
       </main>
       <BottomNav />
     </>

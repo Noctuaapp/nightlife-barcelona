@@ -47,6 +47,7 @@ type Club = {
   rating?: number
   people?: string
   dresscode?: string
+  dress_code?: string | null
   terrace?: boolean
   smoking_area?: boolean
   table_booking?: boolean
@@ -153,7 +154,8 @@ const clubToForm = (club: Club): ClubFormData => ({
   image: club.image || "",
   rating: club.rating != null ? String(club.rating) : "",
   people: club.people || "",
-  dresscode: club.dresscode || "",
+  // La columna real es dress_code (antes se leía "dresscode", que no existe, y al guardar se borraba la vestimenta).
+  dresscode: club.dress_code || club.dresscode || "",
   terrace: !!club.terrace,
   smoking_area: !!club.smoking_area,
   table_booking: !!club.table_booking,

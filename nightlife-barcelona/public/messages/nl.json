@@ -536,7 +536,9 @@
     "legendSoon": "Sluit binnenkort",
     "legendClosed": "Gesloten",
     "legendUnknown": "Geen openingstijden",
-    "showOnMap": "Toon {n} op de kaart"
+    "showOnMap": "Toon {n} op de kaart",
+    "essentialsSampleHint": "Je ziet de {n} dichtstbijzijnde per categorie. Kies een categorie om ze allemaal te zien.",
+    "allBarrios": "Alle wijken"
   },
   "planPage": {
     "notLoggedInSubtitle": "Meld je aan om je perfecte avond in Barcelona samen te stellen, op maat en zonder een euro te veel uit te geven.",
@@ -918,7 +920,8 @@
     "fPrivateEvents": "Privéfeesten",
     "fVenueRental": "Zaalverhuur",
     "rideTo": "Bestemming",
-    "ticketsAdvance": "Voorverkoop tickets"
+    "ticketsAdvance": "Voorverkoop tickets",
+    "fCapacityLabel": "Capaciteit"
   },
   "eventPage": {
     "dateTbc": "Datum nog niet bekend",

@@ -536,7 +536,9 @@
     "legendSoon": "Chiude presto",
     "legendClosed": "Chiuso",
     "legendUnknown": "Senza orari",
-    "showOnMap": "Mostra {n} sulla mappa"
+    "showOnMap": "Mostra {n} sulla mappa",
+    "essentialsSampleHint": "Vedi i {n} più vicini di ogni categoria. Scegli una categoria per vederli tutti.",
+    "allBarrios": "Tutti i quartieri"
   },
   "planPage": {
     "notLoggedInSubtitle": "Registrati per creare il tuo piano perfetto a Barcellona, su misura e senza spendere un euro in più.",
@@ -918,7 +920,8 @@
     "fPrivateEvents": "Eventi privati",
     "fVenueRental": "Affitto del locale",
     "rideTo": "Destinazione",
-    "ticketsAdvance": "Biglietti in prevendita"
+    "ticketsAdvance": "Biglietti in prevendita",
+    "fCapacityLabel": "Capienza"
   },
   "eventPage": {
     "dateTbc": "Data da confermare",

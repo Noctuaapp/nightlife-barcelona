@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
 import { availabilityOf, availabilityClass, isVerificationCurrent, verificationAgeDays } from "../availability"
-import { ESSENTIAL_CATEGORIES, categoryInfo, isKnownCategory } from "../essentialCategories"
+import { ESSENTIAL_CATEGORIES, categoryInfo, isKnownCategory, usesOwnPhoto } from "../essentialCategories"
 
 // Viernes 6/11/2026 a las 03:00 en Madrid (CET = UTC+1 → 02:00 UTC).
 const NOW = new Date("2026-11-06T02:00:00Z")
@@ -150,5 +150,18 @@ describe("catálogo de categorías", () => {
 
   it("una categoría desconocida no rompe nada", () => {
     expect(categoryInfo("Inventada").slug).toBe("inventada")
+  })
+})
+
+describe("imagen de los esenciales", () => {
+  it("consignas, casinos, comida, supermercados y gasolineras enseñan su propia foto; el resto, la imagen predeterminada", () => {
+    expect(usesOwnPhoto("Luggage")).toBe(true)
+    expect(usesOwnPhoto("luggage")).toBe(true)
+    expect(usesOwnPhoto("Casino")).toBe(true)
+    for (const c of ["Food", "food", "Supermarket", "Gas Station", "gas-station"]) expect(usesOwnPhoto(c), c).toBe(true)
+    for (const c of ["Pharmacy", "Hospital", "Veterinary", "Police", "Taxi", "Metro", "Nitbus", "Parking", "Bicing", "Vending", "ATM", "Toilets", "LostFound"]) {
+      expect(usesOwnPhoto(c), c).toBe(false)
+    }
+    expect(usesOwnPhoto(null)).toBe(false)
   })
 })

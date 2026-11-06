@@ -7,6 +7,7 @@ import { touchCache } from "../../../lib/touchCache"
 import { useLanguage } from "../../../context/LanguageContext"
 import { toast } from "../../ui/Toast"
 import { EXTRA_FEATURES } from "../../../lib/extraFeatures"
+import { dressCodeOf } from "../../../lib/dressCode"
 
 // Características del club (terraza, billar, VIP...). Dos arreglos (24/10/2026):
 //   1. El futbolín/billar se podía marcar en /admin pero la ficha nunca lo enseñaba.
@@ -32,7 +33,7 @@ const TOGGLES: Toggle[] = [
 type Club = Record<string, any>
 
 export function activeFeatureCount(club: Club, capacity: number | null): number {
-  return TOGGLES.filter((f) => !!club[f.field]).length + (club.dresscode ? 1 : 0) + (capacity ? 1 : 0)
+  return TOGGLES.filter((f) => !!club[f.field]).length + (dressCodeOf(club) ? 1 : 0) + (capacity ? 1 : 0)
 }
 
 export default function ClubFeatures({ club, capacity, isAdmin }: { club: Club; capacity: number | null; isAdmin: boolean }) {
@@ -59,32 +60,43 @@ export default function ClubFeatures({ club, capacity, isAdmin }: { club: Club; 
   }
 
   const active = TOGGLES.filter((f) => values[f.field])
-  const extra = [
-    club.dresscode && { key: "dresscode", label: `${t("clubPage.fDresscode")}: ${club.dresscode}`, icon: "shirt" },
-    capacity && { key: "capacity", label: t("clubPage.fCapacity").replace("{n}", String(capacity)), icon: "users" },
-  ].filter(Boolean) as { key: string; label: string; icon: string }[]
+  // Datos con valor (dresscode, aforo): fichas con etiqueta pequeña y el dato grande. Los servicios (sí/no) son píldoras.
+  const facts = [
+    dressCodeOf(club) && { key: "dresscode", label: t("clubPage.fDresscode"), value: dressCodeOf(club) },
+    capacity && { key: "capacity", label: t("clubPage.fCapacityLabel"), value: String(capacity) },
+  ].filter(Boolean) as { key: string; label: string; value: string }[]
 
   return (
     <>
-      {active.length + extra.length > 0 && (
-        <ul className="grid grid-cols-2 gap-2 sm:gap-3">
-          {active.map((f) => (
-            <li key={f.field} className="flex min-w-0 items-center gap-2.5 rounded-ctl border border-white/10 px-3 py-2.5 sm:px-4 sm:py-3">
-              <Icon name={f.icon} className="h-4 w-4 shrink-0 text-brand-soft" />
-              <span className="min-w-0 break-words text-[13px] font-semibold leading-snug text-ink sm:text-sm">{t(f.labelKey)}</span>
-            </li>
+      {facts.length > 0 && (
+        <dl className={`grid gap-2 ${facts.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+          {facts.map((f) => (
+            <div key={f.key} className="min-w-0 rounded-2xl border border-white/10 bg-[#14111c] px-4 py-3">
+              <dt className="text-[11px] font-semibold text-zinc-400">{f.label}</dt>
+              <dd className="mt-0.5 break-words text-[17px] font-extrabold leading-snug text-white">{f.value}</dd>
+            </div>
           ))}
-          {extra.map((f) => (
-            <li key={f.key} className="flex min-w-0 items-center gap-2.5 rounded-ctl border border-white/10 px-3 py-2.5 sm:px-4 sm:py-3">
-              <Icon name={f.icon} className="h-4 w-4 shrink-0 text-brand-soft" />
-              <span className="min-w-0 break-words text-[13px] font-semibold leading-snug text-ink sm:text-sm">{f.label}</span>
+        </dl>
+      )}
+
+      {active.length > 0 && (
+        <ul className={`flex flex-wrap gap-2 ${facts.length > 0 ? "mt-3" : ""}`}>
+          {active.map((f) => (
+            <li
+              key={f.field}
+              className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-full bg-[#23202d] py-1.5 pl-1.5 pr-4 text-[13px] font-semibold leading-snug text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] sm:text-sm"
+            >
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-[#0a0910]">
+                <Icon name={f.icon} className="h-3.5 w-3.5" />
+              </span>
+              <span className="min-w-0 break-words">{t(f.labelKey)}</span>
             </li>
           ))}
         </ul>
       )}
 
       {isAdmin && (
-        <div className={`rounded-ctl border border-dashed border-purple-400/40 bg-purple-500/[0.05] p-4 ${active.length + extra.length > 0 ? "mt-4" : ""}`}>
+        <div className={`rounded-ctl border border-dashed border-purple-400/40 bg-purple-500/[0.05] p-4 ${active.length + facts.length > 0 ? "mt-4" : ""}`}>
           <p className="mb-3 text-xs font-semibold text-purple-200">{t("clubPage.editFeatures")}</p>
           <div className="flex flex-wrap gap-2">
             {TOGGLES.map((f) => {

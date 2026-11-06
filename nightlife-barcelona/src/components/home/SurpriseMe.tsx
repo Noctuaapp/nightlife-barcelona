@@ -280,6 +280,16 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
     )
   }
 
+  // «Quitar filtros» de la fila de filtros: borra solo los filtros (cerca, gratis, terraza, LGTBI+, zona) y
+  // deja el rollo elegido; vuelve a tirar con lo que queda.
+  const clearExtraFilters = () => {
+    setExtras(NO_EXTRAS)
+    setZone("")
+    setNear(false)
+    setGeoError("")
+    draw({ mood, extras: NO_EXTRAS, zone: "", near: false }, true)
+  }
+
   const clearFilters = () => {
     setMood("any")
     setExtras(NO_EXTRAS)
@@ -462,9 +472,10 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
                 })}
               </div>
 
-              {/* Filtros: una sola fila con scroll, debajo del rollo, solo cuando se piden */}
+              {/* Filtros: debajo del rollo, solo cuando se piden. Se pliegan en varias filas (06/11/2026): la fila con scroll
+                  horizontal no se podía deslizar con el ratón ni se veía que había más a la derecha. */}
               {filtersOpen && (
-                <div id="surprise-filters" className="scrollbar-none mt-2 flex gap-2 overflow-x-auto px-5 pb-1">
+                <div id="surprise-filters" className="mt-2 flex flex-wrap gap-2 px-5 pb-1">
                   <button onClick={toggleNear} aria-pressed={near} className={`${chipBase} ${near ? on : off}`}>
                     <MapPin size={15} aria-hidden="true" className="shrink-0" />
                     {locating ? t("surprise.locating") : t("surprise.nearOff")}
@@ -499,6 +510,15 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
                         ))}
                       </select>
                     </label>
+                  )}
+                  {activeFilters > 0 && (
+                    <button
+                      onClick={clearExtraFilters}
+                      className={`${chipBase} border border-white/25 bg-transparent text-zinc-200 hover:bg-white/10`}
+                    >
+                      <X size={14} aria-hidden="true" className="shrink-0" />
+                      {t("surprise.clearFilters")}
+                    </button>
                   )}
                 </div>
               )}

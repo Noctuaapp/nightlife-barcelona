@@ -26,6 +26,7 @@ import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { cleanEssential } from "../../lib/essentials"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { UtensilsCrossed, ShoppingCart } from "lucide-react"
+import { dressCodeOf } from "../../lib/dressCode"
 
 // "Planifica tu noche". Cambios de la auditoría de octubre 2026:
 // - Los estilos de música eran "Commercial" y "Cocktail Bar" (en inglés) contra datos en español:
@@ -208,7 +209,7 @@ function scoreClub(club: any, prefs: Prefs, t: (key: string) => string): { score
     reasons.push(t("planPage.reasonOffer"))
   }
 
-  if (prefs.dresscode !== "any" && club.dresscode === prefs.dresscode) {
+  if (prefs.dresscode !== "any" && dressCodeOf(club) === prefs.dresscode) {
     score += 10
     reasons.push(t("planPage.reasonDresscode"))
   }
@@ -645,7 +646,7 @@ export default function PlanPage() {
 
     // Alternativas: primero las del mismo barrio o dresscode que el plan principal.
     const rest = allScoredClubs.filter((c) => c.id !== top?.id && c.id !== second?.id)
-    const close = top ? rest.filter((c) => c.neighborhood === top.neighborhood || (top.dresscode && c.dresscode === top.dresscode)) : []
+    const close = top ? rest.filter((c) => c.neighborhood === top.neighborhood || (dressCodeOf(top) && dressCodeOf(c) === dressCodeOf(top))) : []
     const alts = [...close, ...rest.filter((c) => !close.includes(c))].slice(0, 4)
 
     if (top || second) {
@@ -730,7 +731,7 @@ export default function PlanPage() {
   // casilla de ofertas solo si algún local tiene alguna.
   const venueTypeOptions = VENUE_TYPE_OPTIONS.filter((v) => venueTypeSet.has(v.value) || optionsWithData([v.value], clubs, (c, o) => c.venue_type === o).length > 0)
   const musicOptions = MUSIC_OPTIONS.filter((m) => musicSet.has(m) || optionsWithData([m], clubs, (c, o) => styleMatches(c.music, o)).length > 0)
-  const dresscodeOptions = DRESSCODE_OPTIONS.filter((d) => d === "any" || d === dresscode || optionsWithData([d], clubs, (c, o) => c.dresscode === o).length > 0)
+  const dresscodeOptions = DRESSCODE_OPTIONS.filter((d) => d === "any" || d === dresscode || optionsWithData([d], clubs, (c, o) => dressCodeOf(c) === o).length > 0)
   const anyOffers = clubs.some((c) => hasOffer(c))
 
   const option = (active: boolean) =>

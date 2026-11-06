@@ -8,6 +8,7 @@
 // distinto de un local a otro. Si el local tiene descripción escrita, se usa esa.
 
 import { EXTRA_FEATURES } from "./extraFeatures"
+import { dressCodeOf } from "./dressCode"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Club = Record<string, any>
@@ -62,7 +63,7 @@ export function clubSummary(club: Club): string {
 
   const age = club.age_min || club.min_age || club.edad_minima
   if (age) parts.push(`Edad mínima: ${String(age).replace(/^\+?/, "+")} años.`)
-  const dresscode = clean(club.dresscode)
+  const dresscode = dressCodeOf(club)
   if (dresscode) parts.push(`Código de vestimenta: ${dresscode}.`)
 
   const extras = [

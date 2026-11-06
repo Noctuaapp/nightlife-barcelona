@@ -119,3 +119,13 @@ export function essentialSlugLabelEs(slug: string | null | undefined): string {
 export const categoryNameKey = (key: string) => `essentials.category_names.${key.replace(/\s+/g, "")}`
 export const categoryDescKey = (key: string) => `essentials.categories.${key.replace(/\s+/g, "")}`
 export const groupNameKey = (group: EssentialGroup) => `essentialsPage.groups.${group}`
+
+// Imagen de cada sitio (06/11/2026): los esenciales son servicios básicos y públicos (farmacia, cajero, parada,
+// aseos…), así que todos llevan la imagen predeterminada de su categoría (icono sobre un fondo liso) en vez de
+// una foto suelta que quedaba descuadrada. Conservan la foto propia los sitios que son un negocio con cara:
+// consignas, casinos, restaurantes y comida, supermercados y gasolineras (decidido el 06/11/2026 a las 11:32).
+// Acepta la clave («Gas Station») o el slug («gas-station»).
+const OWN_PHOTO = new Set(["luggage", "casino", "food", "supermarket", "gas station", "gas-station"])
+export function usesOwnPhoto(categoryOrSlug: string | null | undefined): boolean {
+  return OWN_PHOTO.has(String(categoryOrSlug || "").toLowerCase())
+}

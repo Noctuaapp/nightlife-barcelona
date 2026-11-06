@@ -16,6 +16,7 @@ import { zoneOf, zonesPresent } from "../../lib/zones"
 import { categoryRank, categoryNameKey, categoryInfo } from "../../lib/essentialCategories"
 import { availabilityOf } from "../../lib/availability"
 import { isShownEssential } from "../../lib/essentials"
+import { limitEssentialsForMap, PER_CATEGORY } from "../../lib/essentialsMapLimit"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { MapPin, Footprints, X, List, LocateFixed, Search, Phone, type LucideIcon } from "lucide-react"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
@@ -220,6 +221,9 @@ const FilterSelect = ({ value, options, onChange, placeholder, accent, big = fal
 const normQ = (v: string) =>
   (v || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim()
 
+// Barrio de un club (la columna neighborhood ya viene normalizada). Vacío si no consta.
+const barrioOf = (i: { neighborhood?: string | null }) => (typeof i.neighborhood === "string" ? i.neighborhood.trim() : "")
+
 const getName = (item: Club | Event | Essential) => ("name" in item ? item.name : item.title)
 const getSub = (item: Club | Event | Essential, t?: (key: string) => string) => {
   if ("music" in item) return item.neighborhood || ""
@@ -385,6 +389,7 @@ export default function MapPage() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
   const [search, setSearch] = useState("")
   const [zone, setZone] = useState("")
+  const [barrio, setBarrio] = useState("") // barrio dentro de la zona (solo en clubs)
   const [category, setCategory] = useState("")
   const [mapQuery, setMapQuery] = useState("")
   const [mapSearchOpen, setMapSearchOpen] = useState(false)
@@ -392,7 +397,7 @@ export default function MapPage() {
   // Alto que queda entre el buscador y el teclado: la lista de resultados no pasa de ahí (hace scroll por dentro).
   const mapInputWrapRef = useRef<HTMLDivElement>(null)
   const mapListMax = useVisibleBelow(mapInputWrapRef, mapSearchOpen)
-  useEffect(() => { setZone(""); setCategory("") }, [filter])
+  useEffect(() => { setZone(""); setBarrio(""); setCategory("") }, [filter])
   // El buscador flotante se quedaba abierto para siempre: antes solo se cerraba al borrar el
   // texto o elegir un resultado, así que si lo abrías sin escribir nada (p. ej. para "usar mi
   // ubicación") no había forma de cerrarlo ni volviendo a pulsarlo (ya estaba enfocado, así que
@@ -536,19 +541,24 @@ export default function MapPage() {
       })
       markersRef.current.push(marker)
     }
-    const inZone = (i: { neighborhood?: string | null; address?: string | null }) => !zone || zoneOf(i) === zone
+    const inZone = (i: { neighborhood?: string | null; address?: string | null }) => (!zone || zoneOf(i) === zone) && (filter !== "clubs" || !barrio || barrioOf(i) === barrio)
     if (filter === "clubs") clubs.filter((c) => c.latitude && c.longitude && inZone(c)).forEach((c) => addMarker(c.latitude!, c.longitude!, c))
     else if (filter === "events") events.filter((e) => e.latitude && e.longitude && inZone(e)).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
-    else if (filter === "essentials") essentials.filter((e) => e.latitude && e.longitude && inZone(e) && (!category || e.category === category)).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
+    else if (filter === "essentials") {
+      // No se dibuja todo de golpe (saturaba el mapa): una muestra de los más cercanos, o la categoría elegida.
+      const c = map.current.getCenter()
+      limitEssentialsForMap(essentials.filter((e) => inZone(e)), { category, center: { lat: c.lat, lng: c.lng } })
+        .forEach((e) => addMarker(e.latitude!, e.longitude!, e))
+    }
 
     // Al elegir un área o una categoría, el mapa se encuadra solo en lo que ha quedado (filtrar rápido, sin
     // tener que buscarlo a mano).
-    if ((zone || category) && markersRef.current.length > 0) {
+    if ((zone || barrio || category) && markersRef.current.length > 0) {
       const bounds = new mapboxgl.LngLatBounds()
       markersRef.current.forEach((m) => bounds.extend(m.getLngLat()))
       map.current.fitBounds(bounds, { padding: 70, maxZoom: 15, duration: 700 })
     }
-  }, [filter, mapReady, clubs, events, essentials, zone, category])
+  }, [filter, mapReady, clubs, events, essentials, zone, barrio, category])
 
   useEffect(() => {
     if (urlHandledRef.current || !mapReady) return
@@ -650,6 +660,17 @@ export default function MapPage() {
 
   const rawList = filter === "clubs" ? clubs : filter === "events" ? events : essentials
   const zonesAvail = zonesPresent(rawList as { neighborhood?: string | null; address?: string | null }[])
+  // Barrios de la zona elegida (solo clubs): del más al menos locales; así se afina después de elegir el área.
+  const barriosAvail: { name: string; n: number }[] = (() => {
+    if (filter !== "clubs" || !zone) return []
+    const counts = new Map<string, number>()
+    for (const c of clubs) {
+      if (zoneOf(c) !== zone) continue
+      const b = barrioOf(c)
+      if (b) counts.set(b, (counts.get(b) || 0) + 1)
+    }
+    return Array.from(counts, ([name, n]) => ({ name, n })).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name, "es"))
+  })()
   const categoriesAvail = filter === "essentials"
     ? Array.from(new Set(essentials.map((e) => e.category))).sort((a, b) => categoryRank(a) - categoryRank(b))
     : []
@@ -687,9 +708,21 @@ export default function MapPage() {
           accent={COLORS[filter]}
           placeholder={t("essentialsPage.allArea")}
           value={zone}
-          onChange={setZone}
+          onChange={(z) => { setZone(z); setBarrio("") }}
           options={[{ value: "", label: t("essentialsPage.allArea") }, ...zonesAvail.map((z) => ({ value: z, label: z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", "") }))]}
         />
+        {barriosAvail.length > 1 && (
+          <div style={{ marginTop: "8px" }}>
+            <FilterSelect
+              big
+              accent={COLORS[filter]}
+              placeholder={t("map.allBarrios")}
+              value={barrio}
+              onChange={setBarrio}
+              options={[{ value: "", label: t("map.allBarrios") }, ...barriosAvail.map((b) => ({ value: b.name, label: `${b.name} (${b.n})` }))]}
+            />
+          </div>
+        )}
       </div>
     ) : null
   )
@@ -697,6 +730,11 @@ export default function MapPage() {
   // encuadra solo en lo que queda y los sitios se ven en el propio mapa o con el buscador flotante.
   const essentialsPanel = (mobile: boolean) => {
     const count = filter === "essentials" ? essentials.filter((e) => e.latitude && e.longitude && (!zone || zoneOf(e) === zone) && (!category || e.category === category)).length : 0
+    // Lo que de verdad se dibuja en el mapa (una muestra si no hay categoría): el botón dice la cifra real.
+    const ctr = map.current?.getCenter()
+    const shownCount = filter === "essentials"
+      ? limitEssentialsForMap(essentials.filter((e) => !zone || zoneOf(e) === zone), { category, center: { lat: ctr?.lat ?? 41.3851, lng: ctr?.lng ?? 2.1734 } }).length
+      : 0
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         {zonesAvail.length > 1 && (
@@ -724,10 +762,13 @@ export default function MapPage() {
           </div>
         )}
         <p style={{ fontSize: "12px", color: "#a19fad" }}>{count} {t("map.results")}</p>
+        {!category && (
+          <p style={{ fontSize: "12px", color: "#a19fad" }}>{t("map.essentialsSampleHint").replace("{n}", String(PER_CATEGORY))}</p>
+        )}
         {mobile && (
           <button type="button" onClick={() => setShowList(false)}
             style={{ width: "100%", borderRadius: "999px", border: "none", background: COLORS[filter], color: "#fff", fontSize: "14px", fontWeight: 800, padding: "13px 16px", cursor: "pointer", boxShadow: `0 14px 30px -12px ${COLORS[filter]}99` }}>
-            {t("map.showOnMap").replace("{n}", String(count))}
+            {t("map.showOnMap").replace("{n}", String(shownCount))}
           </button>
         )}
       </div>
@@ -736,6 +777,7 @@ export default function MapPage() {
 
   const currentList = rawList.filter((item) => {
     if (zone && zoneOf(item as { neighborhood?: string | null; address?: string | null }) !== zone) return false
+    if (filter === "clubs" && barrio && barrioOf(item as Club) !== barrio) return false
     if (filter === "essentials" && category && (item as Essential).category !== category) return false
     if (!search) return true
     const name = getName(item).toLowerCase()
@@ -754,6 +796,7 @@ export default function MapPage() {
     const base = (rawList as (Club | Event | Essential)[]).filter(
       (i) => i.latitude && i.longitude
         && (!zone || zoneOf(i as { neighborhood?: string | null; address?: string | null }) === zone)
+        && (filter !== "clubs" || !barrio || barrioOf(i as Club) === barrio)
         && (filter !== "essentials" || !category || (i as Essential).category === category)
     )
     if (!mapQ) {

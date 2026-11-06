@@ -540,7 +540,9 @@
     "useLocation": "Use my location to see what's nearest",
     "noResultsFor": "No results for “{q}”.",
     "legendUnknown": "No hours",
-    "showOnMap": "Show {n} on the map"
+    "showOnMap": "Show {n} on the map",
+    "essentialsSampleHint": "Showing the {n} nearest of each category. Pick a category to see them all.",
+    "allBarrios": "All neighbourhoods"
   },
   "planPage": {
     "notLoggedInSubtitle": "Sign up to build your perfect night in Barcelona, tailored to you and without spending a euro more than you need.",
@@ -937,7 +939,8 @@
     "fPrivateEvents": "Private events",
     "fVenueRental": "Venue hire",
     "rideTo": "Destination",
-    "ticketsAdvance": "Advance tickets"
+    "ticketsAdvance": "Advance tickets",
+    "fCapacityLabel": "Capacity"
   },
   "eventPage": {
     "dateTbc": "Date to be confirmed",

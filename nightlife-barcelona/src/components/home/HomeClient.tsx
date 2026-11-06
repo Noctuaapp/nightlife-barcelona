@@ -53,9 +53,9 @@ const TABS = [
 // Redondea hacia abajo para que la cifra sea siempre "aproximada por debajo" (nunca promete más
 // locales de los que realmente hay): a la decena por debajo de 200, a la media centena a partir
 // de ahí.
-function roughly(n: number): number {
+function roughly(n: number, fixedStep?: number): number {
   if (n <= 0) return 0
-  const step = n < 200 ? 10 : 50
+  const step = fixedStep ?? (n < 200 ? 10 : 50)
   return Math.floor(n / step) * step
 }
 
@@ -472,7 +472,7 @@ export default function HomeClient({
                una idea rápida de tamaño antes de los accesos rápidos. */}
             <div className="mt-6 hidden flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-200 sm:flex">
               <span>
-                <strong className="font-display text-base text-white">{roughly(clubs.length)}+</strong> {t("home.statsClubs")}
+                <strong className="font-display text-base text-white">{roughly(clubs.length, 10)}+</strong> {t("home.statsClubs")}
               </span>
               {/* Solo eventos que aún no han pasado, y la cifra exacta mientras sean pocos (con
                   "+90" se prometía mucho más de lo que había). Sin eventos, no se enseña. */}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { clubMetaDescription, clubTitle, CLUB_TITLE_MAX } from "../clubSummary"
+import { clubMetaDescription, clubSummary, clubTitle, CLUB_TITLE_MAX } from "../clubSummary"
 
 describe("clubTitle", () => {
   it("añade horario y cómo llegar cuando cabe", () => {
@@ -60,5 +60,15 @@ describe("clubMetaDescription", () => {
     const d = clubMetaDescription({ name: "Sala Larga", hours: "x ".repeat(60).trim(), price: "y ".repeat(40).trim() })
     expect(d.length).toBeLessThanOrEqual(158)
     expect(d.endsWith("…")).toBe(true)
+  })
+})
+
+describe("clubSummary: vestimenta", () => {
+  it("la toma de la columna real de clubs (dress_code)", () => {
+    expect(clubSummary({ name: "Sutton", dress_code: "Elegant" })).toContain("Código de vestimenta: Elegant.")
+  })
+
+  it("sin dato, no la menciona", () => {
+    expect(clubSummary({ name: "Sutton", dress_code: "" })).not.toContain("vestimenta")
   })
 })

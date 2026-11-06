@@ -536,7 +536,9 @@
     "legendSoon": "Schließt bald",
     "legendClosed": "Geschlossen",
     "legendUnknown": "Keine Zeiten",
-    "showOnMap": "{n} auf der Karte zeigen"
+    "showOnMap": "{n} auf der Karte zeigen",
+    "essentialsSampleHint": "Pro Kategorie werden die {n} nächsten angezeigt. Wähle eine Kategorie, um alle zu sehen.",
+    "allBarrios": "Alle Viertel"
   },
   "planPage": {
     "notLoggedInSubtitle": "Registriere dich, um deinen perfekten Abend in Barcelona zu planen, ganz nach deinem Geschmack und ohne einen Euro zu viel auszugeben.",
@@ -918,7 +920,8 @@
     "fPrivateEvents": "Private Events",
     "fVenueRental": "Location mieten",
     "rideTo": "Ziel",
-    "ticketsAdvance": "Vorverkaufstickets"
+    "ticketsAdvance": "Vorverkaufstickets",
+    "fCapacityLabel": "Kapazität"
   },
   "eventPage": {
     "dateTbc": "Datum folgt",

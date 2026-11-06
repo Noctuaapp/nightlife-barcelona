@@ -24,7 +24,7 @@ import { createSlug } from "../../../lib/slug"
 import AdminEditButton from "../../../components/admin/AdminEditButton"
 import EssentialPhoto from "../../../components/essentials/EssentialPhoto"
 import Icon from "../../../components/ui/Icon"
-import { ESSENTIAL_CATEGORIES, categoryNameKey } from "../../../lib/essentialCategories"
+import { ESSENTIAL_CATEGORIES, categoryNameKey, usesOwnPhoto } from "../../../lib/essentialCategories"
 import { NIGHT_BUS_LINES } from "../../../lib/nightBuses"
 import { METRO_STATIONS } from "../../../lib/metroStations"
 import { MetroLineBadge, NitbusBadge, NitbusRouteRow } from "../../../components/ui/TransitBadge"
@@ -602,7 +602,7 @@ export default function EssentialCategoryPage() {
           if (category === "parking") el.innerHTML = PARKING_MARKER_SVG
           else el.textContent = initial
         }
-        if (item.image) {
+        if (usesOwnPhoto(category) && item.image) {
           const img = document.createElement("img")
           img.src = item.image
           img.referrerPolicy = "no-referrer"
@@ -875,7 +875,7 @@ export default function EssentialCategoryPage() {
             mano) — mezclar fotos reales con el icono genérico en la misma lista quedaba
             descuadrado (unas con foto, otras con un simple tren). Mejor que las 155 se vean igual:
             siempre el icono, nunca la foto, aunque alguna la tenga. */}
-        <EssentialPhoto src={category === "metro" ? null : item.image} alt={item.name} icon={<CatIcon size={24} />} color={config.color} className="h-16 w-16 shrink-0 rounded-ctl" />
+        <EssentialPhoto src={usesOwnPhoto(category) ? item.image : null} alt={item.name} icon={<CatIcon size={24} />} color={config.color} className="h-16 w-16 shrink-0 rounded-ctl" />
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold leading-snug text-ink">{item.name}</h3>
           {item.highFee && <span className="mt-1 inline-block rounded-full bg-warn/15 px-2.5 py-0.5 text-xs font-semibold text-warn">{t("essentialsPage.highFee")}</span>}
@@ -1367,7 +1367,7 @@ export default function EssentialCategoryPage() {
                 {selected && (
                   <div className="absolute inset-x-3 bottom-3 overflow-hidden rounded-2xl border border-white/10 bg-night/95 backdrop-blur-xl">
                     <div className="relative">
-                      <EssentialPhoto src={selected.image} alt={selected.name} icon={<CatIcon size={32} />} color={config.color} className="h-28 w-full md:h-36" />
+                      <EssentialPhoto src={usesOwnPhoto(category) ? selected.image : null} alt={selected.name} icon={<CatIcon size={32} />} color={config.color} className="h-28 w-full md:h-36" />
                       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-night via-black/25 to-transparent" />
                       <button
                         onClick={() => setSelected(null)}

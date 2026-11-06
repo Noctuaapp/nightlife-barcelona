@@ -26,10 +26,9 @@ export default function EssentialPhoto({
   if (!clean || failedSrc === clean) {
     return (
       <div
-        className={`flex items-center justify-center ${className}`}
-        style={{ background: `linear-gradient(135deg, ${color}40, ${color}12)` }}
+        className={`flex items-center justify-center bg-[#1c1928] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] ${className}`}
       >
-        <span className="text-3xl text-white/70">{icon}</span>
+        <span className="text-3xl" style={{ color }}>{icon}</span>
       </div>
     )
   }

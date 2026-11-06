@@ -115,6 +115,8 @@ export default function AdminToolsPage() {
   const [essArea, setEssArea] = useState("badalona")
   const [essCat, setEssCat] = useState("all")
   const [essReal, setEssReal] = useState(false)
+  const [allNewRunning, setAllNewRunning] = useState(false)
+  const [allNewLog, setAllNewLog] = useState<string[]>([])
   const [gArea, setGArea] = useState("badalona")
   const [gCat, setGCat] = useState("supermarket,food")
   const [gReal, setGReal] = useState(false)
@@ -236,6 +238,67 @@ export default function AdminToolsPage() {
     const json: ToolResult = await res.json().catch(() => ({ error: `Respuesta no válida (${res.status})` }))
     if (!res.ok) throw new Error(json?.error || `Error ${res.status}`)
     return json
+  }
+
+  // «Importar lo que falta» (06/11/2026): las categorías nuevas, una detrás de otra, en todas las áreas. Es lo mismo que
+  // elegir cada área y categoría a mano e «Importar de verdad», pero sin tener que hacerlo 70 veces. Es seguro repetirlo:
+  // el importador se salta lo que ya existe, y todo entra OCULTO para que lo revises y lo publiques.
+  const NEW_ESS_CATS: [string, string][] = [
+    ["taxi", "Paradas de taxi"],
+    ["veterinary", "Veterinarios de urgencias"],
+    ["toilets", "Aseos públicos"],
+    ["vending", "Máquinas expendedoras"],
+    ["luggage", "Consignas"],
+    ["police", "Comisarías y policía"],
+    ["bicing", "Estaciones de Bicing"],
+  ]
+  const ESS_AREAS: [string, string][] = [
+    ["barcelona", "Barcelona"],
+    ["hospitalet", "L'Hospitalet"],
+    ["badalona", "Badalona"],
+    ["elprat", "El Prat"],
+    ["santacoloma", "Santa Coloma"],
+    ["cornella", "Cornellà"],
+    ["santadria", "Sant Adrià"],
+    ["esplugues", "Esplugues"],
+    ["santfeliu", "Sant Feliu"],
+    ["santboi", "Sant Boi"],
+  ]
+  const runAllNewEssentials = async () => {
+    if (!window.confirm("Se importarán las 7 categorías nuevas en las 10 áreas, una detrás de otra (unos minutos). Todo entra oculto. ¿Seguir?")) return
+    stopRef.current["all-new-ess"] = false
+    setAllNewRunning(true)
+    setAllNewLog([])
+    const log = (line: string) => setAllNewLog((l) => [...l, line])
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+    try {
+      for (const [cat, catName] of NEW_ESS_CATS) {
+        for (const [area, areaName] of ESS_AREAS) {
+          if (stopRef.current["all-new-ess"]) { log("Parado."); return }
+          let done = false
+          for (let attempt = 1; attempt <= 2 && !done; attempt++) {
+            try {
+              const { data } = await supabase.auth.getSession()
+              const token = data.session?.access_token
+              if (!token) throw new Error("Sesión caducada: vuelve a iniciar sesión.")
+              const res = await fetch(`/api/admin/import-osm-essentials?area=${area}&cat=${cat}&dry=0`, { headers: { Authorization: `Bearer ${token}` } })
+              const json = await res.json().catch(() => ({ error: `Respuesta no válida (${res.status})` }))
+              if (!res.ok) throw new Error(json?.error || `Error ${res.status}`)
+              log(`✓ ${catName} · ${areaName}: ${json.insertados ?? 0} nuevos`)
+              done = true
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : "Error"
+              if (attempt === 2 || /Sesión caducada/.test(msg)) { log(`✗ ${catName} · ${areaName}: ${msg}`); done = true }
+              else await sleep(8000) // Overpass a veces responde «ocupado»: se reintenta una vez
+            }
+          }
+          await sleep(1500) // sin ir a toda prisa contra Overpass
+        }
+      }
+      log("Terminado. Revisa y publica en Admin › Esenciales.")
+    } finally {
+      setAllNewRunning(false)
+    }
   }
 
   const run = async (tool: Tool, repeat: boolean) => {
@@ -429,6 +492,40 @@ export default function AdminToolsPage() {
                     <input type="checkbox" checked={essReal} onChange={(e) => setEssReal(e.target.checked)} />
                     Importar de verdad
                   </label>
+                </div>
+              )}
+
+              {tool.osmEssentials && (
+                <div className="mt-4 rounded-xl border border-white/10 bg-black/30 p-4">
+                  <p className="text-sm font-semibold text-white">Importar lo que falta</p>
+                  <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+                    Las 7 categorías nuevas (taxi, veterinarios, aseos, máquinas, consignas, policía y Bicing) en las 10 áreas, una detrás de
+                    otra. Se salta lo que ya está importado y todo entra oculto.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      onClick={runAllNewEssentials}
+                      disabled={allNewRunning}
+                      className="rounded-xl bg-white px-4 py-2 text-sm font-bold text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                    >
+                      {allNewRunning ? "Importando…" : "Importar lo que falta"}
+                    </button>
+                    {allNewRunning && (
+                      <button
+                        onClick={() => (stopRef.current["all-new-ess"] = true)}
+                        className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/10"
+                      >
+                        Parar
+                      </button>
+                    )}
+                  </div>
+                  {allNewLog.length > 0 && (
+                    <ul className="mt-3 max-h-56 overflow-auto rounded-xl bg-black/50 p-3 text-xs leading-relaxed text-zinc-300">
+                      {allNewLog.map((l, i) => (
+                        <li key={i} className={l.startsWith("✗") ? "text-red-300" : ""}>{l}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               )}
 

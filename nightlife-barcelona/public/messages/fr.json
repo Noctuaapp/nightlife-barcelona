@@ -536,7 +536,9 @@
     "legendSoon": "Ferme bientôt",
     "legendClosed": "Fermé",
     "legendUnknown": "Horaires inconnus",
-    "showOnMap": "Voir {n} sur la carte"
+    "showOnMap": "Voir {n} sur la carte",
+    "essentialsSampleHint": "Les {n} plus proches de chaque catégorie sont affichés. Choisissez une catégorie pour tout voir.",
+    "allBarrios": "Tous les quartiers"
   },
   "planPage": {
     "notLoggedInSubtitle": "Inscris-toi pour créer ton plan parfait à Barcelone, sur mesure et sans dépenser un euro de trop.",
@@ -918,7 +920,8 @@
     "fPrivateEvents": "Événements privés",
     "fVenueRental": "Location du lieu",
     "rideTo": "Destination",
-    "ticketsAdvance": "Billets en prévente"
+    "ticketsAdvance": "Billets en prévente",
+    "fCapacityLabel": "Capacité"
   },
   "eventPage": {
     "dateTbc": "Date à confirmer",

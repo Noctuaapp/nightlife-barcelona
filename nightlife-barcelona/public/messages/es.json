@@ -541,7 +541,9 @@
     "useLocation": "Usar mi ubicación para ver lo más cercano",
     "noResultsFor": "Sin resultados para «{q}».",
     "legendUnknown": "Sin horario",
-    "showOnMap": "Ver {n} en el mapa"
+    "showOnMap": "Ver {n} en el mapa",
+    "essentialsSampleHint": "Se ven los {n} más cercanos de cada categoría. Elige una categoría para ver todos.",
+    "allBarrios": "Todos los barrios"
   },
   "planPage": {
     "notLoggedInSubtitle": "Regístrate para crear tu plan perfecto en Barcelona, a tu medida y sin gastar un euro de más.",
@@ -950,7 +952,8 @@
     "fPrivateEvents": "Eventos privados",
     "fVenueRental": "Alquiler del local",
     "rideTo": "Destino",
-    "ticketsAdvance": "Entradas anticipadas"
+    "ticketsAdvance": "Entradas anticipadas",
+    "fCapacityLabel": "Aforo"
   },
   "eventPage": {
     "dateTbc": "Fecha por confirmar",

@@ -16,7 +16,8 @@ import { setPopupState, usePopupSlot } from "../../lib/popupGate"
 // Es un aviso emergente: aparece abajo y centrado (también en ordenador), sin tapar la pantalla (no hay
 // fondo oscuro ni bloquea nada), con «Continuar con Google» como botón principal y una cruz para quitarlo.
 // Sale en las fichas de club y de evento y, desde el 03/11/2026, también en la portada, la lista de
-// clubs, los esenciales y las páginas de barrio, zona y música (ver JoinNoctuaPrompt).
+// clubs y las páginas de barrio, zona y música (ver lib/joinPrompt.ts; desde el 06/11/2026 ya no sale en
+// Esenciales). Estilo «píldora»: superficie lisa, sin degradado ni resplandor.
 //
 // Para no molestar —y para no parecer un «intersticial intrusivo», que Google penaliza en las
 // visitas que llegan desde el buscador— no sale nada más llegar:
@@ -197,8 +198,7 @@ export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; ite
         visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
       }`}
     >
-      <div className="relative overflow-hidden rounded-card border border-brand/40 bg-gradient-to-br from-[#1b1244] via-surface to-[#2b1038] p-4 shadow-[0_24px_60px_-18px_rgba(0,0,0,0.85)]">
-        <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-fuchsia-500/20 blur-3xl" />
+      <div className="relative rounded-card border border-white/10 bg-surface p-4 shadow-[0_24px_60px_-18px_rgba(0,0,0,0.85)]">
 
         <button
           type="button"
@@ -210,7 +210,7 @@ export default function JoinNoctuaCard({ kind, itemId, name }: { kind: Kind; ite
         </button>
 
         <div className="relative flex items-start gap-3 pr-8">
-          <div className="shrink-0 rounded-full bg-white/[0.06] p-1.5">
+          <div className="shrink-0 rounded-full bg-[#23202d] p-1.5">
             <NocOwl size={34} mood="party" />
           </div>
           <div className="min-w-0">
