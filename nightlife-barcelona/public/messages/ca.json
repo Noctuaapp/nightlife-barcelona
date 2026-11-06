@@ -1527,7 +1527,7 @@
     "listingTitle": "La teva fitxa",
     "name": "Nom *",
     "address": "Adreça",
-    "hoursHint": "Format: 23:55-06:00, o per dies: V/S 23:00-06:00",
+    "hoursHint": "Marca els dies que obres i posa l’hora d’inici i de fi de cadascun. Si tanques de matinada, la fi compta al dia següent.",
     "openDays": "Dies que obre",
     "mainImage": "Imatge principal",
     "imageUrlPh": "https://… (o puja-la des del teu dispositiu)",
@@ -1690,7 +1690,11 @@
     "repeatHint": "Es creen {n} nits iguals, una per setmana, començant a la data de dalt. Després pots editar o esborrar cadascuna per separat.",
     "errRepeatDate": "Per repetir la nit, posa primer la data de la primera.",
     "nightsCreated": "{n} nits creades",
-    "createNights": "Crear {n} nits"
+    "createNights": "Crear {n} nits",
+    "hoursMissing": "Falta l’hora d’inici o de fi",
+    "hoursSameForAll": "Mateix horari per a tots els dies marcats",
+    "hoursEarly": "Comença passada la mitjanit: compta com la nit d’aquest dia",
+    "hoursLegacy": "Horari anterior, no es pot separar per dies:"
   },
   "ownerInbox": {
     "title": "Missatges amb Noctua",

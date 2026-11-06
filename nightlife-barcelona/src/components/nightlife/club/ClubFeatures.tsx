@@ -7,7 +7,7 @@ import { touchCache } from "../../../lib/touchCache"
 import { useLanguage } from "../../../context/LanguageContext"
 import { toast } from "../../ui/Toast"
 import { EXTRA_FEATURES } from "../../../lib/extraFeatures"
-import { dressCodeOf } from "../../../lib/dressCode"
+import { dressCodeLabel, dressCodeOf } from "../../../lib/dressCode"
 
 // Características del club (terraza, billar, VIP...). Dos arreglos (24/10/2026):
 //   1. El futbolín/billar se podía marcar en /admin pero la ficha nunca lo enseñaba.
@@ -62,7 +62,7 @@ export default function ClubFeatures({ club, capacity, isAdmin }: { club: Club; 
   const active = TOGGLES.filter((f) => values[f.field])
   // Datos con valor (dresscode, aforo): fichas con etiqueta pequeña y el dato grande. Los servicios (sí/no) son píldoras.
   const facts = [
-    dressCodeOf(club) && { key: "dresscode", label: t("clubPage.fDresscode"), value: dressCodeOf(club) },
+    dressCodeOf(club) && { key: "dresscode", label: t("clubPage.fDresscode"), value: dressCodeLabel(dressCodeOf(club), t) },
     capacity && { key: "capacity", label: t("clubPage.fCapacityLabel"), value: String(capacity) },
   ].filter(Boolean) as { key: string; label: string; value: string }[]
 

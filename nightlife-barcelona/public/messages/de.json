@@ -1430,7 +1430,7 @@
     "listingTitle": "Dein Profil",
     "name": "Name *",
     "address": "Adresse",
-    "hoursHint": "Format: 23:55-06:00 oder nach Tagen: V/S 23:00-06:00",
+    "hoursHint": "Wähle die Öffnungstage und gib für jeden Start- und Endzeit an. Wenn du nach Mitternacht schließt, zählt das Ende für den Folgetag.",
     "openDays": "Öffnungstage",
     "mainImage": "Hauptbild",
     "imageUrlPh": "https://… (oder lade es von deinem Gerät hoch)",
@@ -1593,7 +1593,11 @@
     "repeatHint": "Es werden {n} gleiche Partys angelegt, eine pro Woche, ab dem Datum oben. Danach kannst du jede einzeln bearbeiten oder löschen.",
     "errRepeatDate": "Um die Party zu wiederholen, gib zuerst das Datum der ersten an.",
     "nightsCreated": "{n} Partys angelegt",
-    "createNights": "{n} Partys anlegen"
+    "createNights": "{n} Partys anlegen",
+    "hoursMissing": "Start- oder Endzeit fehlt",
+    "hoursSameForAll": "Gleiche Zeiten für alle gewählten Tage",
+    "hoursEarly": "Beginnt nach Mitternacht: zählt als Nacht dieses Tages",
+    "hoursLegacy": "Bisherige Zeiten, nicht nach Tagen trennbar:"
   },
   "ownerInbox": {
     "title": "Nachrichten mit Noctua",

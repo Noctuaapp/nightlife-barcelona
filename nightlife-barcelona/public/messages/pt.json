@@ -1512,7 +1512,7 @@
     "listingTitle": "A tua ficha",
     "name": "Nome *",
     "address": "Endereço",
-    "hoursHint": "Formato: 23:55-06:00, ou por dias: V/S 23:00-06:00",
+    "hoursHint": "Marca os dias em que abres e indica a hora de início e de fim de cada um. Se fechas depois da meia-noite, o fim conta para o dia seguinte.",
     "openDays": "Dias que abre",
     "mainImage": "Imagem principal",
     "imageUrlPh": "https://… (ou carrega-a a partir do teu dispositivo)",
@@ -1675,7 +1675,11 @@
     "repeatHint": "São criadas {n} noites iguais, uma por semana, a começar na data de cima. Depois podes editar ou apagar cada uma em separado.",
     "errRepeatDate": "Para repetir a noite, indica primeiro a data da primeira.",
     "nightsCreated": "{n} noites criadas",
-    "createNights": "Criar {n} noites"
+    "createNights": "Criar {n} noites",
+    "hoursMissing": "Falta a hora de início ou de fim",
+    "hoursSameForAll": "Mesmo horário para todos os dias marcados",
+    "hoursEarly": "Começa depois da meia-noite: conta como a noite deste dia",
+    "hoursLegacy": "Horário anterior, não é possível separar por dias:"
   },
   "ownerInbox": {
     "title": "Mensagens com o Noctua",

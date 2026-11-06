@@ -1430,7 +1430,7 @@
     "listingTitle": "Jouw pagina",
     "name": "Naam *",
     "address": "Adres",
-    "hoursHint": "Formaat: 23:55-06:00, of per dag: V/S 23:00-06:00",
+    "hoursHint": "Vink de dagen aan waarop je open bent en geef per dag het begin- en eindtijdstip. Sluit je na middernacht, dan telt het einde voor de volgende dag.",
     "openDays": "Openingsdagen",
     "mainImage": "Hoofdafbeelding",
     "imageUrlPh": "https://… (of upload hem vanaf je apparaat)",
@@ -1593,7 +1593,11 @@
     "repeatHint": "Dit maakt {n} identieke avonden aan, één per week, vanaf de datum hierboven. Daarna kun je elke avond apart bewerken of verwijderen.",
     "errRepeatDate": "Om de avond te herhalen, vul eerst de datum van de eerste in.",
     "nightsCreated": "{n} avonden aangemaakt",
-    "createNights": "{n} avonden aanmaken"
+    "createNights": "{n} avonden aanmaken",
+    "hoursMissing": "Begin- of eindtijd ontbreekt",
+    "hoursSameForAll": "Zelfde tijden voor alle aangevinkte dagen",
+    "hoursEarly": "Begint na middernacht: telt als de nacht van deze dag",
+    "hoursLegacy": "Vorige openingstijden, niet per dag te splitsen:"
   },
   "ownerInbox": {
     "title": "Berichten met Noctua",

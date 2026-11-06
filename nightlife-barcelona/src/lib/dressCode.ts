@@ -11,3 +11,13 @@ export function dressCodeOf(club: Record<string, any> | null | undefined): strin
   }
   return ""
 }
+
+// Valores únicos de vestimenta (06/11/2026). Antes era texto libre y había 14 variantes ("Elegant", "Smart-casual",
+// "Casual arreglado"…), así que el filtro del Plan, que compara el texto exacto, solo ofrecía "Casual". Ahora el
+// admin y «Mi club» eligen de esta lista y en la base de datos solo hay estos valores (o vacío).
+export const DRESS_CODES = ["Casual", "Smart casual", "Elegante", "Dark casual"] as const
+
+// Texto para mostrar. Solo "Elegante" cambia según el idioma; el resto se escribe igual en todos.
+export function dressCodeLabel(code: string, t: (key: string) => string): string {
+  return code === "Elegante" ? t("planPage.dressElegant") : code
+}

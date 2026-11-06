@@ -1527,7 +1527,7 @@
     "listingTitle": "Your listing",
     "name": "Name *",
     "address": "Address",
-    "hoursHint": "Format: 23:55-06:00, or by day: V/S 23:00-06:00",
+    "hoursHint": "Tick the days you open and set the start and end time for each one. If you close after midnight, the end time counts as the next day.",
     "openDays": "Opening days",
     "mainImage": "Main image",
     "imageUrlPh": "https://… (or upload it from your device)",
@@ -1690,7 +1690,11 @@
     "repeatHint": "This creates {n} identical nights, one per week, starting on the date above. You can then edit or delete each one separately.",
     "errRepeatDate": "To repeat the night, set the date of the first one first.",
     "nightsCreated": "{n} nights created",
-    "createNights": "Create {n} nights"
+    "createNights": "Create {n} nights",
+    "hoursMissing": "Start or end time missing",
+    "hoursSameForAll": "Same hours for all ticked days",
+    "hoursEarly": "Starts after midnight: counts as this day’s night",
+    "hoursLegacy": "Previous hours, can’t be split by day:"
   },
   "ownerInbox": {
     "title": "Messages with Noctua",

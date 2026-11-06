@@ -1430,7 +1430,7 @@
     "listingTitle": "La tua scheda",
     "name": "Nome *",
     "address": "Indirizzo",
-    "hoursHint": "Formato: 23:55-06:00, o per giorni: V/S 23:00-06:00",
+    "hoursHint": "Segna i giorni di apertura e indica l’ora di inizio e di fine di ciascuno. Se chiudi dopo mezzanotte, la fine vale per il giorno dopo.",
     "openDays": "Giorni di apertura",
     "mainImage": "Immagine principale",
     "imageUrlPh": "https://… (o caricala dal tuo dispositivo)",
@@ -1593,7 +1593,11 @@
     "repeatHint": "Vengono create {n} serate identiche, una a settimana, a partire dalla data qui sopra. Poi puoi modificare o eliminare ognuna separatamente.",
     "errRepeatDate": "Per ripetere la serata, indica prima la data della prima.",
     "nightsCreated": "{n} serate create",
-    "createNights": "Crea {n} serate"
+    "createNights": "Crea {n} serate",
+    "hoursMissing": "Manca l’ora di inizio o di fine",
+    "hoursSameForAll": "Stesso orario per tutti i giorni selezionati",
+    "hoursEarly": "Inizia dopo mezzanotte: conta come la notte di questo giorno",
+    "hoursLegacy": "Orario precedente, non separabile per giorni:"
   },
   "ownerInbox": {
     "title": "Messaggi con Noctua",

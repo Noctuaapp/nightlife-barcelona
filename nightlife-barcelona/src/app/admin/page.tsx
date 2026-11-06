@@ -11,6 +11,8 @@ import CoordsField from "../../components/admin/CoordsField"
 import { coordsPayload, coordToInput } from "../../lib/coords"
 import { touchCache, clubPaths } from "../../lib/touchCache"
 import { createSlug } from "../../lib/slug"
+import { DRESS_CODES } from "../../lib/dressCode"
+import ClubHoursEditor from "../../components/admin/ClubHoursEditor"
 
 type Club = {
   id: number
@@ -666,10 +668,6 @@ export default function AdminPage() {
         <label className={labelClass}>Precio</label>
         <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="15-20€" className={inputClass} />
       </div>
-      <div>
-        <label className={labelClass}>Horario</label>
-        <input value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} placeholder="23:55 - 06:00" className={inputClass} />
-      </div>
       <div className="md:col-span-2">
         <label className={labelClass}>Descripción</label>
         <textarea
@@ -740,7 +738,16 @@ export default function AdminPage() {
       </div>
       <div>
         <label className={labelClass}>Dress code</label>
-        <input value={form.dresscode} onChange={(e) => setForm({ ...form, dresscode: e.target.value })} placeholder="Elegante, casual..." className={inputClass} />
+        <select value={form.dresscode} onChange={(e) => setForm({ ...form, dresscode: e.target.value })} className={inputClass} style={{ colorScheme: "dark" }}>
+          <option value="">Sin especificar</option>
+          {DRESS_CODES.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+          {/* Un valor antiguo fuera de la lista se conserva hasta que se cambie, para no borrarlo sin querer. */}
+          {form.dresscode && !(DRESS_CODES as readonly string[]).includes(form.dresscode) && <option value={form.dresscode}>{form.dresscode}</option>}
+        </select>
       </div>
       <div>
         <label className={labelClass}>Tipo de local</label>
@@ -751,27 +758,25 @@ export default function AdminPage() {
         </select>
       </div>
       <div className="md:col-span-2">
-        <label className={labelClass}>Días que abre (vacío = sin dato, no se filtra en Planifica tu noche)</label>
-        <div className="flex flex-wrap gap-2">
-          {DAY_OPTIONS.map((day) => {
-            const active = form.open_days.includes(day)
-            return (
-              <button
-                key={day}
-                type="button"
-                onClick={() =>
-                  setForm({
-                    ...form,
-                    open_days: active ? form.open_days.filter((d) => d !== day) : [...form.open_days, day],
-                  })
-                }
-                className={`rounded-full px-4 py-2 text-xs font-bold transition ${active ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}
-              >
-                {day}
-              </button>
-            )
-          })}
-        </div>
+        <label className={labelClass}>Horario por días (sin días = sin dato, no se filtra en Planifica tu noche)</label>
+        <p className="mb-3 text-xs text-zinc-400">Marca cada día que abre y pon su hora de inicio y de fin; el horario se compone solo. Si cierra de madrugada, el fin cuenta al día siguiente.</p>
+        <ClubHoursEditor
+          hours={form.hours}
+          openDays={form.open_days}
+          onChange={(next) => setForm({ ...form, ...next })}
+          dayLabel={(i) => DAY_OPTIONS[i]}
+          chipClass={(active) => `rounded-full px-4 py-2 text-xs font-bold transition ${active ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}
+          inputClass={inputClass}
+          labels={{
+            start: "hora de inicio",
+            end: "hora de fin",
+            missing: "Falta la hora de inicio o de fin (sin las dos, este día no entra en el horario)",
+            sameForAll: "Mismo horario para todos los días marcados",
+            early: "Empieza pasada la medianoche: cuenta como la noche de este día",
+            legacy: "Horario anterior (no se puede separar por días):",
+            preview: "Se guardará como:",
+          }}
+        />
       </div>
       <div>
         <label className={labelClass}>Líneas de metro cercanas (separadas por comas)</label>

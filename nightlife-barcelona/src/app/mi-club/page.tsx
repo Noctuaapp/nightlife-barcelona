@@ -14,6 +14,8 @@ import { EXTRA_FEATURES, CLOSED_FIELD, extrasFromRow } from "../../lib/extraFeat
 import { useLanguage } from "../../context/LanguageContext"
 import { toast } from "../../components/ui/Toast"
 import { createSlug } from "../../lib/slug"
+import { DRESS_CODES, dressCodeLabel } from "../../lib/dressCode"
+import ClubHoursEditor from "../../components/admin/ClubHoursEditor"
 import { madridToday } from "../../lib/madridDay"
 import { addDays } from "../../lib/scheduleNotices"
 import { touchCache, clubPaths, clubEventPaths } from "../../lib/touchCache"
@@ -95,7 +97,6 @@ const VENUE_TYPE_OPTIONS = [
   { value: "Karaoke", key: "planPage.venueKaraoke" },
   { value: "Bar de billar", key: "planPage.venuePool" },
 ]
-const DAY_OPTIONS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
 
 // Secciones del menú de arriba (id del bloque de la página + clave del texto).
 const SECTIONS = [
@@ -969,38 +970,45 @@ export default function MiClubPage() {
                   <input value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="15–20 €" className={inputClass} />
                 </div>
                 <div>
-                  <label className={labelClass}>{t("event.schedule")}</label>
-                  <input value={form.hours} onChange={(e) => set("hours", e.target.value)} placeholder="23:55-06:00" className={inputClass} />
-                  <p className="mt-1 text-xs text-zinc-400">{t("ownerPortal.hoursHint")}</p>
-                </div>
-                <div>
                   <label className={labelClass}>{t("ownerPortal.capacity")}</label>
                   <input value={form.people} onChange={(e) => set("people", e.target.value)} placeholder={t("ownerPortal.capacityPh")} className={inputClass} />
                 </div>
                 <div className="md:col-span-2">
                   <label className={labelClass}>{t("planPage.dresscode")}</label>
-                  <input value={form.dresscode} onChange={(e) => set("dresscode", e.target.value)} placeholder="Casual, Smart casual…" className={inputClass} />
+                  <select value={form.dresscode} onChange={(e) => set("dresscode", e.target.value)} style={{ colorScheme: "dark" }} className={inputClass}>
+                    <option value="">—</option>
+                    {DRESS_CODES.map((d) => (
+                      <option key={d} value={d}>
+                        {dressCodeLabel(d, t)}
+                      </option>
+                    ))}
+                    {/* Un valor antiguo fuera de la lista se conserva hasta que se cambie, para no borrarlo sin querer. */}
+                    {form.dresscode && !(DRESS_CODES as readonly string[]).includes(form.dresscode) && <option value={form.dresscode}>{form.dresscode}</option>}
+                  </select>
                 </div>
                 <div className="md:col-span-2">
-                  <label className={labelClass}>{t("ownerPortal.openDays")}</label>
-                  <div className="flex flex-wrap gap-2">
-                    {DAY_OPTIONS.map((day, i) => {
-                      const active = form.open_days.includes(day)
-                      // Etiqueta del día en el idioma activo (2024-01-01 fue lunes).
-                      const label = new Date(2024, 0, 1 + i).toLocaleDateString(dateLocale, { weekday: "short" }).replace(".", "")
-                      return (
-                        <button
-                          key={day}
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() => set("open_days", active ? form.open_days.filter((d) => d !== day) : [...form.open_days, day])}
-                          className={`${toggle(active)} capitalize`}
-                        >
-                          {label}
-                        </button>
-                      )
-                    })}
-                  </div>
+                  <label className={labelClass}>{t("event.schedule")}</label>
+                  <p className="mb-3 text-xs text-zinc-400">{t("ownerPortal.hoursHint")}</p>
+                  <ClubHoursEditor
+                    hours={form.hours}
+                    openDays={form.open_days}
+                    onChange={(next) => {
+                      set("hours", next.hours)
+                      set("open_days", next.open_days)
+                    }}
+                    // Etiqueta del día en el idioma activo (2024-01-01 fue lunes).
+                    dayLabel={(i) => new Date(2024, 0, 1 + i).toLocaleDateString(dateLocale, { weekday: "short" }).replace(".", "")}
+                    chipClass={toggle}
+                    inputClass={inputClass}
+                    labels={{
+                      start: t("ownerPortal.startTime"),
+                      end: t("ownerPortal.endTime"),
+                      missing: t("ownerPortal.hoursMissing"),
+                      sameForAll: t("ownerPortal.hoursSameForAll"),
+                      early: t("ownerPortal.hoursEarly"),
+                      legacy: t("ownerPortal.hoursLegacy"),
+                    }}
+                  />
                 </div>
               </div>
             </Card>

@@ -26,7 +26,7 @@ import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { cleanEssential } from "../../lib/essentials"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { UtensilsCrossed, ShoppingCart } from "lucide-react"
-import { dressCodeOf } from "../../lib/dressCode"
+import { DRESS_CODES, dressCodeLabel, dressCodeOf } from "../../lib/dressCode"
 
 // "Planifica tu noche". Cambios de la auditoría de octubre 2026:
 // - Los estilos de música eran "Commercial" y "Cocktail Bar" (en inglés) contra datos en español:
@@ -318,7 +318,7 @@ const VENUE_TYPE_OPTIONS = [
   { value: "Bar de billar", key: "venuePool" },
 ]
 const MUSIC_OPTIONS = STYLES.filter((s) => s.slug !== "electronica").map((s) => s.slug)
-const DRESSCODE_OPTIONS = ["any", "Casual", "Smart casual", "Elegante", "Dark casual"]
+const DRESSCODE_OPTIONS = ["any", ...DRESS_CODES]
 
 const TIME_WINDOWS: Record<string, { icon: LucideIcon; start: string }> = {
   early: { icon: Moon, start: "23:00" },
@@ -499,7 +499,7 @@ export default function PlanPage() {
   }, [step, phase])
 
   const styleLabel = (slug: string) => cap(t(`areas.style.${slug}`))
-  const dressLabel = (d: string) => (d === "any" ? t("planPage.dressAny") : d === "Elegante" ? t("planPage.dressElegant") : d)
+  const dressLabel = (d: string) => (d === "any" ? t("planPage.dressAny") : dressCodeLabel(d, t))
 
   const selectVibe = (key: string) => {
     if (vibeKey === key) {

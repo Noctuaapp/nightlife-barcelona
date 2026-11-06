@@ -35,7 +35,7 @@ export function madridClock(): { dow: number; minutes: number } {
   return { dow: Math.max(0, WEEKDAYS.indexOf(wd)), minutes: hour * 60 + minute }
 }
 
-function expandDays(token: string): string[] {
+export function expandDays(token: string): string[] {
   const out = new Set<string>()
   for (const part of token.split("/")) {
     const p = part.trim()
@@ -56,7 +56,7 @@ function expandDays(token: string): string[] {
   return Array.from(out)
 }
 
-function openDaysToLetters(openDays?: string[] | null): string[] | null {
+export function openDaysToLetters(openDays?: string[] | null): string[] | null {
   if (!openDays || openDays.length === 0) return null
   const letters = openDays
     .map((d) => OPEN_DAY_TO_LETTER[d.trim().toLowerCase().slice(0, 3)] || OPEN_DAY_TO_LETTER[d.trim().toLowerCase()])
