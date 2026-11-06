@@ -10,6 +10,7 @@ import { NitbusBadge } from "../ui/TransitBadge"
 import { useLanguage } from "../../context/LanguageContext"
 import { NIGHT_BUS_LINES, parseRoute } from "../../lib/nightBuses"
 import { compareLineCodes, normStopName, type NbSearchEntry } from "../../lib/nitbusRoutes"
+import { NightPage } from "../ui/NightBackdrop"
 
 // Portada de Nitbus (31/10/2026): todas las líneas como tarjetas y un buscador de parada
 // («¿qué nocturno cojo desde aquí?»). Cada línea abre su esquema en /nitbus/N24.
@@ -42,6 +43,7 @@ export default function NitbusIndexView({ counts, search }: Props) {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
+      <NightPage tone="violet">
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:py-14">
         <header>
           <h1 className="font-display text-[2rem] leading-tight text-ink sm:text-5xl">{t("nitbusPage.title")}</h1>
@@ -134,6 +136,7 @@ export default function NitbusIndexView({ counts, search }: Props) {
         </Link>
         <p className="mt-6 text-xs leading-relaxed text-zinc-400">{t("nitbusPage.officialNote")}</p>
       </main>
+      </NightPage>
       <Footer />
       <BottomNav />
     </div>

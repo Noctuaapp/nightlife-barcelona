@@ -4,9 +4,9 @@ import { getNightBusLine, nightBusStopsUrl, parseRoute } from "../../lib/nightBu
 // Insignia de línea de transporte: redonda para metro (como el rótulo del andén), en placa
 // rectangular para Nitbus (como el cartel azul de la parada). La forma distingue el modo sin
 // necesitar una etiqueta de texto aparte; el color es el oficial de cada línea de metro.
-export function MetroLineBadge({ code, size = "sm" }: { code: string; size?: "sm" | "md" }) {
+export function MetroLineBadge({ code, size = "sm" }: { code: string; size?: "sm" | "md" | "lg" }) {
   const { bg, fg } = metroLineColor(code)
-  const dim = size === "md" ? "h-7 w-7 text-sm" : "h-6 w-6 text-xs"
+  const dim = size === "lg" ? "h-11 w-11 text-xl" : size === "md" ? "h-7 w-7 text-sm" : "h-6 w-6 text-xs"
   return (
     <span
       className={`inline-flex shrink-0 items-center justify-center rounded-full font-black ${dim}`}

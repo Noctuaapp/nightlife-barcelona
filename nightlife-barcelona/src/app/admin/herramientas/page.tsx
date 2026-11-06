@@ -5,6 +5,8 @@ import AdminShell from "../../../components/admin/AdminShell"
 import { DataExport, SystemStatus } from "../../../components/admin/SystemStatus"
 import { supabase } from "../../../lib/supabase"
 import { ADMIN_EMAIL } from "../../../lib/admin"
+import { BTN_DANGER, BTN_GHOST, BTN_PRIMARY, Panel, SectionTitle } from "../../../components/admin/ui"
+import { Bus, CalendarClock, CloudDownload, MapPin, Moon, PartyPopper, Power, RefreshCw, Search, ShieldAlert, ShoppingBasket, Wrench, type LucideIcon } from "lucide-react"
 import { SEASONAL_THEMES, type SeasonalOverride } from "../../../lib/nocSeasonal"
 
 // Herramientas de mantenimiento. Antes se lanzaban visitando una URL con la clave de admin
@@ -21,6 +23,20 @@ type Tool = {
   osmEssentials?: boolean // zona + categoría + vista previa / importar de verdad
   googleEssentials?: boolean // igual, pero con Google Places (cuesta llamadas de pago)
   nitbus?: boolean // vista previa / importar de verdad, sin zona
+}
+
+const TOOL_ICONS: Record<string, LucideIcon> = {
+  "refresh-clubs": RefreshCw,
+  "refresh-events": RefreshCw,
+  "refresh-essentials": RefreshCw,
+  "advance-events": CalendarClock,
+  "assign-place-ids": Search,
+  geocode: MapPin,
+  "fix-mismatched": ShieldAlert,
+  "import-osm": CloudDownload,
+  "import-osm-essentials": ShoppingBasket,
+  "import-google-essentials": ShoppingBasket,
+  "import-nitbus": Bus,
 }
 
 const TOOLS: Tool[] = [
@@ -339,11 +355,11 @@ export default function AdminToolsPage() {
     >
       <SystemStatus />
 
-      <div className={`mb-6 rounded-2xl border p-5 ${maintenance ? "border-red-500/40 bg-red-500/[0.07]" : "border-white/10 bg-white/[0.03]"}`}>
+      <Panel accent="coral" className={`mb-6 ${maintenance ? "ring-1 ring-inset ring-red-500/50" : ""}`}>
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-base font-black">Modo mantenimiento</h2>
-            <p className="mt-1 text-sm text-zinc-400">
+          <div className="min-w-0 flex-1">
+            <SectionTitle icon={Power} accent={maintenance ? "pink" : "coral"}>Modo mantenimiento</SectionTitle>
+            <p className="mt-3 text-sm text-zinc-400">
               {maintenance
                 ? "Activo: la web está cerrada para todos menos para ti."
                 : "Apagado: la web funciona con normalidad para todo el mundo."}
@@ -352,20 +368,18 @@ export default function AdminToolsPage() {
           <button
             onClick={toggleMaintenance}
             disabled={maintenance === null || savingMaintenance}
-            className={`shrink-0 rounded-xl px-5 py-2.5 text-sm font-bold transition disabled:opacity-50 ${
-              maintenance ? "bg-white text-black hover:bg-zinc-200" : "border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20"
-            }`}
+            className={`shrink-0 ${maintenance ? BTN_PRIMARY : BTN_DANGER}`}
           >
             {maintenance === null ? "Cargando…" : savingMaintenance ? "Guardando…" : maintenance ? "Desactivar" : "Activar mantenimiento"}
           </button>
         </div>
-      </div>
+      </Panel>
 
-      <div className="mb-6 rounded-2xl border border-purple-500/30 bg-purple-500/[0.06] p-5">
+      <Panel accent="violet" className="mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-base font-black">Club Noctua</h2>
-            <p className="mt-1 text-sm text-zinc-400">
+          <div className="min-w-0 flex-1">
+            <SectionTitle icon={PartyPopper} accent="violet">Club Noctua</SectionTitle>
+            <p className="mt-3 text-sm text-zinc-400">
               {noctuaEnabled
                 ? "Activo: todo el mundo gana XP y ve misiones, insignias y niveles."
                 : "En pausa: solo se gana XP invitando amigos. Nadie ve misiones, insignias ni niveles salvo tú."}
@@ -374,20 +388,18 @@ export default function AdminToolsPage() {
           <button
             onClick={toggleClubNoctua}
             disabled={noctuaEnabled === null || savingToggle}
-            className={`shrink-0 rounded-xl px-5 py-2.5 text-sm font-bold transition disabled:opacity-50 ${
-              noctuaEnabled ? "bg-white text-black hover:bg-zinc-200" : "bg-purple-500 text-white hover:bg-purple-400"
-            }`}
+            className={`shrink-0 ${noctuaEnabled ? BTN_GHOST : "rounded-ctl bg-brand px-5 py-2.5 text-sm font-bold text-white transition hover:bg-brand-strong disabled:opacity-50"}`}
           >
             {noctuaEnabled === null ? "Cargando…" : savingToggle ? "Guardando…" : noctuaEnabled ? "Pausar" : "Activar"}
           </button>
         </div>
-      </div>
+      </Panel>
 
-      <div className="mb-6 rounded-2xl border border-purple-500/30 bg-purple-500/[0.06] p-5">
+      <Panel accent="pink" className="mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-base font-black">Temporada de Noc</h2>
-            <p className="mt-1 text-sm text-zinc-400">
+          <div className="min-w-0 flex-1">
+            <SectionTitle icon={Moon} accent="pink">Temporada de Noc</SectionTitle>
+            <p className="mt-3 text-sm text-zinc-400">
               {nocMode === "auto" || nocMode === null
                 ? "Automático: Noc se pone el accesorio que toque según la fecha, sin tocar nada."
                 : nocMode === "none"
@@ -399,7 +411,7 @@ export default function AdminToolsPage() {
             value={nocMode ?? "auto"}
             disabled={nocMode === null || savingNocMode}
             onChange={(e) => changeNocMode(e.target.value as SeasonalOverride)}
-            className="shrink-0 rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm font-semibold text-white outline-none disabled:opacity-50"
+            className="w-full max-w-full rounded-ctl border border-white/10 bg-night/70 px-4 py-2.5 text-sm font-semibold text-white outline-none transition focus:border-brand/60 disabled:opacity-50 sm:w-auto"
             style={{ colorScheme: "dark" }}
           >
             <option value="auto">🗓️ Automático (según la fecha)</option>
@@ -411,23 +423,23 @@ export default function AdminToolsPage() {
             ))}
           </select>
         </div>
-      </div>
+      </Panel>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {TOOLS.map((tool) => {
           const st = state[tool.key]
           const remaining = typeof st?.result?.remaining === "number" ? st.result.remaining : null
           return (
-            <div key={tool.key} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <h2 className="text-base font-black">{tool.title}</h2>
-              <p className="mt-1 text-sm text-zinc-400">{tool.description}</p>
+            <Panel key={tool.key} accent={tool.key.startsWith("import") ? "cyan" : "violet"} className="min-w-0" glow={false}>
+              <SectionTitle icon={TOOL_ICONS[tool.key] ?? Wrench}>{tool.title}</SectionTitle>
+              <p className="mt-3 text-sm text-zinc-400">{tool.description}</p>
 
               {tool.osm && (
                 <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
                   <select
                     value={osmArea}
                     onChange={(e) => setOsmArea(e.target.value)}
-                    className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-white"
+                    className="max-w-full rounded-ctl border border-white/10 bg-night/70 px-3 py-2 text-white outline-none transition focus:border-brand/60"
                   >
                     <option value="barcelona">Barcelona</option>
                     <option value="hospitalet">L&apos;Hospitalet</option>
@@ -452,7 +464,7 @@ export default function AdminToolsPage() {
                   <select
                     value={essArea}
                     onChange={(e) => setEssArea(e.target.value)}
-                    className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-white"
+                    className="max-w-full rounded-ctl border border-white/10 bg-night/70 px-3 py-2 text-white outline-none transition focus:border-brand/60"
                   >
                     <option value="barcelona">Barcelona</option>
                     <option value="hospitalet">L&apos;Hospitalet</option>
@@ -468,7 +480,7 @@ export default function AdminToolsPage() {
                   <select
                     value={essCat}
                     onChange={(e) => setEssCat(e.target.value)}
-                    className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-white"
+                    className="max-w-full rounded-ctl border border-white/10 bg-night/70 px-3 py-2 text-white outline-none transition focus:border-brand/60"
                   >
                     <option value="all">Todas las categorías</option>
                     <option value="pharmacy">Farmacias</option>
@@ -496,7 +508,7 @@ export default function AdminToolsPage() {
               )}
 
               {tool.osmEssentials && (
-                <div className="mt-4 rounded-xl border border-white/10 bg-black/30 p-4">
+                <div className="mt-4 rounded-ctl border border-white/10 bg-night/60 p-4">
                   <p className="text-sm font-semibold text-white">Importar lo que falta</p>
                   <p className="mt-1 text-xs leading-relaxed text-zinc-400">
                     Las 7 categorías nuevas (taxi, veterinarios, aseos, máquinas, consignas, policía y Bicing) en las 10 áreas, una detrás de
@@ -506,21 +518,21 @@ export default function AdminToolsPage() {
                     <button
                       onClick={runAllNewEssentials}
                       disabled={allNewRunning}
-                      className="rounded-xl bg-white px-4 py-2 text-sm font-bold text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                      className={BTN_PRIMARY}
                     >
                       {allNewRunning ? "Importando…" : "Importar lo que falta"}
                     </button>
                     {allNewRunning && (
                       <button
                         onClick={() => (stopRef.current["all-new-ess"] = true)}
-                        className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/10"
+                        className={BTN_GHOST}
                       >
                         Parar
                       </button>
                     )}
                   </div>
                   {allNewLog.length > 0 && (
-                    <ul className="mt-3 max-h-56 overflow-auto rounded-xl bg-black/50 p-3 text-xs leading-relaxed text-zinc-300">
+                    <ul className="mt-3 max-h-56 overflow-auto rounded-ctl bg-black/50 p-3 text-xs leading-relaxed text-zinc-300">
                       {allNewLog.map((l, i) => (
                         <li key={i} className={l.startsWith("✗") ? "text-red-300" : ""}>{l}</li>
                       ))}
@@ -534,7 +546,7 @@ export default function AdminToolsPage() {
                   <select
                     value={gArea}
                     onChange={(e) => setGArea(e.target.value)}
-                    className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-white"
+                    className="max-w-full rounded-ctl border border-white/10 bg-night/70 px-3 py-2 text-white outline-none transition focus:border-brand/60"
                   >
                     <option value="hospitalet">L&apos;Hospitalet</option>
                     <option value="badalona">Badalona</option>
@@ -549,7 +561,7 @@ export default function AdminToolsPage() {
                   <select
                     value={gCat}
                     onChange={(e) => setGCat(e.target.value)}
-                    className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-white"
+                    className="max-w-full rounded-ctl border border-white/10 bg-night/70 px-3 py-2 text-white outline-none transition focus:border-brand/60"
                   >
                     <option value="supermarket,food">Supermercados + comida</option>
                     <option value="supermarket">Solo supermercados</option>
@@ -576,7 +588,7 @@ export default function AdminToolsPage() {
                 <button
                   onClick={() => run(tool, false)}
                   disabled={st?.running}
-                  className="rounded-xl bg-white px-4 py-2 text-sm font-bold text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                  className={BTN_PRIMARY}
                 >
                   {st?.running ? "Ejecutando…" : "Ejecutar"}
                 </button>
@@ -584,7 +596,7 @@ export default function AdminToolsPage() {
                   <button
                     onClick={() => run(tool, true)}
                     disabled={st?.running}
-                    className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/10 disabled:opacity-50"
+                    className={BTN_GHOST}
                   >
                     Repetir hasta terminar
                   </button>
@@ -592,7 +604,7 @@ export default function AdminToolsPage() {
                 {st?.running && tool.batch && (
                   <button
                     onClick={() => (stopRef.current[tool.key] = true)}
-                    className="rounded-xl border border-red-400/30 px-4 py-2 text-sm font-bold text-red-300 transition hover:bg-red-500/10"
+                    className={BTN_DANGER}
                   >
                     Parar
                   </button>
@@ -610,12 +622,12 @@ export default function AdminToolsPage() {
               {st?.result && (
                 <details className="mt-3">
                   <summary className="cursor-pointer text-xs font-semibold text-zinc-400">Ver respuesta</summary>
-                  <pre className="mt-2 max-h-64 overflow-auto rounded-xl bg-black/50 p-3 text-xs leading-relaxed text-zinc-300">
+                  <pre className="mt-2 max-h-64 overflow-auto rounded-ctl bg-black/50 p-3 text-xs leading-relaxed text-zinc-300">
                     {JSON.stringify(st.result, null, 2)}
                   </pre>
                 </details>
               )}
-            </div>
+            </Panel>
           )
         })}
       </div>

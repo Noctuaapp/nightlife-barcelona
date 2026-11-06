@@ -8,6 +8,7 @@ import type { DbRow } from "../../lib/clubQueries"
 import type { AreaLink } from "../../lib/areas"
 import { areaHref } from "../../lib/zonePages"
 import type { AreaFacts } from "../../lib/areaFacts"
+import NightBackdrop from "../ui/NightBackdrop"
 
 // Listado de una página de barrio (/barrio/[slug]), de zona (/zona/[slug]) o de estilo musical
 // (/musica/[slug]). El servidor ya filtra y ordena los locales; aquí solo se pinta con los textos
@@ -100,7 +101,8 @@ export default function AreaListing({ kind, slug, name, clubs, neighborhoods, st
   }
 
   return (
-    <main className="min-h-screen bg-night pb-32 text-ink">
+    <main className="relative isolate min-h-screen bg-night pb-32 text-ink">
+        <NightBackdrop tone={kind === "musica" ? "pink" : kind === "zona" ? "blue" : "violet"} />
       <section className="mx-auto max-w-6xl px-4 pt-8 sm:px-6 sm:pt-12">
         <nav aria-label="breadcrumb" className="text-sm text-zinc-400">
           <Link href="/" className="hover:text-ink">Noctua</Link>

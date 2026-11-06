@@ -334,7 +334,7 @@ export function InlineEditTiers({ table, id, value }: { table: string; id: numbe
             onChange={(e) => update(i, { label: e.target.value })}
             onBlur={commit}
             placeholder="Ej. Abono 2 días"
-            className="min-w-0 flex-1 rounded-md border border-purple-400/40 bg-black/30 px-2 py-1 text-xs text-zinc-200 outline-none focus:border-purple-400"
+            className="min-w-0 flex-1 rounded-md border border-purple-400/40 bg-night/60 px-2 py-1 text-xs text-zinc-200 outline-none focus:border-purple-400"
           />
           <input
             value={tier.price}
@@ -342,7 +342,7 @@ export function InlineEditTiers({ table, id, value }: { table: string; id: numbe
             onChange={(e) => update(i, { price: e.target.value })}
             onBlur={commit}
             placeholder="80 €"
-            className="w-20 shrink-0 rounded-md border border-purple-400/40 bg-black/30 px-2 py-1 text-right text-xs font-semibold text-ink outline-none focus:border-purple-400"
+            className="w-20 shrink-0 rounded-md border border-purple-400/40 bg-night/60 px-2 py-1 text-right text-xs font-semibold text-ink outline-none focus:border-purple-400"
           />
           <button onClick={() => remove(i)} disabled={saving} aria-label="Quitar tarifa" className="shrink-0 text-zinc-400 transition hover:text-red-300">
             ✕

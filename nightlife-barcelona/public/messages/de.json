@@ -60,7 +60,19 @@
     "statsEssentials": "Essentials in der Nähe",
     "openNowIn": "Jetzt geöffnet in {zone}",
     "tonightIn": "Für heute Abend in {zone}",
-    "zonesLabel": "Gegend wählen"
+    "zonesLabel": "Gegend wählen",
+    "exploreTitle": "Entdecke Noctua",
+    "exploreSub": "Alles, was du vor, während und nach dem Ausgehen brauchst",
+    "doorMapText": "Clubs, Apotheken und Haltestellen auf einer Karte",
+    "doorPlanText": "Sag uns, worauf du Lust hast, und wir schlagen Orte vor",
+    "doorEssentialsText": "Apotheken, Geldautomaten und Essen, nachts geöffnet",
+    "doorHomeTitle": "Heimweg",
+    "doorHomeText": "U-Bahn und NitBus: Wähle deine Linie und deine Haltestelle",
+    "doorMetro": "U-Bahn",
+    "doorNitbus": "NitBus",
+    "stylesTitle": "Worauf hast du heute Nacht Lust?",
+    "stylesSub": "Such dir eine Stimmung aus und wir zeigen dir, wo sie läuft",
+    "searchTry": "Probier mal"
   },
   "filters": {
     "all": "Alle"
@@ -109,7 +121,14 @@
     "withEmail": "Lieber mit E-Mail registrieren",
     "moreOptional": "Land und Geschlecht hinzufügen (optional)",
     "showPassword": "Passwort anzeigen",
-    "hidePassword": "Passwort verbergen"
+    "hidePassword": "Passwort verbergen",
+    "pwNeedLower": "einen Kleinbuchstaben",
+    "pwNeedUpper": "einen Großbuchstaben",
+    "pwNeedDigit": "eine Ziffer",
+    "pwNeedSymbol": "ein Sonderzeichen (z. B. ! ? # $)",
+    "error_password_sets": "Das Passwort muss {list} enthalten.",
+    "error_password_min": "Das Passwort muss mindestens {n} Zeichen lang sein.",
+    "error_password_pwned": "Dieses Passwort ist zu bekannt oder in Datenlecks aufgetaucht. Bitte wähle ein anderes."
   },
   "clubs": {
     "title": "Clubs",
@@ -2085,5 +2104,26 @@
     "lost": "Ich habe Handy oder Geldbörse verloren",
     "lostHint": "Fundbüros",
     "buttonNote": "Schnelle Hilfe, wenn heute Nacht etwas schiefgeht: Apotheke, Notaufnahme, Taxi, Toilette oder Polizei in deiner Nähe. Die 112 findest du darin, falls es ernst ist."
+  },
+  "metroPage": {
+    "back": "Alle U-Bahn-Linien",
+    "stopsCount": "{n} Stationen",
+    "findStop": "Station suchen",
+    "noMatch": "Keine Station passt zu „{q}“.",
+    "nearestIs": "Deine nächste Station: {name}, {dist} entfernt.",
+    "nearSpotIs": "Die nächste Station zu dem Ort, den du dir angesehen hast: {name}, {dist} entfernt.",
+    "tripStops": "{n} Stationen",
+    "tripStopOne": "1 Station",
+    "segPickFrom": "Wähle die Einstiegsstation",
+    "segPickTo": "Wähle die Ausstiegsstation",
+    "noStops": "Für diese Linie haben wir noch keine Stationen.",
+    "officialNote": "Zeiten, Takt und Betriebsunterbrechungen: schau auf der offiziellen TMB-Website oder in der App nach. Die Linien L6, L7, L8 und L12 gehören zu FGC.",
+    "title": "U-Bahn Barcelona",
+    "subtitle": "Die Linien L1 bis L12 mit allen Stationen in der richtigen Reihenfolge. Wähle deine Linie oder suche deine Station.",
+    "findStopAll": "Suche deine Station (Catalunya, Sants…)",
+    "viewMap": "Stationen auf der Karte ansehen",
+    "ctaTitle": "Alle Stationen jeder Linie, der Reihe nach",
+    "ctaBody": "Wähle eine Linie, sieh dir ihre Stationen nacheinander an und markiere, wo du ein- und aussteigst.",
+    "seeLine": "Strecke der {code} ansehen und meine Fahrt planen"
   }
 }

@@ -12,6 +12,7 @@ import { badgeIcon } from "@/components/gamification/badgeIcons"
 import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
 import { MapPin, Headphones, CalendarCheck, NotebookPen, Eye, Share2 } from "lucide-react"
+import { NightPage } from "@/components/ui/NightBackdrop"
 
 type Recap = {
   year: number
@@ -234,6 +235,7 @@ export default function MiMesPage() {
   return (
     <div className="flex min-h-screen flex-col bg-night text-ink">
       <Header />
+      <NightPage tone="violet">
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-8 sm:pt-12">
         <div ref={owlRef} className="sr-only" aria-hidden="true"><NocOwl size={220} mood="party" /></div>
 
@@ -318,6 +320,7 @@ export default function MiMesPage() {
           </div>
         )}
       </main>
+      </NightPage>
       <Footer />
       <BottomNav />
     </div>

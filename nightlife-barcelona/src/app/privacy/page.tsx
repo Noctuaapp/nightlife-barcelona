@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"
 import BottomNav from "@/components/layout/BottomNav"
 import { splitLines, splitLabelItems, renderWithLinks } from "@/lib/legalText"
+import { NightPage } from "@/components/ui/NightBackdrop"
 
 const EMAIL_LINK = { email: { href: "mailto:info@noctuaapp.com", label: "info@noctuaapp.com" } }
 
@@ -50,6 +51,7 @@ export default function PrivacyPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
+      <NightPage tone="violet" soft>
       <main className="flex-1 px-4 py-16 max-w-2xl mx-auto w-full">
         <div className="mb-12">
           <p className="text-xs font-semibold text-purple-400 mb-3">Legal</p>
@@ -119,6 +121,7 @@ export default function PrivacyPage() {
           </section>
         </div>
       </main>
+      </NightPage>
       <Footer />
       <BottomNav />
     </div>

@@ -11,9 +11,12 @@ import { useLanguage } from "../../context/LanguageContext"
 import Header from "../../components/layout/Header"
 import BottomNav from "../../components/layout/BottomNav"
 import GoogleButton from "../../components/auth/GoogleButton"
+import { consentMetadata } from "../../lib/signupConsent"
+import { parsePasswordIssue, passwordIssueCode, passwordIssueText } from "../../lib/authErrors"
 import CaptchaBox from "../../components/auth/CaptchaBox"
 import { captchaEnabled, captchaOptions, CAPTCHA_PENDING_MESSAGE } from "../../lib/captcha"
 import { XP_AMOUNTS } from "../../lib/xp"
+import NightBackdrop from "../../components/ui/NightBackdrop"
 
 // Dominios de correo temporal/desechable más usados (10 minutos, buzones de un solo uso, etc.).
 // Confirmar el correo ya filtra direcciones inventadas o mal escritas (el enlace nunca llega),
@@ -156,7 +159,10 @@ export default function SignupPage() {
         // exige confirmar el correo, el upsert a profiles de más abajo no llega a ejecutarse
         // (no hay sesión todavía) — así el username/país/género no se pierden: confirm-age los
         // recupera de aquí la primera vez que la persona entra tras confirmar.
-        data: { username, country, gender },
+        // La aceptación de términos y la edad (la casilla y la fecha son obligatorias arriba) se apuntan
+        // aquí también: sin sesión no se puede escribir en profiles, y así no se pierde. Al entrar por
+        // primera vez, /confirm-age la pasa al perfil sin volver a preguntar.
+        data: { username, country, gender, ...consentMetadata(bd.getFullYear()) },
         ...captchaOptions(captchaToken),
       },
     })
@@ -164,8 +170,11 @@ export default function SignupPage() {
     if (signUpError) {
       setCaptchaToken(null)
       setCaptchaRound((r) => r + 1)
-      setError(signUpError.message)
-      track("signup_error", { meta: { step: "auth", reason: signUpError.message.slice(0, 80) } })
+      // Supabase tiene sus propias reglas de contraseña y responde en inglés: se explica en el idioma de la
+      // persona (ver lib/authErrors.ts) y en la analítica va un código corto, no la frase cortada.
+      const pwIssue = parsePasswordIssue(signUpError.message)
+      setError(pwIssue ? passwordIssueText(pwIssue, t, locale) : signUpError.message)
+      track("signup_error", { meta: { step: "auth", reason: pwIssue ? passwordIssueCode(pwIssue) : signUpError.message.slice(0, 80) } })
       setLoading(false)
       return
     }
@@ -228,7 +237,8 @@ export default function SignupPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-black pb-40 text-white">
+      <main className="relative isolate min-h-screen bg-black pb-40 text-white">
+        <NightBackdrop tone="violet" />
         <section className="relative overflow-hidden px-4 pt-14 pb-10">
           <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-transparent to-transparent" />
           <div className="relative mx-auto max-w-md text-center">

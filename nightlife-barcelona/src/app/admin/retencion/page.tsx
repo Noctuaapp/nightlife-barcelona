@@ -195,7 +195,7 @@ function DayColumns({ cols, unit, caption }: { cols: Col[]; unit: string; captio
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+    <div className="rounded-card border border-white/10 bg-surface p-4">
       <dt className="text-xs text-zinc-400">{label}</dt>
       <dd className="mt-1 font-display text-2xl tabular-nums text-ink">{value}</dd>
       {sub && <p className="mt-0.5 text-[11px] leading-snug text-zinc-500">{sub}</p>}
@@ -216,7 +216,7 @@ function RetentionKpi({ label, pair, soon }: { label: string; pair: Pair; soon: 
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+    <section className="rounded-card border border-white/10 bg-surface p-5">
       <h3 className="text-sm font-black">{title}</h3>
       <div className="mt-4">{children}</div>
     </section>

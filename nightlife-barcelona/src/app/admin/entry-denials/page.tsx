@@ -175,7 +175,7 @@ export default function AdminEntryDenialsPage() {
       {loading ? (
         <p className="mt-10 text-center text-zinc-400">Cargando registros…</p>
       ) : denials.length === 0 ? (
-        <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-10 text-center">
+        <div className="mt-8 rounded-card border border-white/10 bg-surface p-10 text-center">
           <p className="text-3xl">🚫</p>
           <p className="mt-3 text-zinc-400">Todavía no se ha usado «No te dejan entrar» en ningún local.</p>
         </div>
@@ -187,14 +187,14 @@ export default function AdminEntryDenialsPage() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Buscar local, usuario o email"
-              className="mt-3 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white outline-none focus:border-purple-400/60 sm:max-w-sm"
+              className="mt-3 w-full rounded-xl border border-white/10 bg-night/70 px-4 py-2.5 text-sm text-white outline-none focus:border-brand/60 sm:max-w-sm"
             />
             <ul className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
               {filteredDenials.slice(0, 100).map((d) => {
                 const times = d.user_id ? countByUser.get(d.user_id) || 0 : 0
                 const u = d.user_id ? usersById[d.user_id] : null
                 return (
-                  <li key={d.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <li key={d.id} className="rounded-card border border-white/10 bg-surface p-4">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <p className="text-sm font-bold text-white">{REASON_LABELS[d.reason]}</p>
                       <p className="text-xs text-zinc-500">{fmt(d.created_at)}</p>
@@ -224,7 +224,7 @@ export default function AdminEntryDenialsPage() {
             <h2 className="text-lg font-black">Locales con más casos</h2>
             <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
               {topVenues.map((v) => (
-                <div key={v.key} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div key={v.key} className="rounded-card border border-white/10 bg-surface p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <Link href={venueHref(v)} target="_blank" className="font-bold text-white underline-offset-2 hover:underline">
@@ -238,7 +238,7 @@ export default function AdminEntryDenialsPage() {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {REASON_ORDER.filter((r) => v.byReason[r]).map((r) => (
-                      <span key={r} className="rounded-full border border-white/10 bg-black/30 px-2.5 py-1 text-xs text-zinc-300">
+                      <span key={r} className="rounded-full border border-white/10 bg-night/60 px-2.5 py-1 text-xs text-zinc-300">
                         {REASON_LABELS[r]} · {v.byReason[r]}
                       </span>
                     ))}
@@ -265,7 +265,7 @@ export default function AdminEntryDenialsPage() {
             <section className="mt-10">
               <h2 className="text-lg font-black">Quién lo usa más</h2>
               <p className="mt-1 text-sm text-zinc-400">Personas con 2 o más casos: puede ser un problema real con un local… o alguien que lo usa de broma.</p>
-              <ul className="mt-4 divide-y divide-white/5 rounded-2xl border border-white/10 bg-white/[0.03]">
+              <ul className="mt-4 divide-y divide-white/5 rounded-card border border-white/10 bg-surface">
                 {topUsers.map(([id, n]) => {
                   const places = Array.from(new Set(denials.filter((d) => d.user_id === id).map((d) => d.venue_name)))
                   return (
@@ -294,10 +294,11 @@ function StatCard({ label, value, active, onClick }: { label: string; value: num
   return (
     <button
       onClick={onClick}
-      className={`rounded-2xl border p-4 text-left transition ${active ? "border-white bg-white text-black" : "border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.06]"}`}
+      aria-pressed={active}
+      className={`rounded-2xl border p-4 text-left transition ${active ? "border-brand/50 bg-brand/15 ring-1 ring-inset ring-brand/50" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"}`}
     >
-      <p className="text-xs opacity-70">{label}</p>
-      <p className="mt-1 text-3xl font-black tabular-nums">{value}</p>
+      <p className="text-xs text-zinc-300">{label}</p>
+      <p className={`mt-1 font-display text-3xl tabular-nums ${active ? "text-brand-soft" : "text-white"}`}>{value}</p>
     </button>
   )
 }

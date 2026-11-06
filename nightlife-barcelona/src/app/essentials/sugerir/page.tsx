@@ -11,6 +11,7 @@ import { logError } from "../../../lib/log"
 import { ESSENTIAL_SUGGESTION_XP } from "../../../lib/xp"
 import { categoryInfo, categoryNameKey } from "../../../lib/essentialCategories"
 import { useLanguage } from "../../../context/LanguageContext"
+import { NightPage } from "../../../components/ui/NightBackdrop"
 
 // «¿Nos faltan esenciales? ¡Ayúdanos!» (31/10/2026). Formulario: tipo, nombre, calle y número. Lo
 // revisa el admin (Admin › Sugerencias de esenciales) y, si es correcto, da XP. Datos: supabase/62.
@@ -117,6 +118,7 @@ export default function SuggestEssentialPage() {
   return (
     <>
       <Header />
+      <NightPage tone="teal">
       <main className="mx-auto w-full max-w-2xl px-4 py-8 pb-28 sm:py-12">
         <Link href="/essentials" className="inline-flex items-center gap-1 text-sm font-semibold text-zinc-300 transition hover:text-ink">
           <ChevronLeft size={16} aria-hidden="true" /> {t("essentialsSuggest.back")}
@@ -257,6 +259,7 @@ export default function SuggestEssentialPage() {
           </section>
         )}
       </main>
+      </NightPage>
       <BottomNav />
       <AuthGateModal open={gate} onClose={() => setGate(false)} subtitleKey="essentialsSuggest.gate" />
     </>

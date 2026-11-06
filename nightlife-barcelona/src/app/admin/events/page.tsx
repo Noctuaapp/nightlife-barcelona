@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type Dispatch, type SetStateAction } from "react"
 import Link from "next/link"
-import { CalendarDays } from "lucide-react"
+import { CalendarClock, CalendarDays, EyeOff, Flame, type LucideIcon } from "lucide-react"
 
 import AdminShell from "../../../components/admin/AdminShell"
+import { StatTile } from "../../../components/admin/ui"
 
 import { supabase } from "../../../lib/supabase"
 import { fetchAllPages } from "../../../lib/fetchAll"
@@ -195,9 +196,9 @@ const STATUS_TESTS: Record<StatusKey, (e: Event) => boolean> = {
 
 type SortKey = "smart" | "date_asc" | "date_desc" | "recent"
 
-const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-purple-500/50 transition placeholder:text-zinc-400"
+const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-brand/60 transition placeholder:text-zinc-400"
 const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1.5"
-const selectClass = "rounded-2xl border border-white/10 bg-surface px-4 py-4 text-sm font-semibold text-white outline-none transition focus:border-purple-500/50"
+const selectClass = "rounded-2xl border border-white/10 bg-surface px-4 py-4 text-sm font-semibold text-white outline-none transition focus:border-brand/60"
 
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<Event[]>([])
@@ -766,7 +767,7 @@ export default function AdminEventsPage() {
       <div
         key={event.id}
         id={`event-${event.id}`}
-        className={`rounded-card border p-5 transition ${event.hidden ? "border-white/5 bg-white/[0.01] opacity-50" : "border-white/10 bg-white/[0.03]"} ${editing ? "!border-purple-500/40 !bg-purple-500/[0.04] !opacity-100" : ""}`}
+        className={`rounded-card border p-5 transition ${event.hidden ? "border-white/5 bg-white/[0.01] opacity-50" : "border-white/10 bg-surface"} ${editing ? "!border-purple-500/40 !bg-purple-500/[0.04] !opacity-100" : ""}`}
       >
         {editing ? (
           <div>
@@ -857,23 +858,20 @@ export default function AdminEventsPage() {
     )
   }
 
-  const statCards: { label: string; value: number; color: string; apply: () => void }[] = [
-    { label: "Total", value: totals.total, color: "text-white", apply: clearFilters },
-    { label: "Próximos", value: totals.upcoming, color: "text-emerald-400", apply: () => { setPeriod("upcoming"); setStatus("all") } },
-    { label: "Destacados", value: totals.featured, color: "text-orange-400", apply: () => { setPeriod("all"); setStatus("featured") } },
-    { label: "Ocultos", value: totals.hidden, color: "text-zinc-300", apply: () => { setPeriod("all"); setStatus("hidden") } },
+  const statCards: { label: string; value: number; accent: "violet" | "cyan" | "coral" | "pink"; icon: LucideIcon; apply: () => void }[] = [
+    { label: "Total", value: totals.total, accent: "violet", icon: CalendarDays, apply: clearFilters },
+    { label: "Próximos", value: totals.upcoming, accent: "cyan", icon: CalendarClock, apply: () => { setPeriod("upcoming"); setStatus("all") } },
+    { label: "Destacados", value: totals.featured, accent: "coral", icon: Flame, apply: () => { setPeriod("all"); setStatus("featured") } },
+    { label: "Ocultos", value: totals.hidden, accent: "pink", icon: EyeOff, apply: () => { setPeriod("all"); setStatus("hidden") } },
   ]
 
   return (
     <AdminShell title="Eventos y festivales" subtitle="Crea, edita y gestiona los eventos y festivales.">
       <>
         {/* Resumen (cada tarjeta filtra la lista) */}
-        <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
           {statCards.map((s) => (
-            <button key={s.label} onClick={s.apply} className="rounded-card border border-white/10 bg-white/[0.03] p-5 text-center transition hover:bg-white/[0.06]">
-              <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
-              <p className="mt-1 text-xs text-zinc-400">{s.label}</p>
-            </button>
+            <StatTile key={s.label} accent={s.accent} icon={s.icon} label={s.label} value={s.value} onClick={s.apply} />
           ))}
         </div>
 
@@ -896,7 +894,7 @@ export default function AdminEventsPage() {
         <div className="mb-6">
           <button
             onClick={() => { setShowAddForm((v) => !v); cancelEditing() }}
-            className={`w-full rounded-2xl px-6 py-4 text-sm font-black transition md:w-auto ${showAddForm ? "bg-white text-black" : "bg-purple-500 text-white hover:bg-purple-400"}`}
+            className={`w-full rounded-2xl px-6 py-4 text-sm font-black transition md:w-auto ${showAddForm ? "border border-white/15 bg-white/[0.06] text-white hover:bg-white/10" : "bg-purple-500 text-white hover:bg-purple-400"}`}
           >
             {showAddForm ? "✕ Cerrar formulario" : "+ Añadir evento"}
           </button>
@@ -923,7 +921,7 @@ export default function AdminEventsPage() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar título, sala, artista, fecha…"
             aria-label="Buscar eventos"
-            className="flex-1 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 outline-none transition focus:border-purple-500/50"
+            className="flex-1 rounded-card border border-white/10 bg-surface px-5 py-4 outline-none transition focus:border-brand/60"
           />
           <select value={period} onChange={(e) => setPeriod(e.target.value as PeriodKey)} aria-label="Filtrar por fecha" style={{ colorScheme: "dark" }} className={`${selectClass} lg:w-52`}>
             {PERIOD_ORDER.map((k) => (

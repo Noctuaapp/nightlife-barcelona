@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
+import { MapPin } from "lucide-react"
 import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
 import Header from "../layout/Header"
 import BottomNav from "../layout/BottomNav"
 import Footer from "../layout/Footer"
 import FavoriteButton from "../favorites/FavoriteButton"
-import EventsSection from "./EventsSection"
+import AutoScrollRow from "./AutoScrollRow"
 import SurpriseMe from "./SurpriseMe"
 import FeatureTicker from "./FeatureTicker"
 import ReferralBanner from "./ReferralBanner"
@@ -15,12 +16,15 @@ import WelcomeChallenge from "../nightlife/WelcomeChallenge"
 import TopPicks from "./TopPicks"
 import type { ActivePicks } from "../../lib/picks"
 import AreasSection from "./AreasSection"
+import ExploreDoors from "./ExploreDoors"
+import StylesSection from "./StylesSection"
 import Icon from "../ui/Icon"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
 import { useLanguage } from "../../context/LanguageContext"
 import { homeSeed, weightedOrder } from "../../lib/rotation"
 import { createSlug } from "../../lib/slug"
 import { areaHref } from "../../lib/zonePages"
+import { homeStyleCards } from "../../lib/homeStyles"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
@@ -70,7 +74,7 @@ function ClubTile({ club, openNow, distance, compact = false, section }: { club:
   // El corazón va fuera del enlace (un botón dentro de un <a> no es válido): guardar un local desde
   // el listado es el momento natural para pedir la cuenta (si no hay sesión, sale el aviso de registro).
   return (
-    <div className={`relative ${compact ? "h-48 w-[72vw] max-w-[280px] shrink-0 snap-start sm:h-56" : "h-64"}`}>
+    <div className={`relative ${compact ? "h-48 w-[72vw] max-w-[280px] shrink-0 snap-start sm:h-56" : "h-60 sm:h-64"}`}>
     <Link
       href={`/clubs/${club.slug || createSlug(club.name)}`}
       onClick={() => track("home_tile_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { section } })}
@@ -80,24 +84,24 @@ function ClubTile({ club, openNow, distance, compact = false, section }: { club:
         src={club.image || FALLBACK_IMAGE}
         alt={club.name}
         fill
-        sizes={compact ? "280px" : "(max-width: 768px) 100vw, 33vw"}
+        sizes={compact ? "280px" : "(max-width: 768px) 50vw, 33vw"}
         unoptimized={!club.image}
         className="object-cover transition duration-500 group-hover:scale-[1.03]"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-night via-night/50 to-transparent" />
       {openNow !== null && (
         <span
-          className={`absolute left-3 top-3 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-            openNow ? "bg-night/80 text-open" : "bg-night/70 text-zinc-300"
-          }`}
+          className={`absolute flex items-center gap-1.5 rounded-full font-semibold ${
+            compact ? "left-3 top-3 px-2.5 py-1 text-xs" : "left-2.5 top-2.5 px-2 py-0.5 text-[11px] sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs"
+          } ${openNow ? "bg-night/80 text-open" : "bg-night/70 text-zinc-300"}`}
         >
           <span className={`h-1.5 w-1.5 rounded-full ${openNow ? "live-dot bg-open" : "bg-off"}`} />
           {openNow ? t("clubPage.openNow") : t("home.closed")}
         </span>
       )}
-      <div className="relative p-4">
-        <p className="truncate text-lg font-semibold text-ink">{club.name}</p>
-        <p className="mt-0.5 truncate text-sm text-zinc-300">
+      <div className={`relative ${compact ? "p-4" : "p-3 sm:p-4"}`}>
+        <p className={`truncate font-semibold text-ink ${compact ? "text-lg" : "text-base sm:text-lg"}`}>{club.name}</p>
+        <p className={`mt-0.5 truncate text-zinc-300 ${compact ? "text-sm" : "text-xs sm:text-sm"}`}>
           {[club.neighborhood || "Barcelona", distance, club.music].filter(Boolean).join(" · ")}
         </p>
         {(rating || club.price) && (
@@ -112,7 +116,7 @@ function ClubTile({ club, openNow, distance, compact = false, section }: { club:
         )}
       </div>
     </Link>
-    <div className="absolute right-3 top-3 z-10">
+    <div className={`absolute z-10 ${compact ? "right-3 top-3" : "right-2 top-2 sm:right-3 sm:top-3"}`}>
       <FavoriteButton itemType="club" itemId={club.id} variant="overlay" />
     </div>
     </div>
@@ -185,6 +189,8 @@ export default function HomeClient({
   // Zonas para elegir en la primera pantalla (los barrios con más locales).
   const zoneChips = useMemo(() => homeZoneChips(clubs), [clubs])
   const zoneName = zone ? zoneChips.find((z) => z.slug === zone)?.name ?? null : null
+  // «Prueba con…» al tocar el buscador sin escribir nada: los estilos y los barrios con más locales.
+  const tryStyles = useMemo(() => homeStyleCards(clubs, 5), [clubs])
 
   // Primera pantalla: abiertos ahora (los más cercanos si hay ubicación). Si no hay ninguno
   // abierto (de día), los mejor valorados para esta noche.
@@ -266,7 +272,7 @@ export default function HomeClient({
 
   // Las sugerencias no pasan del alto que queda entre el buscador y el teclado (04/11/2026): en el móvil el
   // teclado tapaba la mitad de la lista. Si hay más, la lista hace scroll por dentro.
-  const suggestMax = useVisibleBelow(searchBoxRef, suggestOpen && search.trim().length > 0)
+  const suggestMax = useVisibleBelow(searchBoxRef, suggestOpen)
 
   const clubHref = (c: Club) => `/clubs/${c.slug || createSlug(c.name)}`
   const allResultsHref = `/clubs${search.trim() ? `?search=${encodeURIComponent(search.trim())}` : ""}`
@@ -314,8 +320,8 @@ export default function HomeClient({
     { href: "/events", Glyph: SECTION_ICONS.events, label: t("home.quickEvents"), soon: EVENTS_HIDDEN },
   ]
 
-  // Accesos rápidos: en escritorio van en la portada; en móvil bajan debajo del carrusel de
-  // «Esta noche» para que la primera pantalla enseñe locales y no botones.
+  // Accesos rápidos: solo en escritorio, arriba en la portada. En el móvil los sustituye el bloque
+  // «Explora Noctua» (ExploreDoors), que va debajo del carrusel de «Esta noche».
   const renderQuickLinks = (cls: string) => (
     <nav aria-label={t("home.quickTitle")} className={cls}>
       {quickLinks.map((q) => (
@@ -339,7 +345,7 @@ export default function HomeClient({
         {/* PORTADA: Barcelona de noche a sangre (la foto del skyline con los mismos violetas y azules
             del header), un indicador en directo con los locales abiertos ahora, el titular grande
             con la segunda línea en el degradado de neón de la marca, y el buscador en cristal. */}
-        <section className="relative z-10 isolate overflow-x-clip">
+        <section className="relative z-20 isolate overflow-x-clip">
           <Image
             src="/hero/skyline_barcelona.jpeg"
             alt={t("home.heroImageAlt")}
@@ -420,6 +426,40 @@ export default function HomeClient({
                   {t("home.search")}
                 </button>
               </div>
+
+              {suggestOpen && !search.trim() && (tryStyles.length > 0 || zoneChips.length > 0) && (
+                <div
+                  id="home-search-try"
+                  role="group"
+                  aria-label={t("home.searchTry")}
+                  className="absolute inset-x-0 top-full mt-2 overflow-y-auto overscroll-contain rounded-card border border-white/10 bg-surface/95 p-4 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.85)] backdrop-blur-xl"
+                  style={{ maxHeight: suggestMax ?? undefined }}
+                >
+                  <p className="text-xs font-semibold text-zinc-400">{t("home.searchTry")}</p>
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    {tryStyles.map((st) => (
+                      <Link
+                        key={st.slug}
+                        href={`/musica/${st.slug}`}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.06] px-3.5 py-2 text-sm font-semibold capitalize text-ink transition hover:border-cyan-300/50 hover:bg-white/10"
+                      >
+                        <Icon name="music" className="h-3.5 w-3.5 text-cyan-300" />
+                        {t(`areas.style.${st.slug}`)}
+                      </Link>
+                    ))}
+                    {zoneChips.slice(0, 5).map((z) => (
+                      <Link
+                        key={z.slug}
+                        href={areaHref(z.name)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.06] px-3.5 py-2 text-sm font-semibold text-ink transition hover:border-pink-300/50 hover:bg-white/10"
+                      >
+                        <MapPin className="h-3.5 w-3.5 text-[#ff86bf]" aria-hidden="true" />
+                        {z.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {suggestOpen && search.trim() && (
                 <div
@@ -547,21 +587,27 @@ export default function HomeClient({
             </div>
           )}
           <div className="relative -mx-4 mt-4 sm:mx-0">
-            <div className="scroll-x-thin flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:px-0">
+            {/* Se desliza solo, despacio, hacia la izquierda (se para al tocarlo o con el ratón encima) */}
+            <AutoScrollRow resetKey={zone ?? (geo.pos ? "near" : "all")} className="scroll-x-thin flex gap-3 overflow-x-auto px-4 pb-2 sm:px-0">
               {tonight.list.map((club) => {
                 const d = dist(club)
                 return <ClubTile key={club.id} club={club} openNow={isOpen(club)} distance={d !== null ? formatDistance(d) : null} compact section="tonight" />
               })}
-            </div>
+            </AutoScrollRow>
             {/* Pista visual de que hay más locales deslizando a la derecha (el móvil no siempre
                deja ver la barra de scroll). */}
             {tonight.list.length > 2 && (
               <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-night to-transparent sm:hidden" />
             )}
           </div>
-          {renderQuickLinks("scrollbar-none -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 sm:hidden")}
           <FeatureTicker placement="below" />
         </section>
+
+        {/* EXPLORA NOCTUA: puertas a mapa, plan, esenciales, metro y bus nocturno */}
+        <ExploreDoors />
+
+        {/* ¿QUÉ TE APETECE? un ambiente = una puerta a los locales donde suena */}
+        <StylesSection clubs={clubs} openMap={openMap} mounted={mounted} />
 
         <section className="mx-auto mt-10 max-w-7xl px-4 sm:px-6">
           <ReferralBanner />
@@ -591,7 +637,7 @@ export default function HomeClient({
 
           {activeTab === "near" && geo.error && <p className="mt-4 text-sm text-warn">{geo.error}</p>}
 
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
             {displayed.length === 0 ? (
               <p className="col-span-full py-12 text-center text-zinc-400">{t("home.noResults")}</p>
             ) : (
@@ -612,13 +658,21 @@ export default function HomeClient({
           </div>
         </section>
 
-        <EventsSection />
         <AreasSection />
 
         {/* Qué es Noctua — visible (antes estaba oculto solo para la verificación de Google) */}
-        <section className="mx-auto mt-20 max-w-3xl px-4 sm:px-6">
-          <h2 className="text-lg font-semibold">{t("home.about_title")}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-300">{t("home.about_text")}</p>
+        <section className="mx-auto mt-16 max-w-7xl px-4 sm:px-6" aria-labelledby="about-title">
+          <div className="relative overflow-hidden rounded-card border border-white/10 bg-surface p-6 sm:p-8">
+            <span aria-hidden="true" className="pointer-events-none absolute -left-12 -top-16 h-40 w-40 rounded-full bg-[#a855f7]/20 blur-3xl" />
+            <span aria-hidden="true" className="pointer-events-none absolute -bottom-16 -right-10 h-40 w-40 rounded-full bg-[#3b82ff]/20 blur-3xl" />
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-px"
+              style={{ background: "linear-gradient(90deg, transparent, #6cf2f2 25%, #3b82ff 50%, #a855f7 75%, transparent)" }}
+            />
+            <h2 id="about-title" className="relative font-display text-2xl sm:text-3xl">{t("home.about_title")}</h2>
+            <p className="relative mt-3 max-w-prose text-[15px] leading-relaxed text-zinc-300">{t("home.about_text")}</p>
+          </div>
         </section>
       </main>
 

@@ -60,7 +60,19 @@
     "statsEssentials": "essentiels à proximité",
     "openNowIn": "Ouvert maintenant à {zone}",
     "tonightIn": "Pour ce soir à {zone}",
-    "zonesLabel": "Choisir un quartier"
+    "zonesLabel": "Choisir un quartier",
+    "exploreTitle": "Explorer Noctua",
+    "exploreSub": "Tout ce qu'il te faut avant, pendant et après ta sortie",
+    "doorMapText": "Clubs, pharmacies et arrêts sur une seule carte",
+    "doorPlanText": "Dis-nous ce qui te tente et on te propose des adresses",
+    "doorEssentialsText": "Pharmacies, distributeurs et restauration ouverts la nuit",
+    "doorHomeTitle": "Rentrer chez toi",
+    "doorHomeText": "Métro et NitBus : choisis ta ligne et ton arrêt",
+    "doorMetro": "Métro",
+    "doorNitbus": "NitBus",
+    "stylesTitle": "Tu as envie de quoi ce soir ?",
+    "stylesSub": "Choisis une ambiance et on te montre où ça joue",
+    "searchTry": "Essaie avec"
   },
   "filters": {
     "all": "Tous"
@@ -109,7 +121,14 @@
     "withEmail": "Je préfère m'inscrire avec e-mail",
     "moreOptional": "Ajouter pays et genre (facultatif)",
     "showPassword": "Afficher le mot de passe",
-    "hidePassword": "Masquer le mot de passe"
+    "hidePassword": "Masquer le mot de passe",
+    "pwNeedLower": "une minuscule",
+    "pwNeedUpper": "une majuscule",
+    "pwNeedDigit": "un chiffre",
+    "pwNeedSymbol": "un symbole (par exemple ! ? # $)",
+    "error_password_sets": "Le mot de passe doit contenir {list}.",
+    "error_password_min": "Le mot de passe doit contenir au moins {n} caractères.",
+    "error_password_pwned": "Ce mot de passe est trop courant ou a fuité lors de piratages. Choisis-en un autre."
   },
   "clubs": {
     "title": "Clubs",
@@ -2085,5 +2104,26 @@
     "lost": "J'ai perdu mon téléphone ou mon portefeuille",
     "lostHint": "Bureaux des objets trouvés",
     "buttonNote": "Aide rapide si quelque chose tourne mal ce soir : pharmacie, urgences, taxi, toilettes ou police près de vous. Le 112 est à l'intérieur, en cas de gravité."
+  },
+  "metroPage": {
+    "back": "Toutes les lignes de métro",
+    "stopsCount": "{n} stations",
+    "findStop": "Chercher une station",
+    "noMatch": "Aucune station ne correspond à « {q} ».",
+    "nearestIs": "Ta station la plus proche : {name}, à {dist}.",
+    "nearSpotIs": "La station la plus proche de l’endroit que tu regardais : {name}, à {dist}.",
+    "tripStops": "{n} stations",
+    "tripStopOne": "1 station",
+    "segPickFrom": "Choisis la station de montée",
+    "segPickTo": "Choisis la station de descente",
+    "noStops": "Nous n’avons pas encore les stations de cette ligne.",
+    "officialNote": "Horaires, fréquences et coupures de service : consulte le site ou l’appli officielle de TMB. Les lignes L6, L7, L8 et L12 sont gérées par FGC.",
+    "title": "Métro de Barcelone",
+    "subtitle": "Les lignes L1 à L12 avec toutes leurs stations dans l’ordre. Choisis ta ligne ou cherche ta station.",
+    "findStopAll": "Cherche ta station (Catalunya, Sants…)",
+    "viewMap": "Voir les stations sur la carte",
+    "ctaTitle": "Toutes les stations de chaque ligne, dans l’ordre",
+    "ctaBody": "Choisis une ligne, parcours ses stations une à une et indique où tu montes et où tu descends.",
+    "seeLine": "Voir le parcours de la {code} et mon trajet"
   }
 }

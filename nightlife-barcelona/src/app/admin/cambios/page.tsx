@@ -127,7 +127,7 @@ export default function AdminChangesPage() {
   }
 
   const chip = (active: boolean) =>
-    `rounded-full px-3.5 py-1.5 text-xs font-bold transition ${active ? "bg-white text-black" : "border border-white/10 text-zinc-300 hover:bg-white/5"}`
+    `rounded-full px-3.5 py-1.5 text-xs font-bold transition ${active ? "bg-brand/20 text-white ring-1 ring-inset ring-brand/60" : "border border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"}`
 
   return (
     <AdminShell
@@ -153,7 +153,7 @@ export default function AdminChangesPage() {
         <select
           value={table}
           onChange={(e) => setTable(e.target.value)}
-          className="rounded-full border border-white/10 bg-black/40 px-3.5 py-1.5 text-xs font-bold text-white"
+          className="rounded-full border border-white/10 bg-night/70 px-3.5 py-1.5 text-xs font-bold text-white"
         >
           <option value="all">Todo tipo de ficha</option>
           {Object.entries(TABLES).map(([k, v]) => (
@@ -164,14 +164,14 @@ export default function AdminChangesPage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Buscar ficha o persona"
-          className="min-w-0 flex-1 rounded-full border border-white/10 bg-black/40 px-4 py-1.5 text-sm text-white outline-none sm:max-w-xs"
+          className="min-w-0 flex-1 rounded-full border border-white/10 bg-night/70 px-4 py-1.5 text-sm text-white outline-none sm:max-w-xs"
         />
       </div>
 
       {loading ? (
         <p className="text-sm text-zinc-400">Cargando…</p>
       ) : filtered.length === 0 ? (
-        <p className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center text-sm text-zinc-400">
+        <p className="rounded-card border border-white/10 bg-surface p-8 text-center text-sm text-zinc-400">
           {rows.length === 0 ? "Todavía no hay cambios registrados." : "Nada con estos filtros."}
         </p>
       ) : (
@@ -184,7 +184,7 @@ export default function AdminChangesPage() {
                 ? Object.entries(e.changes as Record<string, { antes: unknown; despues: unknown }>)
                 : []
             return (
-              <li key={e.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <li key={e.id} className="rounded-card border border-white/10 bg-surface p-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <p className="text-sm">
                     <span

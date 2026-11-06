@@ -165,7 +165,7 @@ export default function AdminClubSessionsPage() {
     )
   }
 
-  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-purple-500/50 transition placeholder:text-zinc-400"
+  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-brand/60 transition placeholder:text-zinc-400"
   const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1.5"
 
   const renderForm = (form: typeof emptyForm, setForm: (f: typeof emptyForm) => void) => (
@@ -245,7 +245,7 @@ export default function AdminClubSessionsPage() {
               <p className="py-12 text-center text-sm text-zinc-400">No hay sesiones {filterClub ? "para este club" : "todavía"}.</p>
             )}
             {visibleSessions.map((session) => (
-              <div key={session.id} className="rounded-card border border-white/10 bg-white/[0.03] p-6">
+              <div key={session.id} className="rounded-card border border-white/10 bg-surface p-6">
                 {editingId === session.id ? (
                   <div>
                     {renderForm(editSession, setEditSession)}

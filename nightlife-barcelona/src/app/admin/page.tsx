@@ -5,6 +5,8 @@ import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 import { EXTRA_FEATURES, CLOSED_FIELD, extrasFromRow } from "../../lib/extraFeatures"
 import AdminShell from "../../components/admin/AdminShell"
+import { StatTile } from "../../components/admin/ui"
+import { BadgeCheck, Eye, Flame, Wine } from "lucide-react"
 import { ADMIN_EMAIL } from "../../lib/admin"
 import { toast } from "../../components/ui/Toast"
 import CoordsField from "../../components/admin/CoordsField"
@@ -634,7 +636,7 @@ export default function AdminPage() {
     </main>
   )
 
-  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-purple-500/50 transition placeholder:text-zinc-400"
+  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-brand/60 transition placeholder:text-zinc-400"
   const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1.5"
 
   const renderClubForm = (form: ClubFormData, setForm: (f: ClubFormData) => void) => (
@@ -849,24 +851,17 @@ export default function AdminPage() {
     <AdminShell title="Clubs" subtitle="Gestiona las discotecas, pubs y bares musicales de Noctua.">
       <>
           {/* Stats */}
-          <div className="grid grid-cols-2 gap-4 mb-8 md:grid-cols-4">
-            {[
-              { label: "Total clubs", value: stats.total, color: "text-white" },
-              { label: "Visibles", value: stats.visible, color: "text-emerald-400" },
-              { label: "Verificados", value: stats.verified, color: "text-purple-400" },
-              { label: "Trending", value: stats.trending, color: "text-orange-400" },
-            ].map((stat) => (
-              <div key={stat.label} className="rounded-card border border-white/10 bg-white/[0.03] p-5 text-center">
-                <p className={`text-3xl font-black ${stat.color}`}>{stat.value}</p>
-                <p className="mt-1 text-xs text-zinc-400">{stat.label}</p>
-              </div>
-            ))}
+          <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+            <StatTile accent="violet" icon={Wine} label="Total clubs" value={stats.total} />
+            <StatTile accent="cyan" icon={Eye} label="Visibles" value={stats.visible} />
+            <StatTile accent="pink" icon={BadgeCheck} label="Verificados" value={stats.verified} />
+            <StatTile accent="coral" icon={Flame} label="Trending" value={stats.trending} />
           </div>
 
           {/* Add club toggle */}
           <div className="mb-6">
             <button onClick={() => { setShowAddForm((v) => !v); setEditingId(null) }}
-              className={`rounded-2xl px-6 py-4 text-sm font-black transition w-full md:w-auto ${showAddForm ? "bg-white text-black" : "bg-purple-500 text-white hover:bg-purple-400"}`}>
+              className={`rounded-2xl px-6 py-4 text-sm font-black transition w-full md:w-auto ${showAddForm ? "border border-white/15 bg-white/[0.06] text-white hover:bg-white/10" : "bg-purple-500 text-white hover:bg-purple-400"}`}>
               {showAddForm ? "✕ Cerrar formulario" : "+ Añadir club"}
             </button>
             {showAddForm && (
@@ -893,7 +888,7 @@ export default function AdminPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar clubs..."
-              className="flex-1 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 outline-none focus:border-purple-500/50 transition"
+              className="flex-1 rounded-card border border-white/10 bg-surface px-5 py-4 outline-none focus:border-brand/60 transition"
             />
             {/* Un solo desplegable con el estado y todas las etiquetas, cada una con cuántos clubs la tienen. */}
             <select
@@ -901,7 +896,7 @@ export default function AdminPage() {
               onChange={(e) => setFilter(e.target.value)}
               aria-label="Filtrar clubs"
               style={{ colorScheme: "dark" }}
-              className="rounded-2xl border border-white/10 bg-surface px-4 py-4 text-sm font-semibold text-white outline-none transition focus:border-purple-500/50 md:w-72"
+              className="rounded-2xl border border-white/10 bg-surface px-4 py-4 text-sm font-semibold text-white outline-none transition focus:border-brand/60 md:w-72"
             >
               <option value="all">Todos ({clubs.length})</option>
               <option value="visible">Visibles ({stats.visible})</option>
@@ -937,7 +932,7 @@ export default function AdminPage() {
           </div>
 
           {bulkOpen && (
-            <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <div className="mb-6 rounded-card border border-white/10 bg-surface p-5">
               <p className="text-sm font-bold text-white">Poner o quitar una etiqueta a muchos clubs de golpe</p>
               <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
                 <select
@@ -945,7 +940,7 @@ export default function AdminPage() {
                   onChange={(e) => setBulkTag(e.target.value)}
                   aria-label="Etiqueta"
                   style={{ colorScheme: "dark" }}
-                  className="rounded-xl border border-white/10 bg-surface px-4 py-3 text-sm font-semibold text-white outline-none focus:border-purple-500/50 md:w-64"
+                  className="rounded-xl border border-white/10 bg-surface px-4 py-3 text-sm font-semibold text-white outline-none focus:border-brand/60 md:w-64"
                 >
                   <option value="">Elige la etiqueta…</option>
                   {bulkGroups.map((g) => (
@@ -965,7 +960,7 @@ export default function AdminPage() {
                       type="button"
                       onClick={() => setBulkValue(v)}
                       aria-pressed={bulkValue === v}
-                      className={`rounded-lg px-4 py-2 text-sm font-bold transition ${bulkValue === v ? "bg-white text-black" : "text-zinc-300 hover:bg-white/5"}`}
+                      className={`rounded-lg px-4 py-2 text-sm font-bold transition ${bulkValue === v ? "bg-brand/25 text-white ring-1 ring-inset ring-brand/50" : "text-zinc-300 hover:bg-white/5"}`}
                     >
                       {label}
                     </button>
@@ -978,7 +973,7 @@ export default function AdminPage() {
                       type="button"
                       onClick={() => setBulkScope(v)}
                       aria-pressed={bulkScope === v}
-                      className={`rounded-lg px-4 py-2 text-sm font-bold transition ${bulkScope === v ? "bg-white text-black" : "text-zinc-300 hover:bg-white/5"}`}
+                      className={`rounded-lg px-4 py-2 text-sm font-bold transition ${bulkScope === v ? "bg-brand/25 text-white ring-1 ring-inset ring-brand/50" : "text-zinc-300 hover:bg-white/5"}`}
                     >
                       {label}
                     </button>
@@ -1024,7 +1019,7 @@ export default function AdminPage() {
             <div className="grid gap-4">
               {filteredClubs.map((club) => (
                 <div key={club.id} id={`club-${club.id}`}
-                  className={`rounded-card border p-5 transition ${club.hidden ? "border-white/5 bg-white/[0.01] opacity-50" : "border-white/10 bg-white/[0.03]"} ${editingId === club.id ? "!border-purple-500/40 !bg-purple-500/[0.04] !opacity-100" : ""}`}>
+                  className={`rounded-card border p-5 transition ${club.hidden ? "border-white/5 bg-white/[0.01] opacity-50" : "border-white/10 bg-surface"} ${editingId === club.id ? "!border-purple-500/40 !bg-purple-500/[0.04] !opacity-100" : ""}`}>
 
                   {editingId === club.id ? (
                     <div>

@@ -241,7 +241,7 @@ export default function AdminQualityPage() {
                 key={f.key || "all"}
                 onClick={() => setFilter(f.key)}
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  filter === f.key ? "bg-white text-black" : "border border-white/10 text-zinc-300 hover:bg-white/5"
+                  filter === f.key ? "bg-brand/20 text-white ring-1 ring-inset ring-brand/60" : "border border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"
                 }`}
               >
                 {f.label}
@@ -271,7 +271,7 @@ export default function AdminQualityPage() {
                   type="button"
                   onClick={() => setOrder(k)}
                   aria-pressed={order === k}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${order === k ? "bg-white text-black" : "border border-white/10 text-zinc-300 hover:bg-white/5"}`}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${order === k ? "bg-brand/20 text-white ring-1 ring-inset ring-brand/60" : "border border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"}`}
                 >
                   {label}
                 </button>

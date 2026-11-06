@@ -13,6 +13,7 @@ import BadgesAndChallenges from "@/components/gamification/BadgesAndChallenges"
 import NocOwl from "@/components/mascot/NocOwl"
 import { toDateLocale } from "../../lib/dateLocale"
 import { Compass, Crown, Flame } from "lucide-react"
+import { NightPage } from "@/components/ui/NightBackdrop"
 
 // Ventajas de cada nivel (textos en clubNoctua.*). Solo la insignia de perfil está activa de
 // verdad; el resto se irá habilitando y por eso lleva la etiqueta "Próximamente".
@@ -105,6 +106,7 @@ export default function ClubNoctuaPage() {
   return (
     <div className="flex min-h-screen flex-col bg-night text-ink">
       <Header />
+      <NightPage tone="violet">
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-16 pt-8 sm:pt-12">
         {enabled === null ? null : !showFullPage ? (
           <div className="py-16 text-center">
@@ -202,6 +204,7 @@ export default function ClubNoctuaPage() {
           </>
         )}
       </main>
+      </NightPage>
       <Footer />
       <BottomNav />
     </div>

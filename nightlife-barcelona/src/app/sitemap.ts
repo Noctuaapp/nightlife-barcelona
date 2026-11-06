@@ -7,6 +7,7 @@ import { zoneLinks, zoneSlugByName } from "../lib/zonePages"
 import { zoneOf } from "../lib/zones"
 import { EVENTS_HIDDEN } from "../lib/featureFlags"
 import { NIGHT_BUS_LINES } from "../lib/nightBuses"
+import { METRO_LINE_CODES } from "../lib/metroLines"
 
 const BASE_URL = "https://www.noctuaapp.com"
 
@@ -44,6 +45,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...Object.keys(NIGHT_BUS_LINES).map((code) => ({
       url: `${BASE_URL}/nitbus/${code}`,
       changeFrequency: "weekly" as const,
+      priority: 0.4,
+    })),
+    // Metro: portada y una página por línea, con sus estaciones en orden.
+    { url: `${BASE_URL}/metro`, changeFrequency: "monthly", priority: 0.5 },
+    ...METRO_LINE_CODES.map((code) => ({
+      url: `${BASE_URL}/metro/${code}`,
+      changeFrequency: "monthly" as const,
       priority: 0.4,
     })),
     { url: `${BASE_URL}/contact`, changeFrequency: "monthly", priority: 0.3 },

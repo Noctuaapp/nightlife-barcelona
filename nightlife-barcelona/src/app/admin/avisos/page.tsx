@@ -136,7 +136,7 @@ export default function AdminNoticesPage() {
   }
 
   const chip = (active: boolean) =>
-    `rounded-full px-3.5 py-1.5 text-xs font-bold transition ${active ? "bg-white text-black" : "border border-white/10 text-zinc-300 hover:bg-white/5"}`
+    `rounded-full px-3.5 py-1.5 text-xs font-bold transition ${active ? "bg-brand/20 text-white ring-1 ring-inset ring-brand/60" : "border border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"}`
 
   // Agrupados por día.
   const groups: { day: string; items: Notice[] }[] = []

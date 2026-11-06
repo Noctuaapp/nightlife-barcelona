@@ -233,7 +233,7 @@ export default function AdminAfluenciaPage() {
       subtitle="Qué días de la semana, del mes y qué meses hay más y menos gente en Noctua."
     >
       <div className="space-y-6">
-        <div className="rounded-card border border-white/10 bg-white/[0.03] p-4 text-sm leading-relaxed text-zinc-300">
+        <div className="rounded-card border border-white/10 bg-surface p-4 text-sm leading-relaxed text-zinc-300">
           Esto mide a la gente que usa Noctua, no a toda la ciudad. Y como Noctua crece, lo reciente pesa más: un mes puede salir alto solo
           porque había más usuarios. Para cada gráfica te digo cuántas noches hay detrás y cuánto fiarte.
         </div>
@@ -274,7 +274,7 @@ export default function AdminAfluenciaPage() {
               : `No se han podido cargar los datos (${error}).`}
           </div>
         ) : !current || current.total === 0 ? (
-          <p className="rounded-card border border-white/10 bg-white/[0.03] p-6 text-sm text-zinc-300">
+          <p className="rounded-card border border-white/10 bg-surface p-6 text-sm text-zinc-300">
             Todavía no hay datos de «{info.label}» en este periodo.
           </p>
         ) : (
@@ -284,7 +284,7 @@ export default function AdminAfluenciaPage() {
               {current.nights === 1 ? "noche observada" : "noches observadas"}, {fmtNum(current.total, 0)} {info.unit}-noche en total.
             </p>
             {charts.map((c) => (
-              <section key={c.kind} aria-labelledby={`af-${c.kind}`} className="rounded-card border border-white/10 bg-white/[0.03] p-5">
+              <section key={c.kind} aria-labelledby={`af-${c.kind}`} className="rounded-card border border-white/10 bg-surface p-5">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <h2 id={`af-${c.kind}`} className="text-lg font-semibold text-ink">

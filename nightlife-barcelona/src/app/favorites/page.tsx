@@ -16,6 +16,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { addDays, effectiveHoursStatus, effectiveOpenNow, nightDay } from "../../lib/scheduleNotices"
+import NightBackdrop from "../../components/ui/NightBackdrop"
 
 // Antes esta pantalla tenía un sistema de "listas" (carpetas para organizar favoritos) y una
 // nota de texto por favorito. Tras probarlo, no se le veía suficiente utilidad como para
@@ -236,7 +237,8 @@ export default function FavoritesPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-night pb-40 text-ink">
+      <main className="relative isolate min-h-screen bg-night pb-40 text-ink">
+        <NightBackdrop tone={"pink"} />
         <section className="mx-auto max-w-3xl px-4 pt-8 sm:pt-12">
           <h1 className="font-display text-[2.1rem] leading-[1.06] sm:text-5xl">{t("favoritesPage.title")}</h1>
           <p className="mt-3 max-w-xl text-base text-zinc-300">{t("favoritesPage.subtitle")}</p>

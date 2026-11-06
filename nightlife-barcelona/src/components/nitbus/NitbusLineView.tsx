@@ -6,14 +6,20 @@ import { ChevronLeft, LocateFixed, Navigation, Search, Map as MapIcon } from "lu
 import Header from "../layout/Header"
 import Footer from "../layout/Footer"
 import BottomNav from "../layout/BottomNav"
-import { NitbusBadge } from "../ui/TransitBadge"
+import { MetroLineBadge, NitbusBadge } from "../ui/TransitBadge"
 import StopPicker from "./StopPicker"
 import { useLanguage } from "../../context/LanguageContext"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
-import { NITBUS_PLATE, NITBUS_RAIL } from "../../lib/transitColors"
+import { metroLineColor, NITBUS_PLATE, NITBUS_RAIL } from "../../lib/transitColors"
 import { alightOptions, directionStats, lineStopNames, nearestStop, normStopName, planTrips, resolveSegment, type NbLine, type NbStop } from "../../lib/nitbusRoutes"
+import { NightPage } from "../ui/NightBackdrop"
 
+// Esta misma vista sirve para el metro (06/11/2026, kind="metro"): una línea de metro se carga con el mismo
+// formato (lib/metroLines.ts) y se comporta igual: estaciones en orden, transbordos, «Cerca de mí» y
+// «Mi trayecto». Cambian la insignia, el color de la barra, algunos textos («estaciones» en vez de
+// «paradas») y que no se estima el tiempo (eso era una suposición para el autobús nocturno).
+//
 // Esquema de una línea de Nitbus (31/10/2026): una barra vertical con todas sus paradas en orden,
 // cabeceras marcadas, transbordos con otras líneas nocturnas y «parada más cercana». Sustituye al
 // mapa con mil chinchetas, donde no se veía nada. En vertical porque en el móvil el plano horizontal
@@ -24,7 +30,16 @@ type Props = {
   line: NbLine | null
   route: { from: string; to: string | null; note: string | null } | null
   allCodes: string[]
+  kind?: "nitbus" | "metro"
+  // Sustituye al recorrido de debajo del título (en las líneas de metro con dos tramos hay dos).
+  subtitle?: string
 }
+
+// Frases que en el metro dicen «estación» en vez de «parada» (están en el bloque metroPage del idioma; el resto se comparte con el Nitbus).
+const METRO_OWN_TEXT = new Set([
+  "back", "stopsCount", "findStop", "noMatch", "nearestIs", "nearSpotIs", "tripStops", "tripStopOne",
+  "segPickFrom", "segPickTo", "noStops", "officialNote",
+])
 
 // Un punto del mapa (el sitio que se estaba mirando o la posición de la persona) y la parada de
 // esta línea que le queda más cerca. Pueden marcarse las dos a la vez (31/10/2026): antes, al pulsar
@@ -33,8 +48,10 @@ type Point = { lat: number; lon: number }
 type Focus = { dir: number; index: number; tick: number }
 type Nearest = { index: number; meters: number }
 
-// Una parada con tantas líneas se pinta como nudo de transbordo (Pl. Catalunya, Sants, etc.).
+// Una parada con tantas líneas se pinta como nudo de transbordo (Pl. Catalunya, Sants, etc.). En el metro
+// basta con enlazar con otras dos líneas (tres en total).
 const HUB_MIN_LINES = 4
+const HUB_MIN_LINES_METRO = 2
 const MAX_TRANSFER_BADGES = 12
 // Alinea el punto con la primera línea del nombre: padding superior del renglón (0.75rem) + la
 // mitad de su altura de línea (leading-6 = 1.5rem).
@@ -50,17 +67,26 @@ function pickNearest(line: NbLine, lat: number, lon: number): { dir: number; ind
   return best
 }
 
-function StopDot({ kind }: { kind: "terminal" | "hub" | "stop" }) {
+function StopDot({ kind, accent, rim }: { kind: "terminal" | "hub" | "stop"; accent: string; rim: string }) {
   const base = "absolute left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full"
   if (kind === "terminal")
-    return <span aria-hidden="true" className={`${base} h-5 w-5 ring-4 ring-night`} style={{ top: DOT_TOP, background: NITBUS_PLATE.fg }} />
+    return <span aria-hidden="true" className={`${base} h-5 w-5 ring-4 ring-night`} style={{ top: DOT_TOP, background: accent }} />
   if (kind === "hub")
     return <span aria-hidden="true" className={`${base} h-4 w-4 border-[3px] border-white bg-night ring-4 ring-night`} style={{ top: DOT_TOP }} />
-  return <span aria-hidden="true" className={`${base} h-3 w-3 border-2 bg-night ring-4 ring-night`} style={{ top: DOT_TOP, borderColor: "#9db0ff" }} />
+  return <span aria-hidden="true" className={`${base} h-3 w-3 border-2 bg-night ring-4 ring-night`} style={{ top: DOT_TOP, borderColor: rim }} />
 }
 
-export default function NitbusLineView({ code, line, route, allCodes }: Props) {
+export default function NitbusLineView({ code, line, route, allCodes, kind = "nitbus", subtitle }: Props) {
   const { t } = useLanguage()
+  const isMetro = kind === "metro"
+  // Texto de la página: el del metro si lo tiene, si no el compartido (bloque nitbusPage).
+  const tl = (key: string) => t(isMetro && METRO_OWN_TEXT.has(key) ? `metroPage.${key}` : `nitbusPage.${key}`)
+  const lineColor = isMetro ? metroLineColor(code) : null
+  const railColor = lineColor ? lineColor.bg : NITBUS_RAIL
+  const dotAccent = lineColor ? lineColor.bg : NITBUS_PLATE.fg
+  const dotRim = lineColor ? lineColor.bg : "#9db0ff"
+  const basePath = isMetro ? "/metro" : "/nitbus"
+  const modeName = isMetro ? "Metro" : "Nitbus"
   const geo = useGeolocation({ precise: true })
   const [dir, setDir] = useState(0)
   const [query, setQuery] = useState("")
@@ -184,30 +210,43 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
   const trips = useMemo(() => (line && me && spot ? planTrips(line, me, spot, distanceInMeters) : []), [line, me, spot])
   // Tiempo aproximado de punta a punta del sentido que se está viendo (solo con el recorrido en orden).
   const dirStats = useMemo(() => (ordered && stops.length > 1 ? directionStats(stops, distanceInMeters) : null), [ordered, stops])
-  const approxMinutes = !filtering && !seg && dirStats?.minutes != null ? dirStats.minutes : null
+  const approxMinutes = !isMetro && !filtering && !seg && dirStats?.minutes != null ? dirStats.minutes : null
 
-  const title = `Nitbus ${code}`
+  const title = `${modeName} ${code}`
 
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
+      <NightPage tone="violet">
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:py-12">
-        <Link href="/nitbus" className="inline-flex items-center gap-1 text-sm font-semibold text-zinc-300 transition hover:text-ink">
-          <ChevronLeft size={16} aria-hidden="true" /> {t("nitbusPage.back")}
+        <Link href={basePath} className="inline-flex items-center gap-1 text-sm font-semibold text-zinc-300 transition hover:text-ink">
+          <ChevronLeft size={16} aria-hidden="true" /> {tl("back")}
         </Link>
 
         <header className="mt-5">
           <div className="flex items-center gap-3">
-            <span
-              aria-hidden="true"
-              className="inline-flex h-11 items-center rounded-lg px-3 text-2xl font-black tracking-tight"
-              style={{ background: NITBUS_PLATE.bg, color: NITBUS_PLATE.fg }}
-            >
-              {code}
-            </span>
+            {lineColor ? (
+              <span
+                aria-hidden="true"
+                className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-black ${code.length > 2 ? "text-xl" : "text-2xl"}`}
+                style={{ background: lineColor.bg, color: lineColor.fg }}
+              >
+                {code.replace(/^L/i, "")}
+              </span>
+            ) : (
+              <span
+                aria-hidden="true"
+                className="inline-flex h-11 items-center rounded-lg px-3 text-2xl font-black tracking-tight"
+                style={{ background: NITBUS_PLATE.bg, color: NITBUS_PLATE.fg }}
+              >
+                {code}
+              </span>
+            )}
             <h1 className="font-display text-3xl leading-tight text-ink sm:text-4xl">{title}</h1>
           </div>
-          {route && (
+          {subtitle ? (
+            <p className="mt-3 text-base leading-snug text-zinc-200">{subtitle}</p>
+          ) : route ? (
             <p className="mt-3 text-base leading-snug text-zinc-200">
               <span className="font-semibold">{route.from}</span>
               {route.to && (
@@ -218,30 +257,30 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
               )}
               {route.note && <span className="text-zinc-400"> · {route.note}</span>}
             </p>
-          )}
-          <p className="mt-1 text-sm text-zinc-400">{t("essentialsPage.nitbusHours")}</p>
+          ) : null}
+          <p className="mt-1 text-sm text-zinc-400">{t(isMetro ? "essentialsPage.metroRules" : "essentialsPage.nitbusHours")}</p>
         </header>
 
         {!line || stops.length === 0 ? (
           <div className="mt-8 rounded-card border border-white/10 bg-surface p-6">
-            <p className="text-base leading-relaxed text-zinc-200">{t("nitbusPage.noStops")}</p>
+            <p className="text-base leading-relaxed text-zinc-200">{tl("noStops")}</p>
             <Link
-              href={`/essentials/nitbus?line=${code}`}
+              href={`/essentials/${kind}?line=${code}`}
               className="btn-pill btn-secondary mt-4 inline-flex items-center gap-2 px-5 py-3 text-sm"
             >
-              <MapIcon size={16} aria-hidden="true" /> {t("nitbusPage.viewMap")}
+              <MapIcon size={16} aria-hidden="true" /> {tl("viewMap")}
             </Link>
           </div>
         ) : (
           <>
             {line && !ordered && (
               <p className="mt-6 rounded-card border border-warn/40 bg-warn/[0.08] p-4 text-sm leading-relaxed text-zinc-100">
-                {t("nitbusPage.orderPending")}
+                {tl("orderPending")}
               </p>
             )}
 
             {directions.length > 1 && (
-              <div role="tablist" aria-label={t("nitbusPage.directionLabel")} className="mt-6 grid grid-cols-2 gap-2">
+              <div role="tablist" aria-label={tl("directionLabel")} className="mt-6 grid grid-cols-2 gap-2">
                 {directions.map((d, i) => (
                   <button
                     key={i}
@@ -256,7 +295,7 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                       dir === i ? "border-white bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
                     }`}
                   >
-                    <span className="block text-xs font-normal opacity-80">{t("nitbusPage.towardLabel")}</span>
+                    <span className="block text-xs font-normal opacity-80">{tl("towardLabel")}</span>
                     <span className="block truncate">{d.to}</span>
                   </button>
                 ))}
@@ -264,23 +303,23 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
             )}
 
             {ordered && (
-              <section aria-label={t("nitbusPage.segTitle")} className="mt-4 rounded-card border border-white/10 bg-surface p-4">
-                <h2 className="text-sm font-semibold text-ink">{t("nitbusPage.segTitle")}</h2>
+              <section aria-label={tl("segTitle")} className="mt-4 rounded-card border border-white/10 bg-surface p-4">
+                <h2 className="text-sm font-semibold text-ink">{tl("segTitle")}</h2>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <StopPicker
-                    label={t("nitbusPage.segFrom")}
-                    placeholder={t("nitbusPage.segPickFrom")}
-                    searchPlaceholder={t("nitbusPage.findStop")}
-                    noMatch={(x) => t("nitbusPage.noMatch").replace("{q}", x)}
+                    label={tl("segFrom")}
+                    placeholder={tl("segPickFrom")}
+                    searchPlaceholder={tl("findStop")}
+                    noMatch={(x) => tl("noMatch").replace("{q}", x)}
                     value={fromName}
                     options={fromOptions}
                     onChange={pickFrom}
                   />
                   <StopPicker
-                    label={t("nitbusPage.segTo")}
-                    placeholder={t("nitbusPage.segPickTo")}
-                    searchPlaceholder={t("nitbusPage.findStop")}
-                    noMatch={(x) => t("nitbusPage.noMatch").replace("{q}", x)}
+                    label={tl("segTo")}
+                    placeholder={tl("segPickTo")}
+                    searchPlaceholder={tl("findStop")}
+                    noMatch={(x) => tl("noMatch").replace("{q}", x)}
                     value={toName}
                     options={toOptions}
                     onChange={pickTo}
@@ -290,26 +329,26 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                 {seg && current && (
                   <div aria-live="polite" className="mt-3 rounded-ctl border border-brand/40 bg-brand/[0.08] p-3">
                     <p className="text-sm text-ink">
-                      {t("nitbusPage.tripBoard")
+                      {tl("tripBoard")
                         .replace("{from}", `«${stops[seg.from].name}»`)
                         .replace("{end}", `«${stops[seg.to].name}»`)}
                     </p>
                     <p className="mt-0.5 text-xs text-zinc-300">
                       {[
-                        t("nitbusPage.tripDirection").replace("{to}", current.to),
-                        seg.stops === 1 ? t("nitbusPage.tripStopOne") : t("nitbusPage.tripStops").replace("{n}", String(seg.stops)),
-                        seg.minutes != null ? t("nitbusPage.tripMin").replace("{min}", String(seg.minutes)) : null,
+                        tl("tripDirection").replace("{to}", current.to),
+                        seg.stops === 1 ? tl("tripStopOne") : tl("tripStops").replace("{n}", String(seg.stops)),
+                        !isMetro && seg.minutes != null ? tl("tripMin").replace("{min}", String(seg.minutes)) : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")}
                     </p>
-                    {seg.minutes != null && <p className="mt-1 text-xs text-zinc-500">{t("nitbusPage.estimateNote")}</p>}
+                    {!isMetro && seg.minutes != null && <p className="mt-1 text-xs text-zinc-500">{tl("estimateNote")}</p>}
                     <button
                       type="button"
                       onClick={clearSeg}
                       className="mt-2 text-sm font-semibold text-brand-soft underline underline-offset-4 hover:text-ink"
                     >
-                      {t("nitbusPage.segClear")}
+                      {tl("segClear")}
                     </button>
                   </div>
                 )}
@@ -322,8 +361,8 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t("nitbusPage.findStop")}
-                  aria-label={t("nitbusPage.findStop")}
+                  placeholder={tl("findStop")}
+                  aria-label={tl("findStop")}
                   className="w-full rounded-ctl border border-white/10 bg-surface py-3 pl-11 pr-4 text-sm text-ink outline-none placeholder:text-zinc-500 focus:border-brand/50"
                 />
               </div>
@@ -333,7 +372,7 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                 className="btn-pill btn-secondary inline-flex shrink-0 items-center gap-2 px-4 py-3 text-sm disabled:opacity-60"
               >
                 <LocateFixed size={16} aria-hidden="true" />
-                {geo.locating ? t("nitbusPage.locating") : t("nitbusPage.nearest")}
+                {geo.locating ? tl("locating") : tl("nearest")}
               </button>
             </div>
 
@@ -352,7 +391,7 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                     >
                       <span aria-hidden="true" className="mt-1 h-3 w-3 shrink-0 rounded-full bg-warn" />
                       <span>
-                        {t("nitbusPage.nearSpotIs")
+                        {tl("nearSpotIs")
                           .replace("{name}", current.stops[spotHi.index].name)
                           .replace("{dist}", formatDistance(spotHi.meters))}
                       </span>
@@ -369,7 +408,7 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                     >
                       <span aria-hidden="true" className="mt-1 h-3 w-3 shrink-0 rounded-full bg-brand" />
                       <span>
-                        {t("nitbusPage.nearestIs")
+                        {tl("nearestIs")
                           .replace("{name}", current.stops[meHi.index].name)
                           .replace("{dist}", formatDistance(meHi.meters))}
                       </span>
@@ -379,18 +418,18 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
               )}
               {trips.length > 0 && (
                 <div className="mt-3 rounded-card border border-white/15 bg-white/[0.03] p-3">
-                  <p className="text-sm font-semibold text-ink">{t("nitbusPage.tripTitle").replace("{code}", code)}</p>
+                  <p className="text-sm font-semibold text-ink">{tl("tripTitle").replace("{code}", code)}</p>
                   <div className="mt-2 flex flex-col gap-2">
                     {trips.map((tr) => {
                       const dr = directions[tr.dir]
-                      const board = t("nitbusPage.tripBoard")
+                      const board = tl("tripBoard")
                         .replace("{from}", `«${dr.stops[tr.from].name}»`)
                         .replace("{end}", `«${dr.stops[tr.to].name}»`)
-                      const stopsLabel = tr.stops === 1 ? t("nitbusPage.tripStopOne") : t("nitbusPage.tripStops").replace("{n}", String(tr.stops))
+                      const stopsLabel = tr.stops === 1 ? tl("tripStopOne") : tl("tripStops").replace("{n}", String(tr.stops))
                       const meta = [
-                        t("nitbusPage.tripDirection").replace("{to}", dr.to),
+                        tl("tripDirection").replace("{to}", dr.to),
                         stopsLabel,
-                        tr.minutes != null ? t("nitbusPage.tripMin").replace("{min}", String(tr.minutes)) : null,
+                        !isMetro && tr.minutes != null ? tl("tripMin").replace("{min}", String(tr.minutes)) : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")
@@ -408,7 +447,7 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                           }`}
                         >
                           <span className="block text-xs font-semibold text-zinc-400">
-                            {t(tr.kind === "go" ? "nitbusPage.tripGo" : "nitbusPage.tripBack")}
+                            {tl(tr.kind === "go" ? "tripGo" : "tripBack")}
                           </span>
                           <span className="block text-sm text-ink">{board}</span>
                           <span className="block text-xs text-zinc-300">{meta}</span>
@@ -423,16 +462,16 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
             {!seg && (
               <>
                 <p className="mt-6 text-sm text-zinc-400">
-                  {t("nitbusPage.stopsCount").replace("{n}", String(filtering ? rows.length : stops.length))}
+                  {tl("stopsCount").replace("{n}", String(filtering ? rows.length : stops.length))}
                   {current?.to && !filtering && ordered ? ` · ${current.from} → ${current.to}` : ""}
-                  {approxMinutes != null ? ` · ${t("nitbusPage.approxTime").replace("{min}", String(approxMinutes))}` : ""}
+                  {approxMinutes != null ? ` · ${tl("approxTime").replace("{min}", String(approxMinutes))}` : ""}
                 </p>
-                {approxMinutes != null && <p className="mt-1 text-xs text-zinc-500">{t("nitbusPage.estimateNote")}</p>}
+                {approxMinutes != null && <p className="mt-1 text-xs text-zinc-500">{tl("estimateNote")}</p>}
               </>
             )}
 
             {rows.length === 0 ? (
-              <p className="mt-4 text-base text-zinc-300">{t("nitbusPage.noMatch").replace("{q}", query)}</p>
+              <p className="mt-4 text-base text-zinc-300">{tl("noMatch").replace("{q}", query)}</p>
             ) : (
               <ol className={seg ? "mt-5" : "mt-3"}>
                 {rows.map(({ s, index }) => {
@@ -440,7 +479,7 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                   const isFirst = index === (seg ? seg.from : 0)
                   const isLast = index === (seg ? seg.to : stops.length - 1)
                   const terminal = ordered && (isFirst || isLast)
-                  const hub = !terminal && s.others.length >= HUB_MIN_LINES
+                  const hub = !terminal && s.others.length >= (isMetro ? HUB_MIN_LINES_METRO : HUB_MIN_LINES)
                   const isSpot = spotHi?.index === index
                   const isMe = meHi?.index === index
                   const isNamed = !!named && named.dir === dir && named.index === index
@@ -459,13 +498,13 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                           <span
                             className="absolute left-1/2 w-1.5 -translate-x-1/2"
                             style={{
-                              background: NITBUS_RAIL,
+                              background: railColor,
                               top: railTop ? 0 : DOT_TOP,
                               bottom: railBottom ? 0 : `calc(100% - ${DOT_TOP})`,
                             }}
                           />
                         )}
-                        <StopDot kind={terminal ? "terminal" : hub ? "hub" : "stop"} />
+                        <StopDot kind={terminal ? "terminal" : hub ? "hub" : "stop"} accent={dotAccent} rim={dotRim} />
                       </div>
                       <div className="min-w-0 flex-1 py-3">
                         <p
@@ -477,22 +516,22 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                         </p>
                         {terminal &&
                           (seg ? (
-                            <p className="text-xs font-semibold text-brand-soft">{isFirst ? t("nitbusPage.segBoardHere") : t("nitbusPage.segAlightHere")}</p>
+                            <p className="text-xs font-semibold text-brand-soft">{isFirst ? tl("segBoardHere") : tl("segAlightHere")}</p>
                           ) : (
-                            <p className="text-xs text-zinc-400">{isFirst ? t("nitbusPage.start") : t("nitbusPage.end")}</p>
+                            <p className="text-xs text-zinc-400">{isFirst ? tl("start") : tl("end")}</p>
                           ))}
                         {isSpot && spotHi && (
-                          <p className="text-xs font-semibold text-warn">{t("nitbusPage.spotHere").replace("{dist}", formatDistance(spotHi.meters))}</p>
+                          <p className="text-xs font-semibold text-warn">{tl("spotHere").replace("{dist}", formatDistance(spotHi.meters))}</p>
                         )}
                         {isMe && meHi && (
-                          <p className="text-xs font-semibold text-brand-soft">{t("nitbusPage.youAreHere").replace("{dist}", formatDistance(meHi.meters))}</p>
+                          <p className="text-xs font-semibold text-brand-soft">{tl("youAreHere").replace("{dist}", formatDistance(meHi.meters))}</p>
                         )}
                         {s.others.length > 0 && (
                           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                            <span className="text-xs text-zinc-400">{t("nitbusPage.transfer")}</span>
+                            <span className="text-xs text-zinc-400">{tl("transfer")}</span>
                             {s.others.slice(0, MAX_TRANSFER_BADGES).map((c) => (
-                              <Link key={c} href={`/nitbus/${c}?stop=${encodeURIComponent(s.name)}`} aria-label={`Nitbus ${c}`}>
-                                <NitbusBadge code={c} />
+                              <Link key={c} href={`${basePath}/${c}?stop=${encodeURIComponent(s.name)}`} aria-label={`${modeName} ${c}`}>
+                                {isMetro ? <MetroLineBadge code={c} /> : <NitbusBadge code={c} />}
                               </Link>
                             ))}
                             {s.others.length > MAX_TRANSFER_BADGES && (
@@ -506,8 +545,8 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
                           href={`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}&travelmode=walking`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          title={t("nitbusPage.directions")}
-                          aria-label={`${t("nitbusPage.directions")}: ${s.name}`}
+                          title={tl("directions")}
+                          aria-label={`${tl("directions")}: ${s.name}`}
                           className="mt-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-zinc-500 transition hover:bg-white/10 hover:text-ink"
                         >
                           <Navigation size={16} aria-hidden="true" />
@@ -520,28 +559,29 @@ export default function NitbusLineView({ code, line, route, allCodes }: Props) {
             )}
 
             <Link
-              href={`/essentials/nitbus?line=${code}`}
+              href={`/essentials/${kind}?line=${code}`}
               className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-brand-soft underline underline-offset-4 hover:text-ink"
             >
-              <MapIcon size={16} aria-hidden="true" /> {t("nitbusPage.viewMapLine").replace("{code}", code)}
+              <MapIcon size={16} aria-hidden="true" /> {tl("viewMapLine").replace("{code}", code)}
             </Link>
           </>
         )}
 
-        <section className="mt-10 border-t border-white/10 pt-6" aria-label={t("nitbusPage.otherLines")}>
-          <h2 className="text-base font-semibold text-ink">{t("nitbusPage.otherLines")}</h2>
+        <section className="mt-10 border-t border-white/10 pt-6" aria-label={tl("otherLines")}>
+          <h2 className="text-base font-semibold text-ink">{tl("otherLines")}</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {allCodes
               .filter((c) => c !== code)
               .map((c) => (
-                <Link key={c} href={`/nitbus/${c}`} aria-label={`Nitbus ${c}`} className="rounded-md p-0.5 transition hover:ring-2 hover:ring-white/60">
-                  <NitbusBadge code={c} size="md" />
+                <Link key={c} href={`${basePath}/${c}`} aria-label={`${modeName} ${c}`} className={`${isMetro ? "rounded-full" : "rounded-md"} p-0.5 transition hover:ring-2 hover:ring-white/60`}>
+                  {isMetro ? <MetroLineBadge code={c} size="md" /> : <NitbusBadge code={c} size="md" />}
                 </Link>
               ))}
           </div>
-          <p className="mt-5 text-xs leading-relaxed text-zinc-400">{t("nitbusPage.officialNote")}</p>
+          <p className="mt-5 text-xs leading-relaxed text-zinc-400">{tl("officialNote")}</p>
         </section>
       </main>
+      </NightPage>
       <Footer />
       <BottomNav />
     </div>

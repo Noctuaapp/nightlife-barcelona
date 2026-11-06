@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabase"
 import { fetchAllPages } from "../../lib/fetchAll"
+import { Activity, Download } from "lucide-react"
+import { BTN_GHOST, Panel, SectionTitle, StatTile } from "./ui"
 
 // Estado del sistema y copias de seguridad (25/10/2026, en Ajustes y herramientas).
 //
@@ -112,7 +114,7 @@ function StorageCleaner() {
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-xs">
+    <div className="rounded-ctl border border-white/10 bg-white/[0.03] p-3 text-xs">
       {preview ? (
         preview.count === 0 ? (
           <p className="text-emerald-300">No hay fotos sin usar. Todo lo que ocupa espacio se está usando.</p>
@@ -174,9 +176,9 @@ export function SystemStatus() {
   ]
 
   return (
-    <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-      <h2 className="text-base font-black">Estado del sistema</h2>
-      <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <Panel className="mb-6">
+      <SectionTitle icon={Activity}>Estado del sistema</SectionTitle>
+      <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-4">
           <Meter label="Base de datos" used={Number(s.db_mb || 0)} limit={DB_LIMIT_MB} unit="MB" />
           <Meter label="Fotos y archivos" used={Math.round(storageMb)} limit={STORAGE_LIMIT_MB} unit="MB" />
@@ -207,7 +209,7 @@ export function SystemStatus() {
                 <div
                   key={d}
                   title={`${d}: ${n}`}
-                  className={`flex-1 rounded-t ${n >= GOOGLE_DAILY_LIMIT ? "bg-amber-400" : "bg-purple-400/70"}`}
+                  className={`flex-1 rounded-t ${n >= GOOGLE_DAILY_LIMIT ? "bg-amber-400" : "bg-brand/70"}`}
                   style={{ height: `${Math.max(4, (n / maxCalls) * 100)}%`, opacity: n ? 1 : 0.25 }}
                 />
               )
@@ -237,25 +239,13 @@ export function SystemStatus() {
         </div>
       </div>
 
-      <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-white/10 pt-4 text-sm sm:grid-cols-4">
-        <div>
-          <dt className="text-xs text-zinc-500">Usuarios</dt>
-          <dd className="font-bold tabular-nums">{s.users ?? "—"} <span className="text-xs font-normal text-zinc-500">(+{s.users_7d ?? 0} esta semana)</span></dd>
-        </div>
-        <div>
-          <dt className="text-xs text-zinc-500">Clubs publicados / ocultos</dt>
-          <dd className="font-bold tabular-nums">{s.clubs_visible ?? "—"} / {s.clubs_hidden ?? "—"}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-zinc-500">Clubs con dueño vinculado</dt>
-          <dd className="font-bold tabular-nums">{s.clubs_owned ?? "—"}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-zinc-500">Registros de analítica</dt>
-          <dd className="font-bold tabular-nums">{(s.analytics_rows ?? 0).toLocaleString("es-ES")}</dd>
-        </div>
-      </dl>
-    </div>
+      <div className="mt-5 grid grid-cols-2 gap-3 border-t border-white/10 pt-5 sm:grid-cols-4">
+        <StatTile accent="violet" label="Usuarios" value={s.users ?? "—"} note={`+${s.users_7d ?? 0} esta semana`} />
+        <StatTile accent="pink" label="Clubs publicados / ocultos" value={`${s.clubs_visible ?? "—"} / ${s.clubs_hidden ?? "—"}`} />
+        <StatTile accent="cyan" label="Clubs con dueño vinculado" value={s.clubs_owned ?? "—"} />
+        <StatTile accent="coral" label="Registros de analítica" value={(s.analytics_rows ?? 0).toLocaleString("es-ES")} />
+      </div>
+    </Panel>
   )
 }
 
@@ -307,9 +297,9 @@ export function DataExport() {
   }
 
   return (
-    <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-      <h2 className="text-base font-black">Copia de seguridad</h2>
-      <p className="mt-1 text-sm text-zinc-400">
+    <Panel className="mt-6">
+      <SectionTitle icon={Download}>Copia de seguridad</SectionTitle>
+      <p className="mt-3 text-sm text-zinc-400">
         Descarga los datos en CSV (se abren con Excel o Google Sheets). Conviene hacerlo una vez al mes y guardarlo fuera de Supabase.
         El de usuarios lleva emails: guárdalo en un sitio privado.
       </p>
@@ -320,12 +310,13 @@ export function DataExport() {
             type="button"
             onClick={() => download(e)}
             disabled={busy !== null}
-            className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/10 disabled:opacity-50"
+            className={`inline-flex items-center gap-2 ${BTN_GHOST}`}
           >
-            {busy === e.key ? "Preparando…" : `⬇ ${e.label}`}
+            <Download size={14} aria-hidden="true" />
+            {busy === e.key ? "Preparando…" : e.label}
           </button>
         ))}
       </div>
-    </div>
+    </Panel>
   )
 }

@@ -9,6 +9,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import NocOwl from "../../components/mascot/NocOwl"
 import { logError } from "../../lib/log"
 import { renderWithLinks } from "../../lib/legalText"
+import NightBackdrop from "../../components/ui/NightBackdrop"
 
 // Tipos de consulta que acepta el formulario. El enlace puede traer ?type=...; si el valor no es
 // uno de estos se ignora (antes cualquier texto de la dirección acababa guardado como "tipo").
@@ -131,7 +132,8 @@ export default function ContactPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-night pb-40 text-ink">
+      <main className="relative isolate min-h-screen bg-night pb-40 text-ink">
+        <NightBackdrop tone={"violet"} />
 
         {/* Hero */}
         <section className="relative overflow-hidden px-4 pt-14 pb-16">

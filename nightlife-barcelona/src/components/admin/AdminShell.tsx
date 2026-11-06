@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
+import { ACCENT, AccentContext, type Accent } from "./ui"
 
 // Rediseño del admin (24/10/2026, tras el análisis completo del panel). Antes: 13 pestañas en una
 // sola fila horizontal que había que deslizar, sin orden, con dos pantallas que existían pero no
@@ -21,12 +22,16 @@ import { SECTION_ICONS } from "../../lib/sectionIcons"
 //     directamente en el menú, visibles desde cualquier pantalla del admin.
 //   - (25/10/2026) Avisos: bandeja con todo lo importante que pasa (campana arriba en el móvil).
 //   - (30/10/2026) Buzón de propietarios: contador de mensajes de dueños sin leer.
+//   - (06/11/2026) Mismo diseño que el Resumen en todo el admin: cada sección del menú tiene su acento
+//     (General violeta, Contenido rosa, Comunidad cian, Datos coral), el icono de la pantalla activa se
+//     tiñe de ese color y la cabecera de cada pantalla lleva su icono y un brillo suave del acento.
 type NavItem = { href: string; label: string; icon: LucideIcon; badge?: "messages" | "reports" | "notices" | "owners" }
-type NavGroup = { label: string; items: NavItem[] }
+type NavGroup = { label: string; accent: Accent; items: NavItem[] }
 
 const ADMIN_NAV: NavGroup[] = [
   {
     label: "General",
+    accent: "violet",
     items: [
       { href: "/admin/dashboard", label: "Resumen", icon: LayoutDashboard },
       { href: "/admin/avisos", label: "Avisos", icon: Bell, badge: "notices" },
@@ -36,6 +41,7 @@ const ADMIN_NAV: NavGroup[] = [
     // Las secciones van en el mismo orden que la web (Clubs, Eventos, Esenciales) y cada una lleva pegadas las
     // pantallas que dependen de ella.
     label: "Contenido",
+    accent: "pink",
     items: [
       { href: "/admin", label: "Clubs", icon: SECTION_ICONS.clubs },
       { href: "/admin/club-sessions", label: "Sesiones semanales", icon: Repeat },
@@ -52,6 +58,7 @@ const ADMIN_NAV: NavGroup[] = [
     // Primero las personas (cuentas y lo que hacen), luego lo que mandan (mensajes y buzón), luego la moderación
     // y por último las valoraciones.
     label: "Comunidad",
+    accent: "cyan",
     items: [
       { href: "/admin/users", label: "Usuarios", icon: Users },
       { href: "/admin/actividad", label: "Actividad por usuario", icon: Activity },
@@ -65,6 +72,7 @@ const ADMIN_NAV: NavGroup[] = [
   {
     // Datos agregados, de lo que pasa en la web a lo que se puede enseñar a clubs y compradores de datos.
     label: "Datos",
+    accent: "coral",
     items: [
       { href: "/admin/visitas", label: "Visitas", icon: Footprints },
       { href: "/admin/retencion", label: "Retención", icon: TrendingUp },
@@ -75,6 +83,7 @@ const ADMIN_NAV: NavGroup[] = [
   },
   {
     label: "Sistema",
+    accent: "violet",
     items: [
       { href: "/admin/herramientas", label: "Ajustes y herramientas", icon: Wrench },
       { href: "/admin/cambios", label: "Registro de cambios", icon: History },
@@ -113,39 +122,48 @@ export function invalidateAdminBadges() {
 function NavList({ pathname, badges, onNavigate }: { pathname: string; badges: Badges; onNavigate?: () => void }) {
   return (
     <nav aria-label="Secciones del admin" className="flex flex-col gap-6">
-      {ADMIN_NAV.map((group) => (
-        <div key={group.label}>
-          <p className="mb-1.5 px-3 text-xs font-semibold text-zinc-500">{group.label}</p>
-          <ul className="flex flex-col gap-0.5">
-            {group.items.map((item) => {
-              const active = pathname === item.href
-              const Icon = item.icon
-              const count = item.badge ? badges[item.badge] : 0
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={onNavigate}
-                    aria-current={active ? "page" : undefined}
-                    className={`flex items-center gap-3 rounded-ctl px-3 py-2 text-sm font-semibold transition ${
-                      active ? "bg-white/[0.09] text-ink" : "text-zinc-400 hover:bg-white/[0.05] hover:text-ink"
-                    }`}
-                  >
-                    <Icon size={17} aria-hidden="true" className={active ? "text-brand-soft" : ""} />
-                    <span className="flex-1">{item.label}</span>
-                    {count > 0 && (
-                      <span className="min-w-[22px] rounded-full bg-warn px-1.5 py-0.5 text-center text-[11px] font-bold leading-none text-night tabular-nums">
-                        {count > 99 ? "99+" : count}
-                        <span className="sr-only"> pendientes</span>
+      {ADMIN_NAV.map((group) => {
+        const a = ACCENT[group.accent]
+        return (
+          <div key={group.label}>
+            <p className="mb-1.5 flex items-center gap-2 px-3 text-xs font-semibold text-zinc-400">
+              <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${a.solid}`} />
+              {group.label}
+            </p>
+            <ul className="flex flex-col gap-0.5">
+              {group.items.map((item) => {
+                const active = pathname === item.href
+                const Icon = item.icon
+                const count = item.badge ? badges[item.badge] : 0
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={onNavigate}
+                      aria-current={active ? "page" : undefined}
+                      className={`group relative flex items-center gap-2.5 rounded-ctl px-2.5 py-1.5 text-sm font-semibold transition ${
+                        active ? "bg-white/[0.07] text-ink" : "text-zinc-400 hover:bg-white/[0.04] hover:text-ink"
+                      }`}
+                    >
+                      {active && <span aria-hidden="true" className={`absolute -left-3 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full ${a.solid}`} />}
+                      <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-md transition ${active ? a.chip : "bg-white/[0.04] text-zinc-400 group-hover:text-ink"}`}>
+                        <Icon size={14} aria-hidden="true" />
                       </span>
-                    )}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-      ))}
+                      <span className="flex-1">{item.label}</span>
+                      {count > 0 && (
+                        <span className="min-w-[22px] rounded-full bg-warn px-1.5 py-0.5 text-center text-[11px] font-bold leading-none text-night tabular-nums">
+                          {count > 99 ? "99+" : count}
+                          <span className="sr-only"> pendientes</span>
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )
+      })}
     </nav>
   )
 }
@@ -194,6 +212,15 @@ export default function AdminShell({
 
   const pending = badges.messages + badges.reports + badges.owners
 
+  // Sección y icono de la pantalla actual (para el acento y la cabecera). Pantallas que no salen en el
+  // menú (p. ej. /admin/analytics) usan el acento del Resumen.
+  const current = (() => {
+    for (const g of ADMIN_NAV) for (const item of g.items) if (item.href === pathname) return { accent: g.accent, icon: item.icon }
+    return { accent: "violet" as Accent, icon: LayoutDashboard }
+  })()
+  const CurrentIcon = current.icon
+  const accentStyle = ACCENT[current.accent]
+
   const brand = (
     <Link href="/admin/dashboard" className="flex items-center gap-2.5">
       <span className="flex h-9 w-9 items-center justify-center rounded-ctl bg-brand text-base font-black text-white">N</span>
@@ -205,7 +232,7 @@ export default function AdminShell({
   )
 
   return (
-    <div className="min-h-screen bg-night text-ink lg:grid lg:grid-cols-[264px_1fr]">
+    <div className="min-h-screen bg-night text-ink lg:grid lg:grid-cols-[272px_1fr]">
       {/* Barra lateral (ordenador) */}
       <aside className="hidden lg:block">
         <div className="sticky top-0 flex h-screen flex-col border-r border-white/[0.06] px-3 py-5">
@@ -276,15 +303,23 @@ export default function AdminShell({
         )}
 
         <main className="mx-auto max-w-[1200px] px-4 pb-32 pt-6 sm:px-6 lg:px-10 lg:pt-10">
-          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h1 className="font-display text-3xl tracking-tight md:text-4xl">{title}</h1>
-              {subtitle && <p className="mt-2 max-w-2xl text-sm text-zinc-400">{subtitle}</p>}
+          <div className="relative mb-8">
+            <span aria-hidden="true" className={`pointer-events-none absolute -left-6 -top-16 h-52 w-[28rem] max-w-full rounded-full opacity-60 blur-3xl ${accentStyle.glow}`} />
+            <div className="relative flex flex-wrap items-end justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <span className={`mt-1 hidden h-12 w-12 shrink-0 place-items-center rounded-2xl sm:grid ${accentStyle.chip}`}>
+                  <CurrentIcon size={22} aria-hidden="true" />
+                </span>
+                <div>
+                  <h1 className="font-display text-3xl tracking-tight md:text-4xl">{title}</h1>
+                  {subtitle && <p className="mt-2 max-w-2xl text-sm text-zinc-400">{subtitle}</p>}
+                </div>
+              </div>
+              {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
             </div>
-            {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
           </div>
 
-          {children}
+          <AccentContext.Provider value={current.accent}>{children}</AccentContext.Provider>
         </main>
       </div>
     </div>

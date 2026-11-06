@@ -105,7 +105,7 @@ export default function AdminPollsPage() {
   }
 
   const chip = (active: boolean) =>
-    `rounded-full px-3.5 py-1.5 text-xs font-bold transition ${active ? "bg-white text-black" : "border border-white/10 text-zinc-300 hover:bg-white/5"}`
+    `rounded-full px-3.5 py-1.5 text-xs font-bold transition ${active ? "bg-brand/20 text-white ring-1 ring-inset ring-brand/60" : "border border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"}`
 
   return (
     <AdminShell title="Encuestas" subtitle="La encuesta «¿Qué preferirías?» de cada día: cuánta gente vota, con y sin cuenta, y qué gana.">
@@ -173,13 +173,13 @@ export default function AdminPollsPage() {
           </dl>
 
           {summary.votes === 0 ? (
-            <p className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm text-zinc-400">
+            <p className="mt-6 rounded-card border border-white/10 bg-surface p-5 text-sm text-zinc-400">
               No hay votos en estas fechas. La encuesta sale una vez al día a quien la ve; sin cuenta, solo a quien ha aceptado el banner de cookies.
             </p>
           ) : (
             <>
               {series.length > 1 && (
-                <section className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                <section className="mt-4 rounded-card border border-white/10 bg-surface p-5">
                   <h2 className="text-sm font-black">Votos por día</h2>
                   <div className="mt-4 overflow-x-auto">
                     <div className="flex h-28 items-end gap-[3px]" style={{ minWidth: series.length > 45 ? `${series.length * 9}px` : undefined }}>
@@ -201,7 +201,7 @@ export default function AdminPollsPage() {
               <h2 className="mb-3 mt-8 text-sm font-black">Día a día</h2>
               <ul className="space-y-3">
                 {dayList.slice(0, shown).map((d) => (
-                  <li key={d.day} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                  <li key={d.day} className="rounded-card border border-white/10 bg-surface p-5">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                       <h3 className="text-sm font-black capitalize text-ink">{dayLabel(d.day)}</h3>
                       <p className="text-xs text-zinc-400">
@@ -266,7 +266,7 @@ export default function AdminPollsPage() {
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+    <div className="rounded-card border border-white/10 bg-surface p-4">
       <dt className="text-xs text-zinc-400">{label}</dt>
       <dd className="mt-1 font-display text-2xl tabular-nums text-ink">{value}</dd>
       {sub && <p className="mt-0.5 text-[11px] text-zinc-500">{sub}</p>}

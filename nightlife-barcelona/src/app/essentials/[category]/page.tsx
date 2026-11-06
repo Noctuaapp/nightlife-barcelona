@@ -28,10 +28,12 @@ import { ESSENTIAL_CATEGORIES, categoryNameKey, usesOwnPhoto } from "../../../li
 import { NIGHT_BUS_LINES } from "../../../lib/nightBuses"
 import { METRO_STATIONS } from "../../../lib/metroStations"
 import { MetroLineBadge, NitbusBadge, NitbusRouteRow } from "../../../components/ui/TransitBadge"
+import { metroDot, metroDotCss, metroMarkerHitCss } from "../../../lib/metroMarker"
 import { NITBUS_PLATE } from "../../../lib/transitColors"
 import { ChevronDown, MapPin } from "lucide-react"
 import NitbusStopsMap, { type NitbusMapStop } from "../../../components/nitbus/NitbusStopsMap"
 import { getPrecisePosition } from "../../../lib/precisePosition"
+import NightBackdrop from "../../../components/ui/NightBackdrop"
 
 // Un solo color (el de la marca) para todas las categorías; antes eran doce colores y emojis.
 const BRAND = "#7c5cff"
@@ -591,8 +593,36 @@ export default function EssentialCategoryPage() {
       .filter((e) => !isLineCategory || selectedMetroLine === "All" || (e.subcategory || "").split(",").some((l) => l.trim().toUpperCase() === selectedMetroLine.toUpperCase()))
       .filter((e) => !isLineCategory || !metroSearch.trim() || e.name.toLowerCase().includes(metroSearch.trim().toLowerCase()))
       .forEach((item) => {
+        // Añade el marcador al mapa y lo une a la ficha de abajo. No se le pone transform propio al
+        // elemento: Mapbox lo usa para posicionarlo.
+        const place = (el: HTMLElement) => {
+          const marker = new mapboxgl.Marker({ element: el }).setLngLat([Number(item.longitude), Number(item.latitude)]).addTo(map.current!)
+
+          marker.getElement().addEventListener("click", () => {
+            setSelected(item)
+            map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 16, duration: 800 })
+          })
+
+          markersRef.current.push(marker)
+        }
+
+        // Metro (06/11/2026): un punto del color de la línea (blanco con aro si es transbordo), sin
+        // letras ni fotos, como en un plano de metro. El punto va dentro de un contenedor de 32 px
+        // para que se pueda tocar con el dedo.
+        if (category === "metro") {
+          const hit = document.createElement("div")
+          hit.style.cssText = metroMarkerHitCss
+          hit.setAttribute("role", "button")
+          hit.setAttribute("aria-label", item.name || "")
+          const dot = document.createElement("div")
+          dot.style.cssText = metroDotCss(metroDot(item.subcategory, selectedMetroLine))
+          hit.appendChild(dot)
+          place(hit)
+          return
+        }
+
         // Marcador redondo con la foto del sitio (como en el mapa de clubs); si no hay foto o falla,
-        // el icono de la categoría. No se le pone transform propio: Mapbox lo usa para posicionarlo.
+        // el icono de la categoría.
         const el = document.createElement("div")
         el.style.cssText = `width:40px;height:40px;border-radius:9999px;border:2px solid ${config.color};background:#16141f;color:#f4f3f7;overflow:hidden;display:flex;align-items:center;justify-content:center;font:600 15px/1 system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.55)`
         const initial = (item.name || "?").trim().charAt(0).toUpperCase()
@@ -620,14 +650,7 @@ export default function EssentialCategoryPage() {
         } else {
           fillFallback()
         }
-        const marker = new mapboxgl.Marker({ element: el }).setLngLat([Number(item.longitude), Number(item.latitude)]).addTo(map.current!)
-
-        marker.getElement().addEventListener("click", () => {
-          setSelected(item)
-          map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 16, duration: 800 })
-        })
-
-        markersRef.current.push(marker)
+        place(el)
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady, essentials, config.color, category, selectedMetroLine, metroSearch, activeNight])
@@ -780,7 +803,10 @@ export default function EssentialCategoryPage() {
       return (
         <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-white/10 pt-2">
           {lines.map((l) => (
-            <MetroLineBadge key={l} code={l} />
+            // Cada línea abre su esquema en /metro/L3, con esta estación ya marcada.
+            <Link key={l} href={`/metro/${l.toUpperCase()}?stop=${encodeURIComponent(item.name)}`} onClick={stopPropagation} aria-label={`Metro ${l}: ${item.name}`} className="rounded-full transition hover:ring-2 hover:ring-white/60">
+              <MetroLineBadge code={l} />
+            </Link>
           ))}
         </div>
       )
@@ -918,7 +944,8 @@ export default function EssentialCategoryPage() {
   return (
     <>
       <Header />
-      <main className="relative min-h-screen bg-night pb-40 text-ink">
+      <main className="relative isolate min-h-screen bg-night pb-40 text-ink">
+        <NightBackdrop tone={"teal"} />
         <section className="mx-auto max-w-7xl px-4 pt-6 sm:pt-10">
           <Link href="/essentials" className="inline-flex items-center gap-1.5 text-sm text-zinc-400 transition hover:text-ink">
             <Icon name="back" className="h-4 w-4" /> {t("essentials.title")}
@@ -977,6 +1004,17 @@ export default function EssentialCategoryPage() {
 
         {category === "metro" && (
           <section className="mx-auto mt-6 max-w-7xl px-4">
+            {/* Entrada a las estaciones por línea, en orden (06/11/2026), igual que en Nitbus. */}
+            <Link
+              href="/metro"
+              className="mb-4 flex items-center gap-4 rounded-card border border-brand/40 bg-brand/[0.08] p-5 transition hover:border-brand/70"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-semibold text-ink">{t("metroPage.ctaTitle")}</span>
+                <span className="mt-1 block text-sm leading-snug text-zinc-300">{t("metroPage.ctaBody")}</span>
+              </span>
+              <span className="btn-pill btn-primary shrink-0 px-4 py-2.5 text-sm">{t("nitbusPage.ctaButton")}</span>
+            </Link>
             <div className="rounded-card border border-white/10 bg-surface p-5">
               <p className="mb-2 text-sm font-semibold text-zinc-300">{t("essentialsPage.metroTitle")}</p>
               <p className="text-lg font-semibold text-ink">{metroLabel}</p>
@@ -1080,6 +1118,17 @@ export default function EssentialCategoryPage() {
                 </button>
               ))}
             </div>
+            {/* Con una línea elegida: salto directo a su recorrido y «Mi trayecto». */}
+            {selectedMetroLine !== "All" && METRO_LINE_ORDER.includes(selectedMetroLine) && (
+              <Link
+                href={`/metro/${selectedMetroLine}`}
+                className="mt-3 flex items-center gap-3 rounded-ctl border border-white/10 bg-surface px-4 py-3 text-sm font-semibold text-ink transition hover:border-white/25"
+              >
+                <MetroLineBadge code={selectedMetroLine} size="md" />
+                <span className="min-w-0 flex-1">{t("metroPage.seeLine").replace("{code}", selectedMetroLine)}</span>
+                <ArrowIcon className="h-4 w-4 shrink-0 text-zinc-400" />
+              </Link>
+            )}
           </section>
         )}
 

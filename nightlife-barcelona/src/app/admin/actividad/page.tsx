@@ -295,14 +295,14 @@ export default function AdminActividadPage() {
             key={p.label}
             type="button"
             onClick={() => { setFrom(p.f); setTo(madridToday()) }}
-            className={`rounded-full border px-4 py-2 text-xs font-bold transition ${from === p.f && to === madridToday() ? "border-white bg-white text-night" : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"}`}
+            className={`rounded-full border px-4 py-2 text-xs font-bold transition ${from === p.f && to === madridToday() ? "border-brand/60 bg-brand/20 text-white" : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"}`}
           >
             {p.label}
           </button>
         ))}
-        <input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} style={{ colorScheme: "dark" }} aria-label="Desde" className="rounded-ctl border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-300" />
+        <input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} style={{ colorScheme: "dark" }} aria-label="Desde" className="rounded-ctl border border-white/10 bg-night/70 px-3 py-2 text-xs text-zinc-300" />
         <span className="text-xs text-zinc-500">a</span>
-        <input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} style={{ colorScheme: "dark" }} aria-label="Hasta" className="rounded-ctl border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-300" />
+        <input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} style={{ colorScheme: "dark" }} aria-label="Hasta" className="rounded-ctl border border-white/10 bg-night/70 px-3 py-2 text-xs text-zinc-300" />
       </div>
 
       {error && <p className="mb-6 rounded-card border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}

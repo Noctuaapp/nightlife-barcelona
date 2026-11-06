@@ -10,6 +10,8 @@ import { BLOCK_REASONS, BLOCK_DURATIONS, computeBlockedUntil, isBlockActive, typ
 import { getLevelStatus } from "../../../lib/xp"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import Link from "next/link"
+import { Activity, Ban, Crown, Search, UserPlus, Users } from "lucide-react"
+import { ACCENT, AVATAR_ORDER, StatTile } from "../../../components/admin/ui"
 
 // El admin es una herramienta interna en español, así que aquí no depende del idioma del
 // visitante — siempre se muestra (y se guarda) en español, con bandera.
@@ -32,6 +34,11 @@ type User = {
   level_since: string | null
   birth_year?: number | null
   terms_accepted_at?: string | null
+  // Estado de la cuenta en auth (admin_users_auth_status, supabase/83). Si esa función aún no está
+  // creada, auth_known queda en false y no se enseña nada de esto.
+  auth_known?: boolean
+  email_confirmed_at?: string | null
+  auth_provider?: string | null
 }
 
 type OwnableClub = { id: number; name: string; owner_user_id: string | null }
@@ -189,6 +196,11 @@ export default function AdminUsersPage() {
     // Edad (26/10/2026): solo se guarda el año de nacimiento, no la fecha completa.
     const birthMap = new Map((profiles || []).map((p) => [p.id, (p as any).birth_year as number | null]))
     const termsMap = new Map((profiles || []).map((p) => [p.id, (p as any).terms_accepted_at as string | null]))
+    // Correo confirmado o no, y con qué se registró (correo o Google). Si la función no existe todavía, se ignora.
+    const { data: authRows } = await supabase.rpc("admin_users_auth_status")
+    const authMap = new Map(
+      ((authRows || []) as { user_id: string; email_confirmed_at: string | null; provider: string | null }[]).map((r) => [r.user_id, r])
+    )
 
     if (data) {
       setUsers(
@@ -204,6 +216,9 @@ export default function AdminUsersPage() {
           level_since: levelSinceMap.get(u.id) ?? null,
           birth_year: birthMap.get(u.id) ?? null,
           terms_accepted_at: termsMap.get(u.id) ?? null,
+          auth_known: authMap.has(u.id),
+          email_confirmed_at: authMap.get(u.id)?.email_confirmed_at ?? null,
+          auth_provider: authMap.get(u.id)?.provider ?? null,
         }))
       )
     }
@@ -378,61 +393,61 @@ export default function AdminUsersPage() {
       <>
         <OwnerStatsAccess />
         <section className="mx-auto max-w-7xl">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por email o username..."
-            className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5 outline-none mb-4"
-          />
+          <div className="relative mb-4">
+            <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por email o username..."
+              aria-label="Buscar usuarios"
+              className="w-full rounded-ctl border border-white/10 bg-surface py-3.5 pl-12 pr-4 text-sm text-ink outline-none transition placeholder:text-zinc-500 focus:border-brand/60"
+            />
+          </div>
 
-          <div className="mb-6 flex flex-wrap items-center gap-2">
+          {/* Los filtros son a la vez el recuento: tocar una casilla filtra la lista. */}
+          <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {([
-              ["all", "Todos"],
-              ["new", "Nuevos (7 días)"],
-              ["active", "Activos (7 días)"],
-              ["owners", "Dueños de club/festival"],
-              ["blocked", "Bloqueados"],
-            ] as const).map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setListFilter(key)}
-                className={`rounded-full px-4 py-2 text-xs font-bold transition ${listFilter === key ? "bg-white text-black" : "border border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"}`}
-              >
-                {label}
-              </button>
+              ["all", "Todos", users.length, Users, "violet"],
+              ["new", "Nuevos (7 días)", users.filter((u) => new Date(u.created_at).getTime() >= weekAgo).length, UserPlus, "pink"],
+              ["active", "Activos (7 días)", users.filter((u) => u.last_sign_in_at && new Date(u.last_sign_in_at).getTime() >= weekAgo).length, Activity, "cyan"],
+              ["owners", "Dueños de club/festival", users.filter((u) => ownerIds.has(u.id)).length, Crown, "coral"],
+              ["blocked", "Bloqueados", users.filter((u) => u.is_blocked).length, Ban, "violet"],
+            ] as const).map(([key, label, n, icon, accent]) => (
+              <StatTile key={key} accent={accent} icon={icon} label={label} value={n} active={listFilter === key} onClick={() => setListFilter(key)} />
             ))}
-            <label className="ml-auto flex items-center gap-2 text-xs text-zinc-400">
+          </div>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-zinc-400">{filteredUsers.length} de {users.length}</p>
+            <label className="flex items-center gap-2 text-xs text-zinc-400">
               Ordenar por
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                 style={{ colorScheme: "dark" }}
-                className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white"
+                className="rounded-ctl border border-white/10 bg-surface px-3 py-2 text-xs text-ink outline-none focus:border-brand/60"
               >
                 <option value="created">Registro más reciente</option>
                 <option value="last">Último acceso</option>
                 <option value="xp">Más XP</option>
               </select>
             </label>
-            <p className="w-full text-xs text-zinc-500">{filteredUsers.length} de {users.length}</p>
           </div>
 
           {loading ? (
             <p className="text-zinc-400 text-sm text-center py-20">Cargando usuarios...</p>
           ) : (
             <div className="grid gap-4">
-              {filteredUsers.map((user) => (
+              {filteredUsers.map((user, i) => (
                 <div
                   key={user.id}
                   className={`rounded-card border p-6 flex flex-col gap-4 ${
-                    user.is_blocked ? "border-red-500/30 bg-red-500/[0.04]" : "border-white/10 bg-white/[0.03]"
+                    user.is_blocked ? "border-red-500/30 bg-red-500/[0.04]" : "border-white/10 bg-surface"
                   }`}
                 >
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-500/20 text-purple-300 font-black text-sm">
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br text-sm font-black text-white ${ACCENT[AVATAR_ORDER[i % AVATAR_ORDER.length]].avatar}`}>
                           {user.email?.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
@@ -450,32 +465,45 @@ export default function AdminUsersPage() {
                     </div>
                     <div className="flex flex-wrap gap-3 text-xs text-zinc-400">
                       {user.gender && (
-                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                        <span className="rounded-full bg-white/[0.06] px-3 py-1 text-zinc-300">
                           {user.gender === "Hombre" ? "♂️" : user.gender === "Mujer" ? "♀️" : "🧑"} {user.gender}
                         </span>
                       )}
                       {user.country && (
-                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                        <span className="rounded-full bg-white/[0.06] px-3 py-1 text-zinc-300">
                           {ADMIN_COUNTRIES.find((c) => c.es === user.country)?.flag || "🌍"} {user.country}
                         </span>
                       )}
                       {user.birth_year ? (
-                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1" title={`Nacido/a en ${user.birth_year}`}>
+                        <span className="rounded-full bg-white/[0.06] px-3 py-1 text-zinc-300" title={`Nacido/a en ${user.birth_year}`}>
                           🎂 {new Date().getFullYear() - user.birth_year - 1}–{new Date().getFullYear() - user.birth_year} años
                         </span>
                       ) : (
-                        <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-amber-200" title="No ha pasado por la confirmación de edad">
+                        <span className="rounded-full bg-warn/12 px-3 py-1 font-semibold text-warn" title="No ha pasado por la confirmación de edad">
                           ⚠️ Edad sin confirmar
                         </span>
                       )}
-                      {!user.terms_accepted_at && (
-                        <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-amber-200">⚠️ Sin aceptar términos</span>
+                      {user.auth_known && !user.email_confirmed_at ? (
+                        // Registrada con correo y sin pulsar aún el enlace: todavía no puede entrar. La casilla de
+                        // términos del formulario era obligatoria, así que no se marca como «sin aceptar».
+                        <span className="rounded-full bg-warn/12 px-3 py-1 font-semibold text-warn" title="Se registró pero no ha pulsado el enlace del correo: aún no puede entrar">
+                          ✉️ Correo sin confirmar
+                        </span>
+                      ) : (
+                        !user.terms_accepted_at && (
+                          <span
+                            className="rounded-full bg-warn/12 px-3 py-1 font-semibold text-warn"
+                            title={`Tiene cuenta${user.auth_provider ? ` (${user.auth_provider})` : ""} pero no ha completado «Antes de continuar»: la web se lo pide en cada página hasta que lo haga`}
+                          >
+                            ⚠️ Sin aceptar términos
+                          </span>
+                        )
                       )}
-                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                      <span className="rounded-full bg-white/[0.06] px-3 py-1 text-zinc-300">
                         📅 Registrado: {new Date(user.created_at).toLocaleDateString("es-ES")}
                       </span>
                       {user.last_sign_in_at && (
-                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                        <span className="rounded-full bg-white/[0.06] px-3 py-1 text-zinc-300">
                           🕒 Último acceso: {new Date(user.last_sign_in_at).toLocaleDateString("es-ES")}
                         </span>
                       )}
@@ -501,14 +529,14 @@ export default function AdminUsersPage() {
                   </div>
 
                   {editingId === user.id ? (
-                    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                    <div className="rounded-2xl border border-white/10 bg-night/60 p-4">
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                           <label className="mb-1 block text-xs text-zinc-400">Username</label>
                           <input
                             value={editUsername}
                             onChange={(e) => setEditUsername(e.target.value)}
-                            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500/50"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-brand/60"
                           />
                         </div>
                         <div>
@@ -517,7 +545,7 @@ export default function AdminUsersPage() {
                             value={editGender}
                             onChange={(e) => setEditGender(e.target.value)}
                             style={{ colorScheme: "dark" }}
-                            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500/50"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-brand/60"
                           >
                             <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">Sin especificar</option>
                             <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="Hombre">Hombre</option>
@@ -547,7 +575,7 @@ export default function AdminUsersPage() {
                       </div>
                     </div>
                   ) : messagingId === user.id ? (
-                    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                    <div className="rounded-2xl border border-white/10 bg-night/60 p-4">
                       <label className="mb-1 block text-xs text-zinc-400">
                         Mensaje directo para {user.email}
                       </label>
@@ -556,7 +584,7 @@ export default function AdminUsersPage() {
                         onChange={(e) => setMessageText(e.target.value)}
                         rows={3}
                         placeholder="Escribe el mensaje que recibirá como notificación en la app..."
-                        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder-zinc-600 focus:border-purple-500/50"
+                        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder-zinc-600 focus:border-brand/60"
                       />
                       <div className="mt-3 flex flex-wrap items-center gap-3">
                         <button
@@ -578,7 +606,7 @@ export default function AdminUsersPage() {
                       </div>
                     </div>
                   ) : linkingId === user.id ? (
-                    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                    <div className="rounded-2xl border border-white/10 bg-night/60 p-4">
                       <label className="mb-1 block text-xs text-zinc-400">
                         Club vinculado (puede editar su propia ficha en /mi-club)
                       </label>
@@ -587,7 +615,7 @@ export default function AdminUsersPage() {
                         onChange={(e) => setUserClub(user.id, e.target.value ? Number(e.target.value) : null)}
                         disabled={savingLink}
                         style={{ colorScheme: "dark" }}
-                        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500/50"
+                        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-brand/60"
                       >
                         <option style={{ backgroundColor: "#18181b", color: "#fff" }} value="">Ninguno</option>
                         {ownableClubs.map((c) => (
@@ -690,7 +718,7 @@ export default function AdminUsersPage() {
               value={blockReason}
               onChange={(e) => setBlockReason(e.target.value)}
               style={{ colorScheme: "dark" }}
-              className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white"
+              className="mt-1 w-full rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm text-ink outline-none transition placeholder:text-zinc-500 focus:border-brand/60"
             >
               {BLOCK_REASONS.map((r) => (
                 <option key={r.code} value={r.code}>{r.label}</option>
@@ -701,7 +729,7 @@ export default function AdminUsersPage() {
               value={blockDuration}
               onChange={(e) => setBlockDuration(e.target.value as BlockDuration)}
               style={{ colorScheme: "dark" }}
-              className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white"
+              className="mt-1 w-full rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm text-ink outline-none transition placeholder:text-zinc-500 focus:border-brand/60"
             >
               {BLOCK_DURATIONS.map((d) => (
                 <option key={d.code} value={d.code}>{d.label}</option>
@@ -713,7 +741,7 @@ export default function AdminUsersPage() {
               onChange={(e) => setBlockNote(e.target.value)}
               rows={3}
               maxLength={300}
-              className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white"
+              className="mt-1 w-full rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm text-ink outline-none transition placeholder:text-zinc-500 focus:border-brand/60"
             />
             <div className="mt-5 flex gap-3">
               <button onClick={() => setBlockTarget(null)} className="flex-1 rounded-2xl border border-white/10 py-3 text-sm font-bold text-zinc-300">Cancelar</button>

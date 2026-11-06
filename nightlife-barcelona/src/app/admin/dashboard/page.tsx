@@ -7,6 +7,7 @@ import {
   TrendingDown, TrendingUp, UserPlus, Users, type LucideIcon,
 } from "lucide-react"
 import AdminShell from "../../../components/admin/AdminShell"
+import { ACCENT, AVATAR_ORDER, CARD, StatusPill, type Accent } from "../../../components/admin/ui"
 import { supabase } from "../../../lib/supabase"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { SEASONAL_THEMES } from "../../../lib/nocSeasonal"
@@ -47,57 +48,9 @@ function deltaTone(now: number, before: number): "up" | "down" | "flat" {
   return p > 0 ? "up" : p < 0 ? "down" : "flat"
 }
 
-// Colores del resumen (06/11/2026). Antes todo era gris con un toque de violeta y costaba distinguir un bloque
-// de otro. Ahora cada bloque lleva su acento (violeta de marca, rosa y cian neón, coral) y los estados siguen
-// siendo verde (bien), ámbar (pendiente) y rojo (aviso), sin mezclarse con los acentos. Los colores de
-// identidad nunca van solos: cada bloque tiene su título y su icono.
-type Accent = "violet" | "pink" | "cyan" | "coral"
-const ACCENT: Record<Accent, { chip: string; text: string; glow: string; line: string; bar: string; barLast: string; tile: string; avatar: string }> = {
-  violet: {
-    chip: "bg-brand/15 text-brand-soft",
-    text: "text-brand-soft",
-    glow: "bg-brand/30",
-    line: "via-brand",
-    bar: "bg-linear-to-t from-brand/25 to-brand/80",
-    barLast: "bg-brand-soft shadow-[0_0_14px_rgba(160,139,255,0.8)]",
-    tile: "border-brand/25 bg-brand/10",
-    avatar: "from-brand to-[#ff4fa3]",
-  },
-  pink: {
-    chip: "bg-[#ff4fa3]/15 text-[#ff86bf]",
-    text: "text-[#ff86bf]",
-    glow: "bg-[#ff4fa3]/25",
-    line: "via-[#ff4fa3]",
-    bar: "bg-linear-to-t from-[#ff4fa3]/25 to-[#ff4fa3]/80",
-    barLast: "bg-[#ff86bf] shadow-[0_0_14px_rgba(255,79,163,0.8)]",
-    tile: "border-[#ff4fa3]/25 bg-[#ff4fa3]/10",
-    avatar: "from-[#ff4fa3] to-orange-400",
-  },
-  cyan: {
-    chip: "bg-cyan-400/15 text-cyan-300",
-    text: "text-cyan-300",
-    glow: "bg-cyan-400/20",
-    line: "via-cyan-400",
-    bar: "bg-linear-to-t from-cyan-400/25 to-cyan-400/80",
-    barLast: "bg-cyan-300 shadow-[0_0_14px_rgba(34,211,238,0.8)]",
-    tile: "border-cyan-400/25 bg-cyan-400/10",
-    avatar: "from-cyan-400 to-brand",
-  },
-  coral: {
-    chip: "bg-orange-400/15 text-orange-300",
-    text: "text-orange-300",
-    glow: "bg-orange-400/20",
-    line: "via-orange-400",
-    bar: "bg-linear-to-t from-orange-400/25 to-orange-400/80",
-    barLast: "bg-orange-300 shadow-[0_0_14px_rgba(251,146,60,0.8)]",
-    tile: "border-orange-400/25 bg-orange-400/10",
-    avatar: "from-orange-400 to-[#ff4fa3]",
-  },
-}
-const AVATAR_ORDER: Accent[] = ["violet", "pink", "cyan", "coral"]
-
-const CARD = "relative overflow-hidden rounded-card border border-white/10 bg-surface"
-
+// Colores del resumen (06/11/2026): los acentos, la tarjeta y las pastillas de estado viven ahora en
+// components/admin/ui.tsx, porque el resto de pantallas del admin usan los mismos. Aquí quedan el KPI con
+// su gráfica y el título de bloque, que son propios del Resumen.
 function Sparkline({ values, accent }: { values: number[]; accent: Accent }) {
   const max = Math.max(1, ...values)
   const a = ACCENT[accent]
@@ -153,24 +106,6 @@ function Kpi({
     </Link>
   ) : (
     <div className={cls}>{body}</div>
-  )
-}
-
-const PILL = {
-  green: "bg-open/12 text-open",
-  amber: "bg-warn/12 text-warn",
-  red: "bg-red-500/15 text-red-300",
-  violet: "bg-brand/15 text-brand-soft",
-  neutral: "bg-white/[0.06] text-zinc-300",
-}
-const PILL_DOT = { green: "bg-open", amber: "bg-warn", red: "bg-red-400", violet: "bg-brand-soft", neutral: "bg-zinc-500" }
-
-function StatusPill({ tone, children }: { tone: keyof typeof PILL; children: React.ReactNode }) {
-  return (
-    <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${PILL[tone]}`}>
-      <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${PILL_DOT[tone]}`} />
-      {children}
-    </span>
   )
 }
 

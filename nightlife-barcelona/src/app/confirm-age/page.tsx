@@ -9,6 +9,7 @@ import CountrySelect from "../../components/ui/CountrySelect"
 import { useLanguage } from "../../context/LanguageContext"
 import { track } from "../../lib/track"
 import { safeNextPath } from "../../lib/nextPath"
+import { consentComplete, readSignupConsent } from "../../lib/signupConsent"
 
 export default function ConfirmAgePage() {
   const router = useRouter()
@@ -64,9 +65,27 @@ export default function ConfirmAgePage() {
 
       // Solo se salta esta pantalla si ya aceptó los términos Y tiene la edad guardada (las cuentas
       // antiguas sin año de nacimiento pasan por aquí una vez para confirmarla).
-      if (profile?.terms_accepted_at && profile?.birth_year) {
+      if (consentComplete(profile)) {
         router.replace(safeNextPath())
         return
+      }
+
+      // Alta con correo: la casilla y la fecha de nacimiento se rellenaron en el formulario de registro,
+      // pero sin sesión (hay que confirmar el correo) no se pudieron guardar en el perfil; quedaron en los
+      // metadatos. Se pasan aquí, la primera vez que hay sesión, y no se vuelve a preguntar lo mismo.
+      const signup = readSignupConsent(meta)
+      if (signup && finalUsername) {
+        const { error: syncError } = await supabase.from("profiles").upsert({
+          id: user.id,
+          terms_accepted_at: profile?.terms_accepted_at || signup.termsAcceptedAt,
+          birth_year: profile?.birth_year || signup.birthYear,
+        })
+        if (!syncError) {
+          track("confirm_age_done", { meta: { from: "signup" } })
+          router.replace(safeNextPath())
+          return
+        }
+        // Si no se pudo guardar, se enseña el formulario normal.
       }
       // Sin usuario (típico de entrar con Google, que no lo da) — se pide aquí mismo, junto con
       // el resto de datos obligatorios.

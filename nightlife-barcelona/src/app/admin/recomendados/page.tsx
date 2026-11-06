@@ -163,7 +163,7 @@ export default function AdminPicksPage() {
     )
   }
 
-  const input = "w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none focus:border-purple-400/60"
+  const input = "w-full rounded-xl border border-white/10 bg-night/70 px-3 py-2.5 text-sm text-white outline-none focus:border-brand/60"
 
   return (
     <AdminShell
@@ -176,7 +176,7 @@ export default function AdminPicksPage() {
         </p>
       )}
 
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+      <div className="rounded-card border border-white/10 bg-surface p-5">
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex rounded-xl border border-white/10 p-1">
             {(["night", "week"] as const).map((p) => (
@@ -184,7 +184,7 @@ export default function AdminPicksPage() {
                 key={p}
                 type="button"
                 onClick={() => setPeriod(p)}
-                className={`rounded-lg px-4 py-2 text-sm font-bold transition ${period === p ? "bg-white text-black" : "text-zinc-300 hover:bg-white/5"}`}
+                className={`rounded-lg px-4 py-2 text-sm font-bold transition ${period === p ? "bg-brand/25 text-white ring-1 ring-inset ring-brand/50" : "text-zinc-300 hover:bg-white/5"}`}
               >
                 {p === "night" ? "Una noche" : "Una semana"}
               </button>
@@ -207,7 +207,7 @@ export default function AdminPicksPage() {
 
         <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
           {slots.map((s, i) => (
-            <div key={i} className="rounded-xl border border-white/10 bg-black/20 p-4">
+            <div key={i} className="rounded-xl border border-white/10 bg-night/50 p-4">
               <p className="font-display text-3xl leading-none text-white">{i + 1}</p>
               <input
                 list="picks-clubs"
@@ -246,7 +246,7 @@ export default function AdminPicksPage() {
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {groups.map((g) => (
-            <div key={`${g.period}|${g.starts_on}`} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <div key={`${g.period}|${g.starts_on}`} className="rounded-card border border-white/10 bg-surface p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-bold text-white">

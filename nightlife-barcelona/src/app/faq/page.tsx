@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"
 import BottomNav from "@/components/layout/BottomNav"
 import { useLanguage } from "../../context/LanguageContext"
+import { NightPage } from "@/components/ui/NightBackdrop"
 
 // Cada categoría guarda sus preguntas como un único string traducido: una pregunta por línea,
 // con "pregunta||respuesta" (el sistema de traducciones solo devuelve strings, no arrays).
@@ -38,6 +39,7 @@ export default function FAQPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
+      <NightPage tone="violet" soft>
       <main className="flex-1 px-4 py-16 max-w-2xl mx-auto w-full">
         <div className="mb-12 text-center">
           <h1 className="text-3xl font-bold text-white mb-3">{t("faq.title")}</h1>
@@ -104,6 +106,7 @@ export default function FAQPage() {
           </a>
         </div>
       </main>
+      </NightPage>
       <Footer />
       <BottomNav />
     </div>

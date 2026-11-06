@@ -9,7 +9,6 @@ import { useLanguage } from "../../context/LanguageContext"
 import { awardXp, XP_AMOUNTS, currentIsoWeek, madridDateStr, dayBefore, checkLevelUp } from "../../lib/xp"
 import { ADMIN_EMAIL } from "../../lib/admin"
 import { logError } from "../../lib/log"
-import { safeNextPath } from "../../lib/nextPath"
 import { useViewAsUser } from "../../lib/viewAsUser"
 import LevelUpModal from "../mascot/LevelUpModal"
 import InstallAppButton from "../system/InstallAppButton"
@@ -115,26 +114,6 @@ export default function Header() {
   const hideHeader = pathname === "/map"
 
   useEffect(() => {
-    // Comprueba que el usuario logueado haya confirmado términos + edad. Esto cubre tanto
-    // el alta por Google (que no pasa por el formulario de registro con sus checkboxes) como
-    // cualquier cuenta creada antes de que existiera esta confirmación.
-    const checkTermsAccepted = async (userId: string) => {
-      if (window.location.pathname === "/confirm-age" || window.location.pathname === "/blocked") return
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("terms_accepted_at, birth_year")
-        .eq("id", userId)
-        .maybeSingle()
-      // También sin año de nacimiento (26/10/2026): cuentas de antes de que se guardara la edad.
-      if (!profile?.terms_accepted_at || !profile?.birth_year) {
-        // Se pasa la página en la que estaba (03/11/2026) para volver a ella al terminar, en vez de
-        // acabar en la portada: quien se registra desde un club quiere seguir en ese club.
-        const here = window.location.pathname
-        const back = here === "/login" || here === "/signup" ? safeNextPath() : here + window.location.search
-        router.push(back && back !== "/" ? `/confirm-age?next=${encodeURIComponent(back)}` : "/confirm-age")
-      }
-    }
-
     // Cuenta bloqueada desde el admin: si el usuario está marcado como is_blocked en su perfil,
     // se le manda a /blocked (que a su vez le ofrece cerrar sesión o contactar con soporte).
     const checkBlocked = async (userId: string) => {
@@ -246,7 +225,6 @@ export default function Header() {
       setIsAdmin(data.session?.user.email === ADMIN_EMAIL)
       if (data.session) {
         checkBlocked(data.session.user.id)
-        checkTermsAccepted(data.session.user.id)
         checkWeeklyStreak(data.session.user.id)
         checkDailyStreak(data.session.user.id)
         checkNewLevel(data.session.user.id)
@@ -258,7 +236,6 @@ export default function Header() {
       setIsAdmin(session?.user.email === ADMIN_EMAIL)
       if (session) {
         checkBlocked(session.user.id)
-        checkTermsAccepted(session.user.id)
         checkWeeklyStreak(session.user.id)
       }
     })

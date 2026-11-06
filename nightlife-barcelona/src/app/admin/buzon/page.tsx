@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, ExternalLink, Search, Send, Trash2 } from "lucide-react"
 import AdminShell, { invalidateAdminBadges } from "../../../components/admin/AdminShell"
+import { FilterChip } from "../../../components/admin/ui"
 import { supabase } from "../../../lib/supabase"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { logError } from "../../../lib/log"
@@ -254,22 +255,12 @@ export default function AdminBuzonPage() {
               />
             </div>
             <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setOnlyUnread(false)}
-                aria-pressed={!onlyUnread}
-                className={`rounded-full px-3.5 py-1.5 text-sm font-semibold ${!onlyUnread ? "bg-white text-night" : "border border-white/15 text-zinc-300"}`}
-              >
+              <FilterChip active={!onlyUnread} onClick={() => setOnlyUnread(false)}>
                 Todos ({convos.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setOnlyUnread(true)}
-                aria-pressed={onlyUnread}
-                className={`rounded-full px-3.5 py-1.5 text-sm font-semibold ${onlyUnread ? "bg-white text-night" : "border border-white/15 text-zinc-300"}`}
-              >
+              </FilterChip>
+              <FilterChip active={onlyUnread} onClick={() => setOnlyUnread(true)}>
                 Sin leer ({totalUnread})
-              </button>
+              </FilterChip>
             </div>
 
             {shown.length === 0 ? (

@@ -60,7 +60,19 @@
     "statsEssentials": "essenziali nelle vicinanze",
     "openNowIn": "Aperto ora a {zone}",
     "tonightIn": "Per stasera a {zone}",
-    "zonesLabel": "Scegli la zona"
+    "zonesLabel": "Scegli la zona",
+    "exploreTitle": "Esplora Noctua",
+    "exploreSub": "Tutto ciò che ti serve prima, durante e dopo la serata",
+    "doorMapText": "Locali, farmacie e fermate su un'unica mappa",
+    "doorPlanText": "Dicci cosa ti va e ti proponiamo dei posti",
+    "doorEssentialsText": "Farmacie, bancomat e cibo aperti di notte",
+    "doorHomeTitle": "Tornare a casa",
+    "doorHomeText": "Metro e NitBus: scegli la tua linea e la tua fermata",
+    "doorMetro": "Metro",
+    "doorNitbus": "NitBus",
+    "stylesTitle": "Che cosa ti va stasera?",
+    "stylesSub": "Scegli un'atmosfera e ti mostriamo dove suona",
+    "searchTry": "Prova con"
   },
   "filters": {
     "all": "Tutti"
@@ -109,7 +121,14 @@
     "withEmail": "Preferisco registrarmi con email",
     "moreOptional": "Aggiungi paese e genere (facoltativo)",
     "showPassword": "Mostra password",
-    "hidePassword": "Nascondi password"
+    "hidePassword": "Nascondi password",
+    "pwNeedLower": "una minuscola",
+    "pwNeedUpper": "una maiuscola",
+    "pwNeedDigit": "un numero",
+    "pwNeedSymbol": "un simbolo (ad esempio ! ? # $)",
+    "error_password_sets": "La password deve includere {list}.",
+    "error_password_min": "La password deve avere almeno {n} caratteri.",
+    "error_password_pwned": "Questa password è troppo comune o è comparsa in violazioni di dati. Scegline un’altra."
   },
   "clubs": {
     "title": "Club",
@@ -2085,5 +2104,26 @@
     "lost": "Ho perso il telefono o il portafoglio",
     "lostHint": "Uffici oggetti smarriti",
     "buttonNote": "Aiuto rapido se stanotte qualcosa va storto: farmacia, pronto soccorso, taxi, bagno o polizia vicino a te. Il 112 è all'interno, se è grave."
+  },
+  "metroPage": {
+    "back": "Tutte le linee della metro",
+    "stopsCount": "{n} stazioni",
+    "findStop": "Cerca stazione",
+    "noMatch": "Nessuna stazione corrisponde a «{q}».",
+    "nearestIs": "La tua stazione più vicina: {name}, a {dist}.",
+    "nearSpotIs": "La stazione più vicina al posto che stavi guardando: {name}, a {dist}.",
+    "tripStops": "{n} stazioni",
+    "tripStopOne": "1 stazione",
+    "segPickFrom": "Scegli la stazione di salita",
+    "segPickTo": "Scegli la stazione di discesa",
+    "noStops": "Non abbiamo ancora le stazioni di questa linea.",
+    "officialNote": "Orari, frequenze e interruzioni del servizio: consultali sul sito o sull’app ufficiale di TMB. Le linee L6, L7, L8 e L12 sono di FGC.",
+    "title": "Metropolitana di Barcellona",
+    "subtitle": "Le linee da L1 a L12 con tutte le stazioni in ordine. Scegli la tua linea o cerca la tua stazione.",
+    "findStopAll": "Cerca la tua stazione (Catalunya, Sants…)",
+    "viewMap": "Vedi le stazioni sulla mappa",
+    "ctaTitle": "Tutte le stazioni di ogni linea, in ordine",
+    "ctaBody": "Scegli una linea, guarda le sue stazioni una per una e segna dove sali e dove scendi.",
+    "seeLine": "Vedi il percorso della {code} e il mio tragitto"
   }
 }

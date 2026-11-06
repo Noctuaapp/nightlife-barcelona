@@ -162,7 +162,7 @@ export default function AdminMananeoPage() {
     )
   }
 
-  const input = "w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none focus:border-purple-400/60"
+  const input = "w-full rounded-xl border border-white/10 bg-night/70 px-3 py-2.5 text-sm text-white outline-none focus:border-brand/60"
   const label = "block text-xs font-semibold text-zinc-400"
   const visibleCount = places.filter((p) => !p.hidden).length
 
@@ -181,8 +181,8 @@ export default function AdminMananeoPage() {
         {MANANEO_HIDDEN ? (
           <>
             <span className="font-semibold text-white">Apartado cerrado para los visitantes.</span> Solo lo ves tú, al final de Eventos. Para
-            abrirlo, pon <code className="rounded bg-black/40 px-1.5 py-0.5 text-xs">MANANEO_HIDDEN = false</code> en
-            <code className="ml-1 rounded bg-black/40 px-1.5 py-0.5 text-xs">src/lib/featureFlags.ts</code> y deja visibles los sitios que quieras.
+            abrirlo, pon <code className="rounded bg-night/70 px-1.5 py-0.5 text-xs">MANANEO_HIDDEN = false</code> en
+            <code className="ml-1 rounded bg-night/70 px-1.5 py-0.5 text-xs">src/lib/featureFlags.ts</code> y deja visibles los sitios que quieras.
           </>
         ) : (
           <>
@@ -191,7 +191,7 @@ export default function AdminMananeoPage() {
         )}
       </p>
 
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+      <div className="rounded-card border border-white/10 bg-surface p-5">
         <h2 className="text-base font-black">{form.id ? "Editar sitio" : "Añadir sitio"}</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <label className={label}>
@@ -280,7 +280,7 @@ export default function AdminMananeoPage() {
           {places.map((p) => {
             const st = mananeoHoursState(p.hours)
             return (
-              <div key={p.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div key={p.id} className="rounded-card border border-white/10 bg-surface p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-bold text-white">{p.name}</p>

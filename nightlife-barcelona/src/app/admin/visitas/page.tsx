@@ -110,6 +110,9 @@ const WELCOME_TO: Record<string, string> = { search: "Buscar sitios", month: "Ve
 const SIGNUP_REASONS: Record<string, string> = {
   fill_all: "faltan campos", disposable_email: "correo temporal", weak_password: "contraseña débil",
   birth_date: "sin fecha de nacimiento", under_18: "menor de 18", terms: "no acepta los términos", age_check: "no confirma +18",
+  // Rechazos de contraseña del servidor (Supabase): la web los traduce y aquí se guarda un código.
+  password_policy: "contraseña sin mayúscula, minúscula, número o símbolo", password_min: "contraseña demasiado corta",
+  password_pwned: "contraseña muy conocida o filtrada", password_same: "contraseña igual a la anterior",
 }
 
 // Detalle de los eventos nuevos del embudo de registro y de la ficha (null = lo resuelve la cadena de abajo).
@@ -120,7 +123,7 @@ function extraDetail(e: Ev): string | null {
   if (e.type.startsWith("essential_")) return e.name || ""
   if (e.type === "next_click") return NEXT_TO[to] || to
   if (e.type === "welcome_click") return WELCOME_TO[to] || to
-  if (e.type === "signup_error") return e.meta?.step === "auth" ? `el servidor dice «${reason}»` : SIGNUP_REASONS[reason] || reason
+  if (e.type === "signup_error") return e.meta?.step === "auth" && !SIGNUP_REASONS[reason] ? `el servidor dice «${reason}»` : SIGNUP_REASONS[reason] || reason
   if (e.type === "zone_pick") return e.name === "near" ? "cerca de mí" : e.name || ""
   if (e.type === "auth_gate_view") return ({ favorite: "(al guardar un favorito)", attend: "(al apuntarse)", checkin: "(al hacer check-in)" } as Record<string, string>)[String(e.meta?.reason ?? "")] ?? ""
   if (e.type === "signup_ok") return e.meta?.confirm_email ? "(debe confirmar el correo)" : "(ya con sesión)"
@@ -225,7 +228,7 @@ export default function AdminVisitsPage() {
       for (const e of s.events || []) {
         if (e.type !== "signup_error") continue
         const reason = String(e.meta?.reason ?? "")
-        const label = e.meta?.step === "auth" ? `Servidor: ${reason}` : SIGNUP_REASONS[reason] || reason
+        const label = e.meta?.step === "auth" && !SIGNUP_REASONS[reason] ? `Servidor: ${reason}` : SIGNUP_REASONS[reason] || reason
         errors.set(label, (errors.get(label) || 0) + 1)
       }
     // Instalar la app (27/10/2026). Android da el recuento real ("appinstalled"); iPhone no avisa, solo
@@ -280,7 +283,7 @@ export default function AdminVisitsPage() {
   }
 
   const chip = (active: boolean) =>
-    `rounded-full px-3.5 py-1.5 text-xs font-bold transition ${active ? "bg-white text-black" : "border border-white/10 text-zinc-300 hover:bg-white/5"}`
+    `rounded-full px-3.5 py-1.5 text-xs font-bold transition ${active ? "bg-brand/20 text-white ring-1 ring-inset ring-brand/60" : "border border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"}`
   const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0)
 
   return (
@@ -533,7 +536,7 @@ function VisitRow({
         <ChevronDown size={16} className={`shrink-0 text-zinc-500 transition ${isOpen ? "rotate-180" : ""}`} />
       </button>
       {isOpen && (
-        <div className="bg-black/20 px-4 pb-4 pt-1">
+        <div className="bg-night/50 px-4 pb-4 pt-1">
           {many ? (
             <>
               <p className="pb-1 pt-2 text-[11px] leading-snug text-zinc-500">
@@ -562,7 +565,7 @@ function VisitRow({
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+    <div className="rounded-card border border-white/10 bg-surface p-4">
       <dt className="text-xs text-zinc-400">{label}</dt>
       <dd className="mt-1 font-display text-2xl tabular-nums text-ink">{value}</dd>
       {sub && <p className="mt-0.5 text-[11px] text-zinc-500">{sub}</p>}
@@ -572,7 +575,7 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
 
 function TopList({ title, rows, total }: { title: string; rows: { label: string; n: number }[]; total: number }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+    <section className="rounded-card border border-white/10 bg-surface p-5">
       <h2 className="text-sm font-black">{title}</h2>
       {rows.length === 0 ? (
         <p className="mt-3 text-sm text-zinc-500">Todavía nada.</p>

@@ -197,7 +197,7 @@ export default function AdminNotasPage() {
         <p className="mt-10 text-center text-zinc-400">Cargando...</p>
       ) : groups.length === 0 ? (
         <section className="mx-auto mt-10 max-w-4xl px-4">
-          <div className="rounded-card border border-white/10 bg-white/[0.03] p-10 text-center">
+          <div className="rounded-card border border-white/10 bg-surface p-10 text-center">
             <p className="text-3xl">✅</p>
             <p className="mt-3 text-zinc-400">No hay ninguna denuncia pendiente de revisar.</p>
           </div>
@@ -263,7 +263,7 @@ export default function AdminNotasPage() {
               value={blockReason}
               onChange={(e) => setBlockReason(e.target.value)}
               style={{ colorScheme: "dark" }}
-              className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white"
+              className="mt-1 w-full rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm text-ink outline-none transition placeholder:text-zinc-500 focus:border-brand/60"
             >
               {BLOCK_REASONS.map((r) => (
                 <option key={r.code} value={r.code}>{r.label}</option>
@@ -274,7 +274,7 @@ export default function AdminNotasPage() {
               value={blockDuration}
               onChange={(e) => setBlockDuration(e.target.value as BlockDuration)}
               style={{ colorScheme: "dark" }}
-              className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white"
+              className="mt-1 w-full rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm text-ink outline-none transition placeholder:text-zinc-500 focus:border-brand/60"
             >
               {BLOCK_DURATIONS.map((d) => (
                 <option key={d.code} value={d.code}>{d.label}</option>
@@ -286,7 +286,7 @@ export default function AdminNotasPage() {
               onChange={(e) => setBlockNote(e.target.value)}
               rows={3}
               maxLength={300}
-              className="mt-1 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white"
+              className="mt-1 w-full rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm text-ink outline-none transition placeholder:text-zinc-500 focus:border-brand/60"
             />
             <div className="mt-5 flex gap-3">
               <button onClick={() => setBlockTarget(null)} className="flex-1 rounded-2xl border border-white/10 py-3 text-sm font-bold text-zinc-300">Cancelar</button>

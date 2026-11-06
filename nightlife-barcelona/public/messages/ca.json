@@ -63,7 +63,19 @@
     "picksWeek": "El nostre top 3 de la setmana",
     "openNowIn": "Obert ara a {zone}",
     "tonightIn": "Per aquesta nit a {zone}",
-    "zonesLabel": "Triar zona"
+    "zonesLabel": "Triar zona",
+    "exploreTitle": "Explora Noctua",
+    "exploreSub": "Tot el que necessites abans, durant i després de sortir",
+    "doorMapText": "Clubs, farmàcies i parades en un sol mapa",
+    "doorPlanText": "Digue'ns què et ve de gust i et proposem llocs",
+    "doorEssentialsText": "Farmàcies, caixers i menjar oberts de nit",
+    "doorHomeTitle": "Tornar a casa",
+    "doorHomeText": "Metro i NitBus: tria la teva línia i la teva parada",
+    "doorMetro": "Metro",
+    "doorNitbus": "NitBus",
+    "stylesTitle": "Què et ve de gust aquesta nit?",
+    "stylesSub": "Tria un ambient i t'ensenyem on sona",
+    "searchTry": "Prova amb"
   },
   "filters": {
     "all": "Tots"
@@ -112,7 +124,14 @@
     "withEmail": "Prefereixo registrar-me amb email",
     "moreOptional": "Afegir país i gènere (opcional)",
     "showPassword": "Mostrar contrasenya",
-    "hidePassword": "Amagar contrasenya"
+    "hidePassword": "Amagar contrasenya",
+    "pwNeedLower": "una minúscula",
+    "pwNeedUpper": "una majúscula",
+    "pwNeedDigit": "un número",
+    "pwNeedSymbol": "un símbol (per exemple ! ? # $)",
+    "error_password_sets": "La contrasenya ha d’incloure {list}.",
+    "error_password_min": "La contrasenya ha de tenir almenys {n} caràcters.",
+    "error_password_pwned": "Aquesta contrasenya és massa coneguda o ha aparegut en filtracions de dades. Tria’n una altra."
   },
   "clubs": {
     "title": "Clubs",
@@ -2134,5 +2153,26 @@
     "lost": "He perdut el mòbil o la cartera",
     "lostHint": "Oficines d'objectes perduts",
     "buttonNote": "Ajuda ràpida si alguna cosa va malament aquesta nit: farmàcia, urgències, taxi, lavabo o policia a prop teu. El 112 és a dins, per si és greu."
+  },
+  "metroPage": {
+    "back": "Totes les línies del metro",
+    "stopsCount": "{n} estacions",
+    "findStop": "Cerca una estació",
+    "noMatch": "Cap estació coincideix amb «{q}».",
+    "nearestIs": "La teva estació més propera: {name}, a {dist}.",
+    "nearSpotIs": "L’estació més propera al lloc que estaves mirant: {name}, a {dist}.",
+    "tripStops": "{n} estacions",
+    "tripStopOne": "1 estació",
+    "segPickFrom": "Tria l’estació de pujada",
+    "segPickTo": "Tria l’estació de baixada",
+    "noStops": "Encara no tenim les estacions d’aquesta línia.",
+    "officialNote": "Horaris, freqüències i talls de servei: consulta’ls al web o a l’app oficial de TMB. Les línies L6, L7, L8 i L12 són de FGC.",
+    "title": "Metro de Barcelona",
+    "subtitle": "Les línies L1 a L12 amb totes les estacions en ordre. Tria la teva línia o cerca la teva estació.",
+    "findStopAll": "Cerca la teva estació (Catalunya, Sants…)",
+    "viewMap": "Veure les estacions al mapa",
+    "ctaTitle": "Totes les estacions de cada línia, en ordre",
+    "ctaBody": "Tria una línia, mira’n les estacions una a una i marca on puges i on baixes.",
+    "seeLine": "Veure recorregut i el meu trajecte de {code}"
   }
 }

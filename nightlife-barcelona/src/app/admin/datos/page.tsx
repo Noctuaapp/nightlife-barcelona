@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
+import { Panel, SectionTitle, StatTile, type Accent } from "../../../components/admin/ui"
+import { BarChart3, CalendarCheck, CalendarDays, Car, CheckCircle2, Clock, Eye, Layers, MapPin, Scale, Search, Share2, Smartphone, Ticket, Users, type LucideIcon } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { zoneOf } from "../../../lib/zones"
 import { ADMIN_EMAIL } from "../../../lib/admin"
@@ -68,14 +70,8 @@ function Bars({ data, color = "#7c5cff" }: { data: { label: string; value: numbe
   )
 }
 
-function Stat({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-      <p className="text-3xl font-black text-white">{value}</p>
-      <p className="mt-1 text-xs text-zinc-400">{label}</p>
-      {sub && <p className="mt-1 text-xs text-zinc-400">{sub}</p>}
-    </div>
-  )
+function Stat({ label, value, sub, icon, accent }: { label: string; value: string | number; sub?: string; icon?: LucideIcon; accent?: Accent }) {
+  return <StatTile label={label} value={value} note={sub} icon={icon} accent={accent} />
 }
 
 function ListBars({ rows, suffix = "" }: { rows: { label: string; n: number | null }[]; suffix?: string }) {
@@ -315,21 +311,21 @@ export default function AdminDatosPage() {
 
   return (
     <AdminShell title="Datos de negocio" subtitle="Métricas agregadas para clubs, managers y compradores de datos.">
-      <section className="mx-auto max-w-7xl px-4 pb-16">
+      <section className="mx-auto max-w-7xl pb-16">
         {/* Rango de fechas */}
         <div className="mb-6 flex flex-wrap items-center gap-2">
           {presets.map((p) => (
             <button
               key={p.label}
               onClick={() => { setFrom(p.f); setTo(madridToday()) }}
-              className={`rounded-full border px-4 py-2 text-xs font-bold transition ${from === p.f && to === madridToday() ? "border-white bg-white text-black" : "border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"}`}
+              className={`rounded-full border px-4 py-2 text-xs font-bold transition ${from === p.f && to === madridToday() ? "border-brand/60 bg-brand/20 text-white" : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"}`}
             >
               {p.label}
             </button>
           ))}
-          <input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} style={{ colorScheme: "dark" }} className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-300" />
+          <input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} style={{ colorScheme: "dark" }} className="rounded-xl border border-white/10 bg-night/70 px-3 py-2 text-xs text-zinc-300" />
           <span className="text-xs text-zinc-400">→</span>
-          <input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} style={{ colorScheme: "dark" }} className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-zinc-300" />
+          <input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} style={{ colorScheme: "dark" }} className="rounded-xl border border-white/10 bg-night/70 px-3 py-2 text-xs text-zinc-300" />
         </div>
 
         <div className="mb-6 flex flex-wrap gap-2">
@@ -350,49 +346,49 @@ export default function AdminDatosPage() {
         {!loading && overview && tab === "resumen" && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <Stat label="Sesiones" value={overview.sessions} />
-              <Stat label="Visitas a fichas" value={overview.page_views} />
-              <Stat label="Clics en entradas" value={overview.tickets} sub={`${pct(overview.tickets, overview.page_views)} % de las visitas a fichas`} />
-              <Stat label="Cómo llegar" value={overview.directions} />
-              <Stat label="Compartidos" value={overview.shares} />
-              <Stat label="Búsquedas" value={overview.searches} sub={`${overview.searches_zero} sin resultados`} />
-              <Stat label="Asistiré" value={overview.attendances} />
-              <Stat label="Check-ins reales" value={overview.checkins} sub={`Cumplimiento ${pct(overview.checkins, overview.attendances)}%`} />
+              <Stat label="Sesiones" icon={Users} accent="violet" value={overview.sessions} />
+              <Stat label="Visitas a fichas" icon={Eye} accent="pink" value={overview.page_views} />
+              <Stat label="Clics en entradas" icon={Ticket} accent="cyan" value={overview.tickets} sub={`${pct(overview.tickets, overview.page_views)} % de las visitas a fichas`} />
+              <Stat label="Cómo llegar" icon={MapPin} accent="coral" value={overview.directions} />
+              <Stat label="Compartidos" icon={Share2} accent="violet" value={overview.shares} />
+              <Stat label="Búsquedas" icon={Search} accent="pink" value={overview.searches} sub={`${overview.searches_zero} sin resultados`} />
+              <Stat label="Asistiré" icon={CalendarCheck} accent="cyan" value={overview.attendances} />
+              <Stat label="Check-ins reales" icon={CheckCircle2} accent="coral" value={overview.checkins} sub={`Cumplimiento ${pct(overview.checkins, overview.attendances)}%`} />
             </div>
-            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <p className="text-sm font-bold">Visitas por día</p>
+            <Panel>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <SectionTitle icon={BarChart3} accent="violet">Visitas por día</SectionTitle>
                 <button onClick={exportOverviewCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
               </div>
               <Bars data={(overview.daily || []).map((d: any) => ({ label: d.d.slice(5), value: d.views }))} />
-            </div>
+            </Panel>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-                <p className="mb-4 text-sm font-bold">Origen del tráfico (sesiones)</p>
+              <Panel accent="pink">
+                <SectionTitle icon={Share2} accent="pink" className="mb-4">Origen del tráfico (sesiones)</SectionTitle>
                 <ListBars rows={(overview.sources || []).map((s: any) => ({ label: SOURCE_LABELS[s.source] || s.source, n: s.sessions }))} />
-              </div>
-              <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-                <p className="mb-4 text-sm font-bold">Dispositivo</p>
+              </Panel>
+              <Panel accent="cyan">
+                <SectionTitle icon={Smartphone} accent="cyan" className="mb-4">Dispositivo</SectionTitle>
                 <ListBars rows={(overview.devices || []).map((s: any) => ({ label: s.device === "mobile" ? "Móvil" : s.device === "desktop" ? "Ordenador" : s.device, n: s.sessions }))} />
-              </div>
-              <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-                <p className="mb-4 text-sm font-bold">Visitas por hora del día</p>
+              </Panel>
+              <Panel accent="violet">
+                <SectionTitle icon={Clock} accent="violet" className="mb-4">Visitas por hora del día</SectionTitle>
                 <Bars color="#7c5cff" data={Array.from({ length: 24 }, (_, h) => ({ label: String(h), value: (overview.hours || []).find((x: any) => x.h === h)?.n || 0 }))} />
-              </div>
-              <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-                <p className="mb-4 text-sm font-bold">Visitas por día de la semana</p>
+              </Panel>
+              <Panel accent="coral">
+                <SectionTitle icon={CalendarDays} accent="coral" className="mb-4">Visitas por día de la semana</SectionTitle>
                 <Bars color="#f59e0b" data={[1, 2, 3, 4, 5, 6, 7].map((d) => ({ label: WEEKDAYS[d], value: (overview.weekdays || []).find((x: any) => x.d === d)?.n || 0 }))} />
-              </div>
-              <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-                <p className="mb-4 text-sm font-bold">Clics en Uber / Cabify / FREE NOW</p>
+              </Panel>
+              <Panel accent="cyan">
+                <SectionTitle icon={Car} accent="cyan" className="mb-4">Clics en Uber / Cabify / FREE NOW</SectionTitle>
                 <ListBars rows={rideClicks.map((r) => ({ label: RIDE_PROVIDER_LABELS[r.provider] || r.provider, n: r.n }))} />
-              </div>
+              </Panel>
             </div>
           </div>
         )}
 
         {!loading && (tab === "clubs" || tab === "eventos") && !selected && (
-          <div className="rounded-card border border-white/10 bg-white/[0.03] p-4">
+          <div className="rounded-card border border-white/10 bg-surface p-4">
             <div className="mb-3 flex items-center justify-between px-2">
               <p className="text-xs text-zinc-400">Pulsa un encabezado para ordenar y una fila para ver el detalle.</p>
               <button onClick={tab === "clubs" ? exportClubsCsv : exportEventsCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
@@ -461,16 +457,16 @@ export default function AdminDatosPage() {
 
             {sel && (
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                <Stat label="Visitas" value={sel.views} />
-                <Stat label="Clics en entradas" value={sel.tickets} sub={`${sel.conv} % de las visitas`} />
-                <Stat label="Asistiré" value={sel.attendances} />
-                <Stat label="Check-ins" value={sel.checkins} sub={sel.attendances ? `Cumplimiento ${sel.fulfil}%` : undefined} />
+                <Stat label="Visitas" icon={Eye} accent="pink" value={sel.views} />
+                <Stat label="Clics en entradas" icon={Ticket} accent="cyan" value={sel.tickets} sub={`${sel.conv} % de las visitas`} />
+                <Stat label="Asistiré" icon={CalendarCheck} accent="cyan" value={sel.attendances} />
+                <Stat label="Check-ins" icon={CheckCircle2} accent="coral" value={sel.checkins} sub={sel.attendances ? `Cumplimiento ${sel.fulfil}%` : undefined} />
               </div>
             )}
 
             {sel && bench && (bench.zone || bench.type) && (
-              <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-                <p className="mb-3 text-sm font-bold">Comparativa</p>
+              <Panel accent="violet">
+                <SectionTitle icon={Scale} accent="violet" className="mb-4">Comparativa</SectionTitle>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead><tr className="text-xs text-zinc-400"><th className="py-1 text-left"></th><th className="py-1 text-right">Visitas</th><th className="py-1 text-right">Entradas</th><th className="py-1 text-right">Clic entrada %</th></tr></thead>
@@ -481,45 +477,45 @@ export default function AdminDatosPage() {
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </Panel>
             )}
 
             {detail && (
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 md:col-span-2">
-                  <p className="mb-4 text-sm font-bold">Visitas por día</p>
+                <Panel accent="violet" className="md:col-span-2">
+                  <SectionTitle icon={BarChart3} accent="violet" className="mb-4">Visitas por día</SectionTitle>
                   <Bars data={detail.daily.map((d: any) => ({ label: d.d.slice(5), value: d.views }))} />
-                </div>
-                <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-                  <p className="mb-4 text-sm font-bold">Visitas por hora</p>
+                </Panel>
+                <Panel accent="violet">
+                  <SectionTitle icon={Clock} accent="violet" className="mb-4">Visitas por hora</SectionTitle>
                   <Bars color="#7c5cff" data={Array.from({ length: 24 }, (_, h) => ({ label: String(h), value: detail.hours.find((x: any) => x.h === h)?.n || 0 }))} />
-                </div>
-                <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-                  <p className="mb-4 text-sm font-bold">De dónde llegan</p>
+                </Panel>
+                <Panel accent="pink">
+                  <SectionTitle icon={Share2} accent="pink" className="mb-4">De dónde llegan</SectionTitle>
                   <ListBars rows={detail.sources.map((s: any) => ({ label: SOURCE_LABELS[s.source] || s.source, n: s.n }))} />
-                </div>
-                <div className="rounded-card border border-white/10 bg-white/[0.03] p-6 md:col-span-2">
-                  <p className="mb-3 text-sm font-bold">Asistencia por noche: dicen que van vs. van de verdad</p>
+                </Panel>
+                <Panel accent="cyan" className="md:col-span-2">
+                  <SectionTitle icon={CalendarCheck} accent="cyan" className="mb-4">Asistencia por noche: dicen que van vs. van de verdad</SectionTitle>
                   {detail.nights.length === 0 ? <p className="text-sm text-zinc-400">Sin datos todavía.</p> : (
                     <table className="w-full text-sm">
                       <thead><tr className="text-xs text-zinc-400"><th className="py-1 text-left">Noche</th><th className="py-1 text-right">Asistiré</th><th className="py-1 text-right">Check-ins</th></tr></thead>
                       <tbody>{detail.nights.map((n: any) => <tr key={n.night} className="border-t border-white/5"><td className="py-1">{n.night}</td><td className="text-right">{n.asistire}</td><td className="text-right">{n.checkins}</td></tr>)}</tbody>
                     </table>
                   )}
-                </div>
+                </Panel>
               </div>
             )}
 
             {detailAud && (
-              <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-                <p className="mb-1 text-sm font-bold">Audiencia con cuenta ({detailAud.users} usuarios)</p>
+              <Panel accent="cyan">
+                <SectionTitle icon={Users} accent="cyan" className="mb-4">Audiencia con cuenta ({detailAud.users} usuarios)</SectionTitle>
                 <p className="mb-4 text-xs text-zinc-400">Solo usuarios registrados; los grupos de menos de 5 personas se ocultan.</p>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                   <div><p className="mb-2 text-xs text-zinc-400">Edad</p><ListBars rows={detailAud.ages} /></div>
                   <div><p className="mb-2 text-xs text-zinc-400">Género</p><ListBars rows={detailAud.genders} /></div>
                   <div><p className="mb-2 text-xs text-zinc-400">País</p><ListBars rows={detailAud.countries} /></div>
                 </div>
-              </div>
+              </Panel>
             )}
           </div>
         )}
@@ -538,20 +534,20 @@ export default function AdminDatosPage() {
                   {(new Date(to).getTime() - new Date(from).getTime()) / 86400000 > 366 && " Esta pestaña muestra como máximo los últimos 12 meses del periodo elegido."}
                 </p>
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-                  <Stat label="Visitas a categorías" value={essStats.totals?.category_views ?? 0} />
-                  <Stat label="Visitantes distintos" value={essStats.totals?.visitors ?? 0} />
-                  <Stat label="Locales abiertos" value={essStats.totals?.opens ?? 0} sub="tarjeta o chincheta del mapa" />
-                  <Stat label="Cómo llegar" value={essStats.totals?.directions ?? 0} sub={`${pct(essStats.totals?.directions ?? 0, essStats.totals?.opens ?? 0)}% de los abiertos`} />
-                  <Stat label="Google Maps" value={essStats.totals?.maps ?? 0} />
-                  <Stat label="Desde fichas de club" value={essStats.totals?.nearby ?? 0} sub="esenciales cercanos" />
+                  <Stat label="Visitas a categorías" icon={Eye} accent="pink" value={essStats.totals?.category_views ?? 0} />
+                  <Stat label="Visitantes distintos" icon={Users} accent="violet" value={essStats.totals?.visitors ?? 0} />
+                  <Stat label="Locales abiertos" icon={MapPin} accent="cyan" value={essStats.totals?.opens ?? 0} sub="tarjeta o chincheta del mapa" />
+                  <Stat label="Cómo llegar" icon={MapPin} accent="coral" value={essStats.totals?.directions ?? 0} sub={`${pct(essStats.totals?.directions ?? 0, essStats.totals?.opens ?? 0)}% de los abiertos`} />
+                  <Stat label="Google Maps" icon={MapPin} accent="coral" value={essStats.totals?.maps ?? 0} />
+                  <Stat label="Desde fichas de club" icon={Share2} accent="violet" value={essStats.totals?.nearby ?? 0} sub="esenciales cercanos" />
                 </div>
-                <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-                  <p className="mb-4 text-sm font-bold">Visitas a categorías por día</p>
+                <Panel accent="violet">
+                  <SectionTitle icon={BarChart3} accent="violet" className="mb-4">Visitas a categorías por día</SectionTitle>
                   <Bars data={(essStats.daily || []).map((d: any) => ({ label: d.d.slice(5), value: d.category_views }))} />
-                </div>
-                <div className="rounded-card border border-white/10 bg-white/[0.03] p-4">
+                </Panel>
+                <div className="rounded-card border border-white/10 bg-surface p-4">
                   <div className="mb-3 flex items-center justify-between">
-                    <p className="text-sm font-bold">Por categoría</p>
+                    <SectionTitle icon={Layers} accent="coral">Por categoría</SectionTitle>
                     <button onClick={exportEssCategoriesCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
                   </div>
                   <div className="overflow-x-auto">
@@ -586,9 +582,9 @@ export default function AdminDatosPage() {
                     </table>
                   </div>
                 </div>
-                <div className="rounded-card border border-white/10 bg-white/[0.03] p-4">
+                <div className="rounded-card border border-white/10 bg-surface p-4">
                   <div className="mb-3 flex items-center justify-between">
-                    <p className="text-sm font-bold">Locales más abiertos</p>
+                    <SectionTitle icon={MapPin} accent="cyan">Locales más abiertos</SectionTitle>
                     <button onClick={exportEssItemsCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
                   </div>
                   <div className="overflow-x-auto">
@@ -629,7 +625,7 @@ export default function AdminDatosPage() {
         )}
 
         {!loading && tab === "busquedas" && (
-          <div className="rounded-card border border-white/10 bg-white/[0.03] p-4">
+          <div className="rounded-card border border-white/10 bg-surface p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-2">
               <label className="flex items-center gap-2 text-xs text-zinc-300">
                 <input type="checkbox" checked={onlyZeroSearches} onChange={(e) => setOnlyZeroSearches(e.target.checked)} className="accent-purple-500" />
@@ -655,15 +651,15 @@ export default function AdminDatosPage() {
         )}
 
         {!loading && tab === "audiencia" && audience && (
-          <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
-            <p className="mb-1 text-sm font-bold">Usuarios con cuenta activos en el periodo: {audience.users}</p>
+          <Panel accent="cyan">
+            <SectionTitle icon={Users} accent="cyan" className="mb-4">Usuarios con cuenta activos en el periodo: {audience.users}</SectionTitle>
             <p className="mb-5 text-xs text-zinc-400">Datos agregados y anónimos. Los grupos de menos de 5 personas se ocultan.</p>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               <div><p className="mb-2 text-xs text-zinc-400">Edad</p><ListBars rows={audience.ages} /></div>
               <div><p className="mb-2 text-xs text-zinc-400">Género</p><ListBars rows={audience.genders} /></div>
               <div><p className="mb-2 text-xs text-zinc-400">País</p><ListBars rows={audience.countries} /></div>
             </div>
-          </div>
+          </Panel>
         )}
       </section>
     </AdminShell>

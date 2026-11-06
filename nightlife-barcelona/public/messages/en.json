@@ -63,7 +63,19 @@
     "picksWeek": "Our top 3 this week",
     "openNowIn": "Open now in {zone}",
     "tonightIn": "For tonight in {zone}",
-    "zonesLabel": "Choose an area"
+    "zonesLabel": "Choose an area",
+    "exploreTitle": "Explore Noctua",
+    "exploreSub": "Everything you need before, during and after a night out",
+    "doorMapText": "Clubs, pharmacies and stops on one map",
+    "doorPlanText": "Tell us what you feel like and we'll suggest places",
+    "doorEssentialsText": "Pharmacies, ATMs and food open at night",
+    "doorHomeTitle": "Getting home",
+    "doorHomeText": "Metro and NitBus: pick your line and your stop",
+    "doorMetro": "Metro",
+    "doorNitbus": "NitBus",
+    "stylesTitle": "What are you in the mood for tonight?",
+    "stylesSub": "Pick a vibe and we'll show you where it's playing",
+    "searchTry": "Try"
   },
   "filters": {
     "all": "All"
@@ -112,7 +124,14 @@
     "withEmail": "I'd rather sign up with email",
     "moreOptional": "Add country and gender (optional)",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "pwNeedLower": "a lowercase letter",
+    "pwNeedUpper": "an uppercase letter",
+    "pwNeedDigit": "a number",
+    "pwNeedSymbol": "a symbol (for example ! ? # $)",
+    "error_password_sets": "Your password needs to include {list}.",
+    "error_password_min": "Your password must be at least {n} characters long.",
+    "error_password_pwned": "That password is too common or has appeared in data leaks. Please choose another one."
   },
   "clubs": {
     "title": "Clubs",
@@ -2134,5 +2153,26 @@
     "lost": "I lost my phone or wallet",
     "lostHint": "Lost property offices",
     "buttonNote": "Quick help if something goes wrong tonight: pharmacy, emergency room, taxi, toilets or police near you. The 112 emergency number is inside, in case it's serious."
+  },
+  "metroPage": {
+    "back": "All metro lines",
+    "stopsCount": "{n} stations",
+    "findStop": "Find a station",
+    "noMatch": "No station matches “{q}”.",
+    "nearestIs": "Your nearest station: {name}, {dist} away.",
+    "nearSpotIs": "The nearest station to the place you were looking at: {name}, {dist} away.",
+    "tripStops": "{n} stations",
+    "tripStopOne": "1 station",
+    "segPickFrom": "Choose where you board",
+    "segPickTo": "Choose where you get off",
+    "noStops": "We don’t have the stations for this line yet.",
+    "officialNote": "Times, frequencies and service disruptions: check the official TMB website or app. Lines L6, L7, L8 and L12 are run by FGC.",
+    "title": "Barcelona Metro",
+    "subtitle": "Lines L1 to L12 with every station in order. Pick your line or search for your station.",
+    "findStopAll": "Search your station (Catalunya, Sants…)",
+    "viewMap": "See the stations on the map",
+    "ctaTitle": "Every station on every line, in order",
+    "ctaBody": "Pick a line, see its stations one by one and mark where you get on and off.",
+    "seeLine": "See the {code} route and plan my trip"
   }
 }

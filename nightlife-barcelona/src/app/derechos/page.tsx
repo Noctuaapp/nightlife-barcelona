@@ -7,6 +7,7 @@ import Footer from "@/components/layout/Footer"
 import BottomNav from "@/components/layout/BottomNav"
 import { useLanguage } from "../../context/LanguageContext"
 import { splitLines } from "@/lib/legalText"
+import { NightPage } from "@/components/ui/NightBackdrop"
 
 // Derechos y deberes al salir de fiesta (31/10/2026). Pensada para que la entienda cualquiera:
 // frases cortas, «pueden / no pueden», y los pasos de qué hacer si no te dejan entrar. Las leyes
@@ -94,6 +95,7 @@ export default function RightsPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
+      <NightPage tone="violet" soft>
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:py-16">
         <header>
           <h1 className="font-display text-[2rem] leading-tight text-ink sm:text-5xl">{t("rights.title")}</h1>
@@ -235,6 +237,7 @@ export default function RightsPage() {
           <p className="text-sm leading-relaxed text-zinc-400">{t("rights.disclaimer")}</p>
         </div>
       </main>
+      </NightPage>
       <Footer />
       <BottomNav />
     </div>

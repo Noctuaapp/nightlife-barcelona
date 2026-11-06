@@ -238,35 +238,35 @@ export default function AdminClubEventsPage() {
     <AdminShell title="Noches de club" subtitle="Crea, edita y gestiona las noches concretas de cada club (con fecha).">
       <>
         <section className="mx-auto max-w-7xl">
-          <div className="rounded-card border border-white/10 bg-white/[0.03] p-8">
+          <div className="rounded-card border border-white/10 bg-surface p-8">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              <select value={newClubEvent.club_id} onChange={(e) => handleNewClubChange(e.target.value)} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none">
+              <select value={newClubEvent.club_id} onChange={(e) => handleNewClubChange(e.target.value)} className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none">
                 <option value="">Select club</option>
                 {clubs.map((club) => <option key={club.id} value={club.id}>{club.name}</option>)}
               </select>
-              <input value={newClubEvent.title} onChange={(e) => setNewClubEvent({ ...newClubEvent, title: e.target.value })} placeholder="Night title" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-              <input value={newClubEvent.artist} onChange={(e) => setNewClubEvent({ ...newClubEvent, artist: e.target.value })} placeholder="Artist" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-              <input value={newClubEvent.music} onChange={(e) => setNewClubEvent({ ...newClubEvent, music: e.target.value })} placeholder="Music" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-              <input type="date" value={newClubEvent.date} onChange={(e) => setNewClubEvent({ ...newClubEvent, date: e.target.value })} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-              <input value={newClubEvent.start_time} onChange={(e) => setNewClubEvent({ ...newClubEvent, start_time: e.target.value })} placeholder="Start time" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-              <input value={newClubEvent.end_time} onChange={(e) => setNewClubEvent({ ...newClubEvent, end_time: e.target.value })} placeholder="End time" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-              <input value={newClubEvent.price} onChange={(e) => setNewClubEvent({ ...newClubEvent, price: e.target.value })} placeholder="Price" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-              <input value={newClubEvent.ticket_url} onChange={(e) => setNewClubEvent({ ...newClubEvent, ticket_url: e.target.value })} placeholder="Ticket URL" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
+              <input value={newClubEvent.title} onChange={(e) => setNewClubEvent({ ...newClubEvent, title: e.target.value })} placeholder="Night title" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
+              <input value={newClubEvent.artist} onChange={(e) => setNewClubEvent({ ...newClubEvent, artist: e.target.value })} placeholder="Artist" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
+              <input value={newClubEvent.music} onChange={(e) => setNewClubEvent({ ...newClubEvent, music: e.target.value })} placeholder="Music" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
+              <input type="date" value={newClubEvent.date} onChange={(e) => setNewClubEvent({ ...newClubEvent, date: e.target.value })} className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
+              <input value={newClubEvent.start_time} onChange={(e) => setNewClubEvent({ ...newClubEvent, start_time: e.target.value })} placeholder="Start time" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
+              <input value={newClubEvent.end_time} onChange={(e) => setNewClubEvent({ ...newClubEvent, end_time: e.target.value })} placeholder="End time" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
+              <input value={newClubEvent.price} onChange={(e) => setNewClubEvent({ ...newClubEvent, price: e.target.value })} placeholder="Price" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
+              <input value={newClubEvent.ticket_url} onChange={(e) => setNewClubEvent({ ...newClubEvent, ticket_url: e.target.value })} placeholder="Ticket URL" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
               <div>
                 <p className="text-xs text-zinc-400 mb-2 uppercase tracking-wide">Minimum age</p>
                 <div className="flex gap-2">
                   {ageLevels.map((age) => (
                     <button key={age} onClick={() => setNewClubEvent({ ...newClubEvent, age_min: age })}
-                      className={`rounded-full px-4 py-2 text-sm font-bold transition ${newClubEvent.age_min === age ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white"}`}>
+                      className={`rounded-full px-4 py-2 text-sm font-bold transition ${newClubEvent.age_min === age ? "bg-brand/20 text-white ring-1 ring-inset ring-brand/60" : "border border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"}`}>
                       +{age}
                     </button>
                   ))}
                 </div>
               </div>
-              <input value={newClubEvent.image} onChange={(e) => setNewClubEvent({ ...newClubEvent, image: e.target.value })} placeholder="Image URL" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-3" />
-              <input type="file" accept="image/*" onChange={handleNewImageUpload} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none lg:col-span-3" />
+              <input value={newClubEvent.image} onChange={(e) => setNewClubEvent({ ...newClubEvent, image: e.target.value })} placeholder="Image URL" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none lg:col-span-3" />
+              <input type="file" accept="image/*" onChange={handleNewImageUpload} className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 text-sm text-zinc-300 outline-none lg:col-span-3" />
               {newClubEvent.image && <img src={newClubEvent.image} alt="Preview" className="h-44 w-full rounded-2xl object-cover lg:col-span-3" />}
-              <textarea value={newClubEvent.description} onChange={(e) => setNewClubEvent({ ...newClubEvent, description: e.target.value })} placeholder="Description" className="min-h-[120px] rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-3" />
+              <textarea value={newClubEvent.description} onChange={(e) => setNewClubEvent({ ...newClubEvent, description: e.target.value })} placeholder="Description" className="min-h-[120px] rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none lg:col-span-3" />
               <button onClick={addClubEvent} disabled={uploading} className="rounded-2xl bg-white px-8 py-4 font-bold text-black disabled:opacity-50 lg:col-span-3">
                 {uploading ? "Uploading..." : "Add club night"}
               </button>
@@ -274,39 +274,39 @@ export default function AdminClubEventsPage() {
           </div>
         </section>
 
-        <section className="mx-auto mt-10 max-w-7xl px-4">
+        <section className="mx-auto mt-10 max-w-7xl">
           <div className="grid gap-6">
             {clubEvents.map((clubEvent) => (
-              <div key={clubEvent.id} id={`clubevent-${clubEvent.id}`} className="rounded-card border border-white/10 bg-white/[0.03] p-6">
+              <div key={clubEvent.id} id={`clubevent-${clubEvent.id}`} className="rounded-card border border-white/10 bg-surface p-6">
                 {editingId === clubEvent.id ? (
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                    <select value={editClubEvent.club_id} onChange={(e) => handleEditClubChange(e.target.value)} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none">
+                    <select value={editClubEvent.club_id} onChange={(e) => handleEditClubChange(e.target.value)} className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none">
                       <option value="">Select club</option>
                       {clubs.map((club) => <option key={club.id} value={club.id}>{club.name}</option>)}
                     </select>
-                    <input value={editClubEvent.title} onChange={(e) => setEditClubEvent({ ...editClubEvent, title: e.target.value })} placeholder="Night title" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-                    <input value={editClubEvent.artist} onChange={(e) => setEditClubEvent({ ...editClubEvent, artist: e.target.value })} placeholder="Artist" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-                    <input value={editClubEvent.music} onChange={(e) => setEditClubEvent({ ...editClubEvent, music: e.target.value })} placeholder="Music" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-                    <input type="date" value={editClubEvent.date} onChange={(e) => setEditClubEvent({ ...editClubEvent, date: e.target.value })} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-                    <input value={editClubEvent.start_time} onChange={(e) => setEditClubEvent({ ...editClubEvent, start_time: e.target.value })} placeholder="Start time" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-                    <input value={editClubEvent.end_time} onChange={(e) => setEditClubEvent({ ...editClubEvent, end_time: e.target.value })} placeholder="End time" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-                    <input value={editClubEvent.price} onChange={(e) => setEditClubEvent({ ...editClubEvent, price: e.target.value })} placeholder="Price" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
-                    <input value={editClubEvent.ticket_url} onChange={(e) => setEditClubEvent({ ...editClubEvent, ticket_url: e.target.value })} placeholder="Ticket URL" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none" />
+                    <input value={editClubEvent.title} onChange={(e) => setEditClubEvent({ ...editClubEvent, title: e.target.value })} placeholder="Night title" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
+                    <input value={editClubEvent.artist} onChange={(e) => setEditClubEvent({ ...editClubEvent, artist: e.target.value })} placeholder="Artist" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
+                    <input value={editClubEvent.music} onChange={(e) => setEditClubEvent({ ...editClubEvent, music: e.target.value })} placeholder="Music" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
+                    <input type="date" value={editClubEvent.date} onChange={(e) => setEditClubEvent({ ...editClubEvent, date: e.target.value })} className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
+                    <input value={editClubEvent.start_time} onChange={(e) => setEditClubEvent({ ...editClubEvent, start_time: e.target.value })} placeholder="Start time" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
+                    <input value={editClubEvent.end_time} onChange={(e) => setEditClubEvent({ ...editClubEvent, end_time: e.target.value })} placeholder="End time" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
+                    <input value={editClubEvent.price} onChange={(e) => setEditClubEvent({ ...editClubEvent, price: e.target.value })} placeholder="Price" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
+                    <input value={editClubEvent.ticket_url} onChange={(e) => setEditClubEvent({ ...editClubEvent, ticket_url: e.target.value })} placeholder="Ticket URL" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none" />
                     <div>
                       <p className="text-xs text-zinc-400 mb-2 uppercase tracking-wide">Minimum age</p>
                       <div className="flex gap-2">
                         {ageLevels.map((age) => (
                           <button key={age} onClick={() => setEditClubEvent({ ...editClubEvent, age_min: age })}
-                            className={`rounded-full px-4 py-2 text-sm font-bold transition ${editClubEvent.age_min === age ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white"}`}>
+                            className={`rounded-full px-4 py-2 text-sm font-bold transition ${editClubEvent.age_min === age ? "bg-brand/20 text-white ring-1 ring-inset ring-brand/60" : "border border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"}`}>
                             +{age}
                           </button>
                         ))}
                       </div>
                     </div>
-                    <input value={editClubEvent.image} onChange={(e) => setEditClubEvent({ ...editClubEvent, image: e.target.value })} placeholder="Image URL" className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-3" />
-                    <input type="file" accept="image/*" onChange={handleEditImageUpload} className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-zinc-300 outline-none lg:col-span-3" />
+                    <input value={editClubEvent.image} onChange={(e) => setEditClubEvent({ ...editClubEvent, image: e.target.value })} placeholder="Image URL" className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none lg:col-span-3" />
+                    <input type="file" accept="image/*" onChange={handleEditImageUpload} className="rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 text-sm text-zinc-300 outline-none lg:col-span-3" />
                     {editClubEvent.image && <img src={editClubEvent.image} alt="Preview" className="h-52 w-full rounded-2xl object-cover lg:col-span-3" />}
-                    <textarea value={editClubEvent.description} onChange={(e) => setEditClubEvent({ ...editClubEvent, description: e.target.value })} placeholder="Description" className="min-h-[120px] rounded-2xl border border-white/10 bg-black/40 px-5 py-4 outline-none lg:col-span-3" />
+                    <textarea value={editClubEvent.description} onChange={(e) => setEditClubEvent({ ...editClubEvent, description: e.target.value })} placeholder="Description" className="min-h-[120px] rounded-ctl border border-white/10 bg-night/70 px-4 py-3 text-sm transition placeholder:text-zinc-500 focus:border-brand/60 outline-none lg:col-span-3" />
                     <button onClick={() => saveEditing(clubEvent.id)} disabled={uploading} className="rounded-2xl bg-emerald-400 px-8 py-4 font-bold text-black disabled:opacity-50">Save changes</button>
                     <button onClick={cancelEditing} className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 font-bold">Cancel</button>
                   </div>
@@ -329,7 +329,7 @@ export default function AdminClubEventsPage() {
                         <div className="flex gap-2">
                           {ageLevels.map((age) => (
                             <button key={age} onClick={() => updateAgeMin(clubEvent, age)}
-                              className={`rounded-full px-4 py-2 text-xs font-semibold transition ${clubEvent.age_min === age ? "bg-white text-black" : "border border-white/10 bg-white/5 text-white"}`}>
+                              className={`rounded-full px-4 py-2 text-xs font-semibold transition ${clubEvent.age_min === age ? "bg-brand/20 text-white ring-1 ring-inset ring-brand/60" : "border border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"}`}>
                               +{age}
                             </button>
                           ))}

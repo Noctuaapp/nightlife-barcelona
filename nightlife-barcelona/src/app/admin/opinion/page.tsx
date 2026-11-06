@@ -81,7 +81,7 @@ export default function AdminOpinionPage() {
         <p className="mt-10 text-center text-zinc-400">Cargando...</p>
       ) : total === 0 ? (
         <section className="mx-auto mt-10 max-w-4xl px-4">
-          <div className="rounded-card border border-white/10 bg-white/[0.03] p-10 text-center">
+          <div className="rounded-card border border-white/10 bg-surface p-10 text-center">
             <p className="text-3xl">⭐</p>
             <p className="mt-3 text-zinc-400">Todavía no hay ninguna valoración.</p>
           </div>
@@ -89,14 +89,14 @@ export default function AdminOpinionPage() {
       ) : (
         <section className="mx-auto mt-6 max-w-4xl px-4 pb-10">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-6">
-            <div className="rounded-card border border-white/10 bg-white/[0.03] p-5 sm:col-span-2">
+            <div className="rounded-card border border-white/10 bg-surface p-5 sm:col-span-2">
               <p className="text-xs text-zinc-400">Media</p>
               <p className="mt-2 flex items-center gap-2 text-4xl font-black text-white">
                 {avg.toFixed(1)} <Star className="h-7 w-7 fill-amber-400 text-amber-400" />
               </p>
               <p className="mt-1 text-xs text-zinc-400">{total} valoraciones</p>
             </div>
-            <div className="rounded-card border border-white/10 bg-white/[0.03] p-5 sm:col-span-4">
+            <div className="rounded-card border border-white/10 bg-surface p-5 sm:col-span-4">
               <div className="flex h-full flex-col justify-center gap-1.5">
                 {distribution.map((d) => (
                   <div key={d.n} className="flex items-center gap-2 text-xs text-zinc-400">
@@ -119,7 +119,7 @@ export default function AdminOpinionPage() {
             {rows.filter((r) => r.comment).slice(0, 100).map((r) => {
               const person = r.user_id ? peopleById[r.user_id] : null
               return (
-                <div key={r.id} className="rounded-card border border-white/10 bg-white/[0.03] p-4">
+                <div key={r.id} className="rounded-card border border-white/10 bg-surface p-4">
                   <div className="flex items-center justify-between gap-3">
                     <span className="flex items-center gap-1 text-sm font-bold text-amber-400">
                       {r.rating} <Star className="h-4 w-4 fill-amber-400" />

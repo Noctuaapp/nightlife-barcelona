@@ -5,9 +5,10 @@ import { distanceInMeters } from "./geo"
 // cercana a cada club o a cualquier esencial por geolocalización en vez de depender de que
 // el admin rellene a mano estación a estación (algo que en la práctica no se mantiene).
 // "lines" (L1, L3...) viene de la Wikipedia en inglés ("List of Barcelona Metro stations"),
-// cruzado por nombre con esta lista; 6 estaciones (ramales/accesos menores, p. ej. Vallcarca,
-// Parc Nou) se quedan sin líneas por no encontrar una correspondencia fiable — mejor no mostrar
-// nada que inventar una línea.
+// cruzado por nombre con esta lista. 06/11/2026: al cruzarla con el orden de cada línea (ver
+// metroLines.ts) se corrigieron Tarragona (es de la L3, no de la L1) y La Sagrera (no tiene L4), y se
+// completaron las 6 estaciones que se habían quedado sin línea (Vallcarca, Bellvitge Rambla Marina,
+// Parc Nou, Cèntric, Parc Logístic y Ciutat de la Justícia).
 export type MetroStation = { name: string; lat: number; lon: number; lines?: string[] }
 
 export const METRO_STATIONS: MetroStation[] = [
@@ -40,8 +41,8 @@ export const METRO_STATIONS: MetroStation[] = [
   { name: 'Plaça del Centre', lat: 41.3818207, lon: 2.1356301, lines: ["L3"] },
   { name: 'Pubilla Cases', lat: 41.3738133, lon: 2.1071207, lines: ["L5"] },
   { name: 'Roquetes', lat: 41.447355, lon: 2.1757834, lines: ["L3"] },
-  { name: 'Tarragona', lat: 41.378444, lon: 2.1453675, lines: ["L1"] },
-  { name: 'Vallcarca', lat: 41.4119065, lon: 2.1445239 },
+  { name: 'Tarragona', lat: 41.378444, lon: 2.1453675, lines: ["L3"] },
+  { name: 'Vallcarca', lat: 41.4119065, lon: 2.1445239, lines: ["L3"] },
   { name: 'Valldaura', lat: 41.4380037, lon: 2.1568764, lines: ["L3"] },
   { name: 'Vilapicina', lat: 41.43046, lon: 2.1681725, lines: ["L5"] },
   { name: 'Zona Universitària', lat: 41.3842442, lon: 2.1116863, lines: ["L3", "L9"] },
@@ -60,7 +61,7 @@ export const METRO_STATIONS: MetroStation[] = [
   { name: 'Hospital de Bellvitge', lat: 41.3446499, lon: 2.1072007, lines: ["L1"] },
   { name: 'El Coll | La Teixonera', lat: 41.4216569, lon: 2.1493621, lines: ["L5"] },
   { name: 'Baró de Viver', lat: 41.4499467, lon: 2.1995389, lines: ["L1"] },
-  { name: 'Bellvitge Rambla Marina', lat: 41.3509646, lon: 2.1109354 },
+  { name: 'Bellvitge Rambla Marina', lat: 41.3509646, lon: 2.1109354, lines: ["L1"] },
   { name: 'Avinguda Carrilet', lat: 41.3589129, lon: 2.102483, lines: ["L1", "L8"] },
   { name: 'Can Serra', lat: 41.3676843, lon: 2.1027358, lines: ["L1"] },
   { name: 'Florida', lat: 41.3683228, lon: 2.1098316, lines: ["L1"] },
@@ -74,7 +75,7 @@ export const METRO_STATIONS: MetroStation[] = [
   { name: 'Sant Josep', lat: 41.3609506, lon: 2.1103613, lines: ["L8"] },
   { name: 'Gràcia', lat: 41.3997568, lon: 2.1521547, lines: ["L6", "L7"] },
   { name: 'Llucmajor | República', lat: 41.4370089, lon: 2.1733642, lines: ["L4"] },
-  { name: 'La Sagrera', lat: 41.4226234, lon: 2.1870242, lines: ["L1", "L4", "L5", "L9", "L10"] },
+  { name: 'La Sagrera', lat: 41.4226234, lon: 2.1870242, lines: ["L1", "L5", "L9", "L10"] },
   { name: 'Virrei Amat', lat: 41.4295936, lon: 2.1749989, lines: ["L5"] },
   { name: 'Sagrada Família', lat: 41.4040337, lon: 2.1738819, lines: ["L2", "L5"] },
   { name: 'Fondo', lat: 41.4516735, lon: 2.2184075, lines: ["L1", "L9"] },
@@ -90,9 +91,9 @@ export const METRO_STATIONS: MetroStation[] = [
   { name: 'Església Major', lat: 41.4547585, lon: 2.2124022, lines: ["L9"] },
   { name: 'Pep Ventura', lat: 41.4439389, lon: 2.2380518, lines: ["L2"] },
   { name: 'Mas Blau', lat: 41.3113187, lon: 2.0734222, lines: ["L9"] },
-  { name: 'Parc Nou', lat: 41.3167071, lon: 2.087351 },
-  { name: 'Cèntric', lat: 41.321844, lon: 2.0935651 },
-  { name: 'Parc Logístic', lat: 41.3418064, lon: 2.1279825 },
+  { name: 'Parc Nou', lat: 41.3167071, lon: 2.087351, lines: ["L9"] },
+  { name: 'Cèntric', lat: 41.321844, lon: 2.0935651, lines: ["L9"] },
+  { name: 'Parc Logístic', lat: 41.3418064, lon: 2.1279825, lines: ["L9"] },
   { name: 'Fira', lat: 41.3519228, lon: 2.130679, lines: ["L9"] },
   { name: 'Europa | Fira', lat: 41.3572488, lon: 2.1256902, lines: ["L8", "L9"] },
   { name: 'Can Tries - Gornal', lat: 41.3607212, lon: 2.1181989, lines: ["L9", "L10"] },
@@ -159,7 +160,7 @@ export const METRO_STATIONS: MetroStation[] = [
   { name: 'Foc', lat: 41.3558512, lon: 2.1421622, lines: ["L10"] },
   { name: 'Foneria', lat: 41.3604907, lon: 2.1387397, lines: ["L10"] },
   { name: 'Provençana', lat: 41.3613875, lon: 2.1242931, lines: ["L10"] },
-  { name: 'Ciutat de la Justícia', lat: 41.3632435, lon: 2.1330085 },
+  { name: 'Ciutat de la Justícia', lat: 41.3632435, lon: 2.1330085, lines: ["L10"] },
   { name: 'Ernest Lluch', lat: 41.3758955, lon: 2.1120352, lines: ["L5"] },
   { name: 'Sarrià', lat: 41.3988427, lon: 2.125175, lines: ["L6", "L12"] },
   { name: 'Mercat Nou', lat: 41.3727946, lon: 2.1333313, lines: ["L1"] },

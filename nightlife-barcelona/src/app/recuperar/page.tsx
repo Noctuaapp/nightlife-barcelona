@@ -8,6 +8,7 @@ import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import CaptchaBox from "../../components/auth/CaptchaBox"
 import { captchaEnabled, captchaOptions, CAPTCHA_PENDING_MESSAGE } from "../../lib/captcha"
+import NightBackdrop from "../../components/ui/NightBackdrop"
 
 // «¿Has olvidado tu contraseña?» (26/10/2026). Antes no existía: quien la olvidaba no tenía forma
 // de volver a entrar salvo escribir a soporte. Ahora se pide un enlace por email (lo envía
@@ -54,7 +55,8 @@ export default function RecoverPasswordPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-night pb-40 text-ink">
+      <main className="relative isolate min-h-screen bg-night pb-40 text-ink">
+        <NightBackdrop tone={"violet"} />
         <section className="px-4 pb-10 pt-14">
           <div className="mx-auto max-w-md text-center">
             <h1 className="font-display text-4xl sm:text-5xl">{t("recover.title")}</h1>

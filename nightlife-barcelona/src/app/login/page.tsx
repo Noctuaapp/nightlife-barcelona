@@ -10,6 +10,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import GoogleButton from "../../components/auth/GoogleButton"
 import CaptchaBox from "../../components/auth/CaptchaBox"
 import { captchaEnabled, captchaOptions, CAPTCHA_PENDING_MESSAGE } from "../../lib/captcha"
+import NightBackdrop from "../../components/ui/NightBackdrop"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -54,7 +55,8 @@ export default function LoginPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-night pb-40 text-ink">
+      <main className="relative isolate min-h-screen bg-night pb-40 text-ink">
+        <NightBackdrop tone="violet" />
         <section className="relative overflow-hidden px-4 pt-14 pb-10">
           <div className="relative mx-auto max-w-md text-center">
             <h1 className="font-display text-4xl sm:text-5xl">{t("login.title")}</h1>

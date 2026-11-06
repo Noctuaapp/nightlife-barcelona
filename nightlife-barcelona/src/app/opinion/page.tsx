@@ -7,6 +7,7 @@ import BottomNav from "../../components/layout/BottomNav"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import { Star } from "lucide-react"
+import { NightPage } from "../../components/ui/NightBackdrop"
 
 // Encuesta corta de valoración de la web, enlazada desde el footer. A propósito no exige
 // sesión (se capta a quien tenga cuenta y a quien no), y es de una sola pantalla: una
@@ -53,6 +54,7 @@ export default function OpinionPage() {
   return (
     <div className="flex min-h-screen flex-col bg-night text-ink">
       <Header />
+      <NightPage tone="pink">
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-24 pt-14 sm:pt-20">
         <h1 className="font-display text-3xl sm:text-4xl">{t("opinion.title")}</h1>
         <p className="mt-3 text-sm leading-relaxed text-zinc-400">{t("opinion.subtitle")}</p>
@@ -108,6 +110,7 @@ export default function OpinionPage() {
           </div>
         )}
       </main>
+      </NightPage>
       <Footer />
       <BottomNav />
     </div>

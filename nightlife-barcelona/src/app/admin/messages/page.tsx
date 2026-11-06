@@ -8,6 +8,8 @@ import { supabase } from "../../../lib/supabase"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { logError } from "../../../lib/log"
 import { toast } from "../../../components/ui/Toast"
+import { Archive, CheckCheck, Inbox, Mail, Megaphone, ShieldAlert } from "lucide-react"
+import { Panel, SectionTitle, StatTile } from "../../../components/admin/ui"
 
 type ContactMessage = {
   id: number
@@ -343,27 +345,17 @@ export default function AdminMessagesPage() {
     <AdminShell title="Mensajes" subtitle="Soporte, reportes de datos incorrectos, sugerencias de locales y propuestas de colaboración.">
       <>
         <section className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <FilterCard label="All" value={stats.all} active={filter === "all"} onClick={() => setFilter("all")} />
-            <FilterCard label="New" value={stats.new} active={filter === "new"} onClick={() => setFilter("new")} />
-            <FilterCard
-              label="Reviewed"
-              value={stats.reviewed}
-              active={filter === "reviewed"}
-              onClick={() => setFilter("reviewed")}
-            />
-            <FilterCard
-              label="Closed"
-              value={stats.closed}
-              active={filter === "closed"}
-              onClick={() => setFilter("closed")}
-            />
-            <FilterCard label="Spam" value={stats.spam} active={filter === "spam"} onClick={() => setFilter("spam")} />
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <StatTile accent="violet" icon={Inbox} label="Todos" value={stats.all} active={filter === "all"} onClick={() => setFilter("all")} />
+            <StatTile accent="pink" icon={Mail} label="Nuevos" value={stats.new} active={filter === "new"} onClick={() => setFilter("new")} />
+            <StatTile accent="cyan" icon={CheckCheck} label="Revisados" value={stats.reviewed} active={filter === "reviewed"} onClick={() => setFilter("reviewed")} />
+            <StatTile accent="coral" icon={Archive} label="Cerrados" value={stats.closed} active={filter === "closed"} onClick={() => setFilter("closed")} />
+            <StatTile accent="violet" icon={ShieldAlert} label="Spam" value={stats.spam} active={filter === "spam"} onClick={() => setFilter("spam")} />
           </div>
         </section>
 
         {hotReports.length > 0 && (
-          <section className="mx-auto mt-6 max-w-7xl px-4">
+          <section className="mx-auto mt-6 max-w-7xl">
             <div className="rounded-card border border-red-500/40 bg-red-500/10 p-5">
               <p className="text-sm font-bold text-red-300">
                 🚨 Alerta: {hotReports.length === 1 ? "1 ficha acumula" : `${hotReports.length} fichas acumulan`} {REPORT_ALERT_THRESHOLD} o más reportes sin cerrar
@@ -378,8 +370,8 @@ export default function AdminMessagesPage() {
                     }}
                     className={`rounded-full border px-4 py-2 text-xs font-bold transition ${
                       subjectFilter === r.key
-                        ? "border-white bg-white text-black"
-                        : "border-red-400/40 bg-black/40 text-red-200 hover:border-red-300"
+                        ? "border-brand/60 bg-brand/20 text-white"
+                        : "border-red-400/40 bg-night/70 text-red-200 hover:border-red-300"
                     }`}
                   >
                     {r.subject} · {r.count}
@@ -398,15 +390,15 @@ export default function AdminMessagesPage() {
           </section>
         )}
 
-        <section className="mx-auto mt-10 max-w-7xl px-4">
-          <div className="rounded-card border border-purple-500/20 bg-purple-500/5 p-6">
-            <p className="text-sm font-bold text-purple-300">Aviso general a todos los usuarios</p>
+        <section className="mx-auto mt-10 max-w-7xl">
+          <Panel accent="violet">
+            <SectionTitle icon={Megaphone} accent="violet">Aviso general a todos los usuarios</SectionTitle>
 
             <input
               value={broadcastTitle}
               onChange={(e) => setBroadcastTitle(e.target.value)}
               placeholder="Título (opcional, ej: Mantenimiento programado)"
-              className="mt-3 w-full rounded-2xl border border-white/10 bg-black/40 p-4 text-white placeholder-zinc-600 outline-none focus:border-purple-500/50"
+              className="mt-3 w-full rounded-ctl border border-white/10 bg-night/70 p-4 text-sm text-ink outline-none transition placeholder:text-zinc-500 focus:border-brand/60"
             />
 
             <textarea
@@ -414,26 +406,26 @@ export default function AdminMessagesPage() {
               onChange={(e) => setBroadcastText(e.target.value)}
               rows={3}
               placeholder="Escribe el aviso que verán todos los usuarios logueados..."
-              className="mt-3 w-full rounded-2xl border border-white/10 bg-black/40 p-4 text-white placeholder-zinc-600 outline-none focus:border-purple-500/50"
+              className="mt-3 w-full rounded-ctl border border-white/10 bg-night/70 p-4 text-sm text-ink outline-none transition placeholder:text-zinc-500 focus:border-brand/60"
             />
 
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <button
                 onClick={sendBroadcast}
                 disabled={broadcastSending || !broadcastText.trim()}
-                className="rounded-2xl bg-purple-500 px-6 py-3 text-sm font-bold text-white transition hover:scale-[1.02] disabled:opacity-40"
+                className="rounded-ctl bg-brand px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-strong disabled:opacity-40"
               >
                 {broadcastSending ? "Enviando..." : "Enviar a todos"}
               </button>
               {broadcastOk && <span className="text-sm font-bold text-emerald-400">Enviado ✓</span>}
               {broadcastError && <span className="text-sm font-bold text-red-400">{broadcastError}</span>}
             </div>
-          </div>
+          </Panel>
         </section>
 
-        <section className="mx-auto mt-10 max-w-7xl px-4">
+        <section className="mx-auto mt-10 max-w-7xl">
           <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-            <div className="flex max-h-[70vh] flex-col gap-3 overflow-y-auto rounded-card border border-white/10 bg-white/[0.03] p-4">
+            <div className="flex max-h-[70vh] flex-col gap-3 overflow-y-auto rounded-card border border-white/10 bg-surface p-4">
               {filter === "spam" && stats.spam > 0 && (
                 <button
                   onClick={emptySpam}
@@ -445,7 +437,7 @@ export default function AdminMessagesPage() {
 
               {/* Selección múltiple: dos "seleccionar todos" (esta vista filtrada / todo el
                   buzón entero) más borrar/spam en bloque sobre lo que esté marcado. */}
-              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-black/20 p-3 text-xs">
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-night/50 p-3 text-xs">
                 <button onClick={selectAllVisible} className="font-bold text-zinc-300 hover:text-white">
                   Seleccionar esta página ({filteredMessages.length})
                 </button>
@@ -492,7 +484,7 @@ export default function AdminMessagesPage() {
                     onKeyDown={(e) => e.key === "Enter" && openMessage(message)}
                     className={`flex cursor-pointer gap-3 rounded-2xl border p-4 text-left transition ${
                       selectedId === message.id
-                        ? "border-white bg-white text-black"
+                        ? "border-brand/60 bg-brand/15 text-white"
                         : "border-white/10 bg-white/[0.03] text-white hover:border-white/30"
                     }`}
                   >
@@ -508,24 +500,24 @@ export default function AdminMessagesPage() {
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate text-sm font-bold">{message.name || message.email || "Anónimo"}</span>
                         <span
-                          className={`shrink-0 rounded-xl px-2 py-1 text-xs font-bold uppercase ${
-                            selectedId === message.id ? "bg-black/10 text-black" : statusClass(message.status)
+                          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            statusClass(message.status)
                           }`}
                         >
-                          {message.status}
+                          {statusLabel(message.status)}
                         </span>
                       </div>
 
-                      <p className={`mt-1 truncate text-sm font-semibold ${selectedId === message.id ? "text-black" : "text-zinc-200"}`}>
+                      <p className="mt-1 truncate text-sm font-semibold text-zinc-200">
                         {message.subject || formatType(message.type)}
                       </p>
 
-                      <p className={`mt-1 line-clamp-2 text-xs ${selectedId === message.id ? "text-black/70" : "text-zinc-400"}`}>
+                      <p className="mt-1 line-clamp-2 text-xs text-zinc-400">
                         {message.message}
                       </p>
 
                       {message.created_at && (
-                        <p className={`mt-2 text-xs ${selectedId === message.id ? "text-black/60" : "text-zinc-400"}`}>
+                        <p className="mt-2 text-xs text-zinc-400">
                           {new Date(message.created_at).toLocaleString()}
                         </p>
                       )}
@@ -535,7 +527,7 @@ export default function AdminMessagesPage() {
               )}
             </div>
 
-            <div className="rounded-card border border-white/10 bg-white/[0.03] p-6">
+            <div className="rounded-card border border-white/10 bg-surface p-6">
               {!selectedMessage ? (
                 <div className="flex h-full min-h-[300px] flex-col items-center justify-center text-center">
                   <h2 className="text-3xl font-black">Selecciona un mensaje</h2>
@@ -546,12 +538,12 @@ export default function AdminMessagesPage() {
               ) : (
                 <div>
                   <div className="flex flex-wrap gap-3">
-                    <span className="rounded-2xl bg-white/10 px-4 py-2 text-sm">{formatType(selectedMessage.type)}</span>
-                    <span className={`rounded-2xl px-4 py-2 text-sm font-bold ${statusClass(selectedMessage.status)}`}>
-                      {selectedMessage.status}
+                    <span className="rounded-full bg-white/[0.08] px-4 py-2 text-sm">{formatType(selectedMessage.type)}</span>
+                    <span className={`rounded-full px-4 py-2 text-sm font-semibold ${statusClass(selectedMessage.status)}`}>
+                      {statusLabel(selectedMessage.status)}
                     </span>
                     {selectedMessage.created_at && (
-                      <span className="rounded-2xl bg-white/10 px-4 py-2 text-sm text-zinc-300">
+                      <span className="rounded-full bg-white/[0.08] px-4 py-2 text-sm text-zinc-300">
                         {new Date(selectedMessage.created_at).toLocaleString()}
                       </span>
                     )}
@@ -627,7 +619,7 @@ export default function AdminMessagesPage() {
                       onChange={(e) => setReplyText(e.target.value)}
                       rows={5}
                       placeholder="Escribe tu respuesta (queda guardada como nota interna)..."
-                      className="mt-3 w-full rounded-2xl border border-white/10 bg-black/40 p-4 text-white placeholder-zinc-600 outline-none focus:border-white/30"
+                      className="mt-3 w-full rounded-ctl border border-white/10 bg-night/70 p-4 text-sm text-ink outline-none transition placeholder:text-zinc-500 focus:border-brand/60"
                     />
 
                     <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -653,50 +645,25 @@ export default function AdminMessagesPage() {
   )
 }
 
-function FilterCard({
-  label,
-  value,
-  active,
-  onClick,
-}: {
-  label: string
-  value: number
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-card border p-5 text-left transition hover:scale-[1.02] ${
-        active ? "border-white bg-white text-black" : "border-white/10 bg-white/[0.03] text-white"
-      }`}
-    >
-      <p className="text-xs opacity-70">{label}</p>
-      <h2 className="mt-2 text-4xl font-black">{value}</h2>
-    </button>
-  )
-}
-
 function formatType(type: string) {
   const labels: Record<string, string> = {
-    user_support: "User support",
-    report_issue: "Report issue",
-    suggest_venue: "Suggest venue",
-    club_partnership: "Club partnership",
-    festival_partnership: "Festival partnership",
+    user_support: "Soporte",
+    report_issue: "Dato incorrecto",
+    suggest_venue: "Sugerencia de local",
+    club_partnership: "Colaboración de club",
+    festival_partnership: "Colaboración de festival",
   }
 
   return labels[type] || type
 }
 
+function statusLabel(status: string) {
+  return status === "new" ? "Nuevo" : status === "reviewed" ? "Revisado" : status === "closed" ? "Cerrado" : status
+}
+
 function statusClass(status: string) {
-  if (status === "new") {
-    return "border border-blue-500/20 bg-blue-500/10 text-blue-300"
-  }
-
-  if (status === "reviewed") {
-    return "border border-yellow-500/20 bg-yellow-500/10 text-yellow-300"
-  }
-
-  return "border border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+  if (status === "new") return "bg-brand/15 text-brand-soft"
+  if (status === "reviewed") return "bg-warn/12 text-warn"
+  if (status === "closed") return "bg-open/12 text-open"
+  return "bg-white/[0.06] text-zinc-300"
 }

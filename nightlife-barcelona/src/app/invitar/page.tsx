@@ -9,6 +9,7 @@ import NocOwl from "@/components/mascot/NocOwl"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import { Share2, Check } from "lucide-react"
+import { NightPage } from "@/components/ui/NightBackdrop"
 
 type Info = { code: string; invited: number; active: number }
 
@@ -48,6 +49,7 @@ export default function InvitarPage() {
   return (
     <div className="flex min-h-screen flex-col bg-night text-ink">
       <Header />
+      <NightPage tone="pink">
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-8 sm:pt-12">
         {state === "loading" && <p className="py-24 text-center text-zinc-400">{t("common.loading")}</p>}
 
@@ -103,6 +105,7 @@ export default function InvitarPage() {
           </div>
         )}
       </main>
+      </NightPage>
       <Footer />
       <BottomNav />
     </div>

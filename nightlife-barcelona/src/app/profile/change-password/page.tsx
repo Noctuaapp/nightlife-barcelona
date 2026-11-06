@@ -8,9 +8,10 @@ import BottomNav from "../../../components/layout/BottomNav"
 
 import { supabase } from "../../../lib/supabase"
 import { useLanguage } from "../../../context/LanguageContext"
+import { parsePasswordIssue, passwordIssueText } from "../../../lib/authErrors"
 
 export default function ChangePasswordPage() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [success, setSuccess] = useState("")
@@ -66,7 +67,8 @@ export default function ChangePasswordPage() {
     setSaving(false)
 
     if (error) {
-      setError(/different from the old/i.test(error.message) ? t("changePassword.errorSame") : error.message)
+      const pwIssue = parsePasswordIssue(error.message)
+      setError(pwIssue ? passwordIssueText(pwIssue, t, locale) : error.message)
       return
     }
 

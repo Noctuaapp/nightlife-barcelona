@@ -3,6 +3,7 @@ import { Unbounded, Plus_Jakarta_Sans } from "next/font/google"
 import { Analytics } from "@vercel/analytics/react"
 import { FavoritesProvider } from "../context/FavoritesContext"
 import { LanguageProvider } from "../context/LanguageContext"
+import TermsGate from "../components/auth/TermsGate"
 import MaintenanceGate from "../components/system/MaintenanceGate"
 import TrafficSource from "../components/system/TrafficSource"
 import InstallCapture from "../components/system/InstallCapture"
@@ -106,6 +107,8 @@ export default function RootLayout({
           <FavoritesProvider>
             <MaintenanceGate>
               {children}
+              {/* Quien tiene sesión debe haber aceptado los términos y confirmado su edad, en cualquier página */}
+              <TermsGate />
               {/* Juego "¿Qué prefieres?" — popup diario para todos; sin cuenta, solo con permiso de cookies (ver el componente) */}
               <PartyPollPopup />
               {/* Permiso para lo opcional que se guarda en el dispositivo (ver lib/consent.ts) */}

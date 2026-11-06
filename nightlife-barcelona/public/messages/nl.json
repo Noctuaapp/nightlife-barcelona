@@ -60,7 +60,19 @@
     "statsEssentials": "essentials in de buurt",
     "openNowIn": "Nu open in {zone}",
     "tonightIn": "Voor vanavond in {zone}",
-    "zonesLabel": "Kies een buurt"
+    "zonesLabel": "Kies een buurt",
+    "exploreTitle": "Ontdek Noctua",
+    "exploreSub": "Alles wat je nodig hebt voor, tijdens en na het uitgaan",
+    "doorMapText": "Clubs, apotheken en haltes op één kaart",
+    "doorPlanText": "Vertel ons waar je zin in hebt en wij stellen plekken voor",
+    "doorEssentialsText": "Apotheken, geldautomaten en eten, 's nachts open",
+    "doorHomeTitle": "Naar huis",
+    "doorHomeText": "Metro en NitBus: kies je lijn en je halte",
+    "doorMetro": "Metro",
+    "doorNitbus": "NitBus",
+    "stylesTitle": "Waar heb je vanavond zin in?",
+    "stylesSub": "Kies een sfeer en wij laten zien waar die klinkt",
+    "searchTry": "Probeer eens"
   },
   "filters": {
     "all": "Alle"
@@ -109,7 +121,14 @@
     "withEmail": "Ik registreer liever met e-mail",
     "moreOptional": "Land en geslacht toevoegen (optioneel)",
     "showPassword": "Wachtwoord tonen",
-    "hidePassword": "Wachtwoord verbergen"
+    "hidePassword": "Wachtwoord verbergen",
+    "pwNeedLower": "een kleine letter",
+    "pwNeedUpper": "een hoofdletter",
+    "pwNeedDigit": "een cijfer",
+    "pwNeedSymbol": "een symbool (bijvoorbeeld ! ? # $)",
+    "error_password_sets": "Je wachtwoord moet {list} bevatten.",
+    "error_password_min": "Je wachtwoord moet minstens {n} tekens lang zijn.",
+    "error_password_pwned": "Dit wachtwoord is te bekend of dook op in datalekken. Kies een ander wachtwoord."
   },
   "clubs": {
     "title": "Clubs",
@@ -2085,5 +2104,26 @@
     "lost": "Ik ben mijn telefoon of portemonnee kwijt",
     "lostHint": "Gevonden voorwerpen",
     "buttonNote": "Snelle hulp als er vanavond iets misgaat: apotheek, spoed, taxi, toilet of politie bij jou in de buurt. Het 112 staat erin, voor als het ernstig is."
+  },
+  "metroPage": {
+    "back": "Alle metrolijnen",
+    "stopsCount": "{n} stations",
+    "findStop": "Zoek een station",
+    "noMatch": "Geen station komt overeen met “{q}”.",
+    "nearestIs": "Je dichtstbijzijnde station: {name}, {dist} verderop.",
+    "nearSpotIs": "Het station het dichtst bij de plek die je bekeek: {name}, {dist} verderop.",
+    "tripStops": "{n} stations",
+    "tripStopOne": "1 station",
+    "segPickFrom": "Kies je instapstation",
+    "segPickTo": "Kies je uitstapstation",
+    "noStops": "We hebben de stations van deze lijn nog niet.",
+    "officialNote": "Tijden, frequenties en storingen: kijk op de officiële TMB-website of in de app. De lijnen L6, L7, L8 en L12 zijn van FGC.",
+    "title": "Metro van Barcelona",
+    "subtitle": "De lijnen L1 tot en met L12 met alle stations op volgorde. Kies je lijn of zoek je station.",
+    "findStopAll": "Zoek je station (Catalunya, Sants…)",
+    "viewMap": "Bekijk de stations op de kaart",
+    "ctaTitle": "Alle stations van elke lijn, op volgorde",
+    "ctaBody": "Kies een lijn, bekijk de stations één voor één en geef aan waar je in- en uitstapt.",
+    "seeLine": "Bekijk het traject van {code} en plan mijn rit"
   }
 }
