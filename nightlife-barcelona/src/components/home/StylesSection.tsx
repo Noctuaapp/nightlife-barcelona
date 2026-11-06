@@ -4,6 +4,7 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import Image from "../ui/SafeImage"
 import { useLanguage } from "../../context/LanguageContext"
+import AutoScrollRow from "./AutoScrollRow"
 import { homeStyleCards } from "../../lib/homeStyles"
 import { useMemo } from "react"
 
@@ -48,7 +49,8 @@ export default function StylesSection({
       <p className="mt-2 text-sm text-zinc-300">{t("home.stylesSub")}</p>
 
       <div className="relative -mx-4 mt-6 sm:mx-0">
-        <div className="scroll-x-thin flex snap-x gap-3 overflow-x-auto px-4 pb-3 sm:px-0">
+        {/* Se desliza solo, despacio (se para al tocarlo o con el ratón encima); la tarjeta «Ver todos» entra en el bucle */}
+        <AutoScrollRow className="scroll-x-thin flex gap-3 overflow-x-auto px-4 pb-3 sm:px-0">
           {cards.map((card) => {
             const [a, b] = HUES[card.slug] ?? FALLBACK_HUE
             const openNow = mounted ? card.ids.filter((id) => openMap[String(id)] === true).length : 0
@@ -101,7 +103,7 @@ export default function StylesSection({
             </span>
             {t("home.seeAll")}
           </Link>
-        </div>
+        </AutoScrollRow>
         <div aria-hidden="true" className="pointer-events-none absolute bottom-3 right-0 top-0 w-10 bg-gradient-to-l from-night to-transparent sm:hidden" />
       </div>
     </section>
