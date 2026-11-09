@@ -428,7 +428,7 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
               {/* Cabecera */}
               <div className="flex items-center gap-2 px-5 pb-3 pt-5">
                 <div className="hidden shrink-0 min-[360px]:block">
-                  <NocOwl size={34} mood={phase === "spin" ? "wow" : "wink"} levelColor={levelColor} />
+                  <NocOwl size={38} pose="dado" mood={phase === "spin" ? "wow" : "happy"} levelColor={levelColor} />
                 </div>
                 <h2 className="mr-auto min-w-0 truncate pl-1 font-display text-[15px] leading-none text-white min-[360px]:text-[17px]">{t("surprise.cta")}</h2>
                 <button

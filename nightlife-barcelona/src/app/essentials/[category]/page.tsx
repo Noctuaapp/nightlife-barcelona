@@ -34,6 +34,7 @@ import { ChevronDown, MapPin } from "lucide-react"
 import NitbusStopsMap, { type NitbusMapStop } from "../../../components/nitbus/NitbusStopsMap"
 import { getPrecisePosition } from "../../../lib/precisePosition"
 import NightBackdrop from "../../../components/ui/NightBackdrop"
+import NocOwl from "../../../components/mascot/NocOwl"
 
 // Un solo color (el de la marca) para todas las categorías; antes eran doce colores y emojis.
 const BRAND = "#7c5cff"
@@ -951,9 +952,14 @@ export default function EssentialCategoryPage() {
             <Icon name="back" className="h-4 w-4" /> {t("essentials.title")}
           </Link>
           <div className="mt-4 flex items-center gap-4">
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-ctl bg-brand/15 text-brand-soft">
-              <CatIcon size={28} />
-            </span>
+            {category === "pharmacy" || category === "food" ? (
+              // Farmacias y comida de madrugada llevan a Noc con su cruz o su porción en vez del icono
+              <NocOwl size={68} pose={category === "pharmacy" ? "farmacia" : "pizza"} mood="open" className="shrink-0" />
+            ) : (
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-ctl bg-brand/15 text-brand-soft">
+                <CatIcon size={28} />
+              </span>
+            )}
             <div className="min-w-0">
               <h1 className="font-display text-[1.9rem] leading-tight sm:text-5xl">{label}</h1>
               <p className="mt-1 text-sm text-zinc-400">

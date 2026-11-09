@@ -845,7 +845,7 @@ export default function MapPage() {
   if (!isLoggedIn) {
     return (
       <>
-        <LoginWall titleKey="map.title" subtitleKey="map.subtitle" />
+        <LoginWall titleKey="map.title" subtitleKey="map.subtitle" pose="mapa" />
         <BottomNav />
       </>
     )

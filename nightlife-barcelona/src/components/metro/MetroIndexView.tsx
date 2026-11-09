@@ -10,6 +10,7 @@ import { MetroLineBadge } from "../ui/TransitBadge"
 import { useLanguage } from "../../context/LanguageContext"
 import { normStopName } from "../../lib/nitbusRoutes"
 import { NightPage } from "../ui/NightBackdrop"
+import NocOwl from "../mascot/NocOwl"
 
 // Portada del metro (06/11/2026), hermana de /nitbus: las 12 líneas como tarjetas y un buscador de
 // estación («¿qué líneas paran aquí?»). Cada línea abre su esquema en /metro/L3, con «Mi trayecto».
@@ -46,10 +47,13 @@ export default function MetroIndexView({ lines, search }: Props) {
       <Header />
       <NightPage tone="blue">
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:py-14">
-        <header>
+        <header className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
           <h1 className="font-display text-[2rem] leading-tight text-ink sm:text-5xl">{t("metroPage.title")}</h1>
           <p className="mt-3 max-w-xl text-lg leading-relaxed text-zinc-300">{t("metroPage.subtitle")}</p>
           <p className="mt-2 text-sm font-semibold text-zinc-200">{t("essentialsPage.metroRules")}</p>
+          </div>
+          <NocOwl size={84} pose="metro" mood="happy" className="mt-3 hidden shrink-0 min-[380px]:block sm:mr-4" />
         </header>
 
         <section className="mt-8" aria-label={t("metroPage.findStopAll")}>

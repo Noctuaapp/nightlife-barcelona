@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Check } from "lucide-react"
 import { useLanguage } from "../../context/LanguageContext"
-import NocOwl from "../mascot/NocOwl"
+import NocOwl, { type NocPose } from "../mascot/NocOwl"
 import GoogleButton from "../auth/GoogleButton"
 
 type LoginWallProps = {
@@ -13,13 +13,15 @@ type LoginWallProps = {
   // Ruta a la que volver después de entrar o registrarse. Por defecto, la página actual
   // (con sus parámetros, p. ej. /map?club=…).
   next?: string
+  // Lo que lleva Noc en la mano, para que la pantalla diga de qué va (la chincheta en el mapa…).
+  pose?: NocPose
 }
 
 // Pantalla para las zonas privadas (mapa, Planifica tu noche, favoritos, perfil). Rediseñada el
 // 29/10/2026: lo primero y más llamativo es «Continuar con Google» (un toque, sin contraseña ni
 // formulario); debajo, crear cuenta con email, y «Iniciar sesión» para quien ya tiene cuenta. Todo
 // lleva ?next= para volver directamente aquí.
-export default function LoginWall({ titleKey, subtitleKey, next }: LoginWallProps) {
+export default function LoginWall({ titleKey, subtitleKey, next, pose }: LoginWallProps) {
   const { t } = useLanguage()
   const back = next ?? (typeof window !== "undefined" ? window.location.pathname + window.location.search : "/")
   const q = `?next=${encodeURIComponent(back)}`
@@ -34,7 +36,7 @@ export default function LoginWall({ titleKey, subtitleKey, next }: LoginWallProp
       <div className="relative w-full max-w-sm rounded-card border border-white/10 bg-surface/80 p-6 shadow-[0_30px_80px_-30px_rgba(124,92,255,0.45)] backdrop-blur sm:p-8">
         <div className="flex items-center gap-3">
           <div className="rounded-full bg-white/[0.06] p-1.5">
-            <NocOwl size={44} mood="wink" />
+            <NocOwl size={pose ? 52 : 44} mood={pose ? "happy" : "wink"} pose={pose} />
           </div>
         </div>
         <h1 className="mt-5 font-display text-[1.9rem] leading-[1.08]">{t(titleKey)}</h1>

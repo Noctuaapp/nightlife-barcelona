@@ -13,6 +13,7 @@ import { useViewAsUser } from "../../lib/viewAsUser"
 import LevelUpModal from "../mascot/LevelUpModal"
 import InstallAppButton from "../system/InstallAppButton"
 import { Bell, ChevronLeft, User, Map, Sparkles, Heart, MessageCircle, ShieldCheck, Globe, X, Check } from "lucide-react"
+import NocOwl, { type NocPose } from "../mascot/NocOwl"
 
 const cities = [
   { name: "Barcelona", slug: "barcelona", active: true, lat: 41.3851, lng: 2.1734 },
@@ -485,7 +486,7 @@ export default function Header() {
   // Cada tipo tiene varias frases y cada día sale una distinta, para que no sea siempre la misma.
   const RAIN_CODES = new Set([51, 53, 55, 61, 63, 65, 71, 73, 75, 80, 81, 82, 95])
   const STORM_CODES = new Set([82, 95, 96, 99])
-  const weatherTip: { icon: string; text: string } | null = (() => {
+  const weatherTip: { icon: string; text: string; pose?: NocPose } | null = (() => {
     if (!weather || weather.nightHours.length === 0) return null
     const hours = weather.nightHours
     const temps = hours.map((h) => h.temp)
@@ -517,7 +518,9 @@ export default function Header() {
       .replace("{hour}", rainHour ? rainHour.label : "")
       .replace("{wind}", String(maxWind))
       .replace("{firsth}", hours[0].label)
-    return { icon, text }
+    // Con lluvia o frío, en vez del emoji sale Noc con su paraguas o su bufanda.
+    const pose: NocPose | undefined = kind === "storm" || kind === "rain" ? "paraguas" : kind === "cold" ? "frio" : undefined
+    return { icon, text, pose }
   })()
 
   const isUnread = (n: NotificationRow) =>
@@ -718,7 +721,11 @@ export default function Header() {
         >
           {/* El texto sale entero (hasta 3 líneas): antes en el móvil se cortaba en una sola línea con «…». */}
           <div className="mx-auto flex max-w-5xl items-start gap-2.5 px-4 py-2.5 sm:px-6">
-            <span aria-hidden="true" className="mt-px text-base leading-snug">{weatherTip.icon}</span>
+            {weatherTip.pose ? (
+              <span aria-hidden="true" className="-my-1 shrink-0"><NocOwl size={34} pose={weatherTip.pose} seasonal={false} /></span>
+            ) : (
+              <span aria-hidden="true" className="mt-px text-base leading-snug">{weatherTip.icon}</span>
+            )}
             <p className="min-w-0 flex-1 text-[13px] leading-snug text-zinc-200 sm:text-sm">{weatherTip.text}</p>
             <button
               onClick={dismissWeatherTip}

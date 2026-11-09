@@ -126,7 +126,7 @@ export default function BadgesAndChallenges() {
 
       <section className="mb-10">
         <div className="mb-4 flex items-center gap-3">
-          <NocOwl size={40} mood="wink" />
+          <NocOwl size={48} pose="trofeo" />
           <div>
             <h2 className="text-lg font-semibold text-ink">{t("challenges.title")}</h2>
             <p className="text-sm text-zinc-400">{t("challenges.subtitle")}</p>

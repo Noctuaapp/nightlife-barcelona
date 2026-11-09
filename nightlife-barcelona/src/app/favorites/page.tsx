@@ -17,6 +17,7 @@ import { toDateLocale } from "../../lib/dateLocale"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { addDays, effectiveHoursStatus, effectiveOpenNow, nightDay } from "../../lib/scheduleNotices"
 import NightBackdrop from "../../components/ui/NightBackdrop"
+import NocOwl from "../../components/mascot/NocOwl"
 
 // Antes esta pantalla tenía un sistema de "listas" (carpetas para organizar favoritos) y una
 // nota de texto por favorito. Tras probarlo, no se le veía suficiente utilidad como para
@@ -181,7 +182,7 @@ export default function FavoritesPage() {
     return (
       <>
         <Header />
-        <LoginWall titleKey="favoritesPage.gateTitle" subtitleKey="favoritesPage.gateSubtitle" />
+        <LoginWall titleKey="favoritesPage.gateTitle" subtitleKey="favoritesPage.gateSubtitle" pose="corazon" />
         <BottomNav />
       </>
     )
@@ -270,7 +271,7 @@ export default function FavoritesPage() {
         {totalFavorites === 0 && (
           <section className={section}>
             <div className="rounded-card border border-white/10 bg-surface px-6 py-14 text-center">
-              <Heart size={36} className="mx-auto text-brand-soft" />
+              <div className="mx-auto w-fit"><NocOwl size={88} pose="corazon" /></div>
               <h2 className="mt-5 text-xl font-semibold text-ink">{t("favoritesPage.emptyTitle")}</h2>
               <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-400">{t("favoritesPage.emptySubtitle")}</p>
               <Link href="/clubs" className="btn-pill btn-primary mt-6 inline-flex px-6 py-3 text-sm">

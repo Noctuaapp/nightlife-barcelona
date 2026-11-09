@@ -34,6 +34,7 @@ import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { homeZoneChips, inZone } from "../../lib/homeZones"
 import { track } from "../../lib/track"
 import { useVisibleBelow } from "../../lib/useVisibleBelow"
+import NocOwl from "../mascot/NocOwl"
 
 // Portada. Rediseñada tras la auditoría de octubre 2026:
 // - Antes el titular, un subtítulo de 7 líneas, tres cifras y una cinta animada ocupaban la
@@ -435,7 +436,10 @@ export default function HomeClient({
                   className="absolute inset-x-0 top-full mt-2 overflow-y-auto overscroll-contain rounded-card border border-white/10 bg-surface/95 p-4 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.85)] backdrop-blur-xl"
                   style={{ maxHeight: suggestMax ?? undefined }}
                 >
-                  <p className="text-xs font-semibold text-zinc-400">{t("home.searchTry")}</p>
+                  <p className="flex items-center gap-2 text-xs font-semibold text-zinc-400">
+                    <NocOwl size={30} pose="lupa" mood="open" seasonal={false} />
+                    {t("home.searchTry")}
+                  </p>
                   <div className="mt-2.5 flex flex-wrap gap-2">
                     {tryStyles.map((st) => (
                       <Link

@@ -27,6 +27,7 @@ import { cleanEssential } from "../../lib/essentials"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { UtensilsCrossed, ShoppingCart } from "lucide-react"
 import { DRESS_CODES, dressCodeLabel, dressCodeOf } from "../../lib/dressCode"
+import NocOwl from "../../components/mascot/NocOwl"
 
 // "Planifica tu noche". Cambios de la auditoría de octubre 2026:
 // - Los estilos de música eran "Commercial" y "Cocktail Bar" (en inglés) contra datos en español:
@@ -759,10 +760,8 @@ export default function PlanPage() {
 
         <section className="relative mx-auto max-w-2xl px-4 pb-8 pt-10 sm:pt-14">
           <div className="relative flex items-start gap-4">
-            <span className="relative mt-1 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-brand/40 bg-brand/15 text-brand-soft shadow-[0_0_30px_rgba(124,92,255,0.35)] sm:h-16 sm:w-16">
-              <Disc3 size={26} className="sm:hidden" />
-              <Disc3 size={30} className="hidden sm:block" />
-            </span>
+            {/* Noc con la ruta de la noche (antes, un icono de disco) */}
+            <NocOwl size={76} pose="plan" className="relative mt-1 shrink-0" />
             <div>
               <h1 className="neon-brand font-display text-[2.1rem] leading-[1.06] sm:text-6xl">{t("nav.plan")}</h1>
               <p className="mt-3 max-w-xl text-base leading-relaxed text-zinc-300">{t("planPage.subtitle")}</p>
