@@ -9,6 +9,8 @@ import { distanceInMeters } from "./geo"
 // metroLines.ts) se corrigieron Tarragona (es de la L3, no de la L1) y La Sagrera (no tiene L4), y se
 // completaron las 6 estaciones que se habían quedado sin línea (Vallcarca, Bellvitge Rambla Marina,
 // Parc Nou, Cèntric, Parc Logístic y Ciutat de la Justícia).
+// 11/11/2026: añadida Aeroport T1 (final de la L9 Sud), con las coordenadas de su ficha de Wikipedia; sin ella la
+// línea salía sin su última estación en el mapa.
 export type MetroStation = { name: string; lat: number; lon: number; lines?: string[] }
 
 export const METRO_STATIONS: MetroStation[] = [
@@ -56,6 +58,7 @@ export const METRO_STATIONS: MetroStation[] = [
   { name: 'Arc de Triomf', lat: 41.3921143, lon: 2.1809092, lines: ["L1"] },
   { name: 'Verdaguer', lat: 41.4000911, lon: 2.1684275, lines: ["L4", "L5"] },
   { name: 'Aeroport T2', lat: 41.3038256, lon: 2.0731207, lines: ["L9"] },
+  { name: 'Aeroport T1', lat: 41.289639, lon: 2.073889, lines: ["L9"] },
   { name: 'Diagonal', lat: 41.3959557, lon: 2.1599634, lines: ["L3", "L5"] },
   { name: 'Provença', lat: 41.3928741, lon: 2.157979, lines: ["L6", "L7"] },
   { name: 'Hospital de Bellvitge', lat: 41.3446499, lon: 2.1072007, lines: ["L1"] },

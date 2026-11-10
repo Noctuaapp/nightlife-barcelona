@@ -4,7 +4,8 @@
 //   · nunca uno cerrado temporalmente, cerrado esta noche, ni donde a la persona no la dejaron entrar;
 //   · prefiere lo que está abierto ahora, y dentro de eso lo que encaja con el rollo elegido
 //     (bailar, charlar…), con «cerca de mí» y con los extras (entrada gratis, terraza, LGTBI+);
-//   · si no hay nada con todo eso, va relajando las condiciones por pasos y lo dice (nota);
+//   · si no hay nada con todo eso, va relajando las condiciones por pasos y lo dice (nota): primero los extras, luego
+//     «abierto ahora» (un plan para más tarde que sí encaja con el rollo) y solo al final el rollo;
 //   · entre los candidatos tira un dado con pesos (populares y bien valorados salen más, pero
 //     cualquiera puede salir) y no repite hasta que se acaban.
 import { effectiveOpenNow, isClosedTonight } from "./scheduleNotices"
@@ -14,12 +15,35 @@ import { zoneOf } from "./zones"
 export type Mood = "any" | "dance" | "chat" | "chill" | "live"
 export const MOOD_IDS: Mood[] = ["any", "dance", "chat", "chill", "live"]
 
+// Palabras de cada rollo. Se buscan como palabra entera («hip hop» no encaja con «hipster»); las que acaban en «*»
+// son raíz («electr*» = electrónica, electro…). 11/11/2026: antes era una búsqueda de texto suelta y cualquier
+// parecido valía, y «Bailar» podía acabar en una coctelería.
 export const MOOD_WORDS: Record<Mood, string[]> = {
   any: [],
-  dance: ["techno", "house", "electr", "reggaeton", "latin", "comerc", "commercial", "hip", "r&b", "dance", "disco", "trap"],
-  chat: ["lounge", "cocktail", "coctel", "pop", "indie", "rock", "bar", "chill"],
-  chill: ["jazz", "chill", "lounge", "soul", "funk", "acoust", "acústic", "deep"],
-  live: ["live", "vivo", "concert", "jazz", "rock", "indie", "flamenco", "blues"],
+  dance: [
+    "techno", "house", "electr*", "reggaeton", "latin*", "comerc*", "commercial", "hip hop", "r&b", "dance", "disco*", "trap",
+    "salsa", "bachata", "merengue", "kizomba", "afrobeat*", "dembow", "edm", "trance", "urban*",
+  ],
+  chat: ["lounge", "cocktail", "coctel*", "pop", "indie", "rock", "bar", "chill"],
+  chill: ["jazz", "chill", "lounge", "soul", "funk", "acoust*", "acústic*", "deep"],
+  live: ["live", "vivo", "concert*", "jazz", "rock", "indie", "flamenco", "blues"],
+}
+
+// Tipos de local donde no se baila aunque pongan música de baile de fondo: solo cuentan para «Bailar» si el admin
+// les ha marcado pista de baile.
+const NO_DANCE_TYPE = /cocteler|coctel|cocktail|\bpub\b|billar|karaoke/
+
+const WORD_RE = new Map<string, RegExp>()
+function wordRe(w: string): RegExp {
+  let re = WORD_RE.get(w)
+  if (!re) {
+    const stem = w.endsWith("*")
+    const body = (stem ? w.slice(0, -1) : w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/ /g, "[\\s-]?")
+    // Sin lookbehind (los iPhone antiguos no lo entienden): el límite izquierdo y derecho se comprueba con grupos.
+    re = new RegExp(`(?:^|[^\\p{L}\\p{N}])${body}${stem ? "" : "(?:$|[^\\p{L}\\p{N}])"}`, "u")
+    WORD_RE.set(w, re)
+  }
+  return re
 }
 
 export type Extras = { free: boolean; terrace: boolean; lgtbi: boolean }
@@ -30,14 +54,17 @@ export const NEAR_METERS = 4000
 type Club = Record<string, any>
 type Pos = { lat: number; lon: number } | null
 
-export type SurpriseNote = "" | "extras" | "otherOpen" | "later"
+export type SurpriseNote = "" | "extras" | "moodLater" | "otherOpen" | "later"
 
 // 0 = no encaja. Para «lo que sea» todo vale (1). Cuenta las palabras de música/tipo que coinciden
 // y suma un punto si el local tiene la característica (pista de baile, música en vivo, cócteles).
+// «Bailar» además descarta las coctelerías, pubs, billares y karaokes sin pista de baile.
 export function moodScore(club: Club, mood: Mood): number {
   if (mood === "any") return 1
+  const venueType = String(club.venue_type || "").toLowerCase()
+  if (mood === "dance" && !club.dance_floor && NO_DANCE_TYPE.test(venueType)) return 0
   const text = `${club.music || ""} ${club.category || ""} ${club.venue_type || ""}`.toLowerCase()
-  let score = MOOD_WORDS[mood].reduce((n, w) => n + (text.includes(w) ? 1 : 0), 0)
+  let score = MOOD_WORDS[mood].reduce((n, w) => n + (wordRe(w).test(text) ? 1 : 0), 0)
   if (mood === "dance" && club.dance_floor) score += 1
   if (mood === "live" && club.live_music) score += 1
   if (mood === "chat" && club.cocktails) score += 1
@@ -113,6 +140,9 @@ export function pickSurprise(input: SurpriseInput): SurpriseResult | null {
   const tiers: { note: SurpriseNote; fn: (c: Club) => boolean }[] = [
     { note: "", fn: (c) => open(c) && fits(c) && isNear(c) && matchesExtras(c, extras) },
     ...(anyExtras(extras) ? [{ note: "extras" as SurpriseNote, fn: (c: Club) => open(c) && fits(c) && isNear(c) }] : []),
+    // Con un rollo elegido (bailar, charlar…), el rollo manda sobre estar abierto ahora: antes de proponer algo abierto que
+    // no encaja (una coctelería para «Bailar»), se deja un plan para más tarde que sí encaja (11/11/2026).
+    ...(mood !== "any" ? [{ note: "moodLater" as SurpriseNote, fn: (c: Club) => fits(c) && isNear(c) }] : []),
     { note: "otherOpen", fn: (c) => open(c) && isNear(c) },
     { note: "later", fn: (c) => fits(c) && isNear(c) },
     { note: "later", fn: () => true },

@@ -41,6 +41,7 @@ const MOOD_KEY: Record<Mood, string> = {
 }
 const NOTE_KEY: Record<Exclude<SurpriseNote, "">, string> = {
   extras: "surprise.tierExtras",
+  moodLater: "surprise.tierMoodLater",
   otherOpen: "surprise.tierOtherOpen",
   later: "surprise.tierLater",
 }
@@ -105,6 +106,11 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
   const [locating, setLocating] = useState(false)
   const [geoError, setGeoError] = useState("")
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [zoneOpen, setZoneOpen] = useState(false) // lista de zonas desplegada bajo los filtros
+  const zoneChipRef = useRef<HTMLButtonElement | null>(null)
+  useEffect(() => {
+    if (!filtersOpen) setZoneOpen(false)
+  }, [filtersOpen])
   const [denied, setDenied] = useState<Set<number>>(() => new Set())
   const [strip, setStrip] = useState<string[]>([])
   const [spinKey, setSpinKey] = useState(0)
@@ -308,6 +314,7 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
     setSeen([])
     setNote("")
     setFiltersOpen(false)
+    setZoneOpen(false)
     setTimeout(() => triggerRef.current?.focus(), 0)
   }
 
@@ -492,23 +499,17 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
                     {t("surprise.extraLgtbi")}
                   </button>
                   {zones.length > 1 && (
-                    <label className={`${chipBase} relative focus-within:ring-2 focus-within:ring-white ${zone ? on : off}`}>
-                      <span className="sr-only">{t("surprise.zoneLabel")}</span>
-                      <span aria-hidden="true">{zone ? shortZone(zone) : t("surprise.zoneLabel")}</span>
-                      <ChevronDown size={14} aria-hidden="true" className="shrink-0" />
-                      <select
-                        value={zone}
-                        onChange={(e) => pickZone(e.target.value)}
-                        className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0"
-                      >
-                        <option value="">{t("surprise.allArea")}</option>
-                        {zones.map((z) => (
-                          <option key={z} value={z}>
-                            {shortZone(z)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    <button
+                      ref={zoneChipRef}
+                      onClick={() => setZoneOpen((v) => !v)}
+                      aria-expanded={zoneOpen}
+                      aria-controls="surprise-zones"
+                      className={`${chipBase} ${zone || zoneOpen ? on : off}`}
+                    >
+                      <span className="sr-only">{t("surprise.zoneLabel")}: </span>
+                      {zone ? shortZone(zone) : t("surprise.zoneLabel")}
+                      <ChevronDown size={14} aria-hidden="true" className={`shrink-0 transition-transform motion-reduce:transition-none ${zoneOpen ? "rotate-180" : ""}`} />
+                    </button>
                   )}
                   {activeFilters > 0 && (
                     <button
@@ -518,6 +519,40 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
                       <X size={14} aria-hidden="true" className="shrink-0" />
                       {t("surprise.clearFilters")}
                     </button>
+                  )}
+                  {/* Zonas: en vez del desplegable nativo del navegador (en blanco y azul del sistema, cortado), todas las
+                      zonas a la vista como chips, igual que el resto de filtros. Un toque elige y cierra. */}
+                  {zones.length > 1 && zoneOpen && (
+                    <div
+                      id="surprise-zones"
+                      role="radiogroup"
+                      aria-label={t("surprise.zoneLabel")}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") {
+                          e.stopPropagation()
+                          setZoneOpen(false)
+                          zoneChipRef.current?.focus()
+                        }
+                      }}
+                      className="flex w-full flex-wrap gap-1.5 rounded-2xl bg-[#1a1724] p-2.5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)]"
+                    >
+                      {["", ...zones].map((z) => (
+                        <button
+                          key={z || "all"}
+                          role="radio"
+                          aria-checked={zone === z}
+                          onClick={() => {
+                            pickZone(z)
+                            setZoneOpen(false)
+                          }}
+                          className={`h-9 rounded-full px-3.5 text-sm font-semibold transition active:scale-95 motion-reduce:transition-none ${
+                            zone === z ? on : "bg-[#23202d] text-zinc-100 hover:bg-[#2c2937]"
+                          }`}
+                        >
+                          {z ? shortZone(z) : t("surprise.allArea")}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
               )}

@@ -12,6 +12,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { metroLineColor, NITBUS_PLATE, NITBUS_RAIL } from "../../lib/transitColors"
+import { FGC_LINES } from "../../lib/intl/metroText" // L6, L7, L8 y L12: líneas de FGC, no de TMB
 import { alightOptions, directionStats, lineStopNames, nearestStop, normStopName, planTrips, resolveSegment, type NbLine, type NbStop } from "../../lib/nitbusRoutes"
 import { NightPage } from "../ui/NightBackdrop"
 
@@ -38,8 +39,9 @@ type Props = {
 // Frases que en el metro dicen «estación» en vez de «parada» (están en el bloque metroPage del idioma; el resto se comparte con el Nitbus).
 const METRO_OWN_TEXT = new Set([
   "back", "stopsCount", "findStop", "noMatch", "nearestIs", "nearSpotIs", "tripStops", "tripStopOne",
-  "segPickFrom", "segPickTo", "noStops", "officialNote",
+  "segPickFrom", "segPickTo", "noStops", "officialNote", "sectionLabel", "splitNote", "fgcRules",
 ])
+
 
 // Un punto del mapa (el sitio que se estaba mirando o la posición de la persona) y la parada de
 // esta línea que le queda más cerca. Pueden marcarse las dos a la vez (31/10/2026): antes, al pulsar
@@ -101,6 +103,12 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
   const current = directions[Math.min(dir, Math.max(directions.length - 1, 0))]
   const stops: NbStop[] = current?.stops ?? []
   const ordered = !!line?.ordered
+
+  // L9 y L10: dos tramos (Nord y Sud) que no se tocan. El selector deja ver cada uno por su nombre; el tramo
+  // activo sale del sentido elegido (así también cambia solo al llegar con ?stop= o al elegir un trayecto).
+  const sections = line?.sections && line.sections.length > 1 ? line.sections : null
+  const secIndex = sections ? Math.max(0, sections.findIndex((x) => x.dirs.includes(dir))) : 0
+  const shownDirs = sections ? sections[secIndex].dirs : directions.map((_, i) => i)
 
   // «Mi trayecto» (06/11/2026): subo en una parada y bajo en otra, y la lista se queda con ese tramo.
   // Las paradas de bajada salen de la de subida (solo las que vienen después), así que nunca se elige
@@ -243,6 +251,9 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
               </span>
             )}
             <h1 className="font-display text-3xl leading-tight text-ink sm:text-4xl">{title}</h1>
+            {isMetro && FGC_LINES.has(code.toUpperCase()) && (
+              <span className="shrink-0 rounded-full border border-white/25 px-2.5 py-1 text-xs font-bold leading-none text-zinc-100">FGC</span>
+            )}
           </div>
           {subtitle ? (
             <p className="mt-3 text-base leading-snug text-zinc-200">{subtitle}</p>
@@ -258,7 +269,9 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
               {route.note && <span className="text-zinc-400"> · {route.note}</span>}
             </p>
           ) : null}
-          <p className="mt-1 text-sm text-zinc-400">{t(isMetro ? "essentialsPage.metroRules" : "essentialsPage.nitbusHours")}</p>
+          <p className="mt-1 text-sm text-zinc-400">
+            {isMetro ? (FGC_LINES.has(code.toUpperCase()) ? tl("fgcRules") : t("essentialsPage.metroRules")) : t("essentialsPage.nitbusHours")}
+          </p>
         </header>
 
         {!line || stops.length === 0 ? (
@@ -279,9 +292,35 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
               </p>
             )}
 
+            {sections && (
+              <>
+                <div role="tablist" aria-label={tl("sectionLabel")} className="mt-6 grid grid-cols-2 gap-2">
+                  {sections.map((sec, i) => (
+                    <button
+                      key={sec.name}
+                      role="tab"
+                      aria-selected={secIndex === i}
+                      onClick={() => {
+                        setDir(sec.dirs[0])
+                        setFocus(null)
+                        clearSeg()
+                      }}
+                      className={`min-w-0 rounded-ctl border px-3 py-3 text-left text-sm font-semibold transition ${
+                        secIndex === i ? "border-white bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
+                      }`}
+                    >
+                      <span className="block text-base">{`${code} ${sec.name}`}</span>
+                      <span className="block text-xs font-normal opacity-80">{tl("stopsCount").replace("{n}", String(sec.stopCount))}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs leading-snug text-zinc-400">{tl("splitNote")}</p>
+              </>
+            )}
+
             {directions.length > 1 && (
-              <div role="tablist" aria-label={tl("directionLabel")} className="mt-6 grid grid-cols-2 gap-2">
-                {directions.map((d, i) => (
+              <div role="tablist" aria-label={tl("directionLabel")} className={`${sections ? "mt-3" : "mt-6"} grid grid-cols-2 gap-2`}>
+                {shownDirs.map((i) => ({ d: directions[i], i })).map(({ d, i }) => (
                   <button
                     key={i}
                     role="tab"

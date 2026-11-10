@@ -15,7 +15,7 @@ import NocOwl from "../mascot/NocOwl"
 // Portada del metro (06/11/2026), hermana de /nitbus: las 12 líneas como tarjetas y un buscador de
 // estación («¿qué líneas paran aquí?»). Cada línea abre su esquema en /metro/L3, con «Mi trayecto».
 
-export type MetroIndexLine = { code: string; routes: string[]; count: number }
+export type MetroIndexLine = { code: string; routes: string[]; count: number; fgc?: boolean }
 export type MetroSearchEntry = { name: string; lines: string[] }
 
 type Props = {
@@ -111,7 +111,12 @@ export default function MetroIndexView({ lines, search }: Props) {
                         {r}
                       </span>
                     ))}
-                    <span className="mt-0.5 block text-xs text-zinc-400">{t("metroPage.stopsCount").replace("{n}", String(line.count))}</span>
+                    <span className="mt-0.5 flex items-center gap-2 text-xs text-zinc-400">
+                      {t("metroPage.stopsCount").replace("{n}", String(line.count))}
+                      {line.fgc && (
+                        <span className="shrink-0 rounded-full border border-white/25 px-2 py-0.5 text-[11px] font-bold leading-none text-zinc-100">FGC</span>
+                      )}
+                    </span>
                   </span>
                   <ChevronRight size={18} aria-hidden="true" className="shrink-0 text-zinc-500" />
                 </Link>

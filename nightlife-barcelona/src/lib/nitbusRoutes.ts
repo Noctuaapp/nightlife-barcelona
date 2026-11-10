@@ -46,6 +46,10 @@ export type NbLine = {
   directions: NbDirection[]
   // Paradas distintas de la línea (una parada que está en los dos sentidos cuenta una vez).
   stopCount: number
+  // Líneas de metro con dos tramos que no se tocan (L9 y L10: Nord y Sud). Cada tramo dice qué sentidos
+  // (posiciones en `directions`) son suyos y cuántas estaciones tiene. Sin esto, la página enseñaba solo el
+  // primer tramo y el otro quedaba escondido detrás de un sentido (11/11/2026).
+  sections?: { name: string; dirs: number[]; stopCount: number }[]
 }
 
 export type NbSearchEntry = { name: string; lines: string[] }

@@ -86,6 +86,27 @@ describe("moodScore y extras", () => {
     expect(moodScore({ music: "Jazz", live_music: true }, "live")).toBeGreaterThanOrEqual(2)
     expect(moodScore({ music: "Techno" }, "chill")).toBe(0)
   })
+  it("«Bailar»: las coctelerías, pubs, billares y karaokes sin pista de baile no encajan, aunque pongan house", () => {
+    expect(moodScore({ venue_type: "Coctelería", music: "Deep House, Jazz" }, "dance")).toBe(0)
+    expect(moodScore({ venue_type: "Pub", music: "Rock, House" }, "dance")).toBe(0)
+    expect(moodScore({ venue_type: "Bar de billar", music: "Reggaeton" }, "dance")).toBe(0)
+    expect(moodScore({ venue_type: "Karaoke", music: "Latin" }, "dance")).toBe(0)
+    // Con pista de baile marcada por el admin, sí.
+    expect(moodScore({ venue_type: "Coctelería", music: "House", dance_floor: true }, "dance")).toBeGreaterThan(0)
+    // Una discoteca y un bar musical con música de baile, sí.
+    expect(moodScore({ venue_type: "Discoteca", music: "Techno" }, "dance")).toBeGreaterThanOrEqual(2)
+    expect(moodScore({ venue_type: "Bar musical", music: "Reggaeton · Latin" }, "dance")).toBeGreaterThanOrEqual(2)
+    // Una discoteca sin música anotada encaja por su tipo.
+    expect(moodScore({ venue_type: "Discoteca" }, "dance")).toBeGreaterThan(0)
+  })
+  it("las palabras se buscan enteras: «hipster» no es «hip hop», «Barcelona» no es «bar»", () => {
+    expect(moodScore({ music: "Hipster vibes" }, "dance")).toBe(0)
+    expect(moodScore({ music: "Hip-Hop, R&B" }, "dance")).toBe(2)
+    expect(moodScore({ music: "Hip Hop" }, "dance")).toBe(1)
+    expect(moodScore({ music: "Barcelona sound" }, "chat")).toBe(0)
+    expect(moodScore({ music: "Electrónica" }, "dance")).toBe(1)
+    expect(moodScore({ music: "Salsa y bachata" }, "dance")).toBe(2)
+  })
   it("extras", () => {
     expect(anyExtras(NO_EXTRAS)).toBe(false)
     expect(anyExtras({ ...NO_EXTRAS, terrace: true })).toBe(true)
@@ -155,13 +176,36 @@ describe("pickSurprise", () => {
     expect(r?.note).toBe("")
   })
 
-  it("si nada encaja con el rollo, propone otro abierto y avisa", () => {
+  it("con un rollo elegido, antes un plan para más tarde que encaje que un abierto que no encaja", () => {
     vi.useFakeTimers()
     at("2025-11-07T23:30:00")
     const clubs = [club(1, { music: "Techno" }), club(2, { hours: "10:00-12:00", music: "Jazz" })]
     const r = pickSurprise({ ...base, clubs, mood: "chill" })
+    expect(r?.club.id).toBe(2)
+    expect(r?.note).toBe("moodLater")
+  })
+
+  it("si nada encaja con el rollo ni abierto ni cerrado, propone otro abierto y avisa", () => {
+    vi.useFakeTimers()
+    at("2025-11-07T23:30:00")
+    const clubs = [club(1, { music: "Techno" }), club(2, { hours: "10:00-12:00", music: "House" })]
+    const r = pickSurprise({ ...base, clubs, mood: "chill" })
     expect(r?.club.id).toBe(1)
     expect(r?.note).toBe("otherOpen")
+  })
+
+  it("«Bailar» con una coctelería abierta y una discoteca cerrada: la discoteca, con aviso", () => {
+    vi.useFakeTimers()
+    at("2025-11-04T00:50:00") // martes de madrugada: la discoteca abre solo jueves a sábado
+    const clubs = [
+      club(1, { venue_type: "Coctelería", music: "Deep House, Jazz", hours: "19:00-03:00" }),
+      club(2, { venue_type: "Discoteca", music: "Techno", hours: "J-S 23:59-06:00" }),
+    ]
+    for (let i = 0; i < 30; i++) {
+      const r = pickSurprise({ ...base, clubs, mood: "dance" })
+      expect(r?.club.id).toBe(2)
+      expect(r?.note).toBe("moodLater")
+    }
   })
 
   it("si nada tiene los extras, avisa con «extras»", () => {

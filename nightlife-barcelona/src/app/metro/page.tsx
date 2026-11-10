@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import MetroIndexView, { type MetroIndexLine, type MetroSearchEntry } from "../../components/metro/MetroIndexView"
 import { METRO_LINE_CODES, METRO_LINE_SECTIONS, buildMetroLine } from "../../lib/metroLines"
+import { FGC_LINES } from "../../lib/intl/metroText"
 import { safeJsonLd } from "../../lib/structuredData"
 import { spanishAlternates } from "../../lib/intl/site"
 
@@ -22,6 +23,7 @@ export default function MetroPage() {
       // Una frase por tramo: «Hospital de Bellvitge ↔ Fondo»; en L9 y L10, «Nord: … ↔ …» y «Sud: … ↔ …».
       routes: secs.map((s) => `${secs.length > 1 && s.name ? `${s.name}: ` : ""}${s.stations[0]} ↔ ${s.stations[s.stations.length - 1]}`),
       count: buildMetroLine(code)?.stopCount ?? 0,
+      fgc: FGC_LINES.has(code),
     }
   })
 

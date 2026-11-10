@@ -22,7 +22,7 @@ describe("orden de las líneas de metro", () => {
       for (const s of METRO_LINE_SECTIONS[c]) expect(new Set(s.stations).size, `${c} ${s.name ?? ""}`).toBe(s.stations.length)
   })
 
-  it("cada estación está en metroStations.ts, salvo las cuatro conocidas", () => {
+  it("cada estación está en metroStations.ts, salvo las tres conocidas", () => {
     for (const c of METRO_LINE_CODES)
       for (const n of allNames(c)) if (!byName.has(n)) expect(METRO_EXTRA, `${c} ${n}`).toContain(n)
     for (const n of METRO_EXTRA) expect(byName.has(n), n).toBe(false)
@@ -66,8 +66,38 @@ describe("buildMetroLine", () => {
     expect(sag.others).toEqual(["L1", "L9", "L10"])
   })
   it("las estaciones que faltan en metroStations salen sin coordenadas", () => {
+    const sb = buildMetroLine("L8")!.directions[0].stops.find((x) => x.name === "Sant Boi")!
+    expect(sb).toMatchObject({ name: "Sant Boi", lat: null, lon: null })
+  })
+  it("L9 Sud acaba en Aeroport T1, que ya tiene coordenadas (junto a la T2, no encima)", () => {
     const t1 = buildMetroLine("L9")!.directions.find((d) => d.to === "Aeroport T1")!.stops.at(-1)!
-    expect(t1).toMatchObject({ name: "Aeroport T1", lat: null, lon: null })
+    expect(t1.name).toBe("Aeroport T1")
+    expect(t1.lat).not.toBeNull()
+    expect(t1.others).toEqual([])
+    const t2 = byName.get("Aeroport T2")!
+    const d = distanceInMeters(t1.lat!, t1.lon!, t2.lat, t2.lon)
+    expect(d).toBeGreaterThan(500)
+    expect(d).toBeLessThan(2500)
+  })
+  it("L9 y L10 llevan selector de tramo (Nord y Sud), con sus sentidos y su nº de estaciones", () => {
+    const l9 = buildMetroLine("L9")!
+    expect(l9.sections).toEqual([
+      { name: "Nord", dirs: [0, 1], stopCount: 9 },
+      { name: "Sud", dirs: [2, 3], stopCount: 15 },
+    ])
+    const l10 = buildMetroLine("L10")!
+    expect(l10.sections).toEqual([
+      { name: "Nord", dirs: [0, 1], stopCount: 6 },
+      { name: "Sud", dirs: [2, 3], stopCount: 11 },
+    ])
+    // Los sentidos de cada tramo son los suyos.
+    expect(l9.directions[2].from).toBe("Zona Universitària")
+    expect(l10.directions[0].from).toBe("La Sagrera")
+  })
+  it("las demás líneas (también L11 y L12) no llevan selector de tramo", () => {
+    for (const c of METRO_LINE_CODES.filter((x) => x !== "L9" && x !== "L10")) expect(buildMetroLine(c)!.sections, c).toBeUndefined()
+    expect(buildMetroLine("L11")!.stopCount).toBe(5)
+    expect(buildMetroLine("L12")!.stopCount).toBe(2)
   })
   it("código desconocido", () => {
     expect(buildMetroLine("L99")).toBeNull()

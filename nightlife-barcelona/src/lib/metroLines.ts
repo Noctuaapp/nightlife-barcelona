@@ -16,7 +16,7 @@ import type { NbDirection, NbLine, NbStop } from "./nitbusRoutes"
 // Las líneas L9 y L10 son dos tramos separados que hoy no se tocan (el central aún no está abierto), así
 // que cada una tiene sus dos tramos (Nord y Sud). L6, L7, L8 y L12 son de FGC, no de TMB.
 //
-// Los nombres son los de `metroStations.ts` (los mismos que ve la persona en la lista de estaciones). Cuatro
+// Los nombres son los de `metroStations.ts` (los mismos que ve la persona en la lista de estaciones). Tres
 // estaciones (METRO_EXTRA) no están en esa lista y van sin coordenadas: no se inventan; solo se pierde el
 // botón «Cómo llegar andando» y su distancia.
 
@@ -137,7 +137,7 @@ export const METRO_LINE_SECTIONS: Record<string, MetroSection[]> = {
 }
 
 // Estaciones reales de estas líneas que `metroStations.ts` no tiene todavía.
-export const METRO_EXTRA = ["Aeroport T1", "Magòria-La Campana", "Sant Boi", "Molí Nou-Ciutat Cooperativa"]
+export const METRO_EXTRA = ["Magòria-La Campana", "Sant Boi", "Molí Nou-Ciutat Cooperativa"]
 
 export const METRO_LINE_CODES: string[] = Object.keys(METRO_LINE_SECTIONS).sort(compareLineCodes)
 
@@ -163,14 +163,19 @@ export function buildMetroLine(rawCode: string): NbLine | null {
   const hit = cache.get(code)
   if (hit) return hit
   const directions: NbDirection[] = []
+  const sections: NonNullable<NbLine["sections"]> = []
   const names = new Set<string>()
   for (const sec of METRO_LINE_SECTIONS[code]) {
     const fwd = sec.stations.map((n) => stopOf(n, code))
     for (const n of sec.stations) names.add(n)
+    const first = directions.length
     directions.push({ from: sec.stations[0], to: sec.stations[sec.stations.length - 1], stops: fwd })
     directions.push({ from: sec.stations[sec.stations.length - 1], to: sec.stations[0], stops: [...fwd].reverse() })
+    sections.push({ name: sec.name ?? "", dirs: [first, first + 1], stopCount: sec.stations.length })
   }
   const line: NbLine = { code, ordered: true, directions, stopCount: names.size }
+  // Solo las líneas con varios tramos con nombre (L9 y L10) llevan selector de tramo.
+  if (sections.length > 1 && sections.every((x) => x.name)) line.sections = sections
   cache.set(code, line)
   return line
 }

@@ -4,7 +4,7 @@ import IntlShell from "../IntlShell"
 import { CARD, Crumbs, FaqBlock, Hero, JsonLd, Section, SourceList } from "../IntlBits"
 import { METRO_LINE_CODES, METRO_LINE_SECTIONS, buildMetroLine } from "../../../lib/metroLines"
 import { metroHoursOf, metroNoteOf, sourcesOf } from "../../../lib/intl/transit"
-import { metroStationName, sectionNameOf } from "../../../lib/intl/metroText"
+import { FGC_LINES, metroStationName, sectionNameOf } from "../../../lib/intl/metroText"
 import type { IntlLang } from "../../../lib/intl/lang"
 import { intlMetadata } from "../../../lib/intl/meta"
 import { breadcrumbLd, faqLd, langPath, langUrl } from "../../../lib/intl/site"
@@ -86,6 +86,9 @@ export default function MetroIndex({ lang }: { lang: IntlLang }) {
               <Link href={langPath(lang, `/metro/${l.code}`)} className={`${CARD} block h-full p-4 transition hover:border-white/25`}>
                 <span className="block font-display text-xl text-ink">
                   {l.code} <span className="text-sm font-normal text-zinc-400">{t.stations(l.count)}</span>
+                  {FGC_LINES.has(l.code) && (
+                    <span className="ml-2 rounded-full border border-white/25 px-2 py-0.5 align-middle font-sans text-[11px] font-bold leading-none text-zinc-100">FGC</span>
+                  )}
                 </span>
                 {l.routes.map((r) => (
                   <span key={r} className="mt-1 block text-sm text-zinc-300">
