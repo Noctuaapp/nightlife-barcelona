@@ -23,6 +23,7 @@ import { clubsNear, type ClubPoint } from "../../../lib/parkingNearClubs"
 import { createSlug } from "../../../lib/slug"
 import AdminEditButton from "../../../components/admin/AdminEditButton"
 import EssentialPhoto from "../../../components/essentials/EssentialPhoto"
+import TaxiPanel from "../../../components/essentials/TaxiPanel"
 import Icon from "../../../components/ui/Icon"
 import { ESSENTIAL_CATEGORIES, categoryNameKey, usesOwnPhoto } from "../../../lib/essentialCategories"
 import { NIGHT_BUS_LINES } from "../../../lib/nightBuses"
@@ -48,20 +49,9 @@ const METRO_LINE_ORDER = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", 
 
 // En Taxi, además de paradas reales, se cuelan oficinas/apps (Uber, Cabify, Bolt...) que no son
 // un sitio al que ir a buscar un coche: no tiene sentido enseñarlas en la lista ni como chincheta
-// en el mapa (ya están cubiertas por los botones "pedir ya" de arriba). Mismo filtro que en la
+// en el mapa (ya están cubiertas por «Pedir un taxi ahora», arriba). Mismo filtro que en la
 // ficha de club (ClubTransport.tsx).
 const NOT_A_RANK = /cabify|uber|bolt|free\s?now|oficina|office|headquarter/i
-
-const TAXI_APPS = [
-  { name: "FREE NOW", url: "https://www.free-now.com/es/" },
-  { name: "Cabify", url: "https://cabify.com/es" },
-  { name: "Uber", url: "https://www.uber.com/es/es/" },
-]
-
-const TAXI_PHONES = [
-  { name: "Radio Taxi 033", phone: "933033033" },
-  { name: "Fonotaxi", phone: "933001100" },
-]
 
 type Essential = {
   id: number
@@ -464,6 +454,20 @@ export default function EssentialCategoryPage() {
       map.current = null
     }
   }, [])
+
+  // Taxi: ¿hay paradas reales que enseñar? (las oficinas/apps no cuentan). Mientras carga o si no hay
+  // ninguna, la pantalla se queda en los dos recuadros de arriba, sin lista vacía, filtros ni mapa.
+  const taxiRankCount = category === "taxi" ? essentials.filter((e) => !NOT_A_RANK.test(e.name || "")).length : 0
+  const hideTaxiRanks = category === "taxi" && (loading || taxiRankCount === 0)
+
+  // Taxi: el mapa se crea al montar, cuando la sección aún está oculta (cargando). Al aparecer las
+  // paradas hay que avisar a Mapbox del tamaño real antes de encuadrar los marcadores.
+  useEffect(() => {
+    if (category !== "taxi" || hideTaxiRanks) return
+    map.current?.resize()
+    const id = setTimeout(() => map.current?.resize(), 120)
+    return () => clearTimeout(id)
+  }, [category, hideTaxiRanks])
 
   // El mapa está oculto (display:none) en móvil cuando la vista es "list", así que
   // hace falta forzar un resize cuando se vuelve a mostrar o Mapbox lo pinta mal.
@@ -962,6 +966,7 @@ export default function EssentialCategoryPage() {
             )}
             <div className="min-w-0">
               <h1 className="font-display text-[1.9rem] leading-tight sm:text-5xl">{label}</h1>
+              {!(category === "taxi" && hideTaxiRanks && !loading) && (
               <p className="mt-1 text-sm text-zinc-400">
                 {category === "nitbus"
                   ? t("essentialsPage.nitbusLinesCount").replace("{n}", String(Object.keys(NIGHT_BUS_LINES).length)) +
@@ -970,42 +975,17 @@ export default function EssentialCategoryPage() {
                   ? t("essentialsPage.loading")
                   : `${filteredEssentials.length} ${filteredEssentials.length !== 1 ? t("essentials.locations_plural") : t("essentials.locations")}`}
               </p>
+              )}
             </div>
           </div>
         </section>
 
-        {/* Panel de contexto: pedir taxi ya / horario del metro */}
-        {category === "taxi" && (
-          <section className="mx-auto mt-6 max-w-7xl px-4">
-            <div className="rounded-card border border-white/10 bg-surface p-5">
-              <p className="mb-3 text-sm font-semibold text-ink">{t("essentialsPage.taxiNow")}</p>
-              <div className="flex flex-wrap gap-2.5">
-                {TAXI_APPS.map((app) => (
-                  <a
-                    key={app.name}
-                    href={app.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-pill btn-secondary flex items-center gap-1.5 px-4 py-2.5 text-sm"
-                  >
-                    {app.name} <ArrowIcon className="h-3.5 w-3.5" />
-                  </a>
-                ))}
-                {TAXI_PHONES.map((p) => (
-                  <a
-                    key={p.name}
-                    href={`tel:${p.phone}`}
-                    className="btn-pill btn-primary flex items-center gap-1.5 px-4 py-2.5 text-sm"
-                  >
-                    <Icon name="phone" className="h-4 w-4" /> {p.name}
-                  </a>
-                ))}
-              </div>
-              <p className="mt-3 text-xs text-zinc-400">
-                {filteredEssentials.length > 0 ? t("essentialsPage.taxiRanksHint") : t("essentialsPage.taxiNoRanks")}
-              </p>
-            </div>
-          </section>
+        {/* Taxi (11/11/2026): dos recuadros en vertical — apps con su logo y teléfonos de radio taxi. */}
+        {category === "taxi" && <TaxiPanel />}
+
+        {/* Paradas de taxi: solo si las hay. Sin paradas, ni lista vacía, ni filtros, ni mapa. */}
+        {category === "taxi" && !hideTaxiRanks && (
+          <h2 className="mx-auto mt-8 max-w-7xl px-4 text-lg font-semibold text-ink">{t("essentialsPage.taxiRanksTitle")}</h2>
         )}
 
         {category === "metro" && (
@@ -1141,7 +1121,7 @@ export default function EssentialCategoryPage() {
         {/* Filters — en Nitbus no hay nada que filtrar: el roster de arriba ya es toda la
             información, así que esta sección entera (y la de abajo) no se enseña para esa
             categoría, en vez de enseñar filtros y un mapa vacíos de paradas sueltas sin sentido. */}
-        {category !== "nitbus" && (
+        {category !== "nitbus" && !(category === "taxi" && hideTaxiRanks) && (
         <section className="mx-auto mt-6 max-w-7xl px-4">
           <div className="flex flex-wrap items-center gap-3">
             {/* Día (2/11/2026): primera opción = la noche de hoy; después, los otros seis días. */}
@@ -1350,7 +1330,7 @@ export default function EssentialCategoryPage() {
             nunca llegaba a crearse en Nitbus: su contenedor aparece cuando cargan las paradas y el
             mapa se crea una sola vez al montar la página. */}
         {(category !== "nitbus" || essentials.length > 0) && (
-        <section className="mx-auto mt-6 max-w-7xl px-4">
+        <section className={`mx-auto mt-6 max-w-7xl px-4 ${category === "taxi" && hideTaxiRanks ? "hidden" : ""}`}>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
             <div className={category === "nitbus" ? "md:col-span-12" : `md:col-span-5 ${mobileView === "map" ? "hidden md:block" : ""}`}>
               {category === "nitbus" && (
@@ -1485,7 +1465,7 @@ export default function EssentialCategoryPage() {
         )}
       </main>
       {/* Acceso rápido al mapa mientras se mira la lista (solo móvil) */}
-      {category !== "nitbus" && mobileView === "list" && !loading && essentials.length > 0 && (
+      {category !== "nitbus" && !hideTaxiRanks && mobileView === "list" && !loading && essentials.length > 0 && (
         <button
           onClick={() => setMobileView("map")}
           className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] right-4 z-30 flex items-center gap-1.5 rounded-full bg-ink px-4 py-2.5 text-xs font-semibold text-night shadow-lg md:hidden"

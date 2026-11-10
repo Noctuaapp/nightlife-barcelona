@@ -22,6 +22,7 @@ import StylesSection from "./StylesSection"
 import Icon from "../ui/Icon"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
 import { useLanguage } from "../../context/LanguageContext"
+import { useClubText } from "../../lib/useClubText"
 import { homeSeed, weightedOrder } from "../../lib/rotation"
 import { createSlug } from "../../lib/slug"
 import { areaHref } from "../../lib/zonePages"
@@ -72,6 +73,7 @@ function quality(c: Club): number {
 
 function ClubTile({ club, openNow, distance, compact = false, section }: { club: Club; openNow: boolean | null; distance?: string | null; compact?: boolean; section: "tonight" | "featured" }) {
   const { t } = useLanguage()
+  const ct = useClubText()
   const rating = club.google_rating || club.rating
   // El corazón va fuera del enlace (un botón dentro de un <a> no es válido): guardar un local desde
   // el listado es el momento natural para pedir la cuenta (si no hay sesión, sale el aviso de registro).
@@ -104,7 +106,7 @@ function ClubTile({ club, openNow, distance, compact = false, section }: { club:
       <div className={`relative ${compact ? "p-4" : "p-3 sm:p-4"}`}>
         <p className={`truncate font-semibold text-ink ${compact ? "text-lg" : "text-base sm:text-lg"}`}>{club.name}</p>
         <p className={`mt-0.5 truncate text-zinc-300 ${compact ? "text-sm" : "text-xs sm:text-sm"}`}>
-          {[club.neighborhood || "Barcelona", distance, club.music].filter(Boolean).join(" · ")}
+          {[club.neighborhood || "Barcelona", distance, ct.music(club.music)].filter(Boolean).join(" · ")}
         </p>
         {(rating || club.price) && (
           <p className="mt-1 flex items-center gap-2 text-xs text-zinc-300">
@@ -113,7 +115,7 @@ function ClubTile({ club, openNow, distance, compact = false, section }: { club:
                 <Icon name="star" className="h-3 w-3 text-warn" /> {Number(rating).toFixed(1)}
               </span>
             )}
-            {club.price && <span className="truncate">{club.price}</span>}
+            {club.price && <span className="truncate">{ct.price(club.price)}</span>}
           </p>
         )}
       </div>
@@ -137,6 +139,7 @@ export default function HomeClient({
   picks?: ActivePicks | null
 }) {
   const { t, locale } = useLanguage()
+  const ct = useClubText()
   const clubs = initialClubs
   const geo = useGeolocation()
   const [mounted, setMounted] = useState(false)
@@ -492,7 +495,7 @@ export default function HomeClient({
                               </span>
                               <span className="min-w-0 flex-1">
                                 <span className="block truncate text-sm font-semibold text-ink">{c.name}</span>
-                                <span className="block truncate text-xs text-zinc-400">{[c.neighborhood || "Barcelona", c.music].filter(Boolean).join(" · ")}</span>
+                                <span className="block truncate text-xs text-zinc-400">{[c.neighborhood || "Barcelona", ct.music(c.music)].filter(Boolean).join(" · ")}</span>
                               </span>
                               {openMap[c.id] && <span className="shrink-0 text-xs font-semibold text-open">{t("clubPage.openNow")}</span>}
                             </Link>

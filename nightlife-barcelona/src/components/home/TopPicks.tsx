@@ -3,6 +3,7 @@
 import Link from "next/link"
 import Image from "../ui/SafeImage"
 import { useLanguage } from "../../context/LanguageContext"
+import { useClubText } from "../../lib/useClubText"
 import { createSlug } from "../../lib/slug"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { track } from "../../lib/track"
@@ -16,6 +17,7 @@ const MEDAL = ["#f5c542", "#d6dbe4", "#e0915a"]
 // Aquí la numeración sí significa algo (es un ranking), por eso el número es lo más grande.
 export default function TopPicks({ data }: { data: ActivePicks | null }) {
   const { t } = useLanguage()
+  const ct = useClubText()
   if (!data || data.picks.length === 0) return null
 
   const title = data.period === "night" ? t("home.picksTonight") : t("home.picksWeek")
@@ -71,7 +73,7 @@ export default function TopPicks({ data }: { data: ActivePicks | null }) {
                     <span className="sr-only">{p.rank}. </span>
                     <p className="truncate text-base font-semibold text-ink">{p.club.name}</p>
                     <p className="truncate text-sm text-zinc-400">
-                      {[p.club.neighborhood, p.club.music].filter(Boolean).join(" · ")}
+                      {[p.club.neighborhood, ct.music(p.club.music)].filter(Boolean).join(" · ")}
                     </p>
                     {p.note && <p className="mt-1.5 line-clamp-2 text-sm leading-snug text-zinc-200">{p.note}</p>}
                   </div>

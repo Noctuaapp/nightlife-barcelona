@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { alightOptions, buildNitbusData, compareLineCodes, directionStats, lineStopNames, nearestStop, normStopName, planTrips, resolveSegment, summarizeRoutes, type RouteRow, type LooseStop } from "../nitbusRoutes"
+import { alightOptions, buildNitbusData, compareLineCodes, directionStats, lineEnds, lineStopNames, nearestStop, normStopName, planTrips, resolveSegment, summarizeRoutes, type RouteRow, type LooseStop } from "../nitbusRoutes"
 import { distanceInMeters } from "../geo"
 
 // El módulo importa el cliente de Supabase (necesita variables de entorno); aquí solo se prueba lo puro.
@@ -251,5 +251,28 @@ describe("Mi trayecto: lineStopNames, alightOptions y resolveSegment", () => {
     expect(unordered.ordered).toBe(false)
     expect(alightOptions(unordered, "Pl. Catalunya")).toEqual([])
     expect(resolveSegment(unordered, "Pl. Catalunya", "Sants Estació", distanceInMeters)).toBeNull()
+  })
+})
+
+describe("lineEnds (líneas fuera del catálogo, como la N62)", () => {
+  it("devuelve la primera y la última parada del primer sentido, en orden", () => {
+    const rows = [
+      { direction: 1, seq: 1, name: "Vuelta A" },
+      { direction: 0, seq: 3, name: "Final" },
+      { direction: 0, seq: 1, name: "Inicio" },
+      { direction: 0, seq: 2, name: "Medio" },
+      { direction: 1, seq: 2, name: "Vuelta B" },
+    ]
+    expect(lineEnds(rows)).toEqual({ from: "Inicio", to: "Final" })
+  })
+  it("sin paradas con nombre no hay cabeceras", () => {
+    expect(lineEnds([])).toBeNull()
+    expect(lineEnds([{ direction: 0, seq: 1, name: "  " }])).toBeNull()
+  })
+  it("una línea con una sola parada tiene la misma cabecera en los dos extremos", () => {
+    expect(lineEnds([{ direction: 0, seq: 1, name: " Única " }])).toEqual({ from: "Única", to: "Única" })
+  })
+  it("si el sentido 0 no existe usa el primero que haya", () => {
+    expect(lineEnds([{ direction: 2, seq: 2, name: "B" }, { direction: 2, seq: 1, name: "A" }])).toEqual({ from: "A", to: "B" })
   })
 })

@@ -10,6 +10,7 @@ import { NIGHT_BUS_LINES } from "../lib/nightBuses"
 import { METRO_LINE_CODES } from "../lib/metroLines"
 import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../lib/clubQueries"
 import { buildIntlSitemap, withSpanishAlternates } from "../lib/intl/sitemap"
+import { isClubNoctuaOn } from "../lib/clubNoctuaServer"
 
 const BASE_URL = "https://www.noctuaapp.com"
 
@@ -39,7 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/map`, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE_URL}/plan`, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE_URL}/para-locales`, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${BASE_URL}/club-noctua`, changeFrequency: "monthly", priority: 0.4 },
+    // /club-noctua se añade más abajo solo si Club Noctua está activo: en pausa lleva noindex (club-noctua/layout.tsx).
     { url: `${BASE_URL}/faq`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE_URL}/derechos`, changeFrequency: "monthly", priority: 0.4 },
     // Nitbus: portada y una página por línea, con sus paradas en orden.
@@ -134,7 +135,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     intl = null
   }
 
-  const spanish = [...staticRoutes, ...areaRoutes, ...clubRoutes, ...eventRoutes, ...nightRoutes]
+  const clubNoctuaRoutes: MetadataRoute.Sitemap = (await isClubNoctuaOn())
+    ? [{ url: `${BASE_URL}/club-noctua`, changeFrequency: "monthly", priority: 0.4 }]
+    : []
+
+  const spanish = [...staticRoutes, ...clubNoctuaRoutes, ...areaRoutes, ...clubRoutes, ...eventRoutes, ...nightRoutes]
   if (!intl) return spanish
   return [...withSpanishAlternates(spanish, intl.twins), ...intl.entries]
 }

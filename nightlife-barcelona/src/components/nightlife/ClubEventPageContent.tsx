@@ -13,6 +13,7 @@ import Icon from "../ui/Icon"
 import { toast } from "../ui/Toast"
 import { track } from "../../lib/track"
 import { useLanguage } from "../../context/LanguageContext"
+import { useClubText } from "../../lib/useClubText"
 import { toDateLocale } from "../../lib/dateLocale"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { InlineEditText, InlineEditImage } from "../admin/InlineEdit"
@@ -79,6 +80,7 @@ export default function ClubEventPageContent({
 }) {
   const { t, locale } = useLanguage()
   const isAdmin = useCanEdit() // admin, o el dueño de esta ficha (ver admin/EditAccess)
+  const ct = useClubText() // precio y música en el idioma de la web (quien edita ve el original)
   const [past, setPast] = useState(false)
   useEffect(() => {
     if (!clubEvent.date) return
@@ -133,8 +135,8 @@ export default function ClubEventPageContent({
   const facts = [
     dateLabel && { key: "date", field: null, icon: "calendar", label: t("event.date"), value: past ? t("event.finishedValue") : dateLabel },
     timeLabel && { key: "time", field: null, icon: "clock", label: t("event.schedule"), value: timeLabel },
-    clubEvent.price && { key: "price", field: "price", icon: "ticket", label: t("event.price"), value: clubEvent.price },
-    clubEvent.music && { key: "music", field: "music", icon: "music", label: t("club.music"), value: clubEvent.music },
+    clubEvent.price && { key: "price", field: "price", icon: "ticket", label: t("event.price"), value: isAdmin ? clubEvent.price : ct.price(clubEvent.price) },
+    clubEvent.music && { key: "music", field: "music", icon: "music", label: t("club.music"), value: isAdmin ? clubEvent.music : ct.music(clubEvent.music) },
   ].filter(Boolean) as { key: string; field: string | null; icon: string; label: string; value: string }[]
 
   // Botones de acción: principal blanca y secundarios con el icono en el color de su función (04/11/2026, ver .act en globals.css).
@@ -319,7 +321,7 @@ export default function ClubEventPageContent({
                   {clubEvent.price && (
                     <div className="flex items-center justify-between gap-4">
                       <dt className="text-zinc-400">{t("event.price")}</dt>
-                      <dd className="font-semibold text-ink">{clubEvent.price}</dd>
+                      <dd className="font-semibold text-ink">{ct.price(clubEvent.price)}</dd>
                     </div>
                   )}
                 </dl>

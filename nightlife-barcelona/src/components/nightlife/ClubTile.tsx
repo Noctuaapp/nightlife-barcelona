@@ -8,6 +8,7 @@ import { createSlug } from "../../lib/slug"
 import { activeNotices, effectiveOpenNow } from "../../lib/scheduleNotices"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { useLanguage } from "../../context/LanguageContext"
+import { useClubText } from "../../lib/useClubText"
 
 // Tarjeta compacta del listado /clubs (03/11/2026). La anterior (ClubCard) mide más de 300 px de alto
 // con la foto a un lado y los datos debajo, y en el móvil sale de una en una: tres clubs ocupaban
@@ -64,6 +65,7 @@ export default function ClubTile({
   priority = false,
 }: ClubTileProps) {
   const { t } = useLanguage()
+  const ct = useClubText()
   const [openNow, setOpenNow] = useState<boolean | null>(null)
   const [closedTonight, setClosedTonight] = useState(false)
   const [specialHours, setSpecialHours] = useState<string | null>(null)
@@ -152,11 +154,11 @@ export default function ClubTile({
               <Icon name="star" className="h-3 w-3 text-warn" /> {Number(rating).toFixed(1)}
             </span>
           ) : null}
-          <span className="truncate">{[area || "Barcelona", music].filter(Boolean).join(" · ")}</span>
+          <span className="truncate">{[area || "Barcelona", ct.music(music)].filter(Boolean).join(" · ")}</span>
         </p>
         {(price || tag) && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold">
-            {price && <span className="rounded-full border border-white/20 bg-night/50 px-2 py-0.5 text-zinc-100">{price}</span>}
+            {price && <span className="rounded-full border border-white/20 bg-night/50 px-2 py-0.5 text-zinc-100">{ct.price(price)}</span>}
             {tag && <span className="rounded-full bg-brand/80 px-2 py-0.5 text-white">{tag}</span>}
           </div>
         )}

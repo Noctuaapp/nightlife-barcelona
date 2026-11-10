@@ -99,7 +99,7 @@ const HOLDS_RIGHT_THEME: NocTheme[] = ["sanValentin", "semanaSanta", "santJordi"
 
 type EyeState = "open" | "closed" | "heart" | "none"
 // Cómo mira: normal (duro), medio dormido, borracho (bizco), a tope (festival) o sorprendido.
-type EyeMode = "normal" | "sleepy" | "tipsy" | "hype" | "wide"
+type EyeMode = "normal" | "sleepy" | "tipsy" | "hype" | "wide" | "cheeky"
 
 function heartPath(cx: number, cy: number, k: number): string {
   return `M${cx} ${cy + 6 * k} C${cx - 9 * k} ${cy - 1 * k} ${cx - 8.500 * k} ${cy - 8 * k} ${cx - 3.500 * k} ${cy - 8 * k} C${cx - 1.500 * k} ${cy - 8 * k} ${cx} ${cy - 6.500 * k} ${cx} ${cy - 4.500 * k} C${cx} ${cy - 6.500 * k} ${cx + 1.500 * k} ${cy - 8 * k} ${cx + 3.500 * k} ${cy - 8 * k} C${cx + 8.500 * k} ${cy - 8 * k} ${cx + 9 * k} ${cy - 1 * k} ${cx} ${cy + 6 * k} Z`
@@ -130,8 +130,15 @@ function eye(cx: number, state: EyeState, side: -1 | 1, accent: string, mode: Ey
   const cy = 56
   if (state === "none") return ""
   if (state === "closed") {
-    // Ojo cerrado (el guiño): una raya con el color del nivel.
-    return `<path d="M${cx - 13} 56 Q${cx} 62 ${cx + 13} 56" fill="none" stroke="${INK}" stroke-width="4" stroke-linecap="round"/><path d="M${cx - 13} 56 Q${cx} 62 ${cx + 13} 56" fill="none" stroke="${accent}" stroke-width="1.600" stroke-linecap="round"/>`
+    // Guiño: un arco hacia ARRIBA (∩), grueso, con el color del nivel por encima. Es lo que se lee como un
+    // ojo achinado y alegre; la raya curvada hacia abajo (‿) de antes parecía un ojo dormido, no un guiño
+    // (lo dijo Jordi el 10/11/2026). Lleva debajo la mejilla subida, y la chispa va en el dibujo (wink()).
+    const d = `M${cx - 13} 60 Q${cx} 42.500 ${cx + 13} 60`
+    return (
+      `<path d="${d}" fill="none" stroke="${INK}" stroke-width="7.200" stroke-linecap="round"/>` +
+      `<path d="${d}" fill="none" stroke="${accent}" stroke-width="3" stroke-linecap="round"/>` +
+      `<path d="M${cx - 8} 66 Q${cx} 70 ${cx + 8} 66" fill="none" stroke="${INK}" stroke-width="2.200" stroke-linecap="round" opacity=".55"/>`
+    )
   }
   const wide = mode === "wide"
   const R = wide ? 16 : 14.500
@@ -154,6 +161,7 @@ function eye(cx: number, state: EyeState, side: -1 | 1, accent: string, mode: Ey
     if (mode === "sleepy") { ly = 58.500; deg = 0 } // casi cerrado
     if (mode === "tipsy") { ly = 54; deg = 0 } // párpados caídos y rectos
     if (mode === "hype") { ly = 47.500; deg = 12 } // ojos abiertos y ceño de «vamos»
+    if (mode === "cheeky") { ly = 45; deg = 0 } // el ojo que queda abierto en el guiño: ceja levantada, pícaro
     const c = lidCap(cx, cy, R, side, ly, deg)
     const ox = side === -1 ? c.x1 : c.x2
     const oy = side === -1 ? c.y1 : c.y2
@@ -338,7 +346,7 @@ export function nocSvg({ color, mood = "happy", pose = null, theme = null, id = 
     eyeL = "none"
     eyeR = "none"
   }
-  const eyeMode: EyeMode = mood === "sleepy" ? "sleepy" : tipsy ? "tipsy" : hype ? "hype" : mood === "wow" ? "wide" : "normal"
+  const eyeMode: EyeMode = mood === "sleepy" ? "sleepy" : tipsy ? "tipsy" : hype ? "hype" : mood === "wow" ? "wide" : mood === "wink" ? "cheeky" : "normal"
 
   const beak =
     mood === "wow"
@@ -399,6 +407,12 @@ export function nocSvg({ color, mood = "happy", pose = null, theme = null, id = 
           ? `<text x="8" y="30" font-size="13">z</text><text x="0" y="17" font-size="9">z</text>`
           : `<text x="96" y="30" font-size="13">z</text><text x="105" y="18" font-size="9">z</text>`
     parts.push(`<g fill="${accent}" font-family="Arial Black,Arial,sans-serif" font-weight="900">${zs}</g>`)
+  }
+  if (mood === "wink" && !sunnies && !pose) {
+    // La chispa del guiño, junto al ojo cerrado (con una pose en la mano no se pinta: se pisaría con ella).
+    parts.push(
+      `<path d="M104 28.500 Q105.400 35.600 112.500 37 Q105.400 38.400 104 45.500 Q102.600 38.400 95.500 37 Q102.600 35.600 104 28.500 Z" fill="${GOLD}" stroke="${INK}" stroke-width="1.800" stroke-linejoin="round"/>`
+    )
   }
   if (tipsy) {
     parts.push(

@@ -6,6 +6,7 @@ import { createPortal } from "react-dom"
 import { ChevronDown, ChevronLeft, Clock, Dices, Disc3, Heart, MapPin, MessageCircle, Mic2, Moon, Music2, SlidersHorizontal, Sparkles, Sun, Ticket, Users, X } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import NocOwl from "../mascot/NocOwl"
+import SurpriseRoulette from "./SurpriseRoulette"
 import SharePlanButton from "../plan/SharePlanButton"
 import NocSays, { useOwnLevelColor } from "../mascot/NocSays"
 import { useLanguage } from "../../context/LanguageContext"
@@ -47,11 +48,12 @@ const VIBE_KEY: Record<string, string> = { tranquilo: "clubPage.vibeQuiet", anim
 const LIVE_STATUS_MAX_AGE_MS = 4 * 60 * 60 * 1000
 const PREFS_KEY = "noctua_surprise_v1"
 
-// Ruleta de nombres: 3 filas visibles de REEL_ROW px, la del centro es la que cuenta. Se montan REEL_FILL
-// nombres al azar y al final el elegido; un solo desplazamiento con freno suave (CSS) lo deja en el centro.
-const REEL_ROW = 56
+// Ruleta de casino (SurpriseRoulette): la rueda gira frenando, la bola cae en una casilla y debajo pasan
+// REEL_FILL nombres de locales posibles al azar; el último es el elegido. ROULETTE_MS es lo que dura la
+// tirada y ROULETTE_HOLD el rato que se deja la bola quieta en su casilla antes de enseñar el local.
 const REEL_FILL = 14
-const REEL_MS = 1900
+const ROULETTE_MS = 3200
+const ROULETTE_HOLD = 650
 
 const FOCUSABLE = 'a[href], button:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
@@ -104,8 +106,8 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
   const [geoError, setGeoError] = useState("")
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [denied, setDenied] = useState<Set<number>>(() => new Set())
-  const [strip, setStrip] = useState<Club[]>([])
-  const [stripAt, setStripAt] = useState(0)
+  const [strip, setStrip] = useState<string[]>([])
+  const [spinKey, setSpinKey] = useState(0)
   const [trail, setTrail] = useState<{ items: Club[]; at: number }>({ items: [], at: -1 })
   const [seen, setSeen] = useState<number[]>([])
   const [note, setNote] = useState<SurpriseNote>("")
@@ -209,13 +211,11 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
         last = options[Math.floor(Math.random() * options.length)]
         fill.push(last)
       }
-      const items = [...fill, chosen]
-      setStrip(items)
-      setStripAt(0)
+      setStrip([...fill, chosen].map((c) => c.name))
+      setSpinKey((k) => k + 1)
       setNote("")
       setPhase("spin")
-      timers.current.push(setTimeout(() => setStripAt(items.length - 1), 60))
-      timers.current.push(setTimeout(finish, REEL_MS + 380))
+      timers.current.push(setTimeout(finish, ROULETTE_MS + ROULETTE_HOLD))
     },
     [clubs, mood, extras, zone, near, pos, denied, seen, clearSpin]
   )
@@ -304,7 +304,6 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
     setOpen(false)
     setPhase("spin")
     setStrip([])
-    setStripAt(0)
     setTrail({ items: [], at: -1 })
     setSeen([])
     setNote("")
@@ -532,34 +531,7 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
               <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4 pt-4">
                 {phase === "spin" && (
                   <div className="flex min-h-full flex-col justify-center gap-4">
-                    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#14111c]" style={{ height: REEL_ROW * 3 }} aria-hidden="true">
-                      <div
-                        className="pointer-events-none absolute inset-x-3 rounded-2xl bg-white/[0.07] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
-                        style={{ top: REEL_ROW, height: REEL_ROW }}
-                      />
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 34%, #000 66%, transparent)",
-                          maskImage: "linear-gradient(to bottom, transparent, #000 34%, #000 66%, transparent)",
-                        }}
-                      >
-                        <ul
-                          className="absolute inset-x-0 top-0"
-                          style={{
-                            transform: `translateY(${REEL_ROW - stripAt * REEL_ROW}px)`,
-                            transition: stripAt === 0 ? "none" : `transform ${REEL_MS}ms cubic-bezier(0.12, 0.8, 0.2, 1)`,
-                          }}
-                        >
-                          {strip.map((c, i) => (
-                            <li key={i} className="flex items-center justify-center px-8" style={{ height: REEL_ROW }}>
-                              <span className="truncate font-display text-xl text-white">{c.name}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                    <p className="text-center text-sm font-semibold text-zinc-400">{t("surprise.thinking")}</p>
+                    <SurpriseRoulette key={spinKey} names={strip} durationMs={ROULETTE_MS} label={t("surprise.thinking")} />
                   </div>
                 )}
 

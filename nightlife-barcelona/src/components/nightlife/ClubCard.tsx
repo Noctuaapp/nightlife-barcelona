@@ -8,6 +8,7 @@ import { createSlug } from "../../lib/slug"
 import { activeNotices, effectiveOpenNow } from "../../lib/scheduleNotices"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { useLanguage } from "../../context/LanguageContext"
+import { useClubText } from "../../lib/useClubText"
 
 // Tarjeta de club del listado. Rehecha tras la auditoría de octubre 2026:
 // - Antes medía 420 px y llevaba hasta 9 etiquetas con emojis, algunas falsas: "🔥 {people}+ esta
@@ -66,6 +67,7 @@ export default function ClubCard({
   scheduleNotices,
 }: ClubCardProps) {
   const { t } = useLanguage()
+  const ct = useClubText()
   const [openNow, setOpenNow] = useState<boolean | null>(null)
   const [closedTonight, setClosedTonight] = useState(false)
   const [specialHours, setSpecialHours] = useState<string | null>(null)
@@ -149,9 +151,9 @@ export default function ClubCard({
             </span>
           ) : null}
         </div>
-        <p className="mt-0.5 truncate text-sm text-zinc-400">{[area || "Barcelona", music].filter(Boolean).join(" · ")}</p>
+        <p className="mt-0.5 truncate text-sm text-zinc-400">{[area || "Barcelona", ct.music(music)].filter(Boolean).join(" · ")}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-          {price && <span className="rounded-full border border-white/10 px-2.5 py-1 font-semibold text-zinc-200">{price}</span>}
+          {price && <span className="rounded-full border border-white/10 px-2.5 py-1 font-semibold text-zinc-200">{ct.price(price)}</span>}
           {specialHours && !dimmed && (
             <span className="rounded-full border border-warn/50 px-2.5 py-1 font-semibold text-warn">
               {t("notices.specialHoursChip").replace("{hours}", specialHours)}
@@ -166,7 +168,7 @@ export default function ClubCard({
         {showHours && hours && (
           <p className="mt-2.5 flex items-center gap-1.5 text-xs text-zinc-400">
             <Icon name="clock" className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{hours}</span>
+            <span className="truncate">{ct.hours(hours, openDays)}</span>
           </p>
         )}
       </div>

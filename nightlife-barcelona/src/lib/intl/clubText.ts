@@ -10,6 +10,7 @@ import { EXTRA_FEATURES } from "../extraFeatures"
 import { dressCodeOf } from "../dressCode"
 import { expandDays, openDaysToLetters } from "../clubHours"
 import { CLUB_LEX, MUSIC_KEYS, type Kind, type KindKey } from "./clubLex"
+import { lexCoreOf, type ClubLang } from "./clubLexExtra"
 import { CITY_NAME, NUM_LOCALE, type IntlLang } from "./lang"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,8 +38,8 @@ function stripAccents(s: string): string {
 }
 
 /** "a", "b" and "c" (con «und», «et», «e» en los otros idiomas). */
-export function listOf(lang: IntlLang, items: string[]): string {
-  const and = CLUB_LEX[lang].and
+export function listOf(lang: ClubLang, items: string[]): string {
+  const and = lexCoreOf(lang).and
   if (items.length <= 1) return items.join("")
   if (items.length === 2) return `${items[0]} ${and} ${items[1]}`
   return `${items.slice(0, -1).join(", ")} ${and} ${items[items.length - 1]}`
@@ -69,10 +70,10 @@ export function venueKindOf(lang: IntlLang, venueType: string | null | undefined
 // --- Música ---------------------------------------------------------------------------------------
 
 /** "Techno · Comercial" → ["techno", "commercial"]. Lo que no se reconoce se deja como está escrito. */
-export function musicOf(lang: IntlLang, raw: unknown): string[] {
+export function musicOf(lang: ClubLang, raw: unknown): string[] {
   const text = clean(raw)
   if (!text || /^karaoke$/i.test(text)) return []
-  const labels = CLUB_LEX[lang].musicLabel
+  const labels = lexCoreOf(lang).musicLabel
   const out: string[] = []
   for (const part of text.split(/[,/·|;]/)) {
     const p = part.trim()
@@ -106,8 +107,8 @@ export function minAgeOf(club: Club): number | null {
 
 const WEEK = ["L", "M", "X", "J", "V", "S", "D"]
 
-function daysOf(lang: IntlLang, letters: string[]): string {
-  const lex = CLUB_LEX[lang]
+function daysOf(lang: ClubLang, letters: string[]): string {
+  const lex = lexCoreOf(lang)
   const name = (i: number) => lex.days[i]
   const idx = WEEK.map((l, i) => (letters.includes(l) ? i : -1)).filter((i) => i >= 0)
   if (idx.length === 0) return ""
@@ -126,7 +127,7 @@ function daysOf(lang: IntlLang, letters: string[]): string {
 const pad = (s: string) => s.padStart(2, "0")
 
 /** El campo "hours" del local ("V/S 23:00-06:00, D 19:00-01:00") en el idioma. Vacío si no se entiende. */
-export function hoursOf(lang: IntlLang, hours: unknown, openDays?: string[] | null): string[] {
+export function hoursOf(lang: ClubLang, hours: unknown, openDays?: string[] | null): string[] {
   const text = clean(hours)
   if (!text) return []
   const openLetters = openDaysToLetters(openDays)
@@ -136,7 +137,7 @@ export function hoursOf(lang: IntlLang, hours: unknown, openDays?: string[] | nu
     if (!m) continue
     const time = `${pad(m[2])}:${m[3]}–${pad(m[4])}:${m[5]}`
     const letters = m[1] ? expandDays(m[1]) : openLetters
-    const days = letters && letters.length ? daysOf(lang, letters) : CLUB_LEX[lang].everyNight
+    const days = letters && letters.length ? daysOf(lang, letters) : lexCoreOf(lang).everyNight
     out.push(`${days} ${time}`)
   }
   return out
@@ -153,10 +154,10 @@ export function firstSlot(hours: unknown): string | null {
 export type PriceText = { text: string; translated: boolean }
 
 /** El precio es texto libre del admin. Se traduce solo si TODAS sus palabras se reconocen; si no, se deja tal cual. */
-export function priceOf(lang: IntlLang, raw: unknown): PriceText | null {
+export function priceOf(lang: ClubLang, raw: unknown): PriceText | null {
   const original = clean(raw).replace(/\s+/g, " ")
   if (!original) return null
-  const lex = CLUB_LEX[lang]
+  const lex = lexCoreOf(lang)
   // Frases hechas antes de mirar palabra a palabra («15€ con copa» → «15€ with a drink»). Se guardan aparte
   // para que sus palabras, ya traducidas, no se vuelvan a mirar.
   const stash: string[] = []

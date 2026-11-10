@@ -5,6 +5,11 @@ import Link from "next/link"
 import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
 import HeroImage from "../ui/HeroImage"
 import { useLanguage } from "../../context/LanguageContext"
+import { useClubText } from "../../lib/useClubText"
+import { textItems, useTranslatedTexts } from "../../lib/useTranslatedTexts"
+import { displayPrice } from "../../lib/clubDisplay"
+import { clubSummary as intlClubSummary } from "../../lib/intl/clubText"
+import { isIntlLang } from "../../lib/intl/lang"
 import { track } from "../../lib/track"
 import FavoriteButton from "../favorites/FavoriteButton"
 import CheckInButton from "../gamification/CheckInButton"
@@ -70,6 +75,15 @@ function PanelTitle({ children }: { children: React.ReactNode }) {
 export default function ClubPageContent({ club, clubEvents, clubSessions = [], initialRelated }: { club: any; clubEvents: any[]; clubSessions?: any[]; initialRelated?: any[] }) {
   const { t, locale } = useLanguage()
   const isAdmin = useCanEdit() // admin, o el dueño de esta ficha (ver admin/EditAccess)
+  // Horario, precio, música y textos libres en el idioma de la web (11/11/2026). Quien puede editar la ficha ve
+  // siempre el original en español, porque lo que edita es el original.
+  const ct = useClubText()
+  const priceT = displayPrice(locale, club.price)
+  const tr = useTranslatedTexts(
+    isAdmin || locale === "es"
+      ? []
+      : textItems("clubs", club, ["description", "discount_info", "free_entry_info", ...(priceT.translated ? [] : ["price"])])
+  )
   const [activeTab, setActiveTab] = useState<Tab>("about")
   // ?tab=reviews (enlaces de los avisos del admin, "ver opiniones"...) abre directamente esa pestaña.
   useEffect(() => {
@@ -322,14 +336,14 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
   // está en ningún otro sitio de la ficha es la promo del día y las condiciones de entrada
   // gratuita, así que son las únicas que quedan aquí.
   const faqs = [
-    club.discount_info && { q: t("clubPage.faqPromoQ"), a: club.discount_info },
-    club.free_entry_info && { q: t("clubPage.faqFreeQ"), a: club.free_entry_info },
+    club.discount_info && { q: t("clubPage.faqPromoQ"), a: tr.discount_info ?? club.discount_info },
+    club.free_entry_info && { q: t("clubPage.faqFreeQ"), a: tr.free_entry_info ?? club.free_entry_info },
   ].filter(Boolean) as { q: string; a: string }[]
 
   const quickFacts = [
-    club.music && { key: "music", field: "music", icon: "music", label: t("club.music"), value: club.music },
-    club.price && { key: "price", field: "price", icon: "ticket", label: t("club.price"), value: club.price },
-    club.hours && { key: "hours", field: "hours", icon: "clock", label: t("club.hours"), value: club.hours },
+    club.music && { key: "music", field: "music", icon: "music", label: t("club.music"), value: isAdmin ? club.music : ct.music(club.music) },
+    club.price && { key: "price", field: "price", icon: "ticket", label: t("club.price"), value: isAdmin ? club.price : priceT.translated ? priceT.text : tr.price ?? club.price },
+    club.hours && { key: "hours", field: "hours", icon: "clock", label: t("club.hours"), value: isAdmin ? club.hours : ct.hours(club.hours, club.open_days) },
     minAge && { key: "age", field: "age_min", icon: "id", label: t("clubPage.minAge"), value: String(minAge) },
   ].filter(Boolean) as { key: string; field: string | null; icon: string; label: string; value: string }[]
 
@@ -358,7 +372,8 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
   }
 
   // «Sobre»: en el móvil, 4 líneas y «Leer más» si hay bastante texto; el texto entero sigue en el HTML.
-  const summary = clubSummary(club)
+  // Sin descripción escrita se enseña un resumen con los datos del local; en inglés, alemán, francés e italiano, en su idioma.
+  const summary = isIntlLang(locale) ? intlClubSummary(locale, club) : clubSummary(club)
   const descText = String(club.description || "").trim()
   const canCollapse = !isAdmin && (club.description ? descText.length : summary.length) > 200
 
@@ -698,7 +713,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
               <PanelTitle>{t("clubPage.about").replace("{name}", club.name)}</PanelTitle>
               <p className={`text-[15px] leading-relaxed text-zinc-200 sm:text-base ${canCollapse && !aboutOpen ? "line-clamp-4 lg:line-clamp-none" : ""}`}>
                 {club.description || isAdmin ? (
-                  <InlineEditText table="clubs" id={club.id} field="description" value={club.description} multiline emptyLabel="añadir descripción" />
+                  <InlineEditText table="clubs" id={club.id} field="description" value={isAdmin ? club.description : tr.description ?? club.description} multiline emptyLabel="añadir descripción" />
                 ) : (
                   summary
                 )}

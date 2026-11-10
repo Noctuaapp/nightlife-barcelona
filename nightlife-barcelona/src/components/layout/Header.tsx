@@ -244,11 +244,14 @@ export default function Header() {
   }, [router])
 
   useEffect(() => {
-    const fetchWeather = async () => {
+    // force: la vuelta del temporizador se salta la caché. Antes la pedía igual con la caché de 30 min: el
+    // temporizador saltaba justo antes de que caducara, la tomaba por buena y el tiempo (y el aviso de la
+    // noche) tardaba hasta una hora en actualizarse con la página abierta (10/11/2026).
+    const fetchWeather = async (force = false) => {
       try {
         try {
           const cached = JSON.parse(sessionStorage.getItem(WEATHER_CACHE_KEY) || "null")
-          if (cached && cached.city === selectedCity.slug && Date.now() - cached.at < WEATHER_TTL_MS) {
+          if (!force && cached && cached.city === selectedCity.slug && Date.now() - cached.at < WEATHER_TTL_MS) {
             setWeather(cached.weather)
             return
           }
@@ -318,8 +321,16 @@ export default function Header() {
     }
 
     fetchWeather()
-    const interval = setInterval(fetchWeather, 30 * 60 * 1000)
-    return () => clearInterval(interval)
+    const interval = setInterval(() => fetchWeather(true), 30 * 60 * 1000)
+    // Al volver a la pestaña (en el móvil, tras tener el teléfono bloqueado) se actualiza si la caché ya caducó.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchWeather()
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener("visibilitychange", onVisible)
+    }
   }, [selectedCity])
 
   const [notifOpen, setNotifOpen] = useState(false)

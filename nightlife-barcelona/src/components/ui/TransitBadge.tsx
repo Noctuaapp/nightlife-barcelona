@@ -1,5 +1,6 @@
 import { metroLineColor, NITBUS_PLATE } from "../../lib/transitColors"
 import { getNightBusLine, nightBusStopsUrl, parseRoute } from "../../lib/nightBuses"
+import NitbusUnknownLine from "../nitbus/NitbusUnknownLine"
 
 // Insignia de línea de transporte: redonda para metro (como el rótulo del andén), en placa
 // rectangular para Nitbus (como el cartel azul de la parada). La forma distingue el modo sin
@@ -31,8 +32,9 @@ export function NitbusBadge({ code, size = "sm" }: { code: string; size?: "sm" |
 
 // Fila de una línea Nitbus: placa + origen → destino (en vez de una frase corrida), para que a
 // las 4 de la mañana se entienda de un vistazo a dónde va el bus, no haga falta leer una frase
-// entera para encontrarlo. Si la línea no está en el catálogo (código nuevo o mal escrito), se
-// enseña igual la placa con el código tal cual y el aviso de que no hay datos.
+// entera para encontrarlo. Si la línea no está en el catálogo (N62 y otras que solo vienen de
+// OpenStreetMap), se enseña la placa, sus cabeceras sacadas de sus propias paradas y el enlace a su
+// página (NitbusUnknownLine); solo un código que ni parece de línea se queda con el aviso de sin datos.
 export function NitbusRouteRow({
   code,
   seeStopsLabel,
@@ -54,12 +56,8 @@ export function NitbusRouteRow({
 }) {
   const line = getNightBusLine(code)
   if (!line) {
-    return (
-      <div className="flex items-center gap-2.5">
-        <NitbusBadge code={code.trim().toUpperCase()} />
-        <p className="text-xs text-zinc-400">{unknownLabel}</p>
-      </div>
-    )
+    const clean = code.trim().toUpperCase()
+    return <NitbusUnknownLine code={clean} badge={<NitbusBadge code={clean} />} seeStopsLabel={seeStopsLabel} unknownLabel={unknownLabel} onLinkClick={onLinkClick} />
   }
   const stopsUrl = nightBusStopsUrl(line.code, near)
   const { from, to, note } = parseRoute(line.route)

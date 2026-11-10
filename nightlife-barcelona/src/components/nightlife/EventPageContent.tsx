@@ -24,6 +24,8 @@ import Stars from "./club/Stars"
 import Icon from "../ui/Icon"
 import { toast } from "../ui/Toast"
 import { useLanguage } from "../../context/LanguageContext"
+import { useClubText } from "../../lib/useClubText"
+import { textItems, useTranslatedTexts } from "../../lib/useTranslatedTexts"
 import { toDateLocale } from "../../lib/dateLocale"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { InlineEditText, InlineEditImage, InlineEditTiers } from "../admin/InlineEdit"
@@ -59,6 +61,8 @@ function Panel({ children, className = "" }: { children: React.ReactNode; classN
 export default function EventPageContent({ event, tickets, sessions }: { event: any; tickets: any[]; sessions: any[] }) {
   const { t, locale } = useLanguage()
   const isAdmin = useCanEdit() // admin, o el dueño de esta ficha (ver admin/EditAccess)
+  const ct = useClubText() // precio y música en el idioma de la web (quien edita ve el original)
+  const tr = useTranslatedTexts(isAdmin || locale === "es" ? [] : textItems("events", event, ["description"]))
   // La fecha depende del día en que se mira: se calcula tras montar (HTML de servidor y navegador iguales).
   const [past, setPast] = useState(false)
   useEffect(() => setPast(isEventPast(event.date, event.date_end)), [event.date, event.date_end])
@@ -122,8 +126,8 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
       label: t("event.schedule"),
       value: `${event.start_time}${event.end_time ? ` – ${event.end_time}` : ""}`,
     },
-    event.price && { key: "price", field: "price", icon: "ticket", label: t("event.price"), value: event.price },
-    event.music && { key: "music", field: "music", icon: "music", label: t("club.music"), value: event.music },
+    event.price && { key: "price", field: "price", icon: "ticket", label: t("event.price"), value: isAdmin ? event.price : ct.price(event.price) },
+    event.music && { key: "music", field: "music", icon: "music", label: t("club.music"), value: isAdmin ? event.music : ct.music(event.music) },
   ].filter(Boolean) as { key: string; field: string | null; icon: string; label: string; value: string }[]
 
   const secondaryBtn =
@@ -255,7 +259,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
               <Panel>
                 <h2 className="mb-4 text-lg font-semibold text-ink">{t("event.about")}</h2>
                 <p className="text-base leading-relaxed text-zinc-200 empty:hidden">
-                  <InlineEditText table="events" id={event.id} field="description" value={event.description} multiline emptyLabel="añadir descripción" />
+                  <InlineEditText table="events" id={event.id} field="description" value={isAdmin ? event.description : tr.description ?? event.description} multiline emptyLabel="añadir descripción" />
                 </p>
                 {event.artist && (
                   <div className="mt-5 flex items-center gap-3 rounded-ctl border border-white/10 p-4">
@@ -327,7 +331,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                   <div className="flex items-center justify-between gap-4">
                     <dt className="text-zinc-400">{t("event.price")}</dt>
                     <dd className="font-semibold text-ink">
-                      <InlineEditText table="events" id={event.id} field="price" value={event.price} emptyLabel="precio" className="text-right" />
+                      <InlineEditText table="events" id={event.id} field="price" value={isAdmin ? event.price : ct.price(event.price)} emptyLabel="precio" className="text-right" />
                     </dd>
                   </div>
                 )}

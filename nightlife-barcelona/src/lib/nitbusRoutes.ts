@@ -164,6 +164,21 @@ export function buildNitbusData(rows: RouteRow[], loose: LooseStop[]): NbData {
   return { lines, search }
 }
 
+export type LineEnds = { from: string; to: string }
+
+/**
+ * Cabeceras de una línea (primera y última parada de su primer sentido) a partir de sus paradas en orden.
+ * Es lo que se enseña de una línea que no está en el catálogo escrito a mano (lib/nightBuses.ts): sale de
+ * los datos importados de OpenStreetMap, no se inventa. null si la línea no tiene ninguna parada con nombre.
+ */
+export function lineEnds(rows: { direction: number; seq: number; name: string }[]): LineEnds | null {
+  const named = rows.filter((r) => typeof r.name === "string" && r.name.trim() !== "")
+  if (named.length === 0) return null
+  const firstDirection = Math.min(...named.map((r) => r.direction))
+  const list = named.filter((r) => r.direction === firstDirection).sort((a, b) => a.seq - b.seq)
+  return { from: list[0].name.trim(), to: list[list.length - 1].name.trim() }
+}
+
 // Parada de una lista más cercana a un punto (null si ninguna tiene coordenadas).
 export function nearestStop<T extends { lat: number | null; lon: number | null }>(
   stops: T[],
