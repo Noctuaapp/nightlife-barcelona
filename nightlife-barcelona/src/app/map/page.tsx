@@ -385,7 +385,11 @@ export default function MapPage() {
   const [filter, setFilter] = useState<Filter>("clubs")
   const [selected, setSelected] = useState<Club | Event | Essential | null>(null)
   const [mapReady, setMapReady] = useState(false)
+  // Panel de la izquierda. En escritorio (lg+) arranca abierto, al lado del mapa. En móvil es un panel que TAPA
+  // el mapa, así que arranca cerrado: quien abre el mapa tiene que ver el mapa (10/11/2026; antes salía el menú
+  // abierto y, en Esenciales, los dos desplegables de área y categoría encima). Se abre con el botón «Lista».
   const [showList, setShowList] = useState(true)
+  const [showMobileList, setShowMobileList] = useState(false)
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null)
   const [search, setSearch] = useState("")
   const [zone, setZone] = useState("")
@@ -766,7 +770,7 @@ export default function MapPage() {
           <p style={{ fontSize: "12px", color: "#a19fad" }}>{t("map.essentialsSampleHint").replace("{n}", String(PER_CATEGORY))}</p>
         )}
         {mobile && (
-          <button type="button" onClick={() => setShowList(false)}
+          <button type="button" onClick={() => setShowMobileList(false)}
             style={{ width: "100%", borderRadius: "999px", border: "none", background: COLORS[filter], color: "#fff", fontSize: "14px", fontWeight: 800, padding: "13px 16px", cursor: "pointer", boxShadow: `0 14px 30px -12px ${COLORS[filter]}99` }}>
             {t("map.showOnMap").replace("{n}", String(shownCount))}
           </button>
@@ -829,6 +833,7 @@ export default function MapPage() {
     setMapQuery("")
     setMapSearchOpen(false)
     setShowList(false)
+    setShowMobileList(false)
     map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 })
   }
 
@@ -941,9 +946,9 @@ export default function MapPage() {
               del móvil grande o el botón en dos líneas se solapaban. */}
           <div style={{ position: "absolute", top: "12px", left: "12px", right: "12px", zIndex: 15, display: "flex", flexDirection: "column", gap: "10px", pointerEvents: "none" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
-          <button className="lg:hidden" onClick={() => setShowList(!showList)}
+          <button className="lg:hidden" onClick={() => setShowMobileList((v) => !v)}
             style={{ pointerEvents: "auto", flexShrink: 0, whiteSpace: "nowrap", borderRadius: "999px", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", padding: "9px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>{showList ? <X size={14} /> : <List size={14} />} {showList ? t("map.close") : t("map.list")}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>{showMobileList ? <X size={14} /> : <List size={14} />} {showMobileList ? t("map.close") : t("map.list")}</span>
           </button>
           <button className="hidden lg:block" onClick={() => setShowList(showList === false ? true : false)}
             style={{ pointerEvents: "auto", flexShrink: 0, borderRadius: "999px", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", padding: "6px 10px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1006,19 +1011,19 @@ export default function MapPage() {
 
           </div>
 
-          {showList && (
+          {showMobileList && (
             <div className="lg:hidden" style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "85%", maxWidth: "320px", background: "#0a0910", zIndex: 20, overflowY: "auto", borderRight: "1px solid rgba(255,255,255,0.1)" }}>
               <div style={{ padding: "14px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                   <p style={{ fontWeight: 600, color: "#fff", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}><FilterIcon f={filter} /> {t(`nav.${filter}`)}</p>
-                  <button onClick={() => setShowList(false)} aria-label={t("clubPage.close")} style={{ color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 8px", cursor: "pointer", display: "flex" }}><X size={16} /></button>
+                  <button onClick={() => setShowMobileList(false)} aria-label={t("clubPage.close")} style={{ color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 8px", cursor: "pointer", display: "flex" }}><X size={16} /></button>
                 </div>
                 {filter === "essentials" ? essentialsPanel(true) : (<>
                 <div style={{ marginBottom: "10px" }}><SearchInput value={search} onChange={setSearch} accent={COLORS[filter]} />{filterChips}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {(currentList as (Club | Event | Essential)[]).filter((item) => item.latitude && item.longitude).map((item) => (
                     <button key={item.id}
-                      onClick={() => { setSelected(item); setShowList(false); map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 }) }}
+                      onClick={() => { setSelected(item); setShowMobileList(false); map.current?.flyTo({ center: [item.longitude!, item.latitude!], zoom: 15, duration: 800 }) }}
                       style={{ display: "flex", alignItems: "center", gap: "11px", textAlign: "left", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", padding: "10px 13px", cursor: "pointer", width: "100%" }}>
                       {renderAvatar(item, 38)}
                       <div style={{ minWidth: 0 }}>

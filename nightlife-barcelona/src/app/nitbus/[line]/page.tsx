@@ -5,6 +5,7 @@ import NitbusLineView from "../../../components/nitbus/NitbusLineView"
 import { loadNitbusData, compareLineCodes } from "../../../lib/nitbusRoutes"
 import { NIGHT_BUS_LINES, getNightBusLine, parseRoute } from "../../../lib/nightBuses"
 import { safeJsonLd } from "../../../lib/structuredData"
+import { spanishAlternates } from "../../../lib/intl/site"
 
 // /nitbus/N24: esquema de la línea con todas sus paradas en orden. Se genera al pedirla y se
 // regenera cada hora (igual que /barrio/[slug]).
@@ -30,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `Nitbus ${code}: paradas y recorrido (${where}) | Noctua`
   const description = `${n ? `Las ${n} paradas` : "Las paradas"} del autobús nocturno ${code} de Barcelona en orden, con transbordos a otras líneas nocturnas y la parada más cercana. ${info.route}.`
   const url = `https://www.noctuaapp.com/nitbus/${code}`
-  return { title, description, alternates: { canonical: url }, openGraph: { title, description, url, siteName: "Noctua", locale: "es_ES", type: "website" } }
+  return { title, description, alternates: spanishAlternates(`/nitbus/${code}`, `/night-bus/${code}`), openGraph: { title, description, url, siteName: "Noctua", locale: "es_ES", type: "website" } }
 }
 
 export default async function NitbusLinePage({ params }: Props) {

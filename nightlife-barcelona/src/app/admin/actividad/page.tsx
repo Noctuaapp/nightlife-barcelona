@@ -10,6 +10,7 @@ import { getSortedCountries } from "../../../lib/countries"
 import { PARTY_POLLS } from "../../../lib/partyPolls"
 import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
 import { madridDaysAgo, madridToday } from "../../../lib/madridDay"
+import { fmtDuration } from "../../../lib/duration"
 
 // Actividad por usuario (pedido: panel de analítica "detallado por usuario"). Sustituye a la
 // antigua /admin/analytics, que no salía en el menú y repetía —peor, trayendo 5.000 filas sueltas
@@ -109,6 +110,8 @@ type Row = {
   last_seen: string
   top_device: string | null
   top_source: string | null
+  // Segundos en la web en el periodo (admin_time_stats, SQL 84). 0 si aún no hay dato.
+  time_secs: number
 }
 type Detail = {
   summary: { events: number; sessions: number; active_days: number; first_seen: string | null; last_seen: string | null }
@@ -169,6 +172,7 @@ export default function AdminActividadPage() {
   const [to, setTo] = useState(madridToday())
   const [rows, setRows] = useState<Row[]>([])
   const [users, setUsers] = useState<Record<string, UserInfo>>({})
+  const [timeByUser, setTimeByUser] = useState<Record<string, { visits: number; secs: number }>>({})
   const [totalUsers, setTotalUsers] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -194,14 +198,21 @@ export default function AdminActividadPage() {
   const load = useCallback(async () => {
     setLoading(true)
     setError("")
-    const [act, list] = await Promise.all([
+    const [act, list, timeRes] = await Promise.all([
       supabase.rpc("admin_users_activity", { p_from: from, p_to: to }),
       supabase.rpc("admin_list_users"),
+      // Tiempo por usuario (SQL 84). Si aún no está ejecutado, simplemente no sale la columna con datos.
+      supabase.rpc("admin_time_stats", { p_from: from, p_to: to }),
     ])
+    const tmap: Record<string, { visits: number; secs: number }> = {}
+    for (const u of ((timeRes.data as { users?: { user_id: string; visits: number; total_secs: number }[] } | null)?.users || [])) {
+      tmap[u.user_id] = { visits: Number(u.visits), secs: Number(u.total_secs) }
+    }
+    setTimeByUser(tmap)
     if (act.error) {
       setError(`No se pudo cargar la actividad: ${act.error.message}. ¿Has ejecutado supabase/24_actividad_por_usuario.sql?`)
     }
-    setRows(((act.data || []) as Row[]).map((r) => ({ ...r, events: Number(r.events), sessions: Number(r.sessions), active_days: Number(r.active_days), page_views: Number(r.page_views), tickets: Number(r.tickets), searches: Number(r.searches) })))
+    setRows(((act.data || []) as Row[]).map((r) => ({ ...r, events: Number(r.events), sessions: Number(r.sessions), active_days: Number(r.active_days), page_views: Number(r.page_views), tickets: Number(r.tickets), searches: Number(r.searches), time_secs: tmap[r.user_id]?.secs ?? 0 })))
     const map: Record<string, UserInfo> = {}
     for (const u of (list.data || []) as UserInfo[]) map[u.id] = u
     setUsers(map)
@@ -338,12 +349,13 @@ export default function AdminActividadPage() {
                   {th("page_views", "Fichas")}
                   {th("tickets", "Entradas")}
                   {th("searches", "Búsquedas")}
+                  {th("time_secs", "Tiempo")}
                   {th("last_seen", "Última vez")}
                 </tr>
               </thead>
               <tbody>
                 {loading && (
-                  <tr><td colSpan={8} className="px-4 py-10 text-center text-zinc-500">Cargando…</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-10 text-center text-zinc-500">Cargando…</td></tr>
                 )}
                 {!loading && visible.map((r) => {
                   const u = users[r.user_id]
@@ -359,12 +371,13 @@ export default function AdminActividadPage() {
                       <td className="px-3 py-3 text-right tabular-nums">{r.page_views}</td>
                       <td className="px-3 py-3 text-right tabular-nums">{r.tickets}</td>
                       <td className="px-3 py-3 text-right tabular-nums">{r.searches}</td>
+                      <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums" title="Tiempo en la web con la pestaña a la vista (visitas anteriores al 10/11/2026: estimado)">{r.time_secs > 0 ? fmtDuration(r.time_secs) : "—"}</td>
                       <td className="whitespace-nowrap px-3 py-3 text-right text-zinc-400">{relative(r.last_seen)}</td>
                     </tr>
                   )
                 })}
                 {!loading && visible.length === 0 && (
-                  <tr><td colSpan={8} className="px-4 py-10 text-center text-zinc-500">Nadie con sesión ha hecho nada en este periodo.</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-10 text-center text-zinc-500">Nadie con sesión ha hecho nada en este periodo.</td></tr>
                 )}
               </tbody>
             </table>
@@ -401,10 +414,15 @@ export default function AdminActividadPage() {
 
           {detail && !detailLoading && (
             <>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
                 <Stat label="Visitas" value={detail.summary.sessions} />
                 <Stat label="Días distintos" value={detail.summary.active_days} />
                 <Stat label="Acciones" value={detail.summary.events} />
+                <Stat
+                  label="Tiempo en la web"
+                  value={selectedId && timeByUser[selectedId] ? fmtDuration(timeByUser[selectedId].secs) : "—"}
+                  sub={selectedId && timeByUser[selectedId] ? `${fmtDuration(timeByUser[selectedId].secs / Math.max(1, timeByUser[selectedId].visits))} por visita` : undefined}
+                />
                 <Stat label="Última vez" value={relative(detail.summary.last_seen)} sub={detail.summary.first_seen ? `Primera: ${fmtDateTime(detail.summary.first_seen)}` : undefined} />
               </div>
 

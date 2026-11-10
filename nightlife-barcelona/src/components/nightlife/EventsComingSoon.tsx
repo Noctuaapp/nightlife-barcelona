@@ -51,7 +51,7 @@ export default function EventsComingSoon() {
   return (
     <main className="relative min-h-screen bg-night pb-40 text-ink">
       {/* PORTADA a pantalla casi completa con la foto de la web (03/11/2026): antes era un búho sobre fondo negro. */}
-      <SectionHero section="events" title={t("events.soonTitle")} subtitle={t("events.soonBody")} switcher={<ExploreSwitch active="events" />} tall>
+      <SectionHero section="events" title={t("events.soonTitle")} subtitle={t("events.soonBody")} switcher={<ExploreSwitch active="events" />} tall mascot={<NocOwl size={96} pose="festival" mood="party" className="h-[72px] w-[72px] sm:h-[104px] sm:w-[104px]" />}>
         <div className="mt-6 flex items-center gap-4">
           <Link
             href="/clubs"

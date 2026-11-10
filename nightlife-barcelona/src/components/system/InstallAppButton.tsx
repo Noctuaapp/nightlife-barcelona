@@ -14,10 +14,12 @@ import { track } from "../../lib/track"
 //  · Android donde Chrome todavía no ha dado el aviso de instalar (decide él cuándo): despliega
 //    los pasos a mano del menú ⋮ — así el botón sale siempre en móvil y nunca "desaparece".
 // Solo se pinta en móvil y mientras la app no esté ya instalada. Cada pulsación se anota como
-// "install_click" con de dónde vino (menu | profile | join) y si abrió el cuadro o los pasos.
+// "install_click" con de dónde vino (menu | profile | join | home | intl) y si abrió el cuadro o los pasos.
+// «home» es la tarjeta de la portada y «intl» el pie de las páginas en inglés (/en), que es donde llegan los
+// turistas desde Google.
 
 type Props = {
-  from: "menu" | "profile" | "join"
+  from: "menu" | "profile" | "join" | "home" | "intl"
   variant: "menu" | "card" | "inline"
   /** Para cerrar el menú tras abrir el cuadro de instalación. */
   onDone?: () => void

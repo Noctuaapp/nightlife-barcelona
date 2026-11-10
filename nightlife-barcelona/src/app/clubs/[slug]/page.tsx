@@ -14,6 +14,8 @@ import { clubMetaDescription, clubSummary, clubTitle } from "../../../lib/clubSu
 import type { DbRow } from "../../../lib/clubQueries"
 import { cleanPriceRange, safeJsonLd } from "../../../lib/structuredData"
 import { clubOpeningHoursSpec } from "../../../lib/clubHours"
+import { spanishAlternates } from "../../../lib/intl/site"
+import { englishClubEligible } from "../../../lib/intl/clubEligible"
 
 // ISR: la ficha se genera la primera vez que alguien la pide y se sirve ya hecha durante 6 h
 // (antes se generaba de cero en cada visita, consultando la base de datos cada vez).
@@ -79,7 +81,8 @@ export async function generateMetadata({ params }: ClubPageProps): Promise<Metad
   return {
     title,
     description,
-    alternates: { canonical: url },
+    // Si el local tiene ficha propia en inglés (con datos suficientes), se enlaza como versión en inglés (hreflang).
+    alternates: englishClubEligible(club) ? spanishAlternates(`/clubs/${match.canonicalSlug}`, `/clubs/${match.canonicalSlug}`) : { canonical: url },
     openGraph: {
       title,
       description,

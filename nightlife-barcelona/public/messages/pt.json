@@ -66,13 +66,17 @@
     "doorMapText": "Clubes, farmácias e paragens num só mapa",
     "doorPlanText": "Diz-nos o que te apetece e propomos-te sítios",
     "doorEssentialsText": "Farmácias, multibancos e comida abertos de noite",
-    "doorHomeTitle": "Voltar a casa",
-    "doorHomeText": "Metro e NitBus: escolhe a tua linha e a tua paragem",
     "doorMetro": "Metro",
     "doorNitbus": "NitBus",
+    "getHomeTitle": "Como voltar para casa esta noite",
+    "getHomeText": "Antes de sair, vê como voltas: metro, NitBus e táxi.",
+    "getHomeTaxi": "Táxi",
     "stylesTitle": "O que te apetece esta noite?",
     "stylesSub": "Escolhe um ambiente e mostramos-te onde toca",
-    "searchTry": "Experimenta"
+    "searchTry": "Experimenta",
+    "picksKicker": "Escolhidos pela Noctua",
+    "picksTonight": "O nosso top 3 para esta noite",
+    "picksWeek": "O nosso top 3 da semana"
   },
   "filters": {
     "all": "Todos"
@@ -470,7 +474,8 @@
     "hintGroup": "Limitar grupos grandes pode ser válido se for uma regra visível e igual para todos.",
     "hintOther": "Se achas que foi pela tua origem, sexo, orientação ou outra condição pessoal, tens direitos.",
     "rightsLink": "Ver os meus direitos se não me deixarem entrar",
-    "triggerHint": "Mostramos-te onde ir perto"
+    "triggerHint": "Mostramos-te onde ir perto",
+    "reasonWhy": "Conta-nos o que aconteceu: ajuda-nos a melhorar a Noctua e a não voltar a recomendar-te este local. Entretanto, aqui tens sítios perto para continuares a festa."
   },
   "clubCard": {
     "vipTable": "Mesa VIP",
@@ -667,7 +672,10 @@
     "funTip7": "Chegar um pouco antes da hora de ponta costuma sair mais barato e sem fila.",
     "funTip8": "Um bom pequeno-almoço depois da festa é sagrado — há sítios abertos já de madrugada.",
     "offersPriority": "Dar prioridade a locais com ofertas ou descontos",
-    "reasonOffer": "Tem oferta ou desconto"
+    "reasonOffer": "Tem oferta ou desconto",
+    "venueCocktail": "Bar de cocktails",
+    "venueKaraoke": "Karaoke",
+    "venuePool": "Bar de bilhar"
   },
   "favoritesPage": {
     "loading": "A carregar favoritos...",
@@ -953,7 +961,19 @@
     "fVenueRental": "Aluguer do espaço",
     "rideTo": "Destino",
     "ticketsAdvance": "Bilhetes antecipados",
-    "fCapacityLabel": "Lotação"
+    "fCapacityLabel": "Lotação",
+    "editFeatures": "Editar características (só tu vês)",
+    "fFoosball": "Matraquilhos / bilhar",
+    "fCigMachine": "Máquina de tabaco",
+    "fDarts": "Dardos",
+    "fKaraoke": "Karaoke",
+    "fLiveMusic": "Música ao vivo",
+    "fDanceFloor": "Pista de dança",
+    "fCloakroom": "Bengaleiro",
+    "fFood": "Comida / cozinha",
+    "fShisha": "Shisha",
+    "fAccessible": "Acessível a cadeira de rodas",
+    "stopAt": "Paragem {name}"
   },
   "eventPage": {
     "dateTbc": "Data a confirmar",
@@ -1121,7 +1141,10 @@
       "other": "Outros"
     },
     "call": "Ligar",
-    "website": "Site"
+    "website": "Site",
+    "nitbusStops": "paragens",
+    "nitbusAllLines": "Ver todas as linhas e para onde vão",
+    "nitbusSearchPlaceholder": "Procura uma paragem (ex. Pl. Catalunya)"
   },
   "areas": {
     "titleBarrio": "Discotecas em {name}",
@@ -1306,6 +1329,22 @@
     "today": "Hoje",
     "recent": "Visto recentemente",
     "recentEmpty": "Ainda não visitaste nenhum club ou evento.",
+    "dexTitle": "O teu Noctadex",
+    "dexSub": "Os locais onde fizeste check-in e as vezes que lá foste.",
+    "dexSummary": "{places} locais · {checkins} check-ins",
+    "dexShow": "Mostrar",
+    "dexHide": "Ocultar",
+    "dexHiddenNote": "Ocultaste-o. Toca em «Mostrar» quando o quiseres ver outra vez.",
+    "dexEmpty": "Ainda não fizeste check-in em nenhum local. Faz o primeiro a partir da página de um clube e aparecerá aqui.",
+    "dexTimesOne": "1 vez",
+    "dexTimesMany": "{n} vezes",
+    "dexLast": "Última: {date}",
+    "dexTier_new": "Novo",
+    "dexTier_regular": "Habitual",
+    "dexTier_home": "Da casa",
+    "dexTier_legend": "Lenda",
+    "dexMore": "Ver os {n}",
+    "dexLess": "Ver menos",
     "kindEvent": "Evento",
     "kindClub": "Club",
     "inbox": "Caixa de entrada",
@@ -1336,7 +1375,13 @@
     "ownerCardManage": "Gerir o meu espaço",
     "ownerCardNotice": "Avisar de um encerramento",
     "ownerCardNights": "As minhas noites",
-    "ownerCardView": "Ver a minha ficha"
+    "ownerCardView": "Ver a minha ficha",
+    "deniedTitle": "Locais que já não te recomendamos",
+    "deniedIntro": "Contaste-nos que aqui não te deixaram entrar, por isso não os sugerimos no «Surpreende-me» nem nos locais próximos. Podes voltar a vê-los quando quiseres.",
+    "deniedRestore": "Voltar a mostrar",
+    "deniedRestored": "{name} volta a aparecer nas tuas recomendações",
+    "deniedError": "Não foi possível alterar. Tenta novamente.",
+    "deniedTimes": "{n} vezes"
   },
   "badges": {
     "title": "Insígnias de exploração",
@@ -1758,7 +1803,28 @@
   "weatherTip": {
     "rain": "Esta noite pode chover: leva um guarda-chuva (embora dentro do club estejas protegido).",
     "cold": "Está frio esta noite: leva um casaco (depois dentro do local estará calor).",
-    "nice": "Está uma boa noite para saíres por Barcelona."
+    "nice": "Está uma boa noite para saíres por Barcelona.",
+    "storm1": "Trovoada à vista esta noite ({avg}°). Plano de interior: esplanadas, nem pensar.",
+    "storm2": "Esta noite há trovoada. Melhor um clube do que uma esplanada, e táxi no regresso.",
+    "storm3": "Relâmpagos e trovões esta noite. Que a tempestade seja só a da pista.",
+    "rain1": "Pode chover por volta das {hour} ({avg}°). Guarda-chuva ou táxi, o cabelo não se negoceia.",
+    "rain2": "Chuva esta noite a partir das {hour}. Descansa, que dentro do clube não chove.",
+    "rain3": "Previsão de chuva por volta das {hour}. Leva um guarda-chuva dobrável, ocupa menos espaço do que o arrependimento.",
+    "wind1": "Vento forte esta noite (até {wind} km/h). Cabelo em risco, esplanadas é melhor evitar.",
+    "wind2": "Noite de ventania: até {wind} km/h. Procura um sítio abrigado e agarra o boné.",
+    "wind3": "Sopra forte esta noite ({wind} km/h). A festa é melhor lá dentro.",
+    "hot1": "Noite de calor: {first}° à saída. Roupa leve, água entre copos e rooftop se puderes.",
+    "hot2": "{first}° às {firsth}… é noite de esplanada. Hidrata-te, que a noite é longa.",
+    "hot3": "Mormaço barcelonês esta noite ({avg}°). T-shirt fresca e leque no bolso.",
+    "nice1": "Noite perfeita: {first}° à saída e {min}° no regresso. Sem desculpas para ficar em casa.",
+    "nice2": "Temperatura perfeita esta noite ({avg}°). Nem casaco nem suor: vai a ela.",
+    "nice3": "Barcelona está linda esta noite: {avg}° e sem chuva. Tu decides onde.",
+    "fresh1": "Refresca esta noite: {first}° à saída e {min}° no regresso. Algo quente para a fila.",
+    "fresh2": "Noite fresquinha ({avg}°). Casaco leve: lá dentro sobra, mas à saída agradece-se.",
+    "fresh3": "{min}° de madrugada. Leva algo para o regresso, que às 6 não perdoa.",
+    "cold1": "Está frio esta noite: {min}° de madrugada. Casaco sim senhor, deixa-o no bengaleiro.",
+    "cold2": "Noite de frio ({avg}°). Agasalha-te para a fila: lá dentro aquece depressa.",
+    "cold3": "Frio a sério esta noite: {min}°. Cachecol para o regresso, que o Nitbus também demora."
   },
   "opinion": {
     "title": "O que pensas da Noctua?",

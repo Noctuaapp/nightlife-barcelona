@@ -25,6 +25,11 @@ type User = {
   country: string | null
   created_at: string
   last_sign_in_at: string | null
+  // Última vez que la persona estuvo en la web, de verdad (10/11/2026): lo más reciente entre su actividad
+  // registrada (analytics), el día de su último inicio contado (profiles.last_login_date) y el último
+  // inicio de sesión de auth. last_sign_in_at SOLO cambia cuando alguien escribe su clave o pulsa Google;
+  // quien vuelve cada día con la sesión ya guardada en el móvil se queda con una fecha vieja aunque entre a diario.
+  last_active_at?: string | null
   is_blocked: boolean
   block_reason?: string | null
   block_note?: string | null
@@ -46,6 +51,34 @@ type OwnableClub = { id: number; name: string; owner_user_id: string | null }
 // pertenece automáticamente al dueño del club (se gestiona dentro de /mi-club), pero un festival
 // no está atado a ningún club, así que cada uno se vincula a mano aquí, igual que un club.
 type OwnableFestival = { id: number; title: string; date: string | null; owner_user_id: string | null }
+
+// La más reciente de varias fechas (ignora las vacías o rotas).
+function latestOf(...dates: (string | null | undefined)[]): string | null {
+  let best: string | null = null
+  let bestMs = -Infinity
+  for (const d of dates) {
+    if (!d) continue
+    const ms = new Date(d).getTime()
+    if (Number.isFinite(ms) && ms > bestMs) {
+      bestMs = ms
+      best = d
+    }
+  }
+  return best
+}
+
+// «hoy 18:42», «ayer 23:10» o «06/11/2026», siempre en hora de Madrid.
+function fmtLastAccess(iso: string): string {
+  const d = new Date(iso)
+  const day = (x: Date) => x.toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" })
+  const time = d.toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" })
+  // Si lo más reciente es el día suelto de la racha (sin hora de verdad), no se inventa una hora.
+  const dateOnly = iso.endsWith("T12:00:00+01:00")
+  const now = new Date()
+  if (day(d) === day(now)) return dateOnly ? "hoy" : `hoy ${time}`
+  if (day(d) === day(new Date(now.getTime() - 86400000))) return dateOnly ? "ayer" : `ayer ${time}`
+  return d.toLocaleDateString("es-ES", { timeZone: "Europe/Madrid" })
+}
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -195,8 +228,19 @@ export default function AdminUsersPage() {
     const levelSinceMap = new Map((profiles || []).map((p) => [p.id, (p as any).level_since as string | null]))
     // Edad (26/10/2026): solo se guarda el año de nacimiento, no la fecha completa.
     const birthMap = new Map((profiles || []).map((p) => [p.id, (p as any).birth_year as number | null]))
+    const profileMap = new Map((profiles || []).map((p) => [p.id, p]))
     const termsMap = new Map((profiles || []).map((p) => [p.id, (p as any).terms_accepted_at as string | null]))
     // Correo confirmado o no, y con qué se registró (correo o Google). Si la función no existe todavía, se ignora.
+    // Última actividad real. admin_users_activity (supabase/24) da, por usuario, la última vez que dejó rastro
+    // en la web; se pide un periodo largo para que cualquiera tenga fecha aunque lleve meses sin entrar.
+    // Si esa función aún no existe o falla, se usa solo lo demás (profiles.last_login_date y auth).
+    const todayUtc = new Date()
+    const toDate = new Date(todayUtc.getTime() + 86400000).toISOString().slice(0, 10) // mañana: cubre el final del día en Madrid
+    const fromDate = new Date(todayUtc.getTime() - 800 * 86400000).toISOString().slice(0, 10)
+    const { data: activityRows } = await supabase.rpc("admin_users_activity", { p_from: fromDate, p_to: toDate })
+    const lastSeenMap = new Map(
+      ((activityRows || []) as { user_id: string; last_seen: string | null }[]).map((r) => [r.user_id, r.last_seen])
+    )
     const { data: authRows } = await supabase.rpc("admin_users_auth_status")
     const authMap = new Map(
       ((authRows || []) as { user_id: string; email_confirmed_at: string | null; provider: string | null }[]).map((r) => [r.user_id, r])
@@ -216,6 +260,12 @@ export default function AdminUsersPage() {
           level_since: levelSinceMap.get(u.id) ?? null,
           birth_year: birthMap.get(u.id) ?? null,
           terms_accepted_at: termsMap.get(u.id) ?? null,
+          last_active_at: latestOf(
+            lastSeenMap.get(u.id),
+            // last_login_date es un día suelto (hora de Madrid), sin hora: se toma el mediodía solo para poder comparar.
+            (profileMap.get(u.id) as any)?.last_login_date ? `${(profileMap.get(u.id) as any).last_login_date}T12:00:00+01:00` : null,
+            u.last_sign_in_at
+          ),
           auth_known: authMap.has(u.id),
           email_confirmed_at: authMap.get(u.id)?.email_confirmed_at ?? null,
           auth_provider: authMap.get(u.id)?.provider ?? null,
@@ -249,7 +299,7 @@ export default function AdminUsersPage() {
   const filteredUsers = users
     .filter((u) => {
       if (listFilter === "new" && new Date(u.created_at).getTime() < weekAgo) return false
-      if (listFilter === "active" && !(u.last_sign_in_at && new Date(u.last_sign_in_at).getTime() >= weekAgo)) return false
+      if (listFilter === "active" && !(u.last_active_at && new Date(u.last_active_at).getTime() >= weekAgo)) return false
       if (listFilter === "blocked" && !u.is_blocked) return false
       if (listFilter === "owners" && !ownerIds.has(u.id)) return false
       if (!search.trim()) return true
@@ -257,7 +307,7 @@ export default function AdminUsersPage() {
       return u.email?.toLowerCase().includes(q) || u.username?.toLowerCase().includes(q)
     })
     .sort((a, b) => {
-      if (sortBy === "last") return (b.last_sign_in_at || "").localeCompare(a.last_sign_in_at || "")
+      if (sortBy === "last") return new Date(b.last_active_at || 0).getTime() - new Date(a.last_active_at || 0).getTime()
       if (sortBy === "xp") return (b.xp || 0) - (a.xp || 0)
       return b.created_at.localeCompare(a.created_at)
     })
@@ -409,7 +459,7 @@ export default function AdminUsersPage() {
             {([
               ["all", "Todos", users.length, Users, "violet"],
               ["new", "Nuevos (7 días)", users.filter((u) => new Date(u.created_at).getTime() >= weekAgo).length, UserPlus, "pink"],
-              ["active", "Activos (7 días)", users.filter((u) => u.last_sign_in_at && new Date(u.last_sign_in_at).getTime() >= weekAgo).length, Activity, "cyan"],
+              ["active", "Activos (7 días)", users.filter((u) => u.last_active_at && new Date(u.last_active_at).getTime() >= weekAgo).length, Activity, "cyan"],
               ["owners", "Dueños de club/festival", users.filter((u) => ownerIds.has(u.id)).length, Crown, "coral"],
               ["blocked", "Bloqueados", users.filter((u) => u.is_blocked).length, Ban, "violet"],
             ] as const).map(([key, label, n, icon, accent]) => (
@@ -502,9 +552,12 @@ export default function AdminUsersPage() {
                       <span className="rounded-full bg-white/[0.06] px-3 py-1 text-zinc-300">
                         📅 Registrado: {new Date(user.created_at).toLocaleDateString("es-ES")}
                       </span>
-                      {user.last_sign_in_at && (
-                        <span className="rounded-full bg-white/[0.06] px-3 py-1 text-zinc-300">
-                          🕒 Último acceso: {new Date(user.last_sign_in_at).toLocaleDateString("es-ES")}
+                      {user.last_active_at && (
+                        <span
+                          className="rounded-full bg-white/[0.06] px-3 py-1 text-zinc-300"
+                          title="Lo más reciente entre su actividad en la web, su último día contado de racha y su último inicio de sesión"
+                        >
+                          🕒 Último acceso: {fmtLastAccess(user.last_active_at)}
                         </span>
                       )}
                       {(() => {

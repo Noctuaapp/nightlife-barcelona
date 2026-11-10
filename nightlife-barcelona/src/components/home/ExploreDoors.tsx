@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowUpRight, Bus, CalendarHeart, Map as MapIcon, TrainFront } from "lucide-react"
+import { ArrowUpRight, CalendarHeart, Map as MapIcon } from "lucide-react"
 import { useLanguage } from "../../context/LanguageContext"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
 
@@ -11,8 +11,8 @@ import { SECTION_ICONS } from "../../lib/sectionIcons"
 // que une el bloque con el resto de la portada. Sustituye a los botones sueltos que había bajo el carrusel en
 // el móvil (en escritorio siguen en la parte de arriba).
 //
-// Las cuatro puertas son destinos de primer nivel; «Volver a casa» agrupa Metro y NitBus porque a las 4 de la
-// mañana es una sola pregunta («¿cómo llego?»), no dos.
+// Tres puertas de primer nivel (mapa, plan y esenciales). «Volver a casa» (metro, NitBus y taxi) salió de aquí el
+// 10/11/2026 y ahora es un bloque propio, más arriba, con el estado del metro de esta noche (HomeGetHome.tsx).
 
 type Tone = { glow: string; line: string; chip: string; text: string }
 
@@ -106,35 +106,6 @@ export default function ExploreDoors() {
             <span className="mt-1 block text-xs leading-snug text-zinc-400">{t("home.doorEssentialsText")}</span>
           </span>
         </Link>
-
-        {/* Volver a casa: dos accesos en una misma puerta (no se anidan enlaces) */}
-        <div className={`${CARD} col-span-2 flex-col gap-4 p-4 sm:p-5 lg:col-span-4 lg:flex-row lg:items-center lg:justify-between`}>
-          <Glow tone={TONES.blue} />
-          <div className="relative">
-            <p className="text-base font-semibold text-ink">{t("home.doorHomeTitle")}</p>
-            <p className="mt-0.5 text-xs leading-snug text-zinc-400">{t("home.doorHomeText")}</p>
-          </div>
-          <div className="relative grid grid-cols-2 gap-2 lg:w-[26rem]">
-            <Link
-              href="/metro"
-              className="flex items-center gap-2.5 rounded-ctl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-semibold text-ink transition hover:border-white/25 hover:bg-white/[0.08]"
-            >
-              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${TONES.blue.chip}`}>
-                <TrainFront size={17} aria-hidden="true" />
-              </span>
-              {t("home.doorMetro")}
-            </Link>
-            <Link
-              href="/nitbus"
-              className="flex items-center gap-2.5 rounded-ctl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-semibold text-ink transition hover:border-white/25 hover:bg-white/[0.08]"
-            >
-              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${TONES.violet.chip}`}>
-                <Bus size={17} aria-hidden="true" />
-              </span>
-              {t("home.doorNitbus")}
-            </Link>
-          </div>
-        </div>
       </div>
     </section>
   )

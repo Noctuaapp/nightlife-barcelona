@@ -87,6 +87,7 @@ export default function SectionHero({
   switcher,
   children,
   tall = false,
+  mascot,
 }: {
   section: HeroSection
   title: string
@@ -99,6 +100,8 @@ export default function SectionHero({
   children?: React.ReactNode
   // Portada de pantalla casi completa (Eventos «Próximamente»).
   tall?: boolean
+  // Noc con la pose de la sección (de fiesta en Clubs, de festival en Eventos). Va a la derecha del título.
+  mascot?: React.ReactNode
 }) {
   const theme = THEME[section]
   const discs = discsFor(theme)
@@ -151,7 +154,12 @@ export default function SectionHero({
         />
       </div>
 
-      <div className={`mx-auto flex max-w-7xl flex-col items-start px-4 pb-6 pt-6 sm:px-6 sm:pb-10 sm:pt-10 lg:pb-12 lg:pt-12 ${tall ? "min-h-[72vh] justify-center" : ""}`}>
+      <div className={`relative mx-auto flex max-w-7xl flex-col items-start px-4 pb-6 pt-6 sm:px-6 sm:pb-10 sm:pt-10 lg:pb-12 lg:pt-12 ${tall ? "min-h-[72vh] justify-center" : ""}`}>
+        {mascot && (
+          <div aria-hidden="true" className="pointer-events-none absolute bottom-5 right-4 sm:bottom-9 sm:right-8 lg:right-14">
+            {mascot}
+          </div>
+        )}
         {switcher}
         {pill && (
           <p className="mt-5 inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-md sm:text-sm">
@@ -159,7 +167,7 @@ export default function SectionHero({
             {pill}
           </p>
         )}
-        <h1 className={`max-w-3xl break-words font-display text-[1.75rem] leading-[1.04] text-white [text-shadow:0_2px_30px_rgba(0,0,0,0.5)] sm:text-5xl lg:text-6xl ${pill ? "mt-3" : "mt-5"}`}>
+        <h1 className={`max-w-3xl break-words font-display text-[1.75rem] leading-[1.04] text-white [text-shadow:0_2px_30px_rgba(0,0,0,0.5)] sm:text-5xl lg:text-6xl ${pill ? "mt-3" : "mt-5"} ${mascot ? "max-md:pr-24" : ""}`}>
           {title}
         </h1>
         {subtitle && <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-200 sm:text-base">{subtitle}</p>}

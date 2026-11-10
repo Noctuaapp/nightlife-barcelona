@@ -51,7 +51,7 @@ function pickSlot(): { slot: Slot; seed: number } {
 }
 
 const MOOD_BY_SLOT: Record<Slot, OwlMood> = {
-  morning: "happy",
+  morning: "resaca", // «Café en mano»: Noc con gafas de sol, de resaca
   afternoon: "wink",
   evening: "happy",
   weekendEvening: "party",

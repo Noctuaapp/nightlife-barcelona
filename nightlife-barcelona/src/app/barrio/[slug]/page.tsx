@@ -11,6 +11,7 @@ import { safeJsonLd } from "../../../lib/structuredData"
 import { computeAreaFacts } from "../../../lib/areaFactsData"
 import { zoneLinks, zoneSlugByName } from "../../../lib/zonePages"
 import { zoneOf } from "../../../lib/zones"
+import { spanishAlternates } from "../../../lib/intl/site"
 
 // /barrio/el-born, /barrio/poblenou… Una página por barrio con sus discotecas (ver src/lib/areas.ts).
 // 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
@@ -43,7 +44,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
-    alternates: { canonical: url },
+    // Los barrios de Barcelona con locales suficientes tienen su página en inglés (/en/neighbourhoods/...).
+    alternates:
+      clubs.length >= MIN_INDEXABLE && !zoneSlugByName(zoneOf({ neighborhood: area.name }))
+        ? spanishAlternates(`/barrio/${area.slug}`, `/neighbourhoods/${area.slug}`)
+        : { canonical: url },
     ...(clubs.length < MIN_INDEXABLE ? { robots: { index: false, follow: true } } : {}),
     openGraph: { title, description, url, siteName: "Noctua", locale: "es_ES", type: "website", images: clubs[0]?.image ? [{ url: clubs[0].image }] : undefined },
   }

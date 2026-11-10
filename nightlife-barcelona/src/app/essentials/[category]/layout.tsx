@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { supabase } from "../../../lib/supabase"
 import { cleanEssential } from "../../../lib/essentials"
 import { ESSENTIAL_CATEGORIES } from "../../../lib/essentialCategories"
+import { essentialEn } from "../../../lib/intl/en/essentialsText"
+import { spanishAlternates } from "../../../lib/intl/site"
 
 // Título y descripción propios por categoría. Antes las 12 páginas de esenciales compartían el
 // título de la portada, y Google las veía como duplicadas (parte de "Rastreada: sin indexar").
@@ -56,7 +58,8 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   return {
     title: `${meta.title} | Noctua`,
     description: meta.description,
-    alternates: { canonical: `https://www.noctuaapp.com/essentials/${category}` },
+    // Las categorías con página en inglés (/en/essentials/...) se enlazan con hreflang.
+    alternates: essentialEn(category) ? spanishAlternates(`/essentials/${category}`, `/essentials/${category}`) : { canonical: `https://www.noctuaapp.com/essentials/${category}` },
     ...(NOINDEX.has(category) ? { robots: { index: false, follow: true } } : {}),
   }
 }

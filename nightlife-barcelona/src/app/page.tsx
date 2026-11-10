@@ -1,4 +1,6 @@
+import type { Metadata } from "next"
 import { fetchVisibleClubs, HOME_CLUB_FIELDS } from "../lib/clubQueries"
+import { spanishAlternates } from "../lib/intl/site"
 import { supabase } from "../lib/supabase"
 import HomeClient from "../components/home/HomeClient"
 import { getActivePicks } from "../lib/picks"
@@ -13,6 +15,12 @@ import { EVENTS_HIDDEN } from "../lib/featureFlags"
 // animaciones) sigue viviendo en HomeClient, que recibe esos datos ya listos como prop.
 // 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
 export const revalidate = 21600
+
+// Título, descripción y Open Graph vienen de layout.tsx. Aquí solo se añade el enlace a la portada en inglés (/en) para Google
+// (hreflang, 10/11/2026); el canonical sigue siendo la propia página ("./").
+export const metadata: Metadata = {
+  alternates: { ...spanishAlternates("", ""), canonical: "./" },
+}
 
 // Solo para la cinta de cifras ("180+ clubs" etc.): un recuento exacto (head: true, no descarga
 // filas) de esenciales visibles. Los clubs ya los tenemos de fetchVisibleClubs, así que no hace

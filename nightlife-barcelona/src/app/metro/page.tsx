@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import MetroIndexView, { type MetroIndexLine, type MetroSearchEntry } from "../../components/metro/MetroIndexView"
 import { METRO_LINE_CODES, METRO_LINE_SECTIONS, buildMetroLine } from "../../lib/metroLines"
 import { safeJsonLd } from "../../lib/structuredData"
+import { spanishAlternates } from "../../lib/intl/site"
 
 // /metro: las líneas del metro de Barcelona (TMB y FGC) y buscador de estación (06/11/2026). Los datos son
 // fijos (lib/metroLines.ts), así que la página se genera al compilar (sin ISR: no gasta escrituras en Vercel).
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
   title: "Metro de Barcelona: líneas, estaciones y recorrido | Noctua",
   description:
     "Las 12 líneas del metro de Barcelona (L1 a L12) con sus estaciones en orden, transbordos y un planificador de trayecto: elige dónde subes y dónde bajas. Con los horarios del metro de noche.",
-  alternates: { canonical: "https://www.noctuaapp.com/metro" },
+  alternates: spanishAlternates("/metro", "/metro"),
 }
 
 export default function MetroPage() {

@@ -7,6 +7,8 @@ import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { isAdminEmail } from "../../../lib/admin"
 import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
+import { pageLabel } from "../../../lib/adminPageLabel"
+import { fmtDuration, measuredSeconds } from "../../../lib/duration"
 import { madridDaysAgo, madridToday } from "../../../lib/madridDay"
 import { ADMIN_RANGE_MIN, normalizeRange, rangeDays, yearRange, yearsUpTo, type AdminRange } from "../../../lib/adminRange"
 
@@ -60,6 +62,7 @@ const sourceLabel = (s: string | null) => (s ? SOURCE_LABELS[s] || s.replace(/^o
 const EVENT_LABELS: Record<string, string> = {
   session_start: "Entra en",
   page_nav: "Va a",
+  page_time: "Se queda en",
   page_view: "Ve la ficha",
   tickets_click: "Pulsa entradas",
   directions_click: "Pulsa cómo llegar",
@@ -130,38 +133,12 @@ function extraDetail(e: Ev): string | null {
   if (e.type === "google_click") return ({ login: "(en Iniciar sesión)", wall: "(en una zona privada)", modal: "(en el aviso de registro)", join: "(en el aviso de la ficha)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? "(en Crear cuenta)"
   if (e.type === "share_click" && e.meta?.via === "whatsapp") return "por WhatsApp"
   if (e.type === "install_choice") return e.meta?.outcome === "accepted" ? "lo acepta" : "lo rechaza"
-  if (e.type === "install_click") return ({ menu: "(desde el menú ☰)", profile: "(desde Perfil)", welcome: "(desde «Tu primer reto»)", join: "(desde «¿Aún no estás dentro?»)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? ""
+  if (e.type === "install_click") return ({ menu: "(desde el menú ☰)", profile: "(desde Perfil)", welcome: "(desde «Tu primer reto»)", join: "(desde «¿Aún no estás dentro?»)", home: "(desde la portada)", intl: "(desde las páginas en inglés)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? ""
   if (e.type.startsWith("signup_") || e.type.startsWith("confirm_age_") || e.type === "join_view" || e.type === "join_dismiss" || e.type === "install_click") return ""
   return null
 }
 
 const TAB_LABELS: Record<string, string> = { about: "Información", nights: "Noches", sessions: "Sesiones", location: "Ubicación", reviews: "Opiniones" }
-
-function unslug(s: string) {
-  const t = decodeURIComponent(s).replace(/-/g, " ")
-  return t.charAt(0).toUpperCase() + t.slice(1)
-}
-
-// Nombre legible de cada ruta.
-function pageLabel(path: string | null, names: Map<string, string>): string {
-  if (!path) return "—"
-  if (names.has(path)) return names.get(path)!
-  const p = path.replace(/\/+$/, "") || "/"
-  const fixed: Record<string, string> = {
-    "/": "Portada", "/clubs": "Lista de clubs", "/events": "Eventos", "/map": "Mapa", "/plan": "Planifica tu noche",
-    "/essentials": "Esenciales", "/favorites": "Favoritos", "/profile": "Perfil", "/login": "Iniciar sesión",
-    "/signup": "Registro", "/contact": "Contacto", "/faq": "Preguntas frecuentes", "/club-noctua": "Club Noctua",
-    "/opinion": "Opinión de la web", "/privacy": "Privacidad", "/terms": "Términos", "/invitar": "Invitar amigos",
-    "/recuperar": "Recuperar contraseña", "/confirm-age": "Confirmar edad",
-  }
-  if (fixed[p]) return fixed[p]
-  const m = p.match(/^\/(clubs|event|club-event|barrio|musica|essentials|plan)\/(.+)$/)
-  if (m) {
-    const kind = { clubs: "Club", event: "Evento", "club-event": "Noche de club", barrio: "Barrio", musica: "Música", essentials: "Esenciales", plan: "Plan compartido" }[m[1]]
-    return m[1] === "club-event" || m[1] === "plan" ? `${kind} ${m[2]}` : `${kind}: ${unslug(m[2])}`
-  }
-  return p
-}
 
 const PERIODS = [
   { key: 1, label: "Hoy" },
@@ -443,7 +420,9 @@ function Timeline({ s, names }: { s: Session; names: Map<string, string> }) {
             </span>{" "}
             <span className="text-zinc-300">{EVENT_LABELS[e.type] || e.type}</span>{" "}
             <span className="font-semibold text-ink">
-              {extraDetail(e) ?? (e.type === "tab_open"
+              {e.type === "page_time"
+                ? `${pageLabel(typeof e.meta?.path === "string" ? e.meta.path : e.path, names)} · ${fmtDuration(Number(e.meta?.seconds))}`
+                : extraDetail(e) ?? (e.type === "tab_open"
                 ? `${TAB_LABELS[String(e.meta?.tab)] || String(e.meta?.tab || "")} (${e.name || ""})`
                 : e.type === "join_click" && e.meta?.to
                   ? JOIN_TO[String(e.meta.to)] || String(e.meta.to)
@@ -462,6 +441,19 @@ function Timeline({ s, names }: { s: Session; names: Map<string, string> }) {
       </ol>
     </>
   )
+}
+
+// Tiempo de una visita: el medido por la web (page_time, solo con la pestaña a la vista) o, en las visitas
+// anteriores a esa medición, el estimado entre su primer y su último registro («~»: se queda corto, porque
+// no se sabe cuánto miró la última página).
+function visitSeconds(s: Session): { secs: number; measured: boolean } | null {
+  const m = measuredSeconds(s.events)
+  if (m !== null) return { secs: m, measured: true }
+  return s.minutes >= 1 ? { secs: s.minutes * 60, measured: false } : null
+}
+function timeTxt(s: Session): string {
+  const v = visitSeconds(s)
+  return v ? ` · ${v.measured ? "" : "~"}${fmtDuration(v.secs)}` : ""
 }
 
 // Una fila de "Visita a visita": una visita suelta o, si varias comparten el código anónimo del día
@@ -521,7 +513,7 @@ function VisitRow({
               <>
                 {sourceLabel(last.source)} · {last.pages} {last.pages === 1 ? "página" : "páginas"}
                 {last.actions > 0 && ` · ${last.actions} ${last.actions === 1 ? "acción" : "acciones"}`}
-                {last.minutes >= 1 && ` · ${Math.round(last.minutes)} min`}
+                {timeTxt(last)}
               </>
             )}
             {username && ` · @${username}`}

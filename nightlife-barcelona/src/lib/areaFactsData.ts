@@ -14,7 +14,7 @@ const num = (v: unknown): number | null => {
 
 // Paradas de Nitbus (las mismas que usa la ficha de cada local), en memoria durante una hora.
 let stopsCache: { at: number; stops: NitbusStop[] } | null = null
-async function loadNitbusStops(): Promise<NitbusStop[]> {
+export async function loadNitbusStops(): Promise<NitbusStop[]> {
   if (stopsCache && Date.now() - stopsCache.at < 3600_000) return stopsCache.stops
   try {
     const rows = await fetchAllPages((from, to) =>

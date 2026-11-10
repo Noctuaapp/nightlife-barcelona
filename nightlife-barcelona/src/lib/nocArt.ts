@@ -1,24 +1,31 @@
-// El dibujo de Noc, el búho de Noctua (rediseño del 09/11/2026).
+// El dibujo de Noc, el búho de Noctua (rediseño del 09/11/2026, y cara nueva el 10/11/2026).
 //
-// Noc pasa de ser un búho de formas sueltas a un personaje con estilo propio, pensado para ocio nocturno:
-//   · Versión «noche»: cuerpo oscuro; el color del nivel va en el borde, los párpados y la barriga.
+// Noc es un búho de noche con actitud, pensado para ocio nocturno y para que se tome en serio:
+//   · Cuerpo oscuro; el color del nivel va en el borde, la línea de la ceja y la barriga.
+//   · Mirada de búho de verdad: iris ámbar, pupila negra y una ceja pesada y oscura que le da cara de duro
+//     (de vuelta de todo, no de enfadado). Pico afilado y una cadena de oro con una luna.
 //   · Estilo pegatina: formas planas y un contorno de tinta del mismo grosor en todo el dibujo, para que se
 //     pueda llevar igual a la web, a un cartel o a una pulsera.
-//   · Simétrico: los dos ojos y las dos orejas iguales (lo pidió Jordi: las asimetrías no se entendían).
-//   · Poses: además de las expresiones de siempre, Noc puede llevar algo en la mano que cuenta una parte de
-//     Noctua (un cóctel para los bares, la señal del NitBus, la cruz de farmacia, la ruta de Planifica…).
+//   · Simétrico: los dos ojos y las dos orejas iguales (lo pidió Jordi: las asimetrías no se entendían). La
+//     única excepción es el guiño, que cierra un ojo a propósito.
+//   · Expresiones: duro (por defecto), guiño, medio dormido, de fiesta, sorprendido, de resaca (gafas de sol)
+//     y borrachillo (ojos bizcos, mejillas rosas, «hic!» y ladeado).
+//   · Poses: Noc puede llevar algo en la mano que cuenta una parte de Noctua (un cóctel para los bares, la
+//     señal del NitBus, la cruz de farmacia, la ruta de Planifica…). El de clubs (fiesta) levanta un ala hacia
+//     la bola de espejos; el de festival lo da todo, con la cara pintada, gorro y acreditación.
 //   · Disfraces de temporada: los 11 de antes, redibujados con este estilo.
 //
 // Este archivo solo genera el interior del <svg> como texto (no usa React): así el mismo dibujo se puede
 // probar con un test, pintar en la web (components/mascot/NocOwl.tsx) y exportar a imagen. Todo lo que entra
 // en el texto son constantes de aquí o un color ya validado, nunca texto escrito por un usuario.
 
-export type OwlMood = "happy" | "wink" | "sleepy" | "party" | "wow" | "open"
+// «happy» es la cara por defecto (la de duro); «open» se conserva por compatibilidad y se dibuja igual.
+export type OwlMood = "happy" | "wink" | "sleepy" | "party" | "wow" | "open" | "resaca" | "borracho"
 
 export type NocPose =
   | "copa" // bares y coctelerías
-  | "fiesta" // clubs: bola de espejos
-  | "festival" // eventos y festivales: gorro y acreditación
+  | "fiesta" // clubs: bola de espejos y un ala arriba
+  | "festival" // eventos y festivales: gorro, acreditación y cara pintada
   | "mapa" // mapa y «cerca de mí»
   | "pizza" // esenciales: comer de madrugada
   | "farmacia" // esenciales: farmacias de guardia
@@ -63,6 +70,7 @@ const BEAK = "#ffab1a"
 const PINK = "#ff4fa3"
 const CYAN = "#6cf2f2"
 const GOLD = "#fbbf24"
+const AMBER = "#ffb81c" // iris
 
 // Contorno de tinta común a todas las formas.
 const S = `stroke="${INK}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`
@@ -85,39 +93,95 @@ export function safeColor(value: string | undefined | null): string {
 
 // Poses y disfraces en los que Noc sujeta algo con el ala derecha (y por tanto la levanta).
 const HOLDS_RIGHT_POSE: NocPose[] = [
-  "copa", "mapa", "pizza", "farmacia", "plan", "corazon", "ticket", "dado", "trofeo", "paraguas", "lupa", "metro", "nitbus",
+  "copa", "fiesta", "mapa", "pizza", "farmacia", "plan", "corazon", "ticket", "dado", "trofeo", "paraguas", "lupa", "metro", "nitbus",
 ]
 const HOLDS_RIGHT_THEME: NocTheme[] = ["sanValentin", "semanaSanta", "santJordi", "sanJuan", "pride"]
 
-type EyeState = "open" | "cool" | "lid" | "closed" | "heart" | "none"
+type EyeState = "open" | "closed" | "heart" | "none"
+// Cómo mira: normal (duro), medio dormido, borracho (bizco), a tope (festival) o sorprendido.
+type EyeMode = "normal" | "sleepy" | "tipsy" | "hype" | "wide"
 
 function heartPath(cx: number, cy: number, k: number): string {
   return `M${cx} ${cy + 6 * k} C${cx - 9 * k} ${cy - 1 * k} ${cx - 8.500 * k} ${cy - 8 * k} ${cx - 3.500 * k} ${cy - 8 * k} C${cx - 1.500 * k} ${cy - 8 * k} ${cx} ${cy - 6.500 * k} ${cx} ${cy - 4.500 * k} C${cx} ${cy - 6.500 * k} ${cx + 1.500 * k} ${cy - 8 * k} ${cx + 3.500 * k} ${cy - 8 * k} C${cx + 8.500 * k} ${cy - 8 * k} ${cx + 9 * k} ${cy - 1 * k} ${cx} ${cy + 6 * k} Z`
 }
 
-function eye(cx: number, state: EyeState, side: -1 | 1, lid: string, smallPupil: boolean): string {
-  const r = 17
+const DARK = "#120d22" // la ceja: casi negro, más oscuro que el cuerpo
+
+// Párpado/ceja: el trozo del ojo que queda por encima de una recta. `deg` la inclina hacia dentro (más bajo
+// junto a la nariz), que es lo que da la mirada dura. Devuelve el trazo y los puntos donde la recta corta el ojo.
+function lidCap(cx: number, cy: number, R: number, side: -1 | 1, ly: number, deg: number) {
+  const m = -side * Math.tan((deg * Math.PI) / 180)
+  const k = ly - cy
+  const A2 = 1 + m * m
+  const B2 = 2 * m * k
+  const C2 = k * k - R * R
+  const disc = Math.sqrt(B2 * B2 - 4 * A2 * C2)
+  const d1 = (-B2 - disc) / (2 * A2)
+  const d2 = (-B2 + disc) / (2 * A2)
+  const y1 = ly + m * d1
+  const y2 = ly + m * d2
+  return {
+    d: `M${(cx + d1).toFixed(2)} ${y1.toFixed(2)} A${R} ${R} 0 0 1 ${(cx + d2).toFixed(2)} ${y2.toFixed(2)} Z`,
+    x1: cx + d1, y1, x2: cx + d2, y2,
+  }
+}
+
+function eye(cx: number, state: EyeState, side: -1 | 1, accent: string, mode: EyeMode): string {
+  const cy = 56
   if (state === "none") return ""
   if (state === "closed") {
-    return `<circle cx="${cx}" cy="56" r="${r}" fill="${lid}" ${S}/><path d="M${cx - 10} 58 Q${cx} 66 ${cx + 10} 58" fill="none" ${S}/>`
+    // Ojo cerrado (el guiño): una raya con el color del nivel.
+    return `<path d="M${cx - 13} 56 Q${cx} 62 ${cx + 13} 56" fill="none" stroke="${INK}" stroke-width="4" stroke-linecap="round"/><path d="M${cx - 13} 56 Q${cx} 62 ${cx + 13} 56" fill="none" stroke="${accent}" stroke-width="1.600" stroke-linecap="round"/>`
   }
-  const px = cx - side * 3.500
-  const py = state === "lid" ? 62 : 58
-  const pr = smallPupil ? 4.200 : 6.400
-  let out = `<circle cx="${cx}" cy="56" r="${r}" fill="${CREAM}" ${S}/>`
+  const wide = mode === "wide"
+  const R = wide ? 16 : 14.500
   if (state === "heart") {
-    out += `<path d="${heartPath(cx, 58, 1.050)}" fill="${PINK}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`
-    return out
+    return `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${DARK}" ${S}/><path d="${heartPath(cx, 58, 1.100)}" fill="${PINK}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`
   }
-  out += `<circle cx="${px}" cy="${py}" r="${pr}" fill="${INK}"/><circle cx="${px + 2.200}" cy="${py - 2.400}" r="${(pr * 0.32).toFixed(2)}" fill="#fff"/>`
-  if (state === "cool") {
-    out += `<path d="M${cx - 15.300} 48.500 A${r} ${r} 0 0 1 ${cx + 15.300} 48.500 Z" fill="${lid}" ${S}/>`
+  const pr = wide ? 5 : mode === "hype" ? 7.200 : 6.600
+  let px = cx - side * 1.200
+  let py = cy + 2.600
+  if (mode === "sleepy") py = cy + 4.500
+  if (mode === "tipsy") {
+    px = cx - side * 5.200 // los dos hacia la nariz: bizco
+    py = cy + 3
   }
-  if (state === "lid") {
-    out += `<path d="M${cx - r} 56 A${r} ${r} 0 0 1 ${cx + r} 56 L${cx + r - 0.500} 58.500 Q${cx} 61 ${cx - r + 0.500} 58.500 Z" fill="${lid}" ${S}/>`
-    out += `<path d="M${cx - 9} 77.500 Q${cx} 81 ${cx + 9} 77.500" fill="none" stroke="${INK}" stroke-width="1.800" stroke-linecap="round" opacity=".45"/>`
+  let out = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${AMBER}" ${S}/><circle cx="${cx}" cy="${cy}" r="${R - 3.800}" fill="none" stroke="#e8820c" stroke-width="1.800" opacity=".75"/>`
+  out += `<circle cx="${px}" cy="${py}" r="${pr}" fill="${INK}"/><circle cx="${px + 2.400}" cy="${py - 2.600}" r="2" fill="#fff"/>`
+  if (!wide) {
+    let ly = 52
+    let deg = 7
+    if (mode === "sleepy") { ly = 58.500; deg = 0 } // casi cerrado
+    if (mode === "tipsy") { ly = 54; deg = 0 } // párpados caídos y rectos
+    if (mode === "hype") { ly = 47.500; deg = 12 } // ojos abiertos y ceño de «vamos»
+    const c = lidCap(cx, cy, R, side, ly, deg)
+    const ox = side === -1 ? c.x1 : c.x2
+    const oy = side === -1 ? c.y1 : c.y2
+    const ix = side === -1 ? c.x2 : c.x1
+    const iy = side === -1 ? c.y2 : c.y1
+    const ex = side === -1 ? -3.200 : 3.200
+    out += `<path d="${c.d}" fill="${DARK}" ${S}/>`
+    // La ceja se alarga un poco por fuera y por dentro del ojo, y lleva una línea del color del nivel.
+    out += `<path d="M${(ox + ex).toFixed(2)} ${(oy - 0.4).toFixed(2)} L${(ix - ex * 0.6).toFixed(2)} ${(iy + 0.4).toFixed(2)}" stroke="${INK}" stroke-width="4.200" stroke-linecap="round"/>`
+    out += `<path d="M${(ox + ex * 0.3).toFixed(2)} ${(oy + 0.9).toFixed(2)} L${(ix - ex * 0.3).toFixed(2)} ${(iy + 0.9).toFixed(2)}" stroke="${accent}" stroke-width="1.600" stroke-linecap="round"/>`
+  }
+  if (mode === "sleepy") {
+    out += `<path d="M${cx - 9} 73 Q${cx} 76.500 ${cx + 9} 73" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round" opacity=".55"/>` // ojeras
   }
   return out
+}
+
+// Gafas de sol de resaca: dos lentes oscuras con el aro del color del nivel.
+function shades(accent: string): string {
+  const lens = (x: number) =>
+    `<rect x="${x}" y="45" width="30" height="22.500" rx="9" fill="#0b0818" stroke="${INK}" stroke-width="4.400"/><rect x="${x}" y="45" width="30" height="22.500" rx="9" fill="none" stroke="${accent}" stroke-width="1.700"/>`
+  return (
+    `<path d="M28 52 L22.500 50 M92 52 L97.500 50" stroke="${INK}" stroke-width="3.400" stroke-linecap="round"/>` +
+    `<path d="M58 52 Q60 50 62 52" fill="none" stroke="${INK}" stroke-width="3.400" stroke-linecap="round"/>` +
+    lens(28) +
+    lens(62) +
+    `<path d="M34 63 L40.500 49.500 M68 63 L74.500 49.500" stroke="#fff" stroke-width="2.600" stroke-linecap="round" opacity=".32"/><path d="M42 64 L44.500 58.500 M76 64 L78.500 58.500" stroke="#fff" stroke-width="1.600" stroke-linecap="round" opacity=".28"/>`
+  )
 }
 
 // Estrella de 5 puntas centrada en (cx, cy).
@@ -149,9 +213,9 @@ function poseArt(pose: NocPose, accent: string): string {
     case "copa":
       return `<g transform="translate(111 51) scale(1.320) translate(-111 -51)"><g ${S}><path d="M98 22 L124 22 L111 40 Z" fill="#e9fbff"/><path d="M111 40 L111 51"/></g><path d="M102.500 27 L119.500 27 L111 38.500 Z" fill="${PINK}"/><circle cx="119" cy="20" r="4.200" fill="${GOLD}" ${S}/><path d="M104 20 L96 12" ${S}/></g>`
     case "fiesta":
-      return `<path d="M60 -14 L60 -2" ${S}/><circle cx="60" cy="6" r="9" fill="#e9e6ff" ${S}/><path d="M51.500 4 h17 M52.500 9.500 h15 M57 -2.500 v17 M63 -2.500 v17" stroke="${INK}" stroke-width="1.200" opacity=".55"/><path d="${star(77, 0, 0.800)}" fill="#fff"/>`
+      return `<path d="M60 -14 L60 -2" ${S}/><circle cx="60" cy="6" r="9" fill="#e9e6ff" ${S}/><path d="M51.500 4 h17 M52.500 9.500 h15 M57 -2.500 v17 M63 -2.500 v17" stroke="${INK}" stroke-width="1.200" opacity=".55"/><path d="M44 -9 v7 M40.500 -5.500 h7 M80 -6 v6 M77 -3 h6" stroke="${CREAM}" stroke-width="1.700" stroke-linecap="round" opacity=".9"/>`
     case "festival":
-      return `<path d="M42 27 L46 10 C52 6 68 6 74 10 L78 27 Z" fill="${CYAN}" ${S}/><path d="M33 29 C40 23 80 23 87 29 C80 34 40 34 33 29 Z" fill="${CYAN}" ${S}/><path d="M46.500 20 L73.500 20" stroke="${PINK}" stroke-width="3.200"/><path d="M40 78 L60 97 L80 78" fill="none" stroke="${PINK}" stroke-width="2.600" stroke-linejoin="round" stroke-linecap="round"/><rect x="53" y="94" width="14" height="17" rx="2.500" fill="${CREAM}" ${S}/><path d="M56.500 100 h7 M56.500 105 h4.500" stroke="${INK}" stroke-width="1.800" stroke-linecap="round"/>`
+      return `<path d="M42 27 L46 10 C52 6 68 6 74 10 L78 27 Z" fill="${CYAN}" ${S}/><path d="M33 29 C40 23 80 23 87 29 C80 34 40 34 33 29 Z" fill="${CYAN}" ${S}/><path d="M46.500 20 L73.500 20" stroke="${PINK}" stroke-width="3.200"/><path d="M40 78 L60 97 L80 78" fill="none" stroke="${PINK}" stroke-width="2.600" stroke-linejoin="round" stroke-linecap="round"/><rect x="53" y="94" width="14" height="17" rx="2.500" fill="${CREAM}" ${S}/><path d="M56.500 100 h7 M56.500 105 h4.500" stroke="${INK}" stroke-width="1.800" stroke-linecap="round"/><path d="M29 68 l7 2.500 M29.500 73 l7 2.500 M91 68 l-7 2.500 M90.500 73 l-7 2.500" stroke="${CYAN}" stroke-width="2.300" stroke-linecap="round"/>`
     case "mapa":
       return `<path d="M110 50 C102 40 99 34 99 29 A11 11 0 1 1 121 29 C121 34 118 40 110 50 Z" fill="${PINK}" ${S}/><circle cx="110" cy="29" r="4" fill="#fff"/>`
     case "pizza":
@@ -252,6 +316,10 @@ export function nocSvg({ color, mood = "happy", pose = null, theme = null, id = 
   const activeTheme = pose ? null : theme
 
   const party = mood === "party"
+  const sunnies = mood === "resaca"
+  const tipsy = mood === "borracho"
+  // En el festival Noc lo da todo: ojos a tope, ceño de «vamos» y la cabeza echada hacia atrás.
+  const hype = party && pose === "festival"
   const rightUp =
     party ||
     mood === "wink" ||
@@ -259,8 +327,8 @@ export function nocSvg({ color, mood = "happy", pose = null, theme = null, id = 
     (activeTheme ? HOLDS_RIGHT_THEME.includes(activeTheme) : false)
   const leftUp = party
 
-  let eyeL: EyeState = mood === "sleepy" ? "lid" : mood === "happy" || mood === "wink" ? "cool" : "open"
-  let eyeR: EyeState = mood === "wink" ? "closed" : mood === "sleepy" ? "lid" : mood === "happy" ? "cool" : "open"
+  let eyeL: EyeState = "open"
+  let eyeR: EyeState = mood === "wink" ? "closed" : "open"
   if (activeTheme === "sanValentin" && mood !== "sleepy") {
     eyeL = "heart"
     if (mood !== "wink") eyeR = "heart"
@@ -270,13 +338,14 @@ export function nocSvg({ color, mood = "happy", pose = null, theme = null, id = 
     eyeL = "none"
     eyeR = "none"
   }
+  const eyeMode: EyeMode = mood === "sleepy" ? "sleepy" : tipsy ? "tipsy" : hype ? "hype" : mood === "wow" ? "wide" : "normal"
 
   const beak =
     mood === "wow"
       ? `<ellipse cx="60" cy="76" rx="5.500" ry="7" fill="${BEAK}" ${S}/><ellipse cx="60" cy="77.500" rx="2.400" ry="3.400" fill="${INK}"/>`
       : party
-        ? `<path d="M52 70 Q60 67 68 70 Q66 82 60 84 Q54 82 52 70 Z" fill="${BEAK}" ${S}/><path d="M55 73.500 Q60 72.500 65 73.500 Q63.500 80 60 81 Q56.500 80 55 73.500 Z" fill="${INK}"/>`
-        : `<path d="M53.500 69 Q60 66 66.500 69 L60 80.500 Z" fill="${BEAK}" ${S}/>`
+        ? `<path d="M54 68.500 Q60 65 66 68.500 Q67 77 60 85 Q53 77 54 68.500 Z" fill="${BEAK}" ${S}/><path d="M56.500 72.500 Q60 71 63.500 72.500 Q63.500 80 60 82.500 Q56.500 80 56.500 72.500 Z" fill="${INK}"/><ellipse cx="60" cy="80" rx="2.600" ry="1.800" fill="${PINK}"/>`
+        : `<path d="M54.500 68.500 Q60 65 65.500 68.500 Q66 76 60 84 Q54 76 54.500 68.500 Z" fill="${BEAK}" ${S}/><path d="M60 69 L60 79" stroke="#c2680a" stroke-width="1.400" stroke-linecap="round" opacity=".7"/>`
 
   const wingL = leftUp ? WING_L_UP : WING_L_DOWN
   const wingR = rightUp ? WING_R_UP : WING_R_DOWN
@@ -301,23 +370,51 @@ export function nocSvg({ color, mood = "happy", pose = null, theme = null, id = 
   parts.push(
     `<g clip-path="url(#${uid}c)"><path d="M80 20 C100 44 102 92 82 118 L112 118 L112 16 Z" fill="${INK}" opacity=".2"/><path d="M58 78 C73 78 82 87 82 98 C82 110 72 117 58 117 C44 117 34 110 34 98 C34 87 43 78 58 78 Z" fill="${accent}" opacity=".75"/><g fill="none" stroke="${BODY_FILL}" stroke-width="2.400" stroke-linecap="round" stroke-linejoin="round"><path d="M46 95 l4 3.500 l4 -3.500"/><path d="M60 95 l4 3.500 l4 -3.500"/><path d="M53 103.500 l4 3.500 l4 -3.500"/></g><path d="M31 50 C34 38 44 31 55 30" fill="none" stroke="#fff" stroke-width="2.600" stroke-linecap="round" opacity=".35"/></g>`
   )
+  // Disco facial (el «antifaz» claro de los búhos), la cadena de oro con la luna y, si va borracho, los coloretes.
+  parts.push(
+    `<path d="M60 47 C57 38 44 36 35 43 C26 51 27 68 39 76 C46 80.500 55 80 60 83 C65 80 74 80.500 81 76 C93 68 94 51 85 43 C76 36 63 38 60 47 Z" fill="#3a2e72" opacity=".95"/>`
+  )
+  parts.push(
+    `<g clip-path="url(#${uid}c)"><path d="M27 82 Q60 112 93 82" fill="none" stroke="${INK}" stroke-width="5.500" stroke-linecap="round"/><path d="M27 82 Q60 112 93 82" fill="none" stroke="${GOLD}" stroke-width="2.800" stroke-linecap="round" stroke-dasharray="3.600 1.200"/></g><path d="M60 97.500 a6.500 6.500 0 1 0 5 8 a5.200 5.200 0 1 1 -5 -8 Z" fill="${GOLD}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`
+  )
+  if (tipsy) {
+    parts.push(`<ellipse cx="33" cy="73" rx="7" ry="4.200" fill="${PINK}" opacity=".55"/><ellipse cx="87" cy="73" rx="7" ry="4.200" fill="${PINK}" opacity=".55"/>`)
+  }
   if (activeTheme) parts.push(themeUnderEyes(activeTheme, uid))
   parts.push(`<path d="${BODY}" fill="none" ${S}/>`)
   // Cara
-  parts.push(eye(43, eyeL, -1, accent, mood === "wow"))
-  parts.push(eye(77, eyeR, 1, accent, mood === "wow"))
+  if (sunnies) {
+    parts.push(shades(accent))
+  } else {
+    parts.push(eye(43, eyeL, -1, accent, eyeMode))
+    parts.push(eye(77, eyeR, 1, accent, eyeMode))
+  }
   parts.push(beak)
   if (mood === "sleepy") {
+    // Las «z» van donde no tapen lo que sujeta con el ala derecha (la señal del metro sale por la izquierda).
+    const zs =
+      pose === "metro"
+        ? `<text x="4" y="58" font-size="13">z</text><text x="-5" y="45" font-size="9">z</text>`
+        : pose
+          ? `<text x="8" y="30" font-size="13">z</text><text x="0" y="17" font-size="9">z</text>`
+          : `<text x="96" y="30" font-size="13">z</text><text x="105" y="18" font-size="9">z</text>`
+    parts.push(`<g fill="${accent}" font-family="Arial Black,Arial,sans-serif" font-weight="900">${zs}</g>`)
+  }
+  if (tipsy) {
     parts.push(
-      `<g fill="${accent}" font-family="Arial Black,Arial,sans-serif" font-weight="900"><text x="96" y="30" font-size="13">z</text><text x="105" y="18" font-size="9">z</text></g>`
+      `<text x="-6" y="24" font-size="10" fill="${GOLD}" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-style="italic">hic!</text>`
     )
   }
   if (party) {
+    // De fiesta: rayitas de energía y dos gotas de sudor.
     parts.push(
-      `<g stroke-width="2.600" stroke-linecap="round"><path d="M14 30 l4 5" stroke="${CYAN}"/><path d="M104 28 l-3 6" stroke="${PINK}"/><path d="M60 6 l0 6" stroke="${GOLD}"/><path d="M6 44 l5 1" stroke="${GOLD}"/><path d="M116 42 l-5 2" stroke="${CYAN}"/></g>`
+      `<g stroke="${CREAM}" stroke-width="2.400" stroke-linecap="round" opacity=".85"><path d="M12 24 l6 4"/><path d="M5 38 l7 1"/><path d="M108 22 l-5 5"/><path d="M115 36 l-7 1"/></g><path d="M19 46 q-3.500 5 0 8 q3.500 -3 0 -8 z" fill="${CYAN}" stroke="${INK}" stroke-width="1.400" stroke-linejoin="round"/><path d="M103 50 q-3.500 5 0 8 q3.500 -3 0 -8 z" fill="${CYAN}" stroke="${INK}" stroke-width="1.400" stroke-linejoin="round"/>`
     )
   }
   if (pose) parts.push(poseArt(pose, accent))
   if (activeTheme) parts.push(themeFront(activeTheme, uid))
-  return parts.join("")
+  // Borrachillo: ladeado hacia un lado. Festival: echado un poco hacia atrás.
+  const tilt = tipsy ? 6 : hype ? -3 : 0
+  const all = parts.join("")
+  return tilt ? `<g transform="rotate(${tilt} 60 112)">${all}</g>` : all
 }

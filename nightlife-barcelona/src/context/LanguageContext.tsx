@@ -6,6 +6,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 // textos vacíos: Privacidad, Términos y FAQ se veían en blanco, y en cada carga había un parpadeo
 // sin textos. Ahora la primera pintura ya trae el español y los demás idiomas se cargan encima.
 import esMessages from "../../public/messages/es.json"
+import { detectBrowserLocale } from "../lib/browserLocale"
 
 // Idiomas de la web (los 8 del selector del menú, con su bandera).
 type Locale = "es" | "en" | "ca" | "fr" | "de" | "it" | "nl" | "pt"
@@ -43,14 +44,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const fallbackMessages: Record<string, any> = esMessages
 
   useEffect(() => {
-    let saved: Locale = "es"
+    // Primero lo que la persona eligió a mano (guardado en este dispositivo). Si nunca ha elegido, se mira el idioma
+    // de su navegador (10/11/2026): un turista alemán ve la web en alemán sin buscar el selector. Lo detectado no
+    // se guarda: solo cuenta como elección lo que se toca en el selector. Robots y navegadores automatizados se
+    // quedan en español (ver lib/browserLocale.ts).
+    let initial: Locale | null = null
     try {
       const stored = localStorage.getItem("noctua_locale")
-      if (stored && (ACTIVE_LOCALES as string[]).includes(stored)) saved = stored as Locale
+      if (stored && (ACTIVE_LOCALES as string[]).includes(stored)) initial = stored as Locale
     } catch {
-      /* modo privado: se queda en español */
+      /* modo privado: se detecta cada vez */
     }
-    setLocaleState(saved)
+    setLocaleState(initial ?? detectBrowserLocale())
   }, [])
 
   useEffect(() => {

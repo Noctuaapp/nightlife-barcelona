@@ -4,13 +4,15 @@ import { useId } from "react"
 import { currentSeasonalTheme, useNocSeasonalOverride } from "../../lib/nocSeasonal"
 import { nocSvg, type NocPose, type OwlMood } from "../../lib/nocArt"
 
-// Noc, el búho de Noctua. Rediseñado el 09/11/2026: personaje nuevo, de noche, con estilo pegatina.
+// Noc, el búho de Noctua. Rediseñado el 09/11/2026 (personaje de noche, estilo pegatina) y con cara nueva el
+// 10/11/2026: mirada dura de búho de verdad, cadena de oro con luna y más actitud.
 // El dibujo vive en lib/nocArt.ts (un solo sitio para el personaje, sus poses y sus disfraces); este
 // componente solo decide qué toca pintar:
-//   · mood: la expresión (las de siempre, más "open" = ojos abiertos sin más).
+//   · mood: la expresión. "happy" es la de duro por defecto; además guiño, medio dormido, de fiesta, sorprendido,
+//     "resaca" (gafas de sol) y "borracho" (bizco, colorado, "hic!"). "open" se dibuja igual que "happy".
 //   · pose: lo que lleva en la mano para contar una parte de Noctua (cóctel, señal del NitBus, cruz de
 //     farmacia, la ruta de Planifica…). Con pose no se pinta disfraz: mandaría demasiado en un dibujo pequeño.
-//   · levelColor: el color del nivel va en el borde, los párpados y la barriga. Sin nivel, el violeta de marca.
+//   · levelColor: el color del nivel va en el borde, la línea de la ceja y la barriga. Sin nivel, el violeta de marca.
 //   · Disfraz de temporada: por fecha (lib/nocSeasonal.ts) o forzado/apagado desde /admin/herramientas.
 export type { OwlMood, NocPose }
 

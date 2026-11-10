@@ -8,6 +8,8 @@ import { zoneOf } from "../lib/zones"
 import { EVENTS_HIDDEN } from "../lib/featureFlags"
 import { NIGHT_BUS_LINES } from "../lib/nightBuses"
 import { METRO_LINE_CODES } from "../lib/metroLines"
+import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../lib/clubQueries"
+import { buildEnglishSitemap, withSpanishAlternates } from "../lib/intl/sitemap"
 
 const BASE_URL = "https://www.noctuaapp.com"
 
@@ -122,5 +124,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }))
 
-  return [...staticRoutes, ...areaRoutes, ...clubRoutes, ...eventRoutes, ...nightRoutes]
+  // Páginas en inglés (/en) y su hreflang con las españolas gemelas (lib/intl/sitemap.ts). Si esta consulta
+  // falla, el sitemap sigue saliendo sin ellas en vez de romperse.
+  let english: ReturnType<typeof buildEnglishSitemap> | null = null
+  try {
+    const fullClubs = await fetchVisibleClubs(LIST_CLUB_FIELDS)
+    english = buildEnglishSitemap({ clubs: fullClubs, busCodes: Object.keys(NIGHT_BUS_LINES), metroCodes: METRO_LINE_CODES })
+  } catch {
+    english = null
+  }
+
+  const spanish = [...staticRoutes, ...areaRoutes, ...clubRoutes, ...eventRoutes, ...nightRoutes]
+  if (!english) return spanish
+  return [...withSpanishAlternates(spanish, english.twins), ...english.entries]
 }

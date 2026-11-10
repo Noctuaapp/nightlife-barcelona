@@ -19,8 +19,9 @@ export async function touchCache(paths: string[]): Promise<void> {
   }
 }
 
+// La ficha en inglés (/en/clubs/...) se refresca a la vez que la española.
 export const clubPaths = (slug?: string | null): string[] =>
-  ["/", "/clubs", "/mapa", "/map", ...(slug ? [`/clubs/${slug}`] : [])]
+  ["/", "/clubs", "/mapa", "/map", ...(slug ? [`/clubs/${slug}`, `/en/clubs/${slug}`] : [])]
 
 export const eventPaths = (slug?: string | null): string[] =>
   ["/", "/events", "/mapa", "/map", ...(slug ? [`/event/${slug}`] : [])]

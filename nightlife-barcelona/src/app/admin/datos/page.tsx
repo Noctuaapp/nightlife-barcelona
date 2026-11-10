@@ -9,12 +9,13 @@ import { zoneOf } from "../../../lib/zones"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
 import { madridDaysAgo, madridToday, madridYear } from "../../../lib/madridDay"
+import InteractionStats from "../../../components/admin/InteractionStats"
 
 // Panel "Datos": métricas agregadas de Noctua pensadas para enseñar a clubs y managers (y para
 // venderlas). Todo se calcula en Supabase con funciones que solo el admin puede ejecutar y que
 // devuelven números, nunca datos de personas concretas.
 
-type Tab = "resumen" | "clubs" | "eventos" | "esenciales" | "busquedas" | "audiencia"
+type Tab = "resumen" | "clubs" | "eventos" | "esenciales" | "clics" | "busquedas" | "audiencia"
 
 const SOURCE_LABELS: Record<string, string> = {
   search: "Buscadores (Google...)",
@@ -283,6 +284,7 @@ export default function AdminDatosPage() {
     { key: "clubs", label: "Clubs" },
     { key: "eventos", label: "Eventos" },
     { key: "esenciales", label: "Esenciales" },
+    { key: "clics", label: "Clics y tiempo" },
     { key: "busquedas", label: "Búsquedas" },
     { key: "audiencia", label: "Audiencia" },
   ]
@@ -341,7 +343,9 @@ export default function AdminDatosPage() {
         </div>
 
         {error && <p className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}
-        {loading && <p className="text-sm text-zinc-400">Cargando datos...</p>}
+        {loading && tab !== "clics" && <p className="text-sm text-zinc-400">Cargando datos...</p>}
+        {/* Clics y tiempo carga lo suyo aparte (SQL 84), así que no espera a las demás pestañas. */}
+        {tab === "clics" && <InteractionStats from={from} to={to} />}
 
         {!loading && overview && tab === "resumen" && (
           <div className="space-y-6">

@@ -66,13 +66,17 @@
     "doorMapText": "Clubs, pharmacies et arrêts sur une seule carte",
     "doorPlanText": "Dis-nous ce qui te tente et on te propose des adresses",
     "doorEssentialsText": "Pharmacies, distributeurs et restauration ouverts la nuit",
-    "doorHomeTitle": "Rentrer chez toi",
-    "doorHomeText": "Métro et NitBus : choisis ta ligne et ton arrêt",
     "doorMetro": "Métro",
     "doorNitbus": "NitBus",
+    "getHomeTitle": "Comment rentrer ce soir",
+    "getHomeText": "Avant de sortir, regarde comment rentrer : métro, NitBus et taxi.",
+    "getHomeTaxi": "Taxi",
     "stylesTitle": "Tu as envie de quoi ce soir ?",
     "stylesSub": "Choisis une ambiance et on te montre où ça joue",
-    "searchTry": "Essaie avec"
+    "searchTry": "Essaie avec",
+    "picksKicker": "Choisis par Noctua",
+    "picksTonight": "Notre top 3 pour ce soir",
+    "picksWeek": "Notre top 3 de la semaine"
   },
   "filters": {
     "all": "Tous"
@@ -81,7 +85,8 @@
     "back": "Retour",
     "search": "Rechercher",
     "loading": "Chargement...",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "close": "Fermer"
   },
   "login": {
     "title": "Se connecter",
@@ -469,7 +474,8 @@
     "hintGroup": "Limiter les grands groupes peut être valable si la règle est visible et la même pour tous.",
     "hintOther": "Si tu penses que c'était à cause de ton origine, de ton sexe, de ton orientation ou d'une autre situation personnelle, tu as des droits.",
     "rightsLink": "Voir mes droits si on me refuse l'entrée",
-    "triggerHint": "On te montre où aller à proximité"
+    "triggerHint": "On te montre où aller à proximité",
+    "reasonWhy": "Dis-nous ce qui s'est passé : ça nous aide à améliorer Noctua et à ne plus te recommander ce lieu. En attendant, voici des adresses à proximité pour continuer la fête."
   },
   "clubCard": {
     "vipTable": "Table VIP",
@@ -654,7 +660,22 @@
     "mature": "Je préfère une ambiance +30",
     "shareTitle": "Plan de la soirée · {date}",
     "offersPriority": "Privilégier les lieux avec offres ou réductions",
-    "reasonOffer": "Propose une offre ou une réduction"
+    "reasonOffer": "Propose une offre ou une réduction",
+    "venueCocktail": "Bar à cocktails",
+    "venueKaraoke": "Karaoké",
+    "venuePool": "Bar avec billard",
+    "zoneFallbackNote": "Aucun plan ne correspondait à la zone choisie, voici donc le plus proche dans le reste de la ville.",
+    "noBarriosForZone": "Nous n'avons pas encore de quartiers enregistrés pour cette zone — tu peux continuer sans en choisir un.",
+    "farApartNote": "Les deux lieux de ce plan sont un peu éloignés l'un de l'autre.",
+    "expandRangeCta": "La distance m'est égale, je veux m'amuser",
+    "funTip1": "Prends un peu de liquide : certains lieux n'acceptent pas la carte à l'entrée.",
+    "funTip2": "Si vous êtes un grand groupe, écrivez au lieu à l'avance pour réserver une table et éviter la file.",
+    "funTip3": "Le métro de Barcelone ferme tôt le week-end — regarde les bus de nuit (N) avant de sortir.",
+    "funTip4": "Bois de l'eau entre deux verres, la nuit dure plus longtemps et tu en profites mieux.",
+    "funTip5": "Enregistre l'emplacement du lieu sur ton téléphone avant de sortir : il y a peu de réseau quand il y a tant de monde.",
+    "funTip6": "Si tu changes de plan en pleine nuit, dis à quelqu'un de ton groupe où tu vas.",
+    "funTip7": "Arriver un peu avant l'heure de pointe revient souvent moins cher et sans file.",
+    "funTip8": "Un bon petit-déjeuner après la fête, c'est sacré — certains endroits ouvrent dès l'aube."
   },
   "favoritesPage": {
     "loading": "Chargement des favoris...",
@@ -940,7 +961,19 @@
     "fVenueRental": "Location du lieu",
     "rideTo": "Destination",
     "ticketsAdvance": "Billets en prévente",
-    "fCapacityLabel": "Capacité"
+    "fCapacityLabel": "Capacité",
+    "editFeatures": "Modifier les caractéristiques (visible uniquement par toi)",
+    "fFoosball": "Baby-foot / billard",
+    "fCigMachine": "Distributeur de cigarettes",
+    "fDarts": "Fléchettes",
+    "fKaraoke": "Karaoké",
+    "fLiveMusic": "Musique live",
+    "fDanceFloor": "Piste de danse",
+    "fCloakroom": "Vestiaire",
+    "fFood": "Restauration / cuisine",
+    "fShisha": "Chicha",
+    "fAccessible": "Accessible en fauteuil roulant",
+    "stopAt": "Arrêt {name}"
   },
   "eventPage": {
     "dateTbc": "Date à confirmer",
@@ -1108,7 +1141,10 @@
       "other": "Autres"
     },
     "call": "Appeler",
-    "website": "Site web"
+    "website": "Site web",
+    "nitbusStops": "arrêts",
+    "nitbusAllLines": "Voir toutes les lignes et leurs destinations",
+    "nitbusSearchPlaceholder": "Cherche un arrêt (ex. Pl. Catalunya)"
   },
   "areas": {
     "titleBarrio": "Discothèques à {name}",
@@ -1293,6 +1329,22 @@
     "today": "Aujourd'hui",
     "recent": "Vu récemment",
     "recentEmpty": "Tu n'as encore visité aucun club ni événement.",
+    "dexTitle": "Ton Noctadex",
+    "dexSub": "Les lieux où tu as fait un check-in et le nombre de fois où tu y es allé·e.",
+    "dexSummary": "{places} lieux · {checkins} check-ins",
+    "dexShow": "Afficher",
+    "dexHide": "Masquer",
+    "dexHiddenNote": "Tu l'as masqué. Appuie sur « Afficher » quand tu veux le revoir.",
+    "dexEmpty": "Tu n'as encore fait de check-in nulle part. Fais le premier depuis la fiche d'un club et il apparaîtra ici.",
+    "dexTimesOne": "1 fois",
+    "dexTimesMany": "{n} fois",
+    "dexLast": "Dernier : {date}",
+    "dexTier_new": "Nouveau",
+    "dexTier_regular": "Habitué",
+    "dexTier_home": "De la maison",
+    "dexTier_legend": "Légende",
+    "dexMore": "Voir les {n}",
+    "dexLess": "Voir moins",
     "kindEvent": "Événement",
     "kindClub": "Club",
     "inbox": "Boîte de réception",
@@ -1323,7 +1375,13 @@
     "ownerCardManage": "Gérer mon établissement",
     "ownerCardNotice": "Signaler une fermeture",
     "ownerCardNights": "Mes soirées",
-    "ownerCardView": "Voir ma fiche"
+    "ownerCardView": "Voir ma fiche",
+    "deniedTitle": "Lieux que nous ne te recommandons plus",
+    "deniedIntro": "Tu nous as dit qu'on ne t'a pas laissé entrer ici, donc nous ne te les proposons ni dans « Surprends-moi » ni parmi les lieux à proximité. Tu peux les revoir quand tu veux.",
+    "deniedRestore": "Réafficher",
+    "deniedRestored": "{name} réapparaît dans tes recommandations",
+    "deniedError": "Impossible de modifier. Réessaie.",
+    "deniedTimes": "{n} fois"
   },
   "badges": {
     "title": "Badges d'exploration",
@@ -1745,7 +1803,28 @@
   "weatherTip": {
     "rain": "Il pourrait pleuvoir ce soir : prends un parapluie (tu seras à l'abri une fois à l'intérieur).",
     "cold": "Il fait froid ce soir : prends un manteau (il fera chaud une fois à l'intérieur).",
-    "nice": "C'est une belle nuit pour sortir à Barcelone."
+    "nice": "C'est une belle nuit pour sortir à Barcelone.",
+    "storm1": "Orage en vue cette nuit ({avg}°). Plan en intérieur : les terrasses, oublie.",
+    "storm2": "Il y a de l'orage cette nuit. Mieux vaut un club qu'une terrasse, et un taxi pour rentrer.",
+    "storm3": "Éclairs et tonnerre cette nuit. Que l'orage reste sur la piste de danse.",
+    "rain1": "Il pourrait pleuvoir vers {hour} ({avg}°). Parapluie ou taxi, la coiffure ne se négocie pas.",
+    "rain2": "Pluie cette nuit dès {hour}. Pas de panique, il ne pleut pas dans le club.",
+    "rain3": "Pluie prévue vers {hour}. Prends un parapluie pliant, ça prend moins de place que les regrets.",
+    "wind1": "Vent fort cette nuit (jusqu'à {wind} km/h). Coiffure en danger, mieux vaut éviter les terrasses.",
+    "wind2": "Nuit de tempête : jusqu'à {wind} km/h. Trouve un endroit à l'abri et accroche-toi à ta casquette.",
+    "wind3": "Ça souffle fort cette nuit ({wind} km/h). La fête, c'est mieux à l'intérieur.",
+    "hot1": "Nuit chaude : {first}° au départ. Vêtements légers, de l'eau entre deux verres, et rooftop si possible.",
+    "hot2": "{first}° à {firsth}… c'est une nuit de terrasse. Hydrate-toi, la nuit est longue.",
+    "hot3": "Chaleur moite à Barcelone cette nuit ({avg}°). T-shirt léger et éventail dans la poche.",
+    "nice1": "Nuit parfaite : {first}° au départ et {min}° au retour. Aucune excuse pour rester chez soi.",
+    "nice2": "Température idéale cette nuit ({avg}°). Ni veste ni sueur : fonce.",
+    "nice3": "Barcelone est en beauté cette nuit : {avg}° et pas de pluie. À toi de choisir où.",
+    "fresh1": "Ça se rafraîchit cette nuit : {first}° au départ et {min}° au retour. Prévois de quoi te couvrir pour la file.",
+    "fresh2": "Nuit fraîche ({avg}°). Veste légère : inutile à l'intérieur, précieuse à la sortie.",
+    "fresh3": "{min}° au petit matin. Prends une couche en plus pour le retour, à 6 h ça ne pardonne pas.",
+    "cold1": "Il fait froid cette nuit : {min}° au petit matin. Manteau obligatoire, tu le laisseras au vestiaire.",
+    "cold2": "Nuit de froid ({avg}°). Couvre-toi pour la file : à l'intérieur, tu auras vite chaud.",
+    "cold3": "Vrai froid cette nuit : {min}°. Écharpe pour le retour, le bus de nuit se fait aussi attendre."
   },
   "opinion": {
     "title": "Que penses-tu de Noctua ?",

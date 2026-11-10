@@ -17,6 +17,7 @@ import TopPicks from "./TopPicks"
 import type { ActivePicks } from "../../lib/picks"
 import AreasSection from "./AreasSection"
 import ExploreDoors from "./ExploreDoors"
+import HomeGetHome from "./HomeGetHome"
 import StylesSection from "./StylesSection"
 import Icon from "../ui/Icon"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
@@ -607,7 +608,10 @@ export default function HomeClient({
           <FeatureTicker placement="below" />
         </section>
 
-        {/* EXPLORA NOCTUA: puertas a mapa, plan, esenciales, metro y bus nocturno */}
+        {/* CÓMO VOLVER A CASA: estado del metro de esta noche, NitBus y taxi + tarjeta de instalar la app */}
+        <HomeGetHome />
+
+        {/* EXPLORA NOCTUA: puertas a mapa, plan y esenciales */}
         <ExploreDoors />
 
         {/* ¿QUÉ TE APETECE? un ambiente = una puerta a los locales donde suena */}

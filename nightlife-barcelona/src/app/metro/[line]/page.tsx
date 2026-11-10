@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import NitbusLineView from "../../../components/nitbus/NitbusLineView"
 import { METRO_LINE_CODES, buildMetroLine, isMetroLine, metroLineSummary } from "../../../lib/metroLines"
 import { safeJsonLd } from "../../../lib/structuredData"
+import { spanishAlternates } from "../../../lib/intl/site"
 
 // /metro/L1: esquema de la línea con todas sus estaciones en orden y «Mi trayecto» (subo en / bajo en),
 // igual que /nitbus/N24 (06/11/2026). Los datos son fijos (lib/metroLines.ts), así que todas las líneas
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `Metro ${code}: estaciones y recorrido (${metroLineSummary(code)}) | Noctua`
   const description = `Las ${data.stopCount} estaciones de la línea ${code} del metro de Barcelona en orden, con transbordos a otras líneas, la estación más cercana a ti y un planificador de trayecto: elige dónde subes y dónde bajas.`
   const url = `https://www.noctuaapp.com/metro/${code}`
-  return { title, description, alternates: { canonical: url }, openGraph: { title, description, url, siteName: "Noctua", locale: "es_ES", type: "website" } }
+  return { title, description, alternates: spanishAlternates(`/metro/${code}`, `/metro/${code}`), openGraph: { title, description, url, siteName: "Noctua", locale: "es_ES", type: "website" } }
 }
 
 export default async function MetroLinePage({ params }: Props) {

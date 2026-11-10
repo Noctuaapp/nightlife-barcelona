@@ -14,6 +14,7 @@ import { Heart, Trophy, CalendarDays, Gift, Building2, Music2, Camera, Pin, Tras
 import BirthYearSelect from "../../components/ui/BirthYearSelect"
 import CountrySelect from "../../components/ui/CountrySelect"
 import { createSlug } from "../../lib/slug"
+import CheckInDex from "../../components/gamification/CheckInDex"
 import { toDateLocale } from "../../lib/dateLocale"
 import { ADMIN_EMAIL } from "../../lib/admin"
 import NocOwl from "../../components/mascot/NocOwl"
@@ -712,6 +713,9 @@ function ProfileInner() {
               </ul>
             )}
           </div>
+
+          {/* Noctadex: los locales donde has hecho check-in y cuántas veces (ocultable). */}
+          {userId && <CheckInDex userId={userId} />}
 
           <div className={card}>
             <h2 className={`${h2} mb-4`}>{t("profilePage.recent")}</h2>

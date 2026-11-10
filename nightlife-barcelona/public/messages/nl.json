@@ -66,13 +66,17 @@
     "doorMapText": "Clubs, apotheken en haltes op één kaart",
     "doorPlanText": "Vertel ons waar je zin in hebt en wij stellen plekken voor",
     "doorEssentialsText": "Apotheken, geldautomaten en eten, 's nachts open",
-    "doorHomeTitle": "Naar huis",
-    "doorHomeText": "Metro en NitBus: kies je lijn en je halte",
     "doorMetro": "Metro",
     "doorNitbus": "NitBus",
+    "getHomeTitle": "Zo kom je vanavond thuis",
+    "getHomeText": "Check voordat je uitgaat hoe je terugkomt: metro, NitBus en taxi.",
+    "getHomeTaxi": "Taxi",
     "stylesTitle": "Waar heb je vanavond zin in?",
     "stylesSub": "Kies een sfeer en wij laten zien waar die klinkt",
-    "searchTry": "Probeer eens"
+    "searchTry": "Probeer eens",
+    "picksKicker": "Gekozen door Noctua",
+    "picksTonight": "Onze top 3 voor vanavond",
+    "picksWeek": "Onze top 3 van de week"
   },
   "filters": {
     "all": "Alle"
@@ -81,7 +85,8 @@
     "back": "Terug",
     "search": "Zoeken",
     "loading": "Laden...",
-    "cancel": "Annuleren"
+    "cancel": "Annuleren",
+    "close": "Sluiten"
   },
   "login": {
     "title": "Inloggen",
@@ -469,7 +474,8 @@
     "hintGroup": "Grote groepen beperken kan geldig zijn als de regel zichtbaar is en voor iedereen hetzelfde.",
     "hintOther": "Denk je dat het kwam door je afkomst, geslacht, geaardheid of een ander persoonlijk kenmerk, dan heb je rechten.",
     "rightsLink": "Mijn rechten als ik niet binnenkom",
-    "triggerHint": "We tonen je alternatieven in de buurt"
+    "triggerHint": "We tonen je alternatieven in de buurt",
+    "reasonWhy": "Vertel ons wat er is gebeurd: zo kunnen we Noctua verbeteren en je deze zaak niet meer aanbevelen. Hier zijn intussen plekken in de buurt om de avond voort te zetten."
   },
   "clubCard": {
     "vipTable": "VIP-tafel",
@@ -654,7 +660,22 @@
     "mature": "Ik heb liever een 30+-sfeer",
     "shareTitle": "Avondplan · {date}",
     "offersPriority": "Zaken met aanbiedingen of kortingen voorrang geven",
-    "reasonOffer": "Heeft een aanbieding of korting"
+    "reasonOffer": "Heeft een aanbieding of korting",
+    "venueCocktail": "Cocktailbar",
+    "venueKaraoke": "Karaoke",
+    "venuePool": "Poolbar",
+    "zoneFallbackNote": "Er was geen plan die bij de gekozen zone paste, dus laten we de beste match in de rest van de stad zien.",
+    "noBarriosForZone": "Voor deze zone hebben we nog geen wijken opgeslagen — je kunt doorgaan zonder er een te kiezen.",
+    "farApartNote": "De twee zaken in dit plan liggen een eind uit elkaar.",
+    "expandRangeCta": "Afstand maakt niet uit, ik wil gewoon plezier maken",
+    "funTip1": "Neem wat contant geld mee: sommige zaken accepteren aan de deur geen pinpas.",
+    "funTip2": "Gaan jullie met een grote groep? Stuur de zaak vooraf een bericht om een tafel te reserveren en de rij te vermijden.",
+    "funTip3": "De metro van Barcelona stopt in het weekend vroeg — check de nachtbussen (N) voordat je op pad gaat.",
+    "funTip4": "Drink water tussen de drankjes door, dan hou je de nacht langer vol en geniet je meer.",
+    "funTip5": "Sla de locatie van de zaak op je telefoon op voordat je vertrekt; met zoveel mensen is het bereik later slecht.",
+    "funTip6": "Verander je midden in de nacht van plan? Laat iemand uit je groep weten waar je heen gaat.",
+    "funTip7": "Net vóór het drukste uur aankomen is meestal goedkoper en zonder rij.",
+    "funTip8": "Een goed ontbijt na het feest is heilig — sommige plekken zijn al vroeg in de ochtend open."
   },
   "favoritesPage": {
     "loading": "Favorieten laden...",
@@ -940,7 +961,19 @@
     "fVenueRental": "Zaalverhuur",
     "rideTo": "Bestemming",
     "ticketsAdvance": "Voorverkoop tickets",
-    "fCapacityLabel": "Capaciteit"
+    "fCapacityLabel": "Capaciteit",
+    "editFeatures": "Kenmerken bewerken (alleen zichtbaar voor jou)",
+    "fFoosball": "Tafelvoetbal / pool",
+    "fCigMachine": "Sigarettenautomaat",
+    "fDarts": "Darts",
+    "fKaraoke": "Karaoke",
+    "fLiveMusic": "Live muziek",
+    "fDanceFloor": "Dansvloer",
+    "fCloakroom": "Garderobe",
+    "fFood": "Eten / keuken",
+    "fShisha": "Shisha",
+    "fAccessible": "Toegankelijk met rolstoel",
+    "stopAt": "Halte {name}"
   },
   "eventPage": {
     "dateTbc": "Datum nog niet bekend",
@@ -1108,7 +1141,10 @@
       "other": "Overig"
     },
     "call": "Bel",
-    "website": "Website"
+    "website": "Website",
+    "nitbusStops": "haltes",
+    "nitbusAllLines": "Bekijk alle lijnen en waar ze heen gaan",
+    "nitbusSearchPlaceholder": "Zoek een halte (bijv. Pl. Catalunya)"
   },
   "areas": {
     "titleBarrio": "Clubs in {name}",
@@ -1293,6 +1329,22 @@
     "today": "Vandaag",
     "recent": "Onlangs bekeken",
     "recentEmpty": "Je hebt nog geen club of evenement bekeken.",
+    "dexTitle": "Jouw Noctadex",
+    "dexSub": "De plekken waar je hebt ingecheckt en hoe vaak je er was.",
+    "dexSummary": "{places} plekken · {checkins} check-ins",
+    "dexShow": "Tonen",
+    "dexHide": "Verbergen",
+    "dexHiddenNote": "Je hebt het verborgen. Tik op ‘Tonen’ als je het weer wilt zien.",
+    "dexEmpty": "Je hebt nog nergens ingecheckt. Doe je eerste check-in vanaf de pagina van een club en hij verschijnt hier.",
+    "dexTimesOne": "1 keer",
+    "dexTimesMany": "{n} keer",
+    "dexLast": "Laatst: {date}",
+    "dexTier_new": "Nieuw",
+    "dexTier_regular": "Vaste gast",
+    "dexTier_home": "Huisgast",
+    "dexTier_legend": "Legende",
+    "dexMore": "Alle {n} tonen",
+    "dexLess": "Minder tonen",
     "kindEvent": "Evenement",
     "kindClub": "Club",
     "inbox": "Inbox",
@@ -1323,7 +1375,13 @@
     "ownerCardManage": "Mijn zaak beheren",
     "ownerCardNotice": "Sluiting melden",
     "ownerCardNights": "Mijn avonden",
-    "ownerCardView": "Mijn pagina bekijken"
+    "ownerCardView": "Mijn pagina bekijken",
+    "deniedTitle": "Zaken die we je niet meer aanraden",
+    "deniedIntro": "Je vertelde ons dat je hier niet binnenkwam, dus we stellen ze je niet voor bij ‘Verrassing’ of bij zaken in de buurt. Je kunt ze op elk moment weer tonen.",
+    "deniedRestore": "Weer tonen",
+    "deniedRestored": "{name} verschijnt weer in je aanbevelingen",
+    "deniedError": "Het is niet gelukt. Probeer het opnieuw.",
+    "deniedTimes": "{n} keer"
   },
   "badges": {
     "title": "Ontdekkingsbadges",
@@ -1745,7 +1803,28 @@
   "weatherTip": {
     "rain": "Vanavond kan het regenen: neem een paraplu (binnen sta je droog).",
     "cold": "Het is koud vanavond: neem een jas (binnen wordt het warm).",
-    "nice": "Het is een mooie avond om uit te gaan in Barcelona."
+    "nice": "Het is een mooie avond om uit te gaan in Barcelona.",
+    "storm1": "Onweer op komst vannacht ({avg}°). Plan voor binnen: terrassen kun je vergeten.",
+    "storm2": "Vannacht is er onweer. Liever een club dan een terras, en een taxi naar huis.",
+    "storm3": "Bliksem en donder vannacht. Laat het onweer alleen op de dansvloer zijn.",
+    "rain1": "Rond {hour} kan het gaan regenen ({avg}°). Paraplu of taxi: het kapsel is niet onderhandelbaar.",
+    "rain2": "Regen vannacht vanaf {hour}. Geen zorgen, in de club regent het niet.",
+    "rain3": "Regen verwacht rond {hour}. Neem een opvouwbare paraplu mee, die neemt minder ruimte in dan spijt.",
+    "wind1": "Harde wind vannacht (tot {wind} km/u). Kapsel in gevaar, terrassen liever laten zitten.",
+    "wind2": "Stormachtige nacht: tot {wind} km/u. Zoek een plek binnen en hou je pet vast.",
+    "wind3": "Het waait hard vannacht ({wind} km/u). Het feest is beter binnen.",
+    "hot1": "Hete nacht: {first}° als je vertrekt. Lichte kleding, water tussen de drankjes door en rooftop als het kan.",
+    "hot2": "{first}° om {firsth}… dit is een terrasnacht. Blijf drinken, het wordt een lange nacht.",
+    "hot3": "Benauwd in Barcelona vannacht ({avg}°). Luchtig shirt en een waaier in je zak.",
+    "nice1": "Perfecte nacht: {first}° bij vertrek en {min}° op de terugweg. Geen excuus om thuis te blijven.",
+    "nice2": "Precies de goede temperatuur vannacht ({avg}°). Geen jas, niet zweten: go for it.",
+    "nice3": "Barcelona ziet er vannacht prachtig uit: {avg}° en geen regen. Jij kiest waar je heen gaat.",
+    "fresh1": "Het koelt af vannacht: {first}° bij vertrek en {min}° op de terugweg. Iets warms voor in de rij.",
+    "fresh2": "Frisse nacht ({avg}°). Dun jasje: binnen overbodig, bij het naar buiten gaan fijn.",
+    "fresh3": "{min}° in de vroege ochtend. Neem iets extra's mee voor de terugweg, om 6 uur is het niet mild.",
+    "cold1": "Koude nacht: {min}° in de vroege ochtend. Jas aan, je kunt hem in de garderobe achterlaten.",
+    "cold2": "Koude nacht ({avg}°). Trek wat warms aan voor de rij: binnen krijg je het vanzelf warm.",
+    "cold3": "Echt koud vannacht: {min}°. Sjaal voor de terugweg, de nachtbus laat ook op zich wachten."
   },
   "opinion": {
     "title": "Wat vind je van Noctua?",

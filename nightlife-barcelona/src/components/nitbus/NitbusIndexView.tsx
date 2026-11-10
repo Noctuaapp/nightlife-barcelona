@@ -27,7 +27,11 @@ export default function NitbusIndexView({ counts, search }: Props) {
   const { t } = useLanguage()
   const [query, setQuery] = useState("")
 
-  const codes = useMemo(() => Object.keys(NIGHT_BUS_LINES).sort(compareLineCodes), [])
+  // Todas las líneas: las del catálogo (con su recorrido) y también las que solo existen porque tienen paradas
+  // cargadas. Antes solo salían las del catálogo, así que «Todas las líneas» de Esenciales › Nitbus (que sale de las
+  // paradas) enseñaba más que esta lista y algunas no aparecían (10/11/2026). Es la misma unión que ya usa la
+  // página de cada línea.
+  const codes = useMemo(() => Array.from(new Set([...Object.keys(NIGHT_BUS_LINES), ...Object.keys(counts)])).sort(compareLineCodes), [counts])
   const q = normStopName(query)
   const results = useMemo(() => {
     if (q.length < 2) return []
@@ -99,7 +103,9 @@ export default function NitbusIndexView({ counts, search }: Props) {
           <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {codes.map((code) => {
               const line = NIGHT_BUS_LINES[code]
-              const { from, to, note } = parseRoute(line.route)
+              // Una línea que no está en el catálogo no tiene recorrido escrito: se enseña solo su código y las
+              // paradas que tiene, sin inventar a dónde va.
+              const { from, to, note } = line ? parseRoute(line.route) : { from: `Nitbus ${code}`, to: null, note: null }
               const n = counts[code]
               return (
                 <li key={code}>

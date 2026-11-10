@@ -17,6 +17,7 @@ import { OFFERS_FILTER, hasOffer } from "../../lib/offers"
 import { optionsWithData } from "../../lib/filterOptions"
 import { loadFilterMemory, onlyKnown, saveFilterMemory } from "../../lib/filterMemory"
 import { Tag } from "lucide-react"
+import NocOwl from "../mascot/NocOwl"
 
 // Rediseño del listado (03/11/2026). Antes: cabecera de 230 px con título gigante, una barra con seis
 // botones y un desplegable, un fondo animado fijo y tarjetas de 300 px una debajo de otra en el móvil.
@@ -482,6 +483,12 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         title={t("clubs.subtitle")}
         pill={openCount === null || openCount === 0 ? t("home.liveTonight") : (openCount === 1 ? t("home.liveOpenOne") : t("home.liveOpenMany")).replace("{n}", String(openCount))}
         switcher={<ExploreSwitch active="clubs" />}
+        // Noc: de fiesta (chulo, con la bola de espejos); si se filtra por coctelerías o bares, de copas y borrachillo.
+        mascot={
+          selectedGenres.has("Cocktail Bar") || selectedAttributes.has(LATE_BAR_FILTER)
+            ? <NocOwl size={96} pose="copa" mood="borracho" className="h-[72px] w-[72px] sm:h-[104px] sm:w-[104px]" />
+            : <NocOwl size={96} pose="fiesta" className="h-[72px] w-[72px] sm:h-[104px] sm:w-[104px]" />
+        }
       />
 
       {/* BUSCADOR + ATAJOS. Solo se queda fijo al hacer scroll en pantallas grandes (lg+), donde cabe en

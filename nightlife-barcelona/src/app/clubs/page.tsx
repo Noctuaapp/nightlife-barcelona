@@ -8,6 +8,7 @@ import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../../lib/clubQueries"
 import { MIN_INDEXABLE, neighborhoodsOf, stylesOf } from "../../lib/areas"
 import { cleanPriceRange, safeJsonLd } from "../../lib/structuredData"
 import { createSlug } from "../../lib/slug"
+import { spanishAlternates } from "../../lib/intl/site"
 
 // 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
 export const revalidate = 21600
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
   title: "Discotecas y clubs en Barcelona | Noctua",
   description:
     "Descubre las mejores discotecas y clubs de Barcelona: horarios, precios, estilo musical y ubicación. Filtra por barrio, género musical y ambiente.",
-  alternates: { canonical: "https://www.noctuaapp.com/clubs" },
+  alternates: spanishAlternates("/clubs", "/clubs"),
   openGraph: {
     title: "Discotecas y clubs en Barcelona | Noctua",
     description:

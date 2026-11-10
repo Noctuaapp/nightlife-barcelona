@@ -36,6 +36,30 @@ describe("nocArt", () => {
     expect(nocSvg({ pose: "copa", theme: "christmas" })).toBe(nocSvg({ pose: "copa" }))
   })
 
+  it("cada expresión se dibuja distinta y la de resaca lleva gafas", () => {
+    const moods = ["happy", "wink", "sleepy", "party", "wow", "resaca", "borracho"] as const
+    const drawings = moods.map((mood) => nocSvg({ mood }))
+    expect(new Set(drawings).size).toBe(moods.length)
+    // «open» se dibuja igual que «happy» (se conserva por compatibilidad).
+    expect(nocSvg({ mood: "open" })).toBe(nocSvg({ mood: "happy" }))
+    // Gafas: dos lentes redondeadas; el borracho va ladeado.
+    expect(nocSvg({ mood: "resaca" })).toContain('rx="9"')
+    expect(nocSvg({ mood: "happy" })).not.toContain('rx="9"')
+    expect(nocSvg({ mood: "borracho" })).toContain("rotate(6 60 112)")
+  })
+
+  it("el de festival y el de clubs no son el mismo dibujo con otro adorno", () => {
+    const club = nocSvg({ pose: "fiesta" })
+    const fest = nocSvg({ pose: "festival", mood: "party" })
+    // Clubs: chulo, con un ala arriba hacia la bola de espejos (el ala derecha, la misma que al sujetar algo).
+    expect(club).toContain("M90 88 C104 88")
+    expect(club).not.toContain("M27 80 C16 78")
+    // Festival: lo da todo, con los dos brazos arriba y la cabeza echada hacia atrás.
+    expect(fest).toContain("M27 80 C16 78")
+    expect(fest).toContain("rotate(-3 60 112)")
+    expect(club).not.toContain("rotate(-3 60 112)")
+  })
+
   it("es determinista (mismo dibujo en servidor y navegador)", () => {
     expect(nocSvg({ mood: "party", theme: "sanJuan", id: "x" })).toBe(nocSvg({ mood: "party", theme: "sanJuan", id: "x" }))
   })

@@ -493,6 +493,8 @@ export default function Header() {
     const first = temps[0]
     const min = Math.min(...temps)
     const max = Math.max(...temps)
+    // Temperatura media de la franja de salir (23h-06h). Los avisos enseñan esta media y no el rango min–max (10/11/2026).
+    const avg = Math.round(temps.reduce((sum, x) => sum + x, 0) / temps.length)
     const winds = hours.map((h) => h.wind ?? 0)
     const maxWind = Math.max(...winds)
     const rainHour = hours.find((h) => h.code !== null && RAIN_CODES.has(h.code))
@@ -515,6 +517,7 @@ export default function Header() {
       .replace("{first}", String(first))
       .replace("{min}", String(min))
       .replace("{max}", String(max))
+      .replace("{avg}", String(avg))
       .replace("{hour}", rainHour ? rainHour.label : "")
       .replace("{wind}", String(maxWind))
       .replace("{firsth}", hours[0].label)
