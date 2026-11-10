@@ -16,8 +16,8 @@ import { createClient } from "@supabase/supabase-js"
 // anterior con «/» como prefijo dejaba pasar CUALQUIER ruta (/admin, /api/...): la raíz es solo
 // «/», no un prefijo.
 const EXACT_PATHS = new Set(["/", "/clubs", "/events", "/esenciales", "/mapa", "/map"])
-// «/en/clubs/»: ficha en inglés del mismo local (lib/intl, 10/11/2026).
-const PATH_PREFIXES = ["/clubs/", "/en/clubs/", "/event/", "/club-event/", "/barrio/", "/musica/"]
+// «/en/clubs/», «/de/clubs/», «/fr/clubs/», «/it/clubs/»: fichas del mismo local en los idiomas internacionales (lib/intl, 10/11/2026).
+const PATH_PREFIXES = ["/clubs/", "/en/clubs/", "/de/clubs/", "/fr/clubs/", "/it/clubs/", "/event/", "/club-event/", "/barrio/", "/musica/"]
 
 function isAllowedPath(p: unknown): p is string {
   if (typeof p !== "string" || p.length >= 1024 || p.includes("..")) return false

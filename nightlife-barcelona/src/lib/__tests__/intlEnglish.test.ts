@@ -3,7 +3,7 @@ import { clubSummaryEn, dressEn, hoursEn, musicEn, priceEn, venueKindEn } from "
 import { englishClubEligible } from "../intl/clubEligible"
 import { busRouteEn, METRO_HOURS, SOURCES, TAXI_2026 } from "../intl/en/transit"
 import { GUIDES, buildGuide, guideMeta, type Block, type Guide, type GuideCtx } from "../intl/en/guides"
-import { englishAlternates, spanishAlternates, enUrl, esUrl } from "../intl/site"
+import { englishAlternates, spanishAlternates, enUrl, esUrl, langUrl } from "../intl/site"
 import { buildEnglishSitemap, withSpanishAlternates } from "../intl/sitemap"
 import { ESSENTIALS_EN, essentialEn } from "../intl/en/essentialsText"
 import { metroStationName, operatorOf, sectionName } from "../intl/en/metroText"
@@ -124,21 +124,44 @@ describe("horario del metro y tarifas", () => {
 })
 
 describe("hreflang", () => {
-  it("la página inglesa con gemela se declara a sí misma, a la española y x-default español", () => {
+  it("la página inglesa con gemela se declara a sí misma, a las demás versiones, a la española y x-default español", () => {
     const a = englishAlternates("/clubs/x", "/clubs/x")
     expect(a).toEqual({
       canonical: enUrl("/clubs/x"),
-      languages: { en: enUrl("/clubs/x"), es: esUrl("/clubs/x"), "x-default": esUrl("/clubs/x") },
+      languages: {
+        en: enUrl("/clubs/x"),
+        de: langUrl("de", "/clubs/x"),
+        fr: langUrl("fr", "/clubs/x"),
+        it: langUrl("it", "/clubs/x"),
+        es: esUrl("/clubs/x"),
+        "x-default": esUrl("/clubs/x"),
+      },
     })
   })
-  it("una guía sin gemela es su propio x-default", () => {
-    expect(englishAlternates("/guides/g", null)).toEqual({ canonical: enUrl("/guides/g"), languages: { en: enUrl("/guides/g"), "x-default": enUrl("/guides/g") } })
+  it("una guía sin gemela es su propio x-default (inglés) y lista los cuatro idiomas", () => {
+    expect(englishAlternates("/guides/g", null)).toEqual({
+      canonical: enUrl("/guides/g"),
+      languages: {
+        en: enUrl("/guides/g"),
+        de: langUrl("de", "/guides/g"),
+        fr: langUrl("fr", "/guides/g"),
+        it: langUrl("it", "/guides/g"),
+        "x-default": enUrl("/guides/g"),
+      },
+    })
   })
-  it("la española devuelve el enlace de vuelta", () => {
+  it("la española devuelve el enlace de vuelta a los cuatro idiomas", () => {
     const a = spanishAlternates("/nitbus/N7", "/night-bus/N7")
     expect(a).toEqual({
       canonical: esUrl("/nitbus/N7"),
-      languages: { es: esUrl("/nitbus/N7"), en: enUrl("/night-bus/N7"), "x-default": esUrl("/nitbus/N7") },
+      languages: {
+        es: esUrl("/nitbus/N7"),
+        en: enUrl("/night-bus/N7"),
+        de: langUrl("de", "/night-bus/N7"),
+        fr: langUrl("fr", "/night-bus/N7"),
+        it: langUrl("it", "/night-bus/N7"),
+        "x-default": esUrl("/nitbus/N7"),
+      },
     })
   })
 })
@@ -150,9 +173,11 @@ describe("sitemap en inglés", () => {
   const { entries, twins } = buildEnglishSitemap({ clubs, busCodes: ["N7"], metroCodes: ["L1"] })
   const urls = entries.map((e) => e.url)
 
-  it("solo entran los locales con datos suficientes", () => {
-    expect(urls).toContain(enUrl("/clubs/buena"))
-    expect(urls).not.toContain(enUrl("/clubs/pelada"))
+  it("solo entran los locales con datos suficientes, en los cuatro idiomas", () => {
+    for (const l of ["en", "de", "fr", "it"] as const) {
+      expect(urls).toContain(langUrl(l, "/clubs/buena"))
+      expect(urls).not.toContain(langUrl(l, "/clubs/pelada"))
+    }
   })
   it("incluye portada, listas, barrios, líneas, esenciales y guías", () => {
     for (const u of [enUrl(""), enUrl("/clubs"), enUrl("/neighbourhoods/el-born"), enUrl("/night-bus"), enUrl("/night-bus/N7"), enUrl("/metro"), enUrl("/metro/L1"), enUrl("/essentials"), enUrl("/guides")])
@@ -163,18 +188,33 @@ describe("sitemap en inglés", () => {
   it("no repite direcciones", () => {
     expect(new Set(urls).size).toBe(urls.length)
   })
-  it("toda página con gemela lleva las dos direcciones, y la española las mismas (ida y vuelta)", () => {
+  it("toda página con gemela lleva las seis direcciones, y la española las mismas (ida y vuelta)", () => {
     const spanish = withSpanishAlternates(
       [{ url: esUrl("/clubs/buena") }, { url: esUrl("/nitbus/N7") }, { url: esUrl("/faq") }],
       twins
     )
+    const all = (sub: string, es: string) => ({
+      es: esUrl(es),
+      en: langUrl("en", sub),
+      de: langUrl("de", sub),
+      fr: langUrl("fr", sub),
+      it: langUrl("it", sub),
+      "x-default": esUrl(es),
+    })
     const club = spanish.find((e) => e.url === esUrl("/clubs/buena"))
-    expect(club?.alternates?.languages).toEqual({ es: esUrl("/clubs/buena"), en: enUrl("/clubs/buena"), "x-default": esUrl("/clubs/buena") })
-    expect(spanish.find((e) => e.url === esUrl("/nitbus/N7"))?.alternates?.languages?.en).toBe(enUrl("/night-bus/N7"))
+    expect(club?.alternates?.languages).toEqual(all("/clubs/buena", "/clubs/buena"))
+    expect(spanish.find((e) => e.url === esUrl("/nitbus/N7"))?.alternates?.languages).toEqual(all("/night-bus/N7", "/nitbus/N7"))
     expect(spanish.find((e) => e.url === esUrl("/faq"))?.alternates).toBeUndefined()
-    // Ida y vuelta: lo que la inglesa dice de la española, la española lo dice de la inglesa.
-    const en = entries.find((e) => e.url === enUrl("/clubs/buena"))!
-    expect(en.alternates?.languages?.es).toBe(esUrl("/clubs/buena"))
+    // Ida y vuelta: cada versión internacional dice lo mismo que la española.
+    for (const l of ["en", "de", "fr", "it"] as const) {
+      const e = entries.find((x) => x.url === langUrl(l, "/clubs/buena"))!
+      expect(e.alternates?.languages).toEqual(all("/clubs/buena", "/clubs/buena"))
+    }
+  })
+  it("las guías no tienen gemela española: x-default = inglés y cuatro idiomas", () => {
+    const g = entries.find((x) => x.url === langUrl("de", `/guides/${GUIDES[0].slug}`))!
+    expect(g.alternates?.languages?.["x-default"]).toBe(enUrl(`/guides/${GUIDES[0].slug}`))
+    expect(Object.keys(g.alternates!.languages!).sort()).toEqual(["de", "en", "fr", "it", "x-default"])
   })
 })
 

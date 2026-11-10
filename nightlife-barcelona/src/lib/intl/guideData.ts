@@ -5,21 +5,23 @@ import { NIGHT_BUS_LINES } from "../nightBuses"
 import { compareLineCodes } from "../nitbusRoutes"
 import { createSlug } from "../slug"
 import { englishAreas, getAllClubs, getCityStats, getEssentials, rankClubs, type EssentialRowEn } from "./data"
-import type { GuideCtx, PlaceLine } from "./en/guides"
+import type { GuideCtx, PlaceLine } from "./guideTypes"
+import type { IntlLang } from "./lang"
+import { NUM_LOCALE } from "./lang"
 
-// Cifras reales de Noctua que alimentan las guías en inglés. Se calculan en el servidor al generar la
+// Cifras reales de Noctua que alimentan las guías (en inglés, alemán, francés e italiano). Se calculan en el servidor al generar la
 // página (una vez por petición gracias a cache()) y buildGuide() las convierte en texto. Si una consulta
 // falla o no hay datos, esa parte de la guía simplemente no sale: nunca se rellena con algo inventado.
 
-// De lunes a domingo, con su número de día (0 = domingo) para clubOpensOn.
-const NIGHTS: { day: string; dow: number }[] = [
-  { day: "Monday", dow: 1 },
-  { day: "Tuesday", dow: 2 },
-  { day: "Wednesday", dow: 3 },
-  { day: "Thursday", dow: 4 },
-  { day: "Friday", dow: 5 },
-  { day: "Saturday", dow: 6 },
-  { day: "Sunday", dow: 0 },
+// De lunes a domingo, con su número de día (0 = domingo) para clubOpensOn, y el nombre del día en cada idioma.
+const NIGHTS: { dow: number; names: Record<IntlLang, string> }[] = [
+  { dow: 1, names: { en: "Monday", de: "Montag", fr: "Lundi", it: "Lunedì" } },
+  { dow: 2, names: { en: "Tuesday", de: "Dienstag", fr: "Mardi", it: "Martedì" } },
+  { dow: 3, names: { en: "Wednesday", de: "Mittwoch", fr: "Mercredi", it: "Mercoledì" } },
+  { dow: 4, names: { en: "Thursday", de: "Donnerstag", fr: "Jeudi", it: "Giovedì" } },
+  { dow: 5, names: { en: "Friday", de: "Freitag", fr: "Vendredi", it: "Venerdì" } },
+  { dow: 6, names: { en: "Saturday", de: "Samstag", fr: "Samedi", it: "Sabato" } },
+  { dow: 0, names: { en: "Sunday", de: "Sonntag", fr: "Dimanche", it: "Domenica" } },
 ]
 
 const placeOf = (r: EssentialRowEn): PlaceLine => ({
@@ -28,7 +30,7 @@ const placeOf = (r: EssentialRowEn): PlaceLine => ({
   phone: r.phone || undefined,
 })
 
-const byName = (a: EssentialRowEn, b: EssentialRowEn) => a.name.localeCompare(b.name, "en")
+const byNameIn = (lang: IntlLang) => (a: EssentialRowEn, b: EssentialRowEn) => a.name.localeCompare(b.name, NUM_LOCALE[lang])
 
 async function safe<T>(run: () => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -39,15 +41,16 @@ async function safe<T>(run: () => Promise<T>, fallback: T): Promise<T> {
 }
 
 /** Sitios abiertos 24 horas de una categoría, por orden alfabético, y cuántos hay en total. */
-function open24(rows: EssentialRowEn[], limit: number): { list: PlaceLine[]; total: number } {
+function open24(rows: EssentialRowEn[], limit: number, byName: (a: EssentialRowEn, b: EssentialRowEn) => number): { list: PlaceLine[]; total: number } {
   const all = rows.filter((r) => r.open24).sort(byName)
   return { list: all.slice(0, limit).map(placeOf), total: all.length }
 }
 
-export const loadGuideCtx = cache(async (): Promise<GuideCtx> => {
+export const loadGuideCtx = cache(async (lang: IntlLang = "en"): Promise<GuideCtx> => {
+  const byName = byNameIn(lang)
   const [clubs, stats, pharmacy, hospital, food, supermarket, atm] = await Promise.all([
     safe(getAllClubs, []),
-    safe(getCityStats, null),
+    safe(() => getCityStats(lang), null),
     safe(() => getEssentials("Pharmacy"), []),
     safe(() => getEssentials("Hospital"), []),
     safe(() => getEssentials("Food"), []),
@@ -56,8 +59,8 @@ export const loadGuideCtx = cache(async (): Promise<GuideCtx> => {
   ])
 
   // Cuántos locales abren cada noche (solo cuentan los que tienen horario o días de apertura).
-  const nightsOpen = NIGHTS.map(({ day, dow }) => ({
-    day,
+  const nightsOpen = NIGHTS.map(({ names, dow }) => ({
+    day: names[lang],
     n: clubs.filter((c) => clubOpensOn(c.hours, c.open_days, dow) === true).length,
   }))
 
@@ -71,9 +74,9 @@ export const loadGuideCtx = cache(async (): Promise<GuideCtx> => {
     })
   )
 
-  const p24 = open24(pharmacy, 12)
-  const f24 = open24(food, 10)
-  const s24 = open24(supermarket, 10)
+  const p24 = open24(pharmacy, 12, byName)
+  const f24 = open24(food, 10, byName)
+  const s24 = open24(supermarket, 10, byName)
   const hospitals = [...hospital].sort(byName)
 
   return {

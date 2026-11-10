@@ -8,7 +8,8 @@ import { rankClubs } from "../areas"
 import { distanceInMeters } from "../geo"
 import { loadNitbusData, type NbData } from "../nitbusRoutes"
 import { cleanEssential, isShownEssential } from "../essentials"
-import { dressEn, minAgeOf } from "./en/clubText"
+import { dressOf, minAgeOf } from "./clubText"
+import type { IntlLang } from "./lang"
 import { createSlug } from "../slug"
 
 // Datos que necesitan las páginas en inglés (/en/...). Todo se lee en el servidor al generar la página
@@ -34,11 +35,11 @@ export type CityStats = {
   withAge: number
 }
 
-export function computeCityStats(clubs: DbRow[], facts: AreaFacts | null): CityStats {
+export function computeCityStats(clubs: DbRow[], facts: AreaFacts | null, lang: IntlLang = "en"): CityStats {
   const dress = new Map<string, number>()
   const ages = new Map<number, number>()
   for (const c of clubs) {
-    const d = dressEn(c)
+    const d = dressOf(lang, c)
     if (d) dress.set(d, (dress.get(d) || 0) + 1)
     const a = minAgeOf(c)
     if (a) ages.set(a, (ages.get(a) || 0) + 1)
@@ -53,10 +54,10 @@ export function computeCityStats(clubs: DbRow[], facts: AreaFacts | null): CityS
   }
 }
 
-export const getCityStats = cache(async (): Promise<CityStats> => {
+export const getCityStats = cache(async (lang: IntlLang = "en"): Promise<CityStats> => {
   const clubs = await getAllClubs()
   const facts = await computeAreaFacts(clubs)
-  return computeCityStats(clubs, facts)
+  return computeCityStats(clubs, facts, lang)
 })
 
 // --- Nitbus ---------------------------------------------------------------------------------------------

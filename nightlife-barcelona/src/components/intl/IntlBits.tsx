@@ -3,21 +3,23 @@ import Image from "../ui/SafeImage"
 import NightBackdrop, { type NightTone } from "../ui/NightBackdrop"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { safeJsonLd } from "../../lib/structuredData"
-import { enPath } from "../../lib/intl/site"
+import { langPath } from "../../lib/intl/site"
+import type { IntlLang } from "../../lib/intl/lang"
+import { uiOf } from "../../lib/intl/ui"
 import { clubSlugOf } from "../../lib/intl/data"
 import { englishClubEligible } from "../../lib/intl/clubEligible"
-import { clubTagline, priceEn, ratingOf } from "../../lib/intl/en/clubText"
+import { clubTagline, priceOf, ratingOf } from "../../lib/intl/clubText"
 import type { DbRow } from "../../lib/clubQueries"
 
-// Piezas comunes de las páginas en inglés. Todas son de servidor (sin JavaScript en el navegador).
+// Piezas comunes de las páginas en inglés, alemán, francés e italiano. Todas son de servidor (sin JavaScript en el navegador).
 
 export function JsonLd({ data }: { data: unknown }) {
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(data) }} />
 }
 
-export function Crumbs({ items }: { items: { name: string; href?: string }[] }) {
+export function Crumbs({ items, lang }: { items: { name: string; href?: string }[]; lang: IntlLang }) {
   return (
-    <nav aria-label="Breadcrumb" className="mx-auto max-w-6xl px-4 pt-4 text-xs text-zinc-400">
+    <nav aria-label={uiOf(lang).common.crumbsAria} className="mx-auto max-w-6xl px-4 pt-4 text-xs text-zinc-400">
       <ol className="flex flex-wrap items-center gap-1.5">
         {items.map((c, i) => (
           <li key={`${c.name}-${i}`} className="flex items-center gap-1.5">
@@ -131,12 +133,12 @@ export function SourceList({ items }: { items: { name: string; url: string }[] }
   )
 }
 
-/** Tarjeta de local. Si el local no tiene página en inglés que valga la pena, enlaza a su ficha en español (la web ya traduce sola). */
-export function ClubCardEn({ club }: { club: DbRow }) {
+/** Tarjeta de local. Si el local no tiene página internacional que valga la pena, enlaza a su ficha en español (la web ya traduce sola). */
+export function ClubCard({ club, lang }: { club: DbRow; lang: IntlLang }) {
   const slug = clubSlugOf(club)
-  const href = englishClubEligible(club) ? enPath(`/clubs/${slug}`) : `/clubs/${slug}`
+  const href = englishClubEligible(club) ? langPath(lang, `/clubs/${slug}`) : `/clubs/${slug}`
   const rating = ratingOf(club)
-  const price = priceEn(club.price)
+  const price = priceOf(lang, club.price)
   const showPrice = price && price.text.length <= 28
   return (
     <Link href={href} className={`${CARD} group flex gap-3 p-3 transition hover:border-white/25`}>
@@ -145,10 +147,10 @@ export function ClubCardEn({ club }: { club: DbRow }) {
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-base font-semibold text-ink">{club.name}</span>
-        <span className="mt-0.5 block truncate text-xs text-zinc-400">{clubTagline(club)}</span>
+        <span className="mt-0.5 block truncate text-xs text-zinc-400">{clubTagline(lang, club)}</span>
         {(rating || showPrice) && (
           <span className="mt-1.5 flex items-center gap-2 text-xs text-zinc-300">
-            {rating && <span className="font-semibold text-ink">★ {rating.value.toFixed(1)}</span>}
+            {rating && <span className="font-semibold text-ink">★ {lang === "en" ? rating.value.toFixed(1) : rating.value.toFixed(1).replace(".", ",")}</span>}
             {showPrice && (
               <span className="truncate" lang={price.translated ? undefined : "es"}>
                 {price.text}

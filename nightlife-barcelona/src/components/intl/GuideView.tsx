@@ -1,9 +1,12 @@
 import Link from "next/link"
 import { CARD, FaqBlock, Hero, JsonLd, Crumbs, Section, SourceList } from "./IntlBits"
-import { guideMeta, type Block, type Guide } from "../../lib/intl/en/guides"
-import { breadcrumbLd, enUrl, faqLd, SITE } from "../../lib/intl/site"
+import type { Block, Guide } from "../../lib/intl/guideTypes"
+import { guidesOf } from "../../lib/intl/guides"
+import type { IntlLang } from "../../lib/intl/lang"
+import { uiOf } from "../../lib/intl/ui"
+import { breadcrumbLd, langPath, langUrl, faqLd, SITE } from "../../lib/intl/site"
 
-// Pinta una guía (lib/intl/en/guides.ts) como página: titular, índice, secciones, preguntas, fuentes y
+// Pinta una guía (lib/intl/{idioma}/guides.ts) como página: titular, índice, secciones, preguntas, fuentes y
 // guías relacionadas. Es un componente de servidor: todo el texto sale en el HTML.
 
 function BlockView({ b }: { b: Block }) {
@@ -93,8 +96,11 @@ function BlockView({ b }: { b: Block }) {
   }
 }
 
-export default function GuideView({ guide, updated }: { guide: Guide; updated: string }) {
-  const url = enUrl(`/guides/${guide.slug}`)
+export default function GuideView({ guide, updated, lang }: { guide: Guide; updated: string; lang: IntlLang }) {
+  const ui = uiOf(lang)
+  const gv = ui.guideView
+  const { guideMeta } = guidesOf(lang)
+  const url = langUrl(lang, `/guides/${guide.slug}`)
   const related = guide.related.map((s) => guideMeta(s)).filter((g): g is NonNullable<typeof g> => !!g)
 
   const article = {
@@ -102,15 +108,15 @@ export default function GuideView({ guide, updated }: { guide: Guide; updated: s
     "@type": "Article",
     headline: guide.h1,
     description: guide.description,
-    inLanguage: "en",
+    inLanguage: lang,
     mainEntityOfPage: url,
     dateModified: updated,
     author: { "@type": "Organization", name: "Noctua", url: SITE },
     publisher: { "@type": "Organization", name: "Noctua", url: SITE },
   }
   const crumbs = [
-    { name: "Noctua", url: enUrl("") },
-    { name: "Guides", url: enUrl("/guides") },
+    { name: "Noctua", url: langUrl(lang, "") },
+    { name: ui.shell.navGuides, url: langUrl(lang, "/guides") },
     { name: guide.h1, url },
   ]
 
@@ -120,17 +126,19 @@ export default function GuideView({ guide, updated }: { guide: Guide; updated: s
       <JsonLd data={breadcrumbLd(crumbs)} />
       {guide.faq.length > 0 && <JsonLd data={faqLd(guide.faq)} />}
 
-      <Crumbs items={[{ name: "Noctua", href: "/en" }, { name: "Guides", href: "/en/guides" }, { name: guide.h1 }]} />
+      <Crumbs lang={lang} items={[{ name: "Noctua", href: langPath(lang) }, { name: ui.shell.navGuides, href: langPath(lang, "/guides") }, { name: guide.h1 }]} />
       <Hero title={guide.h1} lead={guide.lead} tone="blue">
         <p className="mt-4 text-xs text-zinc-500">
-          Facts checked <time dateTime={updated}>{new Date(updated).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time>. Figures from Noctua are live.
+          {gv.factsChecked}
+          <time dateTime={updated}>{new Date(updated).toLocaleDateString(gv.dateLang, { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time>
+          {gv.figuresLive}
         </p>
       </Hero>
 
       <div className="mx-auto max-w-3xl px-4">
         {guide.sections.length > 2 && (
-          <nav aria-label="In this guide" className={`${CARD} mt-8 p-4`}>
-            <p className="text-sm font-semibold text-ink">In this guide</p>
+          <nav aria-label={gv.inThisGuide} className={`${CARD} mt-8 p-4`}>
+            <p className="text-sm font-semibold text-ink">{gv.inThisGuide}</p>
             <ol className="mt-2 space-y-1.5 text-sm">
               {guide.sections.map((s) => (
                 <li key={s.id}>
@@ -142,7 +150,7 @@ export default function GuideView({ guide, updated }: { guide: Guide; updated: s
               {guide.faq.length > 0 && (
                 <li>
                   <a href="#faq" className="text-zinc-300 underline decoration-white/20 underline-offset-2 transition hover:text-ink">
-                    Frequently asked questions
+                    {ui.common.faqTitle}
                   </a>
                 </li>
               )}
@@ -162,7 +170,7 @@ export default function GuideView({ guide, updated }: { guide: Guide; updated: s
         ))}
 
         <div className={`${CARD} mt-12 flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between`}>
-          <p className="text-base font-semibold text-ink">Noctua puts all of this in your pocket, live.</p>
+          <p className="text-base font-semibold text-ink">{gv.ctaBanner}</p>
           <Link href={guide.cta.href} className="btn-pill btn-primary shrink-0 px-5 py-2.5 text-sm">
             {guide.cta.label}
           </Link>
@@ -171,7 +179,7 @@ export default function GuideView({ guide, updated }: { guide: Guide; updated: s
 
       {guide.faq.length > 0 && (
         <div className="mx-auto max-w-3xl">
-          <Section id="faq" title="Frequently asked questions">
+          <Section id="faq" title={ui.common.faqTitle}>
             <FaqBlock items={guide.faq} />
           </Section>
         </div>
@@ -179,20 +187,20 @@ export default function GuideView({ guide, updated }: { guide: Guide; updated: s
 
       {guide.sources.length > 0 && (
         <div className="mx-auto max-w-3xl">
-          <Section id="sources" title="Sources">
+          <Section id="sources" title={ui.common.sourcesTitle}>
             <SourceList items={guide.sources} />
-            <p className="mt-3 text-xs leading-relaxed text-zinc-500">Rules, fares and hours change. Check the official source before you rely on a figure.</p>
+            <p className="mt-3 text-xs leading-relaxed text-zinc-500">{gv.sourcesNote}</p>
           </Section>
         </div>
       )}
 
       {related.length > 0 && (
         <div className="mx-auto max-w-3xl">
-          <Section id="related" title="More guides">
+          <Section id="related" title={gv.moreGuides}>
             <ul className="grid gap-3 sm:grid-cols-2">
               {related.map((g) => (
                 <li key={g.slug}>
-                  <Link href={`/en/guides/${g.slug}`} className={`${CARD} block h-full p-4 transition hover:border-white/25`}>
+                  <Link href={langPath(lang, `/guides/${g.slug}`)} className={`${CARD} block h-full p-4 transition hover:border-white/25`}>
                     <span className="block text-base font-semibold text-ink">{g.h1}</span>
                     <span className="mt-1 block text-sm text-zinc-400">{g.blurb}</span>
                   </Link>

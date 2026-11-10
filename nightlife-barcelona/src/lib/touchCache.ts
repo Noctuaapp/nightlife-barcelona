@@ -3,6 +3,7 @@
 // Desde la auditoría del 2/11/2026 el endpoint exige sesión: se manda el token de quien guarda
 // (admin o dueño). Sin sesión no hay nada que refrescar, así que ni se llama.
 import { supabase } from "./supabase"
+import { INTL_LANGS } from "./intl/lang"
 
 export async function touchCache(paths: string[]): Promise<void> {
   try {
@@ -19,9 +20,9 @@ export async function touchCache(paths: string[]): Promise<void> {
   }
 }
 
-// La ficha en inglés (/en/clubs/...) se refresca a la vez que la española.
+// Las fichas en inglés, alemán, francés e italiano (/en, /de, /fr, /it) se refrescan a la vez que la española.
 export const clubPaths = (slug?: string | null): string[] =>
-  ["/", "/clubs", "/mapa", "/map", ...(slug ? [`/clubs/${slug}`, `/en/clubs/${slug}`] : [])]
+  ["/", "/clubs", "/mapa", "/map", ...(slug ? [`/clubs/${slug}`, ...INTL_LANGS.map((l) => `/${l}/clubs/${slug}`)] : [])]
 
 export const eventPaths = (slug?: string | null): string[] =>
   ["/", "/events", "/mapa", "/map", ...(slug ? [`/event/${slug}`] : [])]

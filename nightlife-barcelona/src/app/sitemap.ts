@@ -9,7 +9,7 @@ import { EVENTS_HIDDEN } from "../lib/featureFlags"
 import { NIGHT_BUS_LINES } from "../lib/nightBuses"
 import { METRO_LINE_CODES } from "../lib/metroLines"
 import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../lib/clubQueries"
-import { buildEnglishSitemap, withSpanishAlternates } from "../lib/intl/sitemap"
+import { buildIntlSitemap, withSpanishAlternates } from "../lib/intl/sitemap"
 
 const BASE_URL = "https://www.noctuaapp.com"
 
@@ -56,7 +56,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.4,
     })),
-    { url: `${BASE_URL}/contact`, changeFrequency: "monthly", priority: 0.3 },
+    // /contact lleva noindex (contact/layout.tsx), así que no se declara aquí: Search Console lo avisaba como «excluida por noindex».
     { url: `${BASE_URL}/privacy`, changeFrequency: "yearly", priority: 0.2 },
     { url: `${BASE_URL}/terms`, changeFrequency: "yearly", priority: 0.2 },
     ...ESSENTIAL_CATEGORIES.map((cat) => ({
@@ -124,17 +124,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }))
 
-  // Páginas en inglés (/en) y su hreflang con las españolas gemelas (lib/intl/sitemap.ts). Si esta consulta
-  // falla, el sitemap sigue saliendo sin ellas en vez de romperse.
-  let english: ReturnType<typeof buildEnglishSitemap> | null = null
+  // Páginas en inglés, alemán, francés e italiano (/en, /de, /fr, /it) y su hreflang con las españolas gemelas
+  // (lib/intl/sitemap.ts). Si esta consulta falla, el sitemap sigue saliendo sin ellas en vez de romperse.
+  let intl: ReturnType<typeof buildIntlSitemap> | null = null
   try {
     const fullClubs = await fetchVisibleClubs(LIST_CLUB_FIELDS)
-    english = buildEnglishSitemap({ clubs: fullClubs, busCodes: Object.keys(NIGHT_BUS_LINES), metroCodes: METRO_LINE_CODES })
+    intl = buildIntlSitemap({ clubs: fullClubs, busCodes: Object.keys(NIGHT_BUS_LINES), metroCodes: METRO_LINE_CODES })
   } catch {
-    english = null
+    intl = null
   }
 
   const spanish = [...staticRoutes, ...areaRoutes, ...clubRoutes, ...eventRoutes, ...nightRoutes]
-  if (!english) return spanish
-  return [...withSpanishAlternates(spanish, english.twins), ...english.entries]
+  if (!intl) return spanish
+  return [...withSpanishAlternates(spanish, intl.twins), ...intl.entries]
 }
