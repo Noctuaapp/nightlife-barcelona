@@ -11,6 +11,7 @@ import { METRO_LINE_CODES } from "../lib/metroLines"
 import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../lib/clubQueries"
 import { buildIntlSitemap, withSpanishAlternates } from "../lib/intl/sitemap"
 import { isClubNoctuaOn } from "../lib/clubNoctuaServer"
+import { withXmlSafeImages } from "../lib/sitemapXml"
 
 const BASE_URL = "https://www.noctuaapp.com"
 
@@ -140,6 +141,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     : []
 
   const spanish = [...staticRoutes, ...clubNoctuaRoutes, ...areaRoutes, ...clubRoutes, ...eventRoutes, ...nightRoutes]
-  if (!intl) return spanish
-  return [...withSpanishAlternates(spanish, intl.twins), ...intl.entries]
+  // Las direcciones de imagen se escapan al final (11/11/2026): Next las escribe tal cual y un «&» suelto (las fotos de
+  // Unsplash llevan varios) dejaba el XML inválido, con 0 páginas leídas en Search Console. Ver lib/sitemapXml.ts.
+  if (!intl) return withXmlSafeImages(spanish)
+  return withXmlSafeImages([...withSpanishAlternates(spanish, intl.twins), ...intl.entries])
 }
