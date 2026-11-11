@@ -531,8 +531,8 @@ function VisitRow({
         <div className="bg-night/50 px-4 pb-4 pt-1">
           {many ? (
             <>
-              <p className="pb-1 pt-2 text-[11px] leading-snug text-zinc-500">
-                Mismo código anónimo del día{first.visitor ? ` (${first.visitor.slice(0, 6)})` : ""}: misma IP y mismo navegador. Si cambió de wifi a datos aparecería como otra persona.
+              <p className="pb-1 pt-2 text-xs leading-snug text-zinc-400">
+                {sessions.length} visitas juntas porque llegaron desde el mismo móvil u ordenador y la misma conexión el mismo día: casi seguro es la misma persona. Si cambió de wifi a datos, la web la cuenta como otra.
               </p>
               {sessions.map((x) => (
                 <div key={x.id + x.started_at} className="mt-3 first:mt-1">
