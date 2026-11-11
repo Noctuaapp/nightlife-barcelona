@@ -2,14 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
-import { Panel, SectionTitle, StatTile, type Accent } from "../../../components/admin/ui"
+import { FilterChip, Panel, SectionTitle, StatTile, type Accent, type TrendInfo } from "../../../components/admin/ui"
 import { BarChart3, CalendarCheck, CalendarDays, Car, CheckCircle2, Clock, Eye, Layers, MapPin, Scale, Search, Share2, Smartphone, Ticket, Users, type LucideIcon } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { zoneOf } from "../../../lib/zones"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
 import { madridDaysAgo, madridToday, madridYear } from "../../../lib/madridDay"
-import InteractionStats from "../../../components/admin/InteractionStats"
+import InteractionStats, { type Kind as ClickKind } from "../../../components/admin/InteractionStats"
+import { CountryPanel, FunnelPanel, LanguagePanel, SourcePanel } from "../../../components/admin/DataInsights"
+import { NeedSql } from "../../../components/admin/insights"
+import {
+  actionIndex, actionsPer100, compareValues, fillDays, hoursSeries, isDeadItem, previousRange, rangeLength, searchRows, totalActions, weekdaySeries,
+  DEAD_MIN_VIEWS, type ClubActionRow, type CountryRow, type FunnelRow, type HourRow, type LanguageRow, type SearchDetailTerm, type SignupErrorRow, type SourceQualityRow, type WeekdayRow,
+} from "../../../lib/dataInsights"
 
 // Panel "Datos": métricas agregadas de Noctua pensadas para enseñar a clubs y managers (y para
 // venderlas). Todo se calcula en Supabase con funciones que solo el admin puede ejecutar y que
@@ -71,8 +77,8 @@ function Bars({ data, color = "#7c5cff" }: { data: { label: string; value: numbe
   )
 }
 
-function Stat({ label, value, sub, icon, accent }: { label: string; value: string | number; sub?: string; icon?: LucideIcon; accent?: Accent }) {
-  return <StatTile label={label} value={value} note={sub} icon={icon} accent={accent} />
+function Stat({ label, value, sub, icon, accent, onClick, cue, trend }: { label: string; value: string | number; sub?: string; icon?: LucideIcon; accent?: Accent; onClick?: () => void; cue?: string; trend?: TrendInfo | null }) {
+  return <StatTile label={label} value={value} note={sub} icon={icon} accent={accent} onClick={onClick} cue={cue} trend={trend} />
 }
 
 function ListBars({ rows, suffix = "" }: { rows: { label: string; n: number | null }[]; suffix?: string }) {
@@ -93,6 +99,16 @@ function ListBars({ rows, suffix = "" }: { rows: { label: string; n: number | nu
       ))}
     </div>
   )
+}
+
+type Insights = {
+  funnel: { browse: FunnelRow[]; signup: FunnelRow[]; errors: SignupErrorRow[] } | null
+  sources: SourceQualityRow[] | null
+  hours: { views: HourRow[]; sessions: HourRow[]; weekdays: WeekdayRow[] } | null
+  clubActions: ClubActionRow[] | null
+  searchDetail: { terms: SearchDetailTerm[]; daily: { day: string; n: number; zero: number }[]; total: number; total_opened: number } | null
+  languages: LanguageRow[] | null
+  countries: CountryRow[] | null
 }
 
 export default function AdminDatosPage() {
@@ -123,6 +139,16 @@ export default function AdminDatosPage() {
   const [detailAud, setDetailAud] = useState<any>(null)
   const [sortKey, setSortKey] = useState("views")
   const [onlyZeroSearches, setOnlyZeroSearches] = useState(false)
+  // Tipo de clic que se ve en «Clics y tiempo»: lo elegido allí, o el de la cifra del Resumen que se ha pulsado.
+  const [clickKind, setClickKind] = useState<ClickKind>("directions_click")
+  // Más información (11/11/2026): periodo anterior para comparar y lo que añade supabase/88_datos_comparativas.sql.
+  // Se carga aparte para que las pestañas de siempre no esperen; cada pieza vale null si su función aún no existe.
+  const [prevOverview, setPrevOverview] = useState<any>(null)
+  const [insights, setInsights] = useState<Insights | null>(null)
+  const [insightsLoading, setInsightsLoading] = useState(true)
+  const insightsSeq = useRef(0)
+  const [onlyDead, setOnlyDead] = useState(false)
+  const [moreCols, setMoreCols] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -179,6 +205,38 @@ export default function AdminDatosPage() {
   }, [checkingAdmin, load])
 
   useEffect(() => {
+    if (checkingAdmin) return
+    const seq = ++insightsSeq.current
+    setInsightsLoading(true)
+    const range = { p_from: from, p_to: to }
+    const prev = previousRange(from, to)
+    Promise.all([
+      supabase.rpc("admin_data_overview", { p_from: prev.from, p_to: prev.to }),
+      supabase.rpc("admin_funnel", range),
+      supabase.rpc("admin_source_quality", range),
+      supabase.rpc("admin_hours_madrid", range),
+      supabase.rpc("admin_club_actions", range),
+      supabase.rpc("admin_search_detail", range),
+      supabase.rpc("admin_visitor_languages", range),
+      supabase.rpc("admin_visitor_countries", range),
+    ]).then(([po, fu, so, ho, ca, sd, la, co]) => {
+      // Si cambias las fechas rápido, solo vale la última respuesta.
+      if (seq !== insightsSeq.current) return
+      setPrevOverview(po.error ? null : po.data)
+      setInsights({
+        funnel: fu.error ? null : fu.data,
+        sources: so.error ? null : so.data,
+        hours: ho.error ? null : ho.data,
+        clubActions: ca.error ? null : ca.data,
+        searchDetail: sd.error ? null : sd.data,
+        languages: la.error ? null : la.data,
+        countries: co.error ? null : co.data,
+      })
+      setInsightsLoading(false)
+    })
+  }, [checkingAdmin, from, to])
+
+  useEffect(() => {
     if (!selected) { setDetail(null); setDetailAud(null); return }
     const range = { p_from: from, p_to: to }
     supabase.rpc("admin_data_item_detail", { p_type: selected.type, p_id: selected.id, ...range }).then((r) => setDetail(r.data))
@@ -187,6 +245,22 @@ export default function AdminDatosPage() {
 
   const sortRows = (rows: any[]) =>
     [...rows].sort((a, b) => (Number(b[sortKey]) || 0) - (Number(a[sortKey]) || 0))
+
+  // Acciones por ficha (11/11/2026): todo lo que hace la gente en ella, y por cada 100 visitas. «dead» = ficha con
+  // visitas y ninguna acción; solo se sabe con certeza cuando está el SQL 88 (sin él faltarían taxi, llamadas y TikTok).
+  const hasActionExtras = !!insights?.clubActions
+  const clubActionIdx = useMemo(() => actionIndex(insights?.clubActions, "club"), [insights?.clubActions])
+  const eventActionIdx = useMemo(() => actionIndex(insights?.clubActions, "event"), [insights?.clubActions])
+  const withActions = (row: any, extra: ClubActionRow | undefined) => {
+    const actions = totalActions(row, extra)
+    return {
+      actions,
+      apv: actionsPer100(actions, Number(row.views) || 0) ?? 0,
+      rides: (extra?.rides ?? 0) + (extra?.taxi_calls ?? 0),
+      phone: extra?.phone ?? 0,
+      dead: hasActionExtras && isDeadItem(Number(row.views) || 0, actions),
+    }
+  }
 
   const clubRows = useMemo(
     () =>
@@ -197,16 +271,25 @@ export default function AdminDatosPage() {
           venue_type: clubsMeta[String(c.id)]?.venue_type || "—",
           conv: pct(c.tickets, c.views),
           fulfil: pct(c.checkins, c.attendances),
+          ...withActions(c, clubActionIdx.get(String(c.id))),
         }))
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [clubItems, clubsMeta, sortKey]
+    [clubItems, clubsMeta, sortKey, clubActionIdx, hasActionExtras]
   )
   const eventRows = useMemo(
-    () => sortRows(eventItems.map((e) => ({ ...e, conv: pct(e.tickets, e.views) }))),
+    () => sortRows(eventItems.map((e) => ({ ...e, conv: pct(e.tickets, e.views), ...withActions(e, eventActionIdx.get(String(e.id))) }))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [eventItems, sortKey]
+    [eventItems, sortKey, eventActionIdx, hasActionExtras]
   )
+  const shownRows = (tab === "clubs" ? clubRows : eventRows).filter((r) => !onlyDead || r.dead)
+  const deadCount = (tab === "clubs" ? clubRows : eventRows).filter((r) => r.dead).length
+
+  // Comparación con el periodo anterior de la misma duración (solo las cifras de Resumen que existen en los dos).
+  const prevRange = previousRange(from, to)
+  const tr = (key: string) => (prevOverview && overview ? compareValues(Number(overview[key]) || 0, Number(prevOverview[key]) || 0) : null)
+  const fmtDay = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
+  const searchList = useMemo(() => searchRows(searches, insights?.searchDetail?.terms), [searches, insights?.searchDetail])
 
   // Comparativa: media de visitas / entradas / conversión de los clubs de la misma zona y tipo.
   const benchmark = (zone: string, type: string, excludeId: number) => {
@@ -226,12 +309,12 @@ export default function AdminDatosPage() {
 
   const exportClubsCsv = () =>
     downloadCsv(`noctua_clubs_${from}_${to}.csv`,
-      ["Club", "Zona", "Tipo", "Visitas", "Visitantes", "Clics entradas", "Clics en entradas % (de visitas)", "Como llegar", "Compartir", "Favoritos", "Web/Instagram", "Asistire", "Check-ins", "Cumplimiento %"],
-      clubRows.map((c) => [c.name, c.zone, c.venue_type, c.views, c.visitors, c.tickets, c.conv, c.directions, c.shares, c.favorites, c.website, c.attendances, c.checkins, c.fulfil]))
+      ["Club", "Zona", "Tipo", "Visitas", "Visitantes", "Clics entradas", "Clics en entradas % (de visitas)", "Como llegar", "Compartir", "Favoritos", "Web/Instagram", "Asistire", "Check-ins", "Cumplimiento %", "Acciones", "Acciones por 100 visitas", "Taxi/VTC", "Llamadas"],
+      clubRows.map((c) => [c.name, c.zone, c.venue_type, c.views, c.visitors, c.tickets, c.conv, c.directions, c.shares, c.favorites, c.website, c.attendances, c.checkins, c.fulfil, c.actions, c.apv, c.rides, c.phone]))
   const exportEventsCsv = () =>
     downloadCsv(`noctua_eventos_${from}_${to}.csv`,
-      ["Evento", "Visitas", "Visitantes", "Clics entradas", "Clics en entradas % (de visitas)", "Como llegar", "Compartir", "Favoritos", "Asistire"],
-      eventRows.map((e) => [e.name, e.views, e.visitors, e.tickets, e.conv, e.directions, e.shares, e.favorites, e.attendances]))
+      ["Evento", "Visitas", "Visitantes", "Clics entradas", "Clics en entradas % (de visitas)", "Como llegar", "Compartir", "Favoritos", "Asistire", "Acciones", "Acciones por 100 visitas", "Taxi/VTC", "Llamadas"],
+      eventRows.map((e) => [e.name, e.views, e.visitors, e.tickets, e.conv, e.directions, e.shares, e.favorites, e.attendances, e.actions, e.apv, e.rides, e.phone]))
   const exportEssCategoriesCsv = () =>
     downloadCsv(`noctua_esenciales_categorias_${from}_${to}.csv`,
       ["Categoria", "Visitas", "Visitantes", "Locales abiertos", "Como llegar", "Google Maps", "Desde fichas de club"],
@@ -241,8 +324,8 @@ export default function AdminDatosPage() {
       ["Local", "Categoria", "Abierto", "Visitantes", "Como llegar", "Google Maps", "Llegar / abierto %"],
       (essStats?.items || []).map((i: any) => [i.name, essentialSlugLabelEs(i.category), i.opens, i.visitors, i.directions, i.maps, pct(i.directions, i.opens)]))
   const exportSearchesCsv = () =>
-    downloadCsv(`noctua_busquedas_${from}_${to}.csv`, ["Busqueda", "Veces", "Resultados medios", "Veces sin resultados"],
-      searches.map((s) => [s.term, s.n, s.avg_results, s.zero]))
+    downloadCsv(`noctua_busquedas_${from}_${to}.csv`, ["Busqueda", "Veces", "Resultados medios", "Veces sin resultados", "Despues abren algo %"],
+      searchList.map((s) => [s.term, s.n, s.avg_results, s.zero, s.openedPct]))
   const exportOverviewCsv = () =>
     downloadCsv(`noctua_resumen_${from}_${to}.csv`, ["Fecha", "Sesiones", "Visitas a fichas"],
       (overview?.daily || []).map((d: any) => [d.d, d.sessions, d.views]))
@@ -308,6 +391,20 @@ export default function AdminDatosPage() {
     </th>
   )
 
+  // Las cifras del Resumen son solo totales: pulsarlas lleva al detalle (11/11/2026).
+  const goClicks = (kind: ClickKind) => {
+    setClickKind(kind)
+    setSelected(null)
+    setTab("clics")
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+  const goTab = (next: Tab, sort?: string) => {
+    if (sort) setSortKey(sort)
+    setSelected(null)
+    setTab(next)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
   const sel = selected && selected.type === "club" ? clubRows.find((c) => c.id === selected.id) : null
   const bench = sel ? benchmark(sel.zone, sel.venue_type, sel.id) : null
 
@@ -345,20 +442,26 @@ export default function AdminDatosPage() {
         {error && <p className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}
         {loading && tab !== "clics" && <p className="text-sm text-zinc-400">Cargando datos...</p>}
         {/* Clics y tiempo carga lo suyo aparte (SQL 84), así que no espera a las demás pestañas. */}
-        {tab === "clics" && <InteractionStats from={from} to={to} />}
+        {tab === "clics" && <InteractionStats from={from} to={to} kind={clickKind} onKindChange={setClickKind} />}
 
         {!loading && overview && tab === "resumen" && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <Stat label="Sesiones" icon={Users} accent="violet" value={overview.sessions} />
-              <Stat label="Visitas a fichas" icon={Eye} accent="pink" value={overview.page_views} />
-              <Stat label="Clics en entradas" icon={Ticket} accent="cyan" value={overview.tickets} sub={`${pct(overview.tickets, overview.page_views)} % de las visitas a fichas`} />
-              <Stat label="Cómo llegar" icon={MapPin} accent="coral" value={overview.directions} />
-              <Stat label="Compartidos" icon={Share2} accent="violet" value={overview.shares} />
-              <Stat label="Búsquedas" icon={Search} accent="pink" value={overview.searches} sub={`${overview.searches_zero} sin resultados`} />
-              <Stat label="Asistiré" icon={CalendarCheck} accent="cyan" value={overview.attendances} />
-              <Stat label="Check-ins reales" icon={CheckCircle2} accent="coral" value={overview.checkins} sub={`Cumplimiento ${pct(overview.checkins, overview.attendances)}%`} />
+              <Stat label="Sesiones" icon={Users} accent="violet" value={overview.sessions} trend={tr("sessions")} />
+              <Stat label="Visitas a fichas" icon={Eye} accent="pink" value={overview.page_views} trend={tr("page_views")} onClick={() => goTab("clubs", "views")} cue="Ver qué fichas" />
+              <Stat label="Clics en entradas" icon={Ticket} accent="cyan" value={overview.tickets} trend={tr("tickets")} sub={`${pct(overview.tickets, overview.page_views)} % de las visitas a fichas`} onClick={() => goClicks("tickets_click")} cue="Ver dónde y a qué web" />
+              <Stat label="Cómo llegar" icon={MapPin} accent="coral" value={overview.directions} trend={tr("directions")} onClick={() => goClicks("directions_click")} cue="Ver a qué sitios" />
+              <Stat label="Compartidos" icon={Share2} accent="violet" value={overview.shares} trend={tr("shares")} onClick={() => goClicks("share_click")} cue="Ver qué y cómo" />
+              <Stat label="Búsquedas" icon={Search} accent="pink" value={overview.searches} trend={tr("searches")} sub={`${overview.searches_zero} sin resultados`} onClick={() => goTab("busquedas")} cue="Ver cuáles" />
+              <Stat label="Asistiré" icon={CalendarCheck} accent="cyan" value={overview.attendances} trend={tr("attendances")} onClick={() => goClicks("attendance")} cue="Ver a qué noches" />
+              <Stat label="Check-ins reales" icon={CheckCircle2} accent="coral" value={overview.checkins} trend={tr("checkins")} sub={`Cumplimiento ${pct(overview.checkins, overview.attendances)}%`} onClick={() => goTab("clubs", "checkins")} cue="Ver en qué locales" />
             </div>
+            {prevOverview && (
+              <p className="-mt-2 text-xs text-zinc-400">
+                Comparado con los {rangeLength(from, to)} {rangeLength(from, to) === 1 ? "día" : "días"} anteriores ({fmtDay(prevRange.from)}–{fmtDay(prevRange.to)}).
+                {to === madridToday() ? " Hoy aún no ha terminado, así que el periodo actual sale algo más corto de lo que será." : ""}
+              </p>
+            )}
             <Panel>
               <div className="mb-4 flex items-center justify-between gap-3">
                 <SectionTitle icon={BarChart3} accent="violet">Visitas por día</SectionTitle>
@@ -366,6 +469,14 @@ export default function AdminDatosPage() {
               </div>
               <Bars data={(overview.daily || []).map((d: any) => ({ label: d.d.slice(5), value: d.views }))} />
             </Panel>
+            {insights?.funnel ? (
+              <FunnelPanel browse={insights.funnel.browse} signup={insights.funnel.signup} errors={insights.funnel.errors} />
+            ) : insightsLoading ? (
+              <p className="text-sm text-zinc-400">Cargando embudo...</p>
+            ) : (
+              <NeedSql file="88_datos_comparativas.sql" what="el embudo, qué origen convierte y las horas en hora de Madrid" />
+            )}
+            {insights?.sources && <SourcePanel rows={insights.sources} />}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <Panel accent="pink">
                 <SectionTitle icon={Share2} accent="pink" className="mb-4">Origen del tráfico (sesiones)</SectionTitle>
@@ -376,15 +487,18 @@ export default function AdminDatosPage() {
                 <ListBars rows={(overview.devices || []).map((s: any) => ({ label: s.device === "mobile" ? "Móvil" : s.device === "desktop" ? "Ordenador" : s.device, n: s.sessions }))} />
               </Panel>
               <Panel accent="violet">
-                <SectionTitle icon={Clock} accent="violet" className="mb-4">Visitas por hora del día</SectionTitle>
-                <Bars color="#7c5cff" data={Array.from({ length: 24 }, (_, h) => ({ label: String(h), value: (overview.hours || []).find((x: any) => x.h === h)?.n || 0 }))} />
+                <SectionTitle icon={Clock} accent="violet" className="mb-4">Visitas por hora del día{insights?.hours ? " (hora de Madrid)" : ""}</SectionTitle>
+                <Bars color="#7c5cff" data={Array.from({ length: 24 }, (_, h) => ({ label: String(h), value: insights?.hours ? hoursSeries(insights.hours.views)[h] : (overview.hours || []).find((x: any) => x.h === h)?.n || 0 }))} />
               </Panel>
               <Panel accent="coral">
-                <SectionTitle icon={CalendarDays} accent="coral" className="mb-4">Visitas por día de la semana</SectionTitle>
-                <Bars color="#f59e0b" data={[1, 2, 3, 4, 5, 6, 7].map((d) => ({ label: WEEKDAYS[d], value: (overview.weekdays || []).find((x: any) => x.d === d)?.n || 0 }))} />
+                <SectionTitle icon={CalendarDays} accent="coral" className="mb-4">Visitas por día de la semana{insights?.hours ? " (hora de Madrid)" : ""}</SectionTitle>
+                <Bars color="#f59e0b" data={[1, 2, 3, 4, 5, 6, 7].map((d) => ({ label: WEEKDAYS[d], value: insights?.hours ? weekdaySeries(insights.hours.weekdays)[d - 1] : (overview.weekdays || []).find((x: any) => x.d === d)?.n || 0 }))} />
               </Panel>
               <Panel accent="cyan">
-                <SectionTitle icon={Car} accent="cyan" className="mb-4">Clics en Uber / Cabify / FREE NOW</SectionTitle>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <SectionTitle icon={Car} accent="cyan">Clics en Uber / Cabify / FREE NOW</SectionTitle>
+                  <button onClick={() => goClicks("ride_click")} className="shrink-0 rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300 hover:bg-white/10">Ver taxi y VTC ›</button>
+                </div>
                 <ListBars rows={rideClicks.map((r) => ({ label: RIDE_PROVIDER_LABELS[r.provider] || r.provider, n: r.n }))} />
               </Panel>
             </div>
@@ -394,8 +508,16 @@ export default function AdminDatosPage() {
         {!loading && (tab === "clubs" || tab === "eventos") && !selected && (
           <div className="rounded-card border border-white/10 bg-surface p-4">
             <div className="mb-3 flex items-center justify-between px-2">
-              <p className="text-xs text-zinc-400">Pulsa un encabezado para ordenar y una fila para ver el detalle.</p>
+              <p className="text-xs text-zinc-400">Pulsa un encabezado para ordenar y una fila para ver el detalle. «Acciones» suma entradas, llegar, compartir, favoritos, web, taxi, llamadas y asistiré.</p>
               <button onClick={tab === "clubs" ? exportClubsCsv : exportEventsCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
+            </div>
+            <div className="mb-3 flex flex-wrap items-center gap-2 px-2">
+              {hasActionExtras ? (
+                <FilterChip active={onlyDead} onClick={() => setOnlyDead((v) => !v)} count={deadCount}>Con {DEAD_MIN_VIEWS}+ visitas y ninguna acción</FilterChip>
+              ) : (
+                !insightsLoading && <span className="text-xs text-amber-200">Para ver las fichas sin acciones y el taxi por club, ejecuta el SQL 88 (88_datos_comparativas.sql).</span>
+              )}
+              <FilterChip active={moreCols} onClick={() => setMoreCols((v) => !v)}>Más columnas</FilterChip>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -405,6 +527,8 @@ export default function AdminDatosPage() {
                     {tab === "clubs" && <th className="px-3 py-2 text-left text-xs font-semibold text-zinc-400">Zona</th>}
                     {th("views", "Visitas")}
                     {th("visitors", "Visitantes")}
+                    {th("actions", "Acciones")}
+                    {th("apv", "Acc. / 100 vis.")}
                     {th("tickets", "Entradas")}
                     {th("conv", "Clic entrada %")}
                     {th("directions", "Llegar")}
@@ -412,10 +536,14 @@ export default function AdminDatosPage() {
                     {th("attendances", "Asistiré")}
                     {tab === "clubs" && th("checkins", "Check-ins")}
                     {tab === "clubs" && th("fulfil", "Cumpl. %")}
+                    {moreCols && th("favorites", "Favoritos")}
+                    {moreCols && th("website", "Web / IG")}
+                    {moreCols && hasActionExtras && th("rides", "Taxi / VTC")}
+                    {moreCols && hasActionExtras && th("phone", "Llamar")}
                   </tr>
                 </thead>
                 <tbody>
-                  {(tab === "clubs" ? clubRows : eventRows).map((r) => (
+                  {shownRows.map((r) => (
                     <tr key={r.id} onClick={() => setSelected({ type: tab === "clubs" ? "club" : "event", id: r.id, name: r.name })} className="cursor-pointer border-b border-white/5 hover:bg-white/[0.04]">
                       <td className="max-w-[220px] truncate px-3 py-2 font-semibold text-white">
                         {/* El nombre es un botón para abrir el detalle con el teclado; el clic en la fila sigue funcionando con el ratón. */}
@@ -426,10 +554,16 @@ export default function AdminDatosPage() {
                         >
                           {r.name}
                         </button>
+                        {/* En el móvil las columnas de acciones quedan fuera de pantalla: se resumen bajo el nombre. */}
+                        <span className={`mt-0.5 block truncate text-xs font-normal sm:hidden ${r.dead ? "text-amber-300" : "text-zinc-500"}`}>
+                          {r.actions} {r.actions === 1 ? "acción" : "acciones"}{r.views > 0 ? ` · ${String(r.apv).replace(".", ",")} por 100 visitas` : ""}
+                        </span>
                       </td>
                       {tab === "clubs" && <td className="whitespace-nowrap px-3 py-2 text-zinc-400">{r.zone}</td>}
                       <td className="px-3 py-2 text-right">{r.views}</td>
                       <td className="px-3 py-2 text-right">{r.visitors}</td>
+                      <td className="px-3 py-2 text-right font-semibold">{r.actions}</td>
+                      <td className={`px-3 py-2 text-right ${r.dead ? "text-amber-300" : "text-purple-300"}`}>{r.views > 0 ? r.apv : "—"}</td>
                       <td className="px-3 py-2 text-right">{r.tickets}</td>
                       <td className="px-3 py-2 text-right text-purple-300">{r.conv}</td>
                       <td className="px-3 py-2 text-right">{r.directions}</td>
@@ -437,10 +571,14 @@ export default function AdminDatosPage() {
                       <td className="px-3 py-2 text-right">{r.attendances}</td>
                       {tab === "clubs" && <td className="px-3 py-2 text-right">{r.checkins}</td>}
                       {tab === "clubs" && <td className="px-3 py-2 text-right">{r.attendances ? r.fulfil : "—"}</td>}
+                      {moreCols && <td className="px-3 py-2 text-right">{r.favorites ?? 0}</td>}
+                      {moreCols && <td className="px-3 py-2 text-right">{r.website ?? 0}</td>}
+                      {moreCols && hasActionExtras && <td className="px-3 py-2 text-right">{r.rides}</td>}
+                      {moreCols && hasActionExtras && <td className="px-3 py-2 text-right">{r.phone}</td>}
                     </tr>
                   ))}
-                  {(tab === "clubs" ? clubRows : eventRows).length === 0 && (
-                    <tr><td colSpan={11} className="px-3 py-8 text-center text-zinc-400">Todavía no hay datos en este periodo.</td></tr>
+                  {shownRows.length === 0 && (
+                    <tr><td colSpan={17} className="px-3 py-8 text-center text-zinc-400">{onlyDead ? `Ninguna ficha con ${DEAD_MIN_VIEWS} o más visitas se queda sin acciones.` : "Todavía no hay datos en este periodo."}</td></tr>
                   )}
                 </tbody>
               </table>
@@ -637,33 +775,65 @@ export default function AdminDatosPage() {
               </label>
               <button onClick={exportSearchesCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
             </div>
-            <table className="w-full text-sm">
-              <thead><tr className="border-b border-white/10 text-xs text-zinc-400"><th className="px-3 py-2 text-left">Búsqueda</th><th className="px-3 py-2 text-right">Veces</th><th className="px-3 py-2 text-right">Resultados medios</th><th className="px-3 py-2 text-right">Sin resultados</th></tr></thead>
-              <tbody>
-                {searches.filter((s) => !onlyZeroSearches || s.zero > 0).map((s) => (
-                  <tr key={s.term} className="border-b border-white/5">
-                    <td className="px-3 py-2 font-semibold">{s.term}</td>
-                    <td className="px-3 py-2 text-right">{s.n}</td>
-                    <td className="px-3 py-2 text-right">{s.avg_results ?? "—"}</td>
-                    <td className={`px-3 py-2 text-right ${s.zero > 0 ? "text-amber-300" : ""}`}>{s.zero}</td>
-                  </tr>
-                ))}
-                {searches.length === 0 && <tr><td colSpan={4} className="px-3 py-8 text-center text-zinc-400">Todavía no hay búsquedas registradas.</td></tr>}
-              </tbody>
-            </table>
+            {insights?.searchDetail && insights.searchDetail.total > 0 && (
+              <div className="mb-5 px-2">
+                <p className="mb-3 text-xs text-zinc-300">
+                  De {insights.searchDetail.total} búsquedas, <span className="font-semibold text-ink">{insights.searchDetail.total_opened}</span> ({String(pct(insights.searchDetail.total_opened, insights.searchDetail.total)).replace(".", ",")} %) acaban abriendo una ficha o haciendo un clic en los 5 minutos siguientes.
+                  Las demás, o no encuentran lo que buscan o se van.
+                </p>
+                <Bars color="#ec4899" data={fillDays(from, to, insights.searchDetail.daily, (d) => d.n)} />
+                <p className="mt-2 text-xs text-zinc-500">Búsquedas por día.</p>
+              </div>
+            )}
+            {!insights?.searchDetail && !insightsLoading && <NeedSql className="mx-2 mb-4" file="88_datos_comparativas.sql" what="cuántas búsquedas acaban en algo y su evolución por día" />}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[30rem] text-sm">
+                <thead><tr className="border-b border-white/10 text-xs text-zinc-400"><th className="px-3 py-2 text-left">Búsqueda</th><th className="px-3 py-2 text-right">Veces</th><th className="px-3 py-2 text-right">Resultados medios</th><th className="px-3 py-2 text-right">Sin resultados</th>{insights?.searchDetail && <th className="px-3 py-2 text-right">Después abren algo</th>}</tr></thead>
+                <tbody>
+                  {searchList.filter((s) => !onlyZeroSearches || s.zero > 0).map((s) => (
+                    <tr key={s.term} className="border-b border-white/5">
+                      <td className="px-3 py-2 font-semibold">{s.term}</td>
+                      <td className="px-3 py-2 text-right">{s.n}</td>
+                      <td className="px-3 py-2 text-right">{s.avg_results ?? "—"}</td>
+                      <td className={`px-3 py-2 text-right ${s.zero > 0 ? "text-amber-300" : ""}`}>{s.zero}</td>
+                      {insights?.searchDetail && <td className="px-3 py-2 text-right tabular-nums">{s.openedPct === null ? "—" : `${String(s.openedPct).replace(".", ",")} %`}</td>}
+                    </tr>
+                  ))}
+                  {searchList.length === 0 && <tr><td colSpan={5} className="px-3 py-8 text-center text-zinc-400">Todavía no hay búsquedas registradas.</td></tr>}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
-        {!loading && tab === "audiencia" && audience && (
-          <Panel accent="cyan">
-            <SectionTitle icon={Users} accent="cyan" className="mb-4">Usuarios con cuenta activos en el periodo: {audience.users}</SectionTitle>
-            <p className="mb-5 text-xs text-zinc-400">Datos agregados y anónimos. Los grupos de menos de 5 personas se ocultan.</p>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              <div><p className="mb-2 text-xs text-zinc-400">Edad</p><ListBars rows={audience.ages} /></div>
-              <div><p className="mb-2 text-xs text-zinc-400">Género</p><ListBars rows={audience.genders} /></div>
-              <div><p className="mb-2 text-xs text-zinc-400">País</p><ListBars rows={audience.countries} /></div>
-            </div>
-          </Panel>
+        {!loading && tab === "audiencia" && (
+          <div className="space-y-6">
+            {insights?.countries ? (
+              <CountryPanel rows={insights.countries} />
+            ) : insightsLoading ? (
+              <p className="text-sm text-zinc-400">Cargando países...</p>
+            ) : (
+              <NeedSql file="89_pais_visitantes.sql" what="el país de los visitantes" />
+            )}
+            {insights?.languages ? (
+              <LanguagePanel rows={insights.languages} />
+            ) : insightsLoading ? (
+              <p className="text-sm text-zinc-400">Cargando idiomas...</p>
+            ) : (
+              <NeedSql file="88_datos_comparativas.sql" what="el idioma de los visitantes" />
+            )}
+            {audience && (
+              <Panel accent="cyan">
+                <SectionTitle icon={Users} accent="cyan" className="mb-4">Usuarios con cuenta activos en el periodo: {audience.users}</SectionTitle>
+                <p className="mb-5 text-xs text-zinc-400">Datos agregados y anónimos. Los grupos de menos de 5 personas se ocultan.</p>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                  <div><p className="mb-2 text-xs text-zinc-400">Edad</p><ListBars rows={audience.ages} /></div>
+                  <div><p className="mb-2 text-xs text-zinc-400">Género</p><ListBars rows={audience.genders} /></div>
+                  <div><p className="mb-2 text-xs text-zinc-400">País (el que indican en su cuenta)</p><ListBars rows={audience.countries} /></div>
+                </div>
+              </Panel>
+            )}
+          </div>
         )}
       </section>
     </AdminShell>

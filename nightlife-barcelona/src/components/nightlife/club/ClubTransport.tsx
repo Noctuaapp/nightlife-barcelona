@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Icon from "../../ui/Icon"
 import RideButtons from "./RideButtons"
 import { supabase } from "../../../lib/supabase"
+import { track } from "../../../lib/track"
 import { useLanguage } from "../../../context/LanguageContext"
 import { nearestMetroStations } from "../../../lib/metroStations"
 import { getMetroTonight } from "../../../lib/transitHours"
@@ -258,7 +259,14 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
               </span>
             </Row>
           )}
-          <RideButtons name={club.name} address={club.address} lat={hasCoords ? lat : null} lng={hasCoords ? lng : null} />
+          <RideButtons
+            name={club.name}
+            address={club.address}
+            lat={hasCoords ? lat : null}
+            lng={hasCoords ? lng : null}
+            onRideClick={(provider) => track("ride_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { provider, source: "club_page" } })}
+            onTaxiCall={() => track("phone_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { category: "taxi", source: "club_page" } })}
+          />
         </div>
       </div>
     </div>

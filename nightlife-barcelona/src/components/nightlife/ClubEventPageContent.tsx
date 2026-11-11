@@ -12,6 +12,7 @@ import RideButtons from "./club/RideButtons"
 import Icon from "../ui/Icon"
 import { toast } from "../ui/Toast"
 import { track } from "../../lib/track"
+import { outboundHost } from "../../lib/outbound"
 import { useLanguage } from "../../context/LanguageContext"
 import { useClubText } from "../../lib/useClubText"
 import { toDateLocale } from "../../lib/dateLocale"
@@ -117,9 +118,10 @@ export default function ClubEventPageContent({
   const timeLabel = clubEvent.start_time ? `${clubEvent.start_time}${clubEvent.end_time ? ` – ${clubEvent.end_time}` : ""}` : null
 
   const share = async () => {
-    trackClick("share_click")
-    const url = window.location.href
     const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> }
+    // Canal con el que se comparte: el menú de compartir del móvil o el enlace copiado (Admin › Datos › Clics).
+    trackClick("share_click", { channel: typeof nav.share === "function" ? "native" : navigator.clipboard ? "copy" : "none" })
+    const url = window.location.href
     if (nav.share) {
       try {
         await nav.share({ title: clubEvent.title, text: t("clubPage.shareText").replace("{name}", clubEvent.title), url })
@@ -210,7 +212,7 @@ export default function ClubEventPageContent({
 
             <div className="mt-6 flex flex-wrap gap-3">
               {ticketUrl ? (
-                <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone}`}>
+                <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click", { host: outboundHost(ticketUrl) })} className={`${primaryBtn} ${ticketsTone}`}>
                   <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
                 </a>
               ) : directionsUrl ? (
@@ -295,7 +297,8 @@ export default function ClubEventPageContent({
                     address={club?.address}
                     lat={lat}
                     lng={lng}
-                    onRideClick={(provider) => trackClick("ride_click", { provider })}
+                    onRideClick={(provider) => trackClick("ride_click", { provider, source: "event_page" })}
+                    onTaxiCall={() => trackClick("phone_click", { category: "taxi", source: "event_page" })}
                   />
                 </div>
               </Panel>
@@ -339,14 +342,14 @@ export default function ClubEventPageContent({
                           {ticket.price ? <p className="shrink-0 text-sm font-semibold text-ink">{`${ticket.price} ${ticket.currency || "EUR"}`}</p> : null}
                         </div>
                         {ticket.external_url && !clubEvent.sold_out && !past && (
-                          <a href={safeUrl(ticket.external_url) || undefined} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone} mt-3 w-full py-3`}>
+                          <a href={safeUrl(ticket.external_url) || undefined} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click", { host: outboundHost(safeUrl(ticket.external_url)) })} className={`${primaryBtn} ${ticketsTone} mt-3 w-full py-3`}>
                             <Icon name="ticket" className="h-4 w-4" /> {t("clubEvent.buyTicket")}
                           </a>
                         )}
                       </div>
                     ))
                   : ticketUrl && (
-                      <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone} hidden w-full lg:flex`}>
+                      <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click", { host: outboundHost(ticketUrl) })} className={`${primaryBtn} ${ticketsTone} hidden w-full lg:flex`}>
                         <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
                       </a>
                     )}
@@ -374,7 +377,7 @@ export default function ClubEventPageContent({
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-night/95 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-md items-center gap-2">
           {ticketUrl ? (
-            <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone} flex-1 py-3`}>
+            <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click", { host: outboundHost(ticketUrl) })} className={`${primaryBtn} ${ticketsTone} flex-1 py-3`}>
               <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
             </a>
           ) : directionsUrl ? (

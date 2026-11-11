@@ -950,8 +950,12 @@ export default function MapPage() {
             style={{ pointerEvents: "auto", flexShrink: 0, whiteSpace: "nowrap", borderRadius: "999px", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", padding: "9px 16px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)" }}>
             <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>{showMobileList ? <X size={14} /> : <List size={14} />} {showMobileList ? t("map.close") : t("map.list")}</span>
           </button>
-          <button className="hidden lg:block" onClick={() => setShowList(showList === false ? true : false)}
-            style={{ pointerEvents: "auto", flexShrink: 0, borderRadius: "999px", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", padding: "6px 10px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {/* Solo en ordenador (abre y cierra la lista lateral, que en el móvil no existe). 11/11/2026: antes llevaba
+              «hidden lg:block» pero también display:flex en el estilo, y el estilo en línea gana a la clase, así que
+              en el móvil se veía como un botón redondo con una X al lado de «Lista» que no hacía nada. El display
+              va ahora en la clase (lg:flex) y no en el estilo. */}
+          <button className="hidden lg:flex" onClick={() => setShowList(showList === false ? true : false)} aria-label={showList === false ? t("map.list") : t("map.close")}
+            style={{ pointerEvents: "auto", flexShrink: 0, borderRadius: "999px", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", padding: "6px 10px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", backdropFilter: "blur(12px)", width: "36px", height: "36px", alignItems: "center", justifyContent: "center" }}>
             {showList === false ? <List size={16} /> : <X size={16} />}
           </button>
           <button onClick={startTracking}

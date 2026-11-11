@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
 import HeroImage from "../ui/HeroImage"
 import { track } from "../../lib/track"
+import { outboundHost } from "../../lib/outbound"
 import FavoriteButton from "../favorites/FavoriteButton"
 import AttendanceButton from "../gamification/AttendanceButton"
 import NearbyVenuesSheet from "../nightlife/NearbyVenuesSheet"
@@ -12,7 +13,7 @@ import NitbusNearby from "./NitbusNearby"
 import EventSessionsCalendar from "../nightlife/EventSessionsCalendar"
 import ClubGallery from "./club/ClubGallery"
 import ClubReviews, { googleMapsReviewsUrl } from "./club/ClubReviews"
-import VenueReviews from "./club/VenueReviews"
+import ReviewsBlock from "./club/ReviewsBlock"
 import SocialLinks from "./club/SocialLinks"
 import NearbyStrip from "./club/NearbyStrip"
 import MoreEventsStrip from "./club/MoreEventsStrip"
@@ -83,9 +84,10 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
   }, [event.id])
 
   const shareEvent = async () => {
-    trackClick("share_click")
-    const url = window.location.href
     const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> }
+    // Canal con el que se comparte: el menú de compartir del móvil o el enlace copiado (Admin › Datos › Clics).
+    trackClick("share_click", { channel: typeof nav.share === "function" ? "native" : navigator.clipboard ? "copy" : "none" })
+    const url = window.location.href
     if (nav.share) {
       try {
         await nav.share({ title: event.title, text: t("clubPage.shareText").replace("{name}", event.title), url })
@@ -197,7 +199,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
 
             <div className="mt-6 flex flex-wrap gap-3">
               {ticketUrl ? (
-                <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone}`}>
+                <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click", { host: outboundHost(ticketUrl) })} className={`${primaryBtn} ${ticketsTone}`}>
                   <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
                 </a>
               ) : directionsUrl ? (
@@ -304,7 +306,8 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                     address={event.address}
                     lat={hasCoords ? Number(event.latitude) : null}
                     lng={hasCoords ? Number(event.longitude) : null}
-                    onRideClick={(provider) => trackClick("ride_click", { provider })}
+                    onRideClick={(provider) => trackClick("ride_click", { provider, source: "event_page" })}
+                    onTaxiCall={() => trackClick("phone_click", { category: "taxi", source: "event_page" })}
                   />
                 </div>
               </Panel>
@@ -354,7 +357,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                             href={safeUrl(ticket.external_url) || undefined}
                             target="_blank"
                             rel="noopener noreferrer"
-                            onClick={() => trackClick("tickets_click")}
+                            onClick={() => trackClick("tickets_click", { host: outboundHost(safeUrl(ticket.external_url)) })}
                             className={`${primaryBtn} ${ticketsTone} mt-3 w-full py-3`}
                           >
                             <Icon name="ticket" className="h-4 w-4" /> {t("event.buy")}
@@ -363,7 +366,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                       </div>
                     ))
                   : ticketUrl && (
-                      <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone} hidden w-full lg:flex`}>
+                      <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click", { host: outboundHost(ticketUrl) })} className={`${primaryBtn} ${ticketsTone} hidden w-full lg:flex`}>
                         <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
                       </a>
                     )}
@@ -415,26 +418,29 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
 
       {/* Opiniones (25/10/2026): las de Noctua y debajo las de Google, en un solo bloque. */}
       <section id="opiniones" className="mx-auto mb-16 max-w-6xl px-4 sm:px-6">
-        <div className="space-y-10 rounded-card border border-white/10 bg-surface p-6 sm:p-7">
-          <VenueReviews venueType="event" venueId={event.id} />
-          <div className="border-t border-white/10 pt-8">
-            <ClubReviews
-              clubId={event.id}
-              rating={displayRating}
-              count={reviewCount}
-              table="event_reviews"
-              column="event_id"
-              embedded
-              mapsUrl={event.google_place_id ? googleMapsReviewsUrl(event.title, event.location || event.address, event.google_place_id) : null}
-            />
-          </div>
+        <div className="rounded-card border border-white/10 bg-surface p-6 sm:p-7">
+          <ReviewsBlock
+            venueType="event"
+            venueId={event.id}
+            google={
+              <ClubReviews
+                clubId={event.id}
+                rating={displayRating}
+                count={reviewCount}
+                table="event_reviews"
+                column="event_id"
+                embedded
+                mapsUrl={event.google_place_id ? googleMapsReviewsUrl(event.title, event.location || event.address, event.google_place_id) : null}
+              />
+            }
+          />
         </div>
       </section>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-night/95 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-md items-center gap-2">
           {ticketUrl ? (
-            <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone} flex-1 py-3`}>
+            <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click", { host: outboundHost(ticketUrl) })} className={`${primaryBtn} ${ticketsTone} flex-1 py-3`}>
               <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.tickets")}
             </a>
           ) : directionsUrl ? (

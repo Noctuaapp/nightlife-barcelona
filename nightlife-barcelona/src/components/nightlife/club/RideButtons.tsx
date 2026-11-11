@@ -14,20 +14,23 @@ import { detectPlatform, openRideApp, uberLink } from "../../../lib/rideLinks"
 // El 033 llama a Radio Taxi.
 //
 // Se registra qué app de VTC/taxi se pulsa (evento "ride_click" con el proveedor en `meta`, ver
-// src/lib/track.ts) por si en el futuro hay acuerdo comercial con alguna de ellas — se puede ver
-// el desglose en /admin/datos.
+// src/lib/track.ts) y cuándo se llama al taxi (onTaxiCall), por si en el futuro hay acuerdo comercial con
+// alguna de ellas — se puede ver el desglose en Admin › Datos › Clics y tiempo.
+// 11/11/2026: las fichas de club (ClubTransport) no pasaban estos avisos y sus clics nunca se contaban.
 export default function RideButtons({
   name,
   address,
   lat,
   lng,
   onRideClick,
+  onTaxiCall,
 }: {
   name: string
   address?: string | null
   lat?: number | null
   lng?: number | null
   onRideClick?: (provider: "uber" | "cabify" | "freenow") => void
+  onTaxiCall?: () => void
 }) {
   const { t } = useLanguage()
   const destination = [name, address].filter(Boolean).join(", ")
@@ -84,6 +87,7 @@ export default function RideButtons({
       <p className="mt-2 text-center text-xs text-zinc-400">{t("clubPage.rideHint")}</p>
       <a
         href="tel:933033033"
+        onClick={() => onTaxiCall?.()}
         className="act act-ride act-taxi mt-3 flex items-center justify-center gap-2 rounded-ctl px-4 py-3 text-xs font-semibold"
       >
         <Icon name="phone" className="h-4 w-4" />

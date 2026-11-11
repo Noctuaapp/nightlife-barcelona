@@ -5,14 +5,20 @@ import { CalendarCheck, Camera, Car, Clock, Globe, Heart, Hourglass, Music2, Nav
 import { supabase } from "../../lib/supabase"
 import { fmtDuration } from "../../lib/duration"
 import { pageLabel } from "../../lib/adminPageLabel"
+import { destinationRows, rideOriginRows, rideRows, shareChannelRows, type DestinationCount, type RideCount, type RideOriginCount, type ShareChannelCount } from "../../lib/clickDetail"
+import { clickHourSeries, type ClickHourRow } from "../../lib/dataInsights"
 import { Panel, SectionTitle, StatTile, type Accent } from "./ui"
+import { HourBars, NeedSql, PeakNote } from "./insights"
 
 // Admin › Datos › «Clics y tiempo» (10/11/2026). Responde a dos preguntas: ¿cuánta gente pulsa «cómo llegar»,
 // la web, Instagram, «asistiré» o guarda un local en favoritos? y ¿cuánto tiempo se queda en la web?
 // Datos: admin_interaction_stats y admin_time_stats, de supabase/84_clics_y_tiempo.sql. Solo cifras agregadas
 // (el tiempo por usuario está en Admin › Actividad, que es donde ya se trabaja con personas concretas).
+// 11/11/2026: al elegir un tipo de clic se ve también su desglose (supabase/87_clics_detalle.sql): qué taxi o VTC
+// eligen y desde dónde, a qué webs van al pulsar entradas o la web del local, y cómo comparten. Las cifras del
+// Resumen llevan aquí (el padre elige el tipo con `kind`).
 
-type Kind =
+export type Kind =
   | "directions_click" | "website_click" | "instagram_click" | "tiktok_click" | "attendance" | "favorite_click"
   | "tickets_click" | "phone_click" | "share_click" | "ride_click"
 
@@ -36,6 +42,11 @@ type Interaction = {
   favorites_total: number
   favorites_people: number
   favorites_top: { item_type: string | null; item_id: string | null; name: string | null; n: number }[]
+  // Del SQL 87. Si aún no se ha ejecutado no vienen (undefined) y se avisa en vez de enseñar «sin datos».
+  rides?: RideCount[]
+  ride_origins?: RideOriginCount[]
+  destinations?: DestinationCount[]
+  share_channels?: ShareChannelCount[]
 }
 type TimeStats = {
   visits: { total: number; timed: number; measured: number; avg_secs: number | null; median_secs: number | null; total_secs: number | null }
@@ -43,6 +54,20 @@ type TimeStats = {
   by_account: { with_account: { n: number; avg_secs: number | null }; anonymous: { n: number; avg_secs: number | null } }
   sections: { section: string; views: number; avg_secs: number; total_secs: number }[]
   pages: { path: string; views: number; avg_secs: number; total_secs: number }[]
+}
+
+// A qué hora se hace cada tipo de clic (supabase/88). La llamada al taxi se guarda aparte («taxi_call»): en «Llamar» y en
+// «Taxi / VTC» se suma, porque un taxi pedido por teléfono también es una llamada y también es un taxi.
+const HOUR_KINDS: Partial<Record<Kind, { kinds: string[]; note?: string }>> = {
+  directions_click: { kinds: ["directions_click"] },
+  website_click: { kinds: ["website_click"] },
+  instagram_click: { kinds: ["instagram_click"] },
+  tiktok_click: { kinds: ["tiktok_click"] },
+  favorite_click: { kinds: ["favorite_click"] },
+  tickets_click: { kinds: ["tickets_click"] },
+  phone_click: { kinds: ["phone_click", "taxi_call"], note: "Incluye las llamadas al taxi." },
+  share_click: { kinds: ["share_click"] },
+  ride_click: { kinds: ["ride_click", "taxi_call"], note: "Apps de taxi/VTC y llamadas al taxi juntas." },
 }
 
 const ITEM_LABEL: Record<string, string> = { club: "Club", event: "Evento", club_event: "Noche de club", essential: "Esencial" }
@@ -79,6 +104,14 @@ function BarList({ rows, empty = "Sin datos en este periodo." }: { rows: { label
   )
 }
 
+function Need87() {
+  return (
+    <p className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
+      Para ver este desglose, ejecuta el SQL 87 (87_clics_detalle.sql) en Supabase › SQL Editor.
+    </p>
+  )
+}
+
 function DayBars({ days, values }: { days: string[]; values: number[] }) {
   const max = Math.max(1, ...values)
   const step = days.length > 12 ? Math.ceil(days.length / 6) : 1
@@ -98,12 +131,22 @@ function DayBars({ days, values }: { days: string[]; values: number[] }) {
   )
 }
 
-export default function InteractionStats({ from, to }: { from: string; to: string }) {
+export default function InteractionStats({ from, to, kind: kindProp, onKindChange }: { from: string; to: string; kind?: Kind; onKindChange?: (k: Kind) => void }) {
   const [inter, setInter] = useState<Interaction | null>(null)
   const [time, setTime] = useState<TimeStats | null>(null)
+  // Clics por hora (SQL 88). Si aún no se ha ejecutado, null y se avisa en su panel; el resto funciona igual.
+  const [hours, setHours] = useState<ClickHourRow[] | null>(null)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
-  const [kind, setKind] = useState<Kind>("directions_click")
+  const [kind, setKindState] = useState<Kind>(kindProp ?? "directions_click")
+  const setKind = (k: Kind) => {
+    setKindState(k)
+    onKindChange?.(k)
+  }
+  // Si el padre cambia el tipo (una cifra del Resumen), se sigue.
+  useEffect(() => {
+    if (kindProp) setKindState(kindProp)
+  }, [kindProp])
 
   useEffect(() => {
     // Si se cambian las fechas rápido, solo vale la última respuesta.
@@ -113,12 +156,14 @@ export default function InteractionStats({ from, to }: { from: string; to: strin
     Promise.all([
       supabase.rpc("admin_interaction_stats", { p_from: from, p_to: to }),
       supabase.rpc("admin_time_stats", { p_from: from, p_to: to }),
-    ]).then(([a, b]) => {
+      supabase.rpc("admin_hours_madrid", { p_from: from, p_to: to }),
+    ]).then(([a, b, c]) => {
       if (!current) return
       const err = a.error || b.error
       setError(err ? err.message || "error" : "")
       setInter(a.error ? null : (a.data as Interaction))
       setTime(b.error ? null : (b.data as TimeStats))
+      setHours(c.error ? null : ((c.data as { clicks?: ClickHourRow[] } | null)?.clicks ?? []))
       setLoading(false)
     })
     return () => {
@@ -183,6 +228,60 @@ export default function InteractionStats({ from, to }: { from: string; to: strin
               <BarList rows={topRows} />
             </Panel>
           </div>
+
+          {kind === "ride_click" &&
+            (inter.rides === undefined ? (
+              <Need87 />
+            ) : (
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Panel accent="coral">
+                  <SectionTitle icon={Car} accent="coral" className="mb-1">Qué taxi o VTC eligen</SectionTitle>
+                  <p className="mb-4 text-xs text-zinc-400">Cada app pulsada (Uber, Cabify, FREE NOW) y cada llamada al taxi, desde fichas de club, de evento y la página de taxi.</p>
+                  <BarList rows={rideRows(inter.rides)} />
+                </Panel>
+                <Panel accent="coral">
+                  <SectionTitle icon={Navigation} accent="coral" className="mb-1">Desde dónde lo piden</SectionTitle>
+                  <p className="mb-4 text-xs text-zinc-400">Las fichas de club no registraban estos clics hasta el 11/11/2026: las cifras de antes de esa fecha se quedan cortas.</p>
+                  <BarList rows={rideOriginRows(inter.ride_origins)} />
+                </Panel>
+              </div>
+            ))}
+
+          {(kind === "tickets_click" || kind === "website_click") &&
+            (inter.destinations === undefined ? (
+              <Need87 />
+            ) : (
+              <Panel accent={selected.accent}>
+                <SectionTitle icon={Globe} accent={selected.accent} className="mb-1">
+                  {kind === "tickets_click" ? "A qué webs de entradas van" : "A qué webs van"}
+                </SectionTitle>
+                <p className="mb-4 text-xs text-zinc-400">Solo se guarda el dominio de la web de destino. Los clics anteriores al 11/11/2026 no lo llevan y salen como «Sin registrar».</p>
+                <BarList rows={destinationRows(inter.destinations, kind)} />
+              </Panel>
+            ))}
+
+          {HOUR_KINDS[kind] &&
+            (hours === null ? (
+              <NeedSql file="88_datos_comparativas.sql" what="a qué hora se hace cada clic" />
+            ) : (
+              <Panel accent={selected.accent}>
+                <SectionTitle icon={Clock} accent={selected.accent} className="mb-1">A qué hora: {selected.label.toLowerCase()}</SectionTitle>
+                <p className="mb-4 text-xs text-zinc-400">{HOUR_KINDS[kind]?.note ?? "Cuándo lo pulsan a lo largo del día."}</p>
+                <HourBars values={clickHourSeries(hours, HOUR_KINDS[kind]!.kinds)} />
+                <PeakNote values={clickHourSeries(hours, HOUR_KINDS[kind]!.kinds)} noun="clics" />
+              </Panel>
+            ))}
+
+          {kind === "share_click" &&
+            (inter.share_channels === undefined ? (
+              <Need87 />
+            ) : (
+              <Panel accent="violet">
+                <SectionTitle icon={Share2} accent="violet" className="mb-1">Cómo comparten</SectionTitle>
+                <p className="mb-4 text-xs text-zinc-400">Qué se comparte está arriba, en «Dónde más». Aquí, por qué vía: el menú de compartir del móvil o el enlace copiado.</p>
+                <BarList rows={shareChannelRows(inter.share_channels)} />
+              </Panel>
+            ))}
 
           <Panel accent="pink">
             <SectionTitle icon={Heart} accent="pink" className="mb-1">Guardados en favoritos ahora mismo</SectionTitle>

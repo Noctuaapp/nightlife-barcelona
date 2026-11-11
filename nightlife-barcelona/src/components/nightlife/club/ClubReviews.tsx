@@ -51,7 +51,7 @@ export default function ClubReviews({
 
   return (
     <section className={embedded ? "" : "mx-auto mb-16 max-w-6xl px-4 sm:px-6"} aria-label={t("clubPage.googleReviews")}>
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div className={`flex flex-wrap items-end justify-between gap-3 ${reviews.length > 0 ? "mb-4" : ""}`}>
         <div className="flex items-center gap-3">
           {rating && <p className="font-display text-3xl text-ink">{Number(rating).toFixed(1)}</p>}
           <div>

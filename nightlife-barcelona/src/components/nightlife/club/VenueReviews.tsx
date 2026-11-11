@@ -48,10 +48,13 @@ export default function VenueReviews({
   venueType,
   venueId,
   isOwner = false,
+  onLoaded,
 }: {
   venueType: "club" | "event"
   venueId: number
   isOwner?: boolean
+  /** Avisa de cuántas opiniones de Noctua se ven (0 = ninguna): la ficha usa eso para poner antes las de Google. */
+  onLoaded?: (visibleCount: number) => void
 }) {
   const { t, locale } = useLanguage()
   const isAdmin = useIsAdmin()
@@ -128,6 +131,11 @@ export default function VenueReviews({
   const publicOnes = (reviews || []).filter((r) => !r.hidden)
   const avg = publicOnes.length ? publicOnes.reduce((a, r) => a + r.rating, 0) / publicOnes.length : null
   const dist = [5, 4, 3, 2, 1].map((n) => ({ n, c: publicOnes.filter((r) => r.rating === n).length }))
+
+  const visibleCount = visible.length
+  useEffect(() => {
+    if (!missing && reviews !== null) onLoaded?.(visibleCount)
+  }, [missing, reviews, visibleCount, onLoaded])
 
   if (missing || reviews === null) return null
 
@@ -263,28 +271,33 @@ export default function VenueReviews({
 
   const loginHref = typeof window !== "undefined" ? `/login?next=${encodeURIComponent(window.location.pathname + "?tab=reviews")}` : "/login"
   const shown = showAll ? visible : visible.slice(0, 6)
+  // Sin ninguna opinión todavía (11/11/2026): en vez de un bloque grande y vacío (título, subtítulo, «nadie ha opinado»),
+  // una sola invitación corta a ser el primero. Las de Google, que sí tienen contenido, van antes (ver ReviewsBlock).
+  const firstOne = visible.length === 0
 
   return (
-    <section aria-labelledby={`noctua-reviews-${venueType}-${venueId}`}>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 id={`noctua-reviews-${venueType}-${venueId}`} className="text-lg font-semibold text-ink">
-            {t("reviews.title")}
-          </h2>
-          <p className="mt-1 text-sm text-zinc-400">{t("reviews.subtitle")}</p>
-        </div>
-        {avg !== null && (
-          <div className="flex items-center gap-3">
-            <p className="font-display text-4xl leading-none text-ink">{avg.toFixed(1)}</p>
-            <div>
-              <Stars rating={avg} size="h-4 w-4" />
-              <p className="mt-1 text-xs text-zinc-400">
-                {publicOnes.length} {publicOnes.length === 1 ? t("reviews.one") : t("reviews.many")}
-              </p>
-            </div>
+    <section {...(firstOne ? { "aria-label": t("reviews.title") } : { "aria-labelledby": `noctua-reviews-${venueType}-${venueId}` })}>
+      {!firstOne && (
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 id={`noctua-reviews-${venueType}-${venueId}`} className="text-lg font-semibold text-ink">
+              {t("reviews.title")}
+            </h2>
+            <p className="mt-1 text-sm text-zinc-400">{t("reviews.subtitle")}</p>
           </div>
-        )}
-      </div>
+          {avg !== null && (
+            <div className="flex items-center gap-3">
+              <p className="font-display text-4xl leading-none text-ink">{avg.toFixed(1)}</p>
+              <div>
+                <Stars rating={avg} size="h-4 w-4" />
+                <p className="mt-1 text-xs text-zinc-400">
+                  {publicOnes.length} {publicOnes.length === 1 ? t("reviews.one") : t("reviews.many")}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {publicOnes.length >= 3 && (
         <ul className="mt-4 max-w-sm space-y-1" aria-label={t("reviews.distribution")}>
@@ -302,19 +315,36 @@ export default function VenueReviews({
       )}
 
       {/* Escribir / editar la mía */}
-      <div className="mt-5">
+      <div className={firstOne ? "" : "mt-5"}>
         {!userId ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-dashed border-white/15 bg-white/[0.02] p-4">
-            <p className="text-sm text-zinc-300">{t("reviews.loginPrompt")}</p>
-            <Link href={loginHref} className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-night">
-              {t("reviews.loginCta")}
-            </Link>
-          </div>
+          firstOne ? (
+            <div className="flex flex-col items-start gap-3 rounded-card border border-white/10 bg-white/[0.03] p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:p-5">
+              <div className="flex min-w-0 items-start gap-3">
+                <span aria-hidden="true" className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-warn/15">
+                  <Icon name="star" className="h-5 w-5 text-warn" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="text-base font-semibold text-ink">{t("reviews.firstTitle")}</h2>
+                  <p className="mt-0.5 text-sm text-zinc-400">{t("reviews.firstSub")}</p>
+                </div>
+              </div>
+              <Link href={loginHref} className="shrink-0 rounded-full bg-ink px-4 py-2 text-sm font-bold text-night">
+                {t("reviews.firstCta")}
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-dashed border-white/15 bg-white/[0.02] p-4">
+              <p className="text-sm text-zinc-300">{t("reviews.loginPrompt")}</p>
+              <Link href={loginHref} className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-night">
+                {t("reviews.loginCta")}
+              </Link>
+            </div>
+          )
         ) : isOwner && !isAdmin ? (
           <p className="rounded-card border border-white/10 bg-white/[0.02] p-4 text-sm text-zinc-400">{t("reviews.ownerNote")}</p>
         ) : editing || !mine ? (
           <div className="rounded-card border border-white/10 bg-surface p-4 sm:p-5">
-            <p className="text-sm font-semibold text-ink">{mine ? t("reviews.editTitle") : t("reviews.writeTitle")}</p>
+            <p className="text-sm font-semibold text-ink">{mine ? t("reviews.editTitle") : firstOne ? t("reviews.firstTitle") : t("reviews.writeTitle")}</p>
             <div className="mt-3 flex gap-1" role="radiogroup" aria-label={t("reviews.yourRating")}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
@@ -369,9 +399,7 @@ export default function VenueReviews({
       </div>
 
       {/* Lista */}
-      {visible.length === 0 ? (
-        userId && !isOwner ? null : <p className="mt-5 text-sm text-zinc-500">{t("reviews.empty")}</p>
-      ) : (
+      {visible.length === 0 ? null : (
         <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {shown.map((r) => {
             const lvl = r.author_level ? levelByKey(r.author_level) : null

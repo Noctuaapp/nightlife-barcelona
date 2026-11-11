@@ -117,6 +117,19 @@ export function SectionTitle({
   )
 }
 
+export type TrendInfo = { dir: "up" | "down" | "flat"; text: string; prev: number }
+
+// Variación frente al periodo anterior. El color nunca va solo: siempre lleva flecha o «= igual» y el valor de antes a la vista.
+export function TrendChip({ trend }: { trend: TrendInfo }) {
+  const tone = trend.dir === "up" ? "text-open" : trend.dir === "down" ? "text-red-300" : "text-zinc-400"
+  return (
+    <span className={`mt-1.5 block text-xs font-semibold tabular-nums ${tone}`} title={`Periodo anterior: ${trend.prev}`}>
+      {trend.text}
+      {!trend.text.includes("antes") && <span className="font-normal text-zinc-500"> · antes {trend.prev}</span>}
+    </span>
+  )
+}
+
 // Cifra con su etiqueta, en una casilla teñida del acento (los «Clubs visibles / Eventos…» del Resumen).
 export function StatTile({
   accent,
@@ -126,6 +139,8 @@ export function StatTile({
   icon: Icon,
   active,
   onClick,
+  cue,
+  trend,
   className = "",
 }: {
   accent?: Accent
@@ -135,6 +150,10 @@ export function StatTile({
   icon?: LucideIcon
   active?: boolean
   onClick?: () => void
+  /** Texto corto al pie de una casilla que lleva a otra parte («Ver dónde ›»): avisa de que se puede pulsar. */
+  cue?: string
+  /** Variación frente al periodo anterior (▲ 18 %, ▼ antes 3...). Lo calcula lib/dataInsights.compareValues. */
+  trend?: TrendInfo | null
   className?: string
 }) {
   const ctx = useAccent()
@@ -147,6 +166,8 @@ export function StatTile({
       </span>
       <span className={`mt-1 block font-display text-2xl tabular-nums ${a.text}`}>{value}</span>
       {note != null && note !== "" && <span className="mt-0.5 block text-xs text-zinc-500">{note}</span>}
+      {trend && <TrendChip trend={trend} />}
+      {onClick && cue && <span className={`mt-2 block text-xs font-semibold ${a.text}`}>{cue} ›</span>}
     </>
   )
   const cls = `block rounded-2xl border p-4 text-left transition ${active ? `${a.tile} ring-1 ring-inset ${a.ring}` : a.tile} ${onClick ? "hover:brightness-125" : ""} ${className}`

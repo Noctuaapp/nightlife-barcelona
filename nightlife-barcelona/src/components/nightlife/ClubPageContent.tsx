@@ -11,6 +11,7 @@ import { displayPrice } from "../../lib/clubDisplay"
 import { clubSummary as intlClubSummary } from "../../lib/intl/clubText"
 import { isIntlLang } from "../../lib/intl/lang"
 import { track } from "../../lib/track"
+import { outboundHost } from "../../lib/outbound"
 import FavoriteButton from "../favorites/FavoriteButton"
 import CheckInButton from "../gamification/CheckInButton"
 import AttendanceButton from "../gamification/AttendanceButton"
@@ -21,7 +22,7 @@ import NearbyEssentials from "../nightlife/NearbyEssentials"
 import ClubTransport from "./club/ClubTransport"
 import ClubGallery from "./club/ClubGallery"
 import ClubReviews, { googleMapsReviewsUrl } from "./club/ClubReviews"
-import VenueReviews from "./club/VenueReviews"
+import ReviewsBlock from "./club/ReviewsBlock"
 import JoinNoctuaCard from "./JoinNoctuaCard"
 import WelcomeChallenge from "./WelcomeChallenge"
 import NextStepsRow from "./NextStepsRow"
@@ -117,7 +118,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
   const minAge = club.min_age || club.edad_minima || club.age_min || null
   const hasCoords = !!club.latitude && !!club.longitude
 
-  const trackClick = (eventType: string) => track(eventType, { itemType: "club", itemId: club.id, itemName: club.name })
+  const trackClick = (eventType: string, meta?: Record<string, unknown>) => track(eventType, { itemType: "club", itemId: club.id, itemName: club.name, meta })
 
   // false solo cuando se sabe con certeza que el club no abre esta noche (por open_days o por los
   // días de su horario) — null (sin datos para saberlo) no bloquea nada, igual que en el resto de
@@ -265,9 +266,10 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
   }
 
   const shareClub = async () => {
-    trackClick("share_click")
-    const url = window.location.href
     const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> }
+    // Canal con el que se comparte: el menú de compartir del móvil o el enlace copiado (Admin › Datos › Clics).
+    trackClick("share_click", { channel: typeof nav.share === "function" ? "native" : navigator.clipboard ? "copy" : "none" })
+    const url = window.location.href
     if (nav.share) {
       try {
         await nav.share({ title: club.name, text: t("clubPage.shareText").replace("{name}", club.name), url })
@@ -612,7 +614,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
               {(ticketUrl || directionsUrl) && (
                 <div className="mb-3 hidden space-y-2 lg:block">
                   {ticketUrl ? (
-                    <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone} w-full`}>
+                    <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click", { host: outboundHost(ticketUrl) })} className={`${primaryBtn} ${ticketsTone} w-full`}>
                       <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.ticketsAdvance")}
                     </a>
                   ) : (
@@ -656,7 +658,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                 tiktok={club.tiktok}
                 website={club.website}
                 showWebsite
-                onClick={(k) => trackClick(k)}
+                onClick={(k) => trackClick(k, k === "website_click" ? { host: outboundHost(website) } : undefined)}
                 className="mt-4"
               />
               <a
@@ -868,17 +870,21 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
             )}
 
             {activeTab === "reviews" && (
-              <Panel className="space-y-10">
-                <VenueReviews venueType="club" venueId={club.id} isOwner={!!userId && club.owner_user_id === userId} />
-                <div className="border-t border-white/10 pt-8">
-                  <ClubReviews
-                    clubId={club.id}
-                    rating={displayRating}
-                    count={reviewCount}
-                    embedded
-                    mapsUrl={googleMapsReviewsUrl(club.name, club.address, club.google_place_id)}
-                  />
-                </div>
+              <Panel>
+                <ReviewsBlock
+                  venueType="club"
+                  venueId={club.id}
+                  isOwner={!!userId && club.owner_user_id === userId}
+                  google={
+                    <ClubReviews
+                      clubId={club.id}
+                      rating={displayRating}
+                      count={reviewCount}
+                      embedded
+                      mapsUrl={googleMapsReviewsUrl(club.name, club.address, club.google_place_id)}
+                    />
+                  }
+                />
               </Panel>
             )}
           </div>
@@ -944,7 +950,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-night/95 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-md items-center gap-2">
           {ticketUrl ? (
-            <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click")} className={`${primaryBtn} ${ticketsTone} flex-1 whitespace-nowrap !px-3 py-3`}>
+            <a href={ticketUrl} target="_blank" rel="noopener noreferrer" onClick={() => trackClick("tickets_click", { host: outboundHost(ticketUrl) })} className={`${primaryBtn} ${ticketsTone} flex-1 whitespace-nowrap !px-3 py-3`}>
               <Icon name="ticket" className="h-4 w-4" /> {t("clubPage.ticketsAdvance")}
             </a>
           ) : directionsUrl ? (
