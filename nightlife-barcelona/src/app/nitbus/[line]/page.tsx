@@ -23,7 +23,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { line } = await params
   const code = line.toUpperCase()
   const info = getNightBusLine(code)
-  if (!info) return { title: "Línea no encontrada | Noctua" }
+  if (!info) {
+    // Una línea con paradas en los datos pero fuera del catálogo (N62, N72...): la página se abre, pero sin recorrido
+    // descrito no es contenido para Google. Antes salía con el título «Línea no encontrada» y sin noindex, y Google la
+    // tomaba por una 404 blanda («Rastreada: actualmente sin indexar», 11/11/2026). Si ni siquiera hay paradas, la página
+    // llama a notFound() y responde 404.
+    const known = !!(await getData()).lines[code]
+    return { title: known ? `Nitbus ${code}: paradas | Noctua` : "Línea no encontrada | Noctua", robots: { index: false, follow: true } }
+  }
   const data = await getData()
   const n = data.lines[code]?.stopCount
   const route = parseRoute(info.route)
