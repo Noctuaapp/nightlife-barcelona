@@ -372,7 +372,11 @@ export default function HomeClient({
             style={{ background: "linear-gradient(90deg, rgba(7,8,20,0.88) 0%, rgba(7,8,20,0.55) 45%, rgba(7,8,20,0) 75%)" }}
           />
 
-          <div className="mx-auto max-w-7xl px-4 pb-5 pt-4 sm:px-6 sm:pb-16 sm:pt-20 lg:pb-20 lg:pt-28">
+          <div className="relative mx-auto max-w-7xl px-4 pb-5 pt-4 sm:px-6 sm:pb-16 sm:pt-20 lg:pb-20 lg:pt-28">
+            {/* Mensajes: consejos, y en el futuro publi, mesas VIP y avisos (ver lib/homeMessages.ts). 12/11/2026: arriba a la derecha de la
+                portada. En pantalla grande va en la esquina y en tableta, el primero de la portada a la derecha. En el móvil ocupaba demasiado sobre la
+                foto: ahí sigue debajo del carrusel de «Abierto ahora» (el mismo componente, pintado dos veces; solo se ve uno). */}
+            <HomeMessages className="hidden bg-night/75! backdrop-blur-xl sm:mb-3 sm:ml-auto sm:block sm:max-w-md lg:absolute lg:right-8 lg:top-8 lg:z-10 lg:mb-0 lg:ml-0 lg:w-[28rem] lg:max-w-none" />
             <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-md sm:text-sm">
               <span aria-hidden="true" className="live-dot h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
               {openCount > 0
@@ -607,8 +611,7 @@ export default function HomeClient({
               <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-night to-transparent sm:hidden" />
             )}
           </div>
-          {/* Mensajes: consejos, y en el futuro publi, mesas VIP y avisos (ver lib/homeMessages.ts) */}
-          <HomeMessages className="mt-4 sm:mx-auto sm:max-w-2xl" />
+          <HomeMessages className="mt-4 sm:hidden" />
         </section>
 
         {/* CÓMO VOLVER A CASA: estado del metro de esta noche, NitBus y taxi + tarjeta de instalar la app */}

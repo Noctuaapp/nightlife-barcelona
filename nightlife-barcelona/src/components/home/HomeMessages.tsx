@@ -18,6 +18,8 @@ import { activeMessages, shuffled, type HomeMessage, type HomeMessageKind, type 
 
 const INTERVAL_MS = 9000
 const HIDE_KEY = "noctua_home_messages_hidden"
+// La portada pinta el mensaje dos veces (arriba a la derecha en pantalla grande y debajo del carrusel en el móvil; solo se ve una). Al cerrar uno se avisa al otro.
+const HIDE_EVENT = "noctua-home-messages-hide"
 
 const ACCENT: Record<HomeMessageKind, string> = {
   tip: "#6cf2f2",
@@ -61,6 +63,9 @@ export default function HomeMessages({ announcements, className = "" }: { announ
       /* sin almacenamiento: se enseña */
     }
     setReduced(typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+    const onHide = () => setHidden(true)
+    window.addEventListener(HIDE_EVENT, onHide)
+    return () => window.removeEventListener(HIDE_EVENT, onHide)
   }, [])
 
   // Antes de montar se pinta una lista fija (sin aleatorio) con el mismo alto, para que no salte nada al cargar.
@@ -105,6 +110,7 @@ export default function HomeMessages({ announcements, className = "" }: { announ
 
   const hide = () => {
     setHidden(true)
+    window.dispatchEvent(new Event(HIDE_EVENT))
     try {
       sessionStorage.setItem(HIDE_KEY, "1")
     } catch {
