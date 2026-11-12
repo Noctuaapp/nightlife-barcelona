@@ -373,6 +373,89 @@ export function countrySummary(rows: CountryRow[] | null | undefined, top = 10):
   return { rows: shown, known, unknown, unknownPct: pctOf(unknown, known + unknown) }
 }
 
+// ---------- Tiempo en la web por día, semana, mes y año (SQL 90) ----------
+
+export type TimeGrain = "day" | "week" | "month" | "year"
+export const TIME_GRAINS: { key: TimeGrain; label: string; plural: string }[] = [
+  { key: "day", label: "Día", plural: "los últimos 30 días" },
+  { key: "week", label: "Semana", plural: "las últimas 12 semanas" },
+  { key: "month", label: "Mes", plural: "los últimos 12 meses" },
+  { key: "year", label: "Año", plural: "este año y el anterior" },
+]
+export type TimeSeriesRow = { period: string; visits: number; avg_secs: number | null; total_secs: number | null }
+export type TimeSeries = { grain: TimeGrain; from: string; to: string; rows: TimeSeriesRow[] }
+export type TimePeriod = {
+  period: string
+  /** Etiqueta corta para el eje del gráfico. */
+  short: string
+  /** Etiqueta completa para la tabla y el globo del gráfico. */
+  long: string
+  visits: number
+  avgSecs: number | null
+  totalSecs: number
+  /** El periodo en curso aún no ha terminado: sus cifras son parciales. */
+  current: boolean
+}
+
+const MONTHS_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+const MONTHS_LONG = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+
+/** Suma `n` periodos a una fecha AAAA-MM-DD (día, semana, mes o año), siempre al día 1 en mes y año. */
+export function addPeriod(date: string, grain: TimeGrain, n: number): string {
+  const d = new Date(noon(date))
+  if (grain === "day") d.setUTCDate(d.getUTCDate() + n)
+  else if (grain === "week") d.setUTCDate(d.getUTCDate() + 7 * n)
+  else if (grain === "month") d.setUTCMonth(d.getUTCMonth() + n, 1)
+  else d.setUTCFullYear(d.getUTCFullYear() + n, 0, 1)
+  return d.toISOString().slice(0, 10)
+}
+
+const parts = (iso: string) => ({ y: Number(iso.slice(0, 4)), m: Number(iso.slice(5, 7)) - 1, d: Number(iso.slice(8, 10)) })
+
+export function periodLabels(period: string, grain: TimeGrain): { short: string; long: string } {
+  const a = parts(period)
+  if (grain === "day") return { short: `${a.d}/${a.m + 1}`, long: `${a.d} ${MONTHS_SHORT[a.m]} ${a.y}` }
+  if (grain === "week") {
+    const b = parts(addPeriod(period, "day", 6))
+    const end = `${b.d} ${MONTHS_SHORT[b.m]}`
+    const start = b.m === a.m ? `${a.d}` : `${a.d} ${MONTHS_SHORT[a.m]}`
+    return { short: `${a.d}/${a.m + 1}`, long: `Semana del ${start} al ${end}${a.y !== b.y ? ` ${b.y}` : ""}` }
+  }
+  if (grain === "month") return { short: MONTHS_SHORT[a.m], long: `${MONTHS_LONG[a.m][0].toUpperCase()}${MONTHS_LONG[a.m].slice(1)} ${a.y}` }
+  return { short: String(a.y), long: String(a.y) }
+}
+
+/**
+ * Todos los periodos desde el primero hasta el actual, con 0 donde no hay nada, para que un día sin visitas
+ * salga como un hueco y no desaparezca. Más antiguo primero.
+ */
+export function timeSeriesRows(ts: TimeSeries | null | undefined): TimePeriod[] {
+  if (!ts || !ts.from || !ts.to) return []
+  const byPeriod = new Map<string, TimeSeriesRow>()
+  for (const r of ts.rows || []) byPeriod.set(String(r.period).slice(0, 10), r)
+  const out: TimePeriod[] = []
+  for (let p = ts.from, i = 0; p <= ts.to && i < 400; p = addPeriod(p, ts.grain, 1), i++) {
+    const r = byPeriod.get(p)
+    const labels = periodLabels(p, ts.grain)
+    out.push({
+      period: p,
+      ...labels,
+      visits: r ? Number(r.visits) || 0 : 0,
+      avgSecs: r && r.avg_secs != null ? Number(r.avg_secs) : null,
+      totalSecs: r ? Number(r.total_secs) || 0 : 0,
+      current: p === ts.to,
+    })
+  }
+  return out
+}
+
+/** Totales de todo lo que se enseña: visitas con tiempo, tiempo total y media ponderada por visita. */
+export function timeSeriesTotals(rows: TimePeriod[]): { visits: number; totalSecs: number; avgSecs: number | null } {
+  const visits = rows.reduce((s, r) => s + r.visits, 0)
+  const totalSecs = rows.reduce((s, r) => s + r.totalSecs, 0)
+  return { visits, totalSecs, avgSecs: visits > 0 ? Math.round(totalSecs / visits) : null }
+}
+
 // ---------- Días del periodo ----------
 
 /** Todos los días del periodo (AAAA-MM-DD), para que un día sin datos salga como 0 y no desaparezca del gráfico. */

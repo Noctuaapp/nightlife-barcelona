@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
-  actionIndex, actionsPer100, browseSteps, clickHourSeries, compareValues, hoursSeries, isDeadItem, countryName, countrySummary, languageRows, langName, peakHour,
+  actionIndex, actionsPer100, browseSteps, clickHourSeries, compareValues, hoursSeries, isDeadItem, addPeriod, countryName, countrySummary, languageRows, langName, peakHour, periodLabels, timeSeriesRows, timeSeriesTotals,
   pctOf, previousRange, rangeLength, searchRows, signupErrorRows, signupSteps, sourceName, sourceRows, totalActions, weekdaySeries,
 } from "../dataInsights"
 
@@ -222,5 +222,58 @@ describe("país de los visitantes", () => {
     expect(countrySummary([])).toMatchObject({ rows: [], known: 0, unknown: 0, unknownPct: null })
     expect(countrySummary(null).rows).toEqual([])
     expect(countrySummary([{ country: "ES", people: NaN as unknown as number, ficha: 0, clicked: 0 }]).rows).toEqual([])
+  })
+})
+
+describe("tiempo en la web por día, semana, mes y año", () => {
+  it("suma periodos sin romperse con fin de mes, año nuevo ni cambio de hora", () => {
+    expect(addPeriod("2026-11-11", "day", 1)).toBe("2026-11-12")
+    expect(addPeriod("2026-11-30", "day", 1)).toBe("2026-12-01")
+    expect(addPeriod("2026-10-26", "day", 1)).toBe("2026-10-27") // el cambio de hora es el 25/10
+    expect(addPeriod("2026-12-28", "week", 1)).toBe("2027-01-04")
+    expect(addPeriod("2026-11-09", "week", -11)).toBe("2026-08-24")
+    expect(addPeriod("2026-01-01", "month", -1)).toBe("2025-12-01")
+    expect(addPeriod("2026-03-01", "month", 11)).toBe("2027-02-01")
+    expect(addPeriod("2026-01-01", "year", -1)).toBe("2025-01-01")
+  })
+
+  it("etiquetas en español", () => {
+    expect(periodLabels("2026-11-11", "day")).toEqual({ short: "11/11", long: "11 nov 2026" })
+    expect(periodLabels("2026-11-09", "week").long).toBe("Semana del 9 al 15 nov")
+    expect(periodLabels("2026-09-28", "week").long).toBe("Semana del 28 sep al 4 oct")
+    expect(periodLabels("2026-12-28", "week").long).toBe("Semana del 28 dic al 3 ene 2027")
+    expect(periodLabels("2026-11-01", "month")).toEqual({ short: "nov", long: "Noviembre 2026" })
+    expect(periodLabels("2026-01-01", "year")).toEqual({ short: "2026", long: "2026" })
+  })
+
+  it("rellena con 0 los periodos sin visitas y marca el actual", () => {
+    const rows = timeSeriesRows({
+      grain: "day", from: "2026-11-08", to: "2026-11-11",
+      rows: [{ period: "2026-11-10", visits: 3, avg_secs: 120, total_secs: 360 }, { period: "2026-11-11", visits: 1, avg_secs: 30, total_secs: 30 }],
+    })
+    expect(rows.map((r) => r.period)).toEqual(["2026-11-08", "2026-11-09", "2026-11-10", "2026-11-11"])
+    expect(rows.map((r) => r.visits)).toEqual([0, 0, 3, 1])
+    expect(rows[0]).toMatchObject({ avgSecs: null, totalSecs: 0, current: false })
+    expect(rows[3].current).toBe(true)
+    const t = timeSeriesTotals(rows)
+    expect(t).toEqual({ visits: 4, totalSecs: 390, avgSecs: 98 }) // 390 / 4 = 97,5 → 98
+  })
+
+  it("semanas y meses: 12 periodos y el periodo viene como fecha con hora o sin ella", () => {
+    const weeks = timeSeriesRows({ grain: "week", from: "2026-08-24", to: "2026-11-09", rows: [{ period: "2026-11-09T00:00:00", visits: 5, avg_secs: 90, total_secs: 450 }] })
+    expect(weeks).toHaveLength(12)
+    expect(weeks[11]).toMatchObject({ period: "2026-11-09", visits: 5, current: true })
+    const months = timeSeriesRows({ grain: "month", from: "2025-12-01", to: "2026-11-01", rows: [] })
+    expect(months).toHaveLength(12)
+    expect(months[0].long).toBe("Diciembre 2025")
+    expect(timeSeriesRows({ grain: "year", from: "2025-01-01", to: "2026-01-01", rows: [] })).toHaveLength(2)
+  })
+
+  it("sin datos o con datos raros no revienta", () => {
+    expect(timeSeriesRows(null)).toEqual([])
+    expect(timeSeriesRows({ grain: "day", from: "", to: "", rows: [] })).toEqual([])
+    expect(timeSeriesTotals([])).toEqual({ visits: 0, totalSecs: 0, avgSecs: null })
+    const r = timeSeriesRows({ grain: "day", from: "2026-11-10", to: "2026-11-10", rows: [{ period: "2026-11-10", visits: NaN as unknown as number, avg_secs: null, total_secs: null }] })
+    expect(r[0]).toMatchObject({ visits: 0, totalSecs: 0, avgSecs: null })
   })
 })

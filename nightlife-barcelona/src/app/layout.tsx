@@ -7,6 +7,7 @@ import TermsGate from "../components/auth/TermsGate"
 import MaintenanceGate from "../components/system/MaintenanceGate"
 import TrafficSource from "../components/system/TrafficSource"
 import InstallCapture from "../components/system/InstallCapture"
+import InstallBanner from "../components/system/InstallBanner"
 import EventsPreviewCookie from "../components/system/EventsPreviewCookie"
 import ViewAsUserSwitch from "../components/admin/ViewAsUserSwitch"
 import ToastHost from "../components/ui/Toast"
@@ -106,6 +107,8 @@ export default function RootLayout({
         <LanguageProvider>
           <FavoritesProvider>
             <MaintenanceGate>
+              {/* Franja «Instala Noctua» arriba del todo, solo en móvil y si no está instalada (ver el componente) */}
+              <InstallBanner />
               {children}
               {/* Quien tiene sesión debe haber aceptado los términos y confirmado su edad, en cualquier página */}
               <TermsGate />

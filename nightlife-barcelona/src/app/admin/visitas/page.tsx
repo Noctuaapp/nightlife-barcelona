@@ -133,7 +133,7 @@ function extraDetail(e: Ev): string | null {
   if (e.type === "google_click") return ({ login: "(en Iniciar sesión)", wall: "(en una zona privada)", modal: "(en el aviso de registro)", join: "(en el aviso de la ficha)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? "(en Crear cuenta)"
   if (e.type === "share_click" && e.meta?.via === "whatsapp") return "por WhatsApp"
   if (e.type === "install_choice") return e.meta?.outcome === "accepted" ? "lo acepta" : "lo rechaza"
-  if (e.type === "install_click") return ({ menu: "(desde el menú ☰)", profile: "(desde Perfil)", welcome: "(desde «Tu primer reto»)", join: "(desde «¿Aún no estás dentro?»)", home: "(desde la portada)", intl: "(desde las páginas en inglés)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? ""
+  if (e.type === "install_click") return ({ menu: "(desde el menú ☰)", profile: "(desde Perfil)", welcome: "(desde «Tu primer reto»)", join: "(desde «¿Aún no estás dentro?»)", home: "(desde la portada)", banner: "(desde la franja de arriba)", intl: "(desde las páginas en inglés)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? ""
   if (e.type.startsWith("signup_") || e.type.startsWith("confirm_age_") || e.type === "join_view" || e.type === "join_dismiss" || e.type === "install_click") return ""
   return null
 }

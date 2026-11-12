@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
-import { FilterChip, Panel, SectionTitle, StatTile, type Accent, type TrendInfo } from "../../../components/admin/ui"
+import { FilterChip, Panel, SectionTitle, StatTile, TrendRangeContext, type Accent, type TrendInfo } from "../../../components/admin/ui"
 import { BarChart3, CalendarCheck, CalendarDays, Car, CheckCircle2, Clock, Eye, Layers, MapPin, Scale, Search, Share2, Smartphone, Ticket, Users, type LucideIcon } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { zoneOf } from "../../../lib/zones"
@@ -446,6 +446,7 @@ export default function AdminDatosPage() {
 
         {!loading && overview && tab === "resumen" && (
           <div className="space-y-6">
+            <TrendRangeContext.Provider value={prevOverview ? `${fmtDay(prevRange.from)} al ${fmtDay(prevRange.to)}` : null}>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <Stat label="Sesiones" icon={Users} accent="violet" value={overview.sessions} trend={tr("sessions")} />
               <Stat label="Visitas a fichas" icon={Eye} accent="pink" value={overview.page_views} trend={tr("page_views")} onClick={() => goTab("clubs", "views")} cue="Ver qué fichas" />
@@ -456,6 +457,7 @@ export default function AdminDatosPage() {
               <Stat label="Asistiré" icon={CalendarCheck} accent="cyan" value={overview.attendances} trend={tr("attendances")} onClick={() => goClicks("attendance")} cue="Ver a qué noches" />
               <Stat label="Check-ins reales" icon={CheckCircle2} accent="coral" value={overview.checkins} trend={tr("checkins")} sub={`Cumplimiento ${pct(overview.checkins, overview.attendances)}%`} onClick={() => goTab("clubs", "checkins")} cue="Ver en qué locales" />
             </div>
+            </TrendRangeContext.Provider>
             {prevOverview && (
               <p className="-mt-2 text-xs text-zinc-400">
                 Comparado con los {rangeLength(from, to)} {rangeLength(from, to) === 1 ? "día" : "días"} anteriores ({fmtDay(prevRange.from)}–{fmtDay(prevRange.to)}).

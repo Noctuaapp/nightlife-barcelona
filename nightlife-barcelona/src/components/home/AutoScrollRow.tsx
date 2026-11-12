@@ -16,7 +16,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react"
 // - No se anima con «reducir movimiento» activado, ni mientras el carrusel no se ve en pantalla (ahorra batería).
 // - La copia va con aria-hidden y sin foco de teclado: para un lector de pantalla la lista es una sola.
 
-const SPEED = 26 // píxeles por segundo: despacio, que dé tiempo a leer el nombre
+const SPEED = 40 // píxeles por segundo (12/11/2026: antes 26, se quedaba lento): que aún dé tiempo a leer el nombre
 const RESUME_MS = 2800 // espera tras la última interacción antes de retomar
 
 export default function AutoScrollRow({

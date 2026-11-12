@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { compileRows, emptyRows, rowsFromClub, startsAfterMidnight, type DayRow } from "../clubHoursEditor"
+import { compileRows, dayRuns, describeRows, emptyRows, groupRows, hasEarlyRows, rowsFromClub, startsAfterMidnight, type DayRow } from "../clubHoursEditor"
 import { clubOpeningHoursSpec, clubOpensOn } from "../clubHours"
 
 // Atajo: { 3: ["23:55", "06:00"] } = jueves de 23:55 a 06:00 (0 = lunes … 6 = domingo).
@@ -123,5 +123,36 @@ describe("ida y vuelta", () => {
     const early = compileRows(rows({ 4: ["00:00", "06:00"] }))
     expect(clubOpeningHoursSpec(early.hours, early.openDays)[0].dayOfWeek).toEqual(["Saturday"])
     expect(clubOpensOn(early.hours, early.openDays, 5)).toBe(true) // sigue contando como noche del viernes
+  })
+})
+
+describe("horario de madrugada (caso Wolf, 12/11/2026)", () => {
+  // Jueves 00:30-05:00 y viernes y sábado 00:30-06:00, marcados como noches.
+  const wolf = rows({ 3: ["00:30", "05:00"], 4: ["00:30", "06:00"], 5: ["00:30", "06:00"] })
+
+  it("guarda las letras con el día de calendario y vuelve a abrir con las mismas noches", () => {
+    const c = compileRows(wolf)
+    expect(c.hours).toBe("V 00:30-05:00 | S-D 00:30-06:00")
+    expect(c.openDays).toEqual(["Jue", "Vie", "Sáb"])
+    const back = rowsFromClub(c.hours, c.openDays)
+    expect(back.legacy).toBe("")
+    expect(back.rows).toEqual(wolf)
+  })
+
+  it("enseña las noches tal como se marcaron", () => {
+    expect(describeRows(wolf)).toBe("Jue 00:30–05:00 · Vie-Sáb 00:30–06:00")
+    expect(hasEarlyRows(wolf)).toBe(true)
+    expect(hasEarlyRows(rows({ 3: ["23:55", "06:00"] }))).toBe(false)
+  })
+
+  it("agrupa las noches por horario para la ficha pública (bolitas de días + horas)", () => {
+    const { rows } = rowsFromClub("V 00:30-05:00 | S-D 00:30-06:00", ["Jue", "Vie", "Sáb"])
+    expect(groupRows(rows)).toEqual([
+      { time: "00:30–05:00", days: [3] },
+      { time: "00:30–06:00", days: [4, 5] },
+    ])
+    expect(dayRuns([4, 5])).toBe("Vie-Sáb")
+    expect(dayRuns([3, 5])).toBe("Jue/Sáb")
+    expect(dayRuns([3], ["L", "M", "X", "J", "V", "S", "D"])).toBe("J")
   })
 })

@@ -76,7 +76,9 @@
     "getHomeTaxi": "Taxi",
     "stylesTitle": "¿Qué te apetece esta noche?",
     "stylesSub": "Elige un ambiente y te enseñamos dónde suena",
-    "searchTry": "Prueba con"
+    "searchTry": "Prueba con",
+    "getHomeNitbusHint": "Líneas nocturnas, con las paradas en orden",
+    "getHomeTaxiHint": "Paradas, Radio Taxi y apps"
   },
   "filters": {
     "all": "Todos"
@@ -973,7 +975,8 @@
     "fVenueRental": "Alquiler del local",
     "rideTo": "Destino",
     "ticketsAdvance": "Entradas anticipadas",
-    "fCapacityLabel": "Aforo"
+    "fCapacityLabel": "Aforo",
+    "reviewsGoogleFallback": "Mientras tanto, mira qué dicen en Google Maps"
   },
   "eventPage": {
     "dateTbc": "Fecha por confirmar",
@@ -1867,7 +1870,9 @@
     "msg23": "Entra cada día y suma XP con tu racha de visitas",
     "msg24": "¿Falta un local o hay un dato mal? Cuéntanoslo y lo revisamos",
     "msg25": "Descubre la noche por barrios: el Born, Poblenou…",
-    "msg26": "¿Falta un esencial cerca de ti? Propónlo y gana XP"
+    "msg26": "¿Falta un esencial cerca de ti? Propónlo y gana XP",
+    "msg27": "Nitbus: elige dónde subes y dónde bajas y mira solo tu tramo",
+    "msg28": "¿A qué hora cierra el metro hoy? Míralo antes de salir"
   },
   "reviews": {
     "title": "Opiniones de Noctua",
@@ -1979,7 +1984,9 @@
   },
   "install": {
     "body": "Ábrela desde tu pantalla de inicio, a pantalla completa y sin buscarla en el navegador.",
-    "androidSteps": "En Chrome: toca el menú ⋮ y elige «Instalar aplicación» (o «Añadir a pantalla de inicio»)."
+    "androidSteps": "En Chrome: toca el menú ⋮ y elige «Instalar aplicación» (o «Añadir a pantalla de inicio»).",
+    "bannerSub": "Un toque desde tu pantalla de inicio, sin buscarnos cada vez.",
+    "bannerClose": "Cerrar"
   },
   "notices": {
     "closedTonight": "Esta noche no abrimos",
@@ -2213,5 +2220,14 @@
     "ctaTitle": "Todas las estaciones de cada línea, en orden",
     "ctaBody": "Elige una línea, mira sus estaciones una a una y marca dónde subes y dónde bajas.",
     "seeLine": "Ver recorrido y mi trayecto de {code}"
+  },
+  "homeMsg": {
+    "tip": "Consejo",
+    "promo": "Publi",
+    "vip": "Mesas VIP",
+    "notice": "Aviso",
+    "cta": "Verlo",
+    "hide": "Ocultar mensajes",
+    "next": "Siguiente"
   }
 }

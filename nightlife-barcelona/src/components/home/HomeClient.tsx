@@ -10,7 +10,7 @@ import Footer from "../layout/Footer"
 import FavoriteButton from "../favorites/FavoriteButton"
 import AutoScrollRow from "./AutoScrollRow"
 import SurpriseMe from "./SurpriseMe"
-import FeatureTicker from "./FeatureTicker"
+import HomeMessages from "./HomeMessages"
 import ReferralBanner from "./ReferralBanner"
 import WelcomeChallenge from "../nightlife/WelcomeChallenge"
 import TopPicks from "./TopPicks"
@@ -19,6 +19,7 @@ import AreasSection from "./AreasSection"
 import ExploreDoors from "./ExploreDoors"
 import HomeGetHome from "./HomeGetHome"
 import StylesSection from "./StylesSection"
+import TonightTile from "./TonightTile"
 import Icon from "../ui/Icon"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
 import { useLanguage } from "../../context/LanguageContext"
@@ -71,14 +72,14 @@ function quality(c: Club): number {
   return (c.image ? 2 : 0) + (rating >= 4 ? rating : rating / 2) + (c.trending ? 1 : 0)
 }
 
-function ClubTile({ club, openNow, distance, compact = false, section }: { club: Club; openNow: boolean | null; distance?: string | null; compact?: boolean; section: "tonight" | "featured" }) {
+function ClubTile({ club, openNow, distance, section }: { club: Club; openNow: boolean | null; distance?: string | null; section: "featured" }) {
   const { t } = useLanguage()
   const ct = useClubText()
   const rating = club.google_rating || club.rating
   // El corazón va fuera del enlace (un botón dentro de un <a> no es válido): guardar un local desde
   // el listado es el momento natural para pedir la cuenta (si no hay sesión, sale el aviso de registro).
   return (
-    <div className={`relative ${compact ? "h-48 w-[72vw] max-w-[280px] shrink-0 snap-start sm:h-56" : "h-60 sm:h-64"}`}>
+    <div className="relative h-60 sm:h-64">
     <Link
       href={`/clubs/${club.slug || createSlug(club.name)}`}
       onClick={() => track("home_tile_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { section } })}
@@ -88,24 +89,24 @@ function ClubTile({ club, openNow, distance, compact = false, section }: { club:
         src={club.image || FALLBACK_IMAGE}
         alt={club.name}
         fill
-        sizes={compact ? "280px" : "(max-width: 768px) 50vw, 33vw"}
+        sizes="(max-width: 768px) 50vw, 33vw"
         unoptimized={!club.image}
         className="object-cover transition duration-500 group-hover:scale-[1.03]"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-night via-night/50 to-transparent" />
       {openNow !== null && (
         <span
-          className={`absolute flex items-center gap-1.5 rounded-full font-semibold ${
-            compact ? "left-3 top-3 px-2.5 py-1 text-xs" : "left-2.5 top-2.5 px-2 py-0.5 text-[11px] sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs"
-          } ${openNow ? "bg-night/80 text-open" : "bg-night/70 text-zinc-300"}`}
+          className={`absolute left-2.5 top-2.5 flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-xs ${
+            openNow ? "bg-night/80 text-open" : "bg-night/70 text-zinc-300"
+          }`}
         >
           <span className={`h-1.5 w-1.5 rounded-full ${openNow ? "live-dot bg-open" : "bg-off"}`} />
           {openNow ? t("clubPage.openNow") : t("home.closed")}
         </span>
       )}
-      <div className={`relative ${compact ? "p-4" : "p-3 sm:p-4"}`}>
-        <p className={`truncate font-semibold text-ink ${compact ? "text-lg" : "text-base sm:text-lg"}`}>{club.name}</p>
-        <p className={`mt-0.5 truncate text-zinc-300 ${compact ? "text-sm" : "text-xs sm:text-sm"}`}>
+      <div className="relative p-3 sm:p-4">
+        <p className="truncate text-base font-semibold text-ink sm:text-lg">{club.name}</p>
+        <p className="mt-0.5 truncate text-xs text-zinc-300 sm:text-sm">
           {[club.neighborhood || "Barcelona", distance, ct.music(club.music)].filter(Boolean).join(" · ")}
         </p>
         {(rating || club.price) && (
@@ -120,7 +121,7 @@ function ClubTile({ club, openNow, distance, compact = false, section }: { club:
         )}
       </div>
     </Link>
-    <div className={`absolute z-10 ${compact ? "right-3 top-3" : "right-2 top-2 sm:right-3 sm:top-3"}`}>
+    <div className="absolute right-2 top-2 z-10 sm:right-3 sm:top-3">
       <FavoriteButton itemType="club" itemId={club.id} variant="overlay" />
     </div>
     </div>
@@ -371,8 +372,6 @@ export default function HomeClient({
             style={{ background: "linear-gradient(90deg, rgba(7,8,20,0.88) 0%, rgba(7,8,20,0.55) 45%, rgba(7,8,20,0) 75%)" }}
           />
 
-          <FeatureTicker placement="hero" />
-
           <div className="mx-auto max-w-7xl px-4 pb-5 pt-4 sm:px-6 sm:pb-16 sm:pt-20 lg:pb-20 lg:pt-28">
             <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/35 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-md sm:text-sm">
               <span aria-hidden="true" className="live-dot h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
@@ -599,7 +598,7 @@ export default function HomeClient({
             <AutoScrollRow resetKey={zone ?? (geo.pos ? "near" : "all")} className="scroll-x-thin flex gap-3 overflow-x-auto px-4 pb-2 sm:px-0">
               {tonight.list.map((club) => {
                 const d = dist(club)
-                return <ClubTile key={club.id} club={club} openNow={isOpen(club)} distance={d !== null ? formatDistance(d) : null} compact section="tonight" />
+                return <TonightTile key={club.id} club={club} openNow={isOpen(club)} distance={d !== null ? formatDistance(d) : null} />
               })}
             </AutoScrollRow>
             {/* Pista visual de que hay más locales deslizando a la derecha (el móvil no siempre
@@ -608,7 +607,8 @@ export default function HomeClient({
               <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-night to-transparent sm:hidden" />
             )}
           </div>
-          <FeatureTicker placement="below" />
+          {/* Mensajes: consejos, y en el futuro publi, mesas VIP y avisos (ver lib/homeMessages.ts) */}
+          <HomeMessages className="mt-4 sm:mx-auto sm:max-w-2xl" />
         </section>
 
         {/* CÓMO VOLVER A CASA: estado del metro de esta noche, NitBus y taxi + tarjeta de instalar la app */}

@@ -19,7 +19,7 @@ import { track } from "../../lib/track"
 // turistas desde Google.
 
 type Props = {
-  from: "menu" | "profile" | "join" | "home" | "intl"
+  from: "menu" | "profile" | "join" | "home" | "intl" | "banner"
   variant: "menu" | "card" | "inline"
   /** Para cerrar el menú tras abrir el cuadro de instalación. */
   onDone?: () => void

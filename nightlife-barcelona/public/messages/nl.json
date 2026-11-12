@@ -76,7 +76,9 @@
     "searchTry": "Probeer eens",
     "picksKicker": "Gekozen door Noctua",
     "picksTonight": "Onze top 3 voor vanavond",
-    "picksWeek": "Onze top 3 van de week"
+    "picksWeek": "Onze top 3 van de week",
+    "getHomeNitbusHint": "Nachtlijnen, met alle haltes op volgorde",
+    "getHomeTaxiHint": "Standplaatsen, Radio Taxi en apps"
   },
   "filters": {
     "all": "Alle"
@@ -973,7 +975,8 @@
     "fFood": "Eten / keuken",
     "fShisha": "Shisha",
     "fAccessible": "Toegankelijk met rolstoel",
-    "stopAt": "Halte {name}"
+    "stopAt": "Halte {name}",
+    "reviewsGoogleFallback": "Bekijk ondertussen wat men op Google Maps zegt"
   },
   "eventPage": {
     "dateTbc": "Datum nog niet bekend",
@@ -1867,7 +1870,9 @@
     "msg23": "Kom elke dag terug en verdien XP met je reeks",
     "msg24": "Mist er een plek of klopt iets niet? Vertel het ons, wij checken het",
     "msg25": "Ontdek de nacht per buurt: el Born, Poblenou…",
-    "msg26": "Mist er een essential bij jou in de buurt? Stel hem voor en verdien XP"
+    "msg26": "Mist er een essential bij jou in de buurt? Stel hem voor en verdien XP",
+    "msg27": "Nachtbus: kies waar je in- en uitstapt en zie alleen jouw traject",
+    "msg28": "Hoe laat sluit de metro vandaag? Check het voor je uitgaat"
   },
   "reviews": {
     "title": "Noctua-reviews",
@@ -1979,7 +1984,9 @@
   },
   "install": {
     "body": "Open Noctua vanaf je beginscherm, op volledig scherm en zonder te zoeken in de browser.",
-    "androidSteps": "In Chrome: tik op het menu ⋮ en kies «App installeren» (of «Toevoegen aan startscherm»)."
+    "androidSteps": "In Chrome: tik op het menu ⋮ en kies «App installeren» (of «Toevoegen aan startscherm»).",
+    "bannerSub": "Eén tik vanaf je startscherm, zonder ons elke keer te zoeken.",
+    "bannerClose": "Sluiten"
   },
   "notices": {
     "closedTonight": "Vanavond zijn we gesloten",
@@ -2213,5 +2220,14 @@
     "ctaTitle": "Alle stations van elke lijn, op volgorde",
     "ctaBody": "Kies een lijn, bekijk de stations één voor één en geef aan waar je in- en uitstapt.",
     "seeLine": "Bekijk het traject van {code} en plan mijn rit"
+  },
+  "homeMsg": {
+    "tip": "Tip",
+    "promo": "Advertentie",
+    "vip": "VIP-tafels",
+    "notice": "Melding",
+    "cta": "Bekijken",
+    "hide": "Berichten verbergen",
+    "next": "Volgende"
   }
 }

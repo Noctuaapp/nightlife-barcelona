@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isAuthorizedCronRequest } from "@/lib/adminAuth"
 import { startJobBudget, recordGoogleCalls, googleFetch, fetchRichData } from "@/lib/googlePlacesBudget"
+import { classifyGoogleWebsite } from "@/lib/googleWebsite"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -133,7 +134,7 @@ export async function GET(req: Request) {
   // se haya curado a mano.
   const { data: clubs, error } = await supabase
     .from("clubs")
-    .select("id, name, image, gallery, google_place_id")
+    .select("id, name, image, gallery, google_place_id, website, instagram, tiktok")
     .not("google_place_id", "is", null)
     .or("manual_photos.is.null,manual_photos.eq.false")
     .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
@@ -169,7 +170,8 @@ export async function GET(req: Request) {
         // galería: así no se vuelven a descargar las fotos de los que ya las tienen.
         const hasGallery = Array.isArray(club.gallery) && club.gallery.length > 0
         const needsPhotos = fetchRichData() && !hasGallery
-        const fields = needsPhotos ? "displayName,types,rating,userRatingCount,photos" : "displayName,types,rating,userRatingCount"
+        // websiteUri cae en el mismo nivel de precio que rating/userRatingCount, que ya se pedían: no sube el coste.
+        const fields = needsPhotos ? "displayName,types,rating,userRatingCount,websiteUri,photos" : "displayName,types,rating,userRatingCount,websiteUri"
         const detailsRes = await googleFetch(counter, `https://places.googleapis.com/v1/places/${club.google_place_id}?languageCode=es`, {
           headers: {
             "X-Goog-Api-Key": apiKey,
@@ -233,9 +235,20 @@ export async function GET(req: Request) {
         )
         const photoUrls = photoResults.filter((u): u is string => !!u)
 
+        // Web y redes (12/11/2026): lo que Google tiene en su ficha, SOLO en los campos que estén vacíos
+        // (lo escrito a mano por el admin o por el dueño manda siempre). Si la «web» de Google es su
+        // Instagram o su TikTok, va a su campo.
+        const found = classifyGoogleWebsite(data.websiteUri)
+        const isEmpty = (v: unknown) => typeof v !== "string" || v.trim() === ""
+        const socials: Record<string, string> = {}
+        if (found.website && isEmpty(club.website)) socials.website = found.website
+        if (found.instagram && isEmpty(club.instagram)) socials.instagram = found.instagram
+        if (found.tiktok && isEmpty(club.tiktok)) socials.tiktok = found.tiktok
+
         await supabase
           .from("clubs")
           .update({
+            ...socials,
             google_rating: data.rating ?? null,
             google_review_count: data.userRatingCount ?? null,
             google_last_refreshed_at: new Date().toISOString(),

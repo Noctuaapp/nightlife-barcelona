@@ -76,7 +76,9 @@
     "getHomeTaxi": "Taxi",
     "stylesTitle": "Què et ve de gust aquesta nit?",
     "stylesSub": "Tria un ambient i t'ensenyem on sona",
-    "searchTry": "Prova amb"
+    "searchTry": "Prova amb",
+    "getHomeNitbusHint": "Línies nocturnes, amb les parades en ordre",
+    "getHomeTaxiHint": "Parades, Ràdio Taxi i apps"
   },
   "filters": {
     "all": "Tots"
@@ -973,7 +975,8 @@
     "fVenueRental": "Lloguer del local",
     "rideTo": "Destinació",
     "ticketsAdvance": "Entrades anticipades",
-    "fCapacityLabel": "Aforament"
+    "fCapacityLabel": "Aforament",
+    "reviewsGoogleFallback": "Mentrestant, mira què diuen a Google Maps"
   },
   "eventPage": {
     "dateTbc": "Data per confirmar",
@@ -1867,7 +1870,9 @@
     "msg23": "Entra cada dia i suma XP amb la teva ratxa de visites",
     "msg24": "Falta un local o hi ha una dada malament? Explica'ns-ho i ho revisem",
     "msg25": "Descobreix la nit per barris: el Born, Poblenou…",
-    "msg26": "Falta un essencial a prop teu? Proposa'l i guanya XP"
+    "msg26": "Falta un essencial a prop teu? Proposa'l i guanya XP",
+    "msg27": "Nitbus: tria on puges i on baixes i mira només el teu tram",
+    "msg28": "A quina hora tanca el metro avui? Mira-ho abans de sortir"
   },
   "reviews": {
     "title": "Opinions de Noctua",
@@ -1979,7 +1984,9 @@
   },
   "install": {
     "body": "Obre-la des de la pantalla d'inici, a pantalla completa i sense buscar-la al navegador.",
-    "androidSteps": "A Chrome: toca el menú ⋮ i tria «Instal·la l'aplicació» (o «Afegir a la pantalla d'inici»)."
+    "androidSteps": "A Chrome: toca el menú ⋮ i tria «Instal·la l'aplicació» (o «Afegir a la pantalla d'inici»).",
+    "bannerSub": "Un toc des de la pantalla d'inici, sense haver de cercar-nos cada cop.",
+    "bannerClose": "Tanca"
   },
   "notices": {
     "closedTonight": "Aquesta nit no obrim",
@@ -2213,5 +2220,14 @@
     "ctaTitle": "Totes les estacions de cada línia, en ordre",
     "ctaBody": "Tria una línia, mira’n les estacions una a una i marca on puges i on baixes.",
     "seeLine": "Veure recorregut i el meu trajecte de {code}"
+  },
+  "homeMsg": {
+    "tip": "Consell",
+    "promo": "Publi",
+    "vip": "Taules VIP",
+    "notice": "Avís",
+    "cta": "Veure-ho",
+    "hide": "Amaga els missatges",
+    "next": "Següent"
   }
 }

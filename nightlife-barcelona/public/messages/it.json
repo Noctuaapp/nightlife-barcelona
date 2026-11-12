@@ -76,7 +76,9 @@
     "searchTry": "Prova con",
     "picksKicker": "Scelti da Noctua",
     "picksTonight": "La nostra top 3 per stasera",
-    "picksWeek": "La nostra top 3 della settimana"
+    "picksWeek": "La nostra top 3 della settimana",
+    "getHomeNitbusHint": "Linee notturne, con tutte le fermate in ordine",
+    "getHomeTaxiHint": "Posteggi, Radio Taxi e app"
   },
   "filters": {
     "all": "Tutti"
@@ -973,7 +975,8 @@
     "fFood": "Cibo / cucina",
     "fShisha": "Shisha",
     "fAccessible": "Accessibile in sedia a rotelle",
-    "stopAt": "Fermata {name}"
+    "stopAt": "Fermata {name}",
+    "reviewsGoogleFallback": "Nel frattempo, guarda cosa dicono su Google Maps"
   },
   "eventPage": {
     "dateTbc": "Data da confermare",
@@ -1867,7 +1870,9 @@
     "msg23": "Entra ogni giorno e guadagna XP con la tua serie di visite",
     "msg24": "Manca un locale o c'è un dato sbagliato? Dicci tutto e lo controlliamo",
     "msg25": "Scopri la notte per quartieri: el Born, Poblenou…",
-    "msg26": "Manca un essenziale vicino a te? Proponilo e guadagna XP"
+    "msg26": "Manca un essenziale vicino a te? Proponilo e guadagna XP",
+    "msg27": "Nitbus: scegli dove sali e dove scendi e guarda solo il tuo tratto",
+    "msg28": "A che ora chiude la metro stasera? Guarda prima di uscire"
   },
   "reviews": {
     "title": "Recensioni di Noctua",
@@ -1979,7 +1984,9 @@
   },
   "install": {
     "body": "Aprila dalla schermata Home, a schermo intero e senza cercarla nel browser.",
-    "androidSteps": "In Chrome: tocca il menu ⋮ e scegli «Installa app» (o «Aggiungi a schermata Home»)."
+    "androidSteps": "In Chrome: tocca il menu ⋮ e scegli «Installa app» (o «Aggiungi a schermata Home»).",
+    "bannerSub": "Un tocco dalla schermata Home, senza cercarci ogni volta.",
+    "bannerClose": "Chiudi"
   },
   "notices": {
     "closedTonight": "Stasera siamo chiusi",
@@ -2213,5 +2220,14 @@
     "ctaTitle": "Tutte le stazioni di ogni linea, in ordine",
     "ctaBody": "Scegli una linea, guarda le sue stazioni una per una e segna dove sali e dove scendi.",
     "seeLine": "Vedi il percorso della {code} e il mio tragitto"
+  },
+  "homeMsg": {
+    "tip": "Consiglio",
+    "promo": "Pubblicità",
+    "vip": "Tavoli VIP",
+    "notice": "Avviso",
+    "cta": "Guarda",
+    "hide": "Nascondi i messaggi",
+    "next": "Avanti"
   }
 }

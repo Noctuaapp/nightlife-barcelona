@@ -18,7 +18,7 @@ import { availabilityOf } from "../../lib/availability"
 import { isShownEssential } from "../../lib/essentials"
 import { limitEssentialsForMap, PER_CATEGORY } from "../../lib/essentialsMapLimit"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
-import { MapPin, Footprints, X, List, LocateFixed, Search, Phone, type LucideIcon } from "lucide-react"
+import { MapPin, Footprints, X, List, LocateFixed, Search, Phone, Martini, PartyPopper, type LucideIcon } from "lucide-react"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
 import { logError } from "../../lib/log"
 import { clubOpenNow, clubHoursStatus, madridClock } from "../../lib/clubHours"
@@ -145,15 +145,6 @@ const getImage = (item: Club | Event | Essential): string | null => {
   if ("image" in item) return (item as Club | Event).image
   return null
 }
-
-const getInitials = (label: string | null | undefined) =>
-  (label || "?")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
 
 const SearchInput = ({ value, onChange, accent }: { value: string; onChange: (v: string) => void; accent?: string }) => {
   const { t } = useLanguage()
@@ -509,7 +500,6 @@ export default function MapPage() {
     const addMarker = (lat: number, lng: number, item: Club | Event | Essential) => {
       const label = "name" in item ? item.name : item.title
       const image = getImage(item)
-      const initials = getInitials(label)
       const isEssential = "category" in item
 
       // Clubs y esenciales: el color del pin dice si está abierto (verde), cierra en menos de una hora
@@ -535,7 +525,10 @@ export default function MapPage() {
         const Icon = categoryInfo((item as Essential).category).icon
         el.innerHTML = renderToStaticMarkup(<Icon size={17} color="#fff" strokeWidth={2.25} />)
       } else {
-        el.textContent = initials
+        // Club o evento sin foto: antes salían sus iniciales («LB», «NE»…), que parecían un fallo.
+        // Ahora un icono (copa para clubs, confeti para eventos) sobre el color del pin.
+        const Icon = filter === "events" ? PartyPopper : Martini
+        el.innerHTML = renderToStaticMarkup(<Icon size={17} color="#fff" strokeWidth={2.25} />)
       }
 
       const marker = new mapboxgl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map.current!)
@@ -656,8 +649,12 @@ export default function MapPage() {
     return image ? (
       <img src={image} alt={label} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "1px solid rgba(255,255,255,0.15)" }} />
     ) : (
-      <div style={{ width: size, height: size, borderRadius: "50%", background: `linear-gradient(135deg, ${color}, ${color}66)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(size * 0.32), fontWeight: 800, color: "#fff", flexShrink: 0, border: "1px solid rgba(255,255,255,0.15)" }}>
-        {getInitials(label)}
+      <div style={{ width: size, height: size, borderRadius: "50%", background: `linear-gradient(135deg, ${color}, ${color}66)`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0, border: "1px solid rgba(255,255,255,0.15)" }}>
+        {"category" in item
+          ? (() => { const Icon = categoryInfo((item as Essential).category).icon; return <Icon size={Math.round(size * 0.5)} strokeWidth={2.25} /> })()
+          : filter === "events"
+            ? <PartyPopper size={Math.round(size * 0.5)} strokeWidth={2.25} />
+            : <Martini size={Math.round(size * 0.5)} strokeWidth={2.25} />}
       </div>
     )
   }

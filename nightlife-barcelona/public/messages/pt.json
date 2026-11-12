@@ -76,7 +76,9 @@
     "searchTry": "Experimenta",
     "picksKicker": "Escolhidos pela Noctua",
     "picksTonight": "O nosso top 3 para esta noite",
-    "picksWeek": "O nosso top 3 da semana"
+    "picksWeek": "O nosso top 3 da semana",
+    "getHomeNitbusHint": "Linhas noturnas, com as paragens por ordem",
+    "getHomeTaxiHint": "Praças, Rádio Táxi e apps"
   },
   "filters": {
     "all": "Todos"
@@ -973,7 +975,8 @@
     "fFood": "Comida / cozinha",
     "fShisha": "Shisha",
     "fAccessible": "Acessível a cadeira de rodas",
-    "stopAt": "Paragem {name}"
+    "stopAt": "Paragem {name}",
+    "reviewsGoogleFallback": "Entretanto, veja o que dizem no Google Maps"
   },
   "eventPage": {
     "dateTbc": "Data a confirmar",
@@ -1867,7 +1870,9 @@
     "msg23": "Entra todos os dias e soma XP com a tua sequência",
     "msg24": "Falta um local ou há um dado errado? Conta-nos e nós verificamos",
     "msg25": "Descobre a noite por bairros: el Born, Poblenou…",
-    "msg26": "Falta um essencial perto de ti? Sugere-o e ganha XP"
+    "msg26": "Falta um essencial perto de ti? Sugere-o e ganha XP",
+    "msg27": "Nitbus: escolhe onde entras e onde sais e vê só o teu troço",
+    "msg28": "A que horas fecha o metro hoje? Vê antes de sair"
   },
   "reviews": {
     "title": "Opiniões da Noctua",
@@ -1979,7 +1984,9 @@
   },
   "install": {
     "body": "Abre-o a partir do ecrã principal, em ecrã inteiro e sem o procurar no navegador.",
-    "androidSteps": "No Chrome: toca no menu ⋮ e escolhe «Instalar aplicação» (ou «Adicionar ao ecrã principal»)."
+    "androidSteps": "No Chrome: toca no menu ⋮ e escolhe «Instalar aplicação» (ou «Adicionar ao ecrã principal»).",
+    "bannerSub": "Um toque no ecrã principal, sem nos procurares de cada vez.",
+    "bannerClose": "Fechar"
   },
   "notices": {
     "closedTonight": "Esta noite não abrimos",
@@ -2213,5 +2220,14 @@
     "ctaTitle": "Todas as estações de cada linha, por ordem",
     "ctaBody": "Escolhe uma linha, vê as estações uma a uma e marca onde entras e onde sais.",
     "seeLine": "Ver o percurso da {code} e o meu trajeto"
+  },
+  "homeMsg": {
+    "tip": "Dica",
+    "promo": "Publi",
+    "vip": "Mesas VIP",
+    "notice": "Aviso",
+    "cta": "Ver",
+    "hide": "Ocultar mensagens",
+    "next": "Seguinte"
   }
 }

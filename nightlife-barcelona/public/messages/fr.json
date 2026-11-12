@@ -76,7 +76,9 @@
     "searchTry": "Essaie avec",
     "picksKicker": "Choisis par Noctua",
     "picksTonight": "Notre top 3 pour ce soir",
-    "picksWeek": "Notre top 3 de la semaine"
+    "picksWeek": "Notre top 3 de la semaine",
+    "getHomeNitbusHint": "Lignes de nuit, avec tous les arrêts dans l'ordre",
+    "getHomeTaxiHint": "Stations, Radio Taxi et applis"
   },
   "filters": {
     "all": "Tous"
@@ -973,7 +975,8 @@
     "fFood": "Restauration / cuisine",
     "fShisha": "Chicha",
     "fAccessible": "Accessible en fauteuil roulant",
-    "stopAt": "Arrêt {name}"
+    "stopAt": "Arrêt {name}",
+    "reviewsGoogleFallback": "En attendant, voyez ce qu'on en dit sur Google Maps"
   },
   "eventPage": {
     "dateTbc": "Date à confirmer",
@@ -1867,7 +1870,9 @@
     "msg23": "Reviens chaque jour et gagne des XP avec ta série de visites",
     "msg24": "Il manque un lieu ou une info est fausse ? Dis-le-nous, on vérifie",
     "msg25": "Découvre la nuit par quartier : el Born, Poblenou…",
-    "msg26": "Il manque un essentiel près de toi ? Propose-le et gagne des XP"
+    "msg26": "Il manque un essentiel près de toi ? Propose-le et gagne des XP",
+    "msg27": "Nitbus : choisis où tu montes et où tu descends et vois seulement ton tronçon",
+    "msg28": "À quelle heure ferme le métro ce soir ? Regarde avant de sortir"
   },
   "reviews": {
     "title": "Avis Noctua",
@@ -1979,7 +1984,9 @@
   },
   "install": {
     "body": "Ouvre-la depuis ton écran d'accueil, en plein écran, sans la chercher dans le navigateur.",
-    "androidSteps": "Dans Chrome : touche le menu ⋮ puis « Installer l'application » (ou « Ajouter à l'écran d'accueil »)."
+    "androidSteps": "Dans Chrome : touche le menu ⋮ puis « Installer l'application » (ou « Ajouter à l'écran d'accueil »).",
+    "bannerSub": "Un geste depuis ton écran d'accueil, sans nous chercher à chaque fois.",
+    "bannerClose": "Fermer"
   },
   "notices": {
     "closedTonight": "Nous sommes fermés ce soir",
@@ -2213,5 +2220,14 @@
     "ctaTitle": "Toutes les stations de chaque ligne, dans l’ordre",
     "ctaBody": "Choisis une ligne, parcours ses stations une à une et indique où tu montes et où tu descends.",
     "seeLine": "Voir le parcours de la {code} et mon trajet"
+  },
+  "homeMsg": {
+    "tip": "Astuce",
+    "promo": "Pub",
+    "vip": "Tables VIP",
+    "notice": "Avis",
+    "cta": "Voir",
+    "hide": "Masquer les messages",
+    "next": "Suivant"
   }
 }

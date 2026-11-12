@@ -9,6 +9,7 @@ import { destinationRows, rideOriginRows, rideRows, shareChannelRows, type Desti
 import { clickHourSeries, type ClickHourRow } from "../../lib/dataInsights"
 import { Panel, SectionTitle, StatTile, type Accent } from "./ui"
 import { HourBars, NeedSql, PeakNote } from "./insights"
+import TimeSeriesPanel from "./TimeSeriesPanel"
 
 // Admin › Datos › «Clics y tiempo» (10/11/2026). Responde a dos preguntas: ¿cuánta gente pulsa «cómo llegar»,
 // la web, Instagram, «asistiré» o guarda un local en favoritos? y ¿cuánto tiempo se queda en la web?
@@ -289,9 +290,14 @@ export default function InteractionStats({ from, to, kind: kindProp, onKindChang
               {inter.favorites_total} guardados en total, de {inter.favorites_people} {inter.favorites_people === 1 ? "persona" : "personas"}. No depende de las fechas de arriba.
             </p>
             <BarList
-              rows={(inter.favorites_top || []).map((f) => ({ label: f.name || `${ITEM_LABEL[f.item_type || ""] || "Elemento"} #${f.item_id}`, sub: ITEM_LABEL[f.item_type || ""], n: f.n }))}
+              rows={(inter.favorites_top || []).map((f) => ({ label: f.name || `${ITEM_LABEL[f.item_type || ""] || "Elemento"} nº ${f.item_id} · sin ficha`, sub: ITEM_LABEL[f.item_type || ""], n: f.n }))}
               empty="Todavía nadie ha guardado nada."
             />
+            {(inter.favorites_top || []).some((f) => !f.name) && (
+              <p className="mt-3 text-xs text-zinc-500">
+                «Sin ficha»: ese guardado apunta a algo que ya no está en la base de datos (por ejemplo, un club, evento o noche borrado). Sigue contando en el total.
+              </p>
+            )}
           </Panel>
         </>
       )}
@@ -312,6 +318,8 @@ export default function InteractionStats({ from, to, kind: kindProp, onKindChang
             <StatTile accent="pink" icon={Users} label="Con cuenta" value={fmtDuration(time.by_account?.with_account?.avg_secs)} note={`${time.by_account?.with_account?.n ?? 0} visitas, de media`} />
             <StatTile accent="coral" icon={Users} label="Sin cuenta" value={fmtDuration(time.by_account?.anonymous?.avg_secs)} note={`${time.by_account?.anonymous?.n ?? 0} visitas, de media`} />
           </div>
+
+          <TimeSeriesPanel />
 
           <div className="grid gap-6 lg:grid-cols-2">
             <Panel accent="cyan">

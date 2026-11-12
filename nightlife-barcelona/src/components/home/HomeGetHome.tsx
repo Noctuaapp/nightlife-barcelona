@@ -2,50 +2,51 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { CarTaxiFront, Bus, TrainFront, X } from "lucide-react"
-import InstallAppButton from "../system/InstallAppButton"
+import { ArrowUpRight, BusFront, CarTaxiFront } from "lucide-react"
+import { MetroLineBadge, NitbusBadge } from "../ui/TransitBadge"
+import { NITBUS_PLATE } from "../../lib/transitColors"
 import { useLanguage } from "../../context/LanguageContext"
-import { useInstallPrompt } from "../../lib/useInstallPrompt"
 import { getMetroTonight, type MetroTonight } from "../../lib/transitHours"
+import { METRO_LINE_CODES } from "../../lib/metroLines"
+import TransitNetwork from "./art/TransitNetwork"
 
-// «Cómo volver a casa esta noche» en la portada (10/11/2026). Volver a casa era una puerta pequeña al final de
-// «Explora Noctua», y es justo lo que más busca quien viene de fuera: a qué hora cierra el metro, si hay
-// NitBus, cómo pedir un taxi. Aquí va justo debajo del carrusel de «Esta noche»: el estado del metro de hoy
-// (mismo cálculo que la ficha de cada local) y tres accesos: Metro, NitBus y Taxi.
-//
-// Debajo, en el móvil y mientras la app no esté instalada, la tarjeta de «Instala Noctua» (la misma de Perfil),
-// con una X para cerrarla: no vuelve a salir en 14 días. Sigue disponible en el menú ☰ y en Perfil.
+// «Cómo volver a casa esta noche» en la portada (10/11/2026). Rediseñado el 12/11/2026, cuarta versión: sin fotografía. Las dos
+// primeras usaban la foto de la portada y la tercera un amanecer dibujado (se veía cutre). Ahora el fondo es un plano de metro
+// esquemático con los colores oficiales de las líneas (art/TransitNetwork.tsx, SVG en línea). Arriba, el titular; abajo, tres
+// láminas de cristal, una por cada forma de volver, con su señal de la calle: el rombo rojo del metro, la placa azul del NitBus
+// y el amarillo del taxi. El estado del metro es el mismo cálculo que la ficha de cada local.
+// La tarjeta de «Instala Noctua» que había debajo se quitó: ahora es la franja de arriba del todo (InstallBanner).
 
-const DISMISS_KEY = "noctua_home_install_dismissed"
-const SNOOZE_MS = 14 * 24 * 3600 * 1000
+const NITBUS_SAMPLE = ["N0", "N1", "N2", "N3", "N4", "N5"]
+const MAX_METRO_BADGES = 7
 
-const BTN =
-  "flex flex-col items-start gap-2 rounded-ctl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-semibold text-ink transition hover:border-white/25 hover:bg-white/[0.08]"
+// Rombo rojo con la M, el rótulo del metro en la calle.
+function MetroSign() {
+  return (
+    <svg viewBox="0 0 44 44" aria-hidden="true" focusable="false" className="h-11 w-11 drop-shadow-[0_0_14px_rgba(226,35,26,.55)] md:col-start-1 md:row-start-1">
+      <rect x="7" y="7" width="30" height="30" rx="4.5" transform="rotate(45 22 22)" fill="#e2231a" />
+      <text x="22" y="28.2" textAnchor="middle" fontSize="19" fontWeight="800" fill="#fff" fontFamily="inherit">
+        M
+      </text>
+    </svg>
+  )
+}
+
+function Sign({ bg, fg, glow, children }: { bg: string; fg: string; glow: string; children: React.ReactNode }) {
+  return (
+    <span aria-hidden="true" className="grid h-11 w-11 place-items-center rounded-xl border border-white/20 md:col-start-1 md:row-start-1" style={{ background: bg, color: fg, boxShadow: `0 0 16px ${glow}` }}>
+      {children}
+    </span>
+  )
+}
 
 export default function HomeGetHome() {
   const { t } = useLanguage()
-  const install = useInstallPrompt()
   const [metro, setMetro] = useState<MetroTonight | null>(null)
-  const [snoozed, setSnoozed] = useState(true) // oculto hasta saber si se cerró (evita un parpadeo al cargar)
 
   useEffect(() => {
     setMetro(getMetroTonight())
-    try {
-      const at = Number(localStorage.getItem(DISMISS_KEY) || 0)
-      setSnoozed(Number.isFinite(at) && at > 0 && Date.now() - at < SNOOZE_MS)
-    } catch {
-      setSnoozed(false)
-    }
   }, [])
-
-  const dismiss = () => {
-    setSnoozed(true)
-    try {
-      localStorage.setItem(DISMISS_KEY, String(Date.now()))
-    } catch {
-      /* sin almacenamiento: se oculta solo esta visita */
-    }
-  }
 
   const metroLabel = !metro
     ? null
@@ -55,63 +56,84 @@ export default function HomeGetHome() {
         ? t("clubPage.metroAllNight")
         : t("clubPage.metroUntil").replace("{time}", metro.closes)
 
-  const showInstall = !snoozed && install.isMobile && !install.installed
+  const metroCodes = METRO_LINE_CODES.slice(0, MAX_METRO_BADGES)
+
+  const cardClass =
+    "group relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3.5 gap-y-3 rounded-2xl border border-white/20 bg-night/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.14),0_20px_44px_-20px_rgba(0,0,0,.85)] backdrop-blur-xl transition-colors hover:border-white/40 hover:bg-night/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:p-5 md:grid-cols-[1fr_auto] md:grid-rows-[auto_1fr]"
+  // Texto de la tarjeta: en móvil va entre la señal y la flecha; desde md, debajo de las dos.
+  const bodyClass = "col-start-2 row-start-1 flex min-w-0 flex-col gap-1 md:col-span-2 md:col-start-1 md:row-start-2 md:h-full"
+  const arrow = (
+    <ArrowUpRight size={20} strokeWidth={2.4} aria-hidden="true" className="col-start-3 row-start-1 shrink-0 text-zinc-300 md:col-start-2 md:row-start-1 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ink" />
+  )
 
   return (
     <section className="mx-auto mt-10 max-w-7xl px-4 sm:px-6" aria-labelledby="gethome-title">
-      <div className="relative overflow-hidden rounded-card border border-white/10 bg-surface p-4 sm:p-5">
-        <span aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[#3b82ff]/30 blur-2xl" />
-        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-[#3b82ff] to-transparent" />
+      <div className="relative isolate flex min-h-[38rem] flex-col justify-between gap-16 overflow-hidden rounded-card border border-white/10 bg-night px-4 pb-4 pt-6 shadow-[inset_0_1px_0_rgba(255,255,255,.14)] sm:min-h-[36rem] sm:gap-24 sm:px-6 sm:pb-6 sm:pt-8 lg:min-h-[33rem] lg:gap-0 lg:px-8 lg:pb-8 lg:pt-10">
+        {/* En el móvil el dibujo sube para que el intercambiador quede entre el titular y las láminas, no detrás de ellas. */}
+        <TransitNetwork className="absolute inset-x-0 -top-60 -z-20 h-[calc(100%+15rem)] w-full sm:-top-24 sm:h-[calc(100%+6rem)] lg:inset-0 lg:top-0 lg:h-full" />
+        {/* Lectura del texto: oscuro arriba (el titular) y abajo (las láminas); en medio se ve el intercambiador */}
+        <span aria-hidden="true" className="absolute inset-0 -z-10" style={{ background: "linear-gradient(180deg, rgba(10,9,16,.9) 0%, rgba(10,9,16,.5) 22%, rgba(10,9,16,.05) 40%, rgba(10,9,16,.15) 75%, rgba(10,9,16,.4) 100%)" }} />
 
-        <div className="relative lg:flex lg:items-center lg:justify-between lg:gap-8">
-          <div>
-            <h2 id="gethome-title" className="font-display text-2xl sm:text-3xl">
-              {t("home.getHomeTitle")}
-            </h2>
-            <p className="mt-1.5 text-sm leading-snug text-zinc-300">{t("home.getHomeText")}</p>
-            {metroLabel && (
-              <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-ink">
-                <span aria-hidden="true" className={`h-2 w-2 rounded-full ${metro?.state === "closed" ? "bg-rose-400" : "bg-emerald-400"}`} />
-                {t("home.doorMetro")}: {metroLabel}
-              </p>
-            )}
-          </div>
-
-          <div className="mt-4 grid grid-cols-3 gap-2 lg:mt-0 lg:w-[28rem]">
-            <Link href="/metro" className={BTN}>
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#3b82ff]/15 text-[#7fb0ff]">
-                <TrainFront size={17} aria-hidden="true" />
-              </span>
-              {t("home.doorMetro")}
-            </Link>
-            <Link href="/nitbus" className={BTN}>
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#a855f7]/15 text-[#c79bff]">
-                <Bus size={17} aria-hidden="true" />
-              </span>
-              {t("home.doorNitbus")}
-            </Link>
-            <Link href="/essentials/taxi" className={BTN}>
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#ec4899]/15 text-[#ff86bf]">
-                <CarTaxiFront size={17} aria-hidden="true" />
-              </span>
-              {t("home.getHomeTaxi")}
-            </Link>
-          </div>
+        <div>
+          <h2 id="gethome-title" className="max-w-xl font-display text-[1.9rem] leading-[1.08] text-white [text-shadow:0_2px_26px_rgba(0,0,0,.55)] sm:text-4xl lg:text-5xl">
+            {t("home.getHomeTitle")}
+          </h2>
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-zinc-100 [text-shadow:0_1px_14px_rgba(0,0,0,.6)] sm:text-base">{t("home.getHomeText")}</p>
         </div>
 
-        {showInstall && (
-          <div className="relative mt-4">
-            <InstallAppButton from="home" variant="card" cardClass="rounded-ctl p-4 pr-10" titleClass="text-base font-semibold text-ink" />
-            <button
-              type="button"
-              onClick={dismiss}
-              aria-label={t("common.close")}
-              className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full text-zinc-400 transition hover:bg-white/10 hover:text-ink"
-            >
-              <X size={16} aria-hidden="true" />
-            </button>
-          </div>
-        )}
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <li className="flex">
+            <Link href="/metro" className={`${cardClass} w-full`}>
+              <MetroSign />
+              <span className={bodyClass}>
+                <span className="block text-lg font-bold leading-tight text-ink">{t("home.doorMetro")}</span>
+                {metroLabel && (
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-ink">
+                    <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${metro?.state !== "closed" ? "bg-open shadow-[0_0_8px_rgba(52,211,153,.9)]" : "bg-rose-400"}`} />
+                    {metroLabel}
+                  </span>
+                )}
+                <span className="mt-1 flex flex-wrap items-center gap-1 md:mt-auto md:pt-2">
+                  {metroCodes.map((c) => (
+                    <MetroLineBadge key={c} code={c} />
+                  ))}
+                  {METRO_LINE_CODES.length > metroCodes.length && <span className="ml-0.5 text-xs font-semibold text-zinc-300">+{METRO_LINE_CODES.length - metroCodes.length}</span>}
+                </span>
+              </span>
+              {arrow}
+            </Link>
+          </li>
+          <li className="flex">
+            <Link href="/nitbus" className={`${cardClass} w-full`}>
+              <Sign bg={NITBUS_PLATE.bg} fg={NITBUS_PLATE.fg} glow="rgba(255,209,102,.3)">
+                <BusFront size={24} strokeWidth={2.2} />
+              </Sign>
+              <span className={bodyClass}>
+                <span className="block text-lg font-bold leading-tight text-ink">{t("home.doorNitbus")}</span>
+                <span className="block text-xs leading-snug text-zinc-200">{t("home.getHomeNitbusHint")}</span>
+                <span className="mt-1 flex flex-wrap items-center gap-1 md:mt-auto md:pt-2">
+                  {NITBUS_SAMPLE.map((c) => (
+                    <NitbusBadge key={c} code={c} />
+                  ))}
+                  <span className="ml-0.5 text-xs font-semibold text-zinc-300">…</span>
+                </span>
+              </span>
+              {arrow}
+            </Link>
+          </li>
+          <li className="flex">
+            <Link href="/essentials/taxi" className={`${cardClass} w-full`}>
+              <Sign bg="#f5c451" fg="#0a0910" glow="rgba(245,196,81,.35)">
+                <CarTaxiFront size={24} strokeWidth={2.2} />
+              </Sign>
+              <span className={bodyClass}>
+                <span className="block text-lg font-bold leading-tight text-ink">{t("home.getHomeTaxi")}</span>
+                <span className="block text-xs leading-snug text-zinc-200">{t("home.getHomeTaxiHint")}</span>
+              </span>
+              {arrow}
+            </Link>
+          </li>
+        </ul>
       </div>
     </section>
   )

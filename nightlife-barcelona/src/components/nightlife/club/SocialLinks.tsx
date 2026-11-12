@@ -30,6 +30,7 @@ export default function SocialLinks({
   tiktok,
   website,
   showWebsite = false,
+  editExtras = [],
   onClick,
   className = "",
 }: {
@@ -39,6 +40,8 @@ export default function SocialLinks({
   tiktok?: string | null
   website?: string | null
   showWebsite?: boolean
+  /** Campos extra que solo ve y edita el admin o el dueño (p. ej. el enlace de compra de entradas de un club). */
+  editExtras?: { field: string; label: string; value: string | null | undefined; placeholder: string }[]
   onClick?: (kind: "instagram_click" | "website_click" | "tiktok_click") => void
   className?: string
 }) {
@@ -92,16 +95,15 @@ export default function SocialLinks({
 
       {canEdit && (
         <dl className="mt-3 space-y-1.5 rounded-ctl border border-dashed border-purple-400/30 bg-purple-400/[0.04] p-3 text-xs">
-          <p className="font-semibold text-purple-200">Redes (solo lo ves tú)</p>
-          {(
-            [
-              ["instagram", "Instagram", instagram, "@usuario o enlace"],
-              ["tiktok", "TikTok", tiktok, "@usuario o enlace"],
-              ["website", "Web", website, "https://..."],
-            ] as const
-          ).map(([field, label, value, ph]) => (
+          <p className="font-semibold text-purple-200">Redes{editExtras.length > 0 ? " y entradas" : ""} (solo lo ves tú)</p>
+          {[
+            ["instagram", "Instagram", instagram, "@usuario o enlace"],
+            ["tiktok", "TikTok", tiktok, "@usuario o enlace"],
+            ["website", "Web", website, "https://..."],
+            ...editExtras.map((e) => [e.field, e.label, e.value, e.placeholder] as const),
+          ].map(([field, label, value, ph]) => (
             <div key={field} className="flex items-baseline gap-2">
-              <dt className="w-16 shrink-0 text-zinc-400">{label}</dt>
+              <dt className="w-[4.5rem] shrink-0 text-zinc-400">{label}</dt>
               <dd className="min-w-0 flex-1 break-all text-zinc-200">
                 <InlineEditText table={table} id={id} field={field} value={value} placeholder={ph} emptyLabel={`añadir ${label}`} />
               </dd>

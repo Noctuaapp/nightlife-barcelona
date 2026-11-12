@@ -777,6 +777,8 @@ export default function AdminPage() {
             early: "Empieza pasada la medianoche: cuenta como la noche de este día",
             legacy: "Horario anterior (no se puede separar por días):",
             preview: "Se guardará como:",
+            nights: "Lo que has marcado (por noches):",
+            previewNote: "Las horas de madrugada se guardan con el día del calendario: la noche del jueves a las 00:30 ya es viernes. Es correcto: al volver a abrir el formulario salen otra vez tus noches.",
           }}
         />
       </div>

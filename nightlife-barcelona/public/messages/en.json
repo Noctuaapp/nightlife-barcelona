@@ -76,7 +76,9 @@
     "getHomeTaxi": "Taxi",
     "stylesTitle": "What are you in the mood for tonight?",
     "stylesSub": "Pick a vibe and we'll show you where it's playing",
-    "searchTry": "Try"
+    "searchTry": "Try",
+    "getHomeNitbusHint": "Night lines, with every stop in order",
+    "getHomeTaxiHint": "Ranks, Radio Taxi and ride apps"
   },
   "filters": {
     "all": "All"
@@ -973,7 +975,8 @@
     "fVenueRental": "Venue hire",
     "rideTo": "Destination",
     "ticketsAdvance": "Advance tickets",
-    "fCapacityLabel": "Capacity"
+    "fCapacityLabel": "Capacity",
+    "reviewsGoogleFallback": "Meanwhile, see what people say on Google Maps"
   },
   "eventPage": {
     "dateTbc": "Date to be confirmed",
@@ -1867,7 +1870,9 @@
     "msg23": "Come back every day and earn XP with your streak",
     "msg24": "Missing a place or wrong info? Tell us and we'll check it",
     "msg25": "Discover the night by neighbourhood: el Born, Poblenou…",
-    "msg26": "Missing an essential near you? Suggest it and earn XP"
+    "msg26": "Missing an essential near you? Suggest it and earn XP",
+    "msg27": "Night bus: pick where you get on and off and see just your stretch",
+    "msg28": "What time does the metro close today? Check before you go out"
   },
   "reviews": {
     "title": "Noctua reviews",
@@ -1979,7 +1984,9 @@
   },
   "install": {
     "body": "Open it from your home screen, full screen, without hunting for it in the browser.",
-    "androidSteps": "In Chrome: tap the ⋮ menu, then “Install app” (or “Add to Home screen”)."
+    "androidSteps": "In Chrome: tap the ⋮ menu, then “Install app” (or “Add to Home screen”).",
+    "bannerSub": "One tap from your home screen, no searching for us every time.",
+    "bannerClose": "Close"
   },
   "notices": {
     "closedTonight": "We're closed tonight",
@@ -2213,5 +2220,14 @@
     "ctaTitle": "Every station on every line, in order",
     "ctaBody": "Pick a line, see its stations one by one and mark where you get on and off.",
     "seeLine": "See the {code} route and plan my trip"
+  },
+  "homeMsg": {
+    "tip": "Tip",
+    "promo": "Ad",
+    "vip": "VIP tables",
+    "notice": "Notice",
+    "cta": "Take a look",
+    "hide": "Hide messages",
+    "next": "Next"
   }
 }

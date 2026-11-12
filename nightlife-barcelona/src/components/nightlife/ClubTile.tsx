@@ -40,6 +40,8 @@ interface ClubTileProps {
   scheduleNotices?: unknown
   // Las primeras tarjetas (lo que se ve nada más entrar) cargan la foto con prioridad.
   priority?: boolean
+  // Proporción de la tarjeta (clases de Tailwind). Por defecto la del listado; «Locales parecidos» la usa más apaisada.
+  ratio?: string
 }
 
 const LIVE_STATUS_MAX_AGE_MS = 4 * 60 * 60 * 1000
@@ -63,6 +65,7 @@ export default function ClubTile({
   temporarilyClosed = false,
   scheduleNotices,
   priority = false,
+  ratio = "aspect-[4/5] md:aspect-square",
 }: ClubTileProps) {
   const { t } = useLanguage()
   const ct = useClubText()
@@ -119,7 +122,7 @@ export default function ClubTile({
   return (
     <Link
       href={`/clubs/${slug || createSlug(name)}`}
-      className="group relative block aspect-[4/5] overflow-hidden rounded-card md:aspect-square border border-white/10 bg-surface transition hover:border-white/25"
+      className={`group relative block overflow-hidden rounded-card border border-white/10 bg-surface transition hover:border-white/25 ${ratio}`}
     >
       <Image
         src={image || FALLBACK_IMAGE}

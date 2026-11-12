@@ -47,7 +47,16 @@ export default function ClubReviews({
   }, [clubId, table, column])
 
   if (reviews === null) return null
-  if (reviews.length === 0 && !rating) return null
+  if (reviews.length === 0 && !rating) {
+    // Sin reseñas guardadas ni nota de Google: dentro de la pestaña «Opiniones» se deja al menos
+    // la salida a Google Maps, para que quien llega no se encuentre solo con una invitación (12/11/2026).
+    return embedded && mapsUrl ? (
+      <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-semibold text-brand-soft hover:underline">
+        <Icon name="google" className="h-3.5 w-3.5" />
+        {t("clubPage.reviewsGoogleFallback")}
+      </a>
+    ) : null
+  }
 
   return (
     <section className={embedded ? "" : "mx-auto mb-16 max-w-6xl px-4 sm:px-6"} aria-label={t("clubPage.googleReviews")}>

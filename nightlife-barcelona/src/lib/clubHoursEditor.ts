@@ -118,3 +118,47 @@ export function compileRows(rows: DayRow[]): { hours: string; openDays: string[]
   const openDays = rows.flatMap((r, i) => (r.on ? [HOURS_DAY_NAMES[i]] : []))
   return { hours, openDays }
 }
+
+// Las filas agrupadas por horario: [{ time: "00:30–05:00", days: [3] }, { time: "00:30–06:00", days: [4, 5] }]. Los días son
+// índices de noche (0 = lunes). Solo entran las filas completas.
+export function groupRows(rows: DayRow[]): { time: string; days: number[] }[] {
+  const groups = new Map<string, number[]>()
+  rows.forEach((r, i) => {
+    if (!rowIsComplete(r)) return
+    const key = `${r.start}–${r.end}`
+    groups.set(key, [...(groups.get(key) || []), i])
+  })
+  return Array.from(groups.entries()).map(([time, days]) => ({ time, days }))
+}
+
+// [4, 5] → "Vie-Sáb"; [3, 5] → "Jue/Sáb".
+export function dayRuns(idx: number[], names: readonly string[] = HOURS_DAY_NAMES): string {
+  const out: string[] = []
+  let from = idx[0]
+  let prev = idx[0]
+  const flush = () => out.push(from === prev ? names[from] : `${names[from]}-${names[prev]}`)
+  for (const i of idx.slice(1)) {
+    if (i === prev + 1) prev = i
+    else {
+      flush()
+      from = i
+      prev = i
+    }
+  }
+  flush()
+  return out.join("/")
+}
+
+// Las filas tal como las marca la persona (por NOCHES): "Jue 00:30–05:00 · Vie-Sáb 00:30–06:00". Sirve para enseñar en el
+// admin lo que se ha marcado, porque el texto que se guarda usa el día de calendario cuando empieza de madrugada
+// ("V 00:30-05:00 | S-D 00:30-06:00") y a simple vista parece que los días se han movido.
+export function describeRows(rows: DayRow[], names: readonly string[] = HOURS_DAY_NAMES): string {
+  return groupRows(rows)
+    .map((g) => `${dayRuns(g.days, names)} ${g.time}`)
+    .join(" · ")
+}
+
+// ¿Alguna fila empieza de madrugada? Entonces las letras del texto guardado van un día por delante de las filas.
+export function hasEarlyRows(rows: DayRow[]): boolean {
+  return rows.some((r) => rowIsComplete(r) && startsAfterMidnight(r.start, r.end))
+}

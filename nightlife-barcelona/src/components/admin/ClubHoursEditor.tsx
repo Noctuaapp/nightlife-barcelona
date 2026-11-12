@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { HOURS_DAY_NAMES, compileRows, rowIsComplete, rowsFromClub, startsAfterMidnight, type DayRow } from "../../lib/clubHoursEditor"
+import { HOURS_DAY_NAMES, compileRows, describeRows, hasEarlyRows, rowIsComplete, rowsFromClub, startsAfterMidnight, type DayRow } from "../../lib/clubHoursEditor"
 
 // Horario por días para el admin y «Mi club» (06/11/2026): se marca cada día, se despliegan sus horas de inicio
 // y de fin, y el texto de horario y los días de apertura se componen solos (lib/clubHoursEditor.ts).
@@ -14,6 +14,8 @@ export type ClubHoursEditorLabels = {
   early: string // aviso cuando empieza pasada la medianoche
   legacy: string // «Horario anterior (no se puede separar por días):»
   preview?: string // «Se guardará como:» (solo en el admin)
+  nights?: string // «Lo que has marcado:» (solo en el admin)
+  previewNote?: string // por qué las letras del texto guardado van un día por delante en los horarios de madrugada (solo en el admin)
 }
 
 type Props = {
@@ -118,9 +120,17 @@ export default function ClubHoursEditor({ hours, openDays, onChange, labels, day
       )}
 
       {labels.preview && hours && (
-        <p className="mt-3 break-words text-xs text-zinc-400">
-          {labels.preview} <code className="rounded bg-white/10 px-1.5 py-0.5 text-zinc-200">{hours}</code>
-        </p>
+        <div className="mt-3 space-y-1 break-words text-xs text-zinc-400">
+          {labels.nights && (
+            <p>
+              {labels.nights} <span className="font-semibold text-zinc-100">{describeRows(rows, HOURS_DAY_NAMES.map((_, i) => dayLabel(i)))}</span>
+            </p>
+          )}
+          <p>
+            {labels.preview} <code className="rounded bg-white/10 px-1.5 py-0.5 text-zinc-200">{hours}</code>
+          </p>
+          {labels.previewNote && hasEarlyRows(rows) && <p className="text-zinc-500">{labels.previewNote}</p>}
+        </div>
       )}
     </div>
   )

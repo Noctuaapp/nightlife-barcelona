@@ -45,6 +45,7 @@ import { toDateLocale } from "../../lib/dateLocale"
 import { clubSummary } from "../../lib/clubSummary"
 import { safeUrl } from "../../lib/safeUrl"
 import { factCellClass, factsGridClass } from "../../lib/factsGrid"
+import ClubHoursWeek from "./ClubHoursWeek"
 
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
@@ -92,7 +93,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
     if (wanted === "reviews") setActiveTab(wanted)
   }, [])
   // Vienen ya del servidor (enlaces en el HTML para Google); si no, se piden aquí como antes.
-  const [related, setRelated] = useState<any[]>(() => (initialRelated || []).slice(0, 3))
+  const [related, setRelated] = useState<any[]>(() => (initialRelated || []).slice(0, 4))
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [liveCheckins, setLiveCheckins] = useState(0)
@@ -160,7 +161,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
         return points
       }
       const best = [...data].filter((r: any) => r.temporarily_closed !== true).sort((a, b) => score(b) - score(a)).slice(0, 6)
-      setRelated(best.sort(() => Math.random() - 0.5).slice(0, 3))
+      setRelated(best.sort(() => Math.random() - 0.5).slice(0, 4))
     }
 
     // Notas de check-in de las últimas 6 h: lo único realmente "en directo" de la ficha.
@@ -345,7 +346,6 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
   const quickFacts = [
     club.music && { key: "music", field: "music", icon: "music", label: t("club.music"), value: isAdmin ? club.music : ct.music(club.music) },
     club.price && { key: "price", field: "price", icon: "ticket", label: t("club.price"), value: isAdmin ? club.price : priceT.translated ? priceT.text : tr.price ?? club.price },
-    club.hours && { key: "hours", field: "hours", icon: "clock", label: t("club.hours"), value: isAdmin ? club.hours : ct.hours(club.hours, club.open_days) },
     minAge && { key: "age", field: "age_min", icon: "id", label: t("clubPage.minAge"), value: String(minAge) },
   ].filter(Boolean) as { key: string; field: string | null; icon: string; label: string; value: string }[]
 
@@ -510,6 +510,9 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
         </section>
       )}
 
+      {/* HORARIO (12/11/2026): bolitas con los días que abre y, debajo, las horas. Antes era una celda más de los datos prácticos. */}
+      {typeof club.hours === "string" && club.hours.trim() && <ClubHoursWeek clubId={club.id} hours={club.hours} openDays={club.open_days} isAdmin={isAdmin} />}
+
       {/* ESTA NOCHE (solo con datos reales: el local o check-ins de las últimas horas) y PRÓXIMA NOCHE */}
       {(vibe || liveNotes.length > 0 || nextEvent) && (
         <section className="mx-auto mt-3 max-w-6xl space-y-3 px-4 sm:px-6">
@@ -658,6 +661,9 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                 tiktok={club.tiktok}
                 website={club.website}
                 showWebsite
+                // Enlace de compra de entradas (12/11/2026): el admin o el dueño lo ponen aquí; con enlace, la ficha
+                // enseña el botón «Entradas» y cada clic se anota (Admin › Datos › Clics) para hablar luego con el local.
+                editExtras={[{ field: "tickets_url", label: "Entradas", value: club.tickets_url, placeholder: "https://… enlace de compra" }]}
                 onClick={(k) => trackClick(k, k === "website_click" ? { host: outboundHost(website) } : undefined)}
                 className="mt-4"
               />
@@ -896,21 +902,24 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
           mapa y a los esenciales. Cada toque se anota (related_click, nearby_click, next_click). */}
       {related.length > 0 && (
         <section className="mx-auto mt-10 max-w-6xl px-4 sm:px-6" aria-label={t("clubPage.related")}>
-          <div className="mb-3 flex items-end justify-between gap-3">
-            <h2 className="text-base font-semibold text-ink sm:text-lg">{t("clubPage.related")}</h2>
+          {/* 12/11/2026: cuatro locales y «Ver todos». En PC, cuatro columnas y el botón arriba; en móvil, una fila que se
+              desliza y que termina en una pieza «Ver todos los clubs». */}
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-ink sm:text-xl">{t("clubPage.related")}</h2>
             <Link
               href="/clubs"
               onClick={() => track("related_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { to: "all" } })}
-              className="shrink-0 text-xs font-semibold text-brand-soft hover:underline"
+              className="group flex shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] py-1.5 pl-3.5 pr-3 text-xs font-semibold text-ink transition hover:border-white/30 hover:bg-white/10 sm:text-sm"
             >
               {t("home.seeAll")}
+              <Icon name="arrow" className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
-          <ul className="scrollbar-none -mx-4 flex scroll-pl-4 snap-x gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
+          <ul className="scrollbar-none -mx-4 flex scroll-pl-4 snap-x gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-4">
             {related.map((r) => (
               <li
                 key={r.id}
-                className="w-[44vw] max-w-[220px] shrink-0 snap-start sm:w-auto sm:max-w-none"
+                className="w-[58vw] max-w-[250px] shrink-0 snap-start sm:w-auto sm:max-w-none"
                 onClickCapture={() => track("related_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { to: r.name } })}
               >
                 <ClubTile
@@ -921,20 +930,22 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                   image={r.image}
                   rating={r.google_rating || r.rating || null}
                   temporarilyClosed={r.temporarily_closed === true}
+                  ratio="aspect-[4/5] sm:aspect-[16/10] lg:aspect-[4/5]"
                 />
               </li>
             ))}
-            <li className="w-[44vw] max-w-[220px] shrink-0 snap-start sm:w-auto sm:max-w-none">
+            {/* Solo en móvil: la última pieza de la fila. En PC el enlace es el botón de arriba. */}
+            <li className="w-[58vw] max-w-[250px] shrink-0 snap-start sm:hidden">
               <Link
                 href="/clubs"
                 onClick={() => track("related_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { to: "all" } })}
-                className="flex aspect-[4/5] flex-col items-center justify-center gap-3 rounded-card border border-white/10 bg-surface p-4 text-center transition hover:border-white/25 md:aspect-square"
+                className="group relative flex aspect-[4/5] flex-col items-center justify-center gap-3 overflow-hidden rounded-card border border-white/15 p-4 text-center transition hover:border-white/30"
+                style={{ background: "radial-gradient(120% 90% at 50% 0%, #4b34b8 0%, #231a5e 52%, #120d33 100%)" }}
               >
-                {/* 05/11/2026: la flecha va solo en el círculo (antes el texto traía otra «→» y salían dos) y sin tinte morado. */}
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#0a0910]">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#0a0910] shadow-[0_0_28px_rgba(160,139,255,.55)] transition-transform group-hover:translate-x-0.5">
                   <Icon name="arrow" className="h-5 w-5" />
                 </span>
-                <span className="text-sm font-semibold leading-snug text-ink">{t("clubs.explore")}</span>
+                <span className="font-display text-base leading-tight text-ink">{t("clubs.explore")}</span>
               </Link>
             </li>
           </ul>

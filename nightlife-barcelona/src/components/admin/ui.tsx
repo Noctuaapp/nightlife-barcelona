@@ -119,13 +119,18 @@ export function SectionTitle({
 
 export type TrendInfo = { dir: "up" | "down" | "flat"; text: string; prev: number }
 
+/** Fechas del periodo con el que se compara («28/10 al 10/11»): la página las pone y cada «antes» las enseña debajo. */
+export const TrendRangeContext = createContext<string | null>(null)
+
 // Variación frente al periodo anterior. El color nunca va solo: siempre lleva flecha o «= igual» y el valor de antes a la vista.
 export function TrendChip({ trend }: { trend: TrendInfo }) {
+  const since = useContext(TrendRangeContext)
   const tone = trend.dir === "up" ? "text-open" : trend.dir === "down" ? "text-red-300" : "text-zinc-400"
   return (
-    <span className={`mt-1.5 block text-xs font-semibold tabular-nums ${tone}`} title={`Periodo anterior: ${trend.prev}`}>
+    <span className={`mt-1.5 block text-xs font-semibold tabular-nums ${tone}`} title={`Periodo anterior${since ? ` (${since})` : ""}: ${trend.prev}`}>
       {trend.text}
       {!trend.text.includes("antes") && <span className="font-normal text-zinc-500"> · antes {trend.prev}</span>}
+      {since && <span className="block font-normal text-zinc-500">del {since}</span>}
     </span>
   )
 }

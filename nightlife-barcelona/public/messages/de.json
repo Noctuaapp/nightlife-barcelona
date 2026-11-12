@@ -76,7 +76,9 @@
     "searchTry": "Probier mal",
     "picksKicker": "Von Noctua ausgewählt",
     "picksTonight": "Unsere Top 3 für heute Nacht",
-    "picksWeek": "Unsere Top 3 der Woche"
+    "picksWeek": "Unsere Top 3 der Woche",
+    "getHomeNitbusHint": "Nachtlinien mit allen Haltestellen in Reihenfolge",
+    "getHomeTaxiHint": "Taxistände, Funktaxi und Apps"
   },
   "filters": {
     "all": "Alle"
@@ -973,7 +975,8 @@
     "fFood": "Essen / Küche",
     "fShisha": "Shisha",
     "fAccessible": "Rollstuhlgerecht",
-    "stopAt": "Haltestelle {name}"
+    "stopAt": "Haltestelle {name}",
+    "reviewsGoogleFallback": "Schau dir in der Zwischenzeit die Meinungen auf Google Maps an"
   },
   "eventPage": {
     "dateTbc": "Datum folgt",
@@ -1867,7 +1870,9 @@
     "msg23": "Komm jeden Tag vorbei und sammle XP mit deiner Serie",
     "msg24": "Fehlt ein Ort oder stimmt eine Angabe nicht? Sag es uns, wir prüfen es",
     "msg25": "Entdecke die Nacht nach Vierteln: el Born, Poblenou…",
-    "msg26": "Fehlt ein Essential in deiner Nähe? Schlag es vor und sammle XP"
+    "msg26": "Fehlt ein Essential in deiner Nähe? Schlag es vor und sammle XP",
+    "msg27": "Nitbus: Wähle Einstieg und Ausstieg und sieh nur deine Strecke",
+    "msg28": "Wann schließt die Metro heute? Schau nach, bevor du losgehst"
   },
   "reviews": {
     "title": "Noctua-Bewertungen",
@@ -1979,7 +1984,9 @@
   },
   "install": {
     "body": "Öffne sie direkt vom Startbildschirm, im Vollbild und ohne Umweg über den Browser.",
-    "androidSteps": "In Chrome: Tippe auf das Menü ⋮ und dann auf „App installieren“ (oder „Zum Startbildschirm hinzufügen“)."
+    "androidSteps": "In Chrome: Tippe auf das Menü ⋮ und dann auf „App installieren“ (oder „Zum Startbildschirm hinzufügen“).",
+    "bannerSub": "Ein Tipp auf dem Startbildschirm – ohne uns jedes Mal zu suchen.",
+    "bannerClose": "Schließen"
   },
   "notices": {
     "closedTonight": "Heute Nacht haben wir geschlossen",
@@ -2213,5 +2220,14 @@
     "ctaTitle": "Alle Stationen jeder Linie, der Reihe nach",
     "ctaBody": "Wähle eine Linie, sieh dir ihre Stationen nacheinander an und markiere, wo du ein- und aussteigst.",
     "seeLine": "Strecke der {code} ansehen und meine Fahrt planen"
+  },
+  "homeMsg": {
+    "tip": "Tipp",
+    "promo": "Anzeige",
+    "vip": "VIP-Tische",
+    "notice": "Hinweis",
+    "cta": "Ansehen",
+    "hide": "Hinweise ausblenden",
+    "next": "Weiter"
   }
 }

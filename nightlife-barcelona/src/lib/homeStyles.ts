@@ -15,6 +15,8 @@ export type HomeStyleCard = {
   slug: string
   count: number
   image: string | null
+  // Fotos de hasta tres locales más del estilo (distintas de la del fondo): se enseñan como miniaturas en la tarjeta.
+  thumbs: string[]
   // Ids de los locales del estilo: la portada los cruza con «abierto ahora» (que se calcula tras montar).
   ids: (string | number)[]
 }
@@ -34,6 +36,13 @@ export function homeStyleCards(clubs: DbRow[], max: number = HOME_STYLE_MAX): Ho
     // Cada estilo, una foto distinta si se puede: el mejor local aún no usado; si no, el mejor a secas.
     const pick = withImage.find((c) => !used.has(String(c.image))) ?? withImage[0] ?? null
     if (pick) used.add(String(pick.image))
-    return { slug: s.slug, count: list.length, image: pick ? String(pick.image) : null, ids: list.map((c) => c.id) }
+    const thumbs: string[] = []
+    for (const c of withImage) {
+      const src = String(c.image)
+      if (pick && src === String(pick.image)) continue
+      if (!thumbs.includes(src)) thumbs.push(src)
+      if (thumbs.length === 3) break
+    }
+    return { slug: s.slug, count: list.length, image: pick ? String(pick.image) : null, thumbs, ids: list.map((c) => c.id) }
   })
 }

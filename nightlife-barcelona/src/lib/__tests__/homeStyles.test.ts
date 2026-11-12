@@ -56,4 +56,23 @@ describe("homeStyleCards", () => {
     expect(homeStyleCards(all, 3)).toHaveLength(3)
     expect(homeStyleCards([])).toEqual([])
   })
+
+  it("da hasta tres miniaturas de otros locales del estilo, sin repetir y sin la foto del fondo", () => {
+    const cards = homeStyleCards([
+      club("Techno", "https://x/a.jpg", { verified: true }),
+      club("Techno", "https://x/b.jpg"),
+      club("Techno", "https://x/b.jpg"),
+      club("Techno", "https://x/c.jpg"),
+      club("Techno", "https://x/d.jpg"),
+      club("Techno", "https://x/e.jpg"),
+    ])
+    const { image, thumbs } = cards[0]
+    expect(thumbs.length).toBeLessThanOrEqual(3)
+    expect(new Set(thumbs).size).toBe(thumbs.length)
+    expect(thumbs).not.toContain(image)
+  })
+
+  it("sin otras fotos, no hay miniaturas", () => {
+    expect(homeStyleCards(many(3, "Jazz"))[0].thumbs).toEqual([])
+  })
 })
