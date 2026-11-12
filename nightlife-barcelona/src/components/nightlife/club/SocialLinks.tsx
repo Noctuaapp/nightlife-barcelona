@@ -96,16 +96,18 @@ export default function SocialLinks({
       {canEdit && (
         <dl className="mt-3 space-y-1.5 rounded-ctl border border-dashed border-purple-400/30 bg-purple-400/[0.04] p-3 text-xs">
           <p className="font-semibold text-purple-200">Redes{editExtras.length > 0 ? " y entradas" : ""} (solo lo ves tú)</p>
-          {[
-            ["instagram", "Instagram", instagram, "@usuario o enlace"],
-            ["tiktok", "TikTok", tiktok, "@usuario o enlace"],
-            ["website", "Web", website, "https://..."],
-            ...editExtras.map((e) => [e.field, e.label, e.value, e.placeholder] as const),
-          ].map(([field, label, value, ph]) => (
+          {(
+            [
+              ["instagram", "Instagram", instagram, "@usuario o enlace"],
+              ["tiktok", "TikTok", tiktok, "@usuario o enlace"],
+              ["website", "Web", website, "https://..."],
+              ...editExtras.map((e) => [e.field, e.label, e.value, e.placeholder] as const),
+            ] as (readonly [string, string, string | null | undefined, string])[]
+          ).map(([field, label, value, ph]) => (
             <div key={field} className="flex items-baseline gap-2">
               <dt className="w-[4.5rem] shrink-0 text-zinc-400">{label}</dt>
               <dd className="min-w-0 flex-1 break-all text-zinc-200">
-                <InlineEditText table={table} id={id} field={field} value={value} placeholder={ph} emptyLabel={`añadir ${label}`} />
+                <InlineEditText table={table} id={id} field={field} value={value ?? undefined} placeholder={ph} emptyLabel={`añadir ${label}`} />
               </dd>
             </div>
           ))}

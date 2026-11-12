@@ -35,7 +35,7 @@ export default function ClubHoursWeek({
   openDays,
   isAdmin = false,
 }: {
-  clubId: string | number
+  clubId: number
   hours: string
   openDays?: string[] | null
   isAdmin?: boolean
