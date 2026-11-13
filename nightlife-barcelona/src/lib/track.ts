@@ -1,5 +1,6 @@
 import { supabase } from "./supabase"
 import { isAdminEmail } from "./admin"
+import { createHumanGate, listenForHuman } from "./humanGate"
 
 // Analítica propia de Noctua. Todo se guarda en la tabla `analytics`. No se guarda nada personal
 // aparte de user_id (si hay sesión). El session_id es un valor aleatorio que vive solo en memoria
@@ -139,6 +140,21 @@ function isProductionSite(): boolean {
   }
 }
 
+// Puerta de persona real (13/11/2026): nada se envía hasta que el navegador nota una señal humana (toque,
+// tecla, ratón o rueda). Los eventos que llegan antes esperan en memoria y salen, en orden, con la primera
+// señal. Ver src/lib/humanGate.ts: allí se explica el porqué (una oleada de ~450 bots de una sola página).
+// Cada evento guarda la ruta que tenía al producirse: si la señal humana llega después de cambiar de página, el
+// recorrido (entrada, cambios de página, tiempo) sigue mostrando la página correcta de cada paso.
+const gate = createHumanGate<[string, TrackOptions, string]>((items) => {
+  for (const [type, o, path] of items) void sendEvent(type, o, path)
+})
+let watching = false
+function watchForHuman() {
+  if (watching || typeof window === "undefined") return
+  watching = true
+  listenForHuman(window, () => gate.markHuman())
+}
+
 // Registra un evento. Nunca lanza error ni bloquea la interfaz: si falla, se ignora.
 // OJO: el servidor (trigger analytics_guard, ver supabase/64_analitica_tipos_de_evento.sql) solo acepta
 // los tipos de evento de su lista y descarta los demás SIN dar error. Un evento nuevo debe añadirse
@@ -146,6 +162,20 @@ function isProductionSite(): boolean {
 export async function track(eventType: string, opts: TrackOptions = {}) {
   try {
     if (typeof window === "undefined" || !isProductionSite() || isAutomated() || isAdminDevice()) return
+    const path = window.location.pathname.slice(0, 120)
+    if (!gate.isHuman()) {
+      watchForHuman()
+      gate.hold([eventType, opts, path])
+      return
+    }
+    await sendEvent(eventType, opts, path)
+  } catch {
+    /* la analítica nunca debe romper la página */
+  }
+}
+
+async function sendEvent(eventType: string, opts: TrackOptions, path: string) {
+  try {
     // getSession lee la sesión guardada en el navegador; getUser hacía una llamada de red extra a
     // Supabase por cada evento registrado.
     const { data } = await supabase.auth.getSession()
@@ -173,7 +203,7 @@ export async function track(eventType: string, opts: TrackOptions = {}) {
         source: getTrafficSource(),
         device: deviceType(),
         locale: (document.documentElement.lang || navigator.language || "").slice(0, 8),
-        path: window.location.pathname.slice(0, 120),
+        path,
         results_count: o.resultsCount ?? null,
         meta: o.meta ?? null,
       })
