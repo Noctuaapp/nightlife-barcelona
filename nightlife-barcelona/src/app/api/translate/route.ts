@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { handleTranslate, type TranslateDeps } from "@/lib/translateService"
 import { refKey, type TargetLang, type TranslateRef } from "@/lib/translateContent"
+import { takeTranslateCall } from "@/lib/translateBudget"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 30
@@ -11,6 +12,8 @@ export const maxDuration = 30
 // el texto de la base de datos, así que no sirve para traducir texto cualquiera. Cada texto se traduce una vez:
 // después se lee de la tabla. Necesita la variable ANTHROPIC_API_KEY en Vercel; sin ella responde 503 y la web
 // sigue enseñando el texto original en español. TRANSLATE_MODEL cambia el modelo (por defecto, el pequeño y barato).
+// Tope diario de llamadas al modelo (13/11/2026): ver lib/translateBudget.ts y supabase/100_tope_traducciones.sql.
+// TRANSLATE_DAILY_LIMIT lo cambia (0 = no traducir nada).
 const MODEL = process.env.TRANSLATE_MODEL || "claude-haiku-5-5"
 
 function admin() {
@@ -52,6 +55,8 @@ function deps(): TranslateDeps {
       if (error) throw new Error(error.message)
     },
     async callModel(system: string, user: string) {
+      // Sin cupo diario (o sin poder comprobarlo) no se llama al modelo: la web enseña el original en español.
+      if (!(await takeTranslateCall(db))) throw new Error("budget")
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY!, "anthropic-version": "2023-06-01" },
