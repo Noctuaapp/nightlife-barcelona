@@ -10,7 +10,7 @@ import { EXTRA_FEATURES } from "../../lib/extraFeatures"
 import { SearchIcon, CloseIcon, LocationIcon, FlameIcon, SlidersIcon, ChevronDownIcon } from "../ui/FilterIcons"
 import { areasForPostalCode } from "../../lib/postalCodes"
 import { clubStaysOpenPast, madridClock } from "../../lib/clubHours"
-import { effectiveOpenNow, isClosedTonight } from "../../lib/scheduleNotices"
+import { effectiveOpenNow } from "../../lib/scheduleNotices"
 import SectionHero from "../ui/SectionHero"
 import { WEEK_DOW_ORDER, tonightDow, clubMatchesDay } from "../../lib/clubDays"
 import { OFFERS_FILTER, hasOffer } from "../../lib/offers"
@@ -96,7 +96,9 @@ const GENRE_FILTERS = ["Techno", "Commercial", "Cocktail Bar", "Karaoke"]
 // «Bar/pub abierto tras las 2:30» (29/10/2026): los bares y pubs que cierran más tarde de las 2:30,
 // para quien busca dónde seguir cuando ya cierra casi todo pero no quiere ir a una discoteca.
 const LATE_BAR_FILTER = "Bar/pub abierto tras las 2:30"
-const ATTRIBUTE_FILTERS = ["Trending", OFFERS_FILTER, LATE_BAR_FILTER, "LGTBI+", "Sin cola", "Futbolín/Billar", "Descuento hoy", "Entrada gratis", ...EXTRA_FEATURES.filter((f) => f.filter).map((f) => f.filter as string)]
+// «Swinger» (14/11/2026): los clubs marcados como swinger_friendly (antes solo se encontraban buscando por nombre).
+// Como «Sin cola» o «Pista de baile», solo sale si algún club visible lo cumple (optionsWithData).
+const ATTRIBUTE_FILTERS = ["Trending", OFFERS_FILTER, LATE_BAR_FILTER, "LGTBI+", "Swinger", "Sin cola", "Futbolín/Billar", "Descuento hoy", "Entrada gratis", ...EXTRA_FEATURES.filter((f) => f.filter).map((f) => f.filter as string)]
 // Antes solo había "+18", "+21", "+25": los clubs con edad mínima de 30 (campo age_min = 30, editable
 // desde la ficha del club) no se podían filtrar por aquí, aunque el dato existiera. Se añade "+30".
 const AGE_FILTERS = ["+18", "+21", "+25", "+30"]
@@ -259,66 +261,6 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     saveFilterMemory(memoryStorage(), FILTER_MEMORY_KEY, memorySnapshot(window.scrollY))
   }
 
-  const isOpenNow = (hours: string): boolean => {
-    if (!hours) return false
-
-    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Madrid" }))
-    const currentMinutes = now.getHours() * 60 + now.getMinutes()
-    const currentDay = now.getDay()
-
-    const dayMap: Record<string, number> = { L: 1, M: 2, X: 3, J: 4, V: 5, S: 6, D: 0 }
-    const dayOrder = [1, 2, 3, 4, 5, 6, 0]
-
-    const isDayActive = (daysStr: string): boolean => {
-      const parts = daysStr.split("/")
-      for (const part of parts) {
-        if (part.includes("-")) {
-          const [from, to] = part.split("-")
-          const fromIdx = dayOrder.indexOf(dayMap[from])
-          const toIdx = dayOrder.indexOf(dayMap[to])
-          const currentIdx = dayOrder.indexOf(currentDay)
-          if (fromIdx !== -1 && toIdx !== -1 && currentIdx !== -1) {
-            if (fromIdx <= toIdx) {
-              if (currentIdx >= fromIdx && currentIdx <= toIdx) return true
-            } else {
-              if (currentIdx >= fromIdx || currentIdx <= toIdx) return true
-            }
-          }
-        } else {
-          if (dayMap[part] === currentDay) return true
-        }
-      }
-      return false
-    }
-
-    const periods = hours.split("|").map((s) => s.trim())
-
-    for (const period of periods) {
-      const withDay = period.match(/^([LMXJVSD/\-]+)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/)
-      const noDay = period.match(/^(\d{2}:\d{2})-(\d{2}:\d{2})$/)
-
-      if (withDay) {
-        if (!isDayActive(withDay[1])) continue
-        const startMin = parseInt(withDay[2].split(":")[0]) * 60 + parseInt(withDay[2].split(":")[1])
-        const endMin = parseInt(withDay[3].split(":")[0]) * 60 + parseInt(withDay[3].split(":")[1])
-        if (endMin < startMin) {
-          if (currentMinutes >= startMin || currentMinutes <= endMin) return true
-        } else {
-          if (currentMinutes >= startMin && currentMinutes <= endMin) return true
-        }
-      } else if (noDay) {
-        const startMin = parseInt(noDay[1].split(":")[0]) * 60 + parseInt(noDay[1].split(":")[1])
-        const endMin = parseInt(noDay[2].split(":")[0]) * 60 + parseInt(noDay[2].split(":")[1])
-        if (endMin < startMin) {
-          if (currentMinutes >= startMin || currentMinutes <= endMin) return true
-        } else {
-          if (currentMinutes >= startMin && currentMinutes <= endMin) return true
-        }
-      }
-    }
-    return false
-  }
-
   const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371
     const dLat = ((lat2 - lat1) * Math.PI) / 180
@@ -342,6 +284,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
     if (a === OFFERS_FILTER) return hasOffer(club)
     if (a === LATE_BAR_FILTER) return !!club.venue_type && club.venue_type !== "Discoteca" && clubStaysOpenPast(club.hours) === true
     if (a === "LGTBI+") return club.lgtbi_friendly === true
+    if (a === "Swinger") return club.swinger_friendly === true
     if (a === "Sin cola") return club.queue === "No queue" || !club.queue
     if (a === "Futbolín/Billar") return club.has_foosball === true
     if (a === "Descuento hoy") return !!club.discount_info
@@ -394,7 +337,12 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
         matchesQuery(search, [club.name, club.neighborhood, club.music, club.address, club.city, club.venue_type]) ||
         (!!postalAreas && postalAreas.some((area) => matchesQuery(area, [club.neighborhood])))
 
-      const matchesOpenNow = !openNow || (club.temporarily_closed !== true && !isClosedTonight(club.schedule_notices) && isOpenNow(club.hours))
+      // Mismo lector de horarios que el resto de la web (lib/clubHours): entiende «J-S», «L/M/X», varios tramos,
+      // una sola cifra de hora y las noches que pasan de las 24:00 (viernes 23:00-06:00 sigue abierto el sábado a las 02:00).
+      // Antes había aquí uno propio, más estricto, y un local con el horario escrito de otra forma nunca salía en «Ahora».
+      const matchesOpenNow =
+        !openNow ||
+        effectiveOpenNow({ hours: club.hours, open_days: club.open_days, schedule_notices: club.schedule_notices, temporarily_closed: club.temporarily_closed }) === true
       const matchesDay = clubMatchesDay(club.hours, club.open_days, selectedDay)
 
       const matchesNearMe =

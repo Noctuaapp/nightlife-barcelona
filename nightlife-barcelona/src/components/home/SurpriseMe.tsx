@@ -7,6 +7,7 @@ import { ChevronDown, ChevronLeft, Clock, Dices, Disc3, Heart, MapPin, MessageCi
 import type { LucideIcon } from "lucide-react"
 import NocOwl from "../mascot/NocOwl"
 import SurpriseRoulette from "./SurpriseRoulette"
+import CasinoFelt from "./CasinoFelt"
 import SharePlanButton from "../plan/SharePlanButton"
 import NocSays, { useOwnLevelColor } from "../mascot/NocSays"
 import { useLanguage } from "../../context/LanguageContext"
@@ -565,9 +566,9 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
               {/* Escenario */}
               <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4 pt-4">
                 {phase === "spin" && (
-                  <div className="flex min-h-full flex-col justify-center gap-4">
+                  <CasinoFelt>
                     <SurpriseRoulette key={spinKey} names={strip} durationMs={ROULETTE_MS} label={t("surprise.thinking")} />
-                  </div>
+                  </CasinoFelt>
                 )}
 
                 {phase === "empty" && (

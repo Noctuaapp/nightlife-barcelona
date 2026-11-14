@@ -1201,6 +1201,10 @@
     "titleZona": "Clubs and bars in {name}",
     "genericZona": "Clubs, bars and nightlife venues in {name}, with opening hours, prices, music style and how to get home.",
     "otherZones": "Other areas",
+    "openNow": "Open now",
+    "openOf": "{n} of {total} open now",
+    "openNone": "Nothing is open here right now.",
+    "showAll": "Show all",
     "facts": {
       "title": "{name} at a glance",
       "count": "Noctua lists {n} nightlife venues in {name}.",
@@ -1872,7 +1876,8 @@
     "msg25": "Discover the night by neighbourhood: el Born, Poblenou…",
     "msg26": "Missing an essential near you? Suggest it and earn XP",
     "msg27": "Night bus: pick where you get on and off and see just your stretch",
-    "msg28": "What time does the metro close today? Check before you go out"
+    "msg28": "What time does the metro close today? Check before you go out",
+    "msg29": "Fancy a drink midweek too? Find out where here"
   },
   "reviews": {
     "title": "Noctua reviews",

@@ -62,6 +62,45 @@ describe("avisos activos y próximos", () => {
   })
 })
 
+// 14/11/2026: «Ahora» de /clubs usaba un lector de horarios propio, más estricto, y un local con el horario escrito de
+// otra forma no salía nunca como abierto. Ahora /clubs y las páginas de estilo usan este, el mismo de la ficha.
+describe("effectiveOpenNow: el mismo local escrito de varias formas da el mismo resultado", () => {
+  // 2025-11-08 es sábado. 01:30 del sábado es la noche del viernes; 23:30 del sábado es la noche del sábado.
+  const FORMS = ["V/S 23:00-06:00", "V-S 23:00-06:00", "J-S 23:00-06:00", "J-S 23:00-6:00", "J-S 23:00-06:00, D 19:00-01:00", "L-D 23:00-06:00", "X-S 22:00-06:00 | D 19:00-01:00", "23:00-06:00"]
+
+  it("la noche del viernes sigue abierta el sábado a la 01:30", () => {
+    vi.useFakeTimers()
+    at("2025-11-08T01:30:00")
+    for (const hours of FORMS) expect(effectiveOpenNow({ hours }), hours).toBe(true)
+  })
+
+  it("el sábado a las 23:30 abren todos los que incluyen sábado", () => {
+    vi.useFakeTimers()
+    at("2025-11-08T23:30:00")
+    for (const hours of FORMS) expect(effectiveOpenNow({ hours }), hours).toBe(true)
+  })
+
+  it("a las 12:00 no abre ninguno", () => {
+    vi.useFakeTimers()
+    at("2025-11-08T12:00:00")
+    for (const hours of FORMS) expect(effectiveOpenNow({ hours }), hours).toBe(false)
+  })
+
+  it("un local que solo abre jueves y viernes está cerrado el sábado por la noche", () => {
+    vi.useFakeTimers()
+    at("2025-11-08T23:30:00")
+    expect(effectiveOpenNow({ hours: "J/V 23:00-06:00" })).toBe(false)
+  })
+
+  it("sin horario o con uno ilegible no se sabe (null), no «cerrado»", () => {
+    vi.useFakeTimers()
+    at("2025-11-08T23:30:00")
+    expect(effectiveOpenNow({ hours: "" })).toBeNull()
+    expect(effectiveOpenNow({ hours: null })).toBeNull()
+    expect(effectiveOpenNow({ hours: "Jueves a sábado 23:00 - 06:00" })).toBeNull()
+  })
+})
+
 describe("isClosedTonight / effectiveOpenNow", () => {
   const closedSat = [{ id: "1", kind: "closed", from: "2025-11-08", to: "2025-11-08" }]
 

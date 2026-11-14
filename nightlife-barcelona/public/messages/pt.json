@@ -1201,6 +1201,10 @@
     "titleZona": "Discotecas e bares em {name}",
     "genericZona": "Discotecas, bares e locais de vida noturna em {name}, com horário, preço, estilo de música e como voltar para casa.",
     "otherZones": "Outras zonas",
+    "openNow": "Abertos agora",
+    "openOf": "{n} de {total} abertos agora",
+    "openNone": "Neste momento não há nada aberto aqui.",
+    "showAll": "Ver todos",
     "facts": {
       "title": "{name} em números",
       "count": "A Noctua reúne {n} locais de vida noturna em {name}.",
@@ -1872,7 +1876,8 @@
     "msg25": "Descobre a noite por bairros: el Born, Poblenou…",
     "msg26": "Falta um essencial perto de ti? Sugere-o e ganha XP",
     "msg27": "Nitbus: escolhe onde entras e onde sais e vê só o teu troço",
-    "msg28": "A que horas fecha o metro hoje? Vê antes de sair"
+    "msg28": "A que horas fecha o metro hoje? Vê antes de sair",
+    "msg29": "Durante a semana também apetece beber alguma coisa: procura aqui onde"
   },
   "reviews": {
     "title": "Opiniões da Noctua",

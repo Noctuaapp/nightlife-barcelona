@@ -1201,6 +1201,10 @@
     "titleZona": "Clubs und Bars in {name}",
     "genericZona": "Clubs, Bars und Nachtleben in {name}, mit Öffnungszeiten, Preisen, Musikstil und Heimweg.",
     "otherZones": "Weitere Gebiete",
+    "openNow": "Jetzt geöffnet",
+    "openOf": "{n} von {total} jetzt geöffnet",
+    "openNone": "Gerade hat hier nichts geöffnet.",
+    "showAll": "Alle anzeigen",
     "facts": {
       "title": "{name} in Zahlen",
       "count": "Noctua listet {n} Nachtlokale in {name}.",
@@ -1872,7 +1876,8 @@
     "msg25": "Entdecke die Nacht nach Vierteln: el Born, Poblenou…",
     "msg26": "Fehlt ein Essential in deiner Nähe? Schlag es vor und sammle XP",
     "msg27": "Nitbus: Wähle Einstieg und Ausstieg und sieh nur deine Strecke",
-    "msg28": "Wann schließt die Metro heute? Schau nach, bevor du losgehst"
+    "msg28": "Wann schließt die Metro heute? Schau nach, bevor du losgehst",
+    "msg29": "Auch unter der Woche hat man Lust auf einen Drink: Finde hier, wo"
   },
   "reviews": {
     "title": "Noctua-Bewertungen",

@@ -1201,6 +1201,10 @@
     "titleZona": "Discotecas y bares en {name}",
     "genericZona": "Discotecas, bares y locales de ocio nocturno en {name}, con horario, precio, estilo de música y cómo volver a casa.",
     "otherZones": "Otras zonas",
+    "openNow": "Abiertos ahora",
+    "openOf": "{n} de {total} abiertos ahora",
+    "openNone": "Ahora mismo no hay ningún local abierto aquí.",
+    "showAll": "Ver todos",
     "facts": {
       "title": "Datos de {name}",
       "count": "Noctua reúne {n} locales de ocio nocturno en {name}.",
@@ -1872,7 +1876,8 @@
     "msg25": "Descubre la noche por barrios: el Born, Poblenou…",
     "msg26": "¿Falta un esencial cerca de ti? Propónlo y gana XP",
     "msg27": "Nitbus: elige dónde subes y dónde bajas y mira solo tu tramo",
-    "msg28": "¿A qué hora cierra el metro hoy? Míralo antes de salir"
+    "msg28": "¿A qué hora cierra el metro hoy? Míralo antes de salir",
+    "msg29": "Entre semana también apetece tomar algo: busca aquí dónde"
   },
   "reviews": {
     "title": "Opiniones de Noctua",

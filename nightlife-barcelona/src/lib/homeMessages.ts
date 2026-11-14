@@ -33,15 +33,21 @@ export type HomeMessage = {
   endsAt?: string
   /** Solo se enseña si Club Noctua (niveles y XP) está activo para los visitantes. */
   needsClubNoctua?: boolean
+  /** Días de la semana (hora de Madrid) en que se enseña: 0 = domingo … 6 = sábado. Sin esto: todos los días. */
+  days?: number[]
 }
 
-const tip = (n: number, href?: string, needsClubNoctua = false): HomeMessage => ({
+const tip = (n: number, href?: string, needsClubNoctua = false, days?: number[]): HomeMessage => ({
   id: `tip-${n}`,
   kind: "tip",
   text: { key: `homeTicker.msg${n}` },
   ...(href ? { cta: { href } } : {}),
   ...(needsClubNoctua ? { needsClubNoctua: true } : {}),
+  ...(days ? { days } : {}),
 })
+
+// Lunes a jueves: «entre semana». El viernes y el fin de semana la salida ya se da por hecha y el mensaje sobra.
+const ENTRE_SEMANA = [1, 2, 3, 4]
 
 // Consejos propios. Revisados el 12/11/2026: fuera los que ya no valían (eventos y agenda están cerrados,
 // «Noctua está en construcción», «instala Noctua», que ahora tiene su propia franja arriba) y los repetidos.
@@ -56,6 +62,7 @@ export const TIPS: HomeMessage[] = [
   tip(12, "/nitbus"),
   tip(27, "/nitbus"), // «mi trayecto»: dónde subo y dónde bajo
   tip(28, "/metro"), // a qué hora cierra el metro hoy
+  tip(29, "/clubs", false, ENTRE_SEMANA), // «entre semana también apetece tomar algo»: solo de lunes a jueves
   tip(13), // abiertos ahora
   tip(14, "/derechos"),
   tip(15),
@@ -78,6 +85,12 @@ function madridDay(now: Date): string {
   return now.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" })
 }
 
+// Día de la semana en Madrid: 0 = domingo … 6 = sábado.
+export function madridWeekday(now: Date): number {
+  const w = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Madrid", weekday: "short" }).format(now)
+  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(w)
+}
+
 export function isInWindow(m: Pick<HomeMessage, "startsAt" | "endsAt">, now: Date): boolean {
   const day = madridDay(now)
   if (m.startsAt && day < m.startsAt) return false
@@ -94,7 +107,9 @@ export function activeMessages(
   now: Date,
   opts: { clubNoctua: boolean; announcements?: HomeMessage[]; tips?: HomeMessage[]; shuffle?: <T>(items: T[]) => T[] }
 ): HomeMessage[] {
-  const ok = (m: HomeMessage) => isInWindow(m, now) && (!m.needsClubNoctua || opts.clubNoctua)
+  const weekday = madridWeekday(now)
+  const ok = (m: HomeMessage) =>
+    isInWindow(m, now) && (!m.needsClubNoctua || opts.clubNoctua) && (!m.days || m.days.includes(weekday))
   const ann = (opts.announcements ?? ANNOUNCEMENTS).filter(ok)
   const tips = (opts.tips ?? TIPS).filter(ok)
   return [...ann, ...(opts.shuffle ? opts.shuffle(tips) : tips)]

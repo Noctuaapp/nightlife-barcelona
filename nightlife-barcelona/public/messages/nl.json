@@ -1201,6 +1201,10 @@
     "titleZona": "Clubs en bars in {name}",
     "genericZona": "Clubs, bars en uitgaansgelegenheden in {name}, met openingstijden, prijzen, muziekstijl en hoe je thuiskomt.",
     "otherZones": "Andere zones",
+    "openNow": "Nu open",
+    "openOf": "{n} van {total} nu open",
+    "openNone": "Op dit moment is hier niets open.",
+    "showAll": "Toon alles",
     "facts": {
       "title": "{name} in cijfers",
       "count": "Noctua toont {n} uitgaansgelegenheden in {name}.",
@@ -1872,7 +1876,8 @@
     "msg25": "Ontdek de nacht per buurt: el Born, Poblenou…",
     "msg26": "Mist er een essential bij jou in de buurt? Stel hem voor en verdien XP",
     "msg27": "Nachtbus: kies waar je in- en uitstapt en zie alleen jouw traject",
-    "msg28": "Hoe laat sluit de metro vandaag? Check het voor je uitgaat"
+    "msg28": "Hoe laat sluit de metro vandaag? Check het voor je uitgaat",
+    "msg29": "Ook doordeweeks heb je zin in een drankje: zoek hier waar"
   },
   "reviews": {
     "title": "Noctua-reviews",

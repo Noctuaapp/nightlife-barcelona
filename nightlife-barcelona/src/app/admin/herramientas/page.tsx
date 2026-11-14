@@ -44,7 +44,7 @@ const TOOLS: Tool[] = [
     key: "refresh-clubs",
     path: "/api/cron/refresh-google-data",
     title: "Actualizar datos de Google (clubs)",
-    description: "Fotos, valoración, reseñas y horario de los clubs. Se ejecuta solo cada noche a las 04:00.",
+    description: "Valoración y nº de reseñas de Google, fotos (solo a los clubs sin galería) y web o redes si están vacías. No toca los horarios. Se ejecuta solo cada noche a las 04:00.",
     batch: true,
   },
   {

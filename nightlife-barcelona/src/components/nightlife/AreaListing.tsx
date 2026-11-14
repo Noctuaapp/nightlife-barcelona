@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import type { ReactNode } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import ClubCard from "./ClubCard"
 import { useLanguage } from "../../context/LanguageContext"
 import type { DbRow } from "../../lib/clubQueries"
@@ -9,6 +9,7 @@ import type { AreaLink } from "../../lib/areas"
 import { areaHref } from "../../lib/zonePages"
 import type { AreaFacts } from "../../lib/areaFacts"
 import NightBackdrop from "../ui/NightBackdrop"
+import { effectiveOpenNow } from "../../lib/scheduleNotices"
 
 // Listado de una página de barrio (/barrio/[slug]), de zona (/zona/[slug]) o de estilo musical
 // (/musica/[slug]). El servidor ya filtra y ordena los locales; aquí solo se pinta con los textos
@@ -54,6 +55,35 @@ export default function AreaListing({ kind, slug, name, clubs, neighborhoods, st
   const otherZones = zones.filter((z) => !(kind === "zona" && z.slug === slug))
 
   const chip = "btn-pill btn-secondary px-3.5 py-2 text-sm"
+
+  // «Abiertos ahora» (14/11/2026). La portada enseña «3 abiertos» en cada estilo, pero al entrar no había forma de
+  // quedarse solo con esos. Ahora hay un filtro, y la portada enlaza con ?open=1 para llegar ya filtrado. Depende de la
+  // hora, así que se calcula tras montar (el HTML del servidor lleva siempre la lista entera) y se refresca cada minuto.
+  const [mounted, setMounted] = useState(false)
+  const [openOnly, setOpenOnly] = useState(false)
+  const [tick, setTick] = useState(0)
+  useEffect(() => {
+    setMounted(true)
+    try {
+      if (new URLSearchParams(window.location.search).get("open") === "1") setOpenOnly(true)
+    } catch {
+      /* sin acceso a la URL: la lista sale entera */
+    }
+    const id = window.setInterval(() => setTick((n) => n + 1), 60000)
+    return () => window.clearInterval(id)
+  }, [])
+  const openIds = useMemo(() => {
+    if (!mounted) return null
+    const ids = new Set<unknown>()
+    for (const c of clubs) {
+      if (effectiveOpenNow({ hours: c.hours, open_days: c.open_days, schedule_notices: c.schedule_notices, temporarily_closed: c.temporarily_closed }) === true) ids.add(c.id)
+    }
+    return ids
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clubs, mounted, tick])
+  const openCount = openIds?.size ?? 0
+  const filtering = openOnly && openIds !== null
+  const shown = filtering ? clubs.filter((c) => openIds.has(c.id)) : clubs
 
   // Líneas del bloque de datos. Solo salen las que tienen dato; nunca se rellena con algo inventado.
   // Metro, Nitbus y estilos solo en barrios y zonas: en una página de estilo (toda Barcelona) no dicen nada.
@@ -114,11 +144,40 @@ export default function AreaListing({ kind, slug, name, clubs, neighborhoods, st
 
         <h1 className="font-display mt-4 max-w-3xl text-[2rem] leading-[1.08] sm:text-5xl">{title}</h1>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-300">{intro}</p>
-        <p className="mt-3 text-sm text-zinc-400">{t("areas.count").replace("{n}", String(clubs.length))}</p>
+        <p className="mt-3 text-sm text-zinc-400">
+          {filtering
+            ? t("areas.openOf").replace("{n}", String(shown.length)).replace("{total}", String(clubs.length))
+            : t("areas.count").replace("{n}", String(clubs.length))}
+        </p>
+        {/* El botón sale cuando ya se sabe cuántos hay abiertos (y sigue si está puesto, para poder quitarlo). */}
+        {(openCount > 0 || openOnly) && openIds !== null && (
+          <button
+            type="button"
+            onClick={() => setOpenOnly((v) => !v)}
+            aria-pressed={openOnly}
+            className={`mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition active:scale-95 ${
+              openOnly ? "border-open/40 bg-open/15 text-open" : "border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
+            }`}
+          >
+            <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${openOnly ? "live-dot bg-open" : "bg-zinc-500"}`} />
+            {t("areas.openNow")} · {openCount}
+          </button>
+        )}
       </section>
 
+      {filtering && shown.length === 0 && (
+        <section className="mx-auto mt-8 max-w-6xl px-4 sm:px-6">
+          <div className="max-w-xl rounded-card border border-white/10 bg-surface p-5">
+            <p className="text-sm text-zinc-300">{t("areas.openNone")}</p>
+            <button type="button" onClick={() => setOpenOnly(false)} className="btn-pill btn-secondary mt-3 px-4 py-2 text-sm">
+              {t("areas.showAll")}
+            </button>
+          </div>
+        </section>
+      )}
+
       <section className="mx-auto mt-8 grid grid-cols-1 max-w-6xl gap-5 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-3">
-        {clubs.map((club) => (
+        {shown.map((club) => (
           <ClubCard
             key={club.id}
             id={club.id}

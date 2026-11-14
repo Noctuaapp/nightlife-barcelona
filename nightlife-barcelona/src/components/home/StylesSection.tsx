@@ -62,7 +62,8 @@ export default function StylesSection({
             return (
               <Link
                 key={card.slug}
-                href={`/musica/${card.slug}`}
+                // Con locales abiertos ahora, la página del estilo se abre ya filtrada a esos (?open=1); sin ninguno, entera.
+                href={openNow > 0 ? `/musica/${card.slug}?open=1` : `/musica/${card.slug}`}
                 className={`group relative isolate w-[56vw] max-w-[15rem] shrink-0 snap-start overflow-hidden rounded-card border border-white/10 bg-night shadow-[inset_0_1px_0_rgba(255,255,255,.14)] transition-colors hover:border-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-60 ${CARD}`}
               >
                 {/* Sin foto: solo los dos colores */}

@@ -42,3 +42,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# copias de seguridad de Noctua (scripts/backup-noctua.mjs): llevan datos personales, nunca a GitHub
+/backups/

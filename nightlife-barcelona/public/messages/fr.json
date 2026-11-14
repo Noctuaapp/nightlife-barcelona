@@ -1201,6 +1201,10 @@
     "titleZona": "Boîtes de nuit et bars à {name}",
     "genericZona": "Boîtes de nuit, bars et lieux de sortie à {name}, avec horaires, prix, style de musique et comment rentrer chez soi.",
     "otherZones": "Autres zones",
+    "openNow": "Ouverts maintenant",
+    "openOf": "{n} sur {total} ouverts maintenant",
+    "openNone": "Rien n'est ouvert ici pour le moment.",
+    "showAll": "Tout voir",
     "facts": {
       "title": "{name} en chiffres",
       "count": "Noctua recense {n} lieux de sortie à {name}.",
@@ -1872,7 +1876,8 @@
     "msg25": "Découvre la nuit par quartier : el Born, Poblenou…",
     "msg26": "Il manque un essentiel près de toi ? Propose-le et gagne des XP",
     "msg27": "Nitbus : choisis où tu montes et où tu descends et vois seulement ton tronçon",
-    "msg28": "À quelle heure ferme le métro ce soir ? Regarde avant de sortir"
+    "msg28": "À quelle heure ferme le métro ce soir ? Regarde avant de sortir",
+    "msg29": "En semaine aussi, on a envie d'un verre : trouve où ici"
   },
   "reviews": {
     "title": "Avis Noctua",

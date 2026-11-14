@@ -85,6 +85,8 @@ export default function SurpriseRoulette({ names, durationMs, label }: { names: 
   return (
     <div className="flex flex-col items-center gap-4" aria-hidden="true">
       <svg viewBox="0 0 240 240" className="w-full max-w-[15rem]" style={{ overflow: "visible" }}>
+        {/* Sombra: asienta la rueda sobre el tapete (plana, sin desenfoque) */}
+        <circle cx={C} cy={C + 7} r="118" fill="#000" opacity=".32" />
         {/* Cuenco y pista de la bola */}
         <circle cx={C} cy={C} r="117" fill={NIGHT} stroke="#2a2540" strokeWidth="3" />
         <circle cx={C} cy={C} r="109" fill={SURFACE} />
@@ -113,10 +115,11 @@ export default function SurpriseRoulette({ names, durationMs, label }: { names: 
         </g>
       </svg>
 
-      <div className="flex h-12 w-full flex-col items-center justify-center">
-        <span className="max-w-full truncate px-4 font-display text-xl text-white">{names[shown] ?? ""}</span>
+      <div className="flex h-12 w-full max-w-[19rem] flex-col items-center justify-center rounded-full border bg-black/35" style={{ borderColor: `${GOLD}66` }}>
+        <span className="max-w-full truncate px-5 font-display text-lg text-white">{names[shown] ?? ""}</span>
       </div>
-      <p className="-mt-2 text-center text-sm font-semibold text-zinc-400">{label}</p>
+      {/* En el verde del tapete, para que los dibujos no pasen por detrás de las letras */}
+      <p className="-mt-2 rounded-full bg-[#0c3a2b] px-3 py-0.5 text-center text-sm font-semibold text-[#f5e6b3]">{label}</p>
     </div>
   )
 }

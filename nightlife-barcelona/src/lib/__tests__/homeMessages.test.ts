@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { ANNOUNCEMENTS, TIPS, activeMessages, isInWindow, shuffled, type HomeMessage } from "../homeMessages"
+import { ANNOUNCEMENTS, TIPS, activeMessages, isInWindow, madridWeekday, shuffled, type HomeMessage } from "../homeMessages"
 
 const NOON = new Date("2026-12-10T12:00:00Z")
 const promo = (o: Partial<HomeMessage> = {}): HomeMessage => ({ id: "p", kind: "promo", text: { literal: "x" }, sponsor: "Marca", ...o })
@@ -45,6 +45,46 @@ describe("activeMessages", () => {
   })
   it("los enlaces de los consejos son rutas internas", () => {
     for (const m of TIPS) if (m.cta) expect(m.cta.href.startsWith("/")).toBe(true)
+  })
+})
+
+describe("días de la semana (hora de Madrid)", () => {
+  // 2026-12-10 es jueves; 11 viernes; 12 sábado; 13 domingo; 14 lunes.
+  const at = (day: string) => new Date(`2026-12-${day}T12:00:00Z`)
+  const ids = (day: string) => activeMessages(at(day), { clubNoctua: true }).map((m) => m.id)
+
+  it("madridWeekday cuenta 0 = domingo … 6 = sábado y usa la hora de Madrid", () => {
+    expect(madridWeekday(at("13"))).toBe(0)
+    expect(madridWeekday(at("14"))).toBe(1)
+    expect(madridWeekday(at("12"))).toBe(6)
+    // 23:30 UTC del jueves ya es viernes en Madrid (invierno, UTC+1)
+    expect(madridWeekday(new Date("2026-12-10T23:30:00Z"))).toBe(5)
+  })
+
+  it("«entre semana también apetece tomar algo» sale de lunes a jueves y no el resto", () => {
+    for (const d of ["14", "15", "16", "17"]) expect(ids(d)).toContain("tip-29")
+    for (const d of ["11", "12", "13"]) expect(ids(d)).not.toContain("tip-29")
+  })
+
+  it("el viernes de madrugada (jueves noche en UTC) ya no sale", () => {
+    const list = activeMessages(new Date("2026-12-10T23:30:00Z"), { clubNoctua: true })
+    expect(list.some((m) => m.id === "tip-29")).toBe(false)
+  })
+
+  it("los consejos sin días salen todos los días", () => {
+    for (const d of ["11", "12", "13", "14"]) expect(ids(d)).toContain("tip-13")
+  })
+
+  it("el consejo nuevo lleva a /clubs y tiene texto en las 8 lenguas", async () => {
+    const m = TIPS.find((x) => x.id === "tip-29")!
+    expect(m.cta?.href).toBe("/clubs")
+    expect("key" in m.text && m.text.key).toBe("homeTicker.msg29")
+    const fs = await import("node:fs")
+    for (const l of ["es", "en", "ca", "fr", "de", "it", "nl", "pt"]) {
+      const j = JSON.parse(fs.readFileSync(`public/messages/${l}.json`, "utf8"))
+      expect(typeof j.homeTicker.msg29, l).toBe("string")
+      expect(j.homeTicker.msg29.length, l).toBeGreaterThan(10)
+    }
   })
 })
 

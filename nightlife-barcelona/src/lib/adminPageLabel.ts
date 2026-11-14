@@ -29,7 +29,10 @@ export function pageLabel(path: string | null, names: Map<string, string>): stri
   const m = p.match(/^\/(clubs|event|club-event|barrio|musica|essentials|plan|nitbus|metro|zona)\/(.+)$/)
   if (m) {
     const kind = { clubs: "Club", event: "Evento", "club-event": "Noche de club", barrio: "Barrio", musica: "Música", essentials: "Esenciales", plan: "Plan compartido", nitbus: "NitBus", metro: "Metro", zona: "Zona" }[m[1]]
-    return m[1] === "club-event" || m[1] === "plan" ? `${kind} ${m[2]}` : `${kind}: ${unslug(m[2])}`
+    // El código de un plan compartido es la «llave» de su enlace (solo entra quien lo tiene): no se enseña, ni
+    // como número raro (13/11/2026: salía «Plan compartido 37c2325c»). Una noche de club sí lleva su número.
+    if (m[1] === "plan") return kind!
+    return m[1] === "club-event" ? `${kind} ${m[2]}` : `${kind}: ${unslug(m[2])}`
   }
   return p
 }
