@@ -56,6 +56,17 @@ const nextConfig: NextConfig = {
     ]
   },
   images: {
+    // 14/11/2026: el plan Hobby de Vercel incluye 5.000 optimizaciones de imagen al mes y, al pasarse, las fotos nuevas
+    // devuelven error 402 y no cargan (las que ya estaban en caché siguen bien). Para que cada foto se optimice
+    // las menos veces posible:
+    //   - minimumCacheTTL: una foto optimizada se guarda 31 días (antes 4 horas). Las fotos de Noctua llevan un nombre
+    //     distinto cada vez que se sube una nueva (inline-…, manual-…), así que no hay riesgo de ver una foto vieja.
+    //   - deviceSizes: se quitan los anchos 2048 y 3840 (pantallas 4K), que casi no se usan y multiplican las versiones.
+    //   - qualities / formats: una sola calidad y un solo formato (WebP), para no duplicar versiones de cada foto.
+    minimumCacheTTL: 2678400,
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    qualities: [75],
+    formats: ["image/webp"],
     remotePatterns: [
       {
         protocol: "https",
