@@ -40,11 +40,30 @@ export function meters(lat1: number, lon1: number, lat2: number, lon2: number): 
 }
 
 
+export type SeenVenue = { norm: string; lat: number | null; lon: number | null }
+
+// ¿Ya existe este local? Mismo nombre normalizado (a menos de 50 km: Barcelona y Madrid comparten cadenas de locales y no
+// son el mismo sitio), o a menos de 120 m de otro cuyo nombre contiene el suyo (o al revés).
+export function isDuplicateVenue(seen: SeenVenue[], norm: string, lat: number, lon: number): boolean {
+  return seen.some((s) => {
+    if (!s.norm || !norm) return false
+    if (s.norm === norm) {
+      if (s.lat != null && s.lon != null && meters(lat, lon, s.lat, s.lon) > 50000) return false
+      return true
+    }
+    if (s.lat != null && s.lon != null && meters(lat, lon, s.lat, s.lon) < 120) {
+      return (s.norm.length >= 5 && norm.includes(s.norm)) || (norm.length >= 5 && s.norm.includes(norm))
+    }
+    return false
+  })
+}
+
 // Municipio real del local (la cuadrícula de Barcelona también recoge locales de municipios vecinos).
 export function cityFor(tags: Record<string, string>, fallback: string): string {
   const raw = (tags["addr:city"] || "").trim()
   if (raw) {
     if (/^barcelona$/i.test(raw)) return "Barcelona"
+    if (/^madrid$/i.test(raw)) return "Madrid"
     if (/hospitalet/i.test(raw)) return "L'Hospitalet de Llobregat"
     if (/prat/i.test(raw)) return "El Prat de Llobregat"
     if (/badalona/i.test(raw)) return "Badalona"
@@ -66,6 +85,7 @@ export function cityFor(tags: Record<string, string>, fallback: string): string 
   if (/^0892[1-4]/.test(pc)) return "Santa Coloma de Gramenet"
   if (/^08980/.test(pc)) return "Sant Feliu de Llobregat"
   if (/^08830/.test(pc)) return "Sant Boi de Llobregat"
+  if (/^280([0-4]\d|5[0-5])$/.test(pc)) return "Madrid" // 28001-28055: los códigos postales de Madrid capital
   return fallback
 }
 

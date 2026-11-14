@@ -1,5 +1,7 @@
 // Coordenadas que se escriben a mano en el admin (clubs, eventos, esenciales).
 
+import { CITIES, inBox } from "./cities"
+
 export type LatLng = { lat: number; lng: number }
 
 function valid(lat: number, lng: number): LatLng | null {
@@ -56,11 +58,11 @@ export function parseCoordNumber(value: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-// Zona en la que trabaja Noctua (Cataluña con margen). Fuera de aquí casi seguro es un error:
+// Zona en la que trabaja Noctua (Cataluña con margen, y Madrid desde el 14/11/2026). Fuera de aquí casi seguro es un error:
 // latitud y longitud cambiadas de sitio, un signo menos, o un sitio con el mismo nombre en otra
 // ciudad.
 export function isInServiceArea({ lat, lng }: LatLng): boolean {
-  return lat > 40.4 && lat < 42.95 && lng > 0.1 && lng < 3.4
+  return (lat > 40.4 && lat < 42.95 && lng > 0.1 && lng < 3.4) || inBox(CITIES.madrid.box, lat, lng)
 }
 
 export function googleMapsUrl({ lat, lng }: LatLng): string {

@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   if (q.length < 4) return NextResponse.json({ error: "Escribe primero la dirección." }, { status: 400 })
 
   // Si la dirección no dice ciudad, se busca en Barcelona.
-  const query = /barcelona|hospitalet|badalona|sitges|lloret|blanes|salou|tarragona|girona|catalu/i.test(q)
+  const query = /barcelona|madrid|hospitalet|badalona|sitges|lloret|blanes|salou|tarragona|girona|catalu/i.test(q)
     ? q
     : `${q}, Barcelona`
 

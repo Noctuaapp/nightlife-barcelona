@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isAdminRequest } from "@/lib/adminAuth"
+import { inAnyCityBox } from "@/lib/cities"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -9,7 +10,7 @@ export const maxDuration = 60
 // OpenStreetMap Nominatim (gratis; sin tocar la cuota de Google). Procesa 10 por visita (Nominatim
 // pide como máximo 1 petición por segundo). Recarga hasta que "remaining" sea 0.
 // Se lanza desde el panel: /admin/herramientas (sin claves en la URL).
-// Un resultado solo se acepta si cae dentro del área metropolitana de Barcelona.
+// Un resultado solo se acepta si cae dentro del área metropolitana de Barcelona o de Madrid (lib/cities.ts).
 export async function GET(req: Request) {
   if (!(await isAdminRequest(req))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
       const hit = Array.isArray(json) ? json[0] : null
       const lat = hit ? Number(hit.lat) : NaN
       const lon = hit ? Number(hit.lon) : NaN
-      const inArea = lat > 41.28 && lat < 41.55 && lon > 1.95 && lon < 2.35
+      const inArea = inAnyCityBox(lat, lon)
       if (hit && inArea) {
         await supabase.from("clubs").update({ latitude: lat, longitude: lon }).eq("id", club.id)
         results.push({ club: club.name, lat, lon, status: "ok" })

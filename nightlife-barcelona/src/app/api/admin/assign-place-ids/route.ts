@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isAdminRequest } from "@/lib/adminAuth"
+import { googleSearchFor } from "@/lib/cities"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -19,7 +20,7 @@ export async function GET(req: Request) {
 
   const { data: clubs, error } = await supabase
     .from("clubs")
-    .select("id, name, address, neighborhood")
+    .select("id, name, address, neighborhood, city, latitude, longitude")
     .is("google_place_id", null)
     .limit(BATCH_SIZE)
 
@@ -33,7 +34,8 @@ export async function GET(req: Request) {
   const results: any[] = []
 
   for (const club of clubs || []) {
-    const query = `${club.name} ${club.address || club.neighborhood || ""} Barcelona`.trim()
+    // La ciudad sale del propio local: los de Madrid se buscan «en Madrid» y no en Barcelona (14/11/2026).
+    const { query, locationBias } = googleSearchFor(club)
     try {
       const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
         method: "POST",
@@ -42,7 +44,7 @@ export async function GET(req: Request) {
           "X-Goog-Api-Key": apiKey,
           "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress",
         },
-        body: JSON.stringify({ textQuery: query }),
+        body: JSON.stringify({ textQuery: query, ...(locationBias ? { locationBias } : {}) }),
       })
       const json = await res.json()
       const placeId = json?.places?.[0]?.id

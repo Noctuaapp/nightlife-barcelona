@@ -4,8 +4,9 @@ import { isAdminRequest } from "@/lib/adminAuth"
 import { hedgedOverpass, OVERPASS_MIRRORS } from "@/lib/overpassHedged"
 import { fetchAreaElements } from "@/lib/osmAreaFetch"
 import { staticBoundary } from "@/lib/osmBoundaries"
-import { AREAS, normalize, meters, cityFor } from "@/lib/osmAreas"
+import { AREAS, normalize, cityFor, isDuplicateVenue, type SeenVenue } from "@/lib/osmAreas"
 import { isNightlifeVenue, venueTypeOf, venueFlagsOf } from "@/lib/osmVenues"
+import { TILE_AREAS, TILE_ONLY_AREAS, tilesOf } from "@/lib/osmTiles"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -19,6 +20,7 @@ export const maxDuration = 60
 //   Importar de verdad:
 //   /api/admin/import-osm-clubs?area=barcelona&dry=0
 //   area = barcelona | hospitalet | badalona | elprat | santacoloma | cornella | santadria | esplugues | santfeliu | santboi
+//          | madrid1 | madrid2   (Madrid, interior de la M-30, en dos partes: sur y norte)
 
 function cleanUrl(v?: string): string | null {
   if (!v) return null
@@ -32,8 +34,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
   const areaKey = (searchParams.get("area") || "").toLowerCase()
-  const area = AREAS[areaKey]
-  if (!area) return NextResponse.json({ error: `area debe ser una de: ${Object.keys(AREAS).join(", ")}` }, { status: 400 })
+  const area = AREAS[areaKey] ?? TILE_ONLY_AREAS[areaKey]
+  if (!area) return NextResponse.json({ error: `area debe ser una de: ${[...Object.keys(AREAS), ...Object.keys(TILE_ONLY_AREAS)].join(", ")}` }, { status: 400 })
   const dry = searchParams.get("dry") !== "0"
 
   // A Overpass solo se le piden etiquetas simples (discotecas, salas, karaokes y todos los pubs y
@@ -54,18 +56,10 @@ export async function GET(req: Request) {
   let tilesInfo: { ok: number; failed: number } | null = null
   let outside: number | null = null
 
-  if (areaKey === "barcelona") {
-    // Barcelona por cuadrículas: 12 consultas pequeñas (4 x 3) en vez de una enorme.
-    const S = 41.315, N = 41.470, W = 2.050, E = 2.232
-    const rows = 3, cols = 4
-    const tiles: string[] = []
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const s0 = S + ((N - S) * r) / rows, n0 = S + ((N - S) * (r + 1)) / rows
-        const w0 = W + ((E - W) * c) / cols, e0 = W + ((E - W) * (c + 1)) / cols
-        tiles.push(`(${s0.toFixed(5)},${w0.toFixed(5)},${n0.toFixed(5)},${e0.toFixed(5)})`)
-      }
-    }
+  const tileArea = TILE_AREAS[areaKey]
+  if (tileArea) {
+    // Las ciudades grandes (Barcelona y Madrid) van por cuadrículas: consultas pequeñas en vez de una enorme (lib/osmTiles.ts).
+    const tiles = tilesOf(tileArea)
     const startedAt = Date.now()
     const seenIds = new Set<string>()
     const BUDGET = 52000
@@ -111,26 +105,18 @@ export async function GET(req: Request) {
   const { data: existing, error: exErr } = await supabase.from("clubs").select("name, latitude, longitude")
   if (exErr) return NextResponse.json({ error: exErr.message }, { status: 500 })
 
-  type Seen = { norm: string; lat: number | null; lon: number | null }
-  const seen: Seen[] = (existing || []).map((c: any) => ({
+  const seen: SeenVenue[] = (existing || []).map((c: any) => ({
     norm: normalize(c.name || ""),
     lat: c.latitude != null ? Number(c.latitude) : null,
     lon: c.longitude != null ? Number(c.longitude) : null,
   }))
 
-  const isDup = (norm: string, lat: number, lon: number) =>
-    seen.some((s) => {
-      if (!s.norm || !norm) return false
-      if (s.norm === norm) return true
-      if (s.lat != null && s.lon != null && meters(lat, lon, s.lat, s.lon) < 120) {
-        return (s.norm.length >= 5 && norm.includes(s.norm)) || (norm.length >= 5 && s.norm.includes(norm))
-      }
-      return false
-    })
+  const isDup = (norm: string, lat: number, lon: number) => isDuplicateVenue(seen, norm, lat, lon)
 
   const rows: any[] = []
   let skippedDup = 0
   let skippedBar = 0
+  const byCity: Record<string, number> = {}
   for (const el of elements) {
     const tags: Record<string, string> = el.tags || {}
     const name = (tags.name || "").trim()
@@ -149,6 +135,7 @@ export async function GET(req: Request) {
       ? [street + (tags["addr:housenumber"] ? ", " + tags["addr:housenumber"] : ""), tags["addr:postcode"], cityName].filter(Boolean).join(", ")
       : null
     const venue_type = venueTypeOf(tags)
+    byCity[cityName] = (byCity[cityName] || 0) + 1
 
     rows.push({
       name: name.slice(0, 120),
@@ -178,6 +165,7 @@ export async function GET(req: Request) {
       pubs_y_bares_descartados_por_no_ser_nocturnos: skippedBar,
       ya_existian: skippedDup,
       nuevos: rows.length,
+      nuevos_por_municipio: byCity,
       muestra: rows.slice(0, 60).map((r) => `${r.name} (${r.venue_type}) ${r.address || ""}`.trim()),
     })
   }

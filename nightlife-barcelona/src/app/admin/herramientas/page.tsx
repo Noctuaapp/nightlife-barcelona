@@ -92,7 +92,7 @@ const TOOLS: Tool[] = [
     key: "import-osm",
     path: "/api/admin/import-osm-clubs",
     title: "Importar locales desde OpenStreetMap",
-    description: "Todo entra oculto para revisarlo antes de publicar. Sin marcar «Importar de verdad» solo es una vista previa.",
+    description: "Todo entra oculto para revisarlo antes de publicar. Sin marcar «Importar de verdad» solo es una vista previa. Madrid va en dos partes: lanza una y luego la otra.",
     osm: true,
   },
   {
@@ -451,6 +451,8 @@ export default function AdminToolsPage() {
                     <option value="esplugues">Esplugues de Llobregat</option>
                     <option value="santfeliu">Sant Feliu de Llobregat</option>
                     <option value="santboi">Sant Boi de Llobregat</option>
+                    <option value="madrid1">Madrid · parte 1 (sur: Sol, Atocha, Usera)</option>
+                    <option value="madrid2">Madrid · parte 2 (norte: Chueca, Malasaña, Chamartín)</option>
                   </select>
                   <label className="flex items-center gap-2 text-zinc-300">
                     <input type="checkbox" checked={osmReal} onChange={(e) => setOsmReal(e.target.checked)} />

@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import { isAuthorizedCronRequest } from "@/lib/adminAuth"
 import { startJobBudget, recordGoogleCalls, googleFetch, fetchRichData } from "@/lib/googlePlacesBudget"
 import { classifyGoogleWebsite } from "@/lib/googleWebsite"
+import { EXCLUDE_PRELAUNCH_OR } from "@/lib/cities"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -92,6 +93,7 @@ export async function GET(req: Request) {
     .select("id, name, address, neighborhood")
     .is("google_place_id", null)
     .or("manual_photos.is.null,manual_photos.eq.false")
+    .or(EXCLUDE_PRELAUNCH_OR)
     .limit(5)
 
   const newlyAssigned = await Promise.all(
@@ -137,6 +139,7 @@ export async function GET(req: Request) {
     .select("id, name, image, gallery, google_place_id, website, instagram, tiktok")
     .not("google_place_id", "is", null)
     .or("manual_photos.is.null,manual_photos.eq.false")
+    .or(EXCLUDE_PRELAUNCH_OR)
     .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
     .limit(BATCH_SIZE)
 
@@ -145,12 +148,14 @@ export async function GET(req: Request) {
     .select("*", { count: "exact", head: true })
     .not("google_place_id", "is", null)
     .or("manual_photos.is.null,manual_photos.eq.false")
+    .or(EXCLUDE_PRELAUNCH_OR)
 
   const { count: alreadyRefreshed } = await supabase
     .from("clubs")
     .select("*", { count: "exact", head: true })
     .not("google_place_id", "is", null)
     .or("manual_photos.is.null,manual_photos.eq.false")
+    .or(EXCLUDE_PRELAUNCH_OR)
     .not("google_last_refreshed_at", "is", null)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
