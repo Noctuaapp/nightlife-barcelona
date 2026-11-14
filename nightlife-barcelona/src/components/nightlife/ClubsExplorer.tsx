@@ -18,6 +18,9 @@ import { optionsWithData } from "../../lib/filterOptions"
 import { loadFilterMemory, onlyKnown, saveFilterMemory } from "../../lib/filterMemory"
 import { Tag } from "lucide-react"
 import NocOwl from "../mascot/NocOwl"
+import { LIST_CLUB_FIELDS } from "../../lib/clubQueries"
+import { otherCityName } from "../../lib/cities"
+import { usePreviewClubs, useSelectedCity } from "../../lib/previewCity"
 
 // Rediseño del listado (03/11/2026). Antes: cabecera de 230 px con título gigante, una barra con seis
 // botones y un desplegable, un fondo animado fijo y tarjetas de 300 px una debajo de otra en el móvil.
@@ -122,11 +125,20 @@ type ClubsFilterMemory = {
 }
 
 export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] }) {
-  const [clubs] = useState<any[]>(initialClubs)
+  // Con otra ciudad en vista previa (solo el admin, lib/previewCity.ts) el listado enseña los locales de esa ciudad.
+  const clubs = usePreviewClubs<any>(initialClubs, LIST_CLUB_FIELDS)
+  const cityNow = useSelectedCity()
+  const cityPrev = useRef(cityNow)
   const [selectedGenres, setSelectedGenres] = useState<Set<string>>(new Set())
   const [selectedAttributes, setSelectedAttributes] = useState<Set<string>>(new Set())
   const [selectedAges, setSelectedAges] = useState<Set<string>>(new Set())
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<Set<string>>(new Set())
+  // Al cambiar de ciudad (vista previa del admin) los barrios elegidos en la otra ciudad ya no valen.
+  useEffect(() => {
+    if (cityPrev.current === cityNow) return
+    cityPrev.current = cityNow
+    setSelectedNeighborhoods(new Set())
+  }, [cityNow])
   const [search, setSearch] = useState("")
   const [openNow, setOpenNow] = useState(false)
   // «Elige un día» (30/10/2026): null = cualquier día; si no, el número de getDay() (0 = domingo).
@@ -641,7 +653,7 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                 name={club.name}
                 slug={club.slug}
                 music={club.music}
-                area={club.neighborhood}
+                area={club.neighborhood || otherCityName(club)}
                 price={club.price}
                 hours={club.hours}
                 openDays={club.open_days}

@@ -25,6 +25,8 @@ import { clubOpenNow, clubHoursStatus, madridClock } from "../../lib/clubHours"
 import { useVisibleBelow } from "../../lib/useVisibleBelow"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { renderToStaticMarkup } from "react-dom/server"
+import { CITIES, type CityKey } from "../../lib/cities"
+import { fetchCityClubs, useSelectedCity } from "../../lib/previewCity"
 
 // Qué esenciales se enseñan lo decide lib/essentials.ts (isShownEssential): solo las categorías del
 // catálogo (essentialCategories.ts), sin Hotel y sin las oficinas de Uber/Cabify que se guardaron como
@@ -367,6 +369,9 @@ export default function MapPage() {
   const watchIdRef = useRef<number | null>(null)
   const routeLayerRef = useRef<boolean>(false)
   const urlHandledRef = useRef(false)
+  // Otra ciudad en vista previa (solo el admin, lib/previewCity.ts): sus locales (también los ocultos) y su centro.
+  const city = useSelectedCity()
+  const mapCityRef = useRef<CityKey>("barcelona")
   const searchParams = useSearchParams()
 
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
@@ -467,6 +472,14 @@ export default function MapPage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      // Vista previa de otra ciudad: solo locales. Eventos y esenciales son de Barcelona y no se mezclan.
+      if (city !== "barcelona") {
+        const rows = await fetchCityClubs(CITIES[city].name, "id, name, slug, neighborhood, music, hours, open_days, price, latitude, longitude, address, image")
+        setClubs(rows as unknown as Club[])
+        setEvents([])
+        setEssentials([])
+        return
+      }
       const [{ data: clubsData }, { data: eventsData }, { data: essentialsData }] = await Promise.all([
         supabase.from("clubs").select("id, name, slug, neighborhood, music, hours, open_days, price, latitude, longitude, address, image").eq("hidden", false),
         // Eventos oculto (lib/featureFlags.ts): no salen en el mapa.
@@ -484,7 +497,16 @@ export default function MapPage() {
       }
     }
     fetchData()
-  }, [])
+  }, [city])
+
+  // Con otra ciudad en vista previa, el mapa se va a su centro (y vuelve a Barcelona al dejarla). Para el público la
+  // ciudad nunca cambia, así que esto no hace nada.
+  useEffect(() => {
+    if (!mapReady || !map.current || mapCityRef.current === city) return
+    mapCityRef.current = city
+    const c = CITIES[city].center
+    map.current.jumpTo({ center: [c.lng, c.lat], zoom: 12.5 })
+  }, [mapReady, city])
 
   useEffect(() => {
     if (!mapReady || !map.current) return

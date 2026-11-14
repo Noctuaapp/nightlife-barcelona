@@ -14,9 +14,13 @@ import LevelUpModal from "../mascot/LevelUpModal"
 import InstallAppButton from "../system/InstallAppButton"
 import { Bell, ChevronLeft, User, Map, Sparkles, Heart, MessageCircle, ShieldCheck, Globe, X, Check } from "lucide-react"
 import NocOwl, { type NocPose } from "../mascot/NocOwl"
+import CityPicker from "./CityPicker"
+import { useSelectedCity } from "../../lib/previewCity"
 
 const cities = [
   { name: "Barcelona", slug: "barcelona", active: true, lat: 41.3851, lng: 2.1734 },
+  // Madrid solo se elige en vista previa (el admin, ver CityPicker): sirve para el tiempo del menú.
+  { name: "Madrid", slug: "madrid", active: false, lat: 40.4168, lng: -3.7038 },
 ]
 
 const weatherCodes: Record<number, string> = {
@@ -83,8 +87,9 @@ export default function Header() {
   const [newLevel, setNewLevel] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
-  // Barcelona es la única ciudad por ahora (se usa para el tiempo del menú).
-  const [selectedCity] = useState(cities[0])
+  // Barcelona, salvo que el admin tenga otra ciudad en vista previa (lib/previewCity.ts). Se usa para el tiempo del menú.
+  const activeCityKey = useSelectedCity()
+  const selectedCity = cities.find((c) => c.slug === activeCityKey) ?? cities[0]
   const [weather, setWeather] = useState<{
     temp: number
     icon: string
@@ -604,12 +609,8 @@ export default function Header() {
                 <span>{t("common.back")}</span>
               </button>
             ) : (
-              // Ciudad + hora, solo informativo (sin desplegable mientras Barcelona sea la única ciudad).
-              <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] py-1.5 pl-3 pr-3.5 text-xs font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] sm:py-2 sm:text-sm">
-                <span aria-hidden="true" className="live-dot h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
-                <span>{selectedCity.name}</span>
-                {clock && <span className="hidden tabular-nums text-white/55 sm:inline">{clock}</span>}
-              </div>
+              // Ciudad + hora. Para el público es solo la etiqueta; para el admin, un selector con las ciudades en vista previa (CityPicker).
+              <CityPicker clock={clock} />
             )}
           </div>
 

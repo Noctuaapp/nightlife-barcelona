@@ -29,6 +29,9 @@ import { createSlug } from "../../lib/slug"
 import { areaHref } from "../../lib/zonePages"
 import { homeStyleCards } from "../../lib/homeStyles"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
+import { otherCityName } from "../../lib/cities"
+import { HOME_CLUB_FIELDS } from "../../lib/clubQueries"
+import { usePreviewClubs, useSelectedCity } from "../../lib/previewCity"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { effectiveOpenNow, isClosedTonight } from "../../lib/scheduleNotices"
@@ -107,7 +110,7 @@ function ClubTile({ club, openNow, distance, section }: { club: Club; openNow: b
       <div className="relative p-3 sm:p-4">
         <p className="truncate text-base font-semibold text-ink sm:text-lg">{club.name}</p>
         <p className="mt-0.5 truncate text-xs text-zinc-300 sm:text-sm">
-          {[club.neighborhood || "Barcelona", distance, ct.music(club.music)].filter(Boolean).join(" · ")}
+          {[club.neighborhood || otherCityName(club) || "Barcelona", distance, ct.music(club.music)].filter(Boolean).join(" · ")}
         </p>
         {(rating || club.price) && (
           <p className="mt-1 flex items-center gap-2 text-xs text-zinc-300">
@@ -141,7 +144,10 @@ export default function HomeClient({
 }) {
   const { t, locale } = useLanguage()
   const ct = useClubText()
-  const clubs = initialClubs
+  // Vista previa de otra ciudad (solo el admin, lib/previewCity.ts): salen los locales de esa ciudad y se esconde lo
+  // que es solo de Barcelona (destacados, cifras de eventos y esenciales, cómo volver a casa).
+  const previewing = useSelectedCity() !== "barcelona"
+  const clubs = usePreviewClubs<Club>(initialClubs, HOME_CLUB_FIELDS)
   const geo = useGeolocation()
   const [mounted, setMounted] = useState(false)
   // Semilla de la rotación de «Abierto ahora» (lib/rotation.ts). 0 hasta montar: el servidor y el
@@ -498,7 +504,7 @@ export default function HomeClient({
                               </span>
                               <span className="min-w-0 flex-1">
                                 <span className="block truncate text-sm font-semibold text-ink">{c.name}</span>
-                                <span className="block truncate text-xs text-zinc-400">{[c.neighborhood || "Barcelona", ct.music(c.music)].filter(Boolean).join(" · ")}</span>
+                                <span className="block truncate text-xs text-zinc-400">{[c.neighborhood || otherCityName(c) || "Barcelona", ct.music(c.music)].filter(Boolean).join(" · ")}</span>
                               </span>
                               {openMap[c.id] && <span className="shrink-0 text-xs font-semibold text-open">{t("clubPage.openNow")}</span>}
                             </Link>
@@ -527,14 +533,16 @@ export default function HomeClient({
               </span>
               {/* Solo eventos que aún no han pasado, y la cifra exacta mientras sean pocos (con
                   "+90" se prometía mucho más de lo que había). Sin eventos, no se enseña. */}
-              {eventsCount > 0 && (
+              {!previewing && eventsCount > 0 && (
                 <span>
                   <strong className="font-display text-base text-white">{eventsCount < 20 ? eventsCount : `${roughly(eventsCount)}+`}</strong> {t("home.statsEvents")}
                 </span>
               )}
-              <span>
-                <strong className="font-display text-base text-white">{roughly(essentialsCount)}+</strong> {t("home.statsEssentials")}
-              </span>
+              {!previewing && (
+                <span>
+                  <strong className="font-display text-base text-white">{roughly(essentialsCount)}+</strong> {t("home.statsEssentials")}
+                </span>
+              )}
             </div>
 
             {renderQuickLinks("scrollbar-none -mx-4 mt-5 hidden gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex sm:flex-wrap sm:px-0")}
@@ -545,7 +553,7 @@ export default function HomeClient({
         <WelcomeChallenge wide />
 
         {/* TOP 3 DE NOCTUA: solo si lo habéis puesto desde /admin/recomendados */}
-        <TopPicks data={picks} />
+        <TopPicks data={previewing ? null : picks} />
 
         {/* ESTA NOCHE: carrusel en la primera pantalla */}
         <section className="mx-auto max-w-7xl px-4 pt-2 sm:px-6" aria-labelledby="tonight-title">
@@ -615,7 +623,7 @@ export default function HomeClient({
         </section>
 
         {/* CÓMO VOLVER A CASA: estado del metro de esta noche, NitBus y taxi + tarjeta de instalar la app */}
-        <HomeGetHome />
+        {!previewing && <HomeGetHome />}
 
         {/* EXPLORA NOCTUA: puertas a mapa, plan y esenciales */}
         <ExploreDoors />

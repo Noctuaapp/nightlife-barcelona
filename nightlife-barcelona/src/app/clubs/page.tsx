@@ -4,6 +4,7 @@ import BottomNav from "../../components/layout/BottomNav"
 import ClubsExplorer from "../../components/nightlife/ClubsExplorer"
 import ExploreLinks from "../../components/nightlife/ExploreLinks"
 import ClubsDirectory from "../../components/nightlife/ClubsDirectory"
+import OnlyBarcelona from "../../components/system/OnlyBarcelona"
 import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../../lib/clubQueries"
 import { MIN_INDEXABLE, neighborhoodsOf, stylesOf } from "../../lib/areas"
 import { cleanPriceRange, safeJsonLd } from "../../lib/structuredData"
@@ -57,11 +58,14 @@ export default async function ClubsPage() {
     <>
       <Header />
       <ClubsExplorer initialClubs={clubs} />
-      <ClubsDirectory clubs={clubs} />
-      <ExploreLinks
-        neighborhoods={neighborhoodsOf(clubs).filter((n) => n.count >= MIN_INDEXABLE)}
-        styles={stylesOf(clubs).filter((n) => n.count >= MIN_INDEXABLE)}
-      />
+      {/* El índice A–Z y los enlaces a barrios son de Barcelona: con otra ciudad en vista previa (solo el admin) no salen. */}
+      <OnlyBarcelona>
+        <ClubsDirectory clubs={clubs} />
+        <ExploreLinks
+          neighborhoods={neighborhoodsOf(clubs).filter((n) => n.count >= MIN_INDEXABLE)}
+          styles={stylesOf(clubs).filter((n) => n.count >= MIN_INDEXABLE)}
+        />
+      </OnlyBarcelona>
       <BottomNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
     </>

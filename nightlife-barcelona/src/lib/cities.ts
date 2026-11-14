@@ -48,6 +48,14 @@ export function inBox(box: CityBox, lat: number, lng: number): boolean {
   return lat > box.south && lat < box.north && lng > box.west && lng < box.east
 }
 
+/**
+ * Ciudades que salen en el selector de la cabecera: las abiertas, para todo el mundo; las que están en prelaunch,
+ * solo para el admin (vista previa). Con una sola opción el selector no se pinta: queda la etiqueta de siempre.
+ */
+export function selectableCities(isAdmin: boolean): City[] {
+  return Object.values(CITIES).filter((c) => isAdmin || !c.prelaunch)
+}
+
 /** ¿Cae el punto dentro de alguna de las ciudades conocidas? */
 export function inAnyCityBox(lat: number, lng: number): boolean {
   return Object.values(CITIES).some((c) => inBox(c.box, lat, lng))
@@ -72,6 +80,15 @@ export function cityOfClub(club: ClubPlace): CityKey {
   const lng = numberOrNull(club.longitude)
   if (lat !== null && lng !== null && inBox(CITIES.madrid.box, lat, lng)) return "madrid"
   return "barcelona"
+}
+
+/**
+ * Nombre de la ciudad de un local cuando NO es Barcelona (null si es de Barcelona o su área). Sirve para las tarjetas:
+ * un local sin barrio pone «Barcelona» como siempre y uno de Madrid pone «Madrid».
+ */
+export function otherCityName(club: ClubPlace): string | null {
+  const key = cityOfClub(club)
+  return key === "barcelona" ? null : CITIES[key].name
 }
 
 type ClubForSearch = ClubPlace & { name: string; address?: string | null; neighborhood?: string | null }

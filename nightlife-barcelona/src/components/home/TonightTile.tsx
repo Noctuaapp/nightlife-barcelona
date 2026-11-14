@@ -9,6 +9,7 @@ import { useClubText } from "../../lib/useClubText"
 import { clubHoursStatus, madridClock } from "../../lib/clubHours"
 import { createSlug } from "../../lib/slug"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
+import { otherCityName } from "../../lib/cities"
 import { track } from "../../lib/track"
 
 // Tarjeta del carrusel «Abierto ahora» de la portada (12/11/2026). La anterior era un rectángulo bajo con el nombre y tres
@@ -84,7 +85,7 @@ export default function TonightTile({ club, openNow, distance }: { club: Club; o
 
         <span className="relative flex flex-col gap-1.5 p-3.5">
           <span className="line-clamp-2 font-display text-[1.05rem] leading-[1.15] text-ink [text-shadow:0_2px_14px_rgba(0,0,0,.55)]">{club.name}</span>
-          <span className="truncate text-xs text-zinc-300">{[club.neighborhood || "Barcelona", distance].filter(Boolean).join(" · ")}</span>
+          <span className="truncate text-xs text-zinc-300">{[club.neighborhood || otherCityName(club) || "Barcelona", distance].filter(Boolean).join(" · ")}</span>
           <span className="mt-1 flex flex-wrap items-center gap-1.5">
             {rating ? (
               <span className="flex items-center gap-1 text-xs font-bold text-ink">
