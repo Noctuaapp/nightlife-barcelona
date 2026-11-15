@@ -38,8 +38,8 @@ export function areaHref(neighborhood: string): string {
   return zoneSlug ? `/zona/${zoneSlug}` : `/barrio/${createSlug(neighborhood)}`
 }
 
-// Las zonas que tienen página (todas menos Barcelona, que es la web entera).
-export const ZONE_PAGES = ZONES.filter((z) => z !== "Barcelona")
+// Las zonas que tienen página (todas menos Barcelona, que es la web entera, y Madrid, que tendrá la suya en /madrid cuando se abra).
+export const ZONE_PAGES = ZONES.filter((z) => z !== "Barcelona" && z !== "Madrid")
 
 // Zonas fuera de Barcelona con locales suficientes para tener página propia, con su número de
 // locales. Sirve para enlazarlas desde barrios, estilos y otras zonas (y para el sitemap).

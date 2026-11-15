@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import Link from "../system/CityLink"
 import { ArrowUpRight, MapPin, Sparkles, type LucideIcon } from "lucide-react"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
 import { useLanguage } from "../../context/LanguageContext"

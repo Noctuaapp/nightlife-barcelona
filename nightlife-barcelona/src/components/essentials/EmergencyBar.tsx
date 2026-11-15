@@ -1,10 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
+import Link from "../system/CityLink"
 import { Phone, X, CarTaxiFront, Bus, Pill, Hospital, PawPrint, UtensilsCrossed, Toilet, Siren, PackageSearch, ChevronRight, type LucideIcon } from "lucide-react"
 import { useLanguage } from "../../context/LanguageContext"
 import { categoryInfo } from "../../lib/essentialCategories"
+import { useSelectedCity } from "../../lib/previewCity"
+import { useCityT } from "../../lib/useCityT"
 
 // «Me ha pasado algo» (05/11/2026).
 //
@@ -22,6 +24,9 @@ type Shortcut = { key: string; href: string; icon: LucideIcon; title: string; hi
 
 export default function EmergencyBar({ counts }: { counts: Record<string, number> }) {
   const { t } = useLanguage()
+  const tc = useCityT()
+  // Nitbus es de Barcelona: en Madrid, «volver a casa» solo se ofrece cuando hay paradas de taxi publicadas.
+  const city = useSelectedCity()
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -43,13 +48,15 @@ export default function EmergencyBar({ counts }: { counts: Record<string, number
   const shortcuts: Shortcut[] = []
   // Volver a casa: el taxi si ya hay paradas publicadas; si no, el bus nocturno (siempre existe).
   const taxiReady = (counts.Taxi || 0) >= categoryInfo("Taxi").minPlaces
-  shortcuts.push({
-    key: "home",
-    href: taxiReady ? `/essentials/${slug("Taxi")}?near=1` : `/essentials/${slug("Nitbus")}`,
-    icon: taxiReady ? CarTaxiFront : Bus,
-    title: t("essentialsHelp.home"),
-    hint: t("essentialsHelp.homeHint"),
-  })
+  if (taxiReady || city === "barcelona") {
+    shortcuts.push({
+      key: "home",
+      href: taxiReady ? `/essentials/${slug("Taxi")}?near=1` : `/essentials/${slug("Nitbus")}`,
+      icon: taxiReady ? CarTaxiFront : Bus,
+      title: t("essentialsHelp.home"),
+      hint: tc("essentialsHelp.homeHint"),
+    })
+  }
   if (has("Pharmacy")) shortcuts.push({ key: "pharmacy", href: `/essentials/${slug("Pharmacy")}?now=1&near=1`, icon: Pill, title: t("essentialsHelp.pharmacy"), hint: t("essentialsHelp.pharmacyHint") })
   if (has("Hospital")) shortcuts.push({ key: "medical", href: `/essentials/${slug("Hospital")}?near=1`, icon: Hospital, title: t("essentialsHelp.medical"), hint: t("essentialsHelp.medicalHint") })
   if (has("Veterinary")) shortcuts.push({ key: "pet", href: `/essentials/${slug("Veterinary")}?near=1`, icon: PawPrint, title: t("essentialsHelp.pet"), hint: t("essentialsHelp.petHint") })

@@ -1,73 +1,10 @@
-import type { Metadata } from "next"
-import Header from "../../components/layout/Header"
-import BottomNav from "../../components/layout/BottomNav"
-import ClubsExplorer from "../../components/nightlife/ClubsExplorer"
-import ExploreLinks from "../../components/nightlife/ExploreLinks"
-import ClubsDirectory from "../../components/nightlife/ClubsDirectory"
-import OnlyBarcelona from "../../components/system/OnlyBarcelona"
-import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../../lib/clubQueries"
-import { MIN_INDEXABLE, neighborhoodsOf, stylesOf } from "../../lib/areas"
-import { cleanPriceRange, safeJsonLd } from "../../lib/structuredData"
-import { createSlug } from "../../lib/slug"
-import { spanishAlternates } from "../../lib/intl/site"
+import ClubsView, { clubsMetadata } from "../../components/city/ClubsView"
 
 // 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
 export const revalidate = 21600
 
-export const metadata: Metadata = {
-  title: "Discotecas y clubs en Barcelona | Noctua",
-  description:
-    "Descubre las mejores discotecas y clubs de Barcelona: horarios, precios, estilo musical y ubicación. Filtra por barrio, género musical y ambiente.",
-  alternates: spanishAlternates("/clubs", "/clubs"),
-  openGraph: {
-    title: "Discotecas y clubs en Barcelona | Noctua",
-    description:
-      "Descubre las mejores discotecas y clubs de Barcelona: horarios, precios, estilo musical y ubicación.",
-    url: "https://www.noctuaapp.com/clubs",
-    siteName: "Noctua",
-    locale: "es_ES",
-    type: "website",
-  },
-}
+export const metadata = clubsMetadata("barcelona")
 
-export default async function ClubsPage() {
-  const clubs = await fetchVisibleClubs(LIST_CLUB_FIELDS)
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    itemListElement: clubs.slice(0, 30).map((club, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      item: {
-        "@type": "NightClub",
-        name: club.name,
-        url: `https://www.noctuaapp.com/clubs/${club.slug || createSlug(club.name)}`,
-        image: club.image || undefined,
-        address: {
-          "@type": "PostalAddress",
-          addressLocality: club.neighborhood || "Barcelona",
-          addressCountry: "ES",
-        },
-        priceRange: cleanPriceRange(club.price),
-      },
-    })),
-  }
-
-  return (
-    <>
-      <Header />
-      <ClubsExplorer initialClubs={clubs} />
-      {/* El índice A–Z y los enlaces a barrios son de Barcelona: con otra ciudad en vista previa (solo el admin) no salen. */}
-      <OnlyBarcelona>
-        <ClubsDirectory clubs={clubs} />
-        <ExploreLinks
-          neighborhoods={neighborhoodsOf(clubs).filter((n) => n.count >= MIN_INDEXABLE)}
-          styles={stylesOf(clubs).filter((n) => n.count >= MIN_INDEXABLE)}
-        />
-      </OnlyBarcelona>
-      <BottomNav />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
-    </>
-  )
+export default function ClubsPage() {
+  return <ClubsView city="barcelona" />
 }

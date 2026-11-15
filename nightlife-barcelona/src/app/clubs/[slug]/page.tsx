@@ -8,10 +8,14 @@ import { EditAccessProvider } from "../../../components/admin/EditAccess"
 import { notFound, permanentRedirect } from "next/navigation"
 import { supabase } from "../../../lib/supabase"
 import { findBySlug } from "../../../lib/slugLookup"
+import { fetchAllPages } from "../../../lib/fetchAll"
+import { CITIES, cityOfClub, cityUrl, isCityOpen } from "../../../lib/cities"
+import { CityScope } from "../../../lib/cityScope"
+import { cityHeroUrl } from "../../../lib/citySeo"
 import { createSlug } from "../../../lib/slug"
 import { areaHref } from "../../../lib/zonePages"
 import { clubMetaDescription, clubSummary, clubTitle } from "../../../lib/clubSummary"
-import type { DbRow } from "../../../lib/clubQueries"
+import { clubsOfCity, type DbRow } from "../../../lib/clubQueries"
 import { cleanPriceRange, safeJsonLd } from "../../../lib/structuredData"
 import { clubOpeningHoursSpec } from "../../../lib/clubHours"
 import { spanishAlternates } from "../../../lib/intl/site"
@@ -39,17 +43,29 @@ type ClubPageProps = {
 // los clubs: ver src/lib/slugLookup.ts. Los clubs ocultos desde el admin no se encuentran.
 const getClub = cache(async (slug: string) => findBySlug("club", slug))
 
+// La ficha es la misma para todas las ciudades (/clubs/[slug]: el slug es único) y la ciudad sale del propio local (Fase E).
+// Si su ciudad aún no está abierta (Madrid en prelaunch), la ficha no existe para el público aunque el local esté publicado:
+// el admin la ve en vista previa desde el 404 (not-found.tsx).
+const visibleClub = (match: Awaited<ReturnType<typeof getClub>>) => (match && isCityOpen(cityOfClub(match.row)) ? match : null)
+
 // Locales parecidos (mismo barrio y estilo, buena nota), calculados en el servidor: antes se
 // pedían en el navegador después de cargar, así que en el HTML que recibe Google no había ningún
 // enlace a otros clubs. Ahora salen como enlaces normales desde el primer byte, y siempre los
 // mismos para un club dado (Google ve una red de enlaces estable entre fichas).
 async function relatedClubs(club: DbRow): Promise<DbRow[]> {
-  const { data } = await supabase
-    .from("clubs")
-    .select("id, name, slug, image, neighborhood, music, rating, google_rating")
-    .eq("hidden", false)
-    .neq("id", club.id)
-  if (!data) return []
+  // Paginado: entre Barcelona y Madrid hay más de 1.000 locales y una sola consulta se cortaría sin avisar.
+  const data = await fetchAllPages((from, to) =>
+    supabase
+      .from("clubs")
+      .select("id, name, slug, image, neighborhood, music, rating, google_rating, city, latitude, longitude")
+      .eq("hidden", false)
+      .neq("id", club.id)
+      .order("id")
+      .range(from, to)
+  )
+  if (data.length === 0) return []
+  // Solo locales de la misma ciudad: un club de Madrid no recomienda uno de Barcelona ni al revés.
+  const sameCity = clubsOfCity(data as DbRow[], cityOfClub(club))
   const myMusic = String(club.music || "").toLowerCase().split(/[,/·]/).map((m) => m.trim()).filter(Boolean)
   const score = (r: DbRow) => {
     const rating = Number(r.google_rating || r.rating || 0)
@@ -60,17 +76,18 @@ async function relatedClubs(club: DbRow): Promise<DbRow[]> {
     if (r.image) points += 1
     return points
   }
-  return [...(data as DbRow[])].sort((a, b) => score(b) - score(a) || a.id - b.id).slice(0, 6)
+  return [...sameCity].sort((a, b) => score(b) - score(a) || a.id - b.id).slice(0, 6)
 }
 
 export async function generateMetadata({ params }: ClubPageProps): Promise<Metadata> {
   const { slug } = await params
-  const match = await getClub(slug)
+  const match = visibleClub(await getClub(slug))
 
   if (!match) {
     return { title: "Club no encontrado | Noctua" }
   }
   const club = match.row
+  const city = cityOfClub(club)
 
   // Antes todas las fichas decían "Discoteca", también bares y pubs: el título ahora usa el tipo
   // de local real (lo que la gente busca: "bar de copas en Gràcia", "pub en el Born"...).
@@ -81,8 +98,9 @@ export async function generateMetadata({ params }: ClubPageProps): Promise<Metad
   return {
     title,
     description,
-    // Si el local tiene ficha propia en inglés (con datos suficientes), se enlaza como versión en inglés (hreflang).
-    alternates: englishClubEligible(club) ? spanishAlternates(`/clubs/${match.canonicalSlug}`, `/clubs/${match.canonicalSlug}`) : { canonical: url },
+    // Si el local tiene ficha propia en inglés (con datos suficientes), se enlaza como versión en inglés (hreflang). Las páginas
+    // en otros idiomas son de Barcelona: la ficha de un local de Madrid solo está en español.
+    alternates: city === "barcelona" && englishClubEligible(club) ? spanishAlternates(`/clubs/${match.canonicalSlug}`, `/clubs/${match.canonicalSlug}`) : { canonical: url },
     openGraph: {
       title,
       description,
@@ -90,7 +108,7 @@ export async function generateMetadata({ params }: ClubPageProps): Promise<Metad
       siteName: "Noctua",
       locale: "es_ES",
       type: "website",
-      images: club.image ? [{ url: club.image, alt: club.name }] : [{ url: "https://www.noctuaapp.com/hero/skyline_barcelona.jpeg", alt: "Noctua" }],
+      images: club.image ? [{ url: club.image, alt: club.name }] : [{ url: cityHeroUrl(city), alt: "Noctua" }],
     },
     twitter: {
       card: "summary_large_image",
@@ -103,7 +121,7 @@ export async function generateMetadata({ params }: ClubPageProps): Promise<Metad
 
 export default async function ClubPage({ params }: ClubPageProps) {
   const { slug } = await params
-  const match = await getClub(slug)
+  const match = visibleClub(await getClub(slug))
 
   // notFound() devuelve un 404 real. Antes se pintaba "Club not found" pero con código 200, y
   // Google lo cuenta como "soft 404" (página vacía que dice existir).
@@ -111,6 +129,7 @@ export default async function ClubPage({ params }: ClubPageProps) {
   // URL antigua o con otro formato → 301 a la buena (una sola URL por club para Google).
   if (!match.exact) permanentRedirect(`/clubs/${match.canonicalSlug}`)
   const club = match.row
+  const city = cityOfClub(club)
 
   // En paralelo (antes iban una detrás de otra y sumaban sus tiempos).
   const [{ data: clubEvents }, { data: clubSessions }, related] = await Promise.all([
@@ -135,7 +154,8 @@ export default async function ClubPage({ params }: ClubPageProps) {
     address: {
       "@type": "PostalAddress",
       streetAddress: club.address || undefined,
-      addressLocality: club.neighborhood || "Barcelona",
+      // En Barcelona, como siempre, el barrio; en otra ciudad, la propia ciudad (los barrios de Madrid son zonas de Madrid).
+      addressLocality: city === "barcelona" ? club.neighborhood || "Barcelona" : CITIES[city].name,
       addressCountry: "ES",
     },
     ...(club.latitude && club.longitude
@@ -152,9 +172,9 @@ export default async function ClubPage({ params }: ClubPageProps) {
   // Migas de pan para Google (Noctua › Clubs › Barrio › Club): ayudan a entender la estructura
   // del sitio y salen en el resultado de búsqueda en vez de la URL pelada.
   const crumbs = [
-    { name: "Noctua", url: "https://www.noctuaapp.com" },
-    { name: "Clubs", url: "https://www.noctuaapp.com/clubs" },
-    ...(club.neighborhood ? [{ name: club.neighborhood, url: `https://www.noctuaapp.com${areaHref(club.neighborhood)}` }] : []),
+    { name: "Noctua", url: cityUrl("/", city) },
+    { name: "Clubs", url: cityUrl("/clubs", city) },
+    ...(club.neighborhood ? [{ name: club.neighborhood, url: cityUrl(areaHref(club.neighborhood), city) }] : []),
     { name: club.name, url: `https://www.noctuaapp.com/clubs/${match.canonicalSlug}` },
   ]
   const breadcrumb = {
@@ -164,7 +184,7 @@ export default async function ClubPage({ params }: ClubPageProps) {
   }
 
   return (
-    <>
+    <CityScope city={city}>
       <Header />
       {/* El dueño vinculado puede editar su ficha aquí mismo, igual que el admin. */}
       <EditAccessProvider ownerUserId={club.owner_user_id}>
@@ -174,6 +194,6 @@ export default async function ClubPage({ params }: ClubPageProps) {
       <BottomNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumb) }} />
-    </>
+    </CityScope>
   )
 }

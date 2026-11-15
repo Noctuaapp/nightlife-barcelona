@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import robots, { STATE_PARAMS } from "../../app/robots"
+import { CITIES } from "../cities"
 
 // Reglas de robots.txt con la semántica de Google: «*» = cualquier cosa, «$» = final, gana la regla más larga.
 function rule(pattern: string): RegExp {
@@ -58,5 +59,20 @@ describe("robots.txt", () => {
 
   it("el sitemap sigue declarado", () => {
     expect(robots().sitemap).toBe("https://www.noctuaapp.com/sitemap.xml")
+  })
+})
+
+describe("robots.txt · Madrid (Fase E)", () => {
+  it("mientras Madrid esté en prelaunch, /madrid no se rastrea; al abrirla, sí", () => {
+    const original = CITIES.madrid.prelaunch
+    try {
+      CITIES.madrid.prelaunch = true
+      for (const p of ["/madrid", "/madrid/clubs", "/madrid/barrio/malasana"]) expect(blocked(p), p).toBe(true)
+      expect(blocked("/clubs")).toBe(false)
+      CITIES.madrid.prelaunch = false
+      for (const p of ["/madrid", "/madrid/clubs", "/madrid/barrio/malasana", "/madrid/essentials/taxi"]) expect(blocked(p), p).toBe(false)
+    } finally {
+      CITIES.madrid.prelaunch = original
+    }
   })
 })

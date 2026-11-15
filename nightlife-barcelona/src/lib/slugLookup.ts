@@ -1,6 +1,7 @@
 import { supabase } from "./supabase"
 import { createSlug } from "./slug"
 import type { DbRow } from "./clubQueries"
+import { fetchAllPages } from "./fetchAll"
 
 // Busca un club o evento por su slug (la parte final de la URL).
 //
@@ -66,8 +67,8 @@ export async function findBySlug(kind: Kind, rawSlug: string): Promise<SlugMatch
     }
   }
 
-  const { data: list } = await supabase.from(table).select(`id, ${nameField}`).eq("hidden", false)
-  const rows = (list || []) as unknown as DbRow[]
+  // Paginada: con dos ciudades hay más de 1.000 locales y una sola consulta se cortaría sin avisar.
+  const rows = (await fetchAllPages((from, to) => supabase.from(table).select(`id, ${nameField}`).eq("hidden", false).order("id").range(from, to))) as unknown as DbRow[]
   const withSlug = rows.map((r) => ({ id: r.id as number, s: createSlug(r[nameField]) }))
 
   let match = withSlug.find((r) => r.s === requested) || withSlug.find((r) => r.s === normalized)

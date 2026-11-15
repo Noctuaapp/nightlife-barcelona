@@ -13,6 +13,7 @@ import { useFavorites } from "../../context/FavoritesContext"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { createSlug } from "../../lib/slug"
 import { useLanguage } from "../../context/LanguageContext"
+import { useCityT } from "../../lib/useCityT"
 import { toDateLocale } from "../../lib/dateLocale"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { addDays, effectiveHoursStatus, effectiveOpenNow, nightDay } from "../../lib/scheduleNotices"
@@ -72,6 +73,7 @@ type RowStatus = { text: string; tone: "open" | "closed" | "today" | "past" }
 
 export default function FavoritesPage() {
   const { t, locale } = useLanguage()
+  const tc = useCityT() // los textos que nombran la ciudad salen con la que se está viendo (lib/cityText.ts)
   const { favorites, loadingFavorites, toggleFavorite } = useFavorites()
 
   const [clubs, setClubs] = useState<Club[]>([])
@@ -273,7 +275,7 @@ export default function FavoritesPage() {
             <div className="rounded-card border border-white/10 bg-surface px-6 py-14 text-center">
               <div className="mx-auto w-fit"><NocOwl size={88} pose="corazon" /></div>
               <h2 className="mt-5 text-xl font-semibold text-ink">{t("favoritesPage.emptyTitle")}</h2>
-              <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-400">{t("favoritesPage.emptySubtitle")}</p>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-400">{tc("favoritesPage.emptySubtitle")}</p>
               <Link href="/clubs" className="btn-pill btn-primary mt-6 inline-flex px-6 py-3 text-sm">
                 {t("favoritesPage.discoverClubs")}
               </Link>

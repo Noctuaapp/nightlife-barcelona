@@ -13,6 +13,8 @@
 //     cta: { label: "Reservar", href: "/vip" }, startsAt: "2026-12-01", endsAt: "2026-12-31" }
 // Los consejos propios llevan su texto en las traducciones (homeTicker.*); los anuncios, texto literal (un idioma).
 
+import type { CityKey } from "./cities"
+
 export type HomeMessageKind = "tip" | "promo" | "vip" | "notice"
 
 export type HomeMessageText = { key: string } | { literal: string }
@@ -35,16 +37,24 @@ export type HomeMessage = {
   needsClubNoctua?: boolean
   /** Días de la semana (hora de Madrid) en que se enseña: 0 = domingo … 6 = sábado. Sin esto: todos los días. */
   days?: number[]
+  /** Ciudades en las que se enseña (14/11/2026). Sin esto: en todas. Sirve para los consejos que hablan de algo que solo existe en una (NitBus, el metro de TMB…). */
+  cities?: CityKey[]
 }
 
-const tip = (n: number, href?: string, needsClubNoctua = false, days?: number[]): HomeMessage => ({
+const tip = (n: number, href?: string, needsClubNoctua = false, days?: number[], cities?: CityKey[]): HomeMessage => ({
   id: `tip-${n}`,
   kind: "tip",
   text: { key: `homeTicker.msg${n}` },
   ...(href ? { cta: { href } } : {}),
   ...(needsClubNoctua ? { needsClubNoctua: true } : {}),
   ...(days ? { days } : {}),
+  ...(cities ? { cities } : {}),
 })
+
+// Consejos que solo valen en Barcelona: hablan de NitBus, del metro de TMB, de los esenciales (hoy solo hay de Barcelona)
+// o de los derechos en Cataluña. Cuando Madrid tenga lo suyo (transporte, esenciales, barrios), entra aquí su versión.
+const BCN: CityKey[] = ["barcelona"]
+const MAD: CityKey[] = ["madrid"]
 
 // Lunes a jueves: «entre semana». El viernes y el fin de semana la salida ya se da por hecha y el mensaje sobra.
 const ENTRE_SEMANA = [1, 2, 3, 4]
@@ -59,22 +69,23 @@ export const TIPS: HomeMessage[] = [
   tip(5, "/favorites"),
   tip(8), // el tiempo de esta noche
   tip(9, "/map"),
-  tip(12, "/nitbus"),
-  tip(27, "/nitbus"), // «mi trayecto»: dónde subo y dónde bajo
-  tip(28, "/metro"), // a qué hora cierra el metro hoy
+  tip(12, "/nitbus", false, undefined, BCN),
+  tip(27, "/nitbus", false, undefined, BCN), // «mi trayecto»: dónde subo y dónde bajo
+  tip(28, "/metro", false, undefined, BCN), // a qué hora cierra el metro hoy
   tip(29, "/clubs", false, ENTRE_SEMANA), // «entre semana también apetece tomar algo»: solo de lunes a jueves
   tip(13), // abiertos ahora
-  tip(14, "/derechos"),
+  tip(14, "/derechos", false, undefined, BCN), // la guía de derechos es de Cataluña
   tip(15),
   tip(16, "/clubs"),
-  tip(17, "/essentials"),
+  tip(17, "/essentials", false, undefined, BCN),
   tip(18),
   tip(19, "/para-locales"),
   tip(20, "/invitar", true),
   tip(22),
   tip(23, "/profile", true),
-  tip(24, "/contact"),
-  tip(26, "/essentials/sugerir"),
+  tip(24, "/contact", false, undefined, BCN),
+  tip(26, "/essentials/sugerir", false, undefined, BCN),
+  tip(30, "/contact", false, undefined, MAD), // Madrid se está montando: que cuenten qué local falta
 ]
 
 // Publicidad, mesas VIP y avisos. VACÍO a propósito: no se enseña nada que no se haya puesto aquí.
@@ -105,11 +116,22 @@ export function isInWindow(m: Pick<HomeMessage, "startsAt" | "endsAt">, now: Dat
  */
 export function activeMessages(
   now: Date,
-  opts: { clubNoctua: boolean; announcements?: HomeMessage[]; tips?: HomeMessage[]; shuffle?: <T>(items: T[]) => T[] }
+  opts: {
+    clubNoctua: boolean
+    announcements?: HomeMessage[]
+    tips?: HomeMessage[]
+    shuffle?: <T>(items: T[]) => T[]
+    /** Ciudad que se está viendo (por defecto Barcelona). */
+    city?: CityKey
+  }
 ): HomeMessage[] {
   const weekday = madridWeekday(now)
+  const city = opts.city ?? "barcelona"
   const ok = (m: HomeMessage) =>
-    isInWindow(m, now) && (!m.needsClubNoctua || opts.clubNoctua) && (!m.days || m.days.includes(weekday))
+    isInWindow(m, now) &&
+    (!m.needsClubNoctua || opts.clubNoctua) &&
+    (!m.days || m.days.includes(weekday)) &&
+    (!m.cities || m.cities.includes(city))
   const ann = (opts.announcements ?? ANNOUNCEMENTS).filter(ok)
   const tips = (opts.tips ?? TIPS).filter(ok)
   return [...ann, ...(opts.shuffle ? opts.shuffle(tips) : tips)]

@@ -5,6 +5,8 @@ import { Check } from "lucide-react"
 import { useLanguage } from "../../context/LanguageContext"
 import NocOwl, { type NocPose } from "../mascot/NocOwl"
 import GoogleButton from "../auth/GoogleButton"
+import { useSelectedCity } from "../../lib/previewCity"
+import { cityTextKey } from "../../lib/cityText"
 
 type LoginWallProps = {
   // Claves i18n del título y del texto propios de la función (mapa, plan, favoritos, perfil…).
@@ -23,6 +25,7 @@ type LoginWallProps = {
 // lleva ?next= para volver directamente aquí.
 export default function LoginWall({ titleKey, subtitleKey, next, pose }: LoginWallProps) {
   const { t } = useLanguage()
+  const city = useSelectedCity() // el título y el texto nombran la ciudad (lib/cityText.ts)
   const back = next ?? (typeof window !== "undefined" ? window.location.pathname + window.location.search : "/")
   const q = `?next=${encodeURIComponent(back)}`
   const benefits = [t("authGate.benefit2"), t("authGate.benefit1"), t("authGate.benefit3")]
@@ -39,8 +42,8 @@ export default function LoginWall({ titleKey, subtitleKey, next, pose }: LoginWa
             <NocOwl size={pose ? 52 : 44} mood={pose ? "happy" : "wink"} pose={pose} />
           </div>
         </div>
-        <h1 className="mt-5 font-display text-[1.9rem] leading-[1.08]">{t(titleKey)}</h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-zinc-300">{t(subtitleKey)}</p>
+        <h1 className="mt-5 font-display text-[1.9rem] leading-[1.08]">{t(cityTextKey(titleKey, city))}</h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-zinc-300">{t(cityTextKey(subtitleKey, city))}</p>
 
         <ul className="mt-5 space-y-2.5">
           {benefits.map((b) => (

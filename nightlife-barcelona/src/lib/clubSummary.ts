@@ -9,6 +9,7 @@
 
 import { EXTRA_FEATURES } from "./extraFeatures"
 import { dressCodeOf } from "./dressCode"
+import { otherCityName } from "./cities"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Club = Record<string, any>
@@ -37,6 +38,9 @@ function listEs(items: string[]): string {
 
 export function clubPlace(club: Club): string {
   const area = clean(club.neighborhood)
+  // Un local de otra ciudad (Madrid) lleva siempre su ciudad: «Chamberí (Madrid)». Sus zonas («Centro») no se entienden solas.
+  const other = otherCityName(club)
+  if (other) return !area || area === other ? other : `${area} (${other})`
   const city = clean(club.city) || "Barcelona"
   if (!area || area === city) return city
   return /^barcelona$/i.test(city) ? `${area} (Barcelona)` : area
@@ -101,7 +105,10 @@ export const CLUB_TITLE_MAX = 70
 export function clubTitle(club: Club): string {
   const name = clean(club.name)
   const kind = venueKind(club.venue_type).label
-  const place = clean(club.neighborhood) || "Barcelona"
+  const area = clean(club.neighborhood)
+  // Barcelona, como siempre, el barrio; Madrid, la zona con la ciudad («Chamberí, Madrid»): «Centro» a secas no dice dónde está.
+  const other = otherCityName(club)
+  const place = other ? (!area || area === other ? other : `${area}, ${other}`) : area || "Barcelona"
   const base = `${name} — ${kind} en ${place}`
   const withInfo = `${base}: horario y cómo llegar | Noctua`
   return withInfo.length <= CLUB_TITLE_MAX ? withInfo : `${base} | Noctua`

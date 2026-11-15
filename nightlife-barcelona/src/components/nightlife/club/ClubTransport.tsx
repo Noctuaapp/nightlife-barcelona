@@ -8,14 +8,18 @@ import { track } from "../../../lib/track"
 import { useLanguage } from "../../../context/LanguageContext"
 import { nearestMetroStations } from "../../../lib/metroStations"
 import { getMetroTonight } from "../../../lib/transitHours"
+import { CITIES, cityOfClub } from "../../../lib/cities"
+import { cityTextKey } from "../../../lib/cityText"
+import { cityTransit, madridL6EarlyClose } from "../../../lib/cityTransit"
 import { distanceInMeters, formatDistance, walkingMinutes, walkingDirectionsUrl } from "../../../lib/geo"
 import { MetroLineBadge, NitbusBadge } from "../../ui/TransitBadge"
 import { InlineEditText } from "../../admin/InlineEdit"
 import { useCanEdit } from "../../admin/EditAccess"
 import NitbusNearby, { type NitbusSummary } from "../NitbusNearby"
+import BuhoNearby from "../BuhoNearby"
 
 // Cómo llegar y, sobre todo, cómo volver: metro (con su horario de esta noche), NitBus y taxi.
-const PLACA_CATALUNYA = { lat: 41.3869, lon: 2.1701 }
+// El punto donde converge el bus nocturno (Plaça Catalunya, Cibeles…) sale de lib/cityTransit.ts según la ciudad del local.
 // En la categoría Taxi de esenciales también hay oficinas de empresas (Cabify, Uber...): no son
 // paradas a las que tenga sentido ir andando a buscar un taxi.
 const NOT_A_RANK = /cabify|uber|bolt|free\s?now|oficina|office|headquarter/i
@@ -31,6 +35,7 @@ type ClubLike = {
   address?: string | null
   latitude?: number | string | null
   longitude?: number | string | null
+  city?: string | null
   metro_lines?: string | null
   night_buses?: string | null
 }
@@ -51,6 +56,10 @@ function Row({ badge, children, tone }: { badge: React.ReactNode; children: Reac
 
 export default function ClubTransport({ club }: { club: ClubLike }) {
   const { t } = useLanguage()
+  // Ciudad del local (no la del selector): un local de Madrid se explica con el metro, los búhos y los taxis de Madrid.
+  const city = cityOfClub(club)
+  const tr = cityTransit(city)
+  const tc = (key: string) => t(cityTextKey(key, city))
   const hasCoords = !!club.latitude && !!club.longitude
   const lat = Number(club.latitude)
   const lng = Number(club.longitude)
@@ -61,7 +70,7 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
   const [busSummary, setBusSummary] = useState<NitbusSummary | null>(null)
 
   useEffect(() => {
-    setMetroTonight(getMetroTonight())
+    setMetroTonight(getMetroTonight(city))
     if (!hasCoords) return
     let cancelled = false
     supabase
@@ -86,18 +95,22 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
     return () => {
       cancelled = true
     }
-  }, [hasCoords, lat, lng])
+  }, [hasCoords, lat, lng, city])
 
-  const metro = hasCoords ? nearestMetroStations(lat, lng) : []
-  const distCatalunya = hasCoords ? distanceInMeters(lat, lng, PLACA_CATALUNYA.lat, PLACA_CATALUNYA.lon) : null
+  // Las estaciones cercanas son las del metro de la ciudad del local (Barcelona o Metro de Madrid, datos del CRTM).
+  const metro = hasCoords ? nearestMetroStations(lat, lng, 900, 2, city) : []
+  const metroLinesShown = club.metro_lines
+    ? club.metro_lines.split(",").map((l) => l.trim()).filter(Boolean)
+    : metro.flatMap((s) => s.lines ?? [])
+  const distCatalunya = hasCoords ? distanceInMeters(lat, lng, tr.nightBusHub.lat, tr.nightBusHub.lon) : null
   const nitbusNearby = hasCoords
-    ? `https://www.google.com/maps/search/parada+nitbus/@${lat},${lng},16z`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`parada nitbus ${club.name} Barcelona`)}`
+    ? `https://www.google.com/maps/search/parada+${encodeURIComponent(tr.nightBusSearch)}/@${lat},${lng},16z`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`parada ${tr.nightBusSearch} ${club.name} ${CITIES[city].name}`)}`
 
   const metroLabel = !metroTonight
     ? null
     : metroTonight.state === "closed"
-    ? t("clubPage.metroClosed")
+    ? tc("clubPage.metroClosed")
     : metroTonight.closes === "all-night"
     ? t("clubPage.metroAllNight")
     : t("clubPage.metroUntil").replace("{time}", metroTonight.closes)
@@ -122,7 +135,7 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
             {metro[0]?.lines && !club.metro_lines && (
               <div className="flex shrink-0 gap-1">
                 {metro[0].lines.slice(0, 3).map((l) => (
-                  <MetroLineBadge key={l} code={l} />
+                  <MetroLineBadge key={l} code={l} city={city} />
                 ))}
               </div>
             )}
@@ -132,7 +145,7 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
             {club.metro_lines
               ? club.metro_lines.split(",").map((l) => l.trim()).filter(Boolean).map((code) => (
                   <div key={code} className="flex items-center gap-2.5 rounded-ctl border border-white/10 bg-white/[0.02] px-3 py-2.5">
-                    <MetroLineBadge code={code} />
+                    <MetroLineBadge code={code} city={city} />
                     <span className="text-sm text-zinc-300">{t("clubPage.metroLine")}</span>
                   </div>
                 ))
@@ -141,7 +154,7 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
                     {s.lines && s.lines.length > 0 && (
                       <div className="flex shrink-0 gap-1">
                         {s.lines.map((l) => (
-                          <MetroLineBadge key={l} code={l} />
+                          <MetroLineBadge key={l} code={l} city={city} />
                         ))}
                       </div>
                     )}
@@ -159,6 +172,21 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
                     </a>
                   </div>
                 ))}
+            {/* Madrid: la L6 cierra a las 23:00 de domingo a jueves mientras duran las obras de su automatización. */}
+            {city === "madrid" && metroTonight && madridL6EarlyClose(metroLinesShown) && (
+              <p className="rounded-ctl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs leading-snug text-amber-100">
+                {t("clubPage.metroL6Early")}
+              </p>
+            )}
+            {/* Crédito exigido por la licencia de los datos del CRTM. */}
+            {city === "madrid" && metro.length > 0 && !club.metro_lines && (
+              <p className="text-[11px] leading-snug text-zinc-500">
+                {t("clubPage.metroDataCrtm")}{" "}
+                <a href="https://www.crtm.es" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+                  Powered by CRTM
+                </a>
+              </p>
+            )}
           </div>
         </details>
       )}
@@ -167,11 +195,11 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
         <summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-3 [&::-webkit-details-marker]:hidden">
           <Icon name="bus" className="h-4 w-4 shrink-0 text-muted" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-ink">{t("club.night_buses")}</p>
+            <p className="text-sm font-semibold text-ink">{tc("club.night_buses")}</p>
             <p className="truncate text-xs text-zinc-400">
               {busSummary?.first
                 ? `${busSummary.first.stop} · ${formatDistance(busSummary.first.d)} · ${walkingMinutes(busSummary.first.d)} min`
-                : t("clubPage.nitbusNearby")}
+                : tc("clubPage.nitbusNearby")}
             </p>
           </div>
           {busSummary && busSummary.codes.length > 0 && (
@@ -187,7 +215,7 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
         <div className="flex flex-col gap-2.5 px-3 pb-3">
           {/* Una fila por línea: a dónde va, en qué parada cogerla y cuánto se tarda andando
               (ver NitbusNearby). Sin paradas cerca, el enlace de búsqueda de siempre. */}
-          {hasCoords ? (
+          {hasCoords && city === "barcelona" ? (
             <NitbusNearby
               lat={lat}
               lng={lng}
@@ -198,7 +226,21 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
               emptyFallback={
                 <Row tone="bus" badge={<Icon name="map" className="h-3.5 w-3.5" />}>
                   <a href={nitbusNearby} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-200 underline underline-offset-2">
-                    {t("clubPage.nitbusNearby")}
+                    {tc("clubPage.nitbusNearby")}
+                  </a>
+                </Row>
+              }
+            />
+          ) : hasCoords && city === "madrid" ? (
+            // Madrid: búhos de la EMT con sus paradas (datos estáticos, ver lib/madridBuhos.ts).
+            <BuhoNearby
+              lat={lat}
+              lng={lng}
+              onSummary={setBusSummary}
+              emptyFallback={
+                <Row tone="bus" badge={<Icon name="map" className="h-3.5 w-3.5" />}>
+                  <a href={nitbusNearby} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-200 underline underline-offset-2">
+                    {tc("clubPage.nitbusNearby")}
                   </a>
                 </Row>
               }
@@ -206,11 +248,11 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
           ) : (
             <Row tone="bus" badge={<Icon name="map" className="h-3.5 w-3.5" />}>
               <a href={nitbusNearby} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-200 underline underline-offset-2">
-                {t("clubPage.nitbusNearby")}
+                {tc("clubPage.nitbusNearby")}
               </a>
             </Row>
           )}
-          {isAdmin && club.id && (
+          {isAdmin && club.id && city === "barcelona" && (
             <p className="rounded-ctl border border-dashed border-purple-400/40 px-3 py-2 text-xs text-purple-200">
               Líneas de este club (solo tú lo ves, separa con comas):{" "}
               <InlineEditText table="clubs" id={club.id} field="night_buses" value={club.night_buses} placeholder="N24, N28" emptyLabel="añadir líneas" />
@@ -222,9 +264,9 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
               club), así que va como frase pequeña con asterisco, no como una fila de transporte más. */}
           {distCatalunya != null && distCatalunya > 300 && (
             <p className="px-1 text-xs text-zinc-500">
-              * {t("clubPage.catalunyaHub")} ·{" "}
+              * {tc("clubPage.catalunyaHub")} ·{" "}
               <a
-                href={walkingDirectionsUrl(lat, lng, PLACA_CATALUNYA.lat, PLACA_CATALUNYA.lon)}
+                href={walkingDirectionsUrl(lat, lng, tr.nightBusHub.lat, tr.nightBusHub.lon)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold text-zinc-400 underline underline-offset-2"
@@ -264,6 +306,7 @@ export default function ClubTransport({ club }: { club: ClubLike }) {
             address={club.address}
             lat={hasCoords ? lat : null}
             lng={hasCoords ? lng : null}
+            city={city}
             onRideClick={(provider) => track("ride_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { provider, source: "club_page" } })}
             onTaxiCall={() => track("phone_click", { itemType: "club", itemId: club.id, itemName: club.name, meta: { category: "taxi", source: "club_page" } })}
           />

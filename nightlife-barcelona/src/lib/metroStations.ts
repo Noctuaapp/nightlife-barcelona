@@ -1,4 +1,6 @@
 import { distanceInMeters } from "./geo"
+import type { CityKey } from "./cities"
+import { MADRID_METRO_STATIONS } from "./madridMetro"
 
 // Estaciones de metro/FGC de Barcelona (nombre + coordenadas) leídas de OpenStreetMap
 // (datos abiertos, licencia ODbL) via Overpass API, para poder calcular la estación más
@@ -174,8 +176,10 @@ export const METRO_STATIONS: MetroStation[] = [
 // Hasta 2 estaciones dentro de 900m (una distancia caminable de verdad de noche, no "en la misma
 // ciudad"). Si no hay ninguna tan cerca, se devuelve vacío en vez de forzar la más cercana aunque
 // esté a 3km — mejor no decir nada que sugerir que el metro es una opción cuando no lo es.
-export function nearestMetroStations(lat: number, lon: number, maxMeters = 900, limit = 2) {
-  return METRO_STATIONS.map((s) => ({ ...s, distanceMeters: distanceInMeters(lat, lon, s.lat, s.lon) }))
+// `city` elige la red: Barcelona (por defecto, como siempre) o Metro de Madrid (CRTM, ver madridMetro.ts).
+export function nearestMetroStations(lat: number, lon: number, maxMeters = 900, limit = 2, city: CityKey = "barcelona") {
+  const stations = city === "madrid" ? MADRID_METRO_STATIONS : METRO_STATIONS
+  return stations.map((s) => ({ ...s, distanceMeters: distanceInMeters(lat, lon, s.lat, s.lon) }))
     .filter((s) => s.distanceMeters <= maxMeters)
     .sort((a, b) => a.distanceMeters - b.distanceMeters)
     .slice(0, limit)

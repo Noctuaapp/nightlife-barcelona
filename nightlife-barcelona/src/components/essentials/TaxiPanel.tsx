@@ -5,7 +5,9 @@ import ArrowIcon from "../ui/ArrowIcon"
 import { useLanguage } from "../../context/LanguageContext"
 import { track } from "../../lib/track"
 import { detectPlatform, openRideApp } from "../../lib/rideLinks"
-import { TAXI_APPS, TAXI_PHONES, UBER_PICKUP_LINK, formatPhoneEs, telHref, type TaxiApp } from "../../lib/taxiOptions"
+import { TAXI_APPS, UBER_PICKUP_LINK, formatPhoneEs, telHref, type TaxiApp } from "../../lib/taxiOptions"
+import { cityTransit } from "../../lib/cityTransit"
+import { useSelectedCity } from "../../lib/previewCity"
 
 // Pantalla Taxi de Esenciales (11/11/2026). Antes: un solo recuadro con los botones de las apps y los de teléfono
 // pegados en una fila, sin logos. Ahora son dos recuadros separados, cada uno con una lista en vertical:
@@ -17,6 +19,8 @@ const ROW =
 
 export default function TaxiPanel() {
   const { t } = useLanguage()
+  // Los teléfonos de radio taxi son los de la ciudad que se está viendo (lib/cityTransit.ts).
+  const taxiPhones = cityTransit(useSelectedCity()).taxiPhones
 
   const openApp = (app: TaxiApp) => {
     track("ride_click", { itemType: "essential", itemName: app.name, meta: { provider: app.id, source: "taxi_page" } })
@@ -54,7 +58,7 @@ export default function TaxiPanel() {
           <h2 className="text-base font-semibold text-ink">{t("essentialsPage.taxiPhonesTitle")}</h2>
           <p className="mt-1 text-sm leading-snug text-zinc-400">{t("essentialsPage.taxiPhonesHint")}</p>
           <ul className="mt-4 flex flex-col gap-2.5">
-            {TAXI_PHONES.map((p) => (
+            {taxiPhones.map((p) => (
               <li key={p.phone}>
                 <a
                   href={telHref(p.phone)}

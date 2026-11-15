@@ -5,13 +5,13 @@ import NitbusUnknownLine from "../nitbus/NitbusUnknownLine"
 // Insignia de línea de transporte: redonda para metro (como el rótulo del andén), en placa
 // rectangular para Nitbus (como el cartel azul de la parada). La forma distingue el modo sin
 // necesitar una etiqueta de texto aparte; el color es el oficial de cada línea de metro.
-export function MetroLineBadge({ code, size = "sm" }: { code: string; size?: "sm" | "md" | "lg" }) {
-  const { bg, fg } = metroLineColor(code)
+export function MetroLineBadge({ code, size = "sm", city = "barcelona" }: { code: string; size?: "sm" | "md" | "lg"; city?: "barcelona" | "madrid" }) {
+  const { bg, fg } = metroLineColor(code, city)
   const dim = size === "lg" ? "h-11 w-11 text-xl" : size === "md" ? "h-7 w-7 text-sm" : "h-6 w-6 text-xs"
   return (
     <span
       className={`inline-flex shrink-0 items-center justify-center rounded-full font-black ${dim}`}
-      style={{ background: bg, color: fg }}
+      style={{ background: bg, color: fg, ...(bg === "#FFFFFF" ? { boxShadow: "inset 0 0 0 1.5px #16141f" } : null) }}
     >
       {code.replace(/^L/i, "")}
     </span>

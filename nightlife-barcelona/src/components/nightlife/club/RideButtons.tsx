@@ -4,6 +4,10 @@ import Icon from "../../ui/Icon"
 import { useLanguage } from "../../../context/LanguageContext"
 import { toast } from "../../ui/Toast"
 import { detectPlatform, openRideApp, uberLink } from "../../../lib/rideLinks"
+import type { CityKey } from "../../../lib/cities"
+import { cityTextKey } from "../../../lib/cityText"
+import { cityTransit } from "../../../lib/cityTransit"
+import { telHref } from "../../../lib/taxiOptions"
 
 // Pedir un coche o un taxi desde la ficha. Antes Cabify y FREE NOW llevaban a su web aunque
 // tuvieras la app instalada. Ahora en el móvil se abre la app (ver src/lib/rideLinks.ts):
@@ -11,7 +15,7 @@ import { detectPlatform, openRideApp, uberLink } from "../../../lib/rideLinks"
 // - Cabify, con el destino ya puesto (su enlace documentado cabify://cabify/journey). Además se
 //   copia la dirección, por si la versión instalada no lo lee.
 // - FREE NOW, que no tiene enlace con destino: se copia la dirección para pegarla en la app.
-// El 033 llama a Radio Taxi.
+// El botón del taxi llama al radio taxi de la ciudad del local (el 033 en Barcelona; en Madrid, Radio Teléfono Taxi).
 //
 // Se registra qué app de VTC/taxi se pulsa (evento "ride_click" con el proveedor en `meta`, ver
 // src/lib/track.ts) y cuándo se llama al taxi (onTaxiCall), por si en el futuro hay acuerdo comercial con
@@ -24,6 +28,7 @@ export default function RideButtons({
   lng,
   onRideClick,
   onTaxiCall,
+  city = "barcelona",
 }: {
   name: string
   address?: string | null
@@ -31,6 +36,8 @@ export default function RideButtons({
   lng?: number | null
   onRideClick?: (provider: "uber" | "cabify" | "freenow") => void
   onTaxiCall?: () => void
+  /** Ciudad del local: decide a qué teléfono llama el botón del taxi. */
+  city?: CityKey
 }) {
   const { t } = useLanguage()
   const destination = [name, address].filter(Boolean).join(", ")
@@ -86,12 +93,12 @@ export default function RideButtons({
       </div>
       <p className="mt-2 text-center text-xs text-zinc-400">{t("clubPage.rideHint")}</p>
       <a
-        href="tel:933033033"
+        href={telHref(cityTransit(city).taxiPhones[0].phone)}
         onClick={() => onTaxiCall?.()}
         className="act act-ride act-taxi mt-3 flex items-center justify-center gap-2 rounded-ctl px-4 py-3 text-xs font-semibold"
       >
         <Icon name="phone" className="h-4 w-4" />
-        {t("clubPage.callTaxi")}
+        {t(cityTextKey("clubPage.callTaxi", city))}
       </a>
     </div>
   )

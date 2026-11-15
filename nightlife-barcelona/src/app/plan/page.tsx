@@ -24,7 +24,11 @@ import { useLanguage } from "../../context/LanguageContext"
 import { toDateLocale } from "../../lib/dateLocale"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { cleanEssential } from "../../lib/essentials"
+import { essentialsOfCity, scopeToCity } from "../../lib/cityEssentials"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
+import { fetchCityClubsFor, useSelectedCity } from "../../lib/previewCity"
+import { CITIES, cityOfClub, otherCityName } from "../../lib/cities"
+import { cityTextKey } from "../../lib/cityText"
 import { UtensilsCrossed, ShoppingCart } from "lucide-react"
 import { DRESS_CODES, dressCodeLabel, dressCodeOf } from "../../lib/dressCode"
 import NocOwl from "../../components/mascot/NocOwl"
@@ -348,6 +352,8 @@ type Stop = {
 
 export default function PlanPage() {
   const { t, locale } = useLanguage()
+  // Barcelona, o la ciudad que el admin tenga en vista previa (lib/previewCity.ts): el plan solo propone locales de esa ciudad.
+  const city = useSelectedCity()
   const [clubs, setClubs] = useState<any[]>([])
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -402,18 +408,27 @@ export default function PlanPage() {
     supabase.auth.getSession().then(({ data }) => {
       setUserId(data.session?.user.id || null)
     })
+    // Madrid (vista previa, 14/11/2026): sus locales están ocultos y se piden por ciudad, y sus esenciales (comida y súper cerca
+    // del local) por su rectángulo y también ocultos; los eventos todavía son solo de Barcelona.
+    let alive = true
+    const empty = Promise.resolve({ data: [] as any[] })
     Promise.all([
-      supabase.from("clubs").select("*").eq("hidden", false),
+      fetchCityClubsFor(city, "*").then((rows) => ({ data: rows as any[] })),
       // Eventos oculto (lib/featureFlags.ts): el plan solo propone clubs y esenciales.
-      EVENTS_HIDDEN ? Promise.resolve({ data: [] as any[] }) : supabase.from("events").select("*").eq("hidden", false).order("date", { ascending: true }),
-      supabase.from("essentials").select("*").eq("hidden", false).in("category", ["Food", "Supermarket"]),
+      EVENTS_HIDDEN || city !== "barcelona" ? empty : supabase.from("events").select("*").eq("hidden", false).order("date", { ascending: true }),
+      scopeToCity(supabase.from("essentials").select("*").in("category", ["Food", "Supermarket"]), city),
     ]).then(([{ data: clubsData }, { data: eventsData }, { data: essentialsData }]) => {
-      if (clubsData) setClubs(clubsData)
-      if (eventsData) setEvents(eventsData)
-      if (essentialsData) setNearbyEssentials(essentialsData.map(cleanEssential))
+      if (!alive) return
+      // Cada plan solo propone locales de su ciudad (cuando Madrid se abra, los suyos no se cuelan en el de Barcelona).
+      setClubs((clubsData || []).filter((c: any) => cityOfClub(c) === city))
+      setEvents(eventsData || [])
+      setNearbyEssentials(essentialsOfCity((essentialsData || []).map(cleanEssential), city))
       setLoading(false)
     })
-  }, [])
+    return () => {
+      alive = false
+    }
+  }, [city])
 
   // El sitio de comida o supermercado más cercano a unas coordenadas, de los ya cargados.
   const nearestEssentialTo = (lat: number | null | undefined, lon: number | null | undefined) => {
@@ -479,8 +494,8 @@ export default function PlanPage() {
     t("planPage.stepGroup"), t("planPage.stepBudget"), t("planPage.stepVibe"),
     t("planPage.stepVenueType"), t("planPage.stepMusic"), t("planPage.stepArea"), t("planPage.stepFinal"),
   ]
-  const LOADING_MESSAGES = [t("planPage.loading1"), t("planPage.loading2"), t("planPage.loading3"), t("planPage.loading4"), t("planPage.loading5")]
-  const FUN_TIPS = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => t(`planPage.funTip${n}`))
+  const LOADING_MESSAGES = [t("planPage.loading1"), t(cityTextKey("planPage.loading2", city)), t("planPage.loading3"), t("planPage.loading4"), t("planPage.loading5")]
+  const FUN_TIPS = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => t(cityTextKey(`planPage.funTip${n}`, city)))
 
   // Rota el mensajito gracioso cada 7s mientras se ven los resultados y no se ha cerrado con la X.
   useEffect(() => {
@@ -684,7 +699,7 @@ export default function PlanPage() {
         time: i === 0 ? earlyCursor : lateCursor,
         kind: "club",
         title: club.name,
-        subtitle: club.neighborhood || "Barcelona",
+        subtitle: club.neighborhood || otherCityName(club) || "Barcelona",
         reasons: (club.reasons || []).slice(0, 3),
         image: club.image,
         href: `/clubs/${club.slug || createSlug(club.name)}`,
@@ -764,7 +779,7 @@ export default function PlanPage() {
             <NocOwl size={76} pose="plan" className="relative mt-1 shrink-0" />
             <div>
               <h1 className="neon-brand font-display text-[2.1rem] leading-[1.06] sm:text-6xl">{t("nav.plan")}</h1>
-              <p className="mt-3 max-w-xl text-base leading-relaxed text-zinc-300">{t("planPage.subtitle")}</p>
+              <p className="mt-3 max-w-xl text-base leading-relaxed text-zinc-300">{t(cityTextKey("planPage.subtitle", city))}</p>
             </div>
           </div>
         </section>
@@ -1136,7 +1151,7 @@ export default function PlanPage() {
                               </div>
                               <div className="p-3">
                                 <p className="truncate text-sm font-semibold text-ink">{club.name}</p>
-                                <p className="truncate text-xs text-zinc-400">{club.neighborhood || "Barcelona"}</p>
+                                <p className="truncate text-xs text-zinc-400">{club.neighborhood || otherCityName(club) || "Barcelona"}</p>
                               </div>
                             </Link>
                           ))}

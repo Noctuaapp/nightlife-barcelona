@@ -1,20 +1,24 @@
 "use client"
 
 import { useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import { Check, ChevronDown } from "lucide-react"
-import { CITIES, selectableCities, type CityKey } from "../../lib/cities"
-import { setPreviewCity, useSelectedCity } from "../../lib/previewCity"
+import { CITIES, selectableCities, switchCityPath, type CityKey } from "../../lib/cities"
+import { useSelectedCity } from "../../lib/previewCity"
 import { useIsAdmin } from "../../lib/useIsAdmin"
 
 // Ciudad + hora de la cabecera (14/11/2026). Con una sola ciudad disponible (lo que ve el público mientras Madrid esté
-// en «prelaunch», lib/cities.ts) es la etiqueta de siempre, sin desplegable. Para el admin se convierte en un selector
-// con las ciudades que aún no están abiertas marcadas como «vista previa» (lib/previewCity.ts).
+// en «prelaunch», lib/cities.ts) es la etiqueta de siempre, sin desplegable. Con más de una (todos, cuando se abra Madrid; el
+// admin, antes) es un selector que lleva a la misma página de la otra ciudad (/clubs → /madrid/clubs) o, si no existe allí,
+// a su portada. Las ciudades que aún no están abiertas salen marcadas como «vista previa».
 const PILL =
   "flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] py-1.5 pl-3 pr-3.5 text-xs font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] sm:py-2 sm:text-sm"
 
 export default function CityPicker({ clock }: { clock: string | null }) {
   const isAdmin = useIsAdmin()
   const city = useSelectedCity()
+  const router = useRouter()
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const current = CITIES[city]
   const options = selectableCities(isAdmin)
@@ -38,8 +42,8 @@ export default function CityPicker({ clock }: { clock: string | null }) {
   }
 
   const choose = (key: CityKey) => {
-    setPreviewCity(CITIES[key].prelaunch ? key : null)
     setOpen(false)
+    if (key !== city) router.push(switchCityPath(pathname || "/", key))
   }
 
   return (

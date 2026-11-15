@@ -4,6 +4,7 @@ import { useRef, useState } from "react"
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
 import { useLanguage } from "../../context/LanguageContext"
+import { useCityT } from "../../lib/useCityT"
 
 // Vista del índice A–Z de /clubs (31/10/2026). Antes era una lista de cientos de locales seguidos,
 // larguísima en el móvil. Ahora: una cuadrícula de letras y, debajo, solo los locales de la letra
@@ -20,6 +21,7 @@ const INITIAL_VISIBLE = 12
 
 export default function ClubsDirectoryView({ groups, total }: { groups: DirectoryGroup[]; total: number }) {
   const { t } = useLanguage()
+  const tc = useCityT()
   const [active, setActive] = useState(groups[0]?.letter || "")
   const [expanded, setExpanded] = useState(false)
   const tabs = useRef<Record<string, HTMLButtonElement | null>>({})
@@ -44,7 +46,7 @@ export default function ClubsDirectoryView({ groups, total }: { groups: Director
   return (
     <section aria-labelledby="clubs-az" className="mx-auto max-w-7xl border-t border-white/10 bg-night px-4 pt-10">
       <h2 id="clubs-az" className="text-xl font-semibold text-ink">
-        {t("directory.title")}
+        {tc("directory.title")}
       </h2>
       <p className="mt-2 text-sm text-zinc-400">{t("directory.count").replace("{n}", String(total))}</p>
 

@@ -1,19 +1,8 @@
 import type { Metadata } from "next"
-import { cache } from "react"
-import { notFound, permanentRedirect } from "next/navigation"
-import Header from "../../../components/layout/Header"
-import BottomNav from "../../../components/layout/BottomNav"
-import AreaListing from "../../../components/nightlife/AreaListing"
-import { fetchVisibleClubs, LIST_CLUB_FIELDS } from "../../../lib/clubQueries"
-import { MIN_INDEXABLE, neighborhoodsOf, rankClubs, stylesOf } from "../../../lib/areas"
-import { createSlug } from "../../../lib/slug"
-import { safeJsonLd } from "../../../lib/structuredData"
-import { computeAreaFacts } from "../../../lib/areaFactsData"
-import { zoneLinks, zoneSlugByName } from "../../../lib/zonePages"
-import { zoneOf } from "../../../lib/zones"
-import { spanishAlternates } from "../../../lib/intl/site"
+import { BarrioView, barrioMetadata } from "../../../components/city/AreaPages"
 
-// /barrio/el-born, /barrio/poblenou… Una página por barrio con sus discotecas (ver src/lib/areas.ts).
+// /barrio/el-born, /barrio/poblenou… Una página por barrio con sus discotecas (ver src/lib/areas.ts y
+// src/components/city/AreaPages.tsx). Los barrios de Madrid viven en /madrid/barrio/[slug].
 // 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
 export const revalidate = 21600
 export async function generateStaticParams() {
@@ -22,78 +11,10 @@ export async function generateStaticParams() {
 
 type Props = { params: Promise<{ slug: string }> }
 
-const getData = cache(async (slug: string) => {
-  const all = await fetchVisibleClubs(LIST_CLUB_FIELDS)
-  const neighborhoods = neighborhoodsOf(all)
-  const area = neighborhoods.find((n) => n.slug === slug)
-  if (!area) return null
-  const clubs = rankClubs(all.filter((c) => createSlug(c.neighborhood) === slug))
-  // Datos reales de la zona (entrada, horario, metro, Nitbus...) y enlaces a las zonas de fuera de Barcelona.
-  const facts = await computeAreaFacts(clubs)
-  return { area, clubs, neighborhoods, styles: stylesOf(all), facts, zones: zoneLinks(all, MIN_INDEXABLE) }
-})
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params
-  const data = await getData(slug)
-  if (!data) return { title: "Barrio no encontrado | Noctua" }
-  const { area, clubs } = data
-  const title = `Discotecas en ${area.name}, Barcelona | Noctua`
-  const description = `${clubs.length} discotecas y clubs en ${area.name}, Barcelona: horarios, precios, estilo de música y cómo llegar.`
-  const url = `https://www.noctuaapp.com/barrio/${area.slug}`
-  return {
-    title,
-    description,
-    // Los barrios de Barcelona con locales suficientes tienen su página en inglés (/en/neighbourhoods/...).
-    alternates:
-      clubs.length >= MIN_INDEXABLE && !zoneSlugByName(zoneOf({ neighborhood: area.name }))
-        ? spanishAlternates(`/barrio/${area.slug}`, `/neighbourhoods/${area.slug}`)
-        : { canonical: url },
-    ...(clubs.length < MIN_INDEXABLE ? { robots: { index: false, follow: true } } : {}),
-    openGraph: { title, description, url, siteName: "Noctua", locale: "es_ES", type: "website", images: clubs[0]?.image ? [{ url: clubs[0].image }] : undefined },
-  }
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  return barrioMetadata("barcelona", props)
 }
 
-export default async function BarrioPage({ params }: Props) {
-  const { slug } = await params
-  const data = await getData(slug)
-  if (!data) notFound()
-  const { area, clubs, neighborhoods, styles, facts, zones } = data
-  // Un municipio de fuera de Barcelona (Badalona, L'Hospitalet…) ya tiene su página en /zona/: esta
-  // es un duplicado (mismos locales y un título que dice «…, Barcelona»), así que se manda allí.
-  const zoneSlug = zoneSlugByName(zoneOf({ neighborhood: area.name }))
-  if (zoneSlug) permanentRedirect(`/zona/${zoneSlug}`)
-  const url = `https://www.noctuaapp.com/barrio/${area.slug}`
-
-  const jsonLd = [
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Noctua", item: "https://www.noctuaapp.com" },
-        { "@type": "ListItem", position: 2, name: "Discotecas", item: "https://www.noctuaapp.com/clubs" },
-        { "@type": "ListItem", position: 3, name: area.name, item: url },
-      ],
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "ItemList",
-      name: `Discotecas en ${area.name}`,
-      itemListElement: clubs.slice(0, 30).map((c, i) => ({
-        "@type": "ListItem",
-        position: i + 1,
-        url: `https://www.noctuaapp.com/clubs/${c.slug || createSlug(c.name)}`,
-        name: c.name,
-      })),
-    },
-  ]
-
-  return (
-    <>
-      <Header />
-      <AreaListing kind="barrio" slug={area.slug} name={area.name} clubs={clubs} neighborhoods={neighborhoods} styles={styles} zones={zones} facts={facts} />
-      <BottomNav />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
-    </>
-  )
+export default async function BarrioPage(props: Props) {
+  return <BarrioView city="barcelona" params={props.params} />
 }

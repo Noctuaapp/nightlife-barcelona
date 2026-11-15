@@ -221,6 +221,22 @@ describe("categorías nuevas · consignas, comisarías y Bicing", () => {
     expect(judgeEssential(type("bicing"), { amenity: "bicycle_rental", operator: "Bicing", "addr:street": "Carrer de Mallorca" })).toMatchObject({ name: "Bicing · Carrer de Mallorca" })
     expect(judgeEssential(type("bicing"), { amenity: "bicycle_rental", network: "Bicing", name: "Bicing 45" })).toMatchObject({ name: "Bicing 45" })
   })
+  it("BiciMAD (Madrid): mismo criterio que Bicing, con su nombre", () => {
+    expect(judgeEssential(type("bicimad"), { amenity: "bicycle_rental", network: "BiciMAD", name: "Plaza de la Cebada", capacity: "24", ref: "56" })).toEqual({
+      ok: true, name: "BiciMAD · Plaza de la Cebada", openHours: null, subcategory: "Estación", attrs: { capacity: 24, ref: "56" },
+    })
+    expect(judgeEssential(type("bicimad"), { amenity: "bicycle_rental", operator: "BiciMAD", "addr:street": "Calle de Fuencarral" })).toMatchObject({ name: "BiciMAD · Calle de Fuencarral" })
+    expect(judgeEssential(type("bicimad"), { amenity: "bicycle_rental", network: "BiciMAD", name: "BiciMAD 12" })).toMatchObject({ name: "BiciMAD 12" })
+    expect(judgeEssential(type("bicimad"), { amenity: "bicycle_rental", network: "BiciMAD" })).toMatchObject({ name: "Estación de BiciMAD" })
+  })
+  it("BiciMAD solo cuenta si es de BiciMAD (por red, marca u operador); Bicing y otros no", () => {
+    expect(osmMatches("bicimad", { amenity: "bicycle_rental", network: "BiciMAD" })).toBe(true)
+    expect(osmMatches("bicimad", { amenity: "bicycle_rental", brand: "BiciMAD" })).toBe(true)
+    expect(osmMatches("bicimad", { amenity: "bicycle_rental", operator: "EMT BiciMAD" })).toBe(true)
+    expect(osmMatches("bicimad", { amenity: "bicycle_rental", network: "Bicing" })).toBe(false)
+    expect(osmMatches("bicing", { amenity: "bicycle_rental", network: "BiciMAD" })).toBe(false)
+    expect(osmMatches("bicimad", { amenity: "bicycle_rental", name: "Alquiler de bicis" })).toBe(false)
+  })
   it("Bicing solo cuenta si es de Bicing; otros alquileres de bicis no", () => {
     expect(osmMatches("bicing", { amenity: "bicycle_rental", network: "Bicing" })).toBe(true)
     expect(osmMatches("bicing", { amenity: "bicycle_rental", operator: "Barcelona de Serveis Municipals · BICING" })).toBe(true)

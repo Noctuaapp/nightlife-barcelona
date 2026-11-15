@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next"
+import { isCityOpen } from "../lib/cities"
 
 const BASE_URL = "https://www.noctuaapp.com"
 
@@ -29,6 +30,9 @@ export default function robots(): MetadataRoute.Robots {
         "/confirm-age",
         "/blocked",
         "/recuperar",
+        // Madrid (Fase E): mientras la ciudad no esté abierta al público, /madrid no se rastrea (y además no se enlaza ni
+        // sale en el sitemap). Al abrirla (lib/cities.ts) esta línea desaparece sola.
+        ...(isCityOpen("madrid") ? [] : ["/madrid"]),
         // Enlaces "Reportar" de cada ficha: /contact?type=report_issue&subject=... generaba cientos de
         // URLs duplicadas que Google rastreaba sin valor. Solo se bloquean las que llevan parámetros.
         "/contact?",

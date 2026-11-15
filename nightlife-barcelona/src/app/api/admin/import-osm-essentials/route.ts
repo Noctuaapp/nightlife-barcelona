@@ -6,6 +6,10 @@ import { staticBoundary } from "@/lib/osmBoundaries"
 import { AREAS, cityFor, normalize } from "@/lib/osmAreas"
 import { ESSENTIAL_TYPES, essentialAddress, essentialContact, isDuplicateEssential, judgeEssential, osmMatches, osmSourceUrl, typesFor, type ExistingEssential } from "@/lib/osmEssentials"
 import { clubsNearCount, type ClubPoint } from "@/lib/parkingNearClubs"
+import { TILE_AREAS, TILE_ONLY_AREAS, tilesOf } from "@/lib/osmTiles"
+import { fetchTileElements } from "@/lib/osmTileFetch"
+import { cityOfClub } from "@/lib/cities"
+import { madridNeighborhoodFor } from "@/lib/madridZones"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -17,20 +21,22 @@ export const maxDuration = 60
 //
 //   Vista previa (no escribe nada):  /api/admin/import-osm-essentials?area=badalona&cat=all
 //   Importar de verdad:              /api/admin/import-osm-essentials?area=badalona&cat=all&dry=0
-//   area = igual que el importador de locales
+//   area = igual que el importador de locales (en Madrid, madrid1 y madrid2: el interior de la M-30 en dos partes, por cuadrículas)
 //   cat  = all | pharmacy | atm | food | supermarket | gas | hospital | parking
-//          | taxi | veterinary | toilets | vending | luggage | police | bicing
+//          | taxi | veterinary | toilets | vending | luggage | police | bicing | bicimad
 //   «all» son solo las seis primeras de la lista (las de siempre); parking y las nuevas se piden de una en una.
 //   En Barcelona conviene ir categoría a categoría: son muchos datos para una sola consulta.
 //
 // Categorías nuevas (5/11/2026): taxi, veterinary, toilets, vending, luggage, police y bicing. Necesitan el
 // SQL 82 (columnas phone, website, source, source_url, attrs…). Entran ocultas y con verification_status
 // «unverified»: en la web salen como «horario sin confirmar» hasta que se verifican en Admin › Esenciales.
-// Bicing trae solo la ubicación de las estaciones (no las bicis libres en directo).
+// Bicing (Barcelona) y BiciMAD (Madrid) traen solo la ubicación de las estaciones (no las bicis libres en directo).
 //
 // Parkings (2/11/2026): solo gratuitos y públicos, y solo los que tienen algún club publicado a menos de
 // 1.200 m (unos 15 min andando): un parking gratis a 5 km de cualquier club no sirve para salir de
 // fiesta y llenaría la lista. Para traerlos todos, añade &clubs=0. «cat=all» no incluye parkings.
+// En Madrid (14/11/2026) cuentan también los clubs ocultos (todavía no hay ninguno publicado) y el barrio sale de las 12 zonas
+// de lib/madridZones.ts (Malasaña, Chueca…), igual que en los locales. Bicing es de Barcelona y BiciMAD de Madrid: cada una solo encuentra estaciones en su ciudad.
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -38,8 +44,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
   const areaKey = (searchParams.get("area") || "").toLowerCase()
-  const area = AREAS[areaKey]
-  if (!area) return NextResponse.json({ error: `area debe ser una de: ${Object.keys(AREAS).join(", ")}` }, { status: 400 })
+  const tiled = TILE_ONLY_AREAS[areaKey] // Madrid: se recorre por cuadrículas, no por contorno de municipio
+  const area = AREAS[areaKey] ?? tiled
+  if (!area) return NextResponse.json({ error: `area debe ser una de: ${[...Object.keys(AREAS), ...Object.keys(TILE_ONLY_AREAS)].join(", ")}` }, { status: 400 })
   const cat = (searchParams.get("cat") || "all").toLowerCase()
   const types = typesFor(cat)
   if (types.length === 0) {
@@ -48,18 +55,32 @@ export async function GET(req: Request) {
   const dry = searchParams.get("dry") !== "0"
 
   const errors: string[] = []
-  const got = await fetchAreaElements({
-    pattern: area.osmPattern,
-    label: area.city,
-    blocks: (scope) => types.flatMap((t) => t.selectors.map((sel) => `nwr${scope}${sel};`)),
-    errors,
-    boundary: staticBoundary(areaKey),
-    minAreaKm2: areaKey === "barcelona" ? 60 : undefined,
-  })
-  if (!got.ok) {
-    return NextResponse.json({ error: got.error + (cat === "all" ? " Si vuelve a pasar, elige una sola categoría." : ""), detalle: errors }, { status: got.status })
+  const blocks = (scope: string) => types.flatMap((t) => t.selectors.map((sel) => `nwr${scope}${sel};`))
+  let elements: any[]
+  let outside: number | null = null
+  let tilesInfo: { ok: number; failed: number } | null = null
+  if (tiled) {
+    const got = await fetchTileElements({ tiles: tilesOf(TILE_AREAS[areaKey]), blocksFor: blocks, errors })
+    if (got.ok === 0) {
+      return NextResponse.json({ error: `Ninguna cuadrícula respondió. OpenStreetMap está caído o saturado ahora mismo.${cat === "all" ? " Si vuelve a pasar, elige una sola categoría." : ""} Motivo: ${[...new Set(errors)].slice(0, 6).join("; ") || "sin detalle"}`, detalle: errors.slice(0, 6) }, { status: 502 })
+    }
+    elements = got.elements
+    tilesInfo = { ok: got.ok, failed: got.failed }
+  } else {
+    const got = await fetchAreaElements({
+      pattern: area.osmPattern,
+      label: area.city,
+      blocks,
+      errors,
+      boundary: staticBoundary(areaKey),
+      minAreaKm2: areaKey === "barcelona" ? 60 : undefined,
+    })
+    if (!got.ok) {
+      return NextResponse.json({ error: got.error + (cat === "all" ? " Si vuelve a pasar, elige una sola categoría." : ""), detalle: errors }, { status: got.status })
+    }
+    elements = got.elements
+    outside = got.descartados_fuera_del_municipio
   }
-  const elements = got.elements
 
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
@@ -68,7 +89,10 @@ export async function GET(req: Request) {
   const clubPoints: ClubPoint[] = []
   if (onlyNearClubs) {
     for (let from = 0; ; from += 1000) {
-      const { data, error } = await supabase.from("clubs").select("id, name, slug, latitude, longitude").eq("hidden", false).order("id").range(from, from + 999)
+      // En Madrid todavía no hay clubs publicados: se cuentan también los ocultos, que son los que se abrirán.
+      let q = supabase.from("clubs").select("id, name, slug, latitude, longitude")
+      if (!tiled) q = q.eq("hidden", false)
+      const { data, error } = await q.order("id").range(from, from + 999)
       if (error) return NextResponse.json({ error: `No he podido leer los clubs: ${error.message}` }, { status: 500 })
       clubPoints.push(...((data || []) as ClubPoint[]))
       if (!data || data.length < 1000) break
@@ -132,6 +156,8 @@ export async function GET(req: Request) {
     existing.push({ category: type.category, norm: normalize(verdict.name), lat, lon })
 
     const cityName = cityFor(tags, area.city)
+    const suburb = tags["addr:suburb"] || tags["addr:district"]
+    const neighborhood = cityOfClub({ city: cityName, latitude: lat, longitude: lon }) === "madrid" ? madridNeighborhoodFor(lat, lon, suburb) : suburb || cityName
     const contact = essentialContact(tags)
     tally.nuevos++
     rows.push({
@@ -139,7 +165,7 @@ export async function GET(req: Request) {
       category: type.category,
       subcategory: verdict.subcategory ?? null,
       address: essentialAddress(tags, cityName),
-      neighborhood: tags["addr:suburb"] || tags["addr:district"] || cityName,
+      neighborhood,
       description: null,
       image: null,
       open_hours: verdict.openHours,
@@ -163,7 +189,8 @@ export async function GET(req: Request) {
       modo: "VISTA PREVIA (no se ha escrito nada). Marca «Importar de verdad» para guardar.",
       area: area.city,
       categoria: cat,
-      descartados_por_estar_fuera_del_municipio: got.descartados_fuera_del_municipio,
+      ...(outside !== null ? { descartados_por_estar_fuera_del_municipio: outside } : {}),
+      ...(tilesInfo ? { cuadriculas_ok: tilesInfo.ok, cuadriculas_fallidas: tilesInfo.failed, aviso: tilesInfo.failed ? "Faltan zonas: repite la vista previa para completar (no se duplica nada al importar)." : undefined } : {}),
       ...(onlyNearClubs ? { parkings_solo_con_club_a_menos_de_1200_m: `${clubPoints.length} clubs publicados mirados` } : {}),
       nuevos_total: rows.length,
       por_categoria: resumen,
@@ -185,6 +212,7 @@ export async function GET(req: Request) {
     area: area.city,
     categoria: cat,
     insertados: inserted,
+    ...(tilesInfo ? { cuadriculas_ok: tilesInfo.ok, cuadriculas_fallidas: tilesInfo.failed, aviso: tilesInfo.failed ? "Faltan zonas: repite la importación hasta que cuadriculas_fallidas sea 0 (no se duplica nada)." : undefined } : {}),
     por_categoria: resumen,
   })
 }

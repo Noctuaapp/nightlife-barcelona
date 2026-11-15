@@ -1,10 +1,13 @@
 import { madridClock } from "./clubHours"
+import type { CityKey } from "./cities"
 
 // Horario del Metro de Barcelona (TMB), siempre con la hora de Madrid:
 //   lunes a jueves y domingo: 05:00–00:00
 //   viernes y vísperas de festivo: 05:00–02:00
 //   sábado: servicio continuo toda la noche hasta el domingo a las 00:00
 //   noches especiales (Sant Joan y Nochevieja): servicio continuo habitual
+// Metro de Madrid (14/11/2026): todos los días de 06:00 a 01:30, sin distinguir festivos ni fines de semana (Metro de Madrid y
+// CRTM). Salvedad: la L6 cierra a las 23:00 de domingo a jueves mientras dura su automatización (la web lo avisa aparte).
 // Festivos de Barcelona 2026 según el Ajuntament (ajuntament.barcelona.cat/calendarifestius).
 // 2027 es provisional: festivos fijos + Semana Santa y Segunda Pascua calculadas; revisar cuando
 // el Ajuntament publique el calendario.
@@ -28,8 +31,8 @@ function madridDate(offsetDays = 0): string {
 
 export type MetroTonight = {
   state: "open" | "closed"
-  // Cierre de la noche en curso: "00:00", "02:00" o "all-night".
-  closes: "00:00" | "02:00" | "all-night"
+  // Cierre de la noche en curso: "00:00", "01:30" (Madrid), "02:00" o "all-night".
+  closes: "00:00" | "01:30" | "02:00" | "all-night"
   isLate: boolean
 }
 
@@ -41,8 +44,18 @@ function closingFor(dateStr: string, dow: number): MetroTonight["closes"] {
   return "00:00"
 }
 
-export function getMetroTonight(): MetroTonight {
+// Madrid abre el servicio a las 06:00 y lo cierra a la 01:30 (90 minutos pasada la medianoche).
+const MADRID_OPENS = 6 * 60
+const MADRID_CLOSES = 90
+
+/** Estado del metro de Madrid a esa hora (minutos desde la medianoche, hora de Madrid). */
+export function madridMetroAt(minutes: number): MetroTonight {
+  return { state: minutes < MADRID_CLOSES || minutes >= MADRID_OPENS ? "open" : "closed", closes: "01:30", isLate: true }
+}
+
+export function getMetroTonight(city: CityKey = "barcelona"): MetroTonight {
   const { dow, minutes } = madridClock()
+  if (city === "madrid") return madridMetroAt(minutes)
   if (minutes < 5 * 60) {
     // Madrugada: sigue el servicio de la noche anterior, si aún no ha cerrado.
     const yesterdayDow = (dow + 6) % 7

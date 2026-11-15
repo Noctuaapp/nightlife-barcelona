@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import Link from "next/link"
+import Link from "../system/CityLink"
 import { MapPin } from "lucide-react"
 import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
 import Header from "../layout/Header"
@@ -29,9 +29,11 @@ import { createSlug } from "../../lib/slug"
 import { areaHref } from "../../lib/zonePages"
 import { homeStyleCards } from "../../lib/homeStyles"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
-import { otherCityName } from "../../lib/cities"
+import { cityPath, otherCityName } from "../../lib/cities"
 import { HOME_CLUB_FIELDS } from "../../lib/clubQueries"
 import { usePreviewClubs, useSelectedCity } from "../../lib/previewCity"
+import { CITIES } from "../../lib/cities"
+import { useCityT } from "../../lib/useCityT"
 import { useGeolocation } from "../../lib/useGeolocation"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { effectiveOpenNow, isClosedTonight } from "../../lib/scheduleNotices"
@@ -146,7 +148,10 @@ export default function HomeClient({
   const ct = useClubText()
   // Vista previa de otra ciudad (solo el admin, lib/previewCity.ts): salen los locales de esa ciudad y se esconde lo
   // que es solo de Barcelona (destacados, cifras de eventos y esenciales, cómo volver a casa).
-  const previewing = useSelectedCity() !== "barcelona"
+  const city = useSelectedCity()
+  const previewing = city !== "barcelona"
+  // Textos que nombran la ciudad (portada, cifras…): en Madrid salen los de Madrid (lib/cityText.ts).
+  const tc = useCityT()
   const clubs = usePreviewClubs<Club>(initialClubs, HOME_CLUB_FIELDS)
   const geo = useGeolocation()
   const [mounted, setMounted] = useState(false)
@@ -301,7 +306,7 @@ export default function HomeClient({
       window.location.href = clubHref(matches[0])
       return
     }
-    window.location.href = allResultsHref
+    window.location.href = cityPath(allResultsHref, city)
   }
 
   const onSearchKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -354,13 +359,13 @@ export default function HomeClient({
       <Header />
 
       <main className="min-h-screen bg-night pb-28 text-ink md:pb-16">
-        {/* PORTADA: Barcelona de noche a sangre (la foto del skyline con los mismos violetas y azules
+        {/* PORTADA: la ciudad de noche a sangre (la foto del skyline de cada ciudad, public/hero, con los mismos violetas y azules
             del header), un indicador en directo con los locales abiertos ahora, el titular grande
             con la segunda línea en el degradado de neón de la marca, y el buscador en cristal. */}
         <section className="relative z-20 isolate overflow-x-clip">
           <Image
-            src="/hero/skyline_barcelona.jpeg"
-            alt={t("home.heroImageAlt")}
+            src={CITIES[city].heroImage}
+            alt={tc("home.heroImageAlt")}
             fill
             priority
             sizes="100vw"
@@ -387,11 +392,11 @@ export default function HomeClient({
               <span aria-hidden="true" className="live-dot h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
               {openCount > 0
                 ? (openCount === 1 ? t("home.liveOpenOne") : t("home.liveOpenMany")).replace("{n}", String(openCount))
-                : t("home.liveTonight")}
+                : tc("home.liveTonight")}
             </p>
 
             <h1 className="mt-3 max-w-4xl font-display text-[2.15rem] leading-[0.98] tracking-tight text-white [text-shadow:0_2px_30px_rgba(0,0,0,0.45)] sm:mt-5 sm:text-6xl lg:text-[5.25rem]">
-              {t("home.hero")}
+              {tc("home.hero")}
               <span
                 className="block bg-clip-text pb-1 text-transparent"
                 style={{ backgroundImage: "linear-gradient(90deg, #6cf2f2 0%, #3b82ff 35%, #a855f7 68%, #ec4899 100%)" }}
@@ -399,7 +404,7 @@ export default function HomeClient({
                 {t("home.hero_accent")}
               </span>
             </h1>
-            <p className="mt-5 hidden max-w-xl text-lg leading-relaxed text-zinc-200 sm:block">{t("home.subtitle")}</p>
+            <p className="mt-5 hidden max-w-xl text-lg leading-relaxed text-zinc-200 sm:block">{tc("home.subtitle")}</p>
 
             <form onSubmit={handleSearch} role="search" className="relative z-20 mt-3 max-w-2xl sm:mt-7">
               <div ref={searchBoxRef} className="scroll-mt-24">
@@ -529,7 +534,7 @@ export default function HomeClient({
                una idea rápida de tamaño antes de los accesos rápidos. */}
             <div className="mt-6 hidden flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-200 sm:flex">
               <span>
-                <strong className="font-display text-base text-white">{roughly(clubs.length, 10)}+</strong> {t("home.statsClubs")}
+                <strong className="font-display text-base text-white">{roughly(clubs.length, 10)}+</strong> {tc("home.statsClubs")}
               </span>
               {/* Solo eventos que aún no han pasado, y la cifra exacta mientras sean pocos (con
                   "+90" se prometía mucho más de lo que había). Sin eventos, no se enseña. */}
@@ -538,7 +543,7 @@ export default function HomeClient({
                   <strong className="font-display text-base text-white">{eventsCount < 20 ? eventsCount : `${roughly(eventsCount)}+`}</strong> {t("home.statsEvents")}
                 </span>
               )}
-              {!previewing && (
+              {essentialsCount > 0 && (
                 <span>
                   <strong className="font-display text-base text-white">{roughly(essentialsCount)}+</strong> {t("home.statsEssentials")}
                 </span>
@@ -693,7 +698,7 @@ export default function HomeClient({
               style={{ background: "linear-gradient(90deg, transparent, #6cf2f2 25%, #3b82ff 50%, #a855f7 75%, transparent)" }}
             />
             <h2 id="about-title" className="relative font-display text-2xl sm:text-3xl">{t("home.about_title")}</h2>
-            <p className="relative mt-3 max-w-prose text-[15px] leading-relaxed text-zinc-300">{t("home.about_text")}</p>
+            <p className="relative mt-3 max-w-prose text-[15px] leading-relaxed text-zinc-300">{tc("home.about_text")}</p>
           </div>
         </section>
       </main>

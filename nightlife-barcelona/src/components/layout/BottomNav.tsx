@@ -1,6 +1,7 @@
 "use client"
 
-import Link from "next/link"
+import Link from "../system/CityLink"
+import { stripCityPath } from "../../lib/cities"
 import { Home, Shield, type LucideIcon } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -51,7 +52,8 @@ const ACCENT: Record<Accent, { icon: string; active: string; glow: string; line:
 }
 
 export default function BottomNav() {
-  const pathname = usePathname()
+  // Sin el prefijo de ciudad: dentro de /madrid, «/madrid/clubs» cuenta como «/clubs» (los enlaces ya llevan el prefijo, CityLink).
+  const pathname = stripCityPath(usePathname())
   const [isAdminAccount, setIsAdmin] = useState(false)
   // «Ver como usuario»: sin la pestaña Admin.
   const viewAsUser = useViewAsUser()

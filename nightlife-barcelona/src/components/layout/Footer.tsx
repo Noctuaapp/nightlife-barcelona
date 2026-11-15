@@ -1,13 +1,15 @@
 "use client"
 
-import Link from "next/link"
+import Link from "../system/CityLink"
 import Image from "next/image"
 import { useLanguage } from "../../context/LanguageContext"
+import { useCityT } from "../../lib/useCityT"
 import { OPEN_CONSENT_EVENT } from "../../lib/consent"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 
 export default function Footer() {
   const { t } = useLanguage()
+  const tc = useCityT()
 
   return (
     <footer className="mt-20 border-t border-white/10 bg-night px-4 pb-28 pt-14 text-ink md:pb-14">
@@ -37,7 +39,7 @@ export default function Footer() {
           <div>
             <Image src="/noctua_logo.png" alt="Noctua" width={160} height={98} className="h-10 w-auto object-contain" />
             <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-              {t("footer.tagline")}
+              {tc("footer.tagline")}
             </p>
           </div>
 
@@ -80,7 +82,7 @@ export default function Footer() {
 
         {/* Bottom row */}
         <div className="mt-12 flex border-t border-white/10 pt-8 flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <p className="text-xs text-zinc-400">{t("footer.copyright")}</p>
+          <p className="text-xs text-zinc-400">{tc("footer.copyright")}</p>
           <p className="max-w-md text-xs text-zinc-400">
             {t("footer.privacy_note")}
           </p>

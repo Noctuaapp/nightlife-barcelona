@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import Link from "../system/CityLink"
 import Image from "next/image"
 import { ArrowUpRight } from "lucide-react"
 import { useLanguage } from "../../context/LanguageContext"

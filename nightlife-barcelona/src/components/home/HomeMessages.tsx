@@ -1,11 +1,12 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import Link from "next/link"
+import Link from "../system/CityLink"
 import { ArrowUpRight, ChevronRight, Crown, Megaphone, TriangleAlert, X, type LucideIcon } from "lucide-react"
 import NocOwl from "../mascot/NocOwl"
 import { useLanguage } from "../../context/LanguageContext"
 import { useClubNoctuaEnabled } from "../../lib/appSettings"
+import { useSelectedCity } from "../../lib/previewCity"
 import { activeMessages, shuffled, type HomeMessage, type HomeMessageKind, type HomeMessageText } from "../../lib/homeMessages"
 
 // Mensajes de la portada (12/11/2026), debajo del carrusel de «Esta noche». Sustituye al chip de frases sueltas
@@ -45,6 +46,7 @@ function seededRandom(seed: number) {
 export default function HomeMessages({ announcements, className = "" }: { announcements?: HomeMessage[]; className?: string }) {
   const { t } = useLanguage()
   const clubNoctua = useClubNoctuaEnabled() === true
+  const city = useSelectedCity() // los consejos de NitBus, metro de TMB… son solo de Barcelona (lib/homeMessages.ts)
   const [mounted, setMounted] = useState(false)
   const [seed, setSeed] = useState(1)
   const [hidden, setHidden] = useState(false)
@@ -74,9 +76,10 @@ export default function HomeMessages({ announcements, className = "" }: { announ
       activeMessages(new Date(), {
         clubNoctua,
         announcements,
+        city,
         shuffle: mounted ? (items) => shuffled(items, seededRandom(seed)) : undefined,
       }),
-    [clubNoctua, announcements, mounted, seed]
+    [clubNoctua, announcements, city, mounted, seed]
   )
 
   const count = messages.length

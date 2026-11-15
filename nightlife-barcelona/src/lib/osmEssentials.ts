@@ -12,7 +12,7 @@ import { isNightEssentialHours, parseOsmHours, toNoctuaHours, type WeekHours } f
 
 export type EssentialKey =
   | "pharmacy" | "atm" | "food" | "supermarket" | "gas" | "hospital" | "parking"
-  | "taxi" | "veterinary" | "toilets" | "vending" | "luggage" | "police" | "bicing"
+  | "taxi" | "veterinary" | "toilets" | "vending" | "luggage" | "police" | "bicing" | "bicimad"
 
 export type EssentialType = {
   key: EssentialKey
@@ -48,6 +48,9 @@ export const ESSENTIAL_TYPES: EssentialType[] = [
   { key: "police", category: "Police", label: "Comisarías y policía", needsHours: false, inAll: false, selectors: [`["amenity"="police"]`] },
   // Estaciones de Bicing. Solo la ubicación: las bicis y huecos libres en directo no se enseñan todavía.
   { key: "bicing", category: "Bicing", label: "Estaciones de Bicing", needsHours: false, inAll: false, selectors: [`["amenity"="bicycle_rental"]["network"~"bicing",i]`, `["amenity"="bicycle_rental"]["operator"~"bicing",i]`] },
+  // Estaciones de BiciMAD, la bici pública de Madrid (14/11/2026). Igual que Bicing: solo la ubicación. En OpenStreetMap llevan
+  // network=BiciMAD y/o operator=EMT Madrid; se piden por red, por marca o por operador «BiciMAD».
+  { key: "bicimad", category: "BiciMAD", label: "Estaciones de BiciMAD", needsHours: false, inAll: false, selectors: [`["amenity"="bicycle_rental"]["network"~"bicimad",i]`, `["amenity"="bicycle_rental"]["brand"~"bicimad",i]`, `["amenity"="bicycle_rental"]["operator"~"bicimad",i]`] },
 ]
 
 export function typesFor(cat: string): EssentialType[] {
@@ -219,10 +222,11 @@ function judgePolice(tags: Record<string, string>): Verdict {
   return { ok: true, name: essentialName(tags) || "Comisaría", openHours: anyHours(tags), subcategory: policeForce(tags) }
 }
 
-function judgeBicing(tags: Record<string, string>): Verdict {
+// Estación de bici pública (Bicing en Barcelona, BiciMAD en Madrid): solo la ubicación, con la capacidad si OpenStreetMap la sabe.
+function judgeBikeRental(tags: Record<string, string>, brand: string): Verdict {
   const street = streetOf(tags)
   const base = clean(tags.name)
-  const name = base ? (/bicing/i.test(base) ? base : `Bicing · ${base}`) : street ? `Bicing · ${street}` : "Estación de Bicing"
+  const name = base ? (new RegExp(brand, "i").test(base) ? base : `${brand} · ${base}`) : street ? `${brand} · ${street}` : `Estación de ${brand}`
   const attrs: Record<string, unknown> = {}
   const cap = parseInt(tags.capacity || "", 10)
   if (isFinite(cap) && cap > 0 && cap < 200) attrs.capacity = cap
@@ -239,7 +243,8 @@ export function judgeEssential(type: EssentialType, tags: Record<string, string>
     case "vending": return judgeVending(tags)
     case "luggage": return judgeLuggage(tags)
     case "police": return judgePolice(tags)
-    case "bicing": return judgeBicing(tags)
+    case "bicing": return judgeBikeRental(tags, "Bicing")
+    case "bicimad": return judgeBikeRental(tags, "BiciMAD")
   }
   const name = essentialName(tags) ?? (type.key === "atm" ? "Cajero automático" : null)
   if (!name) return { ok: false, reason: "sin_nombre" }
@@ -304,5 +309,6 @@ export function osmMatches(key: EssentialKey, tags: Record<string, string>): boo
     case "luggage": return tags.amenity === "luggage_locker" || tags.amenity === "left_luggage"
     case "police": return tags.amenity === "police"
     case "bicing": return tags.amenity === "bicycle_rental" && /bicing/i.test(`${tags.network || ""} ${tags.operator || ""}`)
+    case "bicimad": return tags.amenity === "bicycle_rental" && /bicimad/i.test(`${tags.network || ""} ${tags.brand || ""} ${tags.operator || ""}`)
   }
 }

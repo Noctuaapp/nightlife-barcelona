@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
+import Link from "../system/CityLink"
+import { stripCityPath } from "../../lib/cities"
 import Image from "next/image"
 import { useRouter, usePathname } from "next/navigation"
 import { supabase } from "../../lib/supabase"
@@ -16,6 +17,7 @@ import { Bell, ChevronLeft, User, Map, Sparkles, Heart, MessageCircle, ShieldChe
 import NocOwl, { type NocPose } from "../mascot/NocOwl"
 import CityPicker from "./CityPicker"
 import { useSelectedCity } from "../../lib/previewCity"
+import { cityTextKey } from "../../lib/cityText"
 
 const cities = [
   { name: "Barcelona", slug: "barcelona", active: true, lat: 41.3851, lng: 2.1734 },
@@ -99,7 +101,8 @@ export default function Header() {
   // Aviso pequeño de "hace buen día para salir" / "coge paraguas o abrigo", una vez al día.
   const [weatherTipDismissed, setWeatherTipDismissed] = useState(true)
   const router = useRouter()
-  const pathname = usePathname()
+  // Sin el prefijo de ciudad: dentro de /madrid, «/madrid/map» cuenta como «/map» (los enlaces ya llevan el prefijo, CityLink).
+  const pathname = stripCityPath(usePathname())
   const { locale, setLocale, t } = useLanguage()
 
   const currentLang = languages.find((l) => l.code === locale) || languages[0]
@@ -529,7 +532,7 @@ export default function Header() {
     // Tres frases por tipo; cambia cada día (todo el mundo ve la misma ese día).
     const day = Math.floor(Date.now() / 86400000)
     const variant = (day % 3) + 1
-    const text = t(`weatherTip.${kind}${variant}`)
+    const text = t(cityTextKey(`weatherTip.${kind}${variant}`, activeCityKey))
       .replace("{first}", String(first))
       .replace("{min}", String(min))
       .replace("{max}", String(max))
@@ -840,7 +843,7 @@ export default function Header() {
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                {t("weather.tonightTitle")}
+                {t(cityTextKey("weather.tonightTitle", activeCityKey))}
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <span style={{ fontSize: "16px" }}>{weather.icon}</span>

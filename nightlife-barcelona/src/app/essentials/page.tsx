@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
+import Link from "../../components/system/CityLink"
 import { Search, X, LocateFixed, Plus } from "lucide-react"
 import { ESSENTIAL_SUGGESTION_XP } from "../../lib/xp"
 import Header from "../../components/layout/Header"
@@ -13,6 +13,9 @@ import EmergencyBar from "../../components/essentials/EmergencyBar"
 import { supabase } from "../../lib/supabase"
 import { fetchAllPages } from "../../lib/fetchAll"
 import { cleanEssential, isShownEssential } from "../../lib/essentials"
+import { essentialsOfCity, scopeToCity } from "../../lib/cityEssentials"
+import { useSelectedCity } from "../../lib/previewCity"
+import { useCityT } from "../../lib/useCityT"
 import { useLanguage } from "../../context/LanguageContext"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../lib/geo"
 import { availabilityOf, availabilityClass } from "../../lib/availability"
@@ -39,14 +42,26 @@ export default function EssentialsPage() {
   // Depende de la hora: se calcula tras montar para que el HTML del servidor y el del navegador coincidan.
   const [metroLabel, setMetroLabel] = useState("")
   const { t, locale } = useLanguage()
+  // Madrid (vista previa del admin, 14/11/2026): sus esenciales se piden por su rectángulo, ocultos incluidos, y los textos que
+  // nombran la ciudad cambian (lib/cityText.ts). En Barcelona todo sigue igual que antes.
+  const city = useSelectedCity()
+  const tc = useCityT()
 
   useEffect(() => {
+    let alive = true
+    setLoading(true)
     // Por páginas: con las paradas de Nitbus hay más de 1.000 esenciales (ver lib/fetchAll).
-    fetchAllPages((from, to) => supabase.from("essentials").select("*").eq("hidden", false).order("id").range(from, to)).then((data) => {
-      setEssentials(data.map(cleanEssential).filter(isShownEssential))
+    fetchAllPages((from, to) => scopeToCity(supabase.from("essentials").select("*"), city).order("id").range(from, to)).then((data) => {
+      if (!alive) return
+      setEssentials(essentialsOfCity(data.map(cleanEssential).filter(isShownEssential), city))
       setLoading(false)
     })
+    return () => {
+      alive = false
+    }
+  }, [city])
 
+  useEffect(() => {
     // Solo se usa la ubicación sin preguntar si el usuario ya la había permitido antes.
     if (navigator.geolocation && navigator.permissions) {
       navigator.permissions
@@ -65,12 +80,12 @@ export default function EssentialsPage() {
   }, [])
 
   useEffect(() => {
-    const m = getMetroTonight()
+    const m = getMetroTonight(city)
     setMetroLabel(
-      m.state === "closed" ? t("clubPage.metroClosed") : m.closes === "all-night" ? t("clubPage.metroAllNight") : t("clubPage.metroUntil").replace("{time}", m.closes)
+      m.state === "closed" ? tc("clubPage.metroClosed") : m.closes === "all-night" ? t("clubPage.metroAllNight") : t("clubPage.metroUntil").replace("{time}", m.closes)
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale])
+  }, [locale, city])
 
   // Solo las categorías del catálogo (lib/essentialCategories.ts): Hotel y Transport ya no salen aunque
   // queden filas en la base, y de Taxi se descartan las oficinas de Uber/Cabify (isShownEssential).
@@ -80,7 +95,7 @@ export default function EssentialsPage() {
   // página o en Maps, y con cientos de paradas llenaban la lista y tapaban farmacias, súper, comida…
   // Siguen en su sección «Transporte» y en la búsqueda por nombre.
   // Bicing tiene cientos de estaciones y llenaban "Cerca de ti" (06/11/2026); sigue en su propia categoría.
-  const NEAR_EXCLUDED = new Set(["Metro", "Nitbus", "Bicing"])
+  const NEAR_EXCLUDED = new Set(["Metro", "Nitbus", "Bicing", "BiciMAD"])
   const nearCategories = categories.filter((c) => !NEAR_EXCLUDED.has(c))
   const openCount = (cat: string) => itemsByCategory(cat).filter((e) => availabilityOf(e).counts).length
 
@@ -158,6 +173,14 @@ export default function EssentialsPage() {
   for (const e of essentials) countsByCategory[e.category] = (countsByCategory[e.category] || 0) + 1
   const listedCategories = categories.filter((c) => (countsByCategory[c] || 0) >= categoryInfo(c).minPlaces)
 
+  // Metro y Nitbus son de Barcelona: en Madrid sus páginas llegarán con el lanzamiento (/metro y los búhos por ciudad). Mientras,
+  // el bloque de transporte de Madrid solo enseña el taxi cuando tiene paradas publicadas.
+  const transportTiles = [
+    ...(city === "barcelona" ? [{ cat: "Metro", line: metroLabel }, { cat: "Nitbus", line: t("essentialsPage.nitbusLine") }] : []),
+    // El taxi vuelve cuando hay paradas de verdad publicadas (mínimo en essentialCategories.ts).
+    ...((countsByCategory.Taxi || 0) >= categoryInfo("Taxi").minPlaces ? [{ cat: "Taxi", line: t("essentialsPage.taxiLine") }] : []),
+  ]
+
   const sectionTitle = "mb-4 text-lg font-semibold text-ink"
   const tile = "flex flex-col gap-3 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25"
 
@@ -168,9 +191,9 @@ export default function EssentialsPage() {
         {/* PORTADA con la foto de la web (03/11/2026), igual que Clubs y Eventos. */}
         <SectionHero
           section="essentials"
-          title={t("essentials.subtitle")}
-          subtitle={t("essentialsPage.intro")}
-          pill={t("home.liveTonight")}
+          title={tc("essentials.subtitle")}
+          subtitle={tc("essentialsPage.intro")}
+          pill={tc("home.liveTonight")}
           switcher={<ExploreSwitch active="essentials" />}
         >
           <div className="mt-6 flex max-w-2xl flex-col gap-3 sm:flex-row">
@@ -311,15 +334,11 @@ export default function EssentialsPage() {
               </section>
             )}
 
+            {transportTiles.length > 0 && (
             <section className="mx-auto mt-10 max-w-7xl px-4">
               <h2 className={sectionTitle}>{t("essentialsPage.transportTitle")}</h2>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {[
-                  { cat: "Metro", line: metroLabel },
-                  { cat: "Nitbus", line: t("essentialsPage.nitbusLine") },
-                  // El taxi vuelve cuando hay paradas de verdad publicadas (mínimo en essentialCategories.ts).
-                  ...((countsByCategory.Taxi || 0) >= categoryInfo("Taxi").minPlaces ? [{ cat: "Taxi", line: t("essentialsPage.taxiLine") }] : []),
-                ].map(({ cat, line }) => {
+                {transportTiles.map(({ cat, line }) => {
                   const info = categoryInfo(cat)
                   const CatIcon = info.icon
                   return (
@@ -336,6 +355,7 @@ export default function EssentialsPage() {
                 })}
               </div>
             </section>
+            )}
 
             {nearby.length > 0 && (
               <section className="mt-10">
@@ -411,7 +431,7 @@ export default function EssentialsPage() {
                                 </span>
                                 <span className="min-w-0 flex-1">
                                   <span className="block text-sm font-semibold text-ink">{t(categoryNameKey(cat))}</span>
-                                  <span className="mt-0.5 block truncate text-xs text-zinc-400">{t(categoryDescKey(cat))}</span>
+                                  <span className="mt-0.5 block truncate text-xs text-zinc-400">{tc(categoryDescKey(cat))}</span>
                                 </span>
                                 <span className="shrink-0 text-xs font-semibold text-zinc-400">{count}</span>
                               </Link>

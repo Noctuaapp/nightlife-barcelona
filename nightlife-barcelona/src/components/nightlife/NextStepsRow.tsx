@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import Link from "../system/CityLink"
 import Icon from "../ui/Icon"
 import { useLanguage } from "../../context/LanguageContext"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"

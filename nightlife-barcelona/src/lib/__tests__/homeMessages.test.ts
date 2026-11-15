@@ -88,6 +88,35 @@ describe("días de la semana (hora de Madrid)", () => {
   })
 })
 
+describe("consejos por ciudad", () => {
+  const ids = (city?: "barcelona" | "madrid") => activeMessages(new Date("2026-12-11T12:00:00Z"), { clubNoctua: true, city }).map((m) => m.id)
+  const BARCELONA_SOLO = ["tip-12", "tip-14", "tip-17", "tip-24", "tip-26", "tip-27", "tip-28"]
+
+  it("sin ciudad es Barcelona: salen los de siempre y no el de Madrid", () => {
+    const list = ids()
+    for (const id of BARCELONA_SOLO) expect(list, id).toContain(id)
+    expect(list).not.toContain("tip-30")
+    expect(ids("barcelona")).toEqual(list)
+  })
+
+  it("en Madrid no sale ningún consejo de NitBus, metro de TMB, esenciales o derechos de Cataluña", () => {
+    const list = ids("madrid")
+    for (const id of BARCELONA_SOLO) expect(list, id).not.toContain(id)
+    expect(list).toContain("tip-30")
+  })
+
+  it("los consejos generales salen en las dos ciudades", () => {
+    for (const id of ["tip-3", "tip-9", "tip-13", "tip-16"]) {
+      expect(ids("barcelona"), id).toContain(id)
+      expect(ids("madrid"), id).toContain(id)
+    }
+  })
+
+  it("las ciudades de un consejo son claves de ciudad conocidas", () => {
+    for (const m of TIPS) for (const c of m.cities ?? []) expect(["barcelona", "madrid"]).toContain(c)
+  })
+})
+
 describe("shuffled", () => {
   it("no pierde ni repite elementos y no toca el original", () => {
     const src = [1, 2, 3, 4, 5, 6]

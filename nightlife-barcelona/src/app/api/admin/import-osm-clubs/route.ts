@@ -7,6 +7,8 @@ import { staticBoundary } from "@/lib/osmBoundaries"
 import { AREAS, normalize, cityFor, isDuplicateVenue, type SeenVenue } from "@/lib/osmAreas"
 import { isNightlifeVenue, venueTypeOf, venueFlagsOf } from "@/lib/osmVenues"
 import { TILE_AREAS, TILE_ONLY_AREAS, tilesOf } from "@/lib/osmTiles"
+import { cityOfClub } from "@/lib/cities"
+import { madridNeighborhoodFor } from "@/lib/madridZones"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
@@ -139,7 +141,11 @@ export async function GET(req: Request) {
 
     rows.push({
       name: name.slice(0, 120),
-      neighborhood: tags["addr:suburb"] || tags["addr:district"] || cityName,
+      // En Madrid, el barrio «de toda la vida» según las coordenadas (Malasaña, Chueca…, ver lib/madridZones.ts); fuera de esas zonas,
+      // el de OpenStreetMap y, si no hay, «Madrid». En el resto de áreas, como siempre.
+      neighborhood: cityOfClub({ city: cityName, latitude: lat, longitude: lon }) === "madrid"
+        ? madridNeighborhoodFor(lat, lon, tags["addr:suburb"] || tags["addr:district"])
+        : tags["addr:suburb"] || tags["addr:district"] || cityName,
       city: cityName,
       address,
       latitude: lat,

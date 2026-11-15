@@ -21,6 +21,7 @@ import JoinNoctuaCard from "./JoinNoctuaCard"
 import WelcomeChallenge from "./WelcomeChallenge"
 import NextStepsRow from "./NextStepsRow"
 import RideButtons from "./club/RideButtons"
+import { cityOfClub } from "../../lib/cities"
 import Stars from "./club/Stars"
 import Icon from "../ui/Icon"
 import { toast } from "../ui/Toast"
@@ -306,6 +307,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
                     address={event.address}
                     lat={hasCoords ? Number(event.latitude) : null}
                     lng={hasCoords ? Number(event.longitude) : null}
+                    city={cityOfClub({ latitude: event.latitude, longitude: event.longitude })}
                     onRideClick={(provider) => trackClick("ride_click", { provider, source: "event_page" })}
                     onTaxiCall={() => trackClick("phone_click", { category: "taxi", source: "event_page" })}
                   />

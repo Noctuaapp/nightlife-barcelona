@@ -9,6 +9,7 @@ import AttendanceButton from "../gamification/AttendanceButton"
 import ClubMap from "../map/ClubMap"
 import NitbusNearby from "./NitbusNearby"
 import RideButtons from "./club/RideButtons"
+import { cityOfClub } from "../../lib/cities"
 import Icon from "../ui/Icon"
 import { toast } from "../ui/Toast"
 import { track } from "../../lib/track"
@@ -297,6 +298,7 @@ export default function ClubEventPageContent({
                     address={club?.address}
                     lat={lat}
                     lng={lng}
+                    city={cityOfClub({ city: club?.city, latitude: club?.latitude, longitude: club?.longitude })}
                     onRideClick={(provider) => trackClick("ride_click", { provider, source: "event_page" })}
                     onTaxiCall={() => trackClick("phone_click", { category: "taxi", source: "event_page" })}
                   />

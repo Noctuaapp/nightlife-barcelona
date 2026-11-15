@@ -23,6 +23,7 @@ type Tool = {
   osmEssentials?: boolean // zona + categoría + vista previa / importar de verdad
   googleEssentials?: boolean // igual, pero con Google Places (cuesta llamadas de pago)
   nitbus?: boolean // vista previa / importar de verdad, sin zona
+  madridBarrios?: boolean // vista previa / aplicar de verdad, con la opción de incluir los importados de OpenStreetMap
 }
 
 const TOOL_ICONS: Record<string, LucideIcon> = {
@@ -37,6 +38,7 @@ const TOOL_ICONS: Record<string, LucideIcon> = {
   "import-osm-essentials": ShoppingBasket,
   "import-google-essentials": ShoppingBasket,
   "import-nitbus": Bus,
+  "assign-madrid-barrios": MapPin,
 }
 
 const TOOLS: Tool[] = [
@@ -116,6 +118,13 @@ const TOOLS: Tool[] = [
     description: "Todas las paradas de las líneas N con sus líneas, para el mapa de Nitbus y las fichas de club. Reemplaza las que se cargaron antes desde aquí (las tuyas a mano no se tocan). Sin marcar «Importar de verdad» solo es una vista previa.",
     nitbus: true,
   },
+  {
+    key: "assign-madrid-barrios",
+    path: "/api/admin/assign-madrid-barrios",
+    title: "Poner barrio a los locales de Madrid",
+    description: "Asigna Malasaña, Chueca, La Latina… (12 zonas, según las coordenadas) a los locales de Madrid que ya importaste. Por defecto solo toca los que tienen el barrio vacío o «Madrid»; lo que hayas escrito a mano se queda. Sin marcar «Aplicar de verdad» solo es una vista previa.",
+    madridBarrios: true,
+  },
 ]
 
 const MAX_ROUNDS = 40
@@ -137,6 +146,8 @@ export default function AdminToolsPage() {
   const [gCat, setGCat] = useState("supermarket,food")
   const [gReal, setGReal] = useState(false)
   const [nitbusReal, setNitbusReal] = useState(false)
+  const [mbReal, setMbReal] = useState(false)
+  const [mbOsm, setMbOsm] = useState(false)
   const stopRef = useRef<Record<string, boolean>>({})
 
   // Interruptor de Club Noctua (pedido el 23/10/2026): mientras está en false, nadie gana XP por
@@ -249,6 +260,8 @@ export default function AdminToolsPage() {
       ? `${tool.path}?area=${gArea}&cat=${gCat}${gReal ? "&dry=0" : ""}`
       : tool.nitbus
       ? `${tool.path}${nitbusReal ? "?dry=0" : ""}`
+      : tool.madridBarrios
+      ? `${tool.path}?osm=${mbOsm ? 1 : 0}${mbReal ? "&dry=0" : ""}`
       : tool.path
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
     const json: ToolResult = await res.json().catch(() => ({ error: `Respuesta no válida (${res.status})` }))
@@ -478,6 +491,8 @@ export default function AdminToolsPage() {
                     <option value="esplugues">Esplugues de Llobregat</option>
                     <option value="santfeliu">Sant Feliu de Llobregat</option>
                     <option value="santboi">Sant Boi de Llobregat</option>
+                    <option value="madrid1">Madrid · parte 1 (sur: Sol, Atocha, Usera)</option>
+                    <option value="madrid2">Madrid · parte 2 (norte: Chueca, Malasaña, Chamartín)</option>
                   </select>
                   <select
                     value={essCat}
@@ -500,6 +515,7 @@ export default function AdminToolsPage() {
                       <option value="luggage">Consignas</option>
                       <option value="police">Comisarías y policía</option>
                       <option value="bicing">Estaciones de Bicing</option>
+                      <option value="bicimad">Estaciones de BiciMAD (Madrid)</option>
                     </optgroup>
                   </select>
                   <label className="flex items-center gap-2 text-zinc-300">
@@ -584,6 +600,19 @@ export default function AdminToolsPage() {
                   <input type="checkbox" checked={nitbusReal} onChange={(e) => setNitbusReal(e.target.checked)} />
                   Importar de verdad
                 </label>
+              )}
+
+              {tool.madridBarrios && (
+                <div className="mt-4 flex flex-col gap-2 text-sm text-zinc-300">
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={mbOsm} onChange={(e) => setMbOsm(e.target.checked)} />
+                    Incluir también los importados de OpenStreetMap (aunque ya traigan otro barrio)
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={mbReal} onChange={(e) => setMbReal(e.target.checked)} />
+                    Aplicar de verdad
+                  </label>
+                </div>
               )}
 
               <div className="mt-4 flex flex-wrap gap-2">

@@ -1,11 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
+import Link from "../system/CityLink"
 import { supabase } from "../../lib/supabase"
 import { distanceInMeters, formatDistance, walkingMinutes, walkingDirectionsUrl } from "../../lib/geo"
 import { getOpenStatus } from "../../lib/openStatus"
 import { cleanEssential } from "../../lib/essentials"
+import { scopeToCity } from "../../lib/cityEssentials"
+import { cityOfClub } from "../../lib/cities"
 import { categoryInfo, categoryNameKey } from "../../lib/essentialCategories"
 import { useLanguage } from "../../context/LanguageContext"
 import { track } from "../../lib/track"
@@ -37,11 +39,11 @@ export default function NearbyEssentials({ latitude, longitude }: { latitude: nu
     let cancelled = false
     Promise.all(
       CATS.map(async (cat) => {
-        const { data } = await supabase
-          .from("essentials")
-          .select("name, open_hours, latitude, longitude")
-          .ilike("category", cat.key)
-          .eq("hidden", false)
+        // Solo los de la ciudad del local (y, con Madrid en vista previa, también los ocultos): lib/cityEssentials.ts.
+        const { data } = await scopeToCity(
+          supabase.from("essentials").select("name, open_hours, latitude, longitude").ilike("category", cat.key),
+          cityOfClub({ latitude, longitude })
+        )
         // Los cajeros con comisión alta (Euronet) no se sugieren como «el más cercano».
         const nearest = ((data || []) as any[])
           .map((e) => cleanEssential({ ...e, category: cat.key }))

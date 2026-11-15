@@ -3,9 +3,13 @@
 import { zoneOf, zonesPresent } from "../../../lib/zones"
 import { getMetroTonight } from "../../../lib/transitHours"
 import { cleanEssential } from "../../../lib/essentials"
+import { essentialsOfCity, scopeToCity } from "../../../lib/cityEssentials"
+import { CITIES } from "../../../lib/cities"
+import { useSelectedCity } from "../../../lib/previewCity"
+import { useCityT } from "../../../lib/useCityT"
 import { useState, useEffect, useMemo, useRef } from "react"
-import { useParams } from "next/navigation"
-import Link from "next/link"
+import { useParams, useRouter } from "next/navigation"
+import Link from "../../../components/system/CityLink"
 import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
 import Header from "../../../components/layout/Header"
@@ -119,21 +123,32 @@ function FilterSelect({
 
 export default function EssentialCategoryPage() {
   const { t, locale } = useLanguage()
+  // Madrid (vista previa del admin, 14/11/2026): sus esenciales se piden por su rectángulo, ocultos incluidos; los textos que
+  // nombran la ciudad cambian (lib/cityText.ts) y el mapa arranca en su centro. En Barcelona todo sigue igual que antes.
+  const city = useSelectedCity()
+  const tc = useCityT()
+  const router = useRouter()
   // Horario del metro de esta noche (con vísperas de festivo). Se calcula tras montar: depende de la hora.
   const [metroLabel, setMetroLabel] = useState("")
   useEffect(() => {
-    const m = getMetroTonight()
+    const m = getMetroTonight(city)
     setMetroLabel(
       m.state === "closed"
-        ? t("clubPage.metroClosed")
+        ? tc("clubPage.metroClosed")
         : m.closes === "all-night"
         ? t("clubPage.metroAllNight")
         : t("clubPage.metroUntil").replace("{time}", m.closes)
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [city])
   const params = useParams()
   const category = (params.category as string).toLowerCase()
+  // Metro, Nitbus y Bicing son de Barcelona (y BiciMAD de Madrid): sus páginas en Madrid llegarán con el lanzamiento. Entre tanto,
+  // quien llega aquí con la otra ciudad en vista previa vuelve a la portada de Esenciales en vez de ver una lista vacía o ajena.
+  const wrongCity = city !== "barcelona" ? category === "metro" || category === "nitbus" || category === "bicing" : category === "bicimad"
+  useEffect(() => {
+    if (wrongCity) router.replace("/essentials")
+  }, [wrongCity, router])
   const info = ESSENTIAL_CATEGORIES.find((c) => c.slug === category)
   const CatIcon = info?.icon || MapPin
   const config = { color: BRAND }
@@ -327,7 +342,13 @@ export default function EssentialCategoryPage() {
   }, [])
 
   useEffect(() => {
+    let alive = true
     const fetchEssentials = async () => {
+      if (wrongCity) {
+        setEssentials([])
+        setLoading(false)
+        return
+      }
       // Nitbus: desde el 25/10/2026 tiene paradas de verdad (importadas de OpenStreetMap desde
       // Ajustes y herramientas, con sus líneas), así que se piden como cualquier otra categoría.
       // Si aún no se han cargado, la página sigue enseñando solo la lista de líneas.
@@ -338,15 +359,16 @@ export default function EssentialCategoryPage() {
       // en el ilike no encontraba ninguna fila. Hay que usar la "key" real de la categoría.
       // Por páginas: Nitbus tiene más de 1.000 paradas y Supabase corta en 1.000 filas.
       const data = await fetchAllPages((from, to) =>
-        supabase.from("essentials").select("*").ilike("category", info?.key || category).eq("hidden", false).order("name").order("id").range(from, to)
+        scopeToCity(supabase.from("essentials").select("*").ilike("category", info?.key || category), city).order("name").order("id").range(from, to)
       )
-      let rows: Essential[] = data ? data.map(cleanEssential) : []
+      // Cada ciudad ve solo lo suyo (por coordenadas): cuando Madrid se abra, sus esenciales no se cuelan en la lista de Barcelona.
+      let rows: Essential[] = data ? essentialsOfCity(data.map(cleanEssential), city) : []
 
       // Metro: con 155 estaciones sería inviable pedirte que las cargues una a una en el admin, así
       // que la red completa (metroStations.ts, con línea por estación) se añade sola. Si ya tienes
       // alguna cargada a mano (con foto, por ejemplo), esa gana: se evita duplicar por proximidad
       // (<120m), no por nombre exacto, porque los nombres no siempre coinciden letra a letra.
-      if (category === "metro") {
+      if (category === "metro" && city === "barcelona") {
         // Si una estación se cargó a mano (con foto, por ejemplo) sin rellenar sus líneas, antes
         // se quedaba sin L1/L2/L3... para siempre — el catálogo la descartaba por estar a <120m de
         // esa fila real, pero la fila real no traía las líneas consigo. Así que desaparecía al
@@ -380,11 +402,16 @@ export default function EssentialCategoryPage() {
         rows = [...rows, ...catalogo].sort((a, b) => a.name.localeCompare(b.name))
       }
 
+      if (!alive) return
       setEssentials(rows)
       setLoading(false)
     }
     fetchEssentials()
-  }, [category, info?.key])
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, info?.key, city])
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return
@@ -394,7 +421,7 @@ export default function EssentialCategoryPage() {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/dark-v11",
-      center: [2.1734, 41.3851],
+      center: [CITIES[city].center.lng, CITIES[city].center.lat],
       zoom: 13,
     })
 
@@ -454,6 +481,14 @@ export default function EssentialCategoryPage() {
       map.current = null
     }
   }, [])
+
+  // Si el admin cambia de ciudad con la página abierta, el mapa se va al centro de la nueva (el encuadre a los sitios lo hace luego la lista).
+  const mapCityRef = useRef(city)
+  useEffect(() => {
+    if (!mapReady || !map.current || mapCityRef.current === city) return
+    mapCityRef.current = city
+    map.current.jumpTo({ center: [CITIES[city].center.lng, CITIES[city].center.lat], zoom: 13 })
+  }, [mapReady, city])
 
   // Taxi: ¿hay paradas reales que enseñar? (las oficinas/apps no cuentan). Mientras carga o si no hay
   // ninguna, la pantalla se queda en los dos recuadros de arriba, sin lista vacía, filtros ni mapa.
@@ -1202,7 +1237,7 @@ export default function EssentialCategoryPage() {
             <p className="mt-3 text-sm text-zinc-400">{t("geo.approximate").replace("{n}", String(Math.round(userAccuracy / 10) * 10))}</p>
           )}
           {farAway && (
-            <p className="mt-3 text-sm text-zinc-400">{t("essentialsPage.farAway")}</p>
+            <p className="mt-3 text-sm text-zinc-400">{tc("essentialsPage.farAway")}</p>
           )}
 
           {/* Toggle lista/mapa — solo móvil */}
@@ -1280,7 +1315,7 @@ export default function EssentialCategoryPage() {
             {userAccuracy != null && userAccuracy > 150 && (
               <p className="mt-3 text-sm text-zinc-400">{t("geo.approximate").replace("{n}", String(Math.round(userAccuracy / 10) * 10))}</p>
             )}
-            {nbFar && <p className="mt-3 text-sm text-zinc-400">{t("essentialsPage.farAway")}</p>}
+            {nbFar && <p className="mt-3 text-sm text-zinc-400">{tc("essentialsPage.farAway")}</p>}
 
             {/* Tus 3 paradas más cercanas, con las líneas que paran en cada una. */}
             {userLocation && nbNearest.length > 0 ? (

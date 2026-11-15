@@ -11,6 +11,7 @@ import CasinoFelt from "./CasinoFelt"
 import SharePlanButton from "../plan/SharePlanButton"
 import NocSays, { useOwnLevelColor } from "../mascot/NocSays"
 import { useLanguage } from "../../context/LanguageContext"
+import { useCityT } from "../../lib/useCityT"
 import { getDeniedClubIds } from "../../lib/deniedVenues"
 import { effectiveHoursStatus, effectiveOpenNow } from "../../lib/scheduleNotices"
 import { createSlug } from "../../lib/slug"
@@ -95,6 +96,7 @@ const shortZone = (z: string) => z.replace(" de Llobregat", "").replace(" de Bes
 
 export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
   const { t } = useLanguage()
+  const tc = useCityT() // los textos que nombran la ciudad salen con la que se está viendo (lib/cityText.ts)
   const levelColor = useOwnLevelColor()
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -267,7 +269,7 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
       return
     }
     if (!navigator.geolocation) {
-      setGeoError(t("surprise.geoUnsupported"))
+      setGeoError(tc("surprise.geoUnsupported"))
       return
     }
     setLocating(true)

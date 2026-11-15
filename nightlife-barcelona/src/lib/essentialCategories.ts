@@ -49,6 +49,8 @@ export const ESSENTIAL_CATEGORIES: EssentialCategory[] = [
   { key: "Parking", slug: "parking", icon: CircleParking, group: "move", availability: "always", trust: "directory", expiryDays: 365, minPlaces: 1 },
   // Bicing: solo la ubicación de las estaciones; las bicis libres en directo no se enseñan (ver la propuesta).
   { key: "Bicing", slug: "bicing", icon: Bike, group: "move", availability: "always", trust: "directory", expiryDays: 365, minPlaces: 5 },
+  // BiciMAD: lo mismo en Madrid (14/11/2026).
+  { key: "BiciMAD", slug: "bicimad", icon: Bike, group: "move", availability: "always", trust: "directory", expiryDays: 365, minPlaces: 5 },
   // Comer y comprar
   { key: "Food", slug: "food", icon: UtensilsCrossed, group: "food", availability: "schedule", trust: "directory", expiryDays: 365, minPlaces: 1 },
   { key: "Supermarket", slug: "supermarket", icon: ShoppingCart, group: "food", availability: "schedule", trust: "directory", expiryDays: 365, minPlaces: 1 },
@@ -105,6 +107,7 @@ const SLUG_LABEL_ES: Record<string, string> = {
   toilets: "Aseos públicos",
   vending: "Máquinas expendedoras",
   bicing: "Estaciones de Bicing",
+  bicimad: "Estaciones de BiciMAD",
   luggage: "Consignas",
   police: "Comisarías y policía",
   "lost-found": "Objetos perdidos",

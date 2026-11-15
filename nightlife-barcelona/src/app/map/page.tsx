@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react"
 import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
-import Link from "next/link"
+import Link from "../../components/system/CityLink"
 import { useSearchParams } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import { track } from "../../lib/track"
@@ -26,7 +26,8 @@ import { useVisibleBelow } from "../../lib/useVisibleBelow"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { renderToStaticMarkup } from "react-dom/server"
 import { CITIES, type CityKey } from "../../lib/cities"
-import { fetchCityClubs, useSelectedCity } from "../../lib/previewCity"
+import { fetchCityClubsFor, useSelectedCity } from "../../lib/previewCity"
+import { essentialsOfCity, scopeToCity } from "../../lib/cityEssentials"
 
 // Qué esenciales se enseñan lo decide lib/essentials.ts (isShownEssential): solo las categorías del
 // catálogo (essentialCategories.ts), sin Hotel y sin las oficinas de Uber/Cabify que se guardaron como
@@ -472,29 +473,37 @@ export default function MapPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      // Vista previa de otra ciudad: solo locales. Eventos y esenciales son de Barcelona y no se mezclan.
-      if (city !== "barcelona") {
-        const rows = await fetchCityClubs(CITIES[city].name, "id, name, slug, neighborhood, music, hours, open_days, price, latitude, longitude, address, image")
-        setClubs(rows as unknown as Club[])
-        setEvents([])
-        setEssentials([])
-        return
-      }
-      const [{ data: clubsData }, { data: eventsData }, { data: essentialsData }] = await Promise.all([
-        supabase.from("clubs").select("id, name, slug, neighborhood, music, hours, open_days, price, latitude, longitude, address, image").eq("hidden", false),
-        // Eventos oculto (lib/featureFlags.ts): no salen en el mapa.
-        EVENTS_HIDDEN ? Promise.resolve({ data: [] as any[] }) : supabase.from("events").select("id, title, slug, date, price, image, latitude, longitude, address").eq("hidden", false),
-        // Sin las paradas de Nitbus (más de mil chinchetas): tienen su propio mapa en Esenciales › Nitbus.
-        supabase.from("essentials").select("id, name, category, neighborhood, open_hours, latitude, longitude, address, phone, is_24h, verification_status, last_verified_at, attrs").eq("hidden", false).neq("category", "Nitbus").limit(5000),
-      ])
-      if (clubsData) setClubs(clubsData)
-      if (eventsData) setEvents(eventsData)
-      if (essentialsData) {
-        const shown = essentialsData.filter(isShownEssential)
+      // Esenciales (también los de Madrid en vista previa, 14/11/2026): solo los de la ciudad que se ve, por sus coordenadas, y
+      // solo las categorías del catálogo que llegan a su mínimo de sitios.
+      const showEssentials = (rows: any[]) => {
+        const shown = essentialsOfCity(rows.filter(isShownEssential), city)
         const perCategory: Record<string, number> = {}
         for (const e of shown) perCategory[e.category] = (perCategory[e.category] || 0) + 1
         setEssentials(shown.filter((e) => perCategory[e.category] >= categoryInfo(e.category).minPlaces))
       }
+      // Sin las paradas de Nitbus (más de mil chinchetas): tienen su propio mapa en Esenciales › Nitbus.
+      const ESSENTIAL_FIELDS = "id, name, category, neighborhood, open_hours, latitude, longitude, address, phone, is_24h, verification_status, last_verified_at, attrs"
+      // Otra ciudad: sus locales (los ocultos también, si está en vista previa) y sus esenciales. Los eventos son de Barcelona y no se mezclan.
+      if (city !== "barcelona") {
+        const [rows, { data: essentialsData }] = await Promise.all([
+          fetchCityClubsFor(city, "id, name, slug, neighborhood, music, hours, open_days, price, latitude, longitude, address, image, city"),
+          scopeToCity(supabase.from("essentials").select(ESSENTIAL_FIELDS), city).neq("category", "Nitbus").limit(5000),
+        ])
+        setClubs(rows as unknown as Club[])
+        setEvents([])
+        showEssentials(essentialsData || [])
+        return
+      }
+      const [{ data: clubsData }, { data: eventsData }, { data: essentialsData }] = await Promise.all([
+        // Los de Barcelona solos: con Madrid abierta, sus locales no se cuelan en este mapa.
+        fetchCityClubsFor("barcelona", "id, name, slug, neighborhood, music, hours, open_days, price, latitude, longitude, address, image, city").then((data) => ({ data: data as unknown as Club[] })),
+        // Eventos oculto (lib/featureFlags.ts): no salen en el mapa.
+        EVENTS_HIDDEN ? Promise.resolve({ data: [] as any[] }) : supabase.from("events").select("id, title, slug, date, price, image, latitude, longitude, address").eq("hidden", false),
+        supabase.from("essentials").select(ESSENTIAL_FIELDS).eq("hidden", false).neq("category", "Nitbus").limit(5000),
+      ])
+      if (clubsData) setClubs(clubsData)
+      if (eventsData) setEvents(eventsData)
+      if (essentialsData) showEssentials(essentialsData)
     }
     fetchData()
   }, [city])
@@ -756,7 +765,7 @@ export default function MapPage() {
     // Lo que de verdad se dibuja en el mapa (una muestra si no hay categoría): el botón dice la cifra real.
     const ctr = map.current?.getCenter()
     const shownCount = filter === "essentials"
-      ? limitEssentialsForMap(essentials.filter((e) => !zone || zoneOf(e) === zone), { category, center: { lat: ctr?.lat ?? 41.3851, lng: ctr?.lng ?? 2.1734 } }).length
+      ? limitEssentialsForMap(essentials.filter((e) => !zone || zoneOf(e) === zone), { category, center: { lat: ctr?.lat ?? CITIES[city].center.lat, lng: ctr?.lng ?? CITIES[city].center.lng } }).length
       : 0
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>

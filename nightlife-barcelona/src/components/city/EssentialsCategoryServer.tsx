@@ -1,0 +1,288 @@
+import type { Metadata } from "next"
+import { supabase } from "../../lib/supabase"
+import { cleanEssential } from "../../lib/essentials"
+import { outsideOtherCities, scopeToCity } from "../../lib/cityEssentials"
+import { CITIES, cityUrl, isCityOpen, type CityKey } from "../../lib/cities"
+import { cityRobots } from "../../lib/citySeo"
+import { ESSENTIAL_CATEGORIES } from "../../lib/essentialCategories"
+import { essentialEn } from "../../lib/intl/en/essentialsText"
+import { spanishAlternates } from "../../lib/intl/site"
+
+// Parte de servidor de /essentials/[categoría] (Barcelona) y /madrid/essentials/[categoría] (Madrid): título y descripción
+// de cada categoría, y el texto y la lista reales que se pintan en el HTML para Google. Los layouts de cada ciudad
+// (app/essentials/[category]/layout.tsx y app/madrid/essentials/[category]/layout.tsx) solo llaman a lo de aquí.
+
+// Título y descripción propios por categoría. Antes las 12 páginas de esenciales compartían el
+// título de la portada, y Google las veía como duplicadas (parte de "Rastreada: sin indexar").
+const BARCELONA_META: Record<string, { title: string; description: string }> = {
+  pharmacy: { title: "Farmacias de guardia y 24 h en Barcelona", description: "Farmacias abiertas ahora y de guardia por la noche en Barcelona, con mapa y cómo llegar." },
+  atm: { title: "Cajeros automáticos en Barcelona", description: "Cajeros cerca de ti en Barcelona y cuáles evitar por sus comisiones." },
+  food: { title: "Comer de madrugada en Barcelona", description: "Sitios para comer abiertos tarde en Barcelona: kebabs, pizzerías y comida rápida nocturna." },
+  transport: { title: "Transporte nocturno en Barcelona", description: "Cómo moverte de noche por Barcelona: metro, NitBus, taxi y aeropuerto." },
+  metro: { title: "Horario del metro de Barcelona por la noche", description: "Hasta qué hora funciona hoy el metro de Barcelona y estaciones cerca de ti." },
+  nitbus: { title: "NitBus: autobuses nocturnos de Barcelona", description: "Líneas y paradas del NitBus para volver a casa de noche en Barcelona." },
+  taxi: { title: "Taxi de noche en Barcelona", description: "Paradas de taxi, teléfonos y apps para pedir un taxi de noche en Barcelona." },
+  // 29/10/2026: era la página con más impresiones en Google (2.456) y solo 8 clics; la gente busca
+  // "supermercado 24 horas", y el título no lo decía.
+  supermarket: { title: "Supermercados 24 h y abiertos de noche en Barcelona", description: "Supermercados abiertos 24 horas y hasta tarde en Barcelona, con mapa, horarios y cuáles están abiertos ahora." },
+  casino: { title: "Casinos en Barcelona", description: "Casinos y salas de juego en Barcelona: horarios y cómo llegar." },
+  "gas-station": { title: "Gasolineras 24 h en Barcelona", description: "Gasolineras abiertas por la noche en Barcelona." },
+  parking: { title: "Parkings gratis cerca de clubs en Barcelona", description: "Aparcamientos públicos gratuitos para dejar el coche en Barcelona, con los clubs que tienes a pie desde cada uno." },
+  hospital: { title: "Urgencias y hospitales en Barcelona", description: "Hospitales con urgencias 24 h en Barcelona y cómo llegar." },
+  // 05/11/2026: categorías nuevas. Llevan noindex hasta que tengan sitios verificados (ver NOINDEX).
+  veterinary: { title: "Veterinarios de urgencia en Barcelona", description: "Veterinarios de urgencia y hospitales veterinarios en Barcelona: horario, teléfono y cómo llegar." },
+  toilets: { title: "Aseos públicos en Barcelona", description: "Aseos públicos en Barcelona con su horario y condiciones de acceso." },
+  vending: { title: "Máquinas expendedoras en Barcelona", description: "Máquinas expendedoras de bebidas, snacks, café y más en Barcelona, accesibles desde la calle." },
+  bicing: { title: "Estaciones de Bicing en Barcelona", description: "Estaciones de Bicing en Barcelona con mapa y la más cercana a ti." },
+  luggage: { title: "Consignas y taquillas en Barcelona", description: "Consignas y taquillas para dejar equipaje o abrigos en Barcelona, con horario y cómo llegar." },
+  police: { title: "Comisarías y policía en Barcelona", description: "Comisarías de la Guardia Urbana, Mossos d'Esquadra y Policía Nacional en Barcelona, con teléfono y cómo llegar." },
+  "lost-found": { title: "Objetos perdidos en Barcelona", description: "Oficinas de objetos perdidos en Barcelona y qué hacer si pierdes el móvil o la cartera." },
+}
+
+// Categorías propias de cada ciudad: el metro, el Nitbus y Bicing son de Barcelona; BiciMAD es de Madrid. El parking gratuito y los
+// textos de «Guardia Urbana» tampoco valen en Madrid. Cualquier otra categoría existe en las dos ciudades.
+const ONLY_BARCELONA = new Set(["metro", "nitbus", "bicing", "parking"])
+const ONLY_MADRID = new Set(["bicimad"])
+
+// Frases de Madrid que no salen de cambiar el nombre de la ciudad.
+const MADRID_META: Record<string, { title: string; description: string }> = {
+  transport: { title: "Transporte nocturno en Madrid", description: "Cómo moverte de noche por Madrid: metro, búhos, taxi y aeropuerto." },
+  police: { title: "Comisarías y policía en Madrid", description: "Comisarías de la Policía Municipal y la Policía Nacional en Madrid, con teléfono y cómo llegar." },
+  bicimad: { title: "Estaciones de BiciMAD en Madrid", description: "Estaciones de BiciMAD en Madrid con mapa y la más cercana a ti." },
+}
+
+const localize = (text: string, city: CityKey) => (city === "barcelona" ? text : text.split("Barcelona").join(CITIES[city].name))
+
+/** Título y descripción de cada categoría de una ciudad (solo las que existen en ella). */
+function metaOf(city: CityKey): Record<string, { title: string; description: string }> {
+  if (city === "barcelona") return Object.fromEntries(Object.entries(BARCELONA_META).filter(([k]) => !ONLY_MADRID.has(k)))
+  const out: Record<string, { title: string; description: string }> = {}
+  for (const [k, v] of Object.entries(BARCELONA_META)) {
+    if (ONLY_BARCELONA.has(k)) continue
+    out[k] = MADRID_META[k] || { title: localize(v.title, city), description: localize(v.description, city) }
+  }
+  for (const [k, v] of Object.entries(MADRID_META)) if (!(k in out) && ONLY_MADRID.has(k)) out[k] = v
+  return out
+}
+
+// Las categorías se generan al compilar (antes cada visita se renderizaba de cero) y cualquier otra URL
+// (/essentials/loquesea) da un 404 real en vez de una página vacía con código 200.
+export function essentialCategoryParams(city: CityKey): { category: string }[] {
+  return Object.keys(metaOf(city)).map((category) => ({ category }))
+}
+
+// La lista de cada categoría la pinta el navegador después de cargar, así que Google veía una página
+// casi vacía ("Cargando…"). El texto de abajo se genera en el servidor con los datos reales y se
+// refresca cada hora.
+// 05/11/2026: antes 3600 s. Subido a 6 h para gastar menos «ISR Writes» de Vercel (ver src/app/clubs/[slug]/page.tsx).
+export const revalidate = 21600
+
+// Casinos se mantiene accesible, pero no se promociona ni se pide indexar: no es un "esencial" de la
+// noche y diluye la relevancia del resto para Google. Hotel se retiró el 05/11/2026 (da 404).
+// Las categorías nuevas tampoco se indexan hasta tener sitios verificados: una página casi vacía
+// perjudica más que ayuda. Cuando una tenga datos, se quita de aquí y se añade a sitemap.ts.
+const NOINDEX = new Set(["casino", "veterinary", "toilets", "vending", "bicing", "bicimad", "luggage", "police", "lost-found"])
+
+/**
+ * Categorías de esenciales de una ciudad que van al sitemap: las que existen en ella, no llevan noindex y tienen datos
+ * suficientes (los mínimos de lib/essentialCategories.ts). Una página casi vacía perjudica más que ayuda. «transport»
+ * (la antigua página del aeropuerto) no se declara en ninguna ciudad nueva. `countsBySlug` son los esenciales publicados
+ * de esa ciudad por categoría.
+ */
+export function sitemapEssentialSlugs(city: CityKey, countsBySlug: Record<string, number>): string[] {
+  return Object.keys(metaOf(city)).filter((slug) => {
+    if (NOINDEX.has(slug) || slug === "transport") return false
+    const min = ESSENTIAL_CATEGORIES.find((c) => c.slug === slug)?.minPlaces ?? 1
+    return (countsBySlug[slug] || 0) >= min
+  })
+}
+
+export async function essentialsCategoryMetadata(city: CityKey, { params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
+  const { category } = await params
+  const meta = metaOf(city)[category]
+  if (!meta) return { title: "Esenciales | Noctua" }
+  return {
+    title: `${meta.title} | Noctua`,
+    description: meta.description,
+    // Las categorías con página en inglés (/en/essentials/...) se enlazan con hreflang. Son de Barcelona: Madrid solo está en español.
+    alternates:
+      city === "barcelona" && essentialEn(category)
+        ? spanishAlternates(`/essentials/${category}`, `/essentials/${category}`)
+        : { canonical: cityUrl(`/essentials/${category}`, city) },
+    ...(NOINDEX.has(category) ? { robots: { index: false, follow: true } } : {}),
+    ...cityRobots(city),
+  }
+}
+
+// Categorías donde tiene sentido el texto de abajo (las que la gente busca como "X 24 horas").
+type Block = {
+  h2: string
+  noun: string // plural, para la frase de introducción
+  intro: string // qué hacer con la lista de arriba
+  listTitle: string
+  faqQuestion: string
+  faqTail: string // aviso final de la respuesta
+}
+const BARCELONA_BLOCKS: Record<string, Block> = {
+  supermarket: {
+    h2: "Supermercados 24 horas y abiertos de noche en Barcelona",
+    noun: "supermercados y tiendas de alimentación",
+    intro: "Sirven para comprar bebida, hielo o algo de picar antes o después de salir. El listado de arriba marca cuáles están abiertos ahora y cuáles te quedan cerca.",
+    listTitle: "Supermercados abiertos 24 horas",
+    faqQuestion: "¿Hay supermercados abiertos 24 horas en Barcelona?",
+    faqTail: "Los horarios pueden cambiar: mira siempre el estado «abierto ahora» del listado.",
+  },
+  pharmacy: {
+    h2: "Farmacias de guardia y 24 horas en Barcelona",
+    noun: "farmacias",
+    intro: "Si te hace falta algo de madrugada, el listado de arriba te dice cuáles están abiertas ahora y cuál te queda más cerca.",
+    listTitle: "Farmacias abiertas 24 horas",
+    faqQuestion: "¿Qué farmacias abren las 24 horas en Barcelona?",
+    faqTail: "Las farmacias de guardia rotan por turnos: confirma el horario antes de ir.",
+  },
+  "gas-station": {
+    h2: "Gasolineras 24 horas en Barcelona",
+    noun: "gasolineras",
+    intro: "Para repostar o comprar algo de madrugada. El listado de arriba marca cuáles están abiertas ahora y cuál te queda más cerca.",
+    listTitle: "Gasolineras abiertas 24 horas",
+    faqQuestion: "¿Dónde repostar de madrugada en Barcelona?",
+    faqTail: "Los horarios pueden cambiar: mira siempre el estado «abierto ahora» del listado.",
+  },
+  food: {
+    h2: "Dónde comer de madrugada en Barcelona",
+    noun: "sitios para comer",
+    intro: "Kebabs, pizzerías y comida rápida para después de la fiesta. El listado de arriba marca cuáles están abiertos ahora y cuáles te quedan cerca.",
+    listTitle: "Abiertos 24 horas",
+    faqQuestion: "¿Qué sitios para comer abren las 24 horas en Barcelona?",
+    faqTail: "Los horarios pueden cambiar: mira siempre el estado «abierto ahora» del listado.",
+  },
+}
+
+type Row = {
+  id: number
+  name: string | null
+  category: string | null
+  address: string | null
+  neighborhood: string | null
+  open_hours: string | null
+}
+
+// «Open 24 hours» sin más, o «Monday to Sunday: Open 24 hours». Un horario de un solo día
+// («Monday: Open 24 hours») no vale: ese sitio no abre 24 horas toda la semana.
+function isOpen24hAllWeek(raw: string | null): boolean {
+  if (!raw) return false
+  const lower = raw.trim().toLowerCase()
+  if (!/24\s*hours/.test(lower)) return false
+  const day = "(monday|tuesday|wednesday|thursday|friday|saturday|sunday)"
+  const withDay = lower.match(new RegExp(`^${day}(?:\\s+to\\s+${day})?`))
+  if (!withDay) return true
+  return withDay[1] === "monday" && withDay[2] === "sunday"
+}
+
+async function loadBlockData(key: string, city: CityKey): Promise<{ total: number; n24: number; rows: { id: number; name: string; where: string }[] } | null> {
+  // Una ciudad aún cerrada no enseña nada suyo en el HTML (y no se piden sus esenciales ocultos).
+  if (!isCityOpen(city)) return null
+  // Este texto habla de una sola ciudad: no cuentan los esenciales de las demás. Barcelona deja fuera lo que cae en otra ciudad;
+  // las otras ciudades se quedan con lo que cae en su rectángulo (lib/cityEssentials.ts).
+  const scope = <Q,>(q: Q): Q => (city === "barcelona" ? outsideOtherCities(q) : scopeToCity(q, city))
+  try {
+    const [totalRes, h24Res] = await Promise.all([
+      scope(supabase.from("essentials").select("id", { count: "exact", head: true }).ilike("category", key).eq("hidden", false)),
+      scope(
+        supabase
+          .from("essentials")
+          .select("id,name,category,address,neighborhood,open_hours")
+          .ilike("category", key)
+          .eq("hidden", false)
+          .ilike("open_hours", "%24 hours%")
+      )
+        .order("name")
+        .range(0, 499),
+    ])
+    if (totalRes.error || h24Res.error) return null
+    const all = ((h24Res.data || []) as Row[])
+      .filter((r) => isOpen24hAllWeek(r.open_hours))
+      .map((r) => cleanEssential({ ...r, name: r.name || "" }))
+      .filter((r) => r.name)
+    const rows = all.slice(0, 12).map((r) => ({
+      id: r.id,
+      name: r.name as string,
+      where: [r.address, r.neighborhood].filter((x): x is string => !!x && !!x.trim()).slice(0, 2).join(", "),
+    }))
+    return { total: totalRes.count || 0, n24: all.length, rows }
+  } catch {
+    return null
+  }
+}
+
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names[0] || ""
+  return names.slice(0, -1).join(", ") + " y " + names[names.length - 1]
+}
+
+export default async function EssentialsCategoryServer({
+  city,
+  children,
+  params,
+}: {
+  city: CityKey
+  children: React.ReactNode
+  params: Promise<{ category: string }>
+}) {
+  const { category } = await params
+  const cityName = CITIES[city].name
+  const raw = metaOf(city)[category] ? BARCELONA_BLOCKS[category] : undefined
+  const block = raw && {
+    ...raw,
+    h2: localize(raw.h2, city),
+    intro: localize(raw.intro, city),
+    faqQuestion: localize(raw.faqQuestion, city),
+  }
+  const key = ESSENTIAL_CATEGORIES.find((c) => c.slug === category)?.key
+  const data = block && key ? await loadBlockData(key, city) : null
+
+  // Sin datos (o sin nada que contar) no se añade nada: es mejor que un texto vacío.
+  if (!block || !data || data.total === 0) return children
+
+  const first3 = data.rows.slice(0, 3).map((r) => r.name)
+  return (
+    <>
+      {children}
+      {/* -mt-28: la página de arriba deja 160 px libres para el menú inferior; así el texto queda
+          pegado a su contenido en vez de a media pantalla de distancia. */}
+      <section aria-labelledby="essentials-seo-title" className="relative -mt-28 bg-night px-4 pb-36 text-ink">
+        <div className="mx-auto max-w-3xl border-t border-white/10 pt-8">
+          <h2 id="essentials-seo-title" className="font-display text-xl leading-tight text-ink">
+            {block.h2}
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+            Noctua reúne {data.total} {block.noun} en {cityName}
+            {data.n24 > 0 ? ` y ${data.n24} abren las 24 horas` : ""}. {block.intro}
+          </p>
+
+          {data.rows.length > 0 && (
+            <>
+              <h3 className="mt-6 text-sm font-semibold text-zinc-200">{block.listTitle}</h3>
+              <ul className="mt-2 space-y-1.5 text-sm text-zinc-400">
+                {data.rows.map((r) => (
+                  <li key={r.id}>
+                    <span className="text-zinc-200">{r.name}</span>
+                    {r.where ? ` · ${r.where}` : ""}
+                  </li>
+                ))}
+              </ul>
+              {data.n24 > data.rows.length && (
+                <p className="mt-2 text-sm text-zinc-500">Y {data.n24 - data.rows.length} más en el listado de arriba.</p>
+              )}
+
+              <h3 className="mt-6 text-sm font-semibold text-zinc-200">{block.faqQuestion}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                En Noctua figuran {data.n24} con horario de 24 horas, como {joinNames(first3)}. {block.faqTail}
+              </p>
+            </>
+          )}
+        </div>
+      </section>
+    </>
+  )
+}

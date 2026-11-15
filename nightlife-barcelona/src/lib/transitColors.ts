@@ -21,11 +21,34 @@ export const METRO_LINE_COLORS: Record<string, string> = {
   L12: "#00A99D",
 }
 
+// Colores de las líneas de Metro de Madrid: los que da el propio CRTM en su GTFS (route_color). Las claras (L1, L3, L5, L6, L8 y el
+// Ramal, que es blanco) llevan texto oscuro; el resto, blanco. El ramal Ópera–Príncipe Pío se llama «R».
+export const MADRID_METRO_LINE_COLORS: Record<string, string> = {
+  L1: "#2DBEF0",
+  L2: "#ED1C24",
+  L3: "#FFD000",
+  L4: "#B65518",
+  L5: "#8FD400",
+  L6: "#98989B",
+  L7: "#EE7518",
+  L8: "#EC82B1",
+  L9: "#A60084",
+  L10: "#005AA9",
+  L11: "#009B3A",
+  L12: "#A49800",
+  R: "#FFFFFF",
+}
+
 // L4 (amarillo) y L10 (celeste muy claro) son demasiado claros para texto blanco encima.
 const LIGHT_LINES = new Set(["L4", "L10", "L10N", "L10S"])
+const MADRID_LIGHT_LINES = new Set(["L1", "L3", "L5", "L6", "L8", "R"])
 
-export function metroLineColor(code: string): { bg: string; fg: string } {
+export function metroLineColor(code: string, city: "barcelona" | "madrid" = "barcelona"): { bg: string; fg: string } {
   const key = code.trim().toUpperCase()
+  if (city === "madrid") {
+    const bg = MADRID_METRO_LINE_COLORS[key] || "#7c5cff"
+    return { bg, fg: MADRID_LIGHT_LINES.has(key) ? "#16141f" : "#ffffff" }
+  }
   const bg = METRO_LINE_COLORS[key] || "#7c5cff"
   return { bg, fg: LIGHT_LINES.has(key) ? "#16141f" : "#ffffff" }
 }

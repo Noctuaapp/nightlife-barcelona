@@ -21,6 +21,7 @@ import NocOwl from "../mascot/NocOwl"
 import { LIST_CLUB_FIELDS } from "../../lib/clubQueries"
 import { otherCityName } from "../../lib/cities"
 import { usePreviewClubs, useSelectedCity } from "../../lib/previewCity"
+import { cityTextKey } from "../../lib/cityText"
 
 // Rediseño del listado (03/11/2026). Antes: cabecera de 230 px con título gigante, una barra con seis
 // botones y un desplegable, un fondo animado fijo y tarjetas de 300 px una debajo de otra en el móvil.
@@ -440,8 +441,8 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
           cuántos locales están abiertos ahora (dato real, se calcula en el navegador) y el título. */}
       <SectionHero
         section="clubs"
-        title={t("clubs.subtitle")}
-        pill={openCount === null || openCount === 0 ? t("home.liveTonight") : (openCount === 1 ? t("home.liveOpenOne") : t("home.liveOpenMany")).replace("{n}", String(openCount))}
+        title={t(cityTextKey("clubs.subtitle", cityNow))}
+        pill={openCount === null || openCount === 0 ? t(cityTextKey("home.liveTonight", cityNow)) : (openCount === 1 ? t("home.liveOpenOne") : t("home.liveOpenMany")).replace("{n}", String(openCount))}
         switcher={<ExploreSwitch active="clubs" />}
         // Noc: de fiesta (chulo, con la bola de espejos); si se filtra por coctelerías o bares, de copas y borrachillo.
         mascot={

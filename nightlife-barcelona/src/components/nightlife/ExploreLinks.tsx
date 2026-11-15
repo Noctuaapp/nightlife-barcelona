@@ -1,7 +1,8 @@
 "use client"
 
-import Link from "next/link"
+import Link from "../system/CityLink"
 import { useLanguage } from "../../context/LanguageContext"
+import { useCityT } from "../../lib/useCityT"
 import type { AreaLink } from "../../lib/areas"
 import { areaHref } from "../../lib/zonePages"
 
@@ -9,6 +10,7 @@ import { areaHref } from "../../lib/zonePages"
 // prefiera navegar así) un camino directo a "discotecas en Gràcia" o "discotecas de techno".
 export default function ExploreLinks({ neighborhoods, styles }: { neighborhoods: AreaLink[]; styles: AreaLink[] }) {
   const { t } = useLanguage()
+  const tc = useCityT()
   if (neighborhoods.length === 0 && styles.length === 0) return null
   const styleName = (slug: string, fallback: string) => {
     const v = t(`areas.style.${slug}`)
@@ -18,7 +20,7 @@ export default function ExploreLinks({ neighborhoods, styles }: { neighborhoods:
   const chip = "btn-pill btn-secondary px-3.5 py-2 text-sm"
   return (
     <section className="mx-auto max-w-7xl space-y-6 border-t border-white/10 bg-night px-4 pb-40 pt-10">
-      <h2 className="text-xl font-semibold text-ink">{t("areas.exploreTitle")}</h2>
+      <h2 className="text-xl font-semibold text-ink">{tc("areas.exploreTitle")}</h2>
       {neighborhoods.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-zinc-400">{t("areas.byBarrio")}</h3>

@@ -12,6 +12,7 @@ import { coordsPayload, coordToInput, googleMapsUrl, parseCoords } from "../../.
 import { touchCache, essentialPaths } from "../../../lib/touchCache"
 import { ESSENTIAL_CATEGORIES, categoryInfo, essentialSlugLabelEs } from "../../../lib/essentialCategories"
 import { isVerificationCurrent } from "../../../lib/availability"
+import { CITIES, cityOfClub, type CityKey } from "../../../lib/cities"
 import { prepareImageForUpload, uploadFileName } from "../../../lib/compressImage"
 
 // Rediseño (2/11/2026): esta pantalla era la más pobre del admin. Con miles de esenciales (las
@@ -89,6 +90,7 @@ const CATEGORY_SINGULAR_ES: Record<string, string> = {
   Toilets: "Aseo público",
   Vending: "Máquina expendedora",
   Bicing: "Estación de Bicing",
+  BiciMAD: "Estación de BiciMAD",
   Luggage: "Consigna",
   Police: "Comisaría",
   LostFound: "Objetos perdidos",
@@ -175,6 +177,9 @@ export default function AdminEssentialsPage() {
 
   const [search, setSearch] = useState("")
   const [category, setCategory] = useState("all")
+  // Ciudad (14/11/2026): Barcelona y Madrid comparten tabla; la ciudad de cada esencial sale de sus coordenadas. Con una ciudad
+  // elegida, los contadores, la lista y «Publicar / Ocultar los filtrados» solo cuentan los suyos.
+  const [cityFilter, setCityFilter] = useState<"all" | CityKey>("all")
   const [status, setStatus] = useState<StatusKey>("all")
   const [sort, setSort] = useState<SortKey>("category")
   const [limit, setLimit] = useState(PAGE_SIZE)
@@ -215,16 +220,22 @@ export default function AdminEssentialsPage() {
   useEffect(() => {
     setLimit(PAGE_SIZE)
     setFocusId(null)
-  }, [search, category, status, sort])
+  }, [search, category, status, sort, cityFilter])
 
   // ---------- Datos derivados (búsqueda, filtros y contadores) ----------
+  const scoped = useMemo(() => (cityFilter === "all" ? essentials : essentials.filter((e) => cityOfClub(e) === cityFilter)), [essentials, cityFilter])
+  const cityCounts = useMemo(() => {
+    const c: Record<CityKey, number> = { barcelona: 0, madrid: 0 }
+    for (const e of essentials) c[cityOfClub(e)]++
+    return c
+  }, [essentials])
   const rows = useMemo(
     () =>
-      essentials.map((e) => ({
+      scoped.map((e) => ({
         e,
         hay: fold([e.name, e.category, categorySingular(e.category), categoryPlural(e.category), e.subcategory, e.address, e.neighborhood, e.description, e.open_hours].filter(Boolean).join(" ")),
       })),
-    [essentials]
+    [scoped]
   )
 
   const { filtered, catCounts, statusCounts } = useMemo(() => {
@@ -255,18 +266,18 @@ export default function AdminEssentialsPage() {
 
   const totals = useMemo(
     () => ({
-      total: essentials.length,
-      visible: essentials.filter(STATUS_TESTS.visible).length,
-      hidden: essentials.filter(STATUS_TESTS.hidden).length,
-      nophoto: essentials.filter(STATUS_TESTS.nophoto).length,
+      total: scoped.length,
+      visible: scoped.filter(STATUS_TESTS.visible).length,
+      hidden: scoped.filter(STATUS_TESTS.hidden).length,
+      nophoto: scoped.filter(STATUS_TESTS.nophoto).length,
     }),
-    [essentials]
+    [scoped]
   )
 
-  const extraCategories = useMemo(() => [...new Set(essentials.map((e) => e.category).filter((c) => c && !categories.includes(c)))].sort(), [essentials])
+  const extraCategories = useMemo(() => [...new Set(scoped.map((e) => e.category).filter((c) => c && !categories.includes(c)))].sort(), [scoped])
 
-  const isFiltered = !!search.trim() || category !== "all" || status !== "all"
-  const clearFilters = () => { setSearch(""); setCategory("all"); setStatus("all") }
+  const isFiltered = !!search.trim() || category !== "all" || status !== "all" || cityFilter !== "all"
+  const clearFilters = () => { setSearch(""); setCategory("all"); setStatus("all"); setCityFilter("all") }
 
   // ---------- Fotos ----------
   // Sube la foto (reducida y enderezada como las de los clubs, lib/compressImage) al bucket
@@ -807,6 +818,10 @@ export default function AdminEssentialsPage() {
             aria-label="Buscar esenciales"
             className="flex-1 rounded-card border border-white/10 bg-surface px-5 py-4 outline-none transition focus:border-brand/60"
           />
+          <select value={cityFilter} onChange={(e) => setCityFilter(e.target.value as "all" | CityKey)} aria-label="Filtrar por ciudad" style={{ colorScheme: "dark" }} className={`${selectClass} lg:w-52`}>
+            <option value="all">Todas las ciudades ({essentials.length})</option>
+            {(Object.keys(CITIES) as CityKey[]).map((k) => <option key={k} value={k}>{CITIES[k].name} ({cityCounts[k]})</option>)}
+          </select>
           <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Filtrar por categoría" style={{ colorScheme: "dark" }} className={`${selectClass} lg:w-60`}>
             <option value="all">Todas las categorías ({[...catCounts.values()].reduce((a, b) => a + b, 0)})</option>
             {categories.map((c) => <option key={c} value={c}>{categoryPlural(c)} ({catCounts.get(c) || 0})</option>)}
@@ -847,7 +862,7 @@ export default function AdminEssentialsPage() {
             </button>
           )}
           <p className="ml-auto self-center text-xs text-zinc-400">
-            {filtered.length} de {essentials.length} esenciales
+            {filtered.length} de {scoped.length} esenciales
           </p>
         </div>
 

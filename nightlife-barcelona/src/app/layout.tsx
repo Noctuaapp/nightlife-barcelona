@@ -17,6 +17,7 @@ import JoinNoctuaPrompt from "../components/nightlife/JoinNoctuaPrompt"
 import ChristmasDecor from "../components/system/ChristmasDecor"
 import "./globals.css"
 import { safeJsonLd } from "../lib/structuredData"
+import { isCityOpen } from "../lib/cities"
 
 // Antes toda la app caía en Arial/Helvetica (la fuente por defecto del sistema, sin declarar
 // ninguna propia) — probablemente lo que más "delata" que una app no tiene identidad propia.
@@ -138,7 +139,8 @@ export default function RootLayout({
                   url: "https://www.noctuaapp.com",
                   logo: "https://www.noctuaapp.com/noctua_logo.png",
                   email: "info@noctuaapp.com",
-                  areaServed: "Barcelona",
+                  // Madrid se suma cuando la ciudad se abre al público (lib/cities.ts).
+                  areaServed: isCityOpen("madrid") ? ["Barcelona", "Madrid"] : "Barcelona",
                 },
                 {
                   "@type": "WebSite",

@@ -8,6 +8,7 @@ import { rankClubs } from "../areas"
 import { distanceInMeters } from "../geo"
 import { loadNitbusData, type NbData } from "../nitbusRoutes"
 import { cleanEssential, isShownEssential } from "../essentials"
+import { outsideOtherCities } from "../cityEssentials"
 import { dressOf, minAgeOf } from "./clubText"
 import type { IntlLang } from "./lang"
 import { createSlug } from "../slug"
@@ -123,7 +124,8 @@ const str = (v: unknown): string => (typeof v === "string" ? v.trim() : "")
 export const getEssentials = cache(async (categoryKey: string): Promise<EssentialRowEn[]> => {
   const run = (cols: string) =>
     fetchAllPages<Record<string, unknown>>((from, to) =>
-      supabase.from("essentials").select(cols).ilike("category", categoryKey).eq("hidden", false).order("id").range(from, to) as unknown as PromiseLike<{
+      // Las páginas en otros idiomas son de Barcelona: sin los esenciales de otras ciudades (Madrid, cuando se publique).
+      outsideOtherCities(supabase.from("essentials").select(cols).ilike("category", categoryKey).eq("hidden", false)).order("id").range(from, to) as unknown as PromiseLike<{
         data: Record<string, unknown>[] | null
         error: unknown
       }>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { clubMetaDescription, clubSummary, clubTitle, CLUB_TITLE_MAX } from "../clubSummary"
+import { clubMetaDescription, clubPlace, clubSummary, clubTitle, CLUB_TITLE_MAX } from "../clubSummary"
 
 describe("clubTitle", () => {
   it("añade horario y cómo llegar cuando cabe", () => {
@@ -10,6 +10,16 @@ describe("clubTitle", () => {
 
   it("usa el tipo real del local y Barcelona si no hay barrio", () => {
     expect(clubTitle({ name: "Almodobar", venue_type: "bar" })).toBe("Almodobar — Bar de copas en Barcelona: horario y cómo llegar | Noctua")
+  })
+
+  it("un local de Madrid lleva su ciudad en el título; uno de Barcelona sigue igual", () => {
+    expect(clubTitle({ name: "Joy", venue_type: "club", neighborhood: "Centro", city: "Madrid" })).toBe(
+      "Joy — Discoteca en Centro, Madrid: horario y cómo llegar | Noctua"
+    )
+    expect(clubTitle({ name: "Joy", venue_type: "club", city: "Madrid" })).toBe("Joy — Discoteca en Madrid: horario y cómo llegar | Noctua")
+    // También cuando solo se sabe por las coordenadas
+    expect(clubTitle({ name: "Joy", venue_type: "club", neighborhood: "Chamberí", latitude: 40.43, longitude: -3.7 })).toContain("Chamberí, Madrid")
+    expect(clubTitle({ name: "Razzmatazz", venue_type: "club", neighborhood: "Poblenou", city: "Barcelona" })).not.toContain("Madrid")
   })
 
   it("con un nombre muy largo se queda con el título de siempre", () => {
@@ -70,5 +80,14 @@ describe("clubSummary: vestimenta", () => {
 
   it("sin dato, no la menciona", () => {
     expect(clubSummary({ name: "Sutton", dress_code: "" })).not.toContain("vestimenta")
+  })
+})
+
+describe("clubPlace", () => {
+  it("Madrid siempre con su ciudad; Barcelona como antes", () => {
+    expect(clubPlace({ neighborhood: "Chueca", city: "Madrid" })).toBe("Chueca (Madrid)")
+    expect(clubPlace({ city: "Madrid" })).toBe("Madrid")
+    expect(clubPlace({ neighborhood: "El Raval", city: "Barcelona" })).toBe("El Raval (Barcelona)")
+    expect(clubPlace({ neighborhood: "Poble-sec" })).toBe("Poble-sec (Barcelona)")
   })
 })

@@ -2,13 +2,15 @@
 
 import { useState, useCallback, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
-import Link from "next/link"
+import Link from "../system/CityLink"
 import { supabase } from "../../lib/supabase"
+import { selectAllPages } from "../../lib/fetchAll"
 import { getDeniedClubIds, rememberDenied } from "../../lib/deniedVenues"
 import { createSlug } from "../../lib/slug"
 import { distanceInMeters, formatDistance } from "../../lib/geo"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { useLanguage } from "../../context/LanguageContext"
+import { useCityT } from "../../lib/useCityT"
 import AuthGateModal from "../ui/AuthGateModal"
 import { DoorClosed, X, Map as MapIcon, Navigation, Lock, ChevronRight } from "lucide-react"
 import { logError } from "../../lib/log"
@@ -102,6 +104,7 @@ export default function NearbyVenuesSheet({
   compact = false,
 }: NearbyVenuesSheetProps) {
   const { t } = useLanguage()
+  const tc = useCityT() // los textos que nombran la ciudad salen con la que se está viendo (lib/cityText.ts)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [venues, setVenues] = useState<VenueResult[] | null>(null)
@@ -159,16 +162,18 @@ export default function NearbyVenuesSheet({
 
     setLoading(true)
 
-    let query = supabase
-      .from("clubs")
-      .select("id, name, slug, image, latitude, longitude, music, neighborhood, queue, trending, lgtbi_friendly")
-      .eq("hidden", false)
-      .not("latitude", "is", null)
-      .not("longitude", "is", null)
-
-    if (excludeClubId != null) query = query.neq("id", excludeClubId)
-
-    const { data } = await query
+    // Página a página: entre Barcelona y Madrid hay más de 1.000 locales y una sola consulta se cortaría sin avisar (y los
+    // más cercanos podrían quedarse fuera).
+    const { data } = await selectAllPages((from, to) => {
+      let query = supabase
+        .from("clubs")
+        .select("id, name, slug, image, latitude, longitude, music, neighborhood, queue, trending, lgtbi_friendly")
+        .eq("hidden", false)
+        .not("latitude", "is", null)
+        .not("longitude", "is", null)
+      if (excludeClubId != null) query = query.neq("id", excludeClubId)
+      return query.order("id").range(from, to)
+    })
 
     // Sin los locales donde a esta persona ya no le dejaron entrar (últimos 90 días).
     const denied = await getDeniedClubIds()
@@ -317,7 +322,7 @@ export default function NearbyVenuesSheet({
               {venues !== null && venues.length === 0 && (
                 <div className="flex flex-col items-center gap-3 py-10 text-center">
                   <MapIcon size={28} className="text-brand-soft" />
-                  <p className="max-w-xs text-sm text-zinc-400">{t("nearby.empty")}</p>
+                  <p className="max-w-xs text-sm text-zinc-400">{tc("nearby.empty")}</p>
                   <Link
                     href="/map"
                     onClick={() => setOpen(false)}

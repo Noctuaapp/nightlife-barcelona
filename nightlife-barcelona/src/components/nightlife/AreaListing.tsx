@@ -1,9 +1,10 @@
 "use client"
 
-import Link from "next/link"
+import Link from "../system/CityLink"
 import { useEffect, useMemo, useState, type ReactNode } from "react"
 import ClubCard from "./ClubCard"
 import { useLanguage } from "../../context/LanguageContext"
+import { useCityT } from "../../lib/useCityT"
 import type { DbRow } from "../../lib/clubQueries"
 import type { AreaLink } from "../../lib/areas"
 import { areaHref } from "../../lib/zonePages"
@@ -30,8 +31,10 @@ type Props = {
 
 export default function AreaListing({ kind, slug, name, clubs, neighborhoods, styles, zones = [], facts = null }: Props) {
   const { t, locale } = useLanguage()
+  // Textos que nombran la ciudad (títulos, introducciones, cifras): en Madrid salen los de Madrid (lib/cityText.ts).
+  const tc = useCityT()
   const translated = (key: string, fallback: string) => {
-    const v = t(key)
+    const v = tc(key)
     return v === key ? fallback : v
   }
   const styleName = (s: string, fallback: string) => {
@@ -39,16 +42,16 @@ export default function AreaListing({ kind, slug, name, clubs, neighborhoods, st
     return v.charAt(0).toUpperCase() + v.slice(1)
   }
   const fill = (key: string, vars: Record<string, string | number>) =>
-    Object.entries(vars).reduce((text, [k, v]) => text.split(`{${k}}`).join(String(v)), t(key))
+    Object.entries(vars).reduce((text, [k, v]) => text.split(`{${k}}`).join(String(v)), tc(key))
   const euros = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 1 })
 
   const displayName = kind === "musica" ? translated(`areas.style.${slug}`, name) : name
-  const rawTitle = (kind === "barrio" ? t("areas.titleBarrio") : kind === "zona" ? t("areas.titleZona") : t("areas.titleStyle")).replace("{name}", displayName)
+  const rawTitle = (kind === "barrio" ? t("areas.titleBarrio") : kind === "zona" ? t("areas.titleZona") : tc("areas.titleStyle")).replace("{name}", displayName)
   const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1)
   const intro =
     kind === "zona"
       ? t("areas.genericZona").replace("{name}", displayName)
-      : translated(`areas.intro.${slug}`, (kind === "barrio" ? t("areas.genericBarrio") : t("areas.genericStyle")).replace("{name}", displayName))
+      : translated(`areas.intro.${slug}`, (kind === "barrio" ? tc("areas.genericBarrio") : tc("areas.genericStyle")).replace("{name}", displayName))
 
   const otherBarrios = neighborhoods.filter((n) => !(kind === "barrio" && n.slug === slug)).slice(0, 14)
   const otherStyles = styles.filter((s) => !(kind === "musica" && s.slug === slug))
