@@ -1,14 +1,21 @@
 "use client"
 
-import { useEffect, useRef, useState, type ChangeEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { logError } from "../../../lib/log"
+import { fetchAllPages } from "../../../lib/fetchAll"
+import { useAdminCity } from "../../../components/admin/AdminCity"
+import { clubIdsOfCity, rowsOfCity, rowsOfCityByClub } from "../../../lib/adminCity"
+import { cityOfClub } from "../../../lib/cities"
 
 type Club = {
   id: number
   name: string
+  city?: string | null
+  latitude?: number | string | null
+  longitude?: number | string | null
 }
 
 type ClubEvent = {
@@ -36,8 +43,15 @@ export default function AdminClubEventsPage() {
     start_time: "", end_time: "", price: "", ticket_url: "", image: "", description: "", age_min: 18,
   }
 
-  const [clubs, setClubs] = useState<Club[]>([])
-  const [clubEvents, setClubEvents] = useState<ClubEvent[]>([])
+  // Admin por ciudad (15/11/2026): el desplegable de locales y la lista solo enseñan los de la ciudad elegida en el menú.
+  const [city, setCity] = useAdminCity()
+  const [allClubs, setClubs] = useState<Club[]>([])
+  const [allClubEvents, setClubEvents] = useState<ClubEvent[]>([])
+  const clubs = useMemo(() => rowsOfCity(allClubs, city), [allClubs, city])
+  const clubEvents = useMemo(
+    () => rowsOfCityByClub(allClubEvents, clubIdsOfCity(allClubs, city), new Set(allClubs.map((c) => c.id)), city),
+    [allClubEvents, allClubs, city]
+  )
   const [newClubEvent, setNewClubEvent] = useState({ ...emptyClubEvent })
   const [editClubEvent, setEditClubEvent] = useState({ ...emptyClubEvent })
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -64,8 +78,8 @@ export default function AdminClubEventsPage() {
   }, [])
 
   const fetchClubs = async () => {
-    const { data } = await supabase.from("clubs").select("id, name").order("name")
-    if (data) setClubs(data)
+    const data = await fetchAllPages<Club>((from, to) => supabase.from("clubs").select("id, name, city, latitude, longitude").order("name").order("id").range(from, to))
+    if (data.length) setClubs(data)
   }
 
   const fetchClubEvents = async () => {
@@ -155,12 +169,16 @@ export default function AdminClubEventsPage() {
   // Llegando desde el botón "Editar" de la ficha pública (?edit=ID).
   const autoEditDone = useRef(false)
   useEffect(() => {
-    if (autoEditDone.current || clubEvents.length === 0) return
+    // Se espera a tener las noches y los locales (la ciudad de una noche sale de su local) y se busca entre todas: el botón «Editar» de
+    // una ficha pública puede ser de la otra ciudad, y entonces se cambia a ella.
+    if (autoEditDone.current || allClubEvents.length === 0 || allClubs.length === 0) return
     const wanted = new URLSearchParams(window.location.search).get("edit")
     autoEditDone.current = true
     if (!wanted) return
-    const found = clubEvents.find((x) => String(x.id) === wanted)
+    const found = allClubEvents.find((x) => String(x.id) === wanted)
     if (!found) return
+    const owner = allClubs.find((c) => c.id === found.club_id)
+    if (owner) setCity(cityOfClub(owner))
     startEditing(found)
     let tries = 0
     const timer = setInterval(() => {
@@ -174,7 +192,23 @@ export default function AdminClubEventsPage() {
       }
     }, 150)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clubEvents])
+  }, [allClubEvents, allClubs])
+
+  // Al cambiar de ciudad se cierra la edición abierta (si esa noche no es de la ciudad nueva) y se limpia el formulario de alta
+  // (su local era de la otra ciudad).
+  const prevCity = useRef(city)
+  useEffect(() => {
+    if (prevCity.current === city) return
+    prevCity.current = city
+    setNewClubEvent({ ...emptyClubEvent })
+    setEditingId((id) => {
+      if (id == null) return id
+      const open = allClubEvents.find((x) => x.id === id)
+      const owner = open ? allClubs.find((c) => c.id === open.club_id) : undefined
+      return owner && cityOfClub(owner) === city ? id : null
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [city])
 
   const cancelEditing = () => { setEditingId(null); setEditClubEvent(emptyClubEvent) }
 

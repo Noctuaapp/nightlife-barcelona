@@ -1,12 +1,15 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { isAdminEmail } from "../../../lib/admin"
 import { toast } from "../../../components/ui/Toast"
 import { MANANEO_HIDDEN } from "../../../lib/featureFlags"
 import { mananeoHoursState, type MananeoPlace } from "../../../lib/mananeo"
+import { useAdminCity } from "../../../components/admin/AdminCity"
+import { rowsOfCity } from "../../../lib/adminCity"
+import { CITIES, cityOfClub } from "../../../lib/cities"
 
 // Mañaneo / resaca (05/11/2026): aquí se añaden y editan los sitios de afterhour que luego salen en el
 // apartado «Mañaneo» de Eventos. Todo nace OCULTO (hidden = true); con MANANEO_HIDDEN en true (lib/featureFlags.ts)
@@ -63,7 +66,12 @@ function parseCoords(raw: string): [number | null, number | null] | null {
 
 export default function AdminMananeoPage() {
   const [checking, setChecking] = useState(true)
-  const [places, setPlaces] = useState<MananeoPlace[]>([])
+  // Admin por ciudad (15/11/2026): solo se ven los sitios de la ciudad elegida en el menú. La tabla no tiene ciudad: la ciudad de un
+  // sitio sale de sus coordenadas (sin coordenadas, Barcelona).
+  const [city] = useAdminCity()
+  const cityName = CITIES[city].name
+  const [allPlaces, setPlaces] = useState<MananeoPlace[]>([])
+  const places = useMemo(() => rowsOfCity(allPlaces, city), [allPlaces, city])
   const [form, setForm] = useState<Form>(EMPTY)
   const [saving, setSaving] = useState(false)
   const [tableMissing, setTableMissing] = useState(false)
@@ -91,6 +99,14 @@ export default function AdminMananeoPage() {
     init()
   }, [load])
 
+  // Al cambiar de ciudad se limpia el formulario (lo que se estaba escribiendo o editando era de la otra ciudad).
+  const prevCity = useRef(city)
+  useEffect(() => {
+    if (prevCity.current === city) return
+    prevCity.current = city
+    setForm(EMPTY)
+  }, [city])
+
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }))
 
   const save = async () => {
@@ -103,6 +119,12 @@ export default function AdminMananeoPage() {
     if (!coords) {
       toast("Las coordenadas se pegan así: 41.3851, 2.1734", 4000)
       return
+    }
+    // Si el sitio no va a caer en la ciudad que estás viendo, se avisa antes de guardar: si no, desaparecería de la lista.
+    const lands = cityOfClub({ latitude: coords[0], longitude: coords[1] })
+    if (lands !== city) {
+      const why = coords[0] === null ? "porque no tiene coordenadas" : "por sus coordenadas"
+      if (!window.confirm(`Estás en ${cityName}, pero este sitio se verá en ${CITIES[lands].name} ${why}.\n\n¿Guardarlo igualmente?`)) return
     }
     const clean = (s: string) => s.trim() || null
     const row = {

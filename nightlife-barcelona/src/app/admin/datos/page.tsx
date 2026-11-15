@@ -6,6 +6,10 @@ import { FilterChip, Panel, SectionTitle, StatTile, TrendRangeContext, type Acce
 import { BarChart3, CalendarCheck, CalendarDays, Car, CheckCircle2, Clock, Eye, Layers, MapPin, Scale, Search, Share2, Smartphone, Ticket, Users, type LucideIcon } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { zoneOf } from "../../../lib/zones"
+import { fetchAllPages } from "../../../lib/fetchAll"
+import { useAdminCity } from "../../../components/admin/AdminCity"
+import { clubCityIndex, cityOfEvent } from "../../../lib/adminCity"
+import { CITIES, cityOfClub, type CityKey } from "../../../lib/cities"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
 import { madridDaysAgo, madridToday, madridYear } from "../../../lib/madridDay"
@@ -125,6 +129,10 @@ export default function AdminDatosPage() {
   const [searches, setSearches] = useState<any[]>([])
   const [audience, setAudience] = useState<any>(null)
   const [clubsMeta, setClubsMeta] = useState<Record<string, any>>({})
+  // Admin por ciudad (15/11/2026): las pestañas Clubs y Eventos enseñan solo lo de la ciudad elegida en el menú. Las demás (Resumen,
+  // Clics, Búsquedas, Audiencia, Esenciales) salen de funciones de Supabase que no separan por ciudad: son de toda la web.
+  const [city] = useAdminCity()
+  const [eventsMeta, setEventsMeta] = useState<Record<string, CityKey>>({})
   const [rideClicks, setRideClicks] = useState<{ provider: string; n: number }[]>([])
   // Esenciales (30/10/2026): se carga aparte para que, si aún no se ha ejecutado el SQL 54, el resto de
   // pestañas sigan funcionando y solo esta avise.
@@ -165,15 +173,17 @@ export default function AdminDatosPage() {
     setLoading(true)
     setError("")
     const range = { p_from: from, p_to: to }
-    const [ov, ci, ei, se, au, clubs, rc, es] = await Promise.all([
+    const [ov, ci, ei, se, au, clubs, rc, es, evMeta] = await Promise.all([
       supabase.rpc("admin_data_overview", range),
       supabase.rpc("admin_data_items", { p_type: "club", ...range }),
       supabase.rpc("admin_data_items", { p_type: "event", ...range }),
       supabase.rpc("admin_data_searches", range),
       supabase.rpc("admin_data_audience", { ...range, p_type: null, p_id: null }),
-      supabase.from("clubs").select("id, name, city, neighborhood, address, venue_type"),
+      // Por páginas: Supabase corta en 1.000 filas y, con Madrid, entre las dos ciudades se pasa de ahí.
+      fetchAllPages((lo, hi) => supabase.from("clubs").select("id, name, city, neighborhood, address, venue_type, latitude, longitude").order("id").range(lo, hi)),
       supabase.rpc("admin_ride_clicks", range),
       supabase.rpc("admin_essentials_stats", range),
+      fetchAllPages((lo, hi) => supabase.from("events").select("id, club_name, latitude, longitude").order("id").range(lo, hi)),
     ])
     if (seq !== loadSeq.current) return
     const firstErr = [ov, ci, ei, se, au].find((r) => r.error)?.error
@@ -195,8 +205,14 @@ export default function AdminDatosPage() {
     setEssError(es.error ? es.error.message : "")
     setEssStats(es.error ? null : es.data)
     const meta: Record<string, any> = {}
-    for (const c of clubs.data || []) meta[String(c.id)] = { ...c, zone: zoneOf(c) }
+    const clubList = (clubs || []) as { id: number; name: string; city: string | null; latitude: number | null; longitude: number | null }[]
+    for (const c of clubList) meta[String(c.id)] = { ...c, zone: zoneOf(c as any) }
     setClubsMeta(meta)
+    // Ciudad de cada evento: por sus coordenadas y, si no las tiene, por el local donde es.
+    const index = clubCityIndex(clubList)
+    const evCities: Record<string, CityKey> = {}
+    for (const e of (evMeta || []) as { id: number; club_name: string | null; latitude: number | null; longitude: number | null }[]) evCities[String(e.id)] = cityOfEvent(e, index)
+    setEventsMeta(evCities)
     setLoading(false)
   }, [from, to])
 
@@ -265,7 +281,8 @@ export default function AdminDatosPage() {
   const clubRows = useMemo(
     () =>
       sortRows(
-        clubItems.map((c) => ({
+        // Solo los clubs de la ciudad elegida (uno sin ficha en la base se queda en Barcelona).
+        clubItems.filter((c) => cityOfClub(clubsMeta[String(c.id)] || {}) === city).map((c) => ({
           ...c,
           zone: clubsMeta[String(c.id)]?.zone || "—",
           venue_type: clubsMeta[String(c.id)]?.venue_type || "—",
@@ -275,13 +292,21 @@ export default function AdminDatosPage() {
         }))
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [clubItems, clubsMeta, sortKey, clubActionIdx, hasActionExtras]
+    [clubItems, clubsMeta, city, sortKey, clubActionIdx, hasActionExtras]
   )
   const eventRows = useMemo(
-    () => sortRows(eventItems.map((e) => ({ ...e, conv: pct(e.tickets, e.views), ...withActions(e, eventActionIdx.get(String(e.id))) }))),
+    () =>
+      sortRows(
+        eventItems
+          .filter((e) => (eventsMeta[String(e.id)] || "barcelona") === city)
+          .map((e) => ({ ...e, conv: pct(e.tickets, e.views), ...withActions(e, eventActionIdx.get(String(e.id))) }))
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [eventItems, sortKey, eventActionIdx, hasActionExtras]
+    [eventItems, eventsMeta, city, sortKey, eventActionIdx, hasActionExtras]
   )
+  // Al cambiar de ciudad se cierra el detalle abierto (era de un club o evento de la otra).
+  useEffect(() => { setSelected(null) }, [city])
+
   const shownRows = (tab === "clubs" ? clubRows : eventRows).filter((r) => !onlyDead || r.dead)
   const deadCount = (tab === "clubs" ? clubRows : eventRows).filter((r) => r.dead).length
 
@@ -308,11 +333,11 @@ export default function AdminDatosPage() {
   }
 
   const exportClubsCsv = () =>
-    downloadCsv(`noctua_clubs_${from}_${to}.csv`,
+    downloadCsv(`noctua_clubs_${city}_${from}_${to}.csv`,
       ["Club", "Zona", "Tipo", "Visitas", "Visitantes", "Clics entradas", "Clics en entradas % (de visitas)", "Como llegar", "Compartir", "Favoritos", "Web/Instagram", "Asistire", "Check-ins", "Cumplimiento %", "Acciones", "Acciones por 100 visitas", "Taxi/VTC", "Llamadas"],
       clubRows.map((c) => [c.name, c.zone, c.venue_type, c.views, c.visitors, c.tickets, c.conv, c.directions, c.shares, c.favorites, c.website, c.attendances, c.checkins, c.fulfil, c.actions, c.apv, c.rides, c.phone]))
   const exportEventsCsv = () =>
-    downloadCsv(`noctua_eventos_${from}_${to}.csv`,
+    downloadCsv(`noctua_eventos_${city}_${from}_${to}.csv`,
       ["Evento", "Visitas", "Visitantes", "Clics entradas", "Clics en entradas % (de visitas)", "Como llegar", "Compartir", "Favoritos", "Asistire", "Acciones", "Acciones por 100 visitas", "Taxi/VTC", "Llamadas"],
       eventRows.map((e) => [e.name, e.views, e.visitors, e.tickets, e.conv, e.directions, e.shares, e.favorites, e.attendances, e.actions, e.apv, e.rides, e.phone]))
   const exportEssCategoriesCsv = () =>
@@ -439,6 +464,11 @@ export default function AdminDatosPage() {
           ))}
         </div>
 
+        {tab !== "clubs" && tab !== "eventos" && (
+          <p className="mb-6 text-xs text-zinc-400">
+            Estas cifras son de toda la web (Barcelona y Madrid juntas): Supabase aún no las separa por ciudad. Las pestañas Clubs y Eventos sí enseñan solo {CITIES[city].name}.
+          </p>
+        )}
         {error && <p className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}
         {loading && tab !== "clics" && <p className="text-sm text-zinc-400">Cargando datos...</p>}
         {/* Clics y tiempo carga lo suyo aparte (SQL 84), así que no espera a las demás pestañas. */}

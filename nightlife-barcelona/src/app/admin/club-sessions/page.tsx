@@ -1,14 +1,20 @@
 "use client"
 
-import { useEffect, useState, type ChangeEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { supabase } from "../../../lib/supabase"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { toast } from "../../../components/ui/Toast"
+import { fetchAllPages } from "../../../lib/fetchAll"
+import { useAdminCity } from "../../../components/admin/AdminCity"
+import { clubIdsOfCity, rowsOfCity, rowsOfCityByClub } from "../../../lib/adminCity"
 
 type Club = {
   id: number
   name: string
+  city?: string | null
+  latitude?: number | string | null
+  longitude?: number | string | null
 }
 
 type ClubSession = {
@@ -38,8 +44,15 @@ const emptyForm = {
 }
 
 export default function AdminClubSessionsPage() {
-  const [clubs, setClubs] = useState<Club[]>([])
-  const [sessions, setSessions] = useState<ClubSession[]>([])
+  // Admin por ciudad (15/11/2026): el desplegable de locales y la lista solo enseñan los de la ciudad elegida en el menú.
+  const [city] = useAdminCity()
+  const [allClubs, setClubs] = useState<Club[]>([])
+  const [allSessions, setSessions] = useState<ClubSession[]>([])
+  const clubs = useMemo(() => rowsOfCity(allClubs, city), [allClubs, city])
+  const sessions = useMemo(
+    () => rowsOfCityByClub(allSessions, clubIdsOfCity(allClubs, city), new Set(allClubs.map((c) => c.id)), city),
+    [allSessions, allClubs, city]
+  )
   const [newSession, setNewSession] = useState(emptyForm)
   const [editSession, setEditSession] = useState(emptyForm)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -65,7 +78,7 @@ export default function AdminClubSessionsPage() {
   }, [])
 
   const fetchClubs = async () => {
-    const { data } = await supabase.from("clubs").select("id, name").order("name")
+    const data = await fetchAllPages<Club>((from, to) => supabase.from("clubs").select("id, name, city, latitude, longitude").order("name").order("id").range(from, to))
     if (data) setClubs(data)
   }
 
@@ -73,6 +86,17 @@ export default function AdminClubSessionsPage() {
     const { data } = await supabase.from("club_sessions").select("*").order("sort_order", { ascending: true })
     if (data) setSessions(data)
   }
+
+  // Al cambiar de ciudad se limpia el filtro por local, el formulario de alta y la edición abierta (eran de un local de la otra ciudad).
+  const prevCity = useRef(city)
+  useEffect(() => {
+    if (prevCity.current === city) return
+    prevCity.current = city
+    setFilterClub("")
+    setNewSession(emptyForm)
+    setEditSession(emptyForm)
+    setEditingId(null)
+  }, [city])
 
   const clubName = (id: number | string) => clubs.find((c) => c.id === Number(id))?.name || ""
 

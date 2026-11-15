@@ -7,6 +7,9 @@ import { supabase } from "../../../lib/supabase"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { createSlug } from "../../../lib/slug"
 import { activeFeatureCount } from "../../../components/nightlife/club/ClubFeatures"
+import { selectAllPages } from "../../../lib/fetchAll"
+import { useAdminCity } from "../../../components/admin/AdminCity"
+import { rowsOfCity } from "../../../lib/adminCity"
 
 // Calidad de las fichas de clubs. La auditoría de octubre 2026 detectó que lo que más resta
 // credibilidad (y lo que más frena la indexación en Google) son fichas con datos por defecto o
@@ -67,7 +70,11 @@ function looksEnglish(text: string): boolean {
 
 export default function AdminQualityPage() {
   const [checkingAdmin, setCheckingAdmin] = useState(true)
-  const [clubs, setClubs] = useState<Club[]>([])
+  // Admin por ciudad (15/11/2026): se puntúan solo las fichas de la ciudad elegida en el menú (y los valores «repetidos» de precio
+  // y horario se calculan dentro de ella).
+  const [city] = useAdminCity()
+  const [allClubs, setClubs] = useState<Club[]>([])
+  const clubs = useMemo(() => rowsOfCity(allClubs, city), [allClubs, city])
   const [loading, setLoading] = useState(true)
   const [onlyVisible, setOnlyVisible] = useState(true)
   const [filter, setFilter] = useState<string>("")
@@ -88,13 +95,11 @@ export default function AdminQualityPage() {
     if (checkingAdmin) return
     // Se piden todas las columnas: para el % de completa hacen falta la galería, las redes y las
     // características, y así tampoco se rompe si alguna columna cambia de nombre.
-    supabase
-      .from("clubs")
-      .select("*")
-      .then(({ data }) => {
-        setClubs((data || []) as Club[])
-        setLoading(false)
-      })
+    // Por páginas: Supabase corta en 1.000 filas y, con Madrid, entre las dos ciudades se pasa de ahí.
+    selectAllPages<Club>((from, to) => supabase.from("clubs").select("*").order("id").range(from, to)).then(({ data }) => {
+      setClubs(data || [])
+      setLoading(false)
+    })
   }, [checkingAdmin])
 
   // Valores que comparten muchas fichas: casi seguro que son de relleno, no datos reales.

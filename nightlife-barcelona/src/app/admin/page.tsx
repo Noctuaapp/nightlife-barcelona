@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 import { EXTRA_FEATURES, CLOSED_FIELD, extrasFromRow } from "../../lib/extraFeatures"
@@ -15,6 +15,10 @@ import { touchCache, clubPaths } from "../../lib/touchCache"
 import { createSlug } from "../../lib/slug"
 import { DRESS_CODES } from "../../lib/dressCode"
 import ClubHoursEditor from "../../components/admin/ClubHoursEditor"
+import { useAdminCity } from "../../components/admin/AdminCity"
+import { rowsOfCity, cityNameForNewRow } from "../../lib/adminCity"
+import { selectAllPages } from "../../lib/fetchAll"
+import { CITIES, cityOfClub } from "../../lib/cities"
 
 type Club = {
   id: number
@@ -55,6 +59,7 @@ type Club = {
   latitude?: number | null
   longitude?: number | null
   description?: string | null
+  city?: string | null
 }
 
 // Antes este desplegable no existía en ningún sitio del panel de admin: la página de Clubs se
@@ -256,8 +261,20 @@ const clubToForm = (club: Club): ClubFormData => ({
   description: club.description || "",
 })
 
+// Supabase devuelve como mucho 1.000 filas por consulta y, con Madrid, entre las dos ciudades se pasa de ahí: se pide página a página
+// (ordenado por nombre y por id, para que las páginas no se pisen ni se repitan).
+async function fetchAllClubs(): Promise<Club[] | null> {
+  const res = await selectAllPages<Club>((from, to) => supabase.from("clubs").select("*").order("name").order("id").range(from, to))
+  return res.data
+}
+
 export default function AdminPage() {
-  const [clubs, setClubs] = useState<Club[]>([])
+  // Admin por ciudad (15/11/2026): `allClubs` es todo lo que hay en la base y `clubs` solo los de la ciudad elegida arriba en el
+  // menú. Todo lo de esta pantalla (lista, contadores, «Mostrar/Ocultar todos», etiquetas en bloque) trabaja con `clubs`.
+  const [city, setCity] = useAdminCity()
+  const [allClubs, setClubs] = useState<Club[]>([])
+  const clubs = useMemo(() => rowsOfCity(allClubs, city), [allClubs, city])
+  const cityName = CITIES[city].name
   const [loading, setLoading] = useState(true)
   const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [search, setSearch] = useState("")
@@ -292,7 +309,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     const fetchClubs = async () => {
-      const { data } = await supabase.from("clubs").select("*").order("name")
+      const data = await fetchAllClubs()
       if (data) setClubs(data)
       setLoading(false)
     }
@@ -331,20 +348,33 @@ export default function AdminPage() {
   // querer escondía (o publicaba) todos los clubs de golpe. Ahora: ocultar todo pide escribir OCULTAR, y
   // mostrar todo avisa de lo que se publicaría sin revisar.
   const confirmHideAll = () =>
-    (window.prompt(`Vas a OCULTAR todos los clubs de la web (${clubs.length}). Nadie podrá verlos hasta que los vuelvas a mostrar.\n\nEscribe OCULTAR para confirmar.`) || "").trim().toUpperCase() === "OCULTAR"
+    (window.prompt(`Vas a OCULTAR todos los clubs de ${cityName} (${clubs.length}). Nadie podrá verlos hasta que los vuelvas a mostrar.\n\nEscribe OCULTAR para confirmar.`) || "").trim().toUpperCase() === "OCULTAR"
   const confirmShowAll = () =>
-    window.confirm(`Vas a PUBLICAR todos los clubs (${clubs.length}), también los que están ocultos a propósito. Por ejemplo, los locales importados de OpenStreetMap que entran ocultos para revisarlos antes.\n\n¿Seguro?`)
+    window.confirm(`Vas a PUBLICAR todos los clubs de ${cityName} (${clubs.length}), también los que están ocultos a propósito. Por ejemplo, los locales importados de OpenStreetMap que entran ocultos para revisarlos antes.\n\n¿Seguro?`)
   const showAll = async () => {
     if (!confirmShowAll()) return
-    await supabase.from("clubs").update({ hidden: false }).neq("id", 0)
-    setClubs((prev) => prev.map((c) => ({ ...c, hidden: false })))
-    touchCache(clubPaths())
+    await setHiddenForCity(false)
   }
 
   const hideAll = async () => {
     if (!confirmHideAll()) return
-    await supabase.from("clubs").update({ hidden: true }).neq("id", 0)
-    setClubs((prev) => prev.map((c) => ({ ...c, hidden: true })))
+    await setHiddenForCity(true)
+  }
+
+  // Solo toca los clubs de la ciudad elegida (antes tocaba todos los de la base, y con Madrid dentro eso afectaría a las dos ciudades).
+  const setHiddenForCity = async (hidden: boolean) => {
+    const ids = clubs.map((c) => c.id)
+    for (let i = 0; i < ids.length; i += 200) {
+      const { error } = await supabase.from("clubs").update({ hidden }).in("id", ids.slice(i, i + 200))
+      if (error) {
+        toast("No se pudo cambiar: " + error.message, 6000)
+        const fresh = await fetchAllClubs()
+        if (fresh) setClubs(fresh)
+        return
+      }
+    }
+    const idSet = new Set(ids)
+    setClubs((prev) => prev.map((c) => (idSet.has(c.id) ? { ...c, hidden } : c)))
     touchCache(clubPaths())
   }
 
@@ -400,7 +430,7 @@ export default function AdminPage() {
     const twin = clubs.find((c) => norm && normalizeVenueName(c.name) === norm)
     if (twin && !confirm(`Ya existe "${twin.name}"${twin.hidden ? " (oculto)" : ""}. ¿Seguro que quieres crear otro local con ese nombre?`)) return
     setSaving(true)
-    const { data, error } = await supabase.from("clubs").insert([formToPayload(newClub)]).select()
+    const { data, error } = await supabase.from("clubs").insert([{ ...formToPayload(newClub), ...cityNameForNewRow(city) }]).select()
     setSaving(false)
     if (error) {
       toast("Error al añadir el club: " + error.message)
@@ -504,12 +534,14 @@ export default function AdminPage() {
   // modo edición y baja hasta él.
   const autoEditDone = useRef(false)
   useEffect(() => {
-    if (autoEditDone.current || clubs.length === 0) return
+    if (autoEditDone.current || allClubs.length === 0) return
     const wanted = new URLSearchParams(window.location.search).get("edit")
     if (!wanted) { autoEditDone.current = true; return }
-    const club = clubs.find((c) => String(c.id) === wanted)
+    // Se busca entre todos los clubs: el botón «Editar» de una ficha pública puede ser de la otra ciudad, y entonces se cambia a ella.
+    const club = allClubs.find((c) => String(c.id) === wanted)
     autoEditDone.current = true
     if (!club) return
+    setCity(cityOfClub(club))
     startEdit(club)
     let tries = 0
     const timer = setInterval(() => {
@@ -523,7 +555,24 @@ export default function AdminPage() {
       }
     }, 150)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clubs])
+  }, [allClubs])
+
+  // Al cambiar de ciudad se cierra el formulario de «Añadir» (el club nuevo se habría creado en la ciudad equivocada), se limpia el
+  // filtro y se cierra la edición abierta si ese club no es de la ciudad nueva.
+  const prevCity = useRef(city)
+  useEffect(() => {
+    if (prevCity.current === city) return
+    prevCity.current = city
+    setShowAddForm(false)
+    setNewClub(emptyForm)
+    setFilter("all")
+    setEditingId((id) => {
+      if (id == null) return id
+      const open = allClubs.find((c) => c.id === id)
+      return open && cityOfClub(open) === city ? id : null
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [city])
 
   const cancelEdit = () => {
     setEditingId(null)
@@ -599,7 +648,7 @@ export default function AdminPage() {
     if (failed) {
       toast("No se pudo aplicar: " + failed, 6000)
       // Lo que sí llegó a cambiar se ve al recargar; se refresca la lista para no enseñar datos falsos.
-      const { data } = await supabase.from("clubs").select("*").order("name")
+      const data = await fetchAllClubs()
       if (data) setClubs(data)
       return
     }

@@ -12,7 +12,8 @@ import { coordsPayload, coordToInput, googleMapsUrl, parseCoords } from "../../.
 import { touchCache, essentialPaths } from "../../../lib/touchCache"
 import { ESSENTIAL_CATEGORIES, categoryInfo, essentialSlugLabelEs } from "../../../lib/essentialCategories"
 import { isVerificationCurrent } from "../../../lib/availability"
-import { CITIES, cityOfClub, type CityKey } from "../../../lib/cities"
+import { CITIES, cityOfClub } from "../../../lib/cities"
+import { useAdminCity } from "../../../components/admin/AdminCity"
 import { prepareImageForUpload, uploadFileName } from "../../../lib/compressImage"
 
 // Rediseño (2/11/2026): esta pantalla era la más pobre del admin. Con miles de esenciales (las
@@ -177,9 +178,11 @@ export default function AdminEssentialsPage() {
 
   const [search, setSearch] = useState("")
   const [category, setCategory] = useState("all")
-  // Ciudad (14/11/2026): Barcelona y Madrid comparten tabla; la ciudad de cada esencial sale de sus coordenadas. Con una ciudad
-  // elegida, los contadores, la lista y «Publicar / Ocultar los filtrados» solo cuentan los suyos.
-  const [cityFilter, setCityFilter] = useState<"all" | CityKey>("all")
+  // Ciudad (14/11/2026): Barcelona y Madrid comparten tabla; la ciudad de cada esencial sale de sus coordenadas. Desde el 15/11/2026 la
+  // ciudad es la del selector del menú del admin (antes había un filtro propio aquí): los contadores, la lista y «Publicar / Ocultar los
+  // filtrados» solo cuentan los esenciales de esa ciudad.
+  const [city, setCity] = useAdminCity()
+  const cityName = CITIES[city].name
   const [status, setStatus] = useState<StatusKey>("all")
   const [sort, setSort] = useState<SortKey>("category")
   const [limit, setLimit] = useState(PAGE_SIZE)
@@ -220,15 +223,10 @@ export default function AdminEssentialsPage() {
   useEffect(() => {
     setLimit(PAGE_SIZE)
     setFocusId(null)
-  }, [search, category, status, sort, cityFilter])
+  }, [search, category, status, sort, city])
 
   // ---------- Datos derivados (búsqueda, filtros y contadores) ----------
-  const scoped = useMemo(() => (cityFilter === "all" ? essentials : essentials.filter((e) => cityOfClub(e) === cityFilter)), [essentials, cityFilter])
-  const cityCounts = useMemo(() => {
-    const c: Record<CityKey, number> = { barcelona: 0, madrid: 0 }
-    for (const e of essentials) c[cityOfClub(e)]++
-    return c
-  }, [essentials])
+  const scoped = useMemo(() => essentials.filter((e) => cityOfClub(e) === city), [essentials, city])
   const rows = useMemo(
     () =>
       scoped.map((e) => ({
@@ -276,8 +274,8 @@ export default function AdminEssentialsPage() {
 
   const extraCategories = useMemo(() => [...new Set(scoped.map((e) => e.category).filter((c) => c && !categories.includes(c)))].sort(), [scoped])
 
-  const isFiltered = !!search.trim() || category !== "all" || status !== "all" || cityFilter !== "all"
-  const clearFilters = () => { setSearch(""); setCategory("all"); setStatus("all"); setCityFilter("all") }
+  const isFiltered = !!search.trim() || category !== "all" || status !== "all"
+  const clearFilters = () => { setSearch(""); setCategory("all"); setStatus("all") }
 
   // ---------- Fotos ----------
   // Sube la foto (reducida y enderezada como las de los clubs, lib/compressImage) al bucket
@@ -375,6 +373,16 @@ export default function AdminEssentialsPage() {
       toast("Pon al menos el nombre y la categoría", 4000)
       return
     }
+    // Si el esencial no va a caer en la ciudad que estás viendo (sus coordenadas mandan; sin ellas, Barcelona), se avisa antes de crearlo:
+    // si no, desaparecería de la lista y parecería que no se ha guardado.
+    const lands = cityOfClub({
+      latitude: newEssential.latitude.trim() ? newEssential.latitude : null,
+      longitude: newEssential.longitude.trim() ? newEssential.longitude : null,
+    })
+    if (lands !== city) {
+      const why = newEssential.latitude.trim() && newEssential.longitude.trim() ? "por sus coordenadas" : "porque no tiene coordenadas"
+      if (!window.confirm(`Estás en ${cityName}, pero este esencial se verá en ${CITIES[lands].name} ${why}.\n\n¿Crearlo igualmente?`)) return
+    }
     setSaving(true)
     const { data, error } = await supabase.from("essentials").insert(formToPayload(newEssential)).select().single()
     setSaving(false)
@@ -413,11 +421,29 @@ export default function AdminEssentialsPage() {
     if (!wanted) return
     const found = essentials.find((x) => String(x.id) === wanted)
     if (!found) return
+    // El botón «Editar» de una ficha pública puede ser de la otra ciudad: se cambia a ella para que se vea.
+    setCity(cityOfClub(found))
     startEditing(found)
     setFocusId(found.id)
     scrollToItem(found.id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [essentials])
+
+  // Al cambiar de ciudad se cierra el formulario de alta (el esencial se habría creado para la ciudad equivocada) y la edición abierta
+  // si ese esencial no es de la ciudad nueva.
+  const prevCity = useRef(city)
+  useEffect(() => {
+    if (prevCity.current === city) return
+    prevCity.current = city
+    setShowAddForm(false)
+    setNewEssential(emptyForm)
+    setEditingId((id) => {
+      if (id == null) return id
+      const open = essentials.find((x) => x.id === id)
+      return open && cityOfClub(open) === city ? id : null
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [city])
 
   const saveEditing = async (id: number) => {
     if (!editEssential.name.trim() || !editEssential.category) {
@@ -476,7 +502,7 @@ export default function AdminEssentialsPage() {
     if (category !== "all") parts.push(categoryPlural(category))
     if (status !== "all") parts.push(STATUS_LABEL[status].toLowerCase())
     if (search.trim()) parts.push(`búsqueda «${search.trim()}»`)
-    return parts.length ? parts.join(" · ") : "toda la web"
+    return parts.length ? parts.join(" · ") : `todos los de ${cityName}`
   }
 
   const bulkSetHidden = async (hidden: boolean) => {
@@ -818,10 +844,6 @@ export default function AdminEssentialsPage() {
             aria-label="Buscar esenciales"
             className="flex-1 rounded-card border border-white/10 bg-surface px-5 py-4 outline-none transition focus:border-brand/60"
           />
-          <select value={cityFilter} onChange={(e) => setCityFilter(e.target.value as "all" | CityKey)} aria-label="Filtrar por ciudad" style={{ colorScheme: "dark" }} className={`${selectClass} lg:w-52`}>
-            <option value="all">Todas las ciudades ({essentials.length})</option>
-            {(Object.keys(CITIES) as CityKey[]).map((k) => <option key={k} value={k}>{CITIES[k].name} ({cityCounts[k]})</option>)}
-          </select>
           <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Filtrar por categoría" style={{ colorScheme: "dark" }} className={`${selectClass} lg:w-60`}>
             <option value="all">Todas las categorías ({[...catCounts.values()].reduce((a, b) => a + b, 0)})</option>
             {categories.map((c) => <option key={c} value={c}>{categoryPlural(c)} ({catCounts.get(c) || 0})</option>)}

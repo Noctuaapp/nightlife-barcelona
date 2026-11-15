@@ -46,7 +46,7 @@ export default async function HomeView({ city }: { city: CityKey }) {
     fetchVisibleClubs(HOME_CLUB_FIELDS, city),
     countUpcomingEvents(city),
     countEssentials(city),
-    city === "barcelona" ? getActivePicks() : Promise.resolve(null), // las recomendaciones de Noctua son de Barcelona
+    getActivePicks(city), // cada ciudad tiene su propio Top 3 de Noctua
   ])
 
   return <HomeClient initialClubs={clubs} eventsCount={eventsCount} essentialsCount={essentialsCount} picks={picks} />

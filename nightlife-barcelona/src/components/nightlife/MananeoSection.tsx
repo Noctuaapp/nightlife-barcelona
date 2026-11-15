@@ -8,6 +8,7 @@ import { supabase } from "../../lib/supabase"
 import { FALLBACK_IMAGE } from "../../lib/fallbackImage"
 import { mananeoDirectionsUrl, mananeoHoursState, mananeoVisible, type MananeoPlace } from "../../lib/mananeo"
 import { socialUrl } from "./club/SocialLinks"
+import { cityOfClub } from "../../lib/cities"
 
 // Apartado «Mañaneo» de Eventos (05/11/2026): sitios de afterhour para seguir cuando sale el sol. Los añade
 // el admin en Admin › Mañaneo. Con MANANEO_HIDDEN (lib/featureFlags.ts) en true solo lo ve el admin, con un aviso;
@@ -26,7 +27,8 @@ export default function MananeoSection() {
       .select("*")
       .order("name")
       .then(({ data }) => {
-        if (alive) setPlaces((data || []) as MananeoPlace[])
+        // Esta página de Eventos es la de Barcelona: los sitios de Madrid (por sus coordenadas) no entran aquí.
+        if (alive) setPlaces(((data || []) as MananeoPlace[]).filter((p) => cityOfClub(p) === "barcelona"))
       })
     return () => {
       alive = false

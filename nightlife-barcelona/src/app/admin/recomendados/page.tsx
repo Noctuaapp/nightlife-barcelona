@@ -7,14 +7,18 @@ import { isAdminEmail } from "../../../lib/admin"
 import { touchCache } from "../../../lib/touchCache"
 import { nightDate, weekRange, type PickPeriod } from "../../../lib/picks"
 import { toast } from "../../../components/ui/Toast"
+import { selectAllPages } from "../../../lib/fetchAll"
+import { useAdminCity } from "../../../components/admin/AdminCity"
+import { rowsOfCity } from "../../../lib/adminCity"
 
 // Top 3 de Noctua (25/10/2026): "un top 3 de clubs recomendados por Noctua, por noche o semana,
 // que solo aparezca cuando pongamos alguno". Lo que se guarda aquí sale en la portada mientras
 // dure esa noche o esa semana; si no hay nada puesto, la portada no enseña el bloque.
 
-type ClubOption = { id: number; name: string; neighborhood: string | null }
+type Place = { city: string | null; latitude: number | null; longitude: number | null }
+type ClubOption = { id: number; name: string; neighborhood: string | null } & Place
 type Slot = { text: string; note: string }
-type Saved = { id: number; rank: number; period: PickPeriod; starts_on: string; ends_on: string; note: string | null; club: { name: string } | null }
+type Saved = { id: number; rank: number; period: PickPeriod; starts_on: string; ends_on: string; note: string | null; club: ({ name: string } & Place) | null }
 
 const EMPTY_SLOTS: Slot[] = [{ text: "", note: "" }, { text: "", note: "" }, { text: "", note: "" }]
 
@@ -28,11 +32,20 @@ function rangeFor(period: PickPeriod, date: string): { start: string; end: strin
 
 export default function AdminPicksPage() {
   const [checking, setChecking] = useState(true)
-  const [clubs, setClubs] = useState<ClubOption[]>([])
+  // Admin por ciudad (15/11/2026): cada ciudad tiene su propio Top 3 (la ciudad de un recomendado es la de su club). Solo se pueden
+  // elegir locales de la ciudad que estás viendo, y guardar o quitar un Top 3 no toca el de la otra ciudad.
+  const [city] = useAdminCity()
+  const [allClubs, setClubs] = useState<ClubOption[]>([])
+  const clubs = useMemo(() => rowsOfCity(allClubs, city), [allClubs, city])
   const [period, setPeriod] = useState<PickPeriod>("night")
   const [date, setDate] = useState(nightDate())
   const [slots, setSlots] = useState<Slot[]>(EMPTY_SLOTS)
-  const [saved, setSaved] = useState<Saved[]>([])
+  const [allSaved, setAllSaved] = useState<Saved[]>([])
+  // Solo los Top 3 de la ciudad elegida (una fila sin club se queda en Barcelona).
+  const saved = useMemo(
+    () => allSaved.filter((s) => (s.club ? rowsOfCity([s.club], city).length > 0 : city === "barcelona")),
+    [allSaved, city]
+  )
   const [saving, setSaving] = useState(false)
   const [tableMissing, setTableMissing] = useState(false)
 
@@ -47,8 +60,10 @@ export default function AdminPicksPage() {
         window.location.href = "/"
         return
       }
-      const { data: list } = await supabase.from("clubs").select("id, name, neighborhood").eq("hidden", false).order("name")
-      setClubs((list || []) as ClubOption[])
+      const res = await selectAllPages((from, to) =>
+        supabase.from("clubs").select("id, name, neighborhood, city, latitude, longitude").eq("hidden", false).order("name").order("id").range(from, to)
+      )
+      setClubs((res.data || []) as unknown as ClubOption[])
       setChecking(false)
     }
     init()
@@ -57,7 +72,7 @@ export default function AdminPicksPage() {
   const loadSaved = useCallback(async () => {
     const { data, error } = await supabase
       .from("noctua_picks")
-      .select("id, rank, period, starts_on, ends_on, note, club:clubs(name)")
+      .select("id, rank, period, starts_on, ends_on, note, club:clubs(name, city, latitude, longitude)")
       .gte("ends_on", nightDate())
       .order("starts_on")
       .order("period")
@@ -66,7 +81,7 @@ export default function AdminPicksPage() {
       setTableMissing(true)
       return
     }
-    setSaved((data || []) as unknown as Saved[])
+    setAllSaved((data || []) as unknown as Saved[])
   }, [])
 
   useEffect(() => {
@@ -109,7 +124,20 @@ export default function AdminPicksPage() {
       rows.push({ club_id: club.id, rank: i + 1, note: slots[i].note.trim() || null })
     }
     setSaving(true)
-    const { error: delErr } = await supabase.from("noctua_picks").delete().eq("period", period).eq("starts_on", range.start)
+    // Se borra solo lo que ya había de ESTA ciudad para esa noche o semana (el Top 3 de la otra ciudad se queda como está).
+    const { data: existing, error: findErr } = await supabase
+      .from("noctua_picks")
+      .select("id, club:clubs(city, latitude, longitude)")
+      .eq("period", period)
+      .eq("starts_on", range.start)
+    const oldIds = ((existing || []) as unknown as { id: number; club: Place | null }[])
+      .filter((r) => (r.club ? rowsOfCity([r.club], city).length > 0 : city === "barcelona"))
+      .map((r) => r.id)
+    const { error: delErr } = findErr
+      ? { error: findErr }
+      : oldIds.length > 0
+        ? await supabase.from("noctua_picks").delete().in("id", oldIds)
+        : { error: null }
     if (delErr) {
       setSaving(false)
       toast("No se pudo guardar: " + delErr.message, 5000)
@@ -131,8 +159,9 @@ export default function AdminPicksPage() {
     loadSaved()
   }
 
-  const removeGroup = async (g: { period: PickPeriod; starts_on: string }) => {
-    const { error } = await supabase.from("noctua_picks").delete().eq("period", g.period).eq("starts_on", g.starts_on)
+  const removeGroup = async (g: { period: PickPeriod; starts_on: string; items: Saved[] }) => {
+    // Por id: solo los puestos de este Top 3 (los de la otra ciudad, para la misma noche, no se tocan).
+    const { error } = await supabase.from("noctua_picks").delete().in("id", g.items.map((i) => i.id))
     if (error) {
       toast("No se pudo borrar: " + error.message, 5000)
       return

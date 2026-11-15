@@ -1,4 +1,5 @@
 import { supabase } from "./supabase"
+import { cityOfClub, type CityKey } from "./cities"
 
 // Top 3 de Noctua (25/10/2026): hasta tres clubs que recomendáis vosotros para una noche o una
 // semana. Ver supabase/33_top3_recomendados.sql y /admin/recomendados.
@@ -34,20 +35,24 @@ export function weekRange(dateStr: string): { start: string; end: string } {
   return { start: iso(start), end: iso(end) }
 }
 
-type Row = { rank: number; note: string | null; period: PickPeriod; club: (PickClub & { hidden?: boolean }) | null }
+type ClubRow = PickClub & { hidden?: boolean; city?: string | null; latitude?: number | string | null; longitude?: number | string | null }
+type Row = { rank: number; note: string | null; period: PickPeriod; club: ClubRow | null }
 
 // Los recomendados que tocan ahora: los de esta noche si hay; si no, los de la semana. null si no
 // hay ninguno (la portada entonces no enseña nada) o si la tabla aún no existe.
-export async function getActivePicks(): Promise<ActivePicks | null> {
+//
+// Por ciudad (15/11/2026): cada ciudad tiene su propio Top 3, y la ciudad de un recomendado es la de su club (cityOfClub). Antes
+// no se miraba, así que un Top 3 de Madrid se habría colado en la portada de Barcelona. Barcelona por defecto: lo de siempre.
+export async function getActivePicks(city: CityKey = "barcelona"): Promise<ActivePicks | null> {
   const today = nightDate()
   const { data, error } = await supabase
     .from("noctua_picks")
-    .select("rank, note, period, club:clubs(id, name, slug, image, neighborhood, music, hidden)")
+    .select("rank, note, period, club:clubs(id, name, slug, image, neighborhood, music, hidden, city, latitude, longitude)")
     .lte("starts_on", today)
     .gte("ends_on", today)
     .order("rank", { ascending: true })
   if (error || !data) return null
-  const rows = (data as unknown as Row[]).filter((r) => r.club && !r.club.hidden)
+  const rows = (data as unknown as Row[]).filter((r) => r.club && !r.club.hidden && cityOfClub(r.club) === city)
   for (const period of ["night", "week"] as const) {
     const list = rows.filter((r) => r.period === period)
     if (list.length > 0) {
@@ -57,8 +62,11 @@ export async function getActivePicks(): Promise<ActivePicks | null> {
       for (const r of list) {
         if (seen.has(r.rank) || picks.length >= 3) continue
         seen.add(r.rank)
-        const { hidden: _hidden, ...club } = r.club!
+        const { hidden: _hidden, city: _city, latitude: _lat, longitude: _lng, ...club } = r.club!
         void _hidden
+        void _city
+        void _lat
+        void _lng
         picks.push({ rank: r.rank, note: r.note, club })
       }
       return { period, picks }

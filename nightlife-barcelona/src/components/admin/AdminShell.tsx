@@ -5,11 +5,12 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, BarChart3, BadgeCheck, Headphones, Users, Vote,
-  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, History, Bell, Footprints, TrendingUp, Inbox, Lightbulb, Moon, Sunrise, type LucideIcon,
+  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, History, Bell, Footprints, TrendingUp, Inbox, Lightbulb, Moon, Sunrise, MapPin, type LucideIcon,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
 import { ACCENT, AccentContext, type Accent } from "./ui"
+import { AdminCityBadge, AdminCitySwitch } from "./AdminCity"
 
 // Rediseño del admin (24/10/2026, tras el análisis completo del panel). Antes: 13 pestañas en una
 // sola fila horizontal que había que deslizar, sin orden, con dos pantallas que existían pero no
@@ -25,7 +26,9 @@ import { ACCENT, AccentContext, type Accent } from "./ui"
 //   - (06/11/2026) Mismo diseño que el Resumen en todo el admin: cada sección del menú tiene su acento
 //     (General violeta, Contenido rosa, Comunidad cian, Datos coral), el icono de la pantalla activa se
 //     tiñe de ese color y la cabecera de cada pantalla lleva su icono y un brillo suave del acento.
-type NavItem = { href: string; label: string; icon: LucideIcon; badge?: "messages" | "reports" | "notices" | "owners" }
+//   - (15/11/2026) Ciudad: selector Barcelona | Madrid arriba del menú. Los apartados marcados con `city` enseñan y gestionan
+//     solo la ciudad elegida (se marcan con un pin en el menú y con la ciudad en la cabecera); el resto es común.
+type NavItem = { href: string; label: string; icon: LucideIcon; badge?: "messages" | "reports" | "notices" | "owners"; city?: boolean }
 type NavGroup = { label: string; accent: Accent; items: NavItem[] }
 
 const ADMIN_NAV: NavGroup[] = [
@@ -43,14 +46,14 @@ const ADMIN_NAV: NavGroup[] = [
     label: "Contenido",
     accent: "pink",
     items: [
-      { href: "/admin", label: "Clubs", icon: SECTION_ICONS.clubs },
-      { href: "/admin/club-sessions", label: "Sesiones semanales", icon: Repeat },
-      { href: "/admin/club-events", label: "Noches de club", icon: Headphones },
-      { href: "/admin/calidad", label: "Calidad de fichas", icon: BadgeCheck },
-      { href: "/admin/recomendados", label: "Top 3 de Noctua", icon: Trophy },
-      { href: "/admin/events", label: "Eventos y festivales", icon: SECTION_ICONS.events },
-      { href: "/admin/mananeo", label: "Mañaneo", icon: Sunrise },
-      { href: "/admin/essentials", label: "Esenciales", icon: SECTION_ICONS.essentials },
+      { href: "/admin", label: "Clubs", icon: SECTION_ICONS.clubs, city: true },
+      { href: "/admin/club-sessions", label: "Sesiones semanales", icon: Repeat, city: true },
+      { href: "/admin/club-events", label: "Noches de club", icon: Headphones, city: true },
+      { href: "/admin/calidad", label: "Calidad de fichas", icon: BadgeCheck, city: true },
+      { href: "/admin/recomendados", label: "Top 3 de Noctua", icon: Trophy, city: true },
+      { href: "/admin/events", label: "Eventos y festivales", icon: SECTION_ICONS.events, city: true },
+      { href: "/admin/mananeo", label: "Mañaneo", icon: Sunrise, city: true },
+      { href: "/admin/essentials", label: "Esenciales", icon: SECTION_ICONS.essentials, city: true },
       { href: "/admin/sugerencias", label: "Sugerencias de esenciales", icon: Lightbulb },
     ],
   },
@@ -78,14 +81,14 @@ const ADMIN_NAV: NavGroup[] = [
       { href: "/admin/retencion", label: "Retención", icon: TrendingUp },
       { href: "/admin/afluencia", label: "Cuándo sale la gente", icon: Moon },
       { href: "/admin/encuestas", label: "Encuestas", icon: Vote },
-      { href: "/admin/datos", label: "Datos de negocio", icon: BarChart3 },
+      { href: "/admin/datos", label: "Datos de negocio", icon: BarChart3, city: true },
     ],
   },
   {
     label: "Sistema",
     accent: "violet",
     items: [
-      { href: "/admin/herramientas", label: "Ajustes y herramientas", icon: Wrench },
+      { href: "/admin/herramientas", label: "Ajustes y herramientas", icon: Wrench, city: true },
       { href: "/admin/cambios", label: "Registro de cambios", icon: History },
     ],
   },
@@ -150,6 +153,12 @@ function NavList({ pathname, badges, onNavigate }: { pathname: string; badges: B
                         <Icon size={14} aria-hidden="true" />
                       </span>
                       <span className="flex-1">{item.label}</span>
+                      {item.city && (
+                        <>
+                          <MapPin size={12} aria-hidden="true" className="shrink-0 text-zinc-500" />
+                          <span className="sr-only"> (cambia con la ciudad)</span>
+                        </>
+                      )}
                       {count > 0 && (
                         <span className="min-w-[22px] rounded-full bg-warn px-1.5 py-0.5 text-center text-[11px] font-bold leading-none text-night tabular-nums">
                           {count > 99 ? "99+" : count}
@@ -215,8 +224,8 @@ export default function AdminShell({
   // Sección y icono de la pantalla actual (para el acento y la cabecera). Pantallas que no salen en el
   // menú (p. ej. /admin/analytics) usan el acento del Resumen.
   const current = (() => {
-    for (const g of ADMIN_NAV) for (const item of g.items) if (item.href === pathname) return { accent: g.accent, icon: item.icon }
-    return { accent: "violet" as Accent, icon: LayoutDashboard }
+    for (const g of ADMIN_NAV) for (const item of g.items) if (item.href === pathname) return { accent: g.accent, icon: item.icon, city: !!item.city }
+    return { accent: "violet" as Accent, icon: LayoutDashboard, city: false }
   })()
   const CurrentIcon = current.icon
   const accentStyle = ACCENT[current.accent]
@@ -237,7 +246,10 @@ export default function AdminShell({
       <aside className="hidden lg:block">
         <div className="sticky top-0 flex h-screen flex-col border-r border-white/[0.06] px-3 py-5">
           <div className="px-3">{brand}</div>
-          <div className="mt-8 flex-1 overflow-y-auto pb-6">
+          <div className="mt-6 px-1">
+            <AdminCitySwitch />
+          </div>
+          <div className="mt-6 flex-1 overflow-y-auto pb-6">
             <NavList pathname={pathname} badges={badges} />
           </div>
           <Link
@@ -292,7 +304,10 @@ export default function AdminShell({
                   <X size={20} />
                 </button>
               </div>
-              <div className="mt-6 flex-1 overflow-y-auto pb-4">
+              <div className="mt-5 px-1">
+                <AdminCitySwitch />
+              </div>
+              <div className="mt-5 flex-1 overflow-y-auto pb-4">
                 <NavList pathname={pathname} badges={badges} onNavigate={() => setMenuOpen(false)} />
               </div>
               <Link href="/" className="flex items-center gap-2 rounded-ctl px-3 py-2 text-sm font-semibold text-zinc-400 hover:text-ink">
@@ -313,6 +328,11 @@ export default function AdminShell({
                 <div>
                   <h1 className="font-display text-3xl tracking-tight md:text-4xl">{title}</h1>
                   {subtitle && <p className="mt-2 max-w-2xl text-sm text-zinc-400">{subtitle}</p>}
+                  {current.city && (
+                    <div className="mt-3">
+                      <AdminCityBadge />
+                    </div>
+                  )}
                 </div>
               </div>
               {actions && <div className="flex flex-wrap gap-2">{actions}</div>}

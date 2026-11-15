@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { DataExport, SystemStatus } from "../../../components/admin/SystemStatus"
 import { supabase } from "../../../lib/supabase"
@@ -8,6 +8,9 @@ import { ADMIN_EMAIL } from "../../../lib/admin"
 import { BTN_DANGER, BTN_GHOST, BTN_PRIMARY, Panel, SectionTitle } from "../../../components/admin/ui"
 import { Bus, CalendarClock, CloudDownload, MapPin, Moon, PartyPopper, Power, RefreshCw, Search, ShieldAlert, ShoppingBasket, Wrench, type LucideIcon } from "lucide-react"
 import { SEASONAL_THEMES, type SeasonalOverride } from "../../../lib/nocSeasonal"
+import { useAdminCity } from "../../../components/admin/AdminCity"
+import { CITIES, type CityKey } from "../../../lib/cities"
+import { ESSENTIAL_AREAS_BY_CITY, NEW_ESSENTIAL_CATS_BY_CITY, OSM_AREAS_BY_CITY, firstAreaOf, isCategoryOfCity, toolsOfCity } from "../../../lib/adminTools"
 
 // Herramientas de mantenimiento. Antes se lanzaban visitando una URL con la clave de admin
 // pegada (?secret=...), que quedaba en el historial y en los registros. Ahora cada botón llama al
@@ -24,6 +27,7 @@ type Tool = {
   googleEssentials?: boolean // igual, pero con Google Places (cuesta llamadas de pago)
   nitbus?: boolean // vista previa / importar de verdad, sin zona
   madridBarrios?: boolean // vista previa / aplicar de verdad, con la opción de incluir los importados de OpenStreetMap
+  city?: CityKey // herramienta de una sola ciudad (sin esto sirve para todas)
 }
 
 const TOOL_ICONS: Record<string, LucideIcon> = {
@@ -107,6 +111,7 @@ const TOOLS: Tool[] = [
   {
     key: "import-google-essentials",
     path: "/api/admin/import-google-essentials",
+    city: "barcelona", // solo sabe de los municipios del área de Barcelona
     title: "Importar esenciales de noche desde Google",
     description: "Supermercados, comida, gasolineras y farmacias abiertos las 24 h o hasta la 1:00 o más tarde, con el horario que da Google (OpenStreetMap y Overture no lo traen). Todo entra oculto para revisarlo en Esenciales. OJO: gasta llamadas de pago de Google (unas 6–14 por municipio para súper + comida; 35 $ cada 1.000, con 1.000 gratis al mes) y respeta el tope diario GOOGLE_PLACES_DAILY_LIMIT, que está en 20: para usarla hay que subirlo en Vercel. La vista previa también gasta llamadas: si te fías, marca «Importar de verdad» directamente.",
     googleEssentials: true,
@@ -114,6 +119,7 @@ const TOOLS: Tool[] = [
   {
     key: "import-nitbus",
     path: "/api/admin/import-nitbus-stops",
+    city: "barcelona", // el Nitbus es de Barcelona
     title: "Cargar paradas de Nitbus (OpenStreetMap)",
     description: "Todas las paradas de las líneas N con sus líneas, para el mapa de Nitbus y las fichas de club. Reemplaza las que se cargaron antes desde aquí (las tuyas a mano no se tocan). Sin marcar «Importar de verdad» solo es una vista previa.",
     nitbus: true,
@@ -121,6 +127,7 @@ const TOOLS: Tool[] = [
   {
     key: "assign-madrid-barrios",
     path: "/api/admin/assign-madrid-barrios",
+    city: "madrid",
     title: "Poner barrio a los locales de Madrid",
     description: "Asigna Malasaña, Chueca, La Latina… (12 zonas, según las coordenadas) a los locales de Madrid que ya importaste. Por defecto solo toca los que tienen el barrio vacío o «Madrid»; lo que hayas escrito a mano se queda. Sin marcar «Aplicar de verdad» solo es una vista previa.",
     madridBarrios: true,
@@ -134,6 +141,11 @@ type RunState = { running: boolean; rounds: number; result: ToolResult | null; e
 
 export default function AdminToolsPage() {
   const [checkingAdmin, setCheckingAdmin] = useState(true)
+  // Admin por ciudad (15/11/2026): los importadores y su zona dependen de la ciudad elegida en el menú; los interruptores de la web
+  // (mantenimiento, Club Noctua, temporada de Noc) y el estado del sistema son de toda la web y no cambian.
+  const [city] = useAdminCity()
+  const cityName = CITIES[city].name
+  const tools = useMemo(() => toolsOfCity(TOOLS, city), [city])
   const [state, setState] = useState<Record<string, RunState>>({})
   const [osmArea, setOsmArea] = useState("barcelona")
   const [osmReal, setOsmReal] = useState(false)
@@ -149,6 +161,20 @@ export default function AdminToolsPage() {
   const [mbReal, setMbReal] = useState(false)
   const [mbOsm, setMbOsm] = useState(false)
   const stopRef = useRef<Record<string, boolean>>({})
+
+  // Al cambiar de ciudad, las zonas y categorías elegidas se ponen en las de la ciudad nueva (una zona de Madrid no se puede lanzar
+  // desde Barcelona ni al revés), y se apagan los «de verdad» para no lanzar nada real sin querer.
+  const prevCity = useRef(city)
+  useEffect(() => {
+    if (prevCity.current === city) return
+    prevCity.current = city
+    setOsmArea(firstAreaOf(city))
+    setEssArea(firstAreaOf(city))
+    setOsmReal(false)
+    setEssReal(false)
+    setMbReal(false)
+    setEssCat((c) => (isCategoryOfCity(c, city) ? c : "all"))
+  }, [city])
 
   // Interruptor de Club Noctua (pedido el 23/10/2026): mientras está en false, nadie gana XP por
   // check-in/racha/login/misiones (solo invitar amigos sigue dando algo) y nadie salvo tú ve
@@ -272,29 +298,10 @@ export default function AdminToolsPage() {
   // «Importar lo que falta» (06/11/2026): las categorías nuevas, una detrás de otra, en todas las áreas. Es lo mismo que
   // elegir cada área y categoría a mano e «Importar de verdad», pero sin tener que hacerlo 70 veces. Es seguro repetirlo:
   // el importador se salta lo que ya existe, y todo entra OCULTO para que lo revises y lo publiques.
-  const NEW_ESS_CATS: [string, string][] = [
-    ["taxi", "Paradas de taxi"],
-    ["veterinary", "Veterinarios de urgencias"],
-    ["toilets", "Aseos públicos"],
-    ["vending", "Máquinas expendedoras"],
-    ["luggage", "Consignas"],
-    ["police", "Comisarías y policía"],
-    ["bicing", "Estaciones de Bicing"],
-  ]
-  const ESS_AREAS: [string, string][] = [
-    ["barcelona", "Barcelona"],
-    ["hospitalet", "L'Hospitalet"],
-    ["badalona", "Badalona"],
-    ["elprat", "El Prat"],
-    ["santacoloma", "Santa Coloma"],
-    ["cornella", "Cornellà"],
-    ["santadria", "Sant Adrià"],
-    ["esplugues", "Esplugues"],
-    ["santfeliu", "Sant Feliu"],
-    ["santboi", "Sant Boi"],
-  ]
+  const NEW_ESS_CATS = NEW_ESSENTIAL_CATS_BY_CITY[city]
+  const ESS_AREAS = ESSENTIAL_AREAS_BY_CITY[city]
   const runAllNewEssentials = async () => {
-    if (!window.confirm("Se importarán las 7 categorías nuevas en las 10 áreas, una detrás de otra (unos minutos). Todo entra oculto. ¿Seguir?")) return
+    if (!window.confirm(`Se importarán las ${NEW_ESS_CATS.length} categorías nuevas de ${cityName} en ${ESS_AREAS.length === 1 ? "su zona" : `las ${ESS_AREAS.length} zonas`}, una detrás de otra (unos minutos). Todo entra oculto. ¿Seguir?`)) return
     stopRef.current["all-new-ess"] = false
     setAllNewRunning(true)
     setAllNewLog([])
@@ -364,7 +371,7 @@ export default function AdminToolsPage() {
   return (
     <AdminShell
       title="Ajustes y herramientas"
-      subtitle="Los interruptores de la web y las tareas de mantenimiento de datos (las automáticas ya se ejecutan solas cada noche; aquí puedes lanzarlas a mano)."
+      subtitle="Los interruptores de la web (para todas las ciudades) y las tareas de mantenimiento de datos (las automáticas ya se ejecutan solas cada noche; aquí puedes lanzarlas a mano). Los importadores salen según la ciudad elegida."
     >
       <SystemStatus />
 
@@ -439,7 +446,7 @@ export default function AdminToolsPage() {
       </Panel>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {TOOLS.map((tool) => {
+        {tools.map((tool) => {
           const st = state[tool.key]
           const remaining = typeof st?.result?.remaining === "number" ? st.result.remaining : null
           return (
@@ -454,18 +461,7 @@ export default function AdminToolsPage() {
                     onChange={(e) => setOsmArea(e.target.value)}
                     className="max-w-full rounded-ctl border border-white/10 bg-night/70 px-3 py-2 text-white outline-none transition focus:border-brand/60"
                   >
-                    <option value="barcelona">Barcelona</option>
-                    <option value="hospitalet">L&apos;Hospitalet</option>
-                    <option value="badalona">Badalona</option>
-                    <option value="elprat">El Prat</option>
-                    <option value="santacoloma">Santa Coloma de Gramenet</option>
-                    <option value="cornella">Cornellà de Llobregat</option>
-                    <option value="santadria">Sant Adrià de Besòs</option>
-                    <option value="esplugues">Esplugues de Llobregat</option>
-                    <option value="santfeliu">Sant Feliu de Llobregat</option>
-                    <option value="santboi">Sant Boi de Llobregat</option>
-                    <option value="madrid1">Madrid · parte 1 (sur: Sol, Atocha, Usera)</option>
-                    <option value="madrid2">Madrid · parte 2 (norte: Chueca, Malasaña, Chamartín)</option>
+                    {OSM_AREAS_BY_CITY[city].map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                   </select>
                   <label className="flex items-center gap-2 text-zinc-300">
                     <input type="checkbox" checked={osmReal} onChange={(e) => setOsmReal(e.target.checked)} />
@@ -481,18 +477,7 @@ export default function AdminToolsPage() {
                     onChange={(e) => setEssArea(e.target.value)}
                     className="max-w-full rounded-ctl border border-white/10 bg-night/70 px-3 py-2 text-white outline-none transition focus:border-brand/60"
                   >
-                    <option value="barcelona">Barcelona</option>
-                    <option value="hospitalet">L&apos;Hospitalet</option>
-                    <option value="badalona">Badalona</option>
-                    <option value="elprat">El Prat</option>
-                    <option value="santacoloma">Santa Coloma de Gramenet</option>
-                    <option value="cornella">Cornellà de Llobregat</option>
-                    <option value="santadria">Sant Adrià de Besòs</option>
-                    <option value="esplugues">Esplugues de Llobregat</option>
-                    <option value="santfeliu">Sant Feliu de Llobregat</option>
-                    <option value="santboi">Sant Boi de Llobregat</option>
-                    <option value="madrid1">Madrid · parte 1 (sur: Sol, Atocha, Usera)</option>
-                    <option value="madrid2">Madrid · parte 2 (norte: Chueca, Malasaña, Chamartín)</option>
+                    {OSM_AREAS_BY_CITY[city].map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                   </select>
                   <select
                     value={essCat}
@@ -506,7 +491,7 @@ export default function AdminToolsPage() {
                     <option value="supermarket">Supermercados</option>
                     <option value="gas">Gasolineras</option>
                     <option value="hospital">Hospitales</option>
-                    <option value="parking">Parkings gratuitos (aparte, no entra en «Todas»)</option>
+                    {isCategoryOfCity("parking", city) && <option value="parking">Parkings gratuitos (aparte, no entra en «Todas»)</option>}
                     <optgroup label="Nuevas (de una en una, no entran en «Todas»)">
                       <option value="taxi">Paradas de taxi</option>
                       <option value="veterinary">Veterinarios de urgencias</option>
@@ -514,8 +499,8 @@ export default function AdminToolsPage() {
                       <option value="vending">Máquinas expendedoras</option>
                       <option value="luggage">Consignas</option>
                       <option value="police">Comisarías y policía</option>
-                      <option value="bicing">Estaciones de Bicing</option>
-                      <option value="bicimad">Estaciones de BiciMAD (Madrid)</option>
+                      {isCategoryOfCity("bicing", city) && <option value="bicing">Estaciones de Bicing</option>}
+                      {isCategoryOfCity("bicimad", city) && <option value="bicimad">Estaciones de BiciMAD</option>}
                     </optgroup>
                   </select>
                   <label className="flex items-center gap-2 text-zinc-300">
@@ -529,8 +514,8 @@ export default function AdminToolsPage() {
                 <div className="mt-4 rounded-ctl border border-white/10 bg-night/60 p-4">
                   <p className="text-sm font-semibold text-white">Importar lo que falta</p>
                   <p className="mt-1 text-xs leading-relaxed text-zinc-400">
-                    Las 7 categorías nuevas (taxi, veterinarios, aseos, máquinas, consignas, policía y Bicing) en las 10 áreas, una detrás de
-                    otra. Se salta lo que ya está importado y todo entra oculto.
+                    Las {NEW_ESS_CATS.length} categorías nuevas (taxi, veterinarios, aseos, máquinas, consignas, policía y {city === "madrid" ? "BiciMAD" : "Bicing"}) en{" "}
+                    {ESS_AREAS.length === 1 ? "su zona" : `las ${ESS_AREAS.length} zonas`} de {cityName}, una detrás de otra. Se salta lo que ya está importado y todo entra oculto.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button

@@ -9,6 +9,9 @@ import { StatTile } from "../../../components/admin/ui"
 
 import { supabase } from "../../../lib/supabase"
 import { fetchAllPages } from "../../../lib/fetchAll"
+import { useAdminCity } from "../../../components/admin/AdminCity"
+import { cityOfEvent, clubCityIndex, eventsOfCity } from "../../../lib/adminCity"
+import { CITIES, type CityKey } from "../../../lib/cities"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { logError } from "../../../lib/log"
 import { toast } from "../../../components/ui/Toast"
@@ -201,7 +204,13 @@ const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-
 const selectClass = "rounded-2xl border border-white/10 bg-surface px-4 py-4 text-sm font-semibold text-white outline-none transition focus:border-brand/60"
 
 export default function AdminEventsPage() {
-  const [events, setEvents] = useState<Event[]>([])
+  // Admin por ciudad (15/11/2026): `allEvents` es todo lo que hay y `events`, solo lo de la ciudad elegida en el menú. La ciudad de un
+  // evento sale de sus coordenadas y, si no las tiene, del local (lib/adminCity.ts). Todo lo demás de la pantalla trabaja con `events`.
+  const [city, setCity] = useAdminCity()
+  const cityName = CITIES[city].name
+  const [allEvents, setEvents] = useState<Event[]>([])
+  const [clubCities, setClubCities] = useState<Map<string, CityKey>>(() => new Map())
+  const events = useMemo(() => eventsOfCity(allEvents, city, clubCities), [allEvents, city, clubCities])
   const [loading, setLoading] = useState(true)
   const [checkingAdmin, setCheckingAdmin] = useState(true)
 
@@ -240,7 +249,12 @@ export default function AdminEventsPage() {
   }, [])
 
   const fetchEvents = async () => {
-    const data = await fetchAllPages((from, to) => supabase.from("events").select("*").order("date", { ascending: true }).order("id").range(from, to))
+    const [data, clubs] = await Promise.all([
+      fetchAllPages((from, to) => supabase.from("events").select("*").order("date", { ascending: true }).order("id").range(from, to)),
+      // Nombre, ciudad y coordenadas de los locales: para saber de qué ciudad es un evento que no tiene coordenadas.
+      fetchAllPages((from, to) => supabase.from("clubs").select("id, name, city, latitude, longitude").order("id").range(from, to)),
+    ])
+    setClubCities(clubCityIndex((clubs || []) as { name: string; city: string | null; latitude: number | null; longitude: number | null }[]))
     setEvents((data || []) as Event[])
     setLoading(false)
   }
@@ -254,6 +268,25 @@ export default function AdminEventsPage() {
     setLimit(PAGE_SIZE)
     setFocusId(null)
   }, [search, period, status, sort])
+
+  // Al cambiar de ciudad: se cierra el formulario de alta (el evento se habría creado para la ciudad equivocada), se limpian los filtros
+  // y se cierra la edición abierta si ese evento no es de la ciudad nueva.
+  const prevCity = useRef(city)
+  useEffect(() => {
+    if (prevCity.current === city) return
+    prevCity.current = city
+    setShowAddForm(false)
+    setNewDraft(emptyDraft)
+    setPeriod("all")
+    setStatus("all")
+    setFocusId(null)
+    setEditingId((id) => {
+      if (id == null) return id
+      const open = allEvents.find((e) => e.id === id)
+      return open && cityOfEvent(open, clubCities) === city ? id : null
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [city])
 
   // ---------- Datos derivados (búsqueda, filtros, contadores y orden) ----------
   const rows = useMemo(
@@ -430,6 +463,15 @@ export default function AdminEventsPage() {
   const addEvent = async () => {
     const problem = validateDraft(newDraft)
     if (problem) { toast(problem, 4000); return }
+    // Si el evento no va a caer en la ciudad que estás viendo (por sus coordenadas o por el local), se avisa antes de crearlo:
+    // si no, desaparecería de la lista y parecería que no se ha guardado.
+    const lands = cityOfEvent({ club_name: newDraft.club_name, latitude: newDraft.latitude.trim() ? newDraft.latitude : null, longitude: newDraft.longitude.trim() ? newDraft.longitude : null }, clubCities)
+    if (lands !== city) {
+      const why = newDraft.latitude.trim() && newDraft.longitude.trim()
+        ? "por sus coordenadas"
+        : lands === "madrid" ? "porque el local es de Madrid" : "porque no tiene coordenadas ni un local de Madrid"
+      if (!window.confirm(`Estás en ${cityName}, pero este evento se verá en ${CITIES[lands].name} ${why}.\n\n¿Crearlo igualmente?`)) return
+    }
     setSaving(true)
     const { data, error } = await supabase
       .from("events")
@@ -487,17 +529,19 @@ export default function AdminEventsPage() {
   // Llegando desde el botón "Editar" de la ficha pública (/admin/events?edit=ID).
   const autoEditDone = useRef(false)
   useEffect(() => {
-    if (autoEditDone.current || events.length === 0) return
+    if (autoEditDone.current || allEvents.length === 0) return
     const wanted = new URLSearchParams(window.location.search).get("edit")
     autoEditDone.current = true
     if (!wanted) return
-    const ev = events.find((e) => String(e.id) === wanted)
+    // Entre todos los eventos: el botón «Editar» de una ficha pública puede ser de la otra ciudad, y entonces se cambia a ella.
+    const ev = allEvents.find((e) => String(e.id) === wanted)
     if (!ev) return
+    setCity(cityOfEvent(ev, clubCities))
     startEditing(ev)
     setFocusId(ev.id)
     scrollToItem(ev.id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [events])
+  }, [allEvents])
 
   const saveEditing = async (id: number) => {
     const problem = validateDraft(editDraft)
@@ -561,7 +605,7 @@ export default function AdminEventsPage() {
     if (period !== "all") parts.push(PERIOD_LABEL[period].toLowerCase())
     if (status !== "all") parts.push(STATUS_LABEL[status].replace(/^[^\p{L}\p{N}]+/u, "").toLowerCase())
     if (search.trim()) parts.push(`búsqueda «${search.trim()}»`)
-    return parts.length ? parts.join(" · ") : "toda la web"
+    return parts.length ? parts.join(" · ") : `todos los de ${cityName}`
   }
 
   const bulkSetHidden = async (hidden: boolean) => {
