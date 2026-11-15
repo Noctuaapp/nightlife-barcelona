@@ -34,10 +34,15 @@ const TILE = `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120" v
 
 const TILE_URL = `url("data:image/svg+xml,${encodeURIComponent(TILE.replace(/\s*\n\s*/g, ""))}")`
 
+// La marca estampada en el tapete (15/11/2026), como el nombre de la casa en una mesa de verdad: las letras de Noctua (el
+// recorte de las letras de public/noctua_logo.png, con su A sin barra) pintadas en el dorado de las líneas. Es una máscara:
+// solo cuenta la forma de las letras, así que el color lo pone el tapete y no hace falta otra imagen por color.
+const WORDMARK_URL = 'url("/noctua_wordmark.png")'
+
 export default function CasinoFelt({ children }: { children: ReactNode }) {
   return (
     <div
-      className="relative isolate flex min-h-full flex-col justify-center overflow-hidden rounded-2xl px-3 py-6"
+      className="relative isolate flex min-h-full flex-col justify-center overflow-hidden rounded-2xl px-3 pb-12 pt-6"
       style={{ backgroundColor: FELT, backgroundImage: TILE_URL, backgroundSize: "160px 120px" }}
     >
       {/* Los arcos de la mesa, centrados donde cae la rueda */}
@@ -55,6 +60,30 @@ export default function CasinoFelt({ children }: { children: ReactNode }) {
       <span aria-hidden="true" className="pointer-events-none absolute inset-[6px] -z-10 rounded-[14px] border-[1.5px]" style={{ borderColor: `${GOLD}8c` }} />
       <span aria-hidden="true" className="pointer-events-none absolute inset-[10px] -z-10 rounded-[10px] border" style={{ borderColor: `${GOLD}38` }} />
       {children}
+      {/* Las letras de la marca, al pie de la mesa, entre el nombre del local y el marco. Van sobre un óvalo del verde del
+          tapete (como el texto de «Noc está pensando…») para que los dibujos de fondo no pasen por detrás de las letras. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-[14px] left-1/2 -z-10 -translate-x-1/2 rounded-full px-4 py-1"
+        style={{ backgroundColor: FELT }}
+      >
+        <span
+          role="img"
+          aria-label="Noctua"
+          className="block w-[8.75rem]"
+          style={{
+            aspectRatio: "600 / 62",
+            backgroundColor: GOLD,
+            opacity: 0.85,
+            WebkitMaskImage: WORDMARK_URL,
+            maskImage: WORDMARK_URL,
+            WebkitMaskRepeat: "no-repeat",
+            maskRepeat: "no-repeat",
+            WebkitMaskSize: "100% 100%",
+            maskSize: "100% 100%",
+          }}
+        />
+      </span>
     </div>
   )
 }

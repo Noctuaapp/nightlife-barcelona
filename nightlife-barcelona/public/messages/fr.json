@@ -1533,6 +1533,13 @@
     "pollError": "Impossible d'enregistrer ton vote. Réessaie.",
     "pollSeeVenue": "Voir le lieu",
     "pollShareHint": "Envoie le lien au reste du groupe pour qu'ils votent.",
+    "pollClosedTag": "Vote terminé",
+    "pollClosedIntro": "Ce vote est terminé. Voici le résultat.",
+    "pollClosedWinner": "Gagnant : {name}",
+    "pollClosedTie": "Égalité : {names}",
+    "pollClosedNobody": "Personne n'a voté.",
+    "pollWon": "Gagnant",
+    "pollClosedTotal": "Votes au total : {n}",
     "homeTitle": "Et pour rentrer ?",
     "homeBody": "Décidez avant de sortir et personne ne reste en plan."
   },

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest"
 import {
   parsePollState,
   leadingIdx,
+  isPollClosed,
   votePercent,
   cleanVoterName,
   newToken,
@@ -180,5 +181,27 @@ describe("madridToday", () => {
   it("usa la fecha de España, no la del servidor", () => {
     expect(madridToday(new Date("2026-12-31T23:30:00Z"))).toBe("2027-01-01")
     expect(madridToday(new Date("2026-06-15T10:00:00Z"))).toBe("2026-06-15")
+  })
+})
+
+describe("isPollClosed", () => {
+  it("sigue abierta la noche del plan y hasta las 06:00 del día siguiente (hora de España)", () => {
+    expect(isPollClosed("2026-11-14", new Date("2026-11-14T09:00:00Z"))).toBe(false) // sábado por la mañana
+    expect(isPollClosed("2026-11-14", new Date("2026-11-15T03:00:00Z"))).toBe(false) // 04:00 del domingo
+    expect(isPollClosed("2026-11-14", new Date("2026-11-15T04:59:00Z"))).toBe(false) // 05:59 del domingo
+  })
+  it("se da por terminada a partir de las 06:00 del día siguiente", () => {
+    expect(isPollClosed("2026-11-14", new Date("2026-11-15T05:00:00Z"))).toBe(true) // 06:00 del domingo
+    expect(isPollClosed("2026-11-14", new Date("2026-11-20T12:00:00Z"))).toBe(true)
+  })
+  it("usa la hora de España también en verano (UTC+2)", () => {
+    expect(isPollClosed("2026-07-11", new Date("2026-07-12T03:59:00Z"))).toBe(false) // 05:59 en Madrid
+    expect(isPollClosed("2026-07-11", new Date("2026-07-12T04:00:00Z"))).toBe(true) // 06:00 en Madrid
+  })
+  it("un plan de otro día o sin fecha válida no se cierra por error", () => {
+    expect(isPollClosed("2026-12-24", new Date("2026-11-15T12:00:00Z"))).toBe(false)
+    expect(isPollClosed(null)).toBe(false)
+    expect(isPollClosed("")).toBe(false)
+    expect(isPollClosed("mañana")).toBe(false)
   })
 })

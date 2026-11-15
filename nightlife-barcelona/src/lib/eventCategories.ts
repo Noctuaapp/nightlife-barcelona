@@ -34,11 +34,26 @@ export const MAIN_BARRIO_FESTES: { name: string; match: string[] }[] = [
   { name: "La Sagrera", match: ["sagrera"] },
   { name: "El Guinardó", match: ["guinardo"] },
   { name: "La Mercè", match: ["la merce"] },
+  // Fiesta mayor de invierno de toda la ciudad, igual que La Mercè lo es de otoño (barcelona.cat/santaeulalia).
+  { name: "Santa Eulàlia", match: ["santa eulalia"] },
+  // Madrid (15/11/2026). Las fiestas de barrio y de ciudad que organiza el Ayuntamiento: agosto en Centro (San Cayetano en
+  // Embajadores/Rastro, San Lorenzo en Lavapiés, La Paloma en La Latina), San Isidro y el Orgullo (MADO, Chueca).
+  { name: "San Cayetano (Embajadores)", match: ["san cayetano"] },
+  { name: "San Lorenzo (Lavapiés)", match: ["san lorenzo"] },
+  { name: "La Paloma (La Latina)", match: ["la paloma"] },
+  { name: "San Isidro", match: ["san isidro"] },
+  { name: "Orgullo (Chueca)", match: ["orgullo"] },
+  // Fiestas de distrito con día fijo del patrón (calendario orientativo 2027 del Ayuntamiento): el Carmen (16 de julio) y Santiago (25 de julio).
+  { name: "El Carmen (Chamberí)", match: ["carmen chamberi"] },
+  { name: "El Carmen (Carabanchel)", match: ["carmen carabanchel"] },
+  { name: "Santiago (Carabanchel)", match: ["santiago carabanchel"] },
 ]
 
 const FESTA_PATTERN = /\b(festa|festes|fiesta|fiestas)\b.*\b(major|majors|mayor|mayores|barri|barrio)\b|\bfm\b|\bfestes (de|del|dels)\b|\bfiestas (de|del)\b|\bla merce\b/
 
-const FESTIVAL_WORDS = ["festival", "primavera sound", "sonar", "cruilla", "mira", "grec", "bam"]
+// «carnaval», «nochevieja»… (15/11/2026): las fiestas de calle de toda la ciudad (Carnaval, Fin de Año) no son conciertos;
+// con estas palabras salen en Festivales y no en Conciertos. Las cabalgatas de Reyes no se cargan: no son de fiesta nocturna.
+const FESTIVAL_WORDS = ["festival", "primavera sound", "sonar", "cruilla", "mira", "grec", "bam", "carnaval", "carnestoltes", "nochevieja", "fin de ano"]
 
 // Devuelve la categoría y, si es fiesta de barrio, el barrio principal al que pertenece (o null si es
 // una fiesta mayor de un barrio que no está en la lista: esas no se enseñan).

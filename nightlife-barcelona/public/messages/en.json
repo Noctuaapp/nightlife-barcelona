@@ -1602,6 +1602,13 @@
     "pollError": "Couldn't save your vote. Try again.",
     "pollSeeVenue": "See the place",
     "pollShareHint": "Send the link to the rest of the group so they can vote.",
+    "pollClosedTag": "Voting closed",
+    "pollClosedIntro": "This vote is over. Here is the result.",
+    "pollClosedWinner": "Winner: {name}",
+    "pollClosedTie": "Tie: {names}",
+    "pollClosedNobody": "Nobody voted.",
+    "pollWon": "Winner",
+    "pollClosedTotal": "Total votes: {n}",
     "homeTitle": "And how are you getting home?",
     "homeBody": "Decide before you head out and nobody gets stranded."
   },

@@ -1533,6 +1533,13 @@
     "pollError": "Je stem kon niet worden opgeslagen. Probeer het opnieuw.",
     "pollSeeVenue": "Bekijk de plek",
     "pollShareHint": "Stuur de link naar de rest van de groep zodat ze kunnen stemmen.",
+    "pollClosedTag": "Stemming afgelopen",
+    "pollClosedIntro": "Deze stemming is afgelopen. Dit is de uitslag.",
+    "pollClosedWinner": "Winnaar: {name}",
+    "pollClosedTie": "Gelijkspel: {names}",
+    "pollClosedNobody": "Niemand heeft gestemd.",
+    "pollWon": "Winnaar",
+    "pollClosedTotal": "Totaal aantal stemmen: {n}",
     "homeTitle": "En hoe komen jullie thuis?",
     "homeBody": "Spreek het af voordat je vertrekt, dan blijft niemand achter."
   },

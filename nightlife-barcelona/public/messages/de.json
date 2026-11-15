@@ -1533,6 +1533,13 @@
     "pollError": "Deine Stimme konnte nicht gespeichert werden. Versuch es noch einmal.",
     "pollSeeVenue": "Ort ansehen",
     "pollShareHint": "Schick den Link an den Rest der Gruppe, damit alle abstimmen.",
+    "pollClosedTag": "Abstimmung beendet",
+    "pollClosedIntro": "Diese Abstimmung ist vorbei. Hier ist das Ergebnis.",
+    "pollClosedWinner": "Gewonnen hat: {name}",
+    "pollClosedTie": "Gleichstand: {names}",
+    "pollClosedNobody": "Niemand hat abgestimmt.",
+    "pollWon": "Gewonnen",
+    "pollClosedTotal": "Stimmen insgesamt: {n}",
     "homeTitle": "Und wie kommt ihr heim?",
     "homeBody": "Klärt es vor dem Ausgehen, dann bleibt niemand auf der Strecke."
   },

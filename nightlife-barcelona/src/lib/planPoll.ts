@@ -4,7 +4,7 @@
 //
 // El servidor es supabase/119_plan_votacion_en_grupo.sql: night_plan_poll_state() y vote_night_plan().
 
-import type { ShareStop } from "./planShare"
+import { madridToday, type ShareStop } from "./planShare"
 
 export const POLL_MIN = 2
 export const POLL_MAX = 5
@@ -50,6 +50,16 @@ export function leadingIdx(state: PollState): number[] {
 /** Porcentaje de votos de una opción (0 si no ha votado nadie). */
 export function votePercent(votes: number, total: number): number {
   return total > 0 ? Math.round((votes / total) * 100) : 0
+}
+
+/**
+ * ¿Ya pasó la noche del plan? La votación se da por terminada a las 06:00 (hora de España) del día siguiente a la
+ * fecha del plan: así una noche de sábado sigue abierta hasta el domingo por la mañana. Sin fecha (o con una fecha
+ * rara) nunca se cierra. No se borra nada: solo cambia lo que se enseña.
+ */
+export function isPollClosed(planDate: string | null | undefined, now: Date = new Date()): boolean {
+  if (!planDate || !/^\d{4}-\d{2}-\d{2}$/.test(planDate)) return false
+  return madridToday(new Date(now.getTime() - 6 * 3_600_000)) > planDate
 }
 
 /** Nombre como lo acepta el servidor: sin caracteres de control, recortado, máx. 30. */

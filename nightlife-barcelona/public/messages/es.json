@@ -1602,6 +1602,13 @@
     "pollError": "No se ha podido guardar tu voto. Prueba otra vez.",
     "pollSeeVenue": "Ver el sitio",
     "pollShareHint": "Pasa el enlace al resto del grupo para que voten.",
+    "pollClosedTag": "Votación terminada",
+    "pollClosedIntro": "Esta votación ya ha terminado. Este fue el resultado.",
+    "pollClosedWinner": "Ganó: {name}",
+    "pollClosedTie": "Empate: {names}",
+    "pollClosedNobody": "Nadie llegó a votar.",
+    "pollWon": "Ganó",
+    "pollClosedTotal": "Votos en total: {n}",
     "homeTitle": "¿Y cómo volvéis?",
     "homeBody": "Decidlo antes de salir y nadie se queda tirado."
   },

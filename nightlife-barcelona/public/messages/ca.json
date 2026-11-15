@@ -1602,6 +1602,13 @@
     "pollError": "No s'ha pogut desar el teu vot. Prova-ho una altra vegada.",
     "pollSeeVenue": "Veure el lloc",
     "pollShareHint": "Passa l'enllaç a la resta del grup perquè votin.",
+    "pollClosedTag": "Votació acabada",
+    "pollClosedIntro": "Aquesta votació ja ha acabat. Aquest va ser el resultat.",
+    "pollClosedWinner": "Va guanyar: {name}",
+    "pollClosedTie": "Empat: {names}",
+    "pollClosedNobody": "Ningú va arribar a votar.",
+    "pollWon": "Va guanyar",
+    "pollClosedTotal": "Vots en total: {n}",
     "homeTitle": "I com torneu?",
     "homeBody": "Decidiu-ho abans de sortir i ningú es queda penjat."
   },

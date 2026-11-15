@@ -1533,6 +1533,13 @@
     "pollError": "Impossibile salvare il tuo voto. Riprova.",
     "pollSeeVenue": "Vedi il locale",
     "pollShareHint": "Manda il link al resto del gruppo perché voti.",
+    "pollClosedTag": "Votazione conclusa",
+    "pollClosedIntro": "Questa votazione è finita. Ecco il risultato.",
+    "pollClosedWinner": "Ha vinto: {name}",
+    "pollClosedTie": "Pareggio: {names}",
+    "pollClosedNobody": "Nessuno ha votato.",
+    "pollWon": "Vincitore",
+    "pollClosedTotal": "Voti in totale: {n}",
     "homeTitle": "E per tornare a casa?",
     "homeBody": "Decidetelo prima di uscire e nessuno resta a piedi."
   },

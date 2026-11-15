@@ -13,7 +13,7 @@ import { toDateLocale } from "../../lib/dateLocale"
 import { track } from "../../lib/track"
 import { Clock, Ticket, Check, Link2, BusFront, CarTaxiFront, TrainFront, Crown } from "lucide-react"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
-import { cleanVoterName, getVoterToken, leadingIdx, parsePollState, peekVoterToken, votePercent, type PollState } from "../../lib/planPoll"
+import { cleanVoterName, getVoterToken, isPollClosed, leadingIdx, parsePollState, peekVoterToken, votePercent, type PollState } from "../../lib/planPoll"
 
 type Stop = { kind?: string; title?: string; subtitle?: string; time?: string; image?: string | null; href?: string }
 type Plan = { title: string; plan_date: string | null; stops: Stop[]; rsvps: string[] }
@@ -65,8 +65,9 @@ export default function SharedPlanClient({ code }: { code: string }) {
 
   // Los amigos van votando: se vuelve a pedir el recuento cada pocos segundos mientras la pantalla está a la vista.
   const isPoll = poll !== null
+  const closed = isPoll && isPollClosed(plan?.plan_date)
   useEffect(() => {
-    if (!isPoll) return
+    if (!isPoll || closed) return
     let n = 0
     const id = window.setInterval(() => {
       if (document.visibilityState === "visible" && n < POLL_REFRESH_MAX) {
@@ -75,7 +76,7 @@ export default function SharedPlanClient({ code }: { code: string }) {
       }
     }, POLL_REFRESH_MS)
     return () => window.clearInterval(id)
-  }, [isPoll, loadPoll])
+  }, [isPoll, closed, loadPoll])
 
   const join = async () => {
     const clean = name.trim()
@@ -95,7 +96,7 @@ export default function SharedPlanClient({ code }: { code: string }) {
   }
 
   const vote = async (idx: number) => {
-    if (votingIdx !== null) return
+    if (votingIdx !== null || closed) return
     const clean = cleanVoterName(name)
     if (!clean) {
       setPollMsg(t("sharedPlan.pollAskName"))
@@ -147,7 +148,7 @@ export default function SharedPlanClient({ code }: { code: string }) {
       <div className="flex items-center gap-3">
         <NocOwl size={60} mood="party" />
         <div>
-          <p className="text-sm font-semibold text-brand-soft">{isPoll ? t("sharedPlan.pollInvited") : t("sharedPlan.invited")}</p>
+          <p className="text-sm font-semibold text-brand-soft">{closed ? t("sharedPlan.pollClosedTag") : isPoll ? t("sharedPlan.pollInvited") : t("sharedPlan.invited")}</p>
           <h1 className="font-display text-2xl leading-tight">{plan.title}</h1>
           {dateText && <p className="text-sm text-zinc-400">{dateText}</p>}
         </div>
@@ -155,21 +156,39 @@ export default function SharedPlanClient({ code }: { code: string }) {
 
       {poll ? (
         <section className="mt-6" aria-label={t("sharedPlan.pollInvited")}>
-          <p className="text-sm text-zinc-300">{t("sharedPlan.pollIntro")}</p>
+          {closed ? (
+            <>
+              <p className="text-sm text-zinc-300">{t("sharedPlan.pollClosedIntro")}</p>
+              {leaders.length > 0 && (
+                <p className="mt-2 flex items-start gap-2 text-base font-bold text-amber-300">
+                  <Crown size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
+                  <span>
+                    {leaders.length === 1
+                      ? t("sharedPlan.pollClosedWinner").replace("{name}", stops[leaders[0]]?.title ?? "")
+                      : t("sharedPlan.pollClosedTie").replace("{names}", leaders.map((i) => stops[i]?.title).filter(Boolean).join(", "))}
+                  </span>
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-zinc-300">{t("sharedPlan.pollIntro")}</p>
 
-          <div className="mt-3">
-            <label htmlFor="poll-name" className="text-xs font-semibold text-zinc-400">{t("sharedPlan.pollNameLabel")}</label>
-            <input
-              id="poll-name"
-              ref={nameRef}
-              value={name}
-              onChange={(e) => { setName(e.target.value); setPollMsg("") }}
-              maxLength={30}
-              placeholder={t("sharedPlan.namePlaceholder")}
-              className="mt-1 w-full rounded-ctl border border-white/15 bg-night px-4 py-3 text-base text-ink outline-none focus:border-brand"
-            />
-          </div>
-          {pollMsg && <p className="mt-2 text-sm text-red-300" role="alert">{pollMsg}</p>}
+              <div className="mt-3">
+                <label htmlFor="poll-name" className="text-xs font-semibold text-zinc-400">{t("sharedPlan.pollNameLabel")}</label>
+                <input
+                  id="poll-name"
+                  ref={nameRef}
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); setPollMsg("") }}
+                  maxLength={30}
+                  placeholder={t("sharedPlan.namePlaceholder")}
+                  className="mt-1 w-full rounded-ctl border border-white/15 bg-night px-4 py-3 text-base text-ink outline-none focus:border-brand"
+                />
+              </div>
+              {pollMsg && <p className="mt-2 text-sm text-red-300" role="alert">{pollMsg}</p>}
+            </>
+          )}
 
           <ul className="mt-4 space-y-3">
             {poll.options.map((o) => {
@@ -197,7 +216,7 @@ export default function SharedPlanClient({ code }: { code: string }) {
                       </div>
                       {leading && (
                         <span className="flex h-fit shrink-0 items-center gap-1 rounded-full bg-amber-400/15 px-2 py-1 text-[11px] font-bold text-amber-300">
-                          <Crown size={12} aria-hidden="true" /> {leaders.length > 1 ? t("sharedPlan.pollTie") : t("sharedPlan.pollLeading")}
+                          <Crown size={12} aria-hidden="true" /> {leaders.length > 1 ? t("sharedPlan.pollTie") : closed ? t("sharedPlan.pollWon") : t("sharedPlan.pollLeading")}
                         </span>
                       )}
                     </div>
@@ -216,6 +235,13 @@ export default function SharedPlanClient({ code }: { code: string }) {
                       </p>
                     )}
 
+                    {closed ? (
+                      mine && (
+                        <p className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-brand-soft">
+                          <Check size={14} aria-hidden="true" /> {t("sharedPlan.pollYourVote")}
+                        </p>
+                      )
+                    ) : (
                     <button
                       type="button"
                       onClick={() => vote(o.idx)}
@@ -228,6 +254,7 @@ export default function SharedPlanClient({ code }: { code: string }) {
                       {mine && <Check size={16} aria-hidden="true" />}
                       {votingIdx === o.idx ? "…" : mine ? t("sharedPlan.pollYourVote") : t("sharedPlan.pollVote")}
                     </button>
+                    )}
                   </div>
                 </li>
               )
@@ -235,9 +262,11 @@ export default function SharedPlanClient({ code }: { code: string }) {
           </ul>
 
           <p className="mt-3 text-center text-sm text-zinc-400" aria-live="polite">
-            {poll.total === 0 ? t("sharedPlan.pollNobody") : t("sharedPlan.pollTotal").replace("{n}", String(poll.total))}
+            {closed
+              ? poll.total === 0 ? t("sharedPlan.pollClosedNobody") : t("sharedPlan.pollClosedTotal").replace("{n}", String(poll.total))
+              : poll.total === 0 ? t("sharedPlan.pollNobody") : t("sharedPlan.pollTotal").replace("{n}", String(poll.total))}
           </p>
-          {poll.mine !== null && <p className="mt-1 text-center text-xs text-zinc-500">{t("sharedPlan.pollShareHint")}</p>}
+          {!closed && poll.mine !== null && <p className="mt-1 text-center text-xs text-zinc-500">{t("sharedPlan.pollShareHint")}</p>}
         </section>
       ) : (
         <ol className="relative mt-8 space-y-4 border-l border-white/15 pl-6">
@@ -267,6 +296,12 @@ export default function SharedPlanClient({ code }: { code: string }) {
         </ol>
       )}
 
+      {closed ? (
+        <Link href="/plan" className="btn-pill btn-primary mt-8 block py-3 text-center text-sm">
+          {t("planPage.generatePlanCta")}
+        </Link>
+      ) : (
+      <>
       <div className="mt-10 rounded-card border border-brand/30 bg-brand/10 p-5">
         {joined ? (
           <p className="flex items-center justify-center gap-2 text-sm font-semibold text-open"><Check size={16} /> {t("sharedPlan.joined")}</p>
@@ -307,6 +342,8 @@ export default function SharedPlanClient({ code }: { code: string }) {
           {t("planPage.generatePlanCta")}
         </Link>
       </div>
+      </>
+      )}
     </div>
   )
 }
