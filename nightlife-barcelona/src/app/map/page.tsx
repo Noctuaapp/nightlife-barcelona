@@ -529,7 +529,6 @@ export default function MapPage() {
     // pin muestra la foto del club/evento recortada en círculo, o sus iniciales sobre el color
     // de la categoría si no tiene foto.
     const addMarker = (lat: number, lng: number, item: Club | Event | Essential) => {
-      const label = "name" in item ? item.name : item.title
       const image = getImage(item)
       const isEssential = "category" in item
 
@@ -541,11 +540,22 @@ export default function MapPage() {
       if (state) { pinColor = STATUS_COLORS[state]; ring = pinColor }
       const el = document.createElement("div")
       el.style.cssText = `width: 34px; height: 34px; border-radius: 50%; border: ${image ? 3.5 : 2.5}px solid ${image ? ring : "#fff"}; box-shadow: 0 2px 10px rgba(0,0,0,0.5); cursor: pointer; overflow: hidden; display: flex; align-items: center; justify-content: center; background: ${pinColor}; font-size: 11px; font-weight: 800; color: #fff; font-family: inherit;`
+      // Icono del pin sin foto: esencial → el de su categoría; club → copa; evento → confeti.
+      const fillIcon = () => {
+        const Icon = isEssential ? categoryInfo((item as Essential).category).icon : filter === "events" ? PartyPopper : Martini
+        el.innerHTML = renderToStaticMarkup(<Icon size={17} color="#fff" strokeWidth={2.25} />)
+      }
       if (image) {
         const img = document.createElement("img")
-        img.src = image
-        img.alt = label || ""
+        img.referrerPolicy = "no-referrer"
+        img.alt = "" // si la foto no carga no debe verse el nombre escrito dentro del círculo (parecían «letras»)
         img.style.cssText = "width: 100%; height: 100%; object-fit: cover;"
+        // Foto que no carga (enlace roto o bloqueado, frecuente en los locales de Madrid): se pone el icono, como si no tuviera foto.
+        img.onerror = () => {
+          el.style.border = "2.5px solid #fff"
+          fillIcon()
+        }
+        img.src = image
         el.appendChild(img)
       } else if (isEssential) {
         // Un esencial (farmacia, cajero, metro...) casi nunca tiene foto, así que antes esto era

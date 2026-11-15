@@ -252,7 +252,7 @@ export default function InteractionStats({ from, to, kind: kindProp, onKindChang
               <div className="grid gap-6 lg:grid-cols-2">
                 <Panel accent="coral">
                   <SectionTitle icon={Car} accent="coral" className="mb-1">Qué taxi o VTC eligen</SectionTitle>
-                  <p className="mb-4 text-xs text-zinc-400">Cada app pulsada (Uber, Cabify, FREE NOW) y cada llamada al taxi, desde fichas de club, de evento y la página de taxi.</p>
+                  <p className="mb-4 text-xs text-zinc-400">Cada app pulsada (Uber, Cabify, FREE NOW, Bolt) y cada llamada al taxi, desde fichas de club, de evento y la página de taxi.</p>
                   <BarList rows={rideRows(inter.rides)} />
                 </Panel>
                 <Panel accent="coral">

@@ -933,7 +933,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                   name={r.name}
                   slug={r.slug}
                   music={r.music}
-                  area={r.neighborhood}
+                  area={r.neighborhood || otherCityName(r)}
                   image={r.image}
                   rating={r.google_rating || r.rating || null}
                   temporarilyClosed={r.temporarily_closed === true}

@@ -15,6 +15,7 @@ export const RIDE_LABEL: Record<string, string> = {
   uber: "Uber",
   cabify: "Cabify",
   freenow: "FREE NOW",
+  bolt: "Bolt",
   taxi_phone: "Llamada a un taxi (teléfono)",
   unknown: NO_DATA,
 }

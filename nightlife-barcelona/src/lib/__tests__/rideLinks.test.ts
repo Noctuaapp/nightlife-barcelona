@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { androidIntent, destinationPath, iosScheme } from "../rideLinks"
+import { androidIntent, destinationPath, iosScheme, webLink } from "../rideLinks"
 
 describe("rideLinks · destino", () => {
   const dest = { name: "Sala Apolo", lat: 41.374, lng: 2.1699 }
@@ -14,6 +14,13 @@ describe("rideLinks · destino", () => {
     expect(destinationPath("cabify", { name: "X" })).toBe("")
     expect(destinationPath("freenow", dest)).toBe("")
     expect(iosScheme("freenow", dest)).toBe("freenow://")
+  })
+  it("Bolt abre su app sin destino (no publica enlace con destino): esquema propio, paquete de Android y su web", () => {
+    expect(destinationPath("bolt", dest)).toBe("")
+    expect(iosScheme("bolt", dest)).toBe("bolt://")
+    expect(androidIntent("bolt", dest)).toContain("intent://#Intent;scheme=bolt;package=ee.mtakso.client;")
+    expect(decodeURIComponent(androidIntent("bolt"))).toContain("play.google.com/store/apps/details?id=ee.mtakso.client")
+    expect(webLink("bolt")).toBe("https://bolt.eu/es-es/")
   })
   it("el enlace de iPhone y el de Android incluyen el destino de Cabify", () => {
     expect(iosScheme("cabify", dest)).toContain("cabify://cabify/journey?json=")

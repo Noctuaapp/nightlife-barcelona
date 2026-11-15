@@ -1,19 +1,22 @@
-// Abrir las apps de transporte (Uber, Cabify, FREE NOW) desde la web, en vez de mandar a su página.
+// Abrir las apps de transporte (Uber, Cabify, FREE NOW, Bolt) desde la web, en vez de mandar a su página.
 //
 // - Uber: su enlace universal (m.uber.com/ul) abre la app si está instalada, con el destino ya
 //   puesto; si no, la web de Uber.
 // - Cabify: su esquema documentado cabify://cabify/journey?json={"stops":[...]} abre la app con el
 //   destino ya puesto (Android: "intent" con el paquete; iPhone: el esquema directo). Si no está
 //   instalada, la tienda. Sin coordenadas se abre la app sin destino.
-// - FREE NOW no publica ningún enlace con destino: se abre su app (o la tienda) y la dirección se
+// - FREE NOW y Bolt no publican ningún enlace con destino: se abre su app (o la tienda) y la dirección se
 //   copia para pegarla. En el ordenador, la web de cada una.
+//   (Bolt: paquete de Android ee.mtakso.client, App Store id675033630 y esquema «bolt», según sus fichas de las tiendas.)
 
-export type RideApp = "uber" | "cabify" | "freenow"
+export type RideApp = "uber" | "cabify" | "freenow" | "bolt"
+/** Las apps que se abren con el esquema propio (todas menos Uber, que usa su enlace universal). */
+export type OpenableApp = Exclude<RideApp, "uber">
 export type Platform = "android" | "ios" | "desktop"
 
 type AppInfo = { scheme: string; host: string; androidPackage: string; iosStore: string; web: string }
 
-const APPS: Record<"cabify" | "freenow", AppInfo> = {
+const APPS: Record<OpenableApp, AppInfo> = {
   cabify: {
     scheme: "cabify",
     host: "cabify",
@@ -27,6 +30,13 @@ const APPS: Record<"cabify" | "freenow", AppInfo> = {
     androidPackage: "taxi.android.client",
     iosStore: "https://apps.apple.com/es/app/id357852748",
     web: "https://www.free-now.com/es/",
+  },
+  bolt: {
+    scheme: "bolt",
+    host: "",
+    androidPackage: "ee.mtakso.client",
+    iosStore: "https://apps.apple.com/es/app/id675033630",
+    web: "https://bolt.eu/es-es/",
   },
 }
 
@@ -46,7 +56,7 @@ export function uberLink(name: string, address?: string | null, lat?: number | n
 export type RideDestination = { name: string; lat?: number | null; lng?: number | null }
 
 // Ruta + consulta del destino para cada app ("" si la app no admite destino o faltan coordenadas).
-export function destinationPath(app: "cabify" | "freenow", dest?: RideDestination): string {
+export function destinationPath(app: OpenableApp, dest?: RideDestination): string {
   if (app !== "cabify" || !dest || !dest.lat || !dest.lng) return ""
   const json = JSON.stringify({
     stops: [{ loc: { latitude: String(dest.lat), longitude: String(dest.lng) }, name: dest.name }],
@@ -55,25 +65,25 @@ export function destinationPath(app: "cabify" | "freenow", dest?: RideDestinatio
 }
 
 // Enlace "intent" de Android: abre la app si está instalada; si no, Chrome va a la tienda.
-export function androidIntent(app: "cabify" | "freenow", dest?: RideDestination): string {
+export function androidIntent(app: OpenableApp, dest?: RideDestination): string {
   const a = APPS[app]
   const store = `https://play.google.com/store/apps/details?id=${a.androidPackage}`
   return `intent://${a.host}${destinationPath(app, dest)}#Intent;scheme=${a.scheme};package=${a.androidPackage};S.browser_fallback_url=${encodeURIComponent(store)};end`
 }
 
-export function iosScheme(app: "cabify" | "freenow", dest?: RideDestination): string {
+export function iosScheme(app: OpenableApp, dest?: RideDestination): string {
   const a = APPS[app]
   return `${a.scheme}://${a.host}${destinationPath(app, dest)}`
 }
 
-export function webLink(app: "cabify" | "freenow"): string {
+export function webLink(app: OpenableApp): string {
   return APPS[app].web
 }
 
 // Abre la app en el móvil. En iPhone, si la app no está instalada, Safari no navega: a los
 // ~1,5 s se manda a la App Store (si la app se abrió, la página ya está en segundo plano y no
 // se hace nada).
-export function openRideApp(app: "cabify" | "freenow", dest?: RideDestination): void {
+export function openRideApp(app: OpenableApp, dest?: RideDestination): void {
   const platform = detectPlatform(navigator.userAgent, navigator.maxTouchPoints || 0)
   if (platform === "android") {
     window.location.href = androidIntent(app, dest)

@@ -201,6 +201,23 @@ body {
   50% { transform: rotate(var(--a1, 12deg)); }
 }
 
+/* Tarjeta del «Sorpréndeme» (home, 15/11/2026): borde con el degradado de neón de la marca (el mismo del titular de la portada y del
+   botón de buscar) y un resplandor suave, para que se vea entre las demás secciones. El botón late con un aro rosa cada pocos segundos
+   hasta que se le pone el ratón encima o el foco. Con «reducir movimiento» el aro no se mueve (regla de reduced-motion de abajo). */
+.surprise-card {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(#14111c, #14111c) padding-box,
+    linear-gradient(120deg, #6cf2f2 0%, #3b82ff 35%, #a855f7 68%, #ec4899 100%) border-box;
+  box-shadow: 0 18px 50px -24px rgba(168, 85, 247, 0.6), 0 0 30px -18px rgba(236, 72, 153, 0.5);
+}
+@keyframes surprise-ring {
+  0% { box-shadow: inset 0 -2px 0 rgb(10 9 16 / 0.08), 0 10px 24px -12px rgb(255 255 255 / 0.45), 0 0 0 0 rgba(236, 72, 153, 0.6); }
+  70%, 100% { box-shadow: inset 0 -2px 0 rgb(10 9 16 / 0.08), 0 10px 24px -12px rgb(255 255 255 / 0.45), 0 0 0 16px rgba(236, 72, 153, 0); }
+}
+.surprise-cta { animation: surprise-ring 2.6s ease-out infinite; }
+.surprise-cta:hover, .surprise-cta:focus-visible { animation: none; }
+
 /* Brillo tipo neón en el titular de "Planifica tu noche" — un único color de marca, estático
    (nada de parpadeo), para dar un poco de energía de fiesta a un titular que si no queda
    plano sobre fondo negro. */

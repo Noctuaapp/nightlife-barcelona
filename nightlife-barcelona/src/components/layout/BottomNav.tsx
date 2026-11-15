@@ -84,8 +84,13 @@ export default function BottomNav() {
     ...(isAdmin ? [{ label: "Admin", href: "/admin/dashboard", icon: Shield, accent: "gold" as Accent }] : []),
   ]
 
+  // Con la pestaña Admin (solo para ti) son cinco botones y ya no caben con el relleno de siempre: se salía el último por la derecha
+  // (15/11/2026). Con cinco, cada botón ocupa una quinta parte, con menos relleno y letra algo menor, y una etiqueta muy larga se recorta
+  // con «…». Con cuatro (todo el público) la barra queda exactamente como estaba.
+  const compact = navItems.length > 4
+
   return (
-    <div className={`fixed bottom-4 left-1/2 z-50 flex w-[92%] max-w-md -translate-x-1/2 items-center justify-around rounded-2xl border border-white/10 bg-black/70 px-3 py-2 shadow-[0_12px_40px_-10px_rgba(124,92,255,0.55)] backdrop-blur-2xl transition-all duration-300 before:pointer-events-none before:absolute before:inset-x-8 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-brand-soft/80 before:to-transparent ${visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-24 opacity-0"}`}>
+    <div className={`fixed bottom-4 left-1/2 z-50 flex w-[92%] max-w-md -translate-x-1/2 items-center justify-around rounded-2xl border border-white/10 bg-black/70 py-2 ${compact ? "px-2" : "px-3"} shadow-[0_12px_40px_-10px_rgba(124,92,255,0.55)] backdrop-blur-2xl transition-all duration-300 before:pointer-events-none before:absolute before:inset-x-8 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-brand-soft/80 before:to-transparent ${visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-24 opacity-0"}`}>
       {navItems.map((item) => {
         const Icon = item.icon
         const active = pathname === item.href
@@ -95,13 +100,13 @@ export default function BottomNav() {
             key={item.href}
             href={item.href}
             aria-current={active ? "page" : undefined}
-            className={`relative flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-xs transition ${
+            className={`relative flex flex-col items-center gap-1 rounded-xl py-2 transition ${compact ? "min-w-0 flex-1 px-1 text-[11px]" : "px-3 text-xs"} ${
               active ? `${a.active} font-bold text-white` : "font-medium text-zinc-400 hover:text-white"
             }`}
           >
             {active && <span aria-hidden="true" className={`absolute inset-x-3 -top-px h-0.5 rounded-full ${a.line}`} />}
             <Icon size={18} className={active ? a.glow : a.icon} />
-            <span>{item.label}</span>
+            <span className="max-w-full truncate">{item.label}</span>
             {item.href === "/events" && EVENTS_HIDDEN && (
               <span className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-warn px-1.5 py-px text-[8px] font-bold leading-tight text-night">
                 {t("nav.soon")}

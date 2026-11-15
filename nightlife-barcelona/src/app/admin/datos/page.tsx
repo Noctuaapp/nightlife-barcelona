@@ -41,7 +41,7 @@ const SOURCE_LABELS: Record<string, string> = {
   direct: "Directo",
 }
 const WEEKDAYS = ["", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
-const RIDE_PROVIDER_LABELS: Record<string, string> = { uber: "Uber", cabify: "Cabify", freenow: "FREE NOW" }
+const RIDE_PROVIDER_LABELS: Record<string, string> = { uber: "Uber", cabify: "Cabify", freenow: "FREE NOW", bolt: "Bolt" }
 
 const daysAgo = madridDaysAgo
 const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0)
@@ -540,7 +540,7 @@ export default function AdminDatosPage() {
               </Panel>
               <Panel accent="cyan">
                 <div className="mb-4 flex items-center justify-between gap-3">
-                  <SectionTitle icon={Car} accent="cyan">Clics en Uber / Cabify / FREE NOW</SectionTitle>
+                  <SectionTitle icon={Car} accent="cyan">Clics en Uber / Cabify / FREE NOW / Bolt</SectionTitle>
                   <button onClick={() => goClicks("ride_click")} className="shrink-0 rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300 hover:bg-white/10">Ver taxi y VTC ›</button>
                 </div>
                 <ListBars rows={rideClicks.map((r) => ({ label: RIDE_PROVIDER_LABELS[r.provider] || r.provider, n: r.n }))} />

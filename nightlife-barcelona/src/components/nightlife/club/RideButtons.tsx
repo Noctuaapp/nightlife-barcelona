@@ -12,8 +12,8 @@ import { telHref } from "../../../lib/taxiOptions"
 // Pedir un coche o un taxi desde la ficha. Antes Cabify y FREE NOW llevaban a su web aunque
 // tuvieras la app instalada. Ahora en el móvil se abre la app (ver src/lib/rideLinks.ts):
 // - Uber, con el destino ya puesto.
-// - Cabify, con el destino ya puesto (su enlace documentado cabify://cabify/journey). Además se
-//   copia la dirección, por si la versión instalada no lo lee.
+// - Cabify: se intenta pasar el destino con cabify://cabify/journey, pero la app instalada lo ignora (15/11/2026:
+//   Jordi la ve abrirse con la pantalla vacía). Por eso la dirección se copia siempre, para pegarla.
 // - FREE NOW, que no tiene enlace con destino: se copia la dirección para pegarla en la app.
 // El botón del taxi llama al radio taxi de la ciudad del local (el 033 en Barcelona; en Madrid, Radio Teléfono Taxi).
 //

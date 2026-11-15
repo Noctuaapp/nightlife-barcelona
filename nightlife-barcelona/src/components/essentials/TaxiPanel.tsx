@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Icon from "../ui/Icon"
 import ArrowIcon from "../ui/ArrowIcon"
 import { useLanguage } from "../../context/LanguageContext"
@@ -11,11 +12,28 @@ import { useSelectedCity } from "../../lib/previewCity"
 
 // Pantalla Taxi de Esenciales (11/11/2026). Antes: un solo recuadro con los botones de las apps y los de teléfono
 // pegados en una fila, sin logos. Ahora son dos recuadros separados, cada uno con una lista en vertical:
-//   1. «Pedir un taxi ahora»: una fila por app, con su logo; abre la app (en el móvil) o su web (en el ordenador).
+//   1. «Pedir un taxi ahora»: una fila por app (FREE NOW, Cabify, Uber y, desde el 15/11/2026, Bolt), con su logo; abre la app (en el móvil) o su web (en el ordenador).
 //   2. «Teléfonos de radio taxi»: una fila por teléfono, que llama al pulsarla.
 // Se registra qué app se pulsa (evento «ride_click», igual que en las fichas) y qué teléfono (phone_click).
 const ROW =
   "flex min-h-[64px] w-full items-center gap-4 rounded-ctl border border-white/10 bg-surface-2 px-4 py-3 text-left transition hover:border-white/25 active:scale-[0.99] motion-reduce:transition-none"
+
+// Logo de la app. Si el archivo no carga (p. ej. aún no se ha subido el de una app nueva), se pone un círculo neutro con
+// la inicial, nunca la imagen rota.
+function AppLogo({ app }: { app: TaxiApp }) {
+  const [failed, setFailed] = useState(false)
+  if (failed) {
+    return (
+      <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-bold text-ink shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]">
+        {app.name.charAt(0)}
+      </span>
+    )
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={app.logo} alt="" width={44} height={44} onError={() => setFailed(true)} className="h-11 w-11 shrink-0 rounded-full object-cover shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]" />
+  )
+}
 
 export default function TaxiPanel() {
   const { t } = useLanguage()
@@ -44,8 +62,7 @@ export default function TaxiPanel() {
             {TAXI_APPS.map((app) => (
               <li key={app.id}>
                 <button type="button" onClick={() => openApp(app)} className={ROW}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={app.logo} alt="" width={44} height={44} className="h-11 w-11 shrink-0 rounded-full object-cover shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]" />
+                  <AppLogo app={app} />
                   <span className="min-w-0 flex-1 text-base font-semibold text-ink">{app.name}</span>
                   <ArrowIcon className="h-4 w-4 shrink-0 text-zinc-400" />
                 </button>

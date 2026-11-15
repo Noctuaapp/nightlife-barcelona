@@ -10,6 +10,7 @@ import { useCityT } from "../../../lib/useCityT"
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "../../../components/system/CityLink"
+import { renderToStaticMarkup } from "react-dom/server"
 import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
 import Header from "../../../components/layout/Header"
@@ -29,7 +30,7 @@ import AdminEditButton from "../../../components/admin/AdminEditButton"
 import EssentialPhoto from "../../../components/essentials/EssentialPhoto"
 import TaxiPanel from "../../../components/essentials/TaxiPanel"
 import Icon from "../../../components/ui/Icon"
-import { ESSENTIAL_CATEGORIES, categoryNameKey, usesOwnPhoto } from "../../../lib/essentialCategories"
+import { ESSENTIAL_CATEGORIES, categoryInfo, categoryNameKey, usesOwnPhoto } from "../../../lib/essentialCategories"
 import { NIGHT_BUS_LINES } from "../../../lib/nightBuses"
 import { METRO_STATIONS } from "../../../lib/metroStations"
 import { MetroLineBadge, NitbusBadge, NitbusRouteRow } from "../../../components/ui/TransitBadge"
@@ -493,7 +494,9 @@ export default function EssentialCategoryPage() {
   // Taxi: ¿hay paradas reales que enseñar? (las oficinas/apps no cuentan). Mientras carga o si no hay
   // ninguna, la pantalla se queda en los dos recuadros de arriba, sin lista vacía, filtros ni mapa.
   const taxiRankCount = category === "taxi" ? essentials.filter((e) => !NOT_A_RANK.test(e.name || "")).length : 0
-  const hideTaxiRanks = category === "taxi" && (loading || taxiRankCount === 0)
+  // En Madrid tampoco se enseñan las paradas (15/11/2026): como en Barcelona, la pantalla de Taxi son solo los dos recuadros de arriba
+  // (apps y teléfonos de radio taxi). Las paradas que hay cargadas para Madrid no se muestran ni en lista ni en mapa.
+  const hideTaxiRanks = category === "taxi" && (loading || taxiRankCount === 0 || city === "madrid")
 
   // Taxi: el mapa se crea al montar, cuando la sección aún está oculta (cargando). Al aparecer las
   // paradas hay que avisar a Mapbox del tamaño real antes de encuadrar los marcadores.
@@ -668,9 +671,14 @@ export default function EssentialCategoryPage() {
         const initial = (item.name || "?").trim().charAt(0).toUpperCase()
         // Parkings: casi todos se llaman «Aparcamiento gratuito · …», así que la inicial (A, P…) no dice
         // nada y despista. Todos llevan el mismo símbolo de parking (el círculo con la P de lucide).
+        // Resto de categorías (15/11/2026): el icono de la categoría de ese sitio (farmacia, cajero, hospital…), no la inicial del nombre
+        // (el comentario de arriba ya lo decía, pero el código ponía la letra: se notaba sobre todo en Madrid, donde casi nada lleva foto).
         const fillFallback = () => {
           if (category === "parking") el.innerHTML = PARKING_MARKER_SVG
-          else el.textContent = initial
+          else if (item.category) {
+            const CatIcon = categoryInfo(item.category).icon
+            el.innerHTML = renderToStaticMarkup(<CatIcon size={20} color="#f4f3f7" strokeWidth={2.25} aria-hidden="true" />)
+          } else el.textContent = initial
         }
         if (usesOwnPhoto(category) && item.image) {
           const img = document.createElement("img")

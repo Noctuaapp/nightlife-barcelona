@@ -3,6 +3,13 @@ import { destinationRows, rideOriginRows, rideRows, shareChannelRows } from "../
 import { outboundHost } from "../outbound"
 
 describe("rideRows", () => {
+  it("Bolt sale con su nombre (clics desde la página de Taxi)", () => {
+    expect(rideRows([{ provider: "bolt", n: 4 }, { provider: "uber", n: 1 }])).toEqual([
+      { label: "Bolt", n: 4 },
+      { label: "Uber", n: 1 },
+    ])
+  })
+
   it("pone nombre a cada app, cuenta las llamadas al taxi y ordena de más a menos", () => {
     const rows = rideRows([
       { provider: "freenow", n: 1 },
@@ -19,8 +26,8 @@ describe("rideRows", () => {
   })
 
   it("lo que no se conoce sale tal cual, los ceros no salen y 'unknown' es «Sin registrar»", () => {
-    expect(rideRows([{ provider: "bolt", n: 2 }, { provider: "uber", n: 0 }, { provider: "unknown", n: 1 }])).toEqual([
-      { label: "bolt", n: 2 },
+    expect(rideRows([{ provider: "otra_app", n: 2 }, { provider: "uber", n: 0 }, { provider: "unknown", n: 1 }])).toEqual([
+      { label: "otra_app", n: 2 },
       { label: "Sin registrar", n: 1 },
     ])
   })

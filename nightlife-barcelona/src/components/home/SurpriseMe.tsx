@@ -12,6 +12,7 @@ import SharePlanButton from "../plan/SharePlanButton"
 import NocSays, { useOwnLevelColor } from "../mascot/NocSays"
 import { useLanguage } from "../../context/LanguageContext"
 import { useCityT } from "../../lib/useCityT"
+import { otherCityName } from "../../lib/cities"
 import { getDeniedClubIds } from "../../lib/deniedVenues"
 import { effectiveHoursStatus, effectiveOpenNow } from "../../lib/scheduleNotices"
 import { createSlug } from "../../lib/slug"
@@ -393,13 +394,13 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
 
   return (
     <>
-      <div className="flex flex-col gap-4 rounded-card border border-white/10 bg-[#14111c] p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="surprise-card flex flex-col gap-4 rounded-card p-5 sm:flex-row sm:items-center sm:justify-between">
         <NocSays />
         <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-center">
           <button
             ref={triggerRef}
             onClick={() => setOpen(true)}
-            className="btn-pill btn-primary inline-flex items-center justify-center gap-2 px-7 py-4 text-sm active:scale-95 motion-reduce:transition-none"
+            className="btn-pill btn-primary surprise-cta inline-flex items-center justify-center gap-2 px-8 py-4 text-base active:scale-95 motion-reduce:transition-none"
           >
             <Dices size={18} aria-hidden="true" /> {t("surprise.cta")}
           </button>
@@ -608,7 +609,7 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
 
                     <h3 className="mt-4 line-clamp-2 font-display text-xl leading-tight text-white">{card.name}</h3>
                     <p className="mt-1 text-sm text-zinc-400">
-                      {card.neighborhood || "Barcelona"}
+                      {card.neighborhood || otherCityName(card) || "Barcelona"}
                       {dist !== null && ` · ${t("surprise.walkDist").replace("{d}", formatDistance(dist)).replace("{n}", String(walkingMinutes(dist)))}`}
                     </p>
 

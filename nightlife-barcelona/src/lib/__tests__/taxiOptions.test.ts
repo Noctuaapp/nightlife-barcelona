@@ -19,7 +19,7 @@ describe("taxiOptions", () => {
   })
 
   it("todas las apps tienen logo propio en public/brands y nombre único", () => {
-    expect(TAXI_APPS.map((a) => a.id)).toEqual(["freenow", "cabify", "uber"])
+    expect(TAXI_APPS.map((a) => a.id)).toEqual(["freenow", "cabify", "uber", "bolt"])
     for (const a of TAXI_APPS) expect(a.logo).toBe(`/brands/${a.id}.png`)
     expect(new Set(TAXI_APPS.map((a) => a.name)).size).toBe(TAXI_APPS.length)
   })

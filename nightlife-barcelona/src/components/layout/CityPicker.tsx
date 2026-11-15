@@ -59,7 +59,9 @@ export default function CityPicker({ clock }: { clock: string | null }) {
       >
         {dot}
         <span>{current.name}</span>
-        {preview && <span className="rounded-full bg-amber-400 px-1.5 py-px text-[10px] font-bold leading-tight text-black">vista previa</span>}
+        {/* En el móvil el aviso no cabe: el logo va centrado y lo tapaba (15/11/2026). Ahí se queda el punto ámbar y el borde ámbar
+            (y el texto, solo para lectores de pantalla); desde sm se ve la etiqueta. */}
+        {preview && <span className="sr-only rounded-full bg-amber-400 px-1.5 py-px text-[10px] font-bold leading-tight text-black sm:not-sr-only">vista previa</span>}
         {clock && !preview && <span className="hidden tabular-nums text-white/55 sm:inline">{clock}</span>}
         <ChevronDown size={14} aria-hidden="true" className={`text-white/60 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>

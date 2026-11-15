@@ -1,13 +1,15 @@
 // Pedir un taxi desde la pantalla Taxi de Esenciales (11/11/2026): las apps y los teléfonos de radio taxi.
 // Antes eran botones pegados en una misma fila; ahora son dos listas separadas (components/essentials/TaxiPanel.tsx).
 
-export type TaxiApp = { id: "uber" | "cabify" | "freenow"; name: string; logo: string }
+export type TaxiApp = { id: "uber" | "cabify" | "freenow" | "bolt"; name: string; logo: string }
 
 /** Apps desde las que se pide un coche. Los logos están en public/brands/. */
 export const TAXI_APPS: readonly TaxiApp[] = [
   { id: "freenow", name: "FREE NOW", logo: "/brands/freenow.png" },
   { id: "cabify", name: "Cabify", logo: "/brands/cabify.png" },
   { id: "uber", name: "Uber", logo: "/brands/uber.png" },
+  // Bolt (15/11/2026): como FREE NOW, se abre la app (o la tienda) sin destino. Su logo va en public/brands/bolt.png.
+  { id: "bolt", name: "Bolt", logo: "/brands/bolt.png" },
 ]
 
 export type TaxiPhone = { name: string; phone: string }

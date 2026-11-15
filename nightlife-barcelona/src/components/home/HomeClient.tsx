@@ -627,6 +627,12 @@ export default function HomeClient({
           <HomeMessages className="mt-4 sm:hidden" />
         </section>
 
+        {/* SORPRÉNDEME (15/11/2026): justo debajo del carrusel de «Esta noche» (antes iba tras las puertas de Explora y los ambientes,
+            casi al final del primer tramo de la portada), con su tarjeta con borde de neón. */}
+        <section className="mx-auto mt-6 max-w-7xl px-4 sm:mt-8 sm:px-6">
+          <SurpriseMe clubs={clubs} />
+        </section>
+
         {/* CÓMO VOLVER A CASA: estado del metro de esta noche, NitBus (en Madrid, búhos) y taxi; en Madrid, con su metro y sus búhos (15/11/2026) */}
         <HomeGetHome />
 
@@ -638,7 +644,6 @@ export default function HomeClient({
 
         <section className="mx-auto mt-10 max-w-7xl px-4 sm:px-6">
           <ReferralBanner />
-          <SurpriseMe clubs={clubs} />
         </section>
 
         {/* DESTACADOS con filtros */}

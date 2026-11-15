@@ -58,7 +58,7 @@ const EVENT_LABELS: Record<string, string> = {
   instagram_click: "Abre Instagram",
   share_click: "Comparte",
   favorite_click: "Favorito",
-  ride_click: "Pide Uber/Cabify",
+  ride_click: "Pide un coche (Uber, Cabify, Bolt…)",
   search: "Busca",
   filter_used: "Usa filtros del plan",
   party_poll_vote: "Vota la encuesta del día",
