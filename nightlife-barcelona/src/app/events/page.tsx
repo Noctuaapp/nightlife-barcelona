@@ -4,7 +4,7 @@ import BottomNav from "../../components/layout/BottomNav"
 import EventsExplorer from "../../components/nightlife/EventsExplorer"
 import EventsComingSoon from "../../components/nightlife/EventsComingSoon"
 import MananeoSection from "../../components/nightlife/MananeoSection"
-import { supabase } from "../../lib/supabase"
+import { fetchCityEvents } from "../../lib/cityEvents"
 import { EVENT_IMAGE_FALLBACK, parsePriceEUR, safeJsonLd } from "../../lib/structuredData"
 import { createSlug } from "../../lib/slug"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
@@ -42,7 +42,8 @@ export default async function EventsPage() {
     )
   }
 
-  const { data: events } = await supabase.from("events").select("*").eq("hidden", false).order("date", { ascending: true })
+  // Solo los eventos de Barcelona: los de Madrid tienen su propia página (/madrid/events, lib/cityEvents.ts).
+  const events = await fetchCityEvents("barcelona")
 
   // Datos estructurados de la lista (30/10/2026). Antes cada evento mandaba el precio tal cual lo
   // escribe el admin ("15€", "Gratis"), sin foto cuando el evento no tenía y hasta sin fecha:
@@ -97,7 +98,7 @@ export default async function EventsPage() {
   return (
     <>
       <Header />
-      <EventsExplorer initialEvents={events || []} />
+      <EventsExplorer initialEvents={events} />
       {/* Mañaneo (afterhours): oculto para los visitantes mientras MANANEO_HIDDEN sea true (lib/featureFlags.ts). */}
       <MananeoSection />
       <BottomNav />

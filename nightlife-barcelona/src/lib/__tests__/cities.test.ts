@@ -142,7 +142,7 @@ describe("URLs por ciudad (Fase E)", () => {
   })
 
   it("en Madrid no se tocan las páginas comunes, las externas ni las que ya llevan prefijo", () => {
-    for (const p of ["/clubs/joy-eslava", "/profile", "/favorites", "/login", "/privacy", "/events", "/event/algo", "/club-event/3", "/admin/dashboard", "/en/clubs", "https://www.google.com/maps", "//cdn.x.com/a", "#top", "mailto:a@b.c", "/madrid/clubs", "/madrid"]) {
+    for (const p of ["/clubs/joy-eslava", "/profile", "/favorites", "/login", "/privacy", "/event/algo", "/club-event/3", "/admin/dashboard", "/en/clubs", "https://www.google.com/maps", "//cdn.x.com/a", "#top", "mailto:a@b.c", "/madrid/clubs", "/madrid"]) {
       expect(cityPath(p, "madrid")).toBe(p)
     }
   })
@@ -157,8 +157,20 @@ describe("URLs por ciudad (Fase E)", () => {
   })
 
   it("qué rutas tienen versión por ciudad", () => {
-    for (const p of ["/", "/clubs", "/essentials", "/essentials/taxi", "/map", "/plan", "/barrio/x", "/musica/techno"]) expect(isCityScoped(p), p).toBe(true)
-    for (const p of ["/clubs/abc", "/profile", "/zona/badalona", "/metro", "/nitbus", "/events", "/essentials/sugerir"]) expect(isCityScoped(p), p).toBe(false)
+    for (const p of ["/", "/clubs", "/essentials", "/essentials/taxi", "/map", "/plan", "/barrio/x", "/musica/techno", "/metro", "/metro/L1", "/buhos", "/buhos/N1", "/events"]) expect(isCityScoped(p), p).toBe(true)
+    // /nitbus es el autobús nocturno de Barcelona: no tiene versión por ciudad (los búhos de Madrid viven en /buhos).
+    for (const p of ["/clubs/abc", "/profile", "/zona/badalona", "/nitbus", "/nitbus/N1", "/event/mi-festival", "/club-event/12", "/essentials/sugerir"]) expect(isCityScoped(p), p).toBe(false)
+  })
+
+  it("eventos: /events tiene su hermana /madrid/events; las fichas de evento son comunes", () => {
+    expect(cityPath("/events", "madrid")).toBe("/madrid/events")
+    expect(cityPath("/events", "barcelona")).toBe("/events")
+    expect(cityPath("/event/mi-festival", "madrid")).toBe("/event/mi-festival")
+    expect(cityFromPath("/madrid/events")).toBe("madrid")
+    expect(stripCityPath("/madrid/events")).toBe("/events")
+    expect(cityUrl("/events", "madrid")).toBe("https://www.noctuaapp.com/madrid/events")
+    expect(switchCityPath("/events", "madrid")).toBe("/madrid/events")
+    expect(switchCityPath("/madrid/events", "barcelona")).toBe("/events")
   })
 
   it("dirección completa para metadatos", () => {
@@ -167,6 +179,17 @@ describe("URLs por ciudad (Fase E)", () => {
     expect(cityUrl("/", "madrid")).toBe("https://www.noctuaapp.com/madrid")
     expect(cityUrl("/clubs", "madrid")).toBe("https://www.noctuaapp.com/madrid/clubs")
     expect(cityUrl("/clubs/joy-eslava", "madrid")).toBe("https://www.noctuaapp.com/clubs/joy-eslava")
+  })
+
+  it("metro y búhos: en Madrid cuelgan de /madrid y en Barcelona no cambia nada", () => {
+    expect(cityUrl("/metro", "madrid")).toBe("https://www.noctuaapp.com/madrid/metro")
+    expect(cityUrl("/metro/L1", "barcelona")).toBe("https://www.noctuaapp.com/metro/L1")
+    expect(cityUrl("/buhos/N1", "madrid")).toBe("https://www.noctuaapp.com/madrid/buhos/N1")
+    expect(cityPath("/metro/L3?stop=Sol", "madrid")).toBe("/madrid/metro/L3?stop=Sol")
+    expect(cityPath("/metro/L3?stop=Sol", "barcelona")).toBe("/metro/L3?stop=Sol")
+    // el Nitbus es de Barcelona: no se prefija
+    expect(cityPath("/nitbus/N1", "madrid")).toBe("/nitbus/N1")
+    expect(stripCityPath("/madrid/buhos/N1")).toBe("/buhos/N1")
   })
 
   it("el selector de ciudad lleva a la misma página si existe en la otra ciudad y, si no, a su portada", () => {

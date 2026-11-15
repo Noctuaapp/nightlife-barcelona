@@ -45,7 +45,7 @@ export const ESSENTIAL_AREAS_BY_CITY: Record<CityKey, AreaList> = {
   ],
 }
 
-/** Categorías nuevas de esenciales (de una en una) que importa «Importar lo que falta». Bicing es de Barcelona y BiciMAD, de Madrid. */
+/** Categorías nuevas de esenciales (de una en una) que importa «Importar lo que falta». Bicing es de Barcelona; BiciMAD y los estancos, de Madrid. */
 export const NEW_ESSENTIAL_CATS_BY_CITY: Record<CityKey, [value: string, label: string][]> = {
   barcelona: [
     ["taxi", "Paradas de taxi"],
@@ -64,12 +64,13 @@ export const NEW_ESSENTIAL_CATS_BY_CITY: Record<CityKey, [value: string, label: 
     ["luggage", "Consignas"],
     ["police", "Comisarías y policía"],
     ["bicimad", "Estaciones de BiciMAD"],
+    ["tobacco", "Estancos"],
   ],
 }
 
 // Categorías que solo existen en una ciudad (las mismas que la web pública: components/city/EssentialsCategoryServer.tsx).
 const ONLY_BARCELONA = new Set(["bicing", "parking"])
-const ONLY_MADRID = new Set(["bicimad"])
+const ONLY_MADRID = new Set(["bicimad", "tobacco"])
 
 /** ¿Tiene sentido esta categoría de esenciales en la ciudad? («all» y las comunes, sí.) */
 export function isCategoryOfCity(category: string, city: CityKey): boolean {

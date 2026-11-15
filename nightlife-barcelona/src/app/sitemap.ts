@@ -4,6 +4,7 @@ import { createSlug } from "../lib/slug"
 import type { DbRow } from "../lib/clubQueries"
 import { MIN_INDEXABLE, neighborhoodsOf, stylesOf } from "../lib/areas"
 import { isCityOpen } from "../lib/cities"
+import { MADRID_BUHO_CODES, MADRID_METRO_CODES } from "../lib/madridTransit"
 import { zoneLinks, zoneSlugByName } from "../lib/zonePages"
 import { zoneOf } from "../lib/zones"
 import { EVENTS_HIDDEN } from "../lib/featureFlags"
@@ -122,6 +123,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         { url: `${BASE_URL}/madrid/essentials`, changeFrequency: "weekly", priority: 0.6 },
         { url: `${BASE_URL}/madrid/map`, changeFrequency: "weekly", priority: 0.5 },
         { url: `${BASE_URL}/madrid/plan`, changeFrequency: "weekly", priority: 0.5 },
+        // Metro y búhos de Madrid (15/11/2026): datos fijos, una página por línea.
+        { url: `${BASE_URL}/madrid/metro`, changeFrequency: "monthly", priority: 0.5 },
+        ...MADRID_METRO_CODES.map((c) => ({ url: `${BASE_URL}/madrid/metro/${c}`, changeFrequency: "monthly" as const, priority: 0.4 })),
+        { url: `${BASE_URL}/madrid/buhos`, changeFrequency: "monthly", priority: 0.5 },
+        ...MADRID_BUHO_CODES.map((c) => ({ url: `${BASE_URL}/madrid/buhos/${c}`, changeFrequency: "monthly" as const, priority: 0.4 })),
         ...neighborhoodsOf(madridAreaClubs)
           .filter((n) => n.count >= MIN_INDEXABLE)
           .map((n) => ({ url: `${BASE_URL}/madrid/barrio/${n.slug}`, changeFrequency: "weekly" as const, priority: 0.6 })),

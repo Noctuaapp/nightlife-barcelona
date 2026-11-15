@@ -1,4 +1,4 @@
-import { Pill, Banknote, UtensilsCrossed, TrainFront, Bus, ShoppingCart, Dices, Fuel, Hospital, MapPin, CircleParking, CarTaxiFront, PawPrint, Toilet, CupSoda, Bike, Luggage, Siren, PackageSearch, type LucideIcon } from "lucide-react"
+import { Pill, Banknote, UtensilsCrossed, TrainFront, Bus, ShoppingCart, Dices, Fuel, Hospital, MapPin, CircleParking, CarTaxiFront, PawPrint, Toilet, CupSoda, Bike, Luggage, Siren, PackageSearch, Cigarette, type LucideIcon } from "lucide-react"
 
 // Catálogo ÚNICO de categorías de esenciales (05/11/2026). Antes la lista vivía en seis sitios
 // (esta, los importadores, el cron de Google, la restricción SQL de sugerencias, el admin y los
@@ -55,6 +55,8 @@ export const ESSENTIAL_CATEGORIES: EssentialCategory[] = [
   { key: "Food", slug: "food", icon: UtensilsCrossed, group: "food", availability: "schedule", trust: "directory", expiryDays: 365, minPlaces: 1 },
   { key: "Supermarket", slug: "supermarket", icon: ShoppingCart, group: "food", availability: "schedule", trust: "directory", expiryDays: 365, minPlaces: 1 },
   { key: "Vending", slug: "vending", icon: CupSoda, group: "food", availability: "schedule", trust: "strict", expiryDays: 180, minPlaces: 3 },
+  // Estancos (15/11/2026): solo Madrid. Entran los abiertos las 24 h o hasta la 1:00 o más tarde, como las farmacias y los supermercados.
+  { key: "Tobacco", slug: "tobacco", icon: Cigarette, group: "food", availability: "schedule", trust: "directory", expiryDays: 180, minPlaces: 1 },
   { key: "ATM", slug: "atm", icon: Banknote, group: "food", availability: "schedule", trust: "directory", expiryDays: 365, minPlaces: 1 },
   { key: "Gas Station", slug: "gas-station", icon: Fuel, group: "food", availability: "schedule", trust: "directory", expiryDays: 365, minPlaces: 1 },
   // Necesidades personales
@@ -108,6 +110,7 @@ const SLUG_LABEL_ES: Record<string, string> = {
   vending: "Máquinas expendedoras",
   bicing: "Estaciones de Bicing",
   bicimad: "Estaciones de BiciMAD",
+  tobacco: "Estancos",
   luggage: "Consignas",
   police: "Comisarías y policía",
   "lost-found": "Objetos perdidos",

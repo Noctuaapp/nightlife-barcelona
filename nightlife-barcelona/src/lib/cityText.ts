@@ -15,6 +15,9 @@ export const CITY_TEXT_KEYS: readonly string[] = [
   "home.liveTonight",
   "home.heroImageAlt",
   "home.statsClubs",
+  // Eventos (15/11/2026)
+  "events.subtitle",
+  "events.soonBody",
   // Listados y mapa
   "clubs.subtitle",
   "map.title",
@@ -50,6 +53,20 @@ export const CITY_TEXT_KEYS: readonly string[] = [
   "clubPage.nitbusNearby",
   "clubPage.catalunyaHub",
   "clubPage.metroClosed",
+  // Metro de Madrid y búhos (15/11/2026): portadas, página de cada línea y bloque «Cómo volver a casa» de la portada
+  "metroPage.title",
+  "metroPage.subtitle",
+  "metroPage.findStopAll",
+  "metroPage.officialNote",
+  "essentialsPage.metroRules",
+  "nitbusPage.title",
+  "nitbusPage.subtitle",
+  "nitbusPage.findStopAll",
+  "nitbusPage.officialNote",
+  "essentialsPage.nitbusHours",
+  "home.doorNitbus",
+  "home.getHomeText",
+  "home.getHomeNitbusHint",
   // Tiempo
   "weather.tonightTitle",
   "weatherTip.nice",

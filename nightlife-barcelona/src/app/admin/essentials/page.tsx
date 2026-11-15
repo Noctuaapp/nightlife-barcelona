@@ -94,6 +94,7 @@ const CATEGORY_SINGULAR_ES: Record<string, string> = {
   BiciMAD: "Estación de BiciMAD",
   Luggage: "Consigna",
   Police: "Comisaría",
+  Tobacco: "Estanco",
   LostFound: "Objetos perdidos",
 }
 const categorySingular = (key: string) => CATEGORY_SINGULAR_ES[key] || key

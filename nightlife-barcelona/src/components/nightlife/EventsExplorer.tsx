@@ -15,6 +15,9 @@ import { toDateLocale } from "../../lib/dateLocale"
 import { optionsWithData } from "../../lib/filterOptions"
 import { classifyEvent, EVENT_CATEGORIES, type EventCategory } from "../../lib/eventCategories"
 import NocOwl from "../mascot/NocOwl"
+import { CITIES } from "../../lib/cities"
+import { cityTextKey } from "../../lib/cityText"
+import { useSelectedCity } from "../../lib/previewCity"
 
 // Un evento de varios días (date_end) no se considera terminado hasta que pasa el último día,
 // no el primero.
@@ -99,6 +102,8 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   const [sortBy, setSortBy] = useState<"date" | "date_desc" | "featured">("date")
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const { t, locale } = useLanguage()
+  const cityNow = useSelectedCity() // Barcelona o Madrid: los eventos que llegan ya son de esa ciudad (lib/cityEvents.ts)
+  const cityName = CITIES[cityNow].name
 
   const availableZones = zonesPresent(events)
 
@@ -256,7 +261,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
       <main className="relative min-h-screen bg-night pb-40 text-ink">
 
         {/* PORTADA con la foto de la web (03/11/2026), igual que Clubs y Esenciales. */}
-        <SectionHero section="events" title={t("events.subtitle")} pill={t("home.liveTonight")} switcher={<ExploreSwitch active="events" />} mascot={<NocOwl size={96} pose="festival" mood="party" className="h-[72px] w-[72px] sm:h-[104px] sm:w-[104px]" />} />
+        <SectionHero section="events" title={t(cityTextKey("events.subtitle", cityNow))} pill={t("home.liveTonight")} switcher={<ExploreSwitch active="events" />} mascot={<NocOwl size={96} pose="festival" mood="party" className="h-[72px] w-[72px] sm:h-[104px] sm:w-[104px]" />} />
 
         {/* CATEGORÍAS (04/11/2026): lo primero que eliges es qué tipo de plan buscas. */}
         <nav aria-label={t("events.title")} className="mx-auto max-w-7xl px-4 pt-5">
@@ -414,7 +419,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                     {dateBlock}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-base font-bold text-ink">{event._cls.barrio || event.title}</p>
-                      <p className="mt-0.5 truncate text-sm text-zinc-400">{event._cls.barrio ? event.title : event.club_name || "Barcelona"}</p>
+                      <p className="mt-0.5 truncate text-sm text-zinc-400">{event._cls.barrio ? event.title : event.club_name || cityName}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                         {soon && <span className="rounded-full bg-white px-2.5 py-1 font-bold text-[#0a0910]">{t("eventsExplorer.thisWeek")}</span>}
                         {past && <span className="rounded-full border border-white/10 px-2.5 py-1 font-semibold text-zinc-300">{t("event.finishedValue")}</span>}
@@ -457,7 +462,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                       {event.featured && !past && <Icon name="star" className="ml-1.5 inline h-4 w-4 align-[-2px] text-warn" />}
                     </h2>
                     <p className="mt-0.5 truncate text-sm text-zinc-400">
-                      {[event.club_name || "Barcelona", event.music].filter(Boolean).join(" · ")}
+                      {[event.club_name || cityName, event.music].filter(Boolean).join(" · ")}
                     </p>
                     {(event.start_time || event.price) && (
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">

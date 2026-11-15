@@ -50,6 +50,10 @@ export type NbLine = {
   // (posiciones en `directions`) son suyos y cuántas estaciones tiene. Sin esto, la página enseñaba solo el
   // primer tramo y el otro quedaba escondido detrás de un sentido (11/11/2026).
   sections?: { name: string; dirs: number[]; stopCount: number }[]
+  // Línea circular (L6 y L12 de Madrid): da la vuelta sin cabeceras. La lista solo marca dónde se ha cortado el círculo, así
+  // que la vista no pinta «inicio» ni «final» y no ofrece «Mi trayecto» (un trayecto que cruzara ese corte saldría por el
+  // camino largo).
+  circular?: boolean
 }
 
 export type NbSearchEntry = { name: string; lines: string[] }

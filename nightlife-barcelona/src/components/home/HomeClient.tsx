@@ -627,8 +627,8 @@ export default function HomeClient({
           <HomeMessages className="mt-4 sm:hidden" />
         </section>
 
-        {/* CÓMO VOLVER A CASA: estado del metro de esta noche, NitBus y taxi + tarjeta de instalar la app */}
-        {!previewing && <HomeGetHome />}
+        {/* CÓMO VOLVER A CASA: estado del metro de esta noche, NitBus (en Madrid, búhos) y taxi; en Madrid, con su metro y sus búhos (15/11/2026) */}
+        <HomeGetHome />
 
         {/* EXPLORA NOCTUA: puertas a mapa, plan y esenciales */}
         <ExploreDoors />

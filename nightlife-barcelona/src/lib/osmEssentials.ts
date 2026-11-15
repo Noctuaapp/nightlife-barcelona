@@ -12,7 +12,7 @@ import { isNightEssentialHours, parseOsmHours, toNoctuaHours, type WeekHours } f
 
 export type EssentialKey =
   | "pharmacy" | "atm" | "food" | "supermarket" | "gas" | "hospital" | "parking"
-  | "taxi" | "veterinary" | "toilets" | "vending" | "luggage" | "police" | "bicing" | "bicimad"
+  | "taxi" | "veterinary" | "toilets" | "vending" | "luggage" | "police" | "bicing" | "bicimad" | "tobacco"
 
 export type EssentialType = {
   key: EssentialKey
@@ -51,6 +51,10 @@ export const ESSENTIAL_TYPES: EssentialType[] = [
   // Estaciones de BiciMAD, la bici pública de Madrid (14/11/2026). Igual que Bicing: solo la ubicación. En OpenStreetMap llevan
   // network=BiciMAD y/o operator=EMT Madrid; se piden por red, por marca o por operador «BiciMAD».
   { key: "bicimad", category: "BiciMAD", label: "Estaciones de BiciMAD", needsHours: false, inAll: false, selectors: [`["amenity"="bicycle_rental"]["network"~"bicimad",i]`, `["amenity"="bicycle_rental"]["brand"~"bicimad",i]`, `["amenity"="bicycle_rental"]["operator"~"bicimad",i]`] },
+  // Estancos (15/11/2026): solo Madrid, donde hay algunos abiertos hasta tarde; en Barcelona ninguno (el importador no los admite allí).
+  // Como las farmacias o los supermercados: solo entran los que OpenStreetMap da abiertos las 24 h o hasta la 1:00 o más tarde. Los de
+  // máquina de tabaco (vending) no son estancos y quedan fuera, como siempre.
+  { key: "tobacco", category: "Tobacco", label: "Estancos", needsHours: true, inAll: false, selectors: [`["shop"="tobacco"]["opening_hours"]`] },
 ]
 
 export function typesFor(cat: string): EssentialType[] {
@@ -246,7 +250,7 @@ export function judgeEssential(type: EssentialType, tags: Record<string, string>
     case "bicing": return judgeBikeRental(tags, "Bicing")
     case "bicimad": return judgeBikeRental(tags, "BiciMAD")
   }
-  const name = essentialName(tags) ?? (type.key === "atm" ? "Cajero automático" : null)
+  const name = essentialName(tags) ?? (type.key === "atm" ? "Cajero automático" : type.key === "tobacco" ? "Estanco" : null)
   if (!name) return { ok: false, reason: "sin_nombre" }
   if (RESTRICTED_ACCESS.has((tags.access || "").toLowerCase())) return { ok: false, reason: "no_es_publico" }
 
@@ -310,5 +314,6 @@ export function osmMatches(key: EssentialKey, tags: Record<string, string>): boo
     case "police": return tags.amenity === "police"
     case "bicing": return tags.amenity === "bicycle_rental" && /bicing/i.test(`${tags.network || ""} ${tags.operator || ""}`)
     case "bicimad": return tags.amenity === "bicycle_rental" && /bicimad/i.test(`${tags.network || ""} ${tags.brand || ""} ${tags.operator || ""}`)
+    case "tobacco": return tags.shop === "tobacco"
   }
 }

@@ -130,7 +130,7 @@ describe("catálogo de categorías", () => {
   })
 
   it("Bicing, consignas, comisarías y objetos perdidos están en el catálogo; recarga eléctrica y agua no", () => {
-    for (const k of ["Bicing", "BiciMAD", "Luggage", "Police", "LostFound", "Taxi", "Veterinary", "Toilets", "Vending"]) expect(isKnownCategory(k)).toBe(true)
+    for (const k of ["Bicing", "BiciMAD", "Luggage", "Police", "LostFound", "Taxi", "Veterinary", "Toilets", "Vending", "Tobacco"]) expect(isKnownCategory(k)).toBe(true)
     for (const k of ["EVCharging", "Water", "Hotel"]) expect(isKnownCategory(k)).toBe(false)
   })
 

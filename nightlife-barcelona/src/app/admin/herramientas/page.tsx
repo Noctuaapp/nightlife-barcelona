@@ -501,6 +501,7 @@ export default function AdminToolsPage() {
                       <option value="police">Comisarías y policía</option>
                       {isCategoryOfCity("bicing", city) && <option value="bicing">Estaciones de Bicing</option>}
                       {isCategoryOfCity("bicimad", city) && <option value="bicimad">Estaciones de BiciMAD</option>}
+                      {isCategoryOfCity("tobacco", city) && <option value="tobacco">Estancos</option>}
                     </optgroup>
                   </select>
                   <label className="flex items-center gap-2 text-zinc-300">
@@ -514,7 +515,7 @@ export default function AdminToolsPage() {
                 <div className="mt-4 rounded-ctl border border-white/10 bg-night/60 p-4">
                   <p className="text-sm font-semibold text-white">Importar lo que falta</p>
                   <p className="mt-1 text-xs leading-relaxed text-zinc-400">
-                    Las {NEW_ESS_CATS.length} categorías nuevas (taxi, veterinarios, aseos, máquinas, consignas, policía y {city === "madrid" ? "BiciMAD" : "Bicing"}) en{" "}
+                    Las {NEW_ESS_CATS.length} categorías nuevas (taxi, veterinarios, aseos, máquinas, consignas, policía{city === "madrid" ? ", BiciMAD y estancos" : " y Bicing"}) en{" "}
                     {ESS_AREAS.length === 1 ? "su zona" : `las ${ESS_AREAS.length} zonas`} de {cityName}, una detrás de otra. Se salta lo que ya está importado y todo entra oculto.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">

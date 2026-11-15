@@ -39,16 +39,17 @@ const BARCELONA_META: Record<string, { title: string; description: string }> = {
   "lost-found": { title: "Objetos perdidos en Barcelona", description: "Oficinas de objetos perdidos en Barcelona y qué hacer si pierdes el móvil o la cartera." },
 }
 
-// Categorías propias de cada ciudad: el metro, el Nitbus y Bicing son de Barcelona; BiciMAD es de Madrid. El parking gratuito y los
+// Categorías propias de cada ciudad: el metro, el Nitbus y Bicing son de Barcelona; BiciMAD y los estancos (15/11/2026) son de Madrid. El parking gratuito y los
 // textos de «Guardia Urbana» tampoco valen en Madrid. Cualquier otra categoría existe en las dos ciudades.
 const ONLY_BARCELONA = new Set(["metro", "nitbus", "bicing", "parking"])
-const ONLY_MADRID = new Set(["bicimad"])
+const ONLY_MADRID = new Set(["bicimad", "tobacco"])
 
 // Frases de Madrid que no salen de cambiar el nombre de la ciudad.
 const MADRID_META: Record<string, { title: string; description: string }> = {
   transport: { title: "Transporte nocturno en Madrid", description: "Cómo moverte de noche por Madrid: metro, búhos, taxi y aeropuerto." },
   police: { title: "Comisarías y policía en Madrid", description: "Comisarías de la Policía Municipal y la Policía Nacional en Madrid, con teléfono y cómo llegar." },
   bicimad: { title: "Estaciones de BiciMAD en Madrid", description: "Estaciones de BiciMAD en Madrid con mapa y la más cercana a ti." },
+  tobacco: { title: "Estancos abiertos hasta tarde en Madrid", description: "Estancos de Madrid abiertos de noche o hasta la 1:00 o más tarde, con horario, mapa y cómo llegar." },
 }
 
 const localize = (text: string, city: CityKey) => (city === "barcelona" ? text : text.split("Barcelona").join(CITIES[city].name))
@@ -81,7 +82,7 @@ export const revalidate = 21600
 // noche y diluye la relevancia del resto para Google. Hotel se retiró el 05/11/2026 (da 404).
 // Las categorías nuevas tampoco se indexan hasta tener sitios verificados: una página casi vacía
 // perjudica más que ayuda. Cuando una tenga datos, se quita de aquí y se añade a sitemap.ts.
-const NOINDEX = new Set(["casino", "veterinary", "toilets", "vending", "bicing", "bicimad", "luggage", "police", "lost-found"])
+const NOINDEX = new Set(["casino", "veterinary", "toilets", "vending", "bicing", "bicimad", "tobacco", "luggage", "police", "lost-found"])
 
 /**
  * Categorías de esenciales de una ciudad que van al sitemap: las que existen en ella, no llevan noindex y tienen datos

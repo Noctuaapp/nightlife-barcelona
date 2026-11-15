@@ -23,7 +23,7 @@ export const maxDuration = 60
 //   Importar de verdad:              /api/admin/import-osm-essentials?area=badalona&cat=all&dry=0
 //   area = igual que el importador de locales (en Madrid, madrid1 y madrid2: el interior de la M-30 en dos partes, por cuadrículas)
 //   cat  = all | pharmacy | atm | food | supermarket | gas | hospital | parking
-//          | taxi | veterinary | toilets | vending | luggage | police | bicing | bicimad
+//          | taxi | veterinary | toilets | vending | luggage | police | bicing | bicimad | tobacco
 //   «all» son solo las seis primeras de la lista (las de siempre); parking y las nuevas se piden de una en una.
 //   En Barcelona conviene ir categoría a categoría: son muchos datos para una sola consulta.
 //
@@ -37,6 +37,7 @@ export const maxDuration = 60
 // fiesta y llenaría la lista. Para traerlos todos, añade &clubs=0. «cat=all» no incluye parkings.
 // En Madrid (14/11/2026) cuentan también los clubs ocultos (todavía no hay ninguno publicado) y el barrio sale de las 12 zonas
 // de lib/madridZones.ts (Malasaña, Chueca…), igual que en los locales. Bicing es de Barcelona y BiciMAD de Madrid: cada una solo encuentra estaciones en su ciudad.
+// Estancos (15/11/2026): solo Madrid (area=madrid1 o madrid2); en cualquier otra zona se rechaza.
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -51,6 +52,10 @@ export async function GET(req: Request) {
   const types = typesFor(cat)
   if (types.length === 0) {
     return NextResponse.json({ error: `cat debe ser una de: all, ${ESSENTIAL_TYPES.map((t) => t.key).join(", ")}` }, { status: 400 })
+  }
+  // Los estancos son solo de Madrid: en Barcelona ninguno abre hasta tarde, así que no se importan allí.
+  if (types.some((t) => t.key === "tobacco") && !tiled) {
+    return NextResponse.json({ error: "Los estancos solo se importan en Madrid (area=madrid1 o madrid2)." }, { status: 400 })
   }
   const dry = searchParams.get("dry") !== "0"
 

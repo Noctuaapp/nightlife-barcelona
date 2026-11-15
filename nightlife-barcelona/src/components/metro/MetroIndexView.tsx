@@ -1,19 +1,22 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import Link from "next/link"
+import Link from "../system/CityLink"
 import { ChevronRight, Map as MapIcon, Search } from "lucide-react"
 import Header from "../layout/Header"
 import Footer from "../layout/Footer"
 import BottomNav from "../layout/BottomNav"
 import { MetroLineBadge } from "../ui/TransitBadge"
-import { useLanguage } from "../../context/LanguageContext"
+import { useCityT } from "../../lib/useCityT"
+import { useSelectedCity } from "../../lib/previewCity"
 import { normStopName } from "../../lib/nitbusRoutes"
 import { NightPage } from "../ui/NightBackdrop"
 import NocOwl from "../mascot/NocOwl"
 
 // Portada del metro (06/11/2026), hermana de /nitbus: las 12 líneas como tarjetas y un buscador de
 // estación («¿qué líneas paran aquí?»). Cada línea abre su esquema en /metro/L3, con «Mi trayecto».
+// Madrid (15/11/2026): la misma portada sirve para /madrid/metro (la ciudad sale del CityScope): colores de Madrid, textos
+// de Madrid (claves «_madrid», lib/cityText.ts), enlaces dentro de /madrid y el crédito del CRTM; sin el mapa de Esenciales.
 
 export type MetroIndexLine = { code: string; routes: string[]; count: number; fgc?: boolean }
 export type MetroSearchEntry = { name: string; lines: string[] }
@@ -26,7 +29,9 @@ type Props = {
 const MAX_RESULTS = 10
 
 export default function MetroIndexView({ lines, search }: Props) {
-  const { t } = useLanguage()
+  const t = useCityT()
+  const city = useSelectedCity()
+  const madrid = city === "madrid"
   const [query, setQuery] = useState("")
 
   const q = normStopName(query)
@@ -81,7 +86,7 @@ export default function MetroIndexView({ lines, search }: Props) {
                         <span className="text-xs text-zinc-400">{t("nitbusPage.linesHere")}</span>
                         {r.lines.map((c) => (
                           <Link key={c} href={`/metro/${c}?stop=${encodeURIComponent(r.name)}`} aria-label={`Metro ${c}: ${r.name}`}>
-                            <MetroLineBadge code={c} size="md" />
+                            <MetroLineBadge code={c} size="md" city={city} />
                           </Link>
                         ))}
                       </div>
@@ -104,7 +109,7 @@ export default function MetroIndexView({ lines, search }: Props) {
                   href={`/metro/${line.code}`}
                   className="flex h-full items-center gap-3.5 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25"
                 >
-                  <MetroLineBadge code={line.code} size="lg" />
+                  <MetroLineBadge code={line.code} size="lg" city={city} />
                   <span className="min-w-0 flex-1">
                     {line.routes.map((r) => (
                       <span key={r} className="block text-sm font-semibold leading-snug text-ink">
@@ -125,13 +130,24 @@ export default function MetroIndexView({ lines, search }: Props) {
           </ul>
         </section>
 
-        <Link
-          href="/essentials/metro"
-          className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-brand-soft underline underline-offset-4 hover:text-ink"
-        >
-          <MapIcon size={16} aria-hidden="true" /> {t("metroPage.viewMap")}
-        </Link>
+        {!madrid && (
+          <Link
+            href="/essentials/metro"
+            className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-brand-soft underline underline-offset-4 hover:text-ink"
+          >
+            <MapIcon size={16} aria-hidden="true" /> {t("metroPage.viewMap")}
+          </Link>
+        )}
         <p className="mt-6 text-xs leading-relaxed text-zinc-400">{t("metroPage.officialNote")}</p>
+        {madrid && (
+          // Crédito exigido por la licencia de los datos del CRTM (no da a entender que respalde la web).
+          <p className="mt-2 text-[11px] leading-snug text-zinc-500">
+            {t("clubPage.metroDataCrtm")}{" "}
+            <a href="https://www.crtm.es" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+              Powered by CRTM
+            </a>
+          </p>
+        )}
       </main>
       </NightPage>
       <Footer />

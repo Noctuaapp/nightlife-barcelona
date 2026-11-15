@@ -1,4 +1,5 @@
-import { METRO_LINE_COLORS } from "../../../lib/transitColors"
+import { METRO_LINE_COLORS, MADRID_METRO_LINE_COLORS } from "../../../lib/transitColors"
+import type { CityKey } from "../../../lib/cities"
 
 // Fondo de «Cómo volver a casa esta noche» (12/11/2026, cuarta versión). Las anteriores usaban fotografía y luego un amanecer
 // dibujado, y no funcionaban. Esto es un plano de metro esquemático (no geográfico): líneas con los colores oficiales de TMB
@@ -7,16 +8,16 @@ import { METRO_LINE_COLORS } from "../../../lib/transitColors"
 // lo importante (el intercambiador) está en el centro.
 
 type Pt = [number, number]
-type Line = { color: string; pts: Pt[] }
+type Line = { code: string; pts: Pt[] }
 
 // Tres líneas viajan juntas por el centro (y 352 / 380 / 408) y se separan a los lados; una cuarta las cruza en vertical y una
 // quinta pasa por debajo. Las diagonales son siempre de 45°, como en un plano de verdad.
 const LINES: Line[] = [
-  { color: METRO_LINE_COLORS.L3, pts: [[-40, 560], [170, 560], [340, 352], [700, 352], [840, 212], [1040, 212]] }, // arriba en el centro
-  { color: METRO_LINE_COLORS.L1, pts: [[-40, 130], [100, 130], [250, 280], [250, 380], [250, 380], [760, 380], [860, 280], [1040, 280]] },
-  { color: METRO_LINE_COLORS.L5, pts: [[-40, 700], [60, 700], [60, 640], [180, 520], [180, 408], [720, 408], [860, 548], [1040, 548]] },
-  { color: METRO_LINE_COLORS.L4, pts: [[440, -40], [440, 120], [510, 190], [510, 800]] },
-  { color: METRO_LINE_COLORS.L2, pts: [[-40, 690], [380, 690], [470, 600], [760, 600], [850, 690], [1040, 690]] },
+  { code: "L3", pts: [[-40, 560], [170, 560], [340, 352], [700, 352], [840, 212], [1040, 212]] }, // arriba en el centro
+  { code: "L1", pts: [[-40, 130], [100, 130], [250, 280], [250, 380], [250, 380], [760, 380], [860, 280], [1040, 280]] },
+  { code: "L5", pts: [[-40, 700], [60, 700], [60, 640], [180, 520], [180, 408], [720, 408], [860, 548], [1040, 548]] },
+  { code: "L4", pts: [[440, -40], [440, 120], [510, 190], [510, 800]] },
+  { code: "L2", pts: [[-40, 690], [380, 690], [470, 600], [760, 600], [850, 690], [1040, 690]] },
 ]
 
 const INTERCHANGES: { x: number; y1: number; y2: number }[] = [
@@ -61,7 +62,9 @@ function stationsOf(pts: Pt[]): Pt[] {
   return out
 }
 
-export default function TransitNetwork({ className = "" }: { className?: string }) {
+// En Madrid el mismo dibujo lleva los colores de las líneas de Madrid (L1 azul claro, L2 roja, L3 amarilla…); en Barcelona, los de TMB.
+export default function TransitNetwork({ className = "", city = "barcelona" }: { className?: string; city?: CityKey }) {
+  const palette = city === "madrid" ? MADRID_METRO_LINE_COLORS : METRO_LINE_COLORS
   return (
     <svg viewBox="0 0 1000 760" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false" className={className}>
       <defs>
@@ -72,13 +75,13 @@ export default function TransitNetwork({ className = "" }: { className?: string 
       {/* Brillo */}
       <g fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="18" opacity=".55" filter="url(#tn-glow)">
         {LINES.map((l, i) => (
-          <path key={i} d={roundedPath(l.pts)} stroke={l.color} />
+          <path key={i} d={roundedPath(l.pts)} stroke={palette[l.code]} />
         ))}
       </g>
       {/* Líneas */}
       <g fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="11">
         {LINES.map((l, i) => (
-          <path key={i} d={roundedPath(l.pts)} stroke={l.color} />
+          <path key={i} d={roundedPath(l.pts)} stroke={palette[l.code]} />
         ))}
       </g>
       {/* Paradas */}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import Link from "next/link"
+import Link from "../system/CityLink"
 import { ChevronLeft, LocateFixed, Navigation, Search, Map as MapIcon } from "lucide-react"
 import Header from "../layout/Header"
 import Footer from "../layout/Footer"
@@ -15,7 +15,15 @@ import { metroLineColor, NITBUS_PLATE, NITBUS_RAIL } from "../../lib/transitColo
 import { FGC_LINES } from "../../lib/intl/metroText" // L6, L7, L8 y L12: líneas de FGC, no de TMB
 import { alightOptions, directionStats, lineStopNames, nearestStop, normStopName, planTrips, resolveSegment, type NbLine, type NbStop } from "../../lib/nitbusRoutes"
 import { NightPage } from "../ui/NightBackdrop"
+import { useSelectedCity } from "../../lib/previewCity"
+import { cityTextKey } from "../../lib/cityText"
+import { madridL6EarlyClose } from "../../lib/cityTransit"
 
+// Madrid (15/11/2026): la misma vista sirve para el Metro de Madrid (kind="metro", /madrid/metro/L3) y para sus búhos
+// (kind="nitbus", /madrid/buhos/N1). La ciudad sale del CityScope (useSelectedCity), no de una prop: en Barcelona todo queda igual.
+// En Madrid cambian los colores de las líneas, los textos que nombran a TMB (claves «_madrid», lib/cityText.ts) y los enlaces
+// (basePath), y no salen el distintivo de FGC, el mapa de Esenciales (todavía no existe para Madrid) ni el tiempo estimado.
+//
 // Esta misma vista sirve para el metro (06/11/2026, kind="metro"): una línea de metro se carga con el mismo
 // formato (lib/metroLines.ts) y se comporta igual: estaciones en orden, transbordos, «Cerca de mí» y
 // «Mi trayecto». Cambian la insignia, el color de la barra, algunos textos («estaciones» en vez de
@@ -34,12 +42,16 @@ type Props = {
   kind?: "nitbus" | "metro"
   // Sustituye al recorrido de debajo del título (en las líneas de metro con dos tramos hay dos).
   subtitle?: string
+  // Búhos de Madrid: cada cuánto pasan (minutos [mínimo, máximo]) las noches de viernes y sábado y el resto.
+  freq?: { weekend: readonly [number, number] | null; weeknight: readonly [number, number] | null }
 }
+
+const freqRange = (r: readonly [number, number]) => (r[0] === r[1] ? String(r[0]) : `${r[0]}–${r[1]}`)
 
 // Frases que en el metro dicen «estación» en vez de «parada» (están en el bloque metroPage del idioma; el resto se comparte con el Nitbus).
 const METRO_OWN_TEXT = new Set([
   "back", "stopsCount", "findStop", "noMatch", "nearestIs", "nearSpotIs", "tripStops", "tripStopOne",
-  "segPickFrom", "segPickTo", "noStops", "officialNote", "sectionLabel", "splitNote", "fgcRules",
+  "segPickFrom", "segPickTo", "noStops", "officialNote", "sectionLabel", "splitNote", "fgcRules", "circularNote",
 ])
 
 
@@ -78,17 +90,30 @@ function StopDot({ kind, accent, rim }: { kind: "terminal" | "hub" | "stop"; acc
   return <span aria-hidden="true" className={`${base} h-3 w-3 border-2 bg-night ring-4 ring-night`} style={{ top: DOT_TOP, borderColor: rim }} />
 }
 
-export default function NitbusLineView({ code, line, route, allCodes, kind = "nitbus", subtitle }: Props) {
+export default function NitbusLineView({ code, line, route, allCodes, kind = "nitbus", subtitle, freq }: Props) {
   const { t } = useLanguage()
+  const city = useSelectedCity()
+  const madrid = city === "madrid"
   const isMetro = kind === "metro"
-  // Texto de la página: el del metro si lo tiene, si no el compartido (bloque nitbusPage).
-  const tl = (key: string) => t(isMetro && METRO_OWN_TEXT.has(key) ? `metroPage.${key}` : `nitbusPage.${key}`)
-  const lineColor = isMetro ? metroLineColor(code) : null
+  // Texto de la página: el del metro si lo tiene, si no el compartido (bloque nitbusPage). Los que nombran la ciudad
+  // (cityTextKey) cambian en Madrid.
+  const tl = (key: string) => t(cityTextKey(isMetro && METRO_OWN_TEXT.has(key) ? `metroPage.${key}` : `nitbusPage.${key}`, city))
+  const lineColor = isMetro ? metroLineColor(code, city) : null
   const railColor = lineColor ? lineColor.bg : NITBUS_RAIL
   const dotAccent = lineColor ? lineColor.bg : NITBUS_PLATE.fg
   const dotRim = lineColor ? lineColor.bg : "#9db0ff"
-  const basePath = isMetro ? "/metro" : "/nitbus"
-  const modeName = isMetro ? "Metro" : "Nitbus"
+  const basePath = isMetro ? "/metro" : madrid ? "/buhos" : "/nitbus"
+  const modeName = isMetro ? "Metro" : madrid ? "Búho" : "Nitbus"
+  // El tiempo de punta a punta es una estimación de Noctua para el Nitbus de Barcelona (no para el metro ni los búhos de Madrid).
+  const showMinutes = !isMetro && !madrid
+  // L6 y L12 de Madrid son circulares; L6 cierra a las 23:00 de domingo a jueves mientras duran las obras (aviso con fecha: se
+  // calcula en el navegador para que la página estática no lo congele).
+  const circular = !!line?.circular
+  const isFgc = isMetro && !madrid && FGC_LINES.has(code.toUpperCase())
+  const [l6Early, setL6Early] = useState(false)
+  useEffect(() => {
+    setL6Early(madrid && isMetro && madridL6EarlyClose([code]))
+  }, [madrid, isMetro, code])
   const geo = useGeolocation({ precise: true })
   const [dir, setDir] = useState(0)
   const [query, setQuery] = useState("")
@@ -113,7 +138,8 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
   // «Mi trayecto» (06/11/2026): subo en una parada y bajo en otra, y la lista se queda con ese tramo.
   // Las paradas de bajada salen de la de subida (solo las que vienen después), así que nunca se elige
   // un par sin trayecto; el sentido se deduce solo.
-  const fromOptions = useMemo(() => (line && ordered ? lineStopNames(line) : []), [line, ordered])
+  const planner = ordered && !circular // «Mi trayecto» (no en las líneas circulares)
+  const fromOptions = useMemo(() => (line && planner ? lineStopNames(line) : []), [line, planner])
   const toOptions = useMemo(() => (line && fromName ? alightOptions(line, fromName) : []), [line, fromName])
   const segFound = useMemo(
     () => (line && fromName && toName ? resolveSegment(line, fromName, toName, distanceInMeters) : null),
@@ -218,7 +244,7 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
   const trips = useMemo(() => (line && me && spot ? planTrips(line, me, spot, distanceInMeters) : []), [line, me, spot])
   // Tiempo aproximado de punta a punta del sentido que se está viendo (solo con el recorrido en orden).
   const dirStats = useMemo(() => (ordered && stops.length > 1 ? directionStats(stops, distanceInMeters) : null), [ordered, stops])
-  const approxMinutes = !isMetro && !filtering && !seg && dirStats?.minutes != null ? dirStats.minutes : null
+  const approxMinutes = showMinutes && !filtering && !seg && dirStats?.minutes != null ? dirStats.minutes : null
 
   const title = `${modeName} ${code}`
 
@@ -251,7 +277,7 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
               </span>
             )}
             <h1 className="font-display text-3xl leading-tight text-ink sm:text-4xl">{title}</h1>
-            {isMetro && FGC_LINES.has(code.toUpperCase()) && (
+            {isFgc && (
               <span className="shrink-0 rounded-full border border-white/25 px-2.5 py-1 text-xs font-bold leading-none text-zinc-100">FGC</span>
             )}
           </div>
@@ -270,19 +296,36 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
             </p>
           ) : null}
           <p className="mt-1 text-sm text-zinc-400">
-            {isMetro ? (FGC_LINES.has(code.toUpperCase()) ? tl("fgcRules") : t("essentialsPage.metroRules")) : t("essentialsPage.nitbusHours")}
+            {isMetro ? (isFgc ? tl("fgcRules") : t(cityTextKey("essentialsPage.metroRules", city))) : t(cityTextKey("essentialsPage.nitbusHours", city))}
           </p>
+          {freq && freq.weekend && freq.weeknight && (
+            <p className="mt-1 text-sm text-zinc-400">
+              {t("clubPage.buhoFreq").replace("{a}", freqRange(freq.weekend)).replace("{b}", freqRange(freq.weeknight))}
+            </p>
+          )}
+          {l6Early && (
+            <p className="mt-3 rounded-ctl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm leading-snug text-amber-100">{t("clubPage.metroL6Early")}</p>
+          )}
+          {circular && line && line.directions[0] && (
+            <p className="mt-3 text-sm leading-snug text-zinc-300">
+              {tl("circularNote")
+                .replace(/\{a\}/g, line.directions[0].stops[0]?.name ?? "")
+                .replace(/\{b\}/g, line.directions[0].stops[line.directions[0].stops.length - 1]?.name ?? "")}
+            </p>
+          )}
         </header>
 
         {!line || stops.length === 0 ? (
           <div className="mt-8 rounded-card border border-white/10 bg-surface p-6">
             <p className="text-base leading-relaxed text-zinc-200">{tl("noStops")}</p>
-            <Link
-              href={`/essentials/${kind}?line=${code}`}
-              className="btn-pill btn-secondary mt-4 inline-flex items-center gap-2 px-5 py-3 text-sm"
-            >
-              <MapIcon size={16} aria-hidden="true" /> {tl("viewMap")}
-            </Link>
+            {!madrid && (
+              <Link
+                href={`/essentials/${kind}?line=${code}`}
+                className="btn-pill btn-secondary mt-4 inline-flex items-center gap-2 px-5 py-3 text-sm"
+              >
+                <MapIcon size={16} aria-hidden="true" /> {tl("viewMap")}
+              </Link>
+            )}
           </div>
         ) : (
           <>
@@ -341,7 +384,7 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
               </div>
             )}
 
-            {ordered && (
+            {planner && (
               <section aria-label={tl("segTitle")} className="mt-4 rounded-card border border-white/10 bg-surface p-4">
                 <h2 className="text-sm font-semibold text-ink">{tl("segTitle")}</h2>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -376,12 +419,12 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
                       {[
                         tl("tripDirection").replace("{to}", current.to),
                         seg.stops === 1 ? tl("tripStopOne") : tl("tripStops").replace("{n}", String(seg.stops)),
-                        !isMetro && seg.minutes != null ? tl("tripMin").replace("{min}", String(seg.minutes)) : null,
+                        showMinutes && seg.minutes != null ? tl("tripMin").replace("{min}", String(seg.minutes)) : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")}
                     </p>
-                    {!isMetro && seg.minutes != null && <p className="mt-1 text-xs text-zinc-500">{tl("estimateNote")}</p>}
+                    {showMinutes && seg.minutes != null && <p className="mt-1 text-xs text-zinc-500">{tl("estimateNote")}</p>}
                     <button
                       type="button"
                       onClick={clearSeg}
@@ -468,7 +511,7 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
                       const meta = [
                         tl("tripDirection").replace("{to}", dr.to),
                         stopsLabel,
-                        !isMetro && tr.minutes != null ? tl("tripMin").replace("{min}", String(tr.minutes)) : null,
+                        showMinutes && tr.minutes != null ? tl("tripMin").replace("{min}", String(tr.minutes)) : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")
@@ -502,7 +545,7 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
               <>
                 <p className="mt-6 text-sm text-zinc-400">
                   {tl("stopsCount").replace("{n}", String(filtering ? rows.length : stops.length))}
-                  {current?.to && !filtering && ordered ? ` · ${current.from} → ${current.to}` : ""}
+                  {current?.to && !filtering && ordered && !circular ? ` · ${current.from} → ${current.to}` : ""}
                   {approxMinutes != null ? ` · ${tl("approxTime").replace("{min}", String(approxMinutes))}` : ""}
                 </p>
                 {approxMinutes != null && <p className="mt-1 text-xs text-zinc-500">{tl("estimateNote")}</p>}
@@ -517,7 +560,7 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
                   // Con un tramo elegido, la «primera» y la «última» son donde subo y donde bajo.
                   const isFirst = index === (seg ? seg.from : 0)
                   const isLast = index === (seg ? seg.to : stops.length - 1)
-                  const terminal = ordered && (isFirst || isLast)
+                  const terminal = ordered && !circular && (isFirst || isLast)
                   const hub = !terminal && s.others.length >= (isMetro ? HUB_MIN_LINES_METRO : HUB_MIN_LINES)
                   const isSpot = spotHi?.index === index
                   const isMe = meHi?.index === index
@@ -570,7 +613,7 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
                             <span className="text-xs text-zinc-400">{tl("transfer")}</span>
                             {s.others.slice(0, MAX_TRANSFER_BADGES).map((c) => (
                               <Link key={c} href={`${basePath}/${c}?stop=${encodeURIComponent(s.name)}`} aria-label={`${modeName} ${c}`}>
-                                {isMetro ? <MetroLineBadge code={c} /> : <NitbusBadge code={c} />}
+                                {isMetro ? <MetroLineBadge code={c} city={city} /> : <NitbusBadge code={c} />}
                               </Link>
                             ))}
                             {s.others.length > MAX_TRANSFER_BADGES && (
@@ -597,12 +640,14 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
               </ol>
             )}
 
-            <Link
-              href={`/essentials/${kind}?line=${code}`}
-              className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-brand-soft underline underline-offset-4 hover:text-ink"
-            >
-              <MapIcon size={16} aria-hidden="true" /> {tl("viewMapLine").replace("{code}", code)}
-            </Link>
+            {!madrid && (
+              <Link
+                href={`/essentials/${kind}?line=${code}`}
+                className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-brand-soft underline underline-offset-4 hover:text-ink"
+              >
+                <MapIcon size={16} aria-hidden="true" /> {tl("viewMapLine").replace("{code}", code)}
+              </Link>
+            )}
           </>
         )}
 
@@ -613,11 +658,25 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
               .filter((c) => c !== code)
               .map((c) => (
                 <Link key={c} href={`${basePath}/${c}`} aria-label={`${modeName} ${c}`} className={`${isMetro ? "rounded-full" : "rounded-md"} p-0.5 transition hover:ring-2 hover:ring-white/60`}>
-                  {isMetro ? <MetroLineBadge code={c} size="md" /> : <NitbusBadge code={c} size="md" />}
+                  {isMetro ? <MetroLineBadge code={c} size="md" city={city} /> : <NitbusBadge code={c} size="md" />}
                 </Link>
               ))}
           </div>
           <p className="mt-5 text-xs leading-relaxed text-zinc-400">{tl("officialNote")}</p>
+          {madrid && (
+            // Fuente de los datos (licencia del CRTM y datos abiertos de la EMT). No da a entender que respalden la web.
+            <p className="mt-2 text-[11px] leading-snug text-zinc-500">
+              {isMetro ? t("clubPage.metroDataCrtm") : t("clubPage.buhoSource")}{" "}
+              <a
+                href={isMetro ? "https://www.crtm.es" : "https://www.emtmadrid.es"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2"
+              >
+                {isMetro ? "Powered by CRTM" : "emtmadrid.es"}
+              </a>
+            </p>
+          )}
         </section>
       </main>
       </NightPage>

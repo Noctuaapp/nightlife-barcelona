@@ -26,12 +26,14 @@ describe("zonas por ciudad", () => {
 })
 
 describe("categorías por ciudad", () => {
-  it("Bicing y parking solo en Barcelona; BiciMAD solo en Madrid; el resto en las dos", () => {
+  it("Bicing y parking solo en Barcelona; BiciMAD y los estancos solo en Madrid; el resto en las dos", () => {
     expect(isCategoryOfCity("bicing", "barcelona")).toBe(true)
     expect(isCategoryOfCity("bicing", "madrid")).toBe(false)
     expect(isCategoryOfCity("parking", "madrid")).toBe(false)
     expect(isCategoryOfCity("bicimad", "madrid")).toBe(true)
     expect(isCategoryOfCity("bicimad", "barcelona")).toBe(false)
+    expect(isCategoryOfCity("tobacco", "madrid")).toBe(true)
+    expect(isCategoryOfCity("tobacco", "barcelona")).toBe(false)
     for (const c of ["all", "pharmacy", "atm", "taxi", "police", "hospital"]) {
       expect(isCategoryOfCity(c, "barcelona")).toBe(true)
       expect(isCategoryOfCity(c, "madrid")).toBe(true)
@@ -42,6 +44,8 @@ describe("categorías por ciudad", () => {
       for (const [cat] of NEW_ESSENTIAL_CATS_BY_CITY[city]) expect(isCategoryOfCity(cat, city)).toBe(true)
     }
     expect(NEW_ESSENTIAL_CATS_BY_CITY.barcelona).toHaveLength(7)
+    expect(NEW_ESSENTIAL_CATS_BY_CITY.barcelona.map(([c]) => c)).not.toContain("tobacco")
+    expect(NEW_ESSENTIAL_CATS_BY_CITY.madrid.map(([c]) => c)).toContain("tobacco")
   })
 })
 

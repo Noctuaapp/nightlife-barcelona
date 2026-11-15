@@ -157,8 +157,12 @@ function splitPath(path: string): { pathname: string; rest: string } {
 
 // Páginas que tienen versión propia en Madrid (con la ruta de Barcelona como referencia). Todo lo demás (la ficha de un
 // local, favoritos, el perfil, los textos legales…) es común a las ciudades y no cambia de dirección.
-const SCOPED_EXACT = new Set(["/", "/clubs", "/essentials", "/map", "/plan"])
-const SCOPED_PREFIX = ["/essentials/", "/barrio/", "/musica/"]
+// Metro y búhos (15/11/2026): /metro (Barcelona) tiene su hermana /madrid/metro, y los búhos de Madrid viven en /madrid/buhos
+// (el Nitbus, /nitbus, es solo de Barcelona y no se prefija).
+// Eventos (15/11/2026): /events (Barcelona) tiene su hermana /madrid/events; cada ciudad enseña solo sus eventos (lib/cityEvents.ts).
+// Las fichas /event/[slug] y /club-event/[id] son comunes: la ciudad se toma del propio evento.
+const SCOPED_EXACT = new Set(["/", "/clubs", "/essentials", "/map", "/plan", "/metro", "/buhos", "/events"])
+const SCOPED_PREFIX = ["/essentials/", "/barrio/", "/musica/", "/metro/", "/buhos/"]
 
 /** ¿Esta ruta (sin prefijo de ciudad) tiene versión propia por ciudad? */
 export function isCityScoped(pathname: string): boolean {
@@ -195,7 +199,7 @@ export function cityUrl(path: string, city: CityKey): string {
 }
 
 // Páginas que existen igual en todas las ciudades y a las que tiene sentido ir al cambiar de ciudad.
-const PORTABLE = new Set(["/", "/clubs", "/essentials", "/map", "/plan"])
+const PORTABLE = new Set(["/", "/clubs", "/essentials", "/map", "/plan", "/events"])
 
 /**
  * Adónde lleva el selector de ciudad: a la misma página en la otra ciudad si existe allí (Clubs, Esenciales, Mapa, Plan) y,

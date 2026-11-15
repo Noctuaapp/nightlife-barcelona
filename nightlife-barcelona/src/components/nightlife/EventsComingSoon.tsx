@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
-import { useLanguage } from "../../context/LanguageContext"
+import Link from "../system/CityLink" // el acceso a los clubs lleva a los de la ciudad en pantalla
+import { useCityT } from "../../lib/useCityT"
+import { useSelectedCity } from "../../lib/previewCity"
+import { fetchCityEvents } from "../../lib/cityEvents"
 import { useIsAdmin } from "../../lib/useIsAdmin"
-import { supabase } from "../../lib/supabase"
 import ExploreSwitch from "./ExploreSwitch"
 import EventsExplorer from "./EventsExplorer"
 import NocOwl from "../mascot/NocOwl"
@@ -15,26 +16,23 @@ import MananeoSection from "./MananeoSection"
 // - Visitantes (y buscadores): solo ven «Próximamente» y un acceso a los clubs. La agenda ni se pide.
 // - Admin: ve la agenda real para poder revisarla y terminarla; los eventos se piden aquí, ya con la
 //   sesión de admin, en vez de enviarlos con la página a todo el mundo.
+// - Cada ciudad enseña solo sus eventos (15/11/2026): /events los de Barcelona y /madrid/events los de Madrid (lib/cityEvents.ts).
 export default function EventsComingSoon() {
-  const { t } = useLanguage()
+  const t = useCityT()
+  const city = useSelectedCity()
   const isAdmin = useIsAdmin()
   const [events, setEvents] = useState<any[] | null>(null)
 
   useEffect(() => {
     if (!isAdmin) return
     let alive = true
-    supabase
-      .from("events")
-      .select("*")
-      .eq("hidden", false)
-      .order("date", { ascending: true })
-      .then(({ data }) => {
-        if (alive) setEvents(data || [])
-      })
+    fetchCityEvents(city).then((rows) => {
+      if (alive) setEvents(rows)
+    })
     return () => {
       alive = false
     }
-  }, [isAdmin])
+  }, [isAdmin, city])
 
   if (isAdmin && events) {
     return (
@@ -43,7 +41,8 @@ export default function EventsComingSoon() {
           Vista de admin: los visitantes ven la pantalla «Próximamente».
         </p>
         <EventsExplorer initialEvents={events} />
-        <MananeoSection />
+        {/* Mañaneo es de Barcelona: en Madrid no se enseña. */}
+        {city === "barcelona" && <MananeoSection />}
       </>
     )
   }

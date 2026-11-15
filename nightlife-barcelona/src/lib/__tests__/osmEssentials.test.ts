@@ -237,6 +237,22 @@ describe("categorías nuevas · consignas, comisarías y Bicing", () => {
     expect(osmMatches("bicing", { amenity: "bicycle_rental", network: "BiciMAD" })).toBe(false)
     expect(osmMatches("bicimad", { amenity: "bicycle_rental", name: "Alquiler de bicis" })).toBe(false)
   })
+  it("Estancos (Madrid): solo los abiertos 24 h o hasta la 1:00 o más tarde; sin nombre se llaman «Estanco»", () => {
+    expect(judgeEssential(type("tobacco"), { shop: "tobacco", name: "Estanco Gran Vía", opening_hours: "Mo-Su 08:00-02:00" })).toMatchObject({ ok: true, name: "Estanco Gran Vía" })
+    expect(judgeEssential(type("tobacco"), { shop: "tobacco", opening_hours: "24/7" })).toMatchObject({ ok: true, name: "Estanco", openHours: "Open 24 hours" })
+    expect(judgeEssential(type("tobacco"), { shop: "tobacco", name: "Estanco", opening_hours: "Mo-Sa 09:00-21:00" })).toEqual({ ok: false, reason: "no_es_de_noche" })
+    expect(judgeEssential(type("tobacco"), { shop: "tobacco", name: "Estanco" })).toEqual({ ok: false, reason: "sin_horario" })
+    expect(judgeEssential(type("tobacco"), { shop: "tobacco", name: "Estanco", access: "private", opening_hours: "24/7" })).toEqual({ ok: false, reason: "no_es_publico" })
+  })
+  it("los estancos son solo las tiendas shop=tobacco con horario; no entran en «all» y no hay máquinas de tabaco", () => {
+    expect(osmMatches("tobacco", { shop: "tobacco" })).toBe(true)
+    expect(osmMatches("tobacco", { amenity: "vending_machine", vending: "cigarettes" })).toBe(false)
+    expect(osmMatches("tobacco", { shop: "kiosk" })).toBe(false)
+    expect(typesFor("tobacco")).toHaveLength(1)
+    expect(typesFor("tobacco")[0].selectors).toEqual([`["shop"="tobacco"]["opening_hours"]`])
+    expect(typesFor("all").map((t) => t.key)).not.toContain("tobacco")
+    expect(judgeEssential(type("vending"), { amenity: "vending_machine", vending: "cigarettes" })).toEqual({ ok: false, reason: "producto_no_util" })
+  })
   it("Bicing solo cuenta si es de Bicing; otros alquileres de bicis no", () => {
     expect(osmMatches("bicing", { amenity: "bicycle_rental", network: "Bicing" })).toBe(true)
     expect(osmMatches("bicing", { amenity: "bicycle_rental", operator: "Barcelona de Serveis Municipals · BICING" })).toBe(true)

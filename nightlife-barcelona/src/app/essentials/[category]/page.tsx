@@ -143,9 +143,9 @@ export default function EssentialCategoryPage() {
   }, [city])
   const params = useParams()
   const category = (params.category as string).toLowerCase()
-  // Metro, Nitbus y Bicing son de Barcelona (y BiciMAD de Madrid): sus páginas en Madrid llegarán con el lanzamiento. Entre tanto,
+  // Metro, Nitbus y Bicing son de Barcelona (y BiciMAD y los estancos de Madrid): sus páginas en Madrid llegarán con el lanzamiento. Entre tanto,
   // quien llega aquí con la otra ciudad en vista previa vuelve a la portada de Esenciales en vez de ver una lista vacía o ajena.
-  const wrongCity = city !== "barcelona" ? category === "metro" || category === "nitbus" || category === "bicing" : category === "bicimad"
+  const wrongCity = city !== "barcelona" ? category === "metro" || category === "nitbus" || category === "bicing" : category === "bicimad" || category === "tobacco"
   useEffect(() => {
     if (wrongCity) router.replace("/essentials")
   }, [wrongCity, router])

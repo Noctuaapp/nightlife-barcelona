@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
+import Link from "../../system/CityLink" // «Ver todos» lleva a los eventos de la ciudad en pantalla (/events o /madrid/events)
 import Image from "../../ui/SafeImage"
 import Icon from "../../ui/Icon"
 import { supabase } from "../../../lib/supabase"
