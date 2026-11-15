@@ -4,17 +4,21 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Check, Copy, ExternalLink, X } from "lucide-react"
 import AdminShell, { invalidateAdminBadges } from "../../../components/admin/AdminShell"
+import { useAdminCity } from "../../../components/admin/AdminCity"
 import { supabase } from "../../../lib/supabase"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { logError } from "../../../lib/log"
 import { toast } from "../../../components/ui/Toast"
 import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
 import { ESSENTIAL_SUGGESTION_XP } from "../../../lib/xp"
+import { suggestionAddress, suggestionCopyText, suggestionMapsUrl, suggestionsOfCity } from "../../../lib/essentialSuggestions"
 
 // Sugerencias de esenciales (31/10/2026): lo que propone la gente desde Esenciales › «¿Nos faltan
 // esenciales?». Lo compruebas en Google Maps y decides: aprobar dando XP, aprobar sin XP o rechazar
 // (a la persona le llega una notificación en cualquiera de los tres casos). Aprobar NO crea el
 // esencial en el mapa: lo añades tú después en Admin › Esenciales. Datos y XP: supabase/62.
+// 15/11/2026: cada sugerencia es de una ciudad (supabase/106) y aquí solo se ven las de la ciudad elegida en el menú. Las que
+// no tienen ciudad (antes de ejecutar el 106) cuentan como de Barcelona.
 
 type Row = {
   id: number
@@ -24,6 +28,8 @@ type Row = {
   street: string
   street_number: string | null
   note: string | null
+  /** 'barcelona' | 'madrid'. No existe hasta ejecutar supabase/106: sin ella, Barcelona. */
+  city?: string | null
   status: "pending" | "approved" | "rejected"
   xp_awarded: number
   admin_note: string | null
@@ -44,9 +50,8 @@ const CATEGORY_ES: Record<string, string> = {
 const stamp = (iso: string) =>
   new Date(iso).toLocaleString("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
 
-const address = (r: Row) => `${r.street}${r.street_number ? ` ${r.street_number}` : ""}`
-const mapsUrl = (r: Row) =>
-  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${r.name} ${address(r)} Barcelona`)}`
+const address = suggestionAddress
+const mapsUrl = suggestionMapsUrl
 
 export default function AdminSugerenciasPage() {
   const [checkingAdmin, setCheckingAdmin] = useState(true)
@@ -57,6 +62,8 @@ export default function AdminSugerenciasPage() {
   const [tab, setTab] = useState<"pending" | "done">("pending")
   const [busy, setBusy] = useState<number | null>(null)
   const [notes, setNotes] = useState<Record<number, string>>({})
+  // Ciudad del admin (15/11/2026): solo se enseñan las sugerencias de esa ciudad.
+  const [city] = useAdminCity()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data, error }) => {
@@ -91,8 +98,9 @@ export default function AdminSugerenciasPage() {
     if (!checkingAdmin) load()
   }, [checkingAdmin, load])
 
-  const pending = useMemo(() => rows.filter((r) => r.status === "pending"), [rows])
-  const done = useMemo(() => rows.filter((r) => r.status !== "pending"), [rows])
+  const cityRows = useMemo(() => suggestionsOfCity(rows, city), [rows, city])
+  const pending = useMemo(() => cityRows.filter((r) => r.status === "pending"), [cityRows])
+  const done = useMemo(() => cityRows.filter((r) => r.status !== "pending"), [cityRows])
   const shown = tab === "pending" ? pending : done
 
   const review = async (r: Row, decision: "approve" | "reject", award: boolean) => {
@@ -118,7 +126,7 @@ export default function AdminSugerenciasPage() {
   }
 
   const copy = async (r: Row) => {
-    const text = `${r.name}\n${CATEGORY_ES[r.category] || r.category}\n${address(r)}, Barcelona`
+    const text = suggestionCopyText(r, CATEGORY_ES[r.category] || r.category)
     try {
       await navigator.clipboard.writeText(text)
       toast("Datos copiados")

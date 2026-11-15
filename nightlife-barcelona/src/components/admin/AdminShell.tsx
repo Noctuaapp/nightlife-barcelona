@@ -56,7 +56,7 @@ const ADMIN_NAV: NavGroup[] = [
       { href: "/admin/events", label: "Eventos y festivales", icon: SECTION_ICONS.events, city: true },
       { href: "/admin/mananeo", label: "Mañaneo", icon: Sunrise, city: true },
       { href: "/admin/essentials", label: "Esenciales", icon: SECTION_ICONS.essentials, city: true },
-      { href: "/admin/sugerencias", label: "Sugerencias de esenciales", icon: Lightbulb },
+      { href: "/admin/sugerencias", label: "Sugerencias de esenciales", icon: Lightbulb, city: true },
     ],
   },
   {

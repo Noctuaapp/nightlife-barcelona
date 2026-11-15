@@ -15,6 +15,7 @@ import { fetchAllPages } from "../../lib/fetchAll"
 import { cleanEssential, isShownEssential } from "../../lib/essentials"
 import { essentialsOfCity, scopeToCity } from "../../lib/cityEssentials"
 import { useSelectedCity } from "../../lib/previewCity"
+import { suggestHref } from "../../lib/essentialSuggestions"
 import { useCityT } from "../../lib/useCityT"
 import { useLanguage } from "../../context/LanguageContext"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../lib/geo"
@@ -256,7 +257,7 @@ export default function EssentialsPage() {
               <div className="py-16 text-center">
                 <p className="text-lg font-semibold text-zinc-200">{t("essentialsPage.noResults")}</p>
                 <p className="mt-2 text-sm text-zinc-400">{t("essentialsPage.noResultsHint")}</p>
-                <Link href="/essentials/sugerir" className="mt-4 inline-block text-sm font-semibold text-brand-soft underline underline-offset-4 hover:text-ink">
+                <Link href={suggestHref(city)} className="mt-4 inline-block text-sm font-semibold text-brand-soft underline underline-offset-4 hover:text-ink">
                   {t("essentialsSuggest.noResultsLink")}
                 </Link>
               </div>
@@ -383,7 +384,7 @@ export default function EssentialsPage() {
                 Si se comprueba y es correcto, da XP (supabase/62). */}
             <section className="mx-auto mt-10 max-w-7xl px-4">
               <Link
-                href="/essentials/sugerir"
+                href={suggestHref(city)}
                 className="flex items-center gap-4 rounded-card border border-white/10 bg-surface p-5 transition hover:border-white/25"
               >
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-[#0a0910]">

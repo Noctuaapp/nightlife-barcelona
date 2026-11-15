@@ -9,12 +9,16 @@ import AuthGateModal from "../../../components/ui/AuthGateModal"
 import { supabase } from "../../../lib/supabase"
 import { logError } from "../../../lib/log"
 import { ESSENTIAL_SUGGESTION_XP } from "../../../lib/xp"
+import { cityFromSuggestSearch, suggestBackHref, suggestionCityField } from "../../../lib/essentialSuggestions"
+import type { CityKey } from "../../../lib/cities"
 import { categoryInfo, categoryNameKey } from "../../../lib/essentialCategories"
 import { useLanguage } from "../../../context/LanguageContext"
 import { NightPage } from "../../../components/ui/NightBackdrop"
 
 // «¿Nos faltan esenciales? ¡Ayúdanos!» (31/10/2026). Formulario: tipo, nombre, calle y número. Lo
 // revisa el admin (Admin › Sugerencias de esenciales) y, si es correcto, da XP. Datos: supabase/62.
+// 15/11/2026: la sugerencia guarda su ciudad. Es una página común a las ciudades, así que la ciudad la trae el enlace
+// (?ciudad=madrid, ver lib/essentialSuggestions.ts); sin nada es Barcelona. Columna city: supabase/106.
 
 type Suggestion = {
   id: number
@@ -46,6 +50,7 @@ export default function SuggestEssentialPage() {
   const [done, setDone] = useState(false)
   const [gate, setGate] = useState(false)
   const [mine, setMine] = useState<Suggestion[]>([])
+  const [city, setCity] = useState<CityKey>("barcelona")
 
   const loadMine = useCallback(async (uid: string) => {
     const { data, error: err } = await supabase
@@ -60,6 +65,12 @@ export default function SuggestEssentialPage() {
       return
     }
     setMine((data || []) as Suggestion[])
+  }, [])
+
+  // La ciudad se lee después de pintar (en el servidor no hay dirección con consulta): sin eso, el HTML del servidor y el del
+  // navegador podrían no coincidir.
+  useEffect(() => {
+    setCity(cityFromSuggestSearch(window.location.search))
   }, [])
 
   useEffect(() => {
@@ -89,6 +100,7 @@ export default function SuggestEssentialPage() {
       street: street.trim(),
       street_number: streetNumber.trim() || null,
       note: note.trim() || null,
+      ...suggestionCityField(city),
     })
     setSending(false)
     if (err) {
@@ -120,7 +132,7 @@ export default function SuggestEssentialPage() {
       <Header />
       <NightPage tone="teal">
       <main className="mx-auto w-full max-w-2xl px-4 py-8 pb-28 sm:py-12">
-        <Link href="/essentials" className="inline-flex items-center gap-1 text-sm font-semibold text-zinc-300 transition hover:text-ink">
+        <Link href={suggestBackHref(city)} className="inline-flex items-center gap-1 text-sm font-semibold text-zinc-300 transition hover:text-ink">
           <ChevronLeft size={16} aria-hidden="true" /> {t("essentialsSuggest.back")}
         </Link>
 
