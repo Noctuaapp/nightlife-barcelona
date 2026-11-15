@@ -8,8 +8,14 @@ import { OPEN_CONSENT_EVENT } from "../../lib/consent"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 
 export default function Footer() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const tc = useCityT()
+  // Guía de Nochevieja (15/11/2026): en español y catalán la página española; en inglés, alemán, francés e italiano su guía en ese idioma
+  // (con hreflang entre las cinco); en el resto, la guía en inglés.
+  const nyeHref =
+    locale === "es" || locale === "ca"
+      ? "/nochevieja-barcelona"
+      : `/${locale === "de" || locale === "fr" || locale === "it" ? locale : "en"}/guides/new-years-eve-barcelona`
 
   return (
     <footer className="mt-20 border-t border-white/10 bg-night px-4 pb-28 pt-14 text-ink md:pb-14">
@@ -55,6 +61,7 @@ export default function Footer() {
               <Link href="/essentials" className="text-sm text-zinc-400 transition hover:text-ink">{t("nav.essentials")}</Link>
               <Link href="/map" className="text-sm text-zinc-400 transition hover:text-ink">{t("nav.map")}</Link>
               <Link href="/plan" className="text-sm text-zinc-400 transition hover:text-ink">{t("nav.plan")}</Link>
+              <Link href={nyeHref} className="text-sm text-zinc-400 transition hover:text-ink">{t("footer.link_nye")}</Link>
             </div>
           </div>
 

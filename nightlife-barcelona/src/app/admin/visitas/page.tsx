@@ -77,6 +77,10 @@ const EVENT_LABELS: Record<string, string> = {
   search: "Busca",
   filter_used: "Usa filtros",
   party_poll_vote: "Vota la encuesta",
+  plan_create: "Crea y comparte un plan",
+  plan_poll_create: "Crea una votación entre sitios",
+  plan_poll_vote: "Vota en una votación de plan",
+  plan_rsvp: "Se apunta a un plan",
   top_pick_click: "Pulsa el Top 3",
   tab_open: "Abre la pestaña",
   nearby_click: "Va a un sitio cercano:",
@@ -130,12 +134,16 @@ function extraDetail(e: Ev): string | null {
   if (e.type === "welcome_click") return WELCOME_TO[to] || to
   if (e.type === "signup_error") return e.meta?.step === "auth" && !SIGNUP_REASONS[reason] ? `el servidor dice «${reason}»` : SIGNUP_REASONS[reason] || reason
   if (e.type === "zone_pick") return e.name === "near" ? "cerca de mí" : e.name || ""
-  if (e.type === "auth_gate_view") return ({ favorite: "(al guardar un favorito)", attend: "(al apuntarse)", checkin: "(al hacer check-in)" } as Record<string, string>)[String(e.meta?.reason ?? "")] ?? ""
+  if (e.type === "plan_poll_vote") return e.meta?.changed ? "(cambia su voto)" : ""
+  if (e.type === "plan_poll_create") return e.meta?.options ? `(${String(e.meta.options)} sitios)` : ""
+  if (e.type === "plan_rsvp") return e.meta?.kind === "poll" ? "(en una votación)" : ""
+  if (e.type === "auth_gate_view" && e.meta?.reason === "plan" && e.meta?.from === "poll") return "(al crear una votación)"
+  if (e.type === "auth_gate_view") return ({ favorite: "(al guardar un favorito)", attend: "(al apuntarse)", checkin: "(al hacer check-in)", plan: "(al compartir un plan)", poll: "(tras votar en la encuesta)" } as Record<string, string>)[String(e.meta?.reason ?? "")] ?? ""
   if (e.type === "signup_ok") return e.meta?.confirm_email ? "(debe confirmar el correo)" : "(ya con sesión)"
   if (e.type === "google_click") return ({ login: "(en Iniciar sesión)", wall: "(en una zona privada)", modal: "(en el aviso de registro)", join: "(en el aviso de la ficha)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? "(en Crear cuenta)"
   if (e.type === "share_click" && e.meta?.via === "whatsapp") return "por WhatsApp"
   if (e.type === "install_choice") return e.meta?.outcome === "accepted" ? "lo acepta" : "lo rechaza"
-  if (e.type === "install_click") return ({ menu: "(desde el menú ☰)", profile: "(desde Perfil)", welcome: "(desde «Tu primer reto»)", join: "(desde «¿Aún no estás dentro?»)", home: "(desde la portada)", banner: "(desde la franja de arriba)", intl: "(desde las páginas en inglés)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? ""
+  if (e.type === "install_click") return ({ menu: "(desde el menú ☰)", profile: "(desde Perfil)", welcome: "(desde «Tu primer reto»)", join: "(desde «¿Aún no estás dentro?»)", home: "(desde la portada)", banner: "(desde la franja de arriba)", essentials: "(desde Esenciales)", intl: "(desde las páginas en inglés)" } as Record<string, string>)[String(e.meta?.from ?? "")] ?? ""
   if (e.type.startsWith("signup_") || e.type.startsWith("confirm_age_") || e.type === "join_view" || e.type === "join_dismiss" || e.type === "install_click") return ""
   return null
 }

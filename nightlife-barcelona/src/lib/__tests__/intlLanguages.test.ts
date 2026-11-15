@@ -215,10 +215,10 @@ function numbersIn(text: string): Set<number> {
 const EN_SLUGS = guidesOf("en").GUIDES.map((g) => g.slug)
 
 describe("guías en los cuatro idiomas", () => {
-  it.each(INTL_LANGS as IntlLang[])("%s: siete guías con las mismas direcciones y el mismo orden que el inglés", (lang) => {
+  it.each(INTL_LANGS as IntlLang[])("%s: ocho guías con las mismas direcciones y el mismo orden que el inglés", (lang) => {
     const set = guidesOf(lang)
     expect(set.GUIDES.map((g) => g.slug)).toEqual(EN_SLUGS)
-    expect(set.GUIDES).toHaveLength(7)
+    expect(set.GUIDES).toHaveLength(8)
     expect(set.GUIDES_REVIEWED).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     expect(set.buildGuide("nope", ctx)).toBeNull()
     expect(set.guideMeta("nope")).toBeUndefined()
@@ -226,8 +226,8 @@ describe("guías en los cuatro idiomas", () => {
 
   it.each(INTL_LANGS as IntlLang[])("%s: títulos y descripciones con longitud útil para Google y sin repetirse", (lang) => {
     const set = guidesOf(lang)
-    expect(new Set(set.GUIDES.map((g) => g.title)).size).toBe(7)
-    expect(new Set(set.GUIDES.map((g) => g.description)).size).toBe(7)
+    expect(new Set(set.GUIDES.map((g) => g.title)).size).toBe(8)
+    expect(new Set(set.GUIDES.map((g) => g.description)).size).toBe(8)
     for (const g of set.GUIDES) {
       expect(g.title.endsWith("| Noctua")).toBe(true)
       expect(g.title.length).toBeLessThanOrEqual(75)
@@ -528,14 +528,22 @@ describe("mapa del sitio en los cuatro idiomas", () => {
     }
   })
 
-  it("las guías no tienen gemela española y su x-default es el inglés", () => {
-    for (const slug of EN_SLUGS) {
+  it("las guías sin gemela española tienen x-default inglés; la de Nochevieja tiene gemela y x-default español", () => {
+    const meta = guidesOf("en").GUIDES
+    for (const g of meta) {
       for (const l of INTL_LANGS) {
-        const languages = byUrl.get(langUrl(l, `/guides/${slug}`))?.alternates?.languages as Record<string, string>
-        expect(languages.es).toBeUndefined()
-        expect(languages["x-default"]).toBe(langUrl("en", `/guides/${slug}`))
+        const languages = byUrl.get(langUrl(l, `/guides/${g.slug}`))?.alternates?.languages as Record<string, string>
+        if (g.esPath) {
+          expect(languages.es).toBe(esUrl(g.esPath))
+          expect(languages["x-default"]).toBe(esUrl(g.esPath))
+          expect(twins.get(esUrl(g.esPath))).toBe(`/guides/${g.slug}`)
+        } else {
+          expect(languages.es).toBeUndefined()
+          expect(languages["x-default"]).toBe(langUrl("en", `/guides/${g.slug}`))
+        }
       }
     }
+    expect(meta.filter((g) => g.esPath).map((g) => g.esPath)).toEqual(["/nochevieja-barcelona"])
   })
 })
 
@@ -551,7 +559,7 @@ describe("metadatos de las páginas", () => {
       { name: "guides", sub: "/guides", es: null, meta: guidesIndexMetadata(lang) },
     ]
     for (const e of essentialsOf(lang)) list.push({ name: `essentials/${e.slug}`, sub: `/essentials/${e.slug}`, es: `/essentials/${e.slug}`, meta: essentialCategoryMetadata(lang, e.slug) })
-    for (const g of guidesOf(lang).GUIDES) list.push({ name: `guides/${g.slug}`, sub: `/guides/${g.slug}`, es: null, meta: guideMetadata(lang, g.slug) })
+    for (const g of guidesOf(lang).GUIDES) list.push({ name: `guides/${g.slug}`, sub: `/guides/${g.slug}`, es: g.esPath ?? null, meta: guideMetadata(lang, g.slug) })
     return list
   }
 

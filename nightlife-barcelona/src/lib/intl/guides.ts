@@ -5,7 +5,7 @@ import * as de from "./de/guides"
 import * as fr from "./fr/guides"
 import * as it from "./it/guides"
 
-// Las siete guías para visitantes en cada idioma (mismos temas, mismo orden y mismas direcciones: solo cambia el texto).
+// Las ocho guías para visitantes en cada idioma (mismos temas, mismo orden y mismas direcciones: solo cambia el texto).
 
 export type GuideSet = {
   GUIDES: GuideMeta[]

@@ -13,6 +13,7 @@
 
 import type { AreaFacts } from "../../areaFacts"
 import type { Block, Guide, GuideCtx, GuideMeta, GuideSection, PlaceLine } from "../guideTypes"
+import { NYE_SLUG, nyeGuide, nyeMeta } from "../nye"
 import { listOf } from "../clubText"
 import { frTypo } from "../frTypo"
 import { TAXI_PHONES, busRouteOf, eurOf, metroHoursOf, metroNoteOf, sourcesOf, taxiFaresOf } from "../transit"
@@ -83,6 +84,8 @@ export const GUIDES: GuideMeta[] = frTypo([
       "Les principaux quartiers où sortir à Barcelone : nombre d'établissements, prix d'entrée et horaires habituels, styles de musique, métro et bus de nuit les plus proches.",
     blurb: "Quartier par quartier, avec prix d'entrée et transports.",
   },
+  // Nochevieja: texto y fuentes en lib/intl/nye.ts (misma guía en los cuatro idiomas y en español).
+  nyeMeta("fr"),
 ])
 
 export function guideMeta(slug: string): GuideMeta | undefined {
@@ -278,7 +281,7 @@ function getHome(ctx: GuideCtx): Guide {
       },
     ],
     sources: [SOURCES.tmbHours, SOURCES.taxiAmb, SOURCES.amb],
-    related: ["barcelona-nightlife-what-time-to-go-out", "barcelona-nightlife-rules-fines-safety"],
+    related: ["barcelona-nightlife-what-time-to-go-out", "barcelona-nightlife-rules-fines-safety", NYE_SLUG],
     cta: { label: "Trouvez votre arrêt le plus proche dans l'appli", href: "/nitbus" },
   })
 }
@@ -899,6 +902,8 @@ export function buildGuide(slug: string, ctx: GuideCtx): Guide | null {
       return getRules()
     case GUIDES[6].slug:
       return getAreas(ctx)
+    case NYE_SLUG:
+      return nyeGuide("fr")
     default:
       return null
   }

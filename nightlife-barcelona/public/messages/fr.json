@@ -354,7 +354,8 @@
     "venueButton": "Contacte-nous",
     "link_feedback": "Note-nous",
     "link_cookies": "Préférences de cookies",
-    "link_rights": "Tes droits quand tu sors"
+    "link_rights": "Tes droits quand tu sors",
+    "link_nye": "Nouvel An à Barcelone"
   },
   "privacy": {
     "title": "Politique de Confidentialité",
@@ -834,7 +835,14 @@
     "benefitChallenge": "Premier défi : enregistre 3 adresses et tes plans sont à portée de main",
     "benefitXp": "Gagne +{xp} XP à chaque check-in et monte de niveau",
     "benefitMonth": "« Ton mois sur Noctua » : le résumé de tes sorties",
-    "benefitGoing": "Ton « j'y vais » compte parmi les noctambules de ce soir"
+    "benefitGoing": "Ton « j'y vais » compte parmi les noctambules de ce soir",
+    "titlePlan": "Crée ton compte pour partager ton plan",
+    "benefitPlanLink": "Partage ton plan avec un lien : tes amis le voient et s'inscrivent sans compte",
+    "titlePoll": "Crée ton compte pour continuer à jouer",
+    "subtitlePoll": "C'est gratuit et ça prend quelques secondes.",
+    "benefitPollAdult": "Tu reçois aussi les questions +18, visibles uniquement avec un compte",
+    "benefitPollSaved": "Tes votes sont enregistrés dans ton compte, pas dans ce navigateur",
+    "ctaPoll": "Avec un compte, tu reçois aussi les questions +18"
   },
   "changePassword": {
     "eyebrow": "Sécurité du compte",
@@ -1509,7 +1517,41 @@
     "nobody": "Personne ne s'est encore inscrit.",
     "going": "Y vont",
     "andMore": "et {n} de plus",
-    "copyLink": "Copier le lien"
+    "copyLink": "Copier le lien",
+    "pollInvited": "À vous de choisir",
+    "pollIntro": "Choisis l'endroit qui te tente le plus. Tu peux changer ton vote quand tu veux.",
+    "pollNameLabel": "Ton prénom (pour que le groupe voie qui vote quoi)",
+    "pollAskName": "Indique ton prénom pour voter.",
+    "pollVote": "Voter",
+    "pollYourVote": "Ton vote",
+    "pollOneVote": "1 vote",
+    "pollVotes": "{n} votes",
+    "pollLeading": "En tête",
+    "pollTie": "Égalité",
+    "pollNobody": "Personne n'a encore voté. Lance-toi.",
+    "pollTotal": "Votes jusqu'ici : {n}",
+    "pollError": "Impossible d'enregistrer ton vote. Réessaie.",
+    "pollSeeVenue": "Voir le lieu",
+    "pollShareHint": "Envoie le lien au reste du groupe pour qu'ils votent.",
+    "homeTitle": "Et pour rentrer ?",
+    "homeBody": "Décidez avant de sortir et personne ne reste en plan."
+  },
+  "planPoll": {
+    "cta": "Pas d'accord ? Faites voter",
+    "ctaSub": "Choisis de 2 à 5 endroits et envoie le lien au groupe : chacun vote sans compte.",
+    "title": "On va où ?",
+    "pickTitle": "Choisis les endroits",
+    "pickHint": "Coche de {min} à {max}. Ceux que tu ne coches pas restent de côté.",
+    "needTwo": "Coche au moins 2 endroits.",
+    "count": "{n} endroits choisis",
+    "create": "Créer le vote et partager",
+    "working": "Création du vote…",
+    "error": "Impossible de créer le vote. Réessaie.",
+    "ready": "Vote créé. Envoie-le au groupe.",
+    "copied": "Lien copié. Colle-le dans le groupe.",
+    "sendGroup": "Envoyer au groupe",
+    "seeResults": "Voir le vote",
+    "message": "On va où ce soir ? Vote ici, sans compte :"
   },
   "notFound": {
     "title": "Pas de fête ici",
@@ -2046,7 +2088,9 @@
     "body": "Ouvre-la depuis ton écran d'accueil, en plein écran, sans la chercher dans le navigateur.",
     "androidSteps": "Dans Chrome : touche le menu ⋮ puis « Installer l'application » (ou « Ajouter à l'écran d'accueil »).",
     "bannerSub": "Un geste depuis ton écran d'accueil, sans nous chercher à chaque fois.",
-    "bannerClose": "Fermer"
+    "bannerClose": "Fermer",
+    "essentialsTitle": "Les essentiels à portée de main",
+    "essentialsBody": "Installe Noctua et ouvre-la depuis ton écran d'accueil quand tu en as besoin : pharmacie de garde, urgences, taxi ou supermarché ouvert, sans nous chercher dans le navigateur."
   },
   "notices": {
     "closedTonight": "Nous sommes fermés ce soir",

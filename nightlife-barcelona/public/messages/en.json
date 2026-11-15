@@ -354,7 +354,8 @@
     "venueButton": "Contact us",
     "link_feedback": "Rate us",
     "link_cookies": "Cookie settings",
-    "link_rights": "Your rights when you go out"
+    "link_rights": "Your rights when you go out",
+    "link_nye": "New Year's Eve in Barcelona"
   },
   "privacy": {
     "title": "Privacy Policy",
@@ -834,7 +835,14 @@
     "benefitChallenge": "First challenge: save 3 spots and your plans are one tap away",
     "benefitXp": "Earn +{xp} XP on every check-in and level up",
     "benefitMonth": "«Your month on Noctua»: a recap of your nights out",
-    "benefitGoing": "Your «going» counts toward tonight's night owls"
+    "benefitGoing": "Your «going» counts toward tonight's night owls",
+    "titlePlan": "Create your account to share your plan",
+    "benefitPlanLink": "Share your plan with a link: your friends can see it and join without an account",
+    "titlePoll": "Create your account to keep playing",
+    "subtitlePoll": "It's free and takes a few seconds.",
+    "benefitPollAdult": "You also get the 18+ questions, which only show with an account",
+    "benefitPollSaved": "Your votes are saved to your account, not to this browser",
+    "ctaPoll": "With an account you also get the 18+ questions"
   },
   "changePassword": {
     "eyebrow": "Account security",
@@ -1578,7 +1586,41 @@
     "nobody": "Nobody has joined yet.",
     "going": "Going",
     "andMore": "and {n} more",
-    "copyLink": "Copy link"
+    "copyLink": "Copy link",
+    "pollInvited": "Time to decide",
+    "pollIntro": "Pick the place you fancy most. You can change your vote any time.",
+    "pollNameLabel": "Your name (so the group can see who votes for what)",
+    "pollAskName": "Add your name to vote.",
+    "pollVote": "Vote",
+    "pollYourVote": "Your vote",
+    "pollOneVote": "1 vote",
+    "pollVotes": "{n} votes",
+    "pollLeading": "Leading",
+    "pollTie": "Tie",
+    "pollNobody": "Nobody has voted yet. Go first.",
+    "pollTotal": "Votes so far: {n}",
+    "pollError": "Couldn't save your vote. Try again.",
+    "pollSeeVenue": "See the place",
+    "pollShareHint": "Send the link to the rest of the group so they can vote.",
+    "homeTitle": "And how are you getting home?",
+    "homeBody": "Decide before you head out and nobody gets stranded."
+  },
+  "planPoll": {
+    "cta": "Can't agree? Let them vote",
+    "ctaSub": "Pick 2 to 5 places and send the link to the group: everyone votes, no account needed.",
+    "title": "Where are we going?",
+    "pickTitle": "Pick the places",
+    "pickHint": "Choose {min} to {max}. The ones you leave out stay out.",
+    "needTwo": "Pick at least 2 places.",
+    "count": "{n} places picked",
+    "create": "Create vote and share",
+    "working": "Creating vote…",
+    "error": "Couldn't create the vote. Try again.",
+    "ready": "Vote created. Send it to the group.",
+    "copied": "Link copied. Paste it in the group chat.",
+    "sendGroup": "Send to the group",
+    "seeResults": "See the vote",
+    "message": "Where are we going tonight? Vote here, no account needed:"
   },
   "notFound": {
     "title": "No party here",
@@ -2046,7 +2088,9 @@
     "body": "Open it from your home screen, full screen, without hunting for it in the browser.",
     "androidSteps": "In Chrome: tap the ⋮ menu, then “Install app” (or “Add to Home screen”).",
     "bannerSub": "One tap from your home screen, no searching for us every time.",
-    "bannerClose": "Close"
+    "bannerClose": "Close",
+    "essentialsTitle": "Keep the essentials one tap away",
+    "essentialsBody": "Install Noctua and open it from your home screen when you need it: an open pharmacy, emergency care, a taxi or a supermarket, without searching for us in the browser."
   },
   "notices": {
     "closedTonight": "We're closed tonight",

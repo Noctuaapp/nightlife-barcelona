@@ -354,7 +354,8 @@
     "venueButton": "Contacta'ns",
     "link_feedback": "Valora'ns",
     "link_cookies": "Preferències de galetes",
-    "link_rights": "Els teus drets en sortir"
+    "link_rights": "Els teus drets en sortir",
+    "link_nye": "Cap d'Any a Barcelona"
   },
   "privacy": {
     "title": "Política de Privacitat",
@@ -834,7 +835,14 @@
     "benefitChallenge": "Primer repte: desa 3 llocs i tindràs els teus plans a un toc",
     "benefitXp": "Guanya +{xp} XP a cada check-in i puja de nivell",
     "benefitMonth": "«El teu mes a Noctua»: el resum de les teves sortides",
-    "benefitGoing": "El teu «hi vaig» compta per als noctàmbuls d'aquesta nit"
+    "benefitGoing": "El teu «hi vaig» compta per als noctàmbuls d'aquesta nit",
+    "titlePlan": "Crea el teu compte per compartir el teu pla",
+    "benefitPlanLink": "Comparteix el teu pla amb un enllaç: els teus amics el veuen i s'apunten sense compte",
+    "titlePoll": "Crea el teu compte per seguir jugant",
+    "subtitlePoll": "És gratis i triga uns segons.",
+    "benefitPollAdult": "També et surten les preguntes +18, que només es veuen amb compte",
+    "benefitPollSaved": "Els teus vots es guarden al teu compte, no en aquest navegador",
+    "ctaPoll": "Amb compte també et surten les preguntes +18"
   },
   "changePassword": {
     "eyebrow": "Seguretat del compte",
@@ -1578,7 +1586,41 @@
     "nobody": "Encara no s'hi ha apuntat ningú.",
     "going": "Hi van",
     "andMore": "i {n} més",
-    "copyLink": "Copiar l'enllaç"
+    "copyLink": "Copiar l'enllaç",
+    "pollInvited": "Toca decidir",
+    "pollIntro": "Tria el lloc que més et ve de gust. Pots canviar el teu vot quan vulguis.",
+    "pollNameLabel": "El teu nom (perquè el grup vegi qui vota què)",
+    "pollAskName": "Posa el teu nom per votar.",
+    "pollVote": "Votar",
+    "pollYourVote": "El teu vot",
+    "pollOneVote": "1 vot",
+    "pollVotes": "{n} vots",
+    "pollLeading": "Va guanyant",
+    "pollTie": "Empat",
+    "pollNobody": "Encara no ha votat ningú. Comença tu.",
+    "pollTotal": "Vots fins ara: {n}",
+    "pollError": "No s'ha pogut desar el teu vot. Prova-ho una altra vegada.",
+    "pollSeeVenue": "Veure el lloc",
+    "pollShareHint": "Passa l'enllaç a la resta del grup perquè votin.",
+    "homeTitle": "I com torneu?",
+    "homeBody": "Decidiu-ho abans de sortir i ningú es queda penjat."
+  },
+  "planPoll": {
+    "cta": "No us poseu d'acord? Que votin",
+    "ctaSub": "Tria de 2 a 5 llocs i envia l'enllaç al grup: cadascú vota sense compte.",
+    "title": "On anem?",
+    "pickTitle": "Tria els llocs",
+    "pickHint": "Marca'n de {min} a {max}. Els que no marquis es queden fora.",
+    "needTwo": "Marca almenys 2 llocs.",
+    "count": "{n} llocs triats",
+    "create": "Crear votació i compartir",
+    "working": "Creant la votació…",
+    "error": "No s'ha pogut crear la votació. Prova-ho una altra vegada.",
+    "ready": "Votació creada. Envia-la al grup.",
+    "copied": "Enllaç copiat. Enganxa'l al grup.",
+    "sendGroup": "Enviar al grup",
+    "seeResults": "Veure la votació",
+    "message": "On anem aquesta nit? Vota aquí, sense compte:"
   },
   "notFound": {
     "title": "Aquí no hi ha festa",
@@ -2046,7 +2088,9 @@
     "body": "Obre-la des de la pantalla d'inici, a pantalla completa i sense buscar-la al navegador.",
     "androidSteps": "A Chrome: toca el menú ⋮ i tria «Instal·la l'aplicació» (o «Afegir a la pantalla d'inici»).",
     "bannerSub": "Un toc des de la pantalla d'inici, sense haver de cercar-nos cada cop.",
-    "bannerClose": "Tanca"
+    "bannerClose": "Tanca",
+    "essentialsTitle": "Tingues els essencials a un toc",
+    "essentialsBody": "Instal·la Noctua i obre-la des de la pantalla d'inici quan la necessitis: farmàcia de guàrdia, urgències, taxi o un súper obert, sense haver de buscar-nos al navegador."
   },
   "notices": {
     "closedTonight": "Aquesta nit no obrim",

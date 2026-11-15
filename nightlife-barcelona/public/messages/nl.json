@@ -354,7 +354,8 @@
     "venueButton": "Neem contact op",
     "link_feedback": "Beoordeel ons",
     "link_cookies": "Cookie-instellingen",
-    "link_rights": "Jouw rechten als je uitgaat"
+    "link_rights": "Jouw rechten als je uitgaat",
+    "link_nye": "Oud en nieuw in Barcelona"
   },
   "privacy": {
     "title": "Privacybeleid",
@@ -834,7 +835,14 @@
     "benefitChallenge": "Eerste uitdaging: bewaar 3 plekken en je plannen zijn één tik weg",
     "benefitXp": "Verdien +{xp} XP bij elke check-in en stijg in level",
     "benefitMonth": "«Jouw maand op Noctua»: het overzicht van je avonden uit",
-    "benefitGoing": "Jouw «ik ga» telt mee voor de nachtbrakers van vanavond"
+    "benefitGoing": "Jouw «ik ga» telt mee voor de nachtbrakers van vanavond",
+    "titlePlan": "Maak je account aan om je plan te delen",
+    "benefitPlanLink": "Deel je plan met een link: je vrienden zien het en doen mee zonder account",
+    "titlePoll": "Maak je account aan om door te spelen",
+    "subtitlePoll": "Het is gratis en duurt een paar seconden.",
+    "benefitPollAdult": "Je krijgt ook de 18+-vragen, die alleen met een account verschijnen",
+    "benefitPollSaved": "Je stemmen worden in je account bewaard, niet in deze browser",
+    "ctaPoll": "Met een account krijg je ook de 18+-vragen"
   },
   "changePassword": {
     "eyebrow": "Accountbeveiliging",
@@ -1509,7 +1517,41 @@
     "nobody": "Er heeft zich nog niemand aangemeld.",
     "going": "Gaan",
     "andMore": "en {n} anderen",
-    "copyLink": "Link kopiëren"
+    "copyLink": "Link kopiëren",
+    "pollInvited": "Tijd om te kiezen",
+    "pollIntro": "Kies de plek waar je het meest zin in hebt. Je kunt je stem altijd wijzigen.",
+    "pollNameLabel": "Je naam (zodat de groep ziet wie waarop stemt)",
+    "pollAskName": "Vul je naam in om te stemmen.",
+    "pollVote": "Stemmen",
+    "pollYourVote": "Jouw stem",
+    "pollOneVote": "1 stem",
+    "pollVotes": "{n} stemmen",
+    "pollLeading": "Aan kop",
+    "pollTie": "Gelijk",
+    "pollNobody": "Nog niemand heeft gestemd. Begin jij maar.",
+    "pollTotal": "Stemmen tot nu toe: {n}",
+    "pollError": "Je stem kon niet worden opgeslagen. Probeer het opnieuw.",
+    "pollSeeVenue": "Bekijk de plek",
+    "pollShareHint": "Stuur de link naar de rest van de groep zodat ze kunnen stemmen.",
+    "homeTitle": "En hoe komen jullie thuis?",
+    "homeBody": "Spreek het af voordat je vertrekt, dan blijft niemand achter."
+  },
+  "planPoll": {
+    "cta": "Komen jullie er niet uit? Laat stemmen",
+    "ctaSub": "Kies 2 tot 5 plekken en stuur de link naar de groep: iedereen stemt zonder account.",
+    "title": "Waar gaan we heen?",
+    "pickTitle": "Kies de plekken",
+    "pickHint": "Kies er {min} tot {max}. Wat je niet aanvinkt, valt af.",
+    "needTwo": "Kies minstens 2 plekken.",
+    "count": "{n} plekken gekozen",
+    "create": "Stemming maken en delen",
+    "working": "Stemming maken…",
+    "error": "De stemming kon niet worden gemaakt. Probeer het opnieuw.",
+    "ready": "Stemming gemaakt. Stuur hem naar de groep.",
+    "copied": "Link gekopieerd. Plak hem in de groepsapp.",
+    "sendGroup": "Naar de groep sturen",
+    "seeResults": "Stemming bekijken",
+    "message": "Waar gaan we vanavond heen? Stem hier, zonder account:"
   },
   "notFound": {
     "title": "Hier is geen feest",
@@ -2046,7 +2088,9 @@
     "body": "Open Noctua vanaf je beginscherm, op volledig scherm en zonder te zoeken in de browser.",
     "androidSteps": "In Chrome: tik op het menu ⋮ en kies «App installeren» (of «Toevoegen aan startscherm»).",
     "bannerSub": "Eén tik vanaf je startscherm, zonder ons elke keer te zoeken.",
-    "bannerClose": "Sluiten"
+    "bannerClose": "Sluiten",
+    "essentialsTitle": "Het hoognodige met één tik",
+    "essentialsBody": "Installeer Noctua en open haar vanaf je beginscherm als je haar nodig hebt: een open apotheek, de spoedeisende hulp, een taxi of een open supermarkt, zonder ons in de browser te zoeken."
   },
   "notices": {
     "closedTonight": "Vanavond zijn we gesloten",

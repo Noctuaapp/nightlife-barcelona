@@ -339,10 +339,10 @@ function internalLinks(g: Guide): string[] {
 }
 
 describe("guías para turistas", () => {
-  it("hay siete, con dirección y título propios y sin repetir", () => {
-    expect(GUIDES).toHaveLength(7)
-    expect(new Set(GUIDES.map((g) => g.slug)).size).toBe(7)
-    expect(new Set(GUIDES.map((g) => g.title)).size).toBe(7)
+  it("hay ocho, con dirección y título propios y sin repetir", () => {
+    expect(GUIDES).toHaveLength(8)
+    expect(new Set(GUIDES.map((g) => g.slug)).size).toBe(8)
+    expect(new Set(GUIDES.map((g) => g.title)).size).toBe(8)
     for (const g of GUIDES) {
       expect(g.title.endsWith("| Noctua")).toBe(true)
       expect(g.title.length).toBeLessThanOrEqual(75)

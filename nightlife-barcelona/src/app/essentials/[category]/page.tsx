@@ -7,7 +7,7 @@ import { essentialsOfCity, scopeToCity } from "../../../lib/cityEssentials"
 import { CITIES } from "../../../lib/cities"
 import { useSelectedCity } from "../../../lib/previewCity"
 import { useCityT } from "../../../lib/useCityT"
-import { useState, useEffect, useMemo, useRef } from "react"
+import { Fragment, useState, useEffect, useMemo, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "../../../components/system/CityLink"
 import { renderToStaticMarkup } from "react-dom/server"
@@ -40,6 +40,7 @@ import { ChevronDown, MapPin } from "lucide-react"
 import NitbusStopsMap, { type NitbusMapStop } from "../../../components/nitbus/NitbusStopsMap"
 import { getPrecisePosition } from "../../../lib/precisePosition"
 import NightBackdrop from "../../../components/ui/NightBackdrop"
+import InstallAppButton from "../../../components/system/InstallAppButton"
 import NocOwl from "../../../components/mascot/NocOwl"
 
 // Un solo color (el de la marca) para todas las categorías; antes eran doce colores y emojis.
@@ -1392,7 +1393,23 @@ export default function EssentialCategoryPage() {
               ) : (
                 <>
                   <div className={category === "nitbus" ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-3 md:max-h-[640px] md:overflow-y-auto md:pr-1 [scrollbar-width:thin]"}>
-                    {(category === "nitbus" ? filteredEssentials.slice(0, nbLimit) : filteredEssentials).map((item) => renderCard(item))}
+                    {(category === "nitbus" ? filteredEssentials.slice(0, nbLimit) : filteredEssentials).map((item, i, all) => (
+                      <Fragment key={item.id}>
+                        {renderCard(item)}
+                        {/* «Tenlo a un toque»: entre los primeros resultados, justo cuando la persona ya ha encontrado lo que buscaba.
+                            Solo se pinta en móvil y si la app no está instalada (InstallAppButton lo decide). */}
+                        {category !== "nitbus" && i === Math.min(2, all.length - 1) && (
+                          <InstallAppButton
+                            from="essentials"
+                            variant="card"
+                            title={t("install.essentialsTitle")}
+                            body={t("install.essentialsBody")}
+                            cardClass="rounded-card border border-white/10 p-4"
+                            titleClass="text-base font-semibold text-ink"
+                          />
+                        )}
+                      </Fragment>
+                    ))}
                   </div>
                   {category === "nitbus" && filteredEssentials.length > nbLimit && (
                     <button

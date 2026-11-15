@@ -64,7 +64,11 @@ export function buildIntlSitemap(input: { clubs: DbRow[]; busCodes: string[]; me
   for (const e of essentialsOf("en")) pair(`/essentials/${e.slug}`, `/essentials/${e.slug}`, "weekly", 0.5)
 
   only("/guides", "weekly", 0.7)
-  for (const g of GUIDES) only(`/guides/${g.slug}`, "monthly", 0.8)
+  // Las guías con gemela en español (Nochevieja) se declaran en los cinco idiomas con x-default = español; las demás, solo en los cuatro.
+  for (const g of GUIDES) {
+    if (g.esPath) pair(`/guides/${g.slug}`, g.esPath, "monthly", 0.8)
+    else only(`/guides/${g.slug}`, "monthly", 0.8)
+  }
 
   return { entries, twins }
 }

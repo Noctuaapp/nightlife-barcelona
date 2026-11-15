@@ -14,20 +14,25 @@ import { track } from "../../lib/track"
 //  · Android donde Chrome todavía no ha dado el aviso de instalar (decide él cuándo): despliega
 //    los pasos a mano del menú ⋮ — así el botón sale siempre en móvil y nunca "desaparece".
 // Solo se pinta en móvil y mientras la app no esté ya instalada. Cada pulsación se anota como
-// "install_click" con de dónde vino (menu | profile | join | home | intl) y si abrió el cuadro o los pasos.
+// "install_click" con de dónde vino (menu | profile | join | home | intl | banner | essentials) y si abrió el cuadro o los pasos.
+// «essentials» es la tarjeta que sale entre los primeros resultados de una categoría de Esenciales (15/11/2026): la
+// persona acaba de encontrar la farmacia o el taxi que buscaba, que es cuando más sentido tiene decirle «tenlo a un toque».
 // «home» es la tarjeta de la portada y «intl» el pie de las páginas en inglés (/en), que es donde llegan los
 // turistas desde Google.
 
 type Props = {
-  from: "menu" | "profile" | "join" | "home" | "intl" | "banner"
+  from: "menu" | "profile" | "join" | "home" | "intl" | "banner" | "essentials"
   variant: "menu" | "card" | "inline"
+  /** Título y texto propios de la tarjeta (por defecto, los de «Instala Noctua en tu móvil»). */
+  title?: string
+  body?: string
   /** Para cerrar el menú tras abrir el cuadro de instalación. */
   onDone?: () => void
   cardClass?: string
   titleClass?: string
 }
 
-export default function InstallAppButton({ from, variant, onDone, cardClass = "", titleClass = "" }: Props) {
+export default function InstallAppButton({ from, variant, onDone, cardClass = "", titleClass = "", title, body }: Props) {
   const { t } = useLanguage()
   const install = useInstallPrompt()
   const [showSteps, setShowSteps] = useState(false)
@@ -109,8 +114,8 @@ export default function InstallAppButton({ from, variant, onDone, cardClass = ""
           <Smartphone size={20} strokeWidth={2} className="text-white" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className={titleClass}>{t("welcome.installTitle")}</h2>
-          <p className="mt-1.5 text-sm leading-snug text-zinc-400">{t("install.body")}</p>
+          <h2 className={titleClass}>{title ?? t("welcome.installTitle")}</h2>
+          <p className="mt-1.5 text-sm leading-snug text-zinc-400">{body ?? t("install.body")}</p>
           {install.canPrompt ? (
             <button
               type="button"

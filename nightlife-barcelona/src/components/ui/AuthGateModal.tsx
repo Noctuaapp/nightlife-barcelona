@@ -14,7 +14,9 @@ import { XP_AMOUNTS } from "../../lib/xp"
 // cuenta para guardarlo») y solo lo que de verdad se gana con ella: XP del check-in (XP_AMOUNTS), el
 // primer reto de bienvenida (guardar 3 sitios) y «Tu mes en Noctua» (que cuenta check-ins y «voy»).
 // Nada de promesas que la web no cumpla.
-export type AuthGateReason = "favorite" | "attend" | "checkin"
+// 15/11/2026: «plan» (compartir un plan de /plan) y «poll» (tras votar en la encuesta del día). Antes compartir un plan mandaba
+// de golpe a /signup, sin explicar nada y perdiendo el plan; y la encuesta no ofrecía cuenta en ningún momento.
+export type AuthGateReason = "favorite" | "attend" | "checkin" | "plan" | "poll"
 
 const REASONS: Record<AuthGateReason, { title: string; subtitle: string; benefits: string[] }> = {
   favorite: {
@@ -32,6 +34,16 @@ const REASONS: Record<AuthGateReason, { title: string; subtitle: string; benefit
     subtitle: "authGate.subtitleCheckin",
     benefits: ["authGate.benefitXp", "authGate.benefitMonth", "authGate.benefitChallenge"],
   },
+  plan: {
+    title: "authGate.titlePlan",
+    subtitle: "authGate.subtitlePlan",
+    benefits: ["authGate.benefitPlanLink", "authGate.benefitChallenge", "authGate.benefitMonth"],
+  },
+  poll: {
+    title: "authGate.titlePoll",
+    subtitle: "authGate.subtitlePoll",
+    benefits: ["authGate.benefitPollAdult", "authGate.benefitPollSaved"],
+  },
 }
 
 type AuthGateModalProps = {
@@ -42,6 +54,8 @@ type AuthGateModalProps = {
   subtitleKey?: string
   // Si se indica, el modal habla de esa acción concreta (título, subtítulo y ventajas propios).
   reason?: AuthGateReason
+  // Para abrirlo encima de otra ventana a pantalla completa (la encuesta, z-[1100]).
+  aboveOverlays?: boolean
 }
 
 // Modal reutilizable de "Regístrate y disfruta de todo Noctua". Sustituye al patrón anterior de
@@ -50,7 +64,7 @@ type AuthGateModalProps = {
 // de golpe de lo que estaba mirando. Portal a document.body por la misma razón que
 // NearbyVenuesSheet: un ancestro con backdrop-blur crea un containing block para position:fixed
 // y el modal quedaría atrapado dentro de esa tarjeta en vez de cubrir la pantalla.
-export default function AuthGateModal({ open, onClose, subtitleKey, reason }: AuthGateModalProps) {
+export default function AuthGateModal({ open, onClose, subtitleKey, reason, aboveOverlays = false }: AuthGateModalProps) {
   const { t } = useLanguage()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
@@ -67,7 +81,7 @@ export default function AuthGateModal({ open, onClose, subtitleKey, reason }: Au
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/75 backdrop-blur-xl sm:items-center sm:p-6"
+      className={`fixed inset-0 ${aboveOverlays ? "z-[1200]" : "z-[100]"} flex items-end justify-center bg-black/75 backdrop-blur-xl sm:items-center sm:p-6`}
       onClick={onClose}
     >
       <div

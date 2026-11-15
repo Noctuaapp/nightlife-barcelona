@@ -26,7 +26,17 @@ export type Guide = {
   cta: { label: string; href: string }
 }
 
-export type GuideMeta = { slug: string; title: string; h1: string; description: string; blurb: string }
+export type GuideMeta = {
+  slug: string
+  title: string
+  h1: string
+  description: string
+  blurb: string
+  /** Su gemela en español (solo las guías que la tienen; las demás no tienen página española). */
+  esPath?: string
+  /** Día (AAAA-MM-DD) en que se comprobaron sus fuentes, si es distinto del de las demás guías. */
+  reviewed?: string
+}
 
 export type PlaceLine = { name: string; where: string; phone?: string }
 

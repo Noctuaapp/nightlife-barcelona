@@ -13,11 +13,16 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
   try {
     // Los planes antiguos tienen 8 caracteres; los nuevos, 12 (más difíciles de adivinar).
     if (/^[a-f0-9]{8,12}$/.test(code)) {
-      const { data } = await supabase.rpc("get_night_plan", { p_code: code })
+      const [{ data }, { data: pollState }] = await Promise.all([
+        supabase.rpc("get_night_plan", { p_code: code }),
+        supabase.rpc("night_plan_poll_state", { p_code: code, p_token: null }),
+      ])
       if (data?.title) {
         title = data.title
-        const names = (data.stops || []).map((s: any) => s.title).filter(Boolean).slice(0, 4).join(" → ")
-        if (names) description = `${names}. Apúntate sin crear cuenta.`
+        // Votación entre sitios (supabase/119): se enseñan separados por «·» y se invita a votar, no a apuntarse.
+        const isPoll = pollState?.mode === "vote"
+        const names = (data.stops || []).map((s: any) => s.title).filter(Boolean).slice(0, isPoll ? 5 : 4).join(isPoll ? " · " : " → ")
+        if (names) description = isPoll ? `Elige entre: ${names}. Vota sin crear cuenta.` : `${names}. Apúntate sin crear cuenta.`
       }
     }
   } catch {}

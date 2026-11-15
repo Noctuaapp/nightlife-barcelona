@@ -15,6 +15,7 @@ import { hasOptionalConsent } from "../../lib/consent"
 import { readLocalVotes, recordLocalVote, votedOnDay } from "../../lib/partyPollLocal"
 import { setPopupState, usePopupSlot } from "../../lib/popupGate"
 import { DOTS, dotsFilled, shareText, verdictOwlMood, verdictText } from "../../lib/pollVerdict"
+import AuthGateModal from "../ui/AuthGateModal"
 
 // Juego "¿Qué prefieres?" (pedido por Jordi: "encuestas rollo el juego que preferirías... ambiente
 // fiesta y cachondeo"). Decisiones: sale como popup al entrar y NO da XP, es solo por diversión.
@@ -76,7 +77,7 @@ function localStore(): Storage | null {
 
 export default function PartyPollPopup() {
   const pathname = usePathname() || ""
-  const { locale } = useLanguage()
+  const { locale, t } = useLanguage()
   const ui = locale === "es" ? UI.es : locale === "ca" ? UI.ca : UI.en
 
   const [open, setOpen] = useState(false)
@@ -93,6 +94,8 @@ export default function PartyPollPopup() {
   // «enlace copiado» cuando el móvil no tiene menú de compartir.
   const [dotsOn, setDotsOn] = useState(false)
   const [copied, setCopied] = useState(false)
+  // Ventana de cuenta que ofrece el enlace de después de votar (solo sin cuenta).
+  const [showGate, setShowGate] = useState(false)
   // false durante los primeros instantes tras abrirse (ver TOUCH_GUARD_MS).
   const [touchReady, setTouchReady] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -287,7 +290,15 @@ export default function PartyPollPopup() {
     setSending(false)
   }
 
-  if (!mounted || !open) return null
+  // Tras votar sin cuenta (15/11/2026): un enlace discreto, no un aviso. Votar sigue siendo libre (decisión del 30/10); lo
+  // que se ofrece es lo único que de verdad se gana con cuenta aquí: las preguntas +18 y que los votos queden en la cuenta.
+  const openGate = () => {
+    setShowGate(true)
+    track("auth_gate_view", { itemType: "poll", itemName: poll?.id ?? null, meta: { reason: "poll", from: "verdict" } })
+  }
+  const gate = <AuthGateModal open={showGate} onClose={() => setShowGate(false)} reason="poll" aboveOverlays />
+
+  if (!mounted || !open) return showGate ? gate : null
 
   const text = poll ? pollText(poll, locale) : null
   const total = results ? results.a + results.b : 0
@@ -349,7 +360,9 @@ export default function PartyPollPopup() {
     )
   }
 
-  return createPortal(
+  return (
+    <>
+    {createPortal(
     <div
       className="fixed inset-0 z-[1100] flex items-end justify-center bg-night/80 p-4 sm:items-center"
       style={{ animation: "pollFade 0.25s ease-out" }}
@@ -431,6 +444,15 @@ export default function PartyPollPopup() {
                 <p className="mt-3 text-center text-xs leading-snug text-muted">
                   {ui.tomorrow}
                 </p>
+                {anon && !userId && (
+                  <button
+                    type="button"
+                    onClick={openGate}
+                    className="mt-2 block w-full text-center text-xs font-semibold leading-snug text-zinc-300 underline-offset-4 transition hover:text-white hover:underline"
+                  >
+                    {t("authGate.ctaPoll")}
+                  </button>
+                )}
               </div>
             ) : (
               <p className="mt-4 min-h-[40px] text-xs leading-snug text-muted">{ui.fun}</p>
@@ -444,5 +466,8 @@ export default function PartyPollPopup() {
       `}</style>
     </div>,
     document.body
+  )}
+    {gate}
+    </>
   )
 }

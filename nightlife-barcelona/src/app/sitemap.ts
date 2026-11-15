@@ -49,6 +49,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // /club-noctua se añade más abajo solo si Club Noctua está activo: en pausa lleva noindex (club-noctua/layout.tsx).
     { url: `${BASE_URL}/faq`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE_URL}/derechos`, changeFrequency: "monthly", priority: 0.4 },
+    // Guía de Nochevieja (15/11/2026): con gemelas en los cuatro idiomas internacionales (hreflang en lib/intl/sitemap.ts).
+    { url: `${BASE_URL}/nochevieja-barcelona`, changeFrequency: "weekly", priority: 0.7 },
     // Nitbus: portada y una página por línea, con sus paradas en orden.
     { url: `${BASE_URL}/nitbus`, changeFrequency: "weekly", priority: 0.5 },
     ...Object.keys(NIGHT_BUS_LINES).map((code) => ({

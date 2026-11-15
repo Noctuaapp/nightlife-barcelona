@@ -23,7 +23,7 @@ export function pageLabel(path: string | null, names: Map<string, string>): stri
     "/signup": "Registro", "/contact": "Contacto", "/faq": "Preguntas frecuentes", "/club-noctua": "Club Noctua",
     "/opinion": "Opinión de la web", "/privacy": "Privacidad", "/terms": "Términos", "/invitar": "Invitar amigos",
     "/recuperar": "Recuperar contraseña", "/confirm-age": "Confirmar edad", "/nitbus": "NitBus", "/metro": "Metro",
-    "/mi-mes": "Mi mes", "/derechos": "Derechos del consumidor", "/para-locales": "Para locales", "/zona": "Zonas",
+    "/mi-mes": "Mi mes", "/derechos": "Derechos del consumidor", "/nochevieja-barcelona": "Guía de Nochevieja", "/para-locales": "Para locales", "/zona": "Zonas",
   }
   if (fixed[p]) return fixed[p]
   const m = p.match(/^\/(clubs|event|club-event|barrio|musica|essentials|plan|nitbus|metro|zona)\/(.+)$/)

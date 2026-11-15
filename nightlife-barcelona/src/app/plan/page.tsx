@@ -1,6 +1,8 @@
 "use client"
 
 import SharePlanButton from "@/components/plan/SharePlanButton"
+import PlanPollButton from "@/components/plan/PlanPollButton"
+import { pollCandidates } from "../../lib/planPoll"
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import {
@@ -1137,6 +1139,21 @@ export default function PlanPage() {
                     <SharePlanButton
                       title={t("planPage.shareTitle").replace("{date}", todayFormatted)}
                       stops={stops.map((st) => ({ kind: st.kind, title: st.title, subtitle: st.subtitle, time: st.time, image: st.image, href: st.href }))}
+                    />
+
+                    {/* «¿No os ponéis de acuerdo? Que voten»: los sitios del plan y sus alternativas, para que el grupo elija (sin cuenta). */}
+                    <PlanPollButton
+                      title={t("planPoll.title")}
+                      candidates={pollCandidates([
+                        stops.map((st) => ({ kind: st.kind, title: st.title, subtitle: st.subtitle, image: st.image, href: st.href })),
+                        alternatives.map((club) => ({
+                          kind: "club" as const,
+                          title: club.name,
+                          subtitle: club.neighborhood || otherCityName(club) || "Barcelona",
+                          image: club.image,
+                          href: `/clubs/${club.slug || createSlug(club.name)}`,
+                        })),
+                      ])}
                     />
 
                     {alternatives.length > 0 && (

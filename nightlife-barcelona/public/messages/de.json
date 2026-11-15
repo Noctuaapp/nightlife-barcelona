@@ -354,7 +354,8 @@
     "venueButton": "Kontaktiere uns",
     "link_feedback": "Bewerte uns",
     "link_cookies": "Cookie-Einstellungen",
-    "link_rights": "Deine Rechte beim Ausgehen"
+    "link_rights": "Deine Rechte beim Ausgehen",
+    "link_nye": "Silvester in Barcelona"
   },
   "privacy": {
     "title": "Datenschutzerklärung",
@@ -834,7 +835,14 @@
     "benefitChallenge": "Erste Challenge: Speichere 3 Spots und deine Pläne sind nur einen Tipp entfernt",
     "benefitXp": "Sammle +{xp} XP bei jedem Check-in und steige auf",
     "benefitMonth": "„Dein Monat auf Noctua“: der Rückblick auf deine Nächte",
-    "benefitGoing": "Dein „Bin dabei“ zählt für die Nachtschwärmer von heute"
+    "benefitGoing": "Dein „Bin dabei“ zählt für die Nachtschwärmer von heute",
+    "titlePlan": "Erstelle dein Konto, um deinen Plan zu teilen",
+    "benefitPlanLink": "Teile deinen Plan per Link: Deine Freunde sehen ihn und sagen ohne Konto zu",
+    "titlePoll": "Erstelle dein Konto, um weiterzuspielen",
+    "subtitlePoll": "Es ist kostenlos und dauert nur wenige Sekunden.",
+    "benefitPollAdult": "Du bekommst auch die 18+-Fragen, die nur mit Konto erscheinen",
+    "benefitPollSaved": "Deine Stimmen werden in deinem Konto gespeichert, nicht in diesem Browser",
+    "ctaPoll": "Mit Konto bekommst du auch die 18+-Fragen"
   },
   "changePassword": {
     "eyebrow": "Kontosicherheit",
@@ -1509,7 +1517,41 @@
     "nobody": "Noch hat sich niemand angemeldet.",
     "going": "Dabei",
     "andMore": "und {n} weitere",
-    "copyLink": "Link kopieren"
+    "copyLink": "Link kopieren",
+    "pollInvited": "Jetzt wird entschieden",
+    "pollIntro": "Wähle den Ort, auf den du am meisten Lust hast. Du kannst deine Stimme jederzeit ändern.",
+    "pollNameLabel": "Dein Name (damit die Gruppe sieht, wer wofür stimmt)",
+    "pollAskName": "Gib deinen Namen ein, um abzustimmen.",
+    "pollVote": "Abstimmen",
+    "pollYourVote": "Deine Stimme",
+    "pollOneVote": "1 Stimme",
+    "pollVotes": "{n} Stimmen",
+    "pollLeading": "Vorn",
+    "pollTie": "Gleichstand",
+    "pollNobody": "Noch hat niemand abgestimmt. Mach den Anfang.",
+    "pollTotal": "Stimmen bisher: {n}",
+    "pollError": "Deine Stimme konnte nicht gespeichert werden. Versuch es noch einmal.",
+    "pollSeeVenue": "Ort ansehen",
+    "pollShareHint": "Schick den Link an den Rest der Gruppe, damit alle abstimmen.",
+    "homeTitle": "Und wie kommt ihr heim?",
+    "homeBody": "Klärt es vor dem Ausgehen, dann bleibt niemand auf der Strecke."
+  },
+  "planPoll": {
+    "cta": "Keine Einigung? Lass abstimmen",
+    "ctaSub": "Wähle 2 bis 5 Orte und schick den Link an die Gruppe: Alle stimmen ohne Konto ab.",
+    "title": "Wohin gehen wir?",
+    "pickTitle": "Wähle die Orte",
+    "pickHint": "Wähle {min} bis {max} aus. Alles, was du nicht anhakst, bleibt draußen.",
+    "needTwo": "Wähle mindestens 2 Orte.",
+    "count": "{n} Orte gewählt",
+    "create": "Abstimmung erstellen und teilen",
+    "working": "Abstimmung wird erstellt…",
+    "error": "Die Abstimmung konnte nicht erstellt werden. Versuch es noch einmal.",
+    "ready": "Abstimmung erstellt. Schick sie an die Gruppe.",
+    "copied": "Link kopiert. Füg ihn in die Gruppe ein.",
+    "sendGroup": "An die Gruppe senden",
+    "seeResults": "Abstimmung ansehen",
+    "message": "Wohin gehen wir heute Abend? Stimm hier ab, ohne Konto:"
   },
   "notFound": {
     "title": "Hier ist keine Party",
@@ -2046,7 +2088,9 @@
     "body": "Öffne sie direkt vom Startbildschirm, im Vollbild und ohne Umweg über den Browser.",
     "androidSteps": "In Chrome: Tippe auf das Menü ⋮ und dann auf „App installieren“ (oder „Zum Startbildschirm hinzufügen“).",
     "bannerSub": "Ein Tipp auf dem Startbildschirm – ohne uns jedes Mal zu suchen.",
-    "bannerClose": "Schließen"
+    "bannerClose": "Schließen",
+    "essentialsTitle": "Das Wichtigste mit einem Tipp",
+    "essentialsBody": "Installiere Noctua und öffne sie vom Startbildschirm, wenn du sie brauchst: Notdienst-Apotheke, Notaufnahme, Taxi oder ein offener Supermarkt, ohne uns im Browser suchen zu müssen."
   },
   "notices": {
     "closedTonight": "Heute Nacht haben wir geschlossen",

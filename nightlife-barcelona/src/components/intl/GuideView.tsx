@@ -9,7 +9,7 @@ import { breadcrumbLd, langPath, langUrl, faqLd, SITE } from "../../lib/intl/sit
 // Pinta una guía (lib/intl/{idioma}/guides.ts) como página: titular, índice, secciones, preguntas, fuentes y
 // guías relacionadas. Es un componente de servidor: todo el texto sale en el HTML.
 
-function BlockView({ b }: { b: Block }) {
+export function BlockView({ b }: { b: Block }) {
   switch (b.t) {
     case "p":
       return <p className="mt-4 text-base leading-relaxed text-zinc-300">{b.text}</p>
