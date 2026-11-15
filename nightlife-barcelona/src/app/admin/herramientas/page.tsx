@@ -32,6 +32,7 @@ type Tool = {
 
 const TOOL_ICONS: Record<string, LucideIcon> = {
   "refresh-clubs": RefreshCw,
+  "refresh-clubs-madrid": RefreshCw,
   "refresh-events": RefreshCw,
   "refresh-essentials": RefreshCw,
   "advance-events": CalendarClock,
@@ -51,6 +52,15 @@ const TOOLS: Tool[] = [
     path: "/api/cron/refresh-google-data",
     title: "Actualizar datos de Google (clubs)",
     description: "Valoración y nº de reseñas de Google, fotos (solo a los clubs sin galería) y web o redes si están vacías. No toca los horarios. Se ejecuta solo cada noche a las 04:00.",
+    batch: true,
+  },
+  {
+    key: "refresh-clubs-madrid",
+    path: "/api/cron/refresh-google-data?city=madrid",
+    city: "madrid",
+    title: "Actualizar datos de Google (clubs de Madrid)",
+    description:
+      "Como el de arriba, pero solo con los locales de Madrid, aunque la ciudad siga en prelaunch (sigue cerrada al público y sus locales, ocultos). Primero les busca la ficha de Google DENTRO de Madrid (descarta lo que caiga fuera o no se parezca al nombre) y luego baja valoración, fotos (solo a los que no tienen galería) y web o redes si están vacías. Los que Google no encuentra se saltan: revísalos a mano. La tarea de cada noche no lo hace: solo se lanza cuando pulsas aquí. Gasta llamadas de pago: ~1 búsqueda + 1 consulta + hasta 5 fotos por club.",
     batch: true,
   },
   {
