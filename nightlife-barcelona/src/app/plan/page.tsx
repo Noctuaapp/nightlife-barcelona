@@ -34,6 +34,7 @@ import { cityTextKey } from "../../lib/cityText"
 import { UtensilsCrossed, ShoppingCart } from "lucide-react"
 import { DRESS_CODES, dressCodeLabel, dressCodeOf } from "../../lib/dressCode"
 import NocOwl from "../../components/mascot/NocOwl"
+import { PLAN_BACKDROP_STYLE } from "../../components/plan/planBackdrop"
 
 // "Planifica tu noche". Cambios de la auditoría de octubre 2026:
 // - Los estilos de música eran "Commercial" y "Cocktail Bar" (en inglés) contra datos en español:
@@ -764,16 +765,10 @@ export default function PlanPage() {
   return (
     <>
       <Header />
-      <main className="relative min-h-screen bg-night pb-40 text-ink">
-        {/* El primer intento (un resplandor pequeño solo en la cabecera) era tan sutil que
-            apenas se notaba, y al hacer scroll por los pasos desaparecía y volvía a quedar todo
-            negro liso. Ahora el ambiente violeta es fijo a la pantalla (sigue ahí en todas las
-            fases: formulario, cargando, resultado) y mucho más intenso — sigue siendo un único
-            color de marca, estático, sin manchas animadas, pero ya se nota. */}
-        <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-          <div className="absolute -left-24 -top-32 h-[26rem] w-[26rem] rounded-full bg-brand/25 blur-[110px]" />
-          <div className="absolute -right-32 top-1/3 h-[22rem] w-[22rem] rounded-full bg-brand-soft/10 blur-[120px]" />
-        </div>
+      {/* Fondo (15/11/2026): cielo índigo con rutas de puntitos y paradas (cena, copa, música), en vez del negro liso con un
+          resplandor violeta. Va como fondo del propio <main> (planBackdrop.ts), así vale para todas las fases (formulario,
+          cargando, resultado) y no depende de capas con z-index. bg-night queda solo de color de respaldo. */}
+      <main className="relative min-h-screen bg-night pb-40 text-ink" style={PLAN_BACKDROP_STYLE}>
 
         <section className="relative mx-auto max-w-2xl px-4 pb-8 pt-10 sm:pt-14">
           <div className="relative flex items-start gap-4">
@@ -787,7 +782,7 @@ export default function PlanPage() {
         </section>
 
         {loading ? (
-          <p className="text-center text-sm text-zinc-400">{t("common.loading")}</p>
+          <p className="text-center text-sm text-zinc-300">{t("common.loading")}</p>
         ) : (
           <>
             {phase === "form" && (
@@ -797,7 +792,7 @@ export default function PlanPage() {
                     <div key={title} className={`h-1 flex-1 rounded-full transition-colors ${i <= step ? "bg-brand" : "bg-white/10"}`} />
                   ))}
                 </div>
-                <p className="mb-6 text-sm text-zinc-400">
+                <p className="mb-6 text-sm text-zinc-300">
                   {t("planPage.stepOf").replace("{n}", String(step + 1)).replace("{total}", String(STEP_TITLES.length))} ·{" "}
                   <span className="font-semibold text-ink">{STEP_TITLES[step]}</span>
                 </p>
@@ -851,7 +846,7 @@ export default function PlanPage() {
                   {step === 3 && (
                     <div>
                       <p className="mb-4 text-sm text-zinc-300">{t("planPage.venueTypeInstruction")}</p>
-                      {autoDetected && <p className="mb-4 text-sm text-brand-soft">{t("planPage.autoDetectedNote")}</p>}
+                      {autoDetected && <p className="mb-4 text-sm text-[#c9bcff]">{t("planPage.autoDetectedNote")}</p>}
                       <div className="flex flex-wrap gap-2">
                         {venueTypeOptions.map((v) => (
                           <button key={v.value} onClick={() => setVenueTypeSet((s) => toggleInSet(s, v.value))} aria-pressed={venueTypeSet.has(v.value)} className={chip(venueTypeSet.has(v.value))}>
@@ -888,7 +883,7 @@ export default function PlanPage() {
                       )}
                       <p className="mb-4 text-sm text-zinc-300">{t("planPage.areaInstruction")}</p>
                       {areaOptions.length === 0 ? (
-                        <p className="text-sm text-zinc-500">{t("planPage.noBarriosForZone")}</p>
+                        <p className="text-sm text-zinc-300">{t("planPage.noBarriosForZone")}</p>
                       ) : (
                         <div className="flex flex-wrap gap-2">
                           {areaOptions.map((a) => (
@@ -1000,7 +995,7 @@ export default function PlanPage() {
                   )}
                 </div>
                 {step < STEP_TITLES.length - 1 && (
-                  <button onClick={generatePlan} className="mt-4 w-full text-center text-sm font-semibold text-zinc-400 underline-offset-4 hover:text-ink hover:underline">
+                  <button onClick={generatePlan} className="mt-4 w-full text-center text-sm font-semibold text-zinc-300 underline-offset-4 hover:text-ink hover:underline">
                     {t("planPage.skipToPlan")}
                   </button>
                 )}
