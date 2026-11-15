@@ -8,6 +8,7 @@ import { supabase } from "../../../lib/supabase"
 import { zoneOf } from "../../../lib/zones"
 import { fetchAllPages } from "../../../lib/fetchAll"
 import { useAdminCity } from "../../../components/admin/AdminCity"
+import { cityFlags, cityFlagsNote, isCitySqlMissing, mergeCityFlags, NO_CITY_FLAGS, rpcByCity, type CityFlags } from "../../../lib/adminRpc"
 import { clubCityIndex, cityOfEvent } from "../../../lib/adminCity"
 import { CITIES, cityOfClub, type CityKey } from "../../../lib/cities"
 import { ADMIN_EMAIL } from "../../../lib/admin"
@@ -24,6 +25,9 @@ import {
 // Panel "Datos": métricas agregadas de Noctua pensadas para enseñar a clubs y managers (y para
 // venderlas). Todo se calcula en Supabase con funciones que solo el admin puede ejecutar y que
 // devuelven números, nunca datos de personas concretas.
+
+// SQL que separa por ciudad las seis funciones admin_data_* de siempre (se prepara aparte del 104).
+const CITY_SQL_105 = "105_datos_por_ciudad.sql"
 
 type Tab = "resumen" | "clubs" | "eventos" | "esenciales" | "clics" | "busquedas" | "audiencia"
 
@@ -129,9 +133,15 @@ export default function AdminDatosPage() {
   const [searches, setSearches] = useState<any[]>([])
   const [audience, setAudience] = useState<any>(null)
   const [clubsMeta, setClubsMeta] = useState<Record<string, any>>({})
-  // Admin por ciudad (15/11/2026): las pestañas Clubs y Eventos enseñan solo lo de la ciudad elegida en el menú. Las demás (Resumen,
-  // Clics, Búsquedas, Audiencia, Esenciales) salen de funciones de Supabase que no separan por ciudad: son de toda la web.
+  // Admin por ciudad (15/11/2026): todo lo de esta pantalla enseña la ciudad elegida en el menú. Clubs y Eventos se filtran aquí por
+  // la ciudad de cada ficha; el resto sale de funciones de Supabase que reciben p_city (SQL 104 y 105). Si una función aún no
+  // la conoce, en Barcelona se ve toda la web junta (con aviso) y en Madrid no se enseña nada (con aviso): nunca cifras de una
+  // ciudad creyendo que son de la otra.
   const [city] = useAdminCity()
+  const [loadFlags, setLoadFlags] = useState<CityFlags>(NO_CITY_FLAGS)
+  const [insightFlags, setInsightFlags] = useState<CityFlags>(NO_CITY_FLAGS)
+  const flags = useMemo(() => mergeCityFlags(loadFlags, insightFlags), [loadFlags, insightFlags])
+  const flagsNote = cityFlagsNote(flags)
   const [eventsMeta, setEventsMeta] = useState<Record<string, CityKey>>({})
   const [rideClicks, setRideClicks] = useState<{ provider: string; n: number }[]>([])
   // Esenciales (30/10/2026): se carga aparte para que, si aún no se ha ejecutado el SQL 54, el resto de
@@ -173,20 +183,23 @@ export default function AdminDatosPage() {
     setLoading(true)
     setError("")
     const range = { p_from: from, p_to: to }
+    // Las fichas (ci, ei) salen de toda la web y aquí se filtran por la ciudad de cada una. Lo demás se pide ya por ciudad.
     const [ov, ci, ei, se, au, clubs, rc, es, evMeta] = await Promise.all([
-      supabase.rpc("admin_data_overview", range),
+      rpcByCity<any>(supabase, "admin_data_overview", range, city, CITY_SQL_105),
       supabase.rpc("admin_data_items", { p_type: "club", ...range }),
       supabase.rpc("admin_data_items", { p_type: "event", ...range }),
-      supabase.rpc("admin_data_searches", range),
-      supabase.rpc("admin_data_audience", { ...range, p_type: null, p_id: null }),
+      rpcByCity<any>(supabase, "admin_data_searches", range, city, CITY_SQL_105),
+      rpcByCity<any>(supabase, "admin_data_audience", { ...range, p_type: null, p_id: null }, city, CITY_SQL_105),
       // Por páginas: Supabase corta en 1.000 filas y, con Madrid, entre las dos ciudades se pasa de ahí.
       fetchAllPages((lo, hi) => supabase.from("clubs").select("id, name, city, neighborhood, address, venue_type, latitude, longitude").order("id").range(lo, hi)),
-      supabase.rpc("admin_ride_clicks", range),
-      supabase.rpc("admin_essentials_stats", range),
+      rpcByCity<any>(supabase, "admin_ride_clicks", range, city, CITY_SQL_105),
+      rpcByCity<any>(supabase, "admin_essentials_stats", range, city),
       fetchAllPages((lo, hi) => supabase.from("events").select("id, club_name, latitude, longitude").order("id").range(lo, hi)),
     ])
     if (seq !== loadSeq.current) return
-    const firstErr = [ov, ci, ei, se, au].find((r) => r.error)?.error
+    setLoadFlags(cityFlags([es], [ov, se, au, rc]))
+    // Que falte el SQL por ciudad no es un fallo: lo explica el aviso de arriba.
+    const firstErr = [ov, ci, ei, se, au].find((r) => r.error && !isCitySqlMissing(r.error))?.error
     if (firstErr) {
       const m = firstErr.message || ""
       const hint = /no autorizado/i.test(m)
@@ -196,13 +209,13 @@ export default function AdminDatosPage() {
           : "Vuelve a intentarlo en un momento."
       setError(`No se pudieron cargar los datos (${m}). ${hint}`)
     }
-    setOverview(ov.data)
+    setOverview(ov.error ? null : ov.data)
     setClubItems(ci.data || [])
     setEventItems(ei.data || [])
-    setSearches(se.data || [])
-    setAudience(au.data)
-    setRideClicks(rc.data || [])
-    setEssError(es.error ? es.error.message : "")
+    setSearches(se.error ? [] : se.data || [])
+    setAudience(au.error ? null : au.data)
+    setRideClicks(rc.error ? [] : rc.data || [])
+    setEssError(es.error && !isCitySqlMissing(es.error) ? es.error.message || "error" : "")
     setEssStats(es.error ? null : es.data)
     const meta: Record<string, any> = {}
     const clubList = (clubs || []) as { id: number; name: string; city: string | null; latitude: number | null; longitude: number | null }[]
@@ -214,7 +227,7 @@ export default function AdminDatosPage() {
     for (const e of (evMeta || []) as { id: number; club_name: string | null; latitude: number | null; longitude: number | null }[]) evCities[String(e.id)] = cityOfEvent(e, index)
     setEventsMeta(evCities)
     setLoading(false)
-  }, [from, to])
+  }, [from, to, city])
 
   useEffect(() => {
     if (!checkingAdmin) load()
@@ -227,17 +240,18 @@ export default function AdminDatosPage() {
     const range = { p_from: from, p_to: to }
     const prev = previousRange(from, to)
     Promise.all([
-      supabase.rpc("admin_data_overview", { p_from: prev.from, p_to: prev.to }),
-      supabase.rpc("admin_funnel", range),
-      supabase.rpc("admin_source_quality", range),
-      supabase.rpc("admin_hours_madrid", range),
-      supabase.rpc("admin_club_actions", range),
-      supabase.rpc("admin_search_detail", range),
-      supabase.rpc("admin_visitor_languages", range),
-      supabase.rpc("admin_visitor_countries", range),
+      rpcByCity<any>(supabase, "admin_data_overview", { p_from: prev.from, p_to: prev.to }, city, CITY_SQL_105),
+      rpcByCity<any>(supabase, "admin_funnel", range, city),
+      rpcByCity<any>(supabase, "admin_source_quality", range, city),
+      rpcByCity<any>(supabase, "admin_hours_madrid", range, city),
+      rpcByCity<any>(supabase, "admin_club_actions", range, city),
+      rpcByCity<any>(supabase, "admin_search_detail", range, city),
+      rpcByCity<any>(supabase, "admin_visitor_languages", range, city),
+      rpcByCity<any>(supabase, "admin_visitor_countries", range, city),
     ]).then(([po, fu, so, ho, ca, sd, la, co]) => {
-      // Si cambias las fechas rápido, solo vale la última respuesta.
+      // Si cambias las fechas o la ciudad rápido, solo vale la última respuesta.
       if (seq !== insightsSeq.current) return
+      setInsightFlags(cityFlags([fu, so, ho, ca, sd, la, co], [po]))
       setPrevOverview(po.error ? null : po.data)
       setInsights({
         funnel: fu.error ? null : fu.data,
@@ -250,7 +264,7 @@ export default function AdminDatosPage() {
       })
       setInsightsLoading(false)
     })
-  }, [checkingAdmin, from, to])
+  }, [checkingAdmin, from, to, city])
 
   useEffect(() => {
     if (!selected) { setDetail(null); setDetailAud(null); return }
@@ -464,10 +478,8 @@ export default function AdminDatosPage() {
           ))}
         </div>
 
-        {tab !== "clubs" && tab !== "eventos" && (
-          <p className="mb-6 text-xs text-zinc-400">
-            Estas cifras son de toda la web (Barcelona y Madrid juntas): Supabase aún no las separa por ciudad. Las pestañas Clubs y Eventos sí enseñan solo {CITIES[city].name}.
-          </p>
+        {tab !== "clubs" && tab !== "eventos" && tab !== "clics" && flagsNote && (
+          <p role="status" className="mb-6 rounded-xl border border-warn/40 bg-warn/10 px-4 py-2.5 text-xs text-warn">{flagsNote.text}</p>
         )}
         {error && <p className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}
         {loading && tab !== "clics" && <p className="text-sm text-zinc-400">Cargando datos...</p>}
@@ -505,7 +517,7 @@ export default function AdminDatosPage() {
               <FunnelPanel browse={insights.funnel.browse} signup={insights.funnel.signup} errors={insights.funnel.errors} />
             ) : insightsLoading ? (
               <p className="text-sm text-zinc-400">Cargando embudo...</p>
-            ) : (
+            ) : flags.m104 ? null : (
               <NeedSql file="88_datos_comparativas.sql" what="el embudo, qué origen convierte y las horas en hora de Madrid" />
             )}
             {insights?.sources && <SourcePanel rows={insights.sources} />}
@@ -817,7 +829,7 @@ export default function AdminDatosPage() {
                 <p className="mt-2 text-xs text-zinc-500">Búsquedas por día.</p>
               </div>
             )}
-            {!insights?.searchDetail && !insightsLoading && <NeedSql className="mx-2 mb-4" file="88_datos_comparativas.sql" what="cuántas búsquedas acaban en algo y su evolución por día" />}
+            {!insights?.searchDetail && !insightsLoading && !flags.m104 && <NeedSql className="mx-2 mb-4" file="88_datos_comparativas.sql" what="cuántas búsquedas acaban en algo y su evolución por día" />}
             <div className="overflow-x-auto">
               <table className="w-full min-w-[30rem] text-sm">
                 <thead><tr className="border-b border-white/10 text-xs text-zinc-400"><th className="px-3 py-2 text-left">Búsqueda</th><th className="px-3 py-2 text-right">Veces</th><th className="px-3 py-2 text-right">Resultados medios</th><th className="px-3 py-2 text-right">Sin resultados</th>{insights?.searchDetail && <th className="px-3 py-2 text-right">Después abren algo</th>}</tr></thead>
@@ -844,14 +856,14 @@ export default function AdminDatosPage() {
               <CountryPanel rows={insights.countries} />
             ) : insightsLoading ? (
               <p className="text-sm text-zinc-400">Cargando países...</p>
-            ) : (
+            ) : flags.m104 ? null : (
               <NeedSql file="89_pais_visitantes.sql" what="el país de los visitantes" />
             )}
             {insights?.languages ? (
               <LanguagePanel rows={insights.languages} />
             ) : insightsLoading ? (
               <p className="text-sm text-zinc-400">Cargando idiomas...</p>
-            ) : (
+            ) : flags.m104 ? null : (
               <NeedSql file="88_datos_comparativas.sql" what="el idioma de los visitantes" />
             )}
             {audience && (

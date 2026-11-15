@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
+import { CitySqlPending, useAdminCity } from "../../../components/admin/AdminCity"
 import { supabase } from "../../../lib/supabase"
 import { isAdminEmail } from "../../../lib/admin"
+import { isCitySqlMissing, rpcByCity } from "../../../lib/adminRpc"
 
 // Retención (29/10/2026): «¿vuelve la gente?». Se mide sin guardar nada en el móvil de nadie, solo
 // con lo que ya se registra:
@@ -227,6 +229,10 @@ export default function AdminRetentionPage() {
   const [checking, setChecking] = useState(true)
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState(false)
+  // Ciudad del admin (15/11/2026). Las cuentas no tienen ciudad: en Madrid cuentan las que han dejado actividad allí.
+  const [city] = useAdminCity()
+  const [cityMessage, setCityMessage] = useState<string | null>(null)
+  const [cityReady, setCityReady] = useState(true)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -240,11 +246,21 @@ export default function AdminRetentionPage() {
 
   useEffect(() => {
     if (checking) return
-    supabase.rpc("admin_retention", { p_days: 60 }).then(({ data, error }) => {
-      if (error || !data) setError(true)
-      else setData(data as Data)
+    // Si se cambia de ciudad rápido, solo vale la última respuesta.
+    let current = true
+    setData(null)
+    setError(false)
+    setCityMessage(null)
+    rpcByCity<Data>(supabase, "admin_retention", { p_days: 60 }, city).then(({ data, error, cityReady }) => {
+      if (!current) return
+      setCityReady(cityReady)
+      if (error || !data) {
+        setError(true)
+        setCityMessage(isCitySqlMissing(error) ? error?.message || null : null)
+      } else setData(data)
     })
-  }, [checking])
+    return () => { current = false }
+  }, [checking, city])
 
   if (checking) {
     return (
@@ -269,9 +285,11 @@ export default function AdminRetentionPage() {
 
   return (
     <AdminShell title="Retención" subtitle="¿Vuelve la gente? Cuentas registradas y app instalada, sin guardar nada en el móvil de nadie.">
+      {!error && !cityReady && <CitySqlPending />}
+
       {error && (
         <div className="mb-6 rounded-2xl border border-warn/40 bg-warn/10 p-5 text-sm text-warn">
-          Falta ejecutar supabase/51_retencion.sql en Supabase.
+          {cityMessage || "Falta ejecutar supabase/51_retencion.sql en Supabase."}
         </div>
       )}
 
@@ -282,6 +300,7 @@ export default function AdminRetentionPage() {
           <h2 className="text-base font-black">Cuentas registradas</h2>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
             Cuentas creadas en los últimos {data.cohort_days} días: {data.accounts}. «Vuelve» = abre la web con la sesión iniciada en otro día distinto al del registro. No cuenta tu cuenta de admin.
+            {city === "madrid" && " En Madrid solo entran las cuentas que han dejado actividad allí (las cuentas no tienen ciudad)."}
           </p>
 
           <dl className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">

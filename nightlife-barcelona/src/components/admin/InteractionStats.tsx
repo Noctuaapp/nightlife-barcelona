@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { CalendarCheck, Camera, Car, Clock, Globe, Heart, Hourglass, Music2, Navigation, Phone, Share2, Smartphone, Ticket, Users, type LucideIcon } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { isCitySqlMissing, rpcByCity } from "../../lib/adminRpc"
 import { fmtDuration } from "../../lib/duration"
 import { pageLabel } from "../../lib/adminPageLabel"
 import { destinationRows, rideOriginRows, rideRows, shareChannelRows, type DestinationCount, type RideCount, type RideOriginCount, type ShareChannelCount } from "../../lib/clickDetail"
@@ -10,6 +11,7 @@ import { clickHourSeries, type ClickHourRow } from "../../lib/dataInsights"
 import { Panel, SectionTitle, StatTile, type Accent } from "./ui"
 import { HourBars, NeedSql, PeakNote } from "./insights"
 import TimeSeriesPanel from "./TimeSeriesPanel"
+import { CitySqlPending, useAdminCity } from "./AdminCity"
 
 // Admin › Datos › «Clics y tiempo» (10/11/2026). Responde a dos preguntas: ¿cuánta gente pulsa «cómo llegar»,
 // la web, Instagram, «asistiré» o guarda un local en favoritos? y ¿cuánto tiempo se queda en la web?
@@ -138,6 +140,10 @@ export default function InteractionStats({ from, to, kind: kindProp, onKindChang
   // Clics por hora (SQL 88). Si aún no se ha ejecutado, null y se avisa en su panel; el resto funciona igual.
   const [hours, setHours] = useState<ClickHourRow[] | null>(null)
   const [error, setError] = useState("")
+  // Ciudad del admin (15/11/2026). cityMissing: Madrid sin el SQL 104. cityReady = false: Barcelona viendo toda la web junta.
+  const [city] = useAdminCity()
+  const [cityMissing, setCityMissing] = useState(false)
+  const [cityReady, setCityReady] = useState(true)
   const [loading, setLoading] = useState(true)
   const [kind, setKindState] = useState<Kind>(kindProp ?? "directions_click")
   const setKind = (k: Kind) => {
@@ -155,22 +161,24 @@ export default function InteractionStats({ from, to, kind: kindProp, onKindChang
     setLoading(true)
     setError("")
     Promise.all([
-      supabase.rpc("admin_interaction_stats", { p_from: from, p_to: to }),
-      supabase.rpc("admin_time_stats", { p_from: from, p_to: to }),
-      supabase.rpc("admin_hours_madrid", { p_from: from, p_to: to }),
+      rpcByCity<Interaction>(supabase, "admin_interaction_stats", { p_from: from, p_to: to }, city),
+      rpcByCity<TimeStats>(supabase, "admin_time_stats", { p_from: from, p_to: to }, city),
+      rpcByCity<{ clicks?: ClickHourRow[] } | null>(supabase, "admin_hours_madrid", { p_from: from, p_to: to }, city),
     ]).then(([a, b, c]) => {
       if (!current) return
       const err = a.error || b.error
       setError(err ? err.message || "error" : "")
-      setInter(a.error ? null : (a.data as Interaction))
-      setTime(b.error ? null : (b.data as TimeStats))
-      setHours(c.error ? null : ((c.data as { clicks?: ClickHourRow[] } | null)?.clicks ?? []))
+      setCityMissing(isCitySqlMissing(a.error) || isCitySqlMissing(b.error) || isCitySqlMissing(c.error))
+      setCityReady(a.cityReady && b.cityReady && c.cityReady)
+      setInter(a.error ? null : a.data)
+      setTime(b.error ? null : b.data)
+      setHours(c.error ? null : (c.data?.clicks ?? []))
       setLoading(false)
     })
     return () => {
       current = false
     }
-  }, [from, to])
+  }, [from, to, city])
 
   const days = useMemo(() => dayList(from, to), [from, to])
   const series = useMemo(() => {
@@ -189,10 +197,17 @@ export default function InteractionStats({ from, to, kind: kindProp, onKindChang
 
   return (
     <div className="space-y-6">
-      {error && (
-        <p className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
-          No se pudieron cargar todos los datos: {error}. ¿Has ejecutado el SQL 84 (84_clics_y_tiempo.sql) en Supabase › SQL Editor?
-        </p>
+      {cityMissing ? (
+        <NeedSql file="104_analitica_por_ciudad.sql" what="estos datos por ciudad" />
+      ) : (
+        <>
+          {!error && !cityReady && <CitySqlPending />}
+          {error && (
+            <p className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
+              No se pudieron cargar todos los datos: {error}. ¿Has ejecutado el SQL 84 (84_clics_y_tiempo.sql) en Supabase › SQL Editor?
+            </p>
+          )}
+        </>
       )}
 
       {inter && (
@@ -263,7 +278,7 @@ export default function InteractionStats({ from, to, kind: kindProp, onKindChang
 
           {HOUR_KINDS[kind] &&
             (hours === null ? (
-              <NeedSql file="88_datos_comparativas.sql" what="a qué hora se hace cada clic" />
+              cityMissing ? null : <NeedSql file="88_datos_comparativas.sql" what="a qué hora se hace cada clic" />
             ) : (
               <Panel accent={selected.accent}>
                 <SectionTitle icon={Clock} accent={selected.accent} className="mb-1">A qué hora: {selected.label.toLowerCase()}</SectionTitle>

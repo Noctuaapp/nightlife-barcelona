@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { CalendarDays } from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { isCitySqlMissing, rpcByCity } from "../../lib/adminRpc"
 import { fmtDuration } from "../../lib/duration"
 import { TIME_GRAINS, timeSeriesRows, timeSeriesTotals, type TimeGrain, type TimePeriod, type TimeSeries } from "../../lib/dataInsights"
 import { FilterChip, Panel, SectionTitle } from "./ui"
 import { NeedSql } from "./insights"
+import { useAdminCity } from "./AdminCity"
 
 // Admin › Datos › Clics y tiempo: el tiempo en la web por día, semana, mes y año (11/11/2026, supabase/90).
 // No depende de las fechas de arriba: cada vista enseña siempre sus últimos periodos (30 días, 12 semanas,
@@ -54,21 +56,32 @@ export default function TimeSeriesPanel() {
   const [metric, setMetric] = useState<Metric>("total")
   const [data, setData] = useState<TimeSeries | null | undefined>(undefined) // undefined = cargando, null = falta el SQL
   const seq = useRef(0)
+  // Ciudad del admin (15/11/2026). cityMissing: Madrid sin el SQL 104 (no se enseña lo de Barcelona en su lugar).
+  const [city] = useAdminCity()
+  const [cityMissing, setCityMissing] = useState(false)
 
   useEffect(() => {
     const mine = ++seq.current
     setData(undefined)
-    supabase.rpc("admin_time_series", { p_grain: grain }).then(({ data: d, error }) => {
-      if (mine !== seq.current) return // si cambias rápido de vista, solo vale la última
-      setData(error ? null : (d as TimeSeries))
+    setCityMissing(false)
+    rpcByCity<TimeSeries>(supabase, "admin_time_series", { p_grain: grain }, city).then(({ data: d, error }) => {
+      if (mine !== seq.current) return // si cambias rápido de vista o de ciudad, solo vale la última
+      setCityMissing(isCitySqlMissing(error))
+      setData(error ? null : d)
     })
-  }, [grain])
+  }, [grain, city])
 
   const rows = useMemo(() => timeSeriesRows(data), [data])
   const totals = useMemo(() => timeSeriesTotals(rows), [rows])
   const grainInfo = TIME_GRAINS.find((g) => g.key === grain)!
 
-  if (data === null) return <NeedSql file="90_tiempo_por_periodo.sql" what="el tiempo en la web por día, semana, mes y año" />
+  if (data === null) {
+    return cityMissing ? (
+      <NeedSql file="104_analitica_por_ciudad.sql" what="el tiempo en la web de esta ciudad" />
+    ) : (
+      <NeedSql file="90_tiempo_por_periodo.sql" what="el tiempo en la web por día, semana, mes y año" />
+    )
+  }
 
   return (
     <Panel accent="cyan">

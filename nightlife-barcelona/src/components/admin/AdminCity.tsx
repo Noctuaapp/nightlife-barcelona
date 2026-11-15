@@ -117,3 +117,16 @@ export function AdminCityBadge() {
     </span>
   )
 }
+
+/**
+ * Aviso para las pantallas de analítica: la base de datos aún no sabe separar por ciudad (falta ejecutar
+ * supabase/104_analitica_por_ciudad.sql), así que lo que se ve es toda la web. En Madrid nunca se enseña eso (se enseña
+ * el error), solo en Barcelona, que es donde está todo el tráfico de verdad.
+ */
+export function CitySqlPending() {
+  return (
+    <p role="status" className="mb-4 rounded-xl border border-warn/40 bg-warn/10 px-4 py-2.5 text-xs text-warn">
+      Se muestra toda la web junta: falta ejecutar supabase/104_analitica_por_ciudad.sql en Supabase para separar Barcelona y Madrid.
+    </p>
+  )
+}

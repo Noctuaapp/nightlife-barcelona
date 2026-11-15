@@ -28,6 +28,8 @@ import { AdminCityBadge, AdminCitySwitch } from "./AdminCity"
 //     tiñe de ese color y la cabecera de cada pantalla lleva su icono y un brillo suave del acento.
 //   - (15/11/2026) Ciudad: selector Barcelona | Madrid arriba del menú. Los apartados marcados con `city` enseñan y gestionan
 //     solo la ciudad elegida (se marcan con un pin en el menú y con la ciudad en la cabecera); el resto es común.
+//     Mismo día: Visitas, Retención y Cuándo sale la gente también (analítica por ciudad, supabase/104). El Resumen mezcla las dos cosas:
+//     tráfico y contenido son de la ciudad elegida (lo dice su etiqueta) y pendientes, estado de la web y usuarios son comunes.
 type NavItem = { href: string; label: string; icon: LucideIcon; badge?: "messages" | "reports" | "notices" | "owners"; city?: boolean }
 type NavGroup = { label: string; accent: Accent; items: NavItem[] }
 
@@ -77,9 +79,9 @@ const ADMIN_NAV: NavGroup[] = [
     label: "Datos",
     accent: "coral",
     items: [
-      { href: "/admin/visitas", label: "Visitas", icon: Footprints },
-      { href: "/admin/retencion", label: "Retención", icon: TrendingUp },
-      { href: "/admin/afluencia", label: "Cuándo sale la gente", icon: Moon },
+      { href: "/admin/visitas", label: "Visitas", icon: Footprints, city: true },
+      { href: "/admin/retencion", label: "Retención", icon: TrendingUp, city: true },
+      { href: "/admin/afluencia", label: "Cuándo sale la gente", icon: Moon, city: true },
       { href: "/admin/encuestas", label: "Encuestas", icon: Vote },
       { href: "/admin/datos", label: "Datos de negocio", icon: BarChart3, city: true },
     ],

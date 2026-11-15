@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
+import { CitySqlPending, useAdminCity } from "../../../components/admin/AdminCity"
 import { supabase } from "../../../lib/supabase"
 import { ADMIN_EMAIL } from "../../../lib/admin"
+import { isCitySqlMissing, rpcByCity } from "../../../lib/adminRpc"
 import { logError } from "../../../lib/log"
 import { madridDaysAgo, madridToday, madridYear } from "../../../lib/madridDay"
 import {
@@ -173,6 +175,9 @@ export default function AdminAfluenciaPage() {
   const [error, setError] = useState("")
   // Si cambias el rango rápido, solo vale la última respuesta.
   const seq = useRef(0)
+  // Ciudad del admin (15/11/2026). cityReady = false: el SQL 104 aún no está puesto y se ve toda la web junta (solo en Barcelona).
+  const [city] = useAdminCity()
+  const [cityReady, setCityReady] = useState(true)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: s, error: e }) => {
@@ -189,17 +194,23 @@ export default function AdminAfluenciaPage() {
     setLoading(true)
     setError("")
     const from = RANGES.find((r) => r.key === range)!.from()
-    const { data: res, error: err } = await supabase.rpc("admin_afluencia", { p_from: from, p_to: madridToday() })
+    const { data: res, error: err, cityReady: ready } = await rpcByCity<Data>(supabase, "admin_afluencia", { p_from: from, p_to: madridToday() }, city)
     if (mine !== seq.current) return
+    setCityReady(ready)
     if (err) {
       logError("AFLUENCIA LOAD:", err)
-      setError(/function|schema cache|does not exist/i.test(err.message || "") ? "missing" : err.message || "error")
+      setError(isCitySqlMissing(err) ? "city" : /function|schema cache|does not exist/i.test(err.message || "") ? "missing" : err.message || "error")
       setData(null)
     } else {
-      setData(res as Data)
+      setData(res)
     }
     setLoading(false)
-  }, [range])
+  }, [range, city])
+
+  // Al cambiar de ciudad no se deja a la vista lo de la otra mientras carga.
+  useEffect(() => {
+    setData(null)
+  }, [city])
 
   useEffect(() => {
     if (!checkingAdmin) load()
@@ -265,11 +276,15 @@ export default function AdminAfluenciaPage() {
           </div>
         </div>
 
+        {!error && !cityReady && <CitySqlPending />}
+
         {loading && !data ? (
           <p className="text-sm text-zinc-400">Cargando…</p>
         ) : error ? (
           <div className="rounded-card border border-warn/40 bg-warn/[0.08] p-5 text-sm text-zinc-200">
-            {error === "missing"
+            {error === "city"
+              ? "Falta ejecutar supabase/104_analitica_por_ciudad.sql en Supabase para ver esto por ciudad."
+              : error === "missing"
               ? "Todavía no está la función en Supabase. Ejecuta el SQL 63 (supabase/63_afluencia.sql) en el editor SQL y recarga esta página."
               : `No se han podido cargar los datos (${error}).`}
           </div>

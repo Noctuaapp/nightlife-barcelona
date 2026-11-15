@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Smartphone, Monitor, ChevronDown, User } from "lucide-react"
 import AdminShell from "../../../components/admin/AdminShell"
+import { CitySqlPending, useAdminCity } from "../../../components/admin/AdminCity"
 import { supabase } from "../../../lib/supabase"
 import { isAdminEmail } from "../../../lib/admin"
+import { isCitySqlMissing, rpcByCity } from "../../../lib/adminRpc"
 import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
 import { pageLabel } from "../../../lib/adminPageLabel"
 import { fmtDuration, measuredSeconds } from "../../../lib/duration"
@@ -155,6 +157,10 @@ export default function AdminVisitsPage() {
   const range: AdminRange = custom ?? { from: madridDaysAgo(days - 1), to: today }
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Ciudad del admin (15/11/2026): las visitas son de Barcelona o de Madrid. cityReady = false: el SQL 104 aún no está puesto.
+  const [city] = useAdminCity()
+  const [cityMissing, setCityMissing] = useState(false)
+  const [cityReady, setCityReady] = useState(true)
   const [open, setOpen] = useState<string | null>(null)
   const [onlyActive, setOnlyActive] = useState(false)
   const [source, setSource] = useState("all")
@@ -176,14 +182,18 @@ export default function AdminVisitsPage() {
     let current = true
     setData(null)
     setError(null)
-    supabase.rpc("admin_sessions", { p_from: range.from, p_to: range.to, p_limit: 400 }).then(({ data, error }) => {
+    setCityMissing(false)
+    rpcByCity<Data>(supabase, "admin_sessions", { p_from: range.from, p_to: range.to, p_limit: 400 }, city).then(({ data, error, cityReady }) => {
       if (!current) return
-      if (error) setError(error.message || "error")
-      else setData(data as Data)
+      setCityReady(cityReady)
+      if (error) {
+        setError(error.message || "error")
+        setCityMissing(isCitySqlMissing(error))
+      } else setData(data)
     })
     return () => { current = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checking, range.from, range.to])
+  }, [checking, range.from, range.to, city])
 
   // Nombres reales de las fichas (vienen en los eventos page_view).
   const names = useMemo(() => {
@@ -312,9 +322,13 @@ export default function AdminVisitsPage() {
         </span>
       </div>
 
+      {!error && !cityReady && <CitySqlPending />}
+
       {error && (
         <div className="mb-6 rounded-2xl border border-warn/40 bg-warn/10 p-5 text-sm text-warn">
-          {/function|schema cache|does not exist/i.test(error)
+          {cityMissing
+            ? error
+            : /function|schema cache|does not exist/i.test(error)
             ? "Falta ejecutar supabase/44_recorridos_de_visitas.sql (y el 50) en Supabase."
             : /no autorizado/i.test(error)
               ? "Esta pantalla solo la puede ver la cuenta de administrador."

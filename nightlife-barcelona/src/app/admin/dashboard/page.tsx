@@ -7,8 +7,12 @@ import {
   TrendingDown, TrendingUp, UserPlus, Users, type LucideIcon,
 } from "lucide-react"
 import AdminShell from "../../../components/admin/AdminShell"
+import { AdminCityBadge, useAdminCity } from "../../../components/admin/AdminCity"
 import { ACCENT, AVATAR_ORDER, CARD, StatusPill, type Accent } from "../../../components/admin/ui"
 import { supabase } from "../../../lib/supabase"
+import { fetchAllPages } from "../../../lib/fetchAll"
+import { clubCityIndex, cityOfEvent, rowsOfCity, rowsOfCityByClub } from "../../../lib/adminCity"
+import { cityFlags, cityFlagsNote, NO_CITY_FLAGS, rpcByCity, type CityFlags } from "../../../lib/adminRpc"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { SEASONAL_THEMES } from "../../../lib/nocSeasonal"
 import { madridDaysAgo, madridDaysAhead, madridToday } from "../../../lib/madridDay"
@@ -126,6 +130,10 @@ export default function AdminDashboardPage() {
   const [system, setSystem] = useState<System>({ maintenance: null, clubNoctua: null, season: null })
   const [content, setContent] = useState<{ clubsVisible: number; clubsHidden: number; events30: number; nights7: number } | null>(null)
   const [upcoming, setUpcoming] = useState<Upcoming[]>([])
+  // Ciudad del admin (15/11/2026). Tráfico y contenido son de la ciudad elegida; pendientes, estado de la web y usuarios son comunes.
+  // Si el SQL por ciudad aún no está, en Barcelona se ve toda la web junta y en Madrid no se enseña tráfico (con aviso).
+  const [city] = useAdminCity()
+  const [trafficFlags, setTrafficFlags] = useState<CityFlags>(NO_CITY_FLAGS)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data, error }) => {
@@ -145,9 +153,9 @@ export default function AdminDashboardPage() {
     const load = async () => {
       const [
         msgs, reports, denials, review,
-        ov, ovPrev, list, activity,
+        list, activity,
         maint, club, season,
-        clubsVisibleRes, clubsHiddenRes, events30, nights7, nextEvents, nextNights, ownerChanges, ownerMessages,
+        ownerChanges, ownerMessages,
       ] = await Promise.all([
         supabase.from("contact_messages").select("id", { count: "exact", head: true }).eq("status", "new").or("is_spam.is.null,is_spam.eq.false"),
         supabase.from("club_checkin_reports").select("id", { count: "exact", head: true }).is("reviewed_at", null),
@@ -155,21 +163,12 @@ export default function AdminDashboardPage() {
         // Ediciones nuevas de eventos anuales: el cron las pasa al año siguiente y las deja ocultas
         // hasta que las revises (cartel, precio y artistas suelen cambiar de una edición a otra).
         supabase.from("events").select("id", { count: "exact", head: true }).eq("recurring", true).eq("hidden", true).gte("date", today),
-        supabase.rpc("admin_data_overview", { p_from: daysAgo(6), p_to: today }),
-        supabase.rpc("admin_data_overview", { p_from: daysAgo(13), p_to: daysAgo(7) }),
         supabase.rpc("admin_list_users"),
         // Cuentas con actividad en la web estos 7 días (misma fuente que Admin › Visitas y Actividad).
         supabase.rpc("admin_users_activity", { p_from: daysAgo(6), p_to: today }),
         supabase.from("app_settings").select("maintenance_mode").eq("id", true).maybeSingle(),
         supabase.from("club_noctua_settings").select("enabled").eq("id", 1).maybeSingle(),
         supabase.from("noc_seasonal_settings").select("mode").eq("id", 1).maybeSingle(),
-        // Solo se cuentan (head): antes se descargaba el campo de TODOS los clubs, y Supabase corta en 1.000 filas.
-        supabase.from("clubs").select("id", { count: "exact", head: true }).eq("hidden", false),
-        supabase.from("clubs").select("id", { count: "exact", head: true }).eq("hidden", true),
-        supabase.from("events").select("id", { count: "exact", head: true }).eq("hidden", false).gte("date", today).lte("date", daysAhead(30)),
-        supabase.from("club_events").select("id", { count: "exact", head: true }).gte("date", today).lte("date", daysAhead(7)),
-        supabase.from("events").select("id, title, date").eq("hidden", false).gte("date", today).lte("date", daysAhead(7)).order("date").limit(6),
-        supabase.from("club_events").select("id, title, date").gte("date", today).lte("date", daysAhead(7)).order("date").limit(6),
         // Cambios hechos por dueños y organizadores en su ficha esta semana (supabase/34).
         supabase.from("admin_audit_log").select("id", { count: "exact", head: true }).gte("at", weekAgoIso).neq("user_email", ADMIN_EMAIL),
         // Mensajes de dueños sin leer (supabase/59). Si la tabla aún no existe, cuenta 0.
@@ -184,9 +183,6 @@ export default function AdminDashboardPage() {
         eventsToReview: review.count || 0,
         ownerChanges: ownerChanges.error ? 0 : ownerChanges.count || 0,
       })
-      setTrafficFailed(!!ov.error)
-      setWeek((ov.data as Overview) || null)
-      setPrevWeek((ovPrev.data as Overview) || null)
 
       const all = (list.data || []) as Signup[]
       const weekAgo = Date.now() - 7 * 86400000
@@ -213,21 +209,72 @@ export default function AdminDashboardPage() {
         season: (season.data?.mode as string) || "auto",
       })
 
+    }
+    load()
+  }, [checkingAdmin])
+
+  // Lo que depende de la ciudad: tráfico de la semana, clubs, eventos y noches. Se vuelve a pedir al cambiar de ciudad.
+  useEffect(() => {
+    if (checkingAdmin) return
+    let current = true
+    const today = madridToday()
+    setWeek(null)
+    setPrevWeek(null)
+    setTrafficFailed(false)
+    setContent(null)
+    setUpcoming([])
+
+    const load = async () => {
+      const [ov, ovPrev, clubs, events, nights] = await Promise.all([
+        rpcByCity<Overview>(supabase, "admin_data_overview", { p_from: daysAgo(6), p_to: today }, city, "105_datos_por_ciudad.sql"),
+        rpcByCity<Overview>(supabase, "admin_data_overview", { p_from: daysAgo(13), p_to: daysAgo(7) }, city, "105_datos_por_ciudad.sql"),
+        // Por páginas: Supabase corta en 1.000 filas y, con Madrid, entre las dos ciudades se pasa de ahí.
+        fetchAllPages((lo, hi) =>
+          supabase.from("clubs").select("id, name, city, latitude, longitude, hidden").order("id").range(lo, hi)
+        ),
+        fetchAllPages((lo, hi) =>
+          supabase.from("events").select("id, title, date, club_name, latitude, longitude").eq("hidden", false).gte("date", today).lte("date", daysAhead(30)).order("date").order("id").range(lo, hi)
+        ),
+        fetchAllPages((lo, hi) =>
+          supabase.from("club_events").select("id, title, date, club_id").gte("date", today).lte("date", daysAhead(7)).order("date").order("id").range(lo, hi)
+        ),
+      ])
+      if (!current) return
+
+      const flags = cityFlags([], [ov, ovPrev])
+      setTrafficFlags(flags)
+      setTrafficFailed(!!ov.error)
+      setWeek(ov.error ? null : ov.data || null)
+      setPrevWeek(ovPrev.error ? null : ovPrev.data || null)
+
+      type ClubRow = { id: number; name: string; city: string | null; latitude: number | null; longitude: number | null; hidden: boolean | null }
+      type EventRow = { id: number; title: string; date: string; club_name: string | null; latitude: number | null; longitude: number | null }
+      type NightRow = { id: number; title: string; date: string; club_id: number | null }
+      const clubRows = clubs as ClubRow[]
+      const mine = rowsOfCity(clubRows, city)
+      const index = clubCityIndex(clubRows)
+      const myEvents = (events as EventRow[]).filter((e) => cityOfEvent(e, index) === city)
+      const weekLimit = daysAhead(7)
+      const myNights = rowsOfCityByClub(nights as NightRow[], new Set(mine.map((c) => c.id)), new Set(clubRows.map((c) => c.id)), city)
+
       setContent({
-        clubsVisible: clubsVisibleRes.count || 0,
-        clubsHidden: clubsHiddenRes.count || 0,
-        events30: events30.count || 0,
-        nights7: nights7.count || 0,
+        clubsVisible: mine.filter((c) => !c.hidden).length,
+        clubsHidden: mine.filter((c) => c.hidden).length,
+        events30: myEvents.length,
+        nights7: myNights.length,
       })
 
       const ups: Upcoming[] = [
-        ...((nextEvents.data || []) as { id: number; title: string; date: string }[]).map((e) => ({ ...e, kind: "Evento" as const, href: `/admin/events?edit=${e.id}` })),
-        ...((nextNights.data || []) as { id: number; title: string; date: string }[]).map((e) => ({ ...e, kind: "Noche de club" as const, href: `/admin/club-events?edit=${e.id}` })),
+        ...myEvents.filter((e) => e.date <= weekLimit).slice(0, 6).map((e) => ({ id: e.id, title: e.title, date: e.date, kind: "Evento" as const, href: `/admin/events?edit=${e.id}` })),
+        ...myNights.slice(0, 6).map((e) => ({ id: e.id, title: e.title, date: e.date, kind: "Noche de club" as const, href: `/admin/club-events?edit=${e.id}` })),
       ].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 8)
       setUpcoming(ups)
     }
     load()
-  }, [checkingAdmin])
+    return () => {
+      current = false
+    }
+  }, [checkingAdmin, city])
 
   if (checkingAdmin) {
     return (
@@ -247,6 +294,8 @@ export default function AdminDashboardPage() {
         { n: pending.ownerChanges, label: "cambios de dueños u organizadores en sus fichas esta semana", href: "/admin/cambios" },
       ].filter((q) => q.n > 0)
     : []
+
+  const trafficNote = cityFlagsNote(trafficFlags)
 
   const seasonLabel =
     system.season === "auto" ? "Automático por fecha" :
@@ -292,9 +341,15 @@ export default function AdminDashboardPage() {
         {/* 2. Tráfico de la semana */}
         <section aria-labelledby="traffic-h">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <SectionTitle id="traffic-h" icon={Activity} accent="bg-brand/15 text-brand-soft">Últimos 7 días</SectionTitle>
+            <div className="flex flex-wrap items-center gap-3">
+              <SectionTitle id="traffic-h" icon={Activity} accent="bg-brand/15 text-brand-soft">Últimos 7 días</SectionTitle>
+              <AdminCityBadge />
+            </div>
             <Link href="/admin/datos" className="text-xs font-semibold text-brand-soft hover:text-ink">Ver datos completos</Link>
           </div>
+          {trafficNote && (
+            <p role="status" className="mb-3 rounded-xl border border-warn/40 bg-warn/10 px-4 py-2.5 text-xs text-warn">{trafficNote.text}</p>
+          )}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {traffic.map((t) => (
               <Kpi
@@ -303,7 +358,7 @@ export default function AdminDashboardPage() {
                 icon={t.icon}
                 label={t.label}
                 value={week ? t.now : trafficFailed ? "—" : "…"}
-                note={week ? delta(t.now, t.before) : trafficFailed ? "No se pudo cargar" : ""}
+                note={week ? delta(t.now, t.before) : trafficFailed ? (trafficNote ? "Falta el SQL" : "No se pudo cargar") : ""}
                 tone={week ? deltaTone(t.now, t.before) : "flat"}
                 series={t.series}
               />
@@ -314,7 +369,7 @@ export default function AdminDashboardPage() {
               icon={Users}
               label="Usuarios registrados"
               value={users ? users.total : "…"}
-              note={users ? `${users.new7} nuevos y ${users.active7} activos esta semana` : ""}
+              note={users ? `${users.new7} nuevos y ${users.active7} activos esta semana (cuentas de toda la web)` : ""}
             />
           </div>
         </section>
@@ -363,7 +418,10 @@ export default function AdminDashboardPage() {
           {/* Contenido */}
           <section aria-labelledby="content-h" className={`${CARD} p-6`}>
             <div className="flex items-center justify-between gap-3">
-              <SectionTitle id="content-h" icon={Layers} accent="bg-[#ff4fa3]/15 text-[#ff86bf]">Contenido publicado</SectionTitle>
+              <div className="flex flex-wrap items-center gap-3">
+                <SectionTitle id="content-h" icon={Layers} accent="bg-[#ff4fa3]/15 text-[#ff86bf]">Contenido publicado</SectionTitle>
+                <AdminCityBadge />
+              </div>
               <Link href="/admin/calidad" className="text-right text-xs font-semibold text-brand-soft hover:text-ink">Revisar calidad de fichas</Link>
             </div>
             <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
