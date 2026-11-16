@@ -9,8 +9,9 @@ import { track } from "../../lib/track"
 // Accesos para seguir navegando desde /clubs (03/11/2026). Una lista de clubs es un callejón sin
 // salida si lo que busca la persona no está ahí: estos avisos la llevan a las otras tres cosas que
 // Noctua sabe hacer —proponerle un plan, enseñarle los locales en el mapa y decirle dónde comer,
-// comprar o sacar dinero a esas horas— sin pedir cuenta. Salen cada 8 tarjetas dentro de la lista y,
-// de tres en tres, al final de ella. Cada pulsación se anota como «next_click» (Admin › Visitas).
+// comprar o sacar dinero a esas horas— sin pedir cuenta. Salen de tres en tres, al final de la lista
+// (hasta el 16/11/2026 también se intercalaban cada 12 tarjetas, y se quitó: aparecían en medio «por la cara»).
+// Cada pulsación se anota como «next_click» (Admin › Visitas).
 
 export type NudgeKind = "plan" | "map" | "essentials"
 

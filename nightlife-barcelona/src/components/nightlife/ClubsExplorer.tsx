@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import ClubTile from "./ClubTile"
 import ExploreSwitch from "./ExploreSwitch"
-import { ClubsNudge, ClubsNudgeRow, NUDGE_ORDER } from "./ClubsNudge"
+import { ClubsNudgeRow } from "./ClubsNudge"
 import { useLanguage } from "../../context/LanguageContext"
 import { matchesQuery } from "../../lib/textSearch"
 import { EXTRA_FEATURES } from "../../lib/extraFeatures"
@@ -647,8 +647,8 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
             )}
           </div>
         ) : (
-          visibleClubs.flatMap((club, index) => {
-            const tile = (
+          visibleClubs.map((club, index) => {
+            return (
               <ClubTile
                 key={club.id}
                 name={club.name}
@@ -671,17 +671,8 @@ export default function ClubsExplorer({ initialClubs }: { initialClubs: any[] })
                 priority={index < 4}
               />
             )
-            // Un aviso de «sigue explorando» entre cada 12 tarjetas (nunca al final: ahí va la fila de tres).
-            if ((index + 1) % PAGE_SIZE === 0 && index + 1 < visibleClubs.length) {
-              const kind = NUDGE_ORDER[((index + 1) / PAGE_SIZE - 1) % NUDGE_ORDER.length]
-              return [
-                tile,
-                <div key={`nudge-${index}`} className="col-span-full">
-                  <ClubsNudge kind={kind} />
-                </div>,
-              ]
-            }
-            return [tile]
+            // 16/11/2026: ya no se intercala un aviso de «sigue explorando» (Planifica tu noche, mapa, esenciales) cada
+            // 12 tarjetas: salía en medio de la lista «por la cara». Los tres siguen al final, en ClubsNudgeRow.
           })
         )}
       </section>

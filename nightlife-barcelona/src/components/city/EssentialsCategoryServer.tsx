@@ -24,7 +24,9 @@ const BARCELONA_META: Record<string, { title: string; description: string }> = {
   taxi: { title: "Taxi de noche en Barcelona", description: "Paradas de taxi, teléfonos y apps para pedir un taxi de noche en Barcelona." },
   // 29/10/2026: era la página con más impresiones en Google (2.456) y solo 8 clics; la gente busca
   // "supermercado 24 horas", y el título no lo decía.
-  supermarket: { title: "Supermercados 24 h y abiertos de noche en Barcelona", description: "Supermercados abiertos 24 horas y hasta tarde en Barcelona, con mapa, horarios y cuáles están abiertos ahora." },
+  // 16/11/2026: las consultas con más impresiones de esta página son «supermercado 24h cerca de mi», «tienda 24 horas cerca de mi»,
+  // «super 24h»…; la descripción ahora dice «cerca de ti» para que el resultado responda a esa búsqueda.
+  supermarket: { title: "Supermercados 24 h y abiertos de noche en Barcelona", description: "Supermercados abiertos 24 horas y hasta tarde en Barcelona: mapa, horarios y cuáles tienes cerca de ti ahora mismo." },
   casino: { title: "Casinos en Barcelona", description: "Casinos y salas de juego en Barcelona: horarios y cómo llegar." },
   "gas-station": { title: "Gasolineras 24 h en Barcelona", description: "Gasolineras abiertas por la noche en Barcelona." },
   parking: { title: "Parkings gratis cerca de clubs en Barcelona", description: "Aparcamientos públicos gratuitos para dejar el coche en Barcelona, con los clubs que tienes a pie desde cada uno." },

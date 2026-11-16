@@ -55,6 +55,16 @@ const nextConfig: NextConfig = {
       { source: "/madrid/clubs/:slug", destination: "/clubs/:slug", permanent: true },
       // La analítica antigua del admin se sustituyó por Actividad por usuario.
       { source: "/admin/analytics", destination: "/admin/actividad", permanent: false },
+      // 16/11/2026: fichas de locales que cambiaron de dirección al renombrarse. Google las seguía rastreando y daban 404 (Search
+      // Console: «No se ha encontrado»), con visitas incluidas (/clubs/juanchito tenía 700 impresiones). Cada una va a su ficha actual.
+      // «bodegon-club» no está aquí a propósito: no hay ninguna ficha parecida, así que sigue dando 404.
+      { source: "/clubs/almayerbar", destination: "/clubs/almayer-cocktail-bar", permanent: true },
+      { source: "/clubs/collage-cocktail-bar", destination: "/clubs/collage-art-cocktail-social-club", permanent: true },
+      { source: "/clubs/discoteca-capitolio", destination: "/clubs/capitolio", permanent: true },
+      { source: "/clubs/jamboree-jazz-dance-club", destination: "/clubs/jamboree-dance-club", permanent: true },
+      { source: "/clubs/juanchito", destination: "/clubs/discoteca-juanchito", permanent: true },
+      { source: "/clubs/shisha-lounge-dejavu-esplugues", destination: "/clubs/shisha-lounge-dejavu", permanent: true },
+      { source: "/clubs/two-schmucks-2", destination: "/clubs/two-schmucks", permanent: true },
     ]
   },
   images: {
@@ -91,4 +101,4 @@ const nextConfig: NextConfig = {
 }
  
 export default nextConfig
- 
+ 

@@ -7,7 +7,7 @@ import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
 import Link from "next/link"
 import { useLanguage } from "../../context/LanguageContext"
 import { createSlug } from "../../lib/slug"
-import { SearchIcon, CloseIcon, LocationIcon, CalendarIcon, ChevronDownIcon } from "../ui/FilterIcons"
+import { SearchIcon, CloseIcon, LocationIcon, CalendarIcon } from "../ui/FilterIcons"
 import ExploreSwitch from "./ExploreSwitch"
 import SectionHero from "../ui/SectionHero"
 import Icon from "../ui/Icon"
@@ -99,7 +99,8 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   // Los eventos pasados se ocultan por defecto (antes salían mezclados, solo atenuados).
   // Por defecto solo los próximos (04/11/2026, con las categorías los pasados se colaban arriba); el chip «Solo próximos» los vuelve a mostrar.
   const [hidePast, setHidePast] = useState(true)
-  const [sortBy, setSortBy] = useState<"date" | "date_desc" | "featured">("date")
+  // 16/11/2026: se quitó el desplegable «Próximos primero» (orden por fecha / más lejanos / destacados): casi repetía «Solo próximos»
+  // y se veía mal. Se ordena siempre por fecha, y con una búsqueda activa primero lo más relevante.
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const { t, locale } = useLanguage()
   const cityNow = useSelectedCity() // Barcelona o Madrid: los eventos que llegan ya son de esa ciudad (lib/cityEvents.ts)
@@ -114,7 +115,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
-  }, [cat, selectedFilters, selectedZones, search, nearMe, hidePast, sortBy])
+  }, [cat, selectedFilters, selectedZones, search, nearMe, hidePast])
 
   const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371
@@ -159,18 +160,12 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
   const sortedEvents = useMemo(() => {
     const arr = [...filteredEvents]
-    if (search.trim() && sortBy === "date") {
-      // Con búsqueda activa y orden por defecto: primero lo más relevante, y a igual relevancia, por fecha.
+    if (search.trim()) {
+      // Con búsqueda activa: primero lo más relevante, y a igual relevancia, por fecha.
       arr.sort((a, b) => searchScore(b, search) - searchScore(a, search) || new Date(a.date).getTime() - new Date(b.date).getTime())
-      return arr
-    }
-    if (sortBy === "featured") {
-      arr.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || new Date(a.date).getTime() - new Date(b.date).getTime())
-    } else if (sortBy === "date_desc") {
-      arr.reverse()
     }
     return arr
-  }, [filteredEvents, sortBy, search])
+  }, [filteredEvents, search])
 
   const visibleEvents = sortedEvents.slice(0, visibleCount)
 
@@ -331,19 +326,6 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                 <CalendarIcon className="h-4 w-4" />
                 {t("eventsExplorer.onlyUpcoming")}
               </button>
-              <div className="relative shrink-0">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                  aria-label={t("explorer.sortLabel")}
-                  className="appearance-none rounded-full border border-white/10 bg-night py-2.5 pl-4 pr-9 text-sm font-semibold text-zinc-200 outline-none"
-                >
-                  <option value="date">{t("eventsExplorer.sortDate")}</option>
-                  <option value="date_desc">{t("eventsExplorer.sortDateDesc")}</option>
-                  <option value="featured">{t("eventsExplorer.sortFeatured")}</option>
-                </select>
-                <ChevronDownIcon className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
-              </div>
               {availableZones.length > 1 &&
                 availableZones.map((z) => (
                   <button key={z} onClick={() => setSelectedZones((s) => toggleInSet(s, z))} aria-pressed={selectedZones.has(z)} className={quick(selectedZones.has(z))}>

@@ -12,7 +12,7 @@ import LoginWall from "../../components/ui/LoginWall"
 import { createSlug } from "../../lib/slug"
 import { useLanguage } from "../../context/LanguageContext"
 import ArrowIcon from "../../components/ui/ArrowIcon"
-import { zoneOf, zonesPresent } from "../../lib/zones"
+import { areaOf, areasPresent } from "../../lib/zones"
 import { categoryRank, categoryNameKey, categoryInfo } from "../../lib/essentialCategories"
 import { availabilityOf } from "../../lib/availability"
 import { isShownEssential } from "../../lib/essentials"
@@ -398,7 +398,7 @@ export default function MapPage() {
   // Alto que queda entre el buscador y el teclado: la lista de resultados no pasa de ahí (hace scroll por dentro).
   const mapInputWrapRef = useRef<HTMLDivElement>(null)
   const mapListMax = useVisibleBelow(mapInputWrapRef, mapSearchOpen)
-  useEffect(() => { setZone(""); setBarrio(""); setCategory("") }, [filter])
+  useEffect(() => { setZone(""); setBarrio(""); setCategory("") }, [filter, city])
   // El buscador flotante se quedaba abierto para siempre: antes solo se cerraba al borrar el
   // texto o elegir un resultado, así que si lo abrías sin escribir nada (p. ej. para "usar mi
   // ubicación") no había forma de cerrarlo ni volviendo a pulsarlo (ya estaba enfocado, así que
@@ -579,7 +579,7 @@ export default function MapPage() {
       })
       markersRef.current.push(marker)
     }
-    const inZone = (i: { neighborhood?: string | null; address?: string | null }) => (!zone || zoneOf(i) === zone) && (filter !== "clubs" || !barrio || barrioOf(i) === barrio)
+    const inZone = (i: { neighborhood?: string | null; address?: string | null }) => (!zone || areaOf(i, city) === zone) && (filter !== "clubs" || !barrio || barrioOf(i) === barrio)
     if (filter === "clubs") clubs.filter((c) => c.latitude && c.longitude && inZone(c)).forEach((c) => addMarker(c.latitude!, c.longitude!, c))
     else if (filter === "events") events.filter((e) => e.latitude && e.longitude && inZone(e)).forEach((e) => addMarker(e.latitude!, e.longitude!, e))
     else if (filter === "essentials") {
@@ -596,7 +596,7 @@ export default function MapPage() {
       markersRef.current.forEach((m) => bounds.extend(m.getLngLat()))
       map.current.fitBounds(bounds, { padding: 70, maxZoom: 15, duration: 700 })
     }
-  }, [filter, mapReady, clubs, events, essentials, zone, barrio, category])
+  }, [filter, mapReady, clubs, events, essentials, zone, barrio, category, city])
 
   useEffect(() => {
     if (urlHandledRef.current || !mapReady) return
@@ -701,13 +701,17 @@ export default function MapPage() {
   }
 
   const rawList = filter === "clubs" ? clubs : filter === "events" ? events : essentials
-  const zonesAvail = zonesPresent(rawList as { neighborhood?: string | null; address?: string | null }[])
+  // Área del selector: en Barcelona, el municipio; en Madrid (donde todo es «Madrid»), el barrio, con cuántos sitios tiene (lib/zones.ts).
+  const areaList = areasPresent(rawList as { neighborhood?: string | null; address?: string | null }[], city)
+  const zonesAvail = areaList.map((a) => a.name)
+  const areaLabel = (z: string) => (city === "madrid" ? `${z} (${areaList.find((a) => a.name === z)?.n ?? 0})` : z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", ""))
   // Barrios de la zona elegida (solo clubs): del más al menos locales; así se afina después de elegir el área.
+  // En Madrid el área YA es el barrio, así que no hay un segundo desplegable.
   const barriosAvail: { name: string; n: number }[] = (() => {
-    if (filter !== "clubs" || !zone) return []
+    if (filter !== "clubs" || !zone || city === "madrid") return []
     const counts = new Map<string, number>()
     for (const c of clubs) {
-      if (zoneOf(c) !== zone) continue
+      if (areaOf(c, city) !== zone) continue
       const b = barrioOf(c)
       if (b) counts.set(b, (counts.get(b) || 0) + 1)
     }
@@ -728,7 +732,7 @@ export default function MapPage() {
             placeholder={t("essentialsPage.allArea")}
             value={zone}
             onChange={setZone}
-            options={[{ value: "", label: t("essentialsPage.allArea") }, ...zonesAvail.map((z) => ({ value: z, label: z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", "") }))]}
+            options={[{ value: "", label: t("essentialsPage.allArea") }, ...zonesAvail.map((z) => ({ value: z, label: areaLabel(z) }))]}
           />
         )}
         {categoriesAvail.length > 1 && (
@@ -751,7 +755,7 @@ export default function MapPage() {
           placeholder={t("essentialsPage.allArea")}
           value={zone}
           onChange={(z) => { setZone(z); setBarrio("") }}
-          options={[{ value: "", label: t("essentialsPage.allArea") }, ...zonesAvail.map((z) => ({ value: z, label: z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", "") }))]}
+          options={[{ value: "", label: t("essentialsPage.allArea") }, ...zonesAvail.map((z) => ({ value: z, label: areaLabel(z) }))]}
         />
         {barriosAvail.length > 1 && (
           <div style={{ marginTop: "8px" }}>
@@ -771,11 +775,11 @@ export default function MapPage() {
   // Esenciales: el panel no lista los miles de sitios (agobiaba). Solo deja elegir área y categoría; el mapa se
   // encuadra solo en lo que queda y los sitios se ven en el propio mapa o con el buscador flotante.
   const essentialsPanel = (mobile: boolean) => {
-    const count = filter === "essentials" ? essentials.filter((e) => e.latitude && e.longitude && (!zone || zoneOf(e) === zone) && (!category || e.category === category)).length : 0
+    const count = filter === "essentials" ? essentials.filter((e) => e.latitude && e.longitude && (!zone || areaOf(e, city) === zone) && (!category || e.category === category)).length : 0
     // Lo que de verdad se dibuja en el mapa (una muestra si no hay categoría): el botón dice la cifra real.
     const ctr = map.current?.getCenter()
     const shownCount = filter === "essentials"
-      ? limitEssentialsForMap(essentials.filter((e) => !zone || zoneOf(e) === zone), { category, center: { lat: ctr?.lat ?? CITIES[city].center.lat, lng: ctr?.lng ?? CITIES[city].center.lng } }).length
+      ? limitEssentialsForMap(essentials.filter((e) => !zone || areaOf(e, city) === zone), { category, center: { lat: ctr?.lat ?? CITIES[city].center.lat, lng: ctr?.lng ?? CITIES[city].center.lng } }).length
       : 0
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -787,7 +791,7 @@ export default function MapPage() {
               placeholder={t("essentialsPage.allArea")}
               value={zone}
               onChange={setZone}
-              options={[{ value: "", label: t("essentialsPage.allArea") }, ...zonesAvail.map((z) => ({ value: z, label: z.replace(" de Llobregat", "").replace(" de Besòs", "").replace(" de Gramenet", "") }))]}
+              options={[{ value: "", label: t("essentialsPage.allArea") }, ...zonesAvail.map((z) => ({ value: z, label: areaLabel(z) }))]}
             />
           </div>
         )}
@@ -818,7 +822,7 @@ export default function MapPage() {
   }
 
   const currentList = rawList.filter((item) => {
-    if (zone && zoneOf(item as { neighborhood?: string | null; address?: string | null }) !== zone) return false
+    if (zone && areaOf(item as { neighborhood?: string | null; address?: string | null }, city) !== zone) return false
     if (filter === "clubs" && barrio && barrioOf(item as Club) !== barrio) return false
     if (filter === "essentials" && category && (item as Essential).category !== category) return false
     if (!search) return true
@@ -837,7 +841,7 @@ export default function MapPage() {
   const mapResults = (() => {
     const base = (rawList as (Club | Event | Essential)[]).filter(
       (i) => i.latitude && i.longitude
-        && (!zone || zoneOf(i as { neighborhood?: string | null; address?: string | null }) === zone)
+        && (!zone || areaOf(i as { neighborhood?: string | null; address?: string | null }, city) === zone)
         && (filter !== "clubs" || !barrio || barrioOf(i as Club) === barrio)
         && (filter !== "essentials" || !category || (i as Essential).category === category)
     )

@@ -5,7 +5,7 @@
 // Madrid (14/11/2026) es una zona más, sin página propia todavía (ver ZONE_PAGES en zonePages.ts): sus locales siguen ocultos hasta el
 // lanzamiento y, con ella, dejan de caer en «Barcelona» por defecto. Sus barrios populares salen de lib/madridZones.ts.
 
-import { cityOfClub } from "./cities"
+import { cityOfClub, type CityKey } from "./cities"
 
 export const ZONES = [
   "Barcelona",
@@ -94,4 +94,24 @@ export function zonesPresent(items: ZoneItem[]): string[] {
     counts.set(z, (counts.get(z) || 0) + 1)
   }
   return ZONES.filter((z) => (counts.get(z) || 0) > 0)
+}
+
+// «Área» del selector del mapa (16/11/2026). En Barcelona es el municipio (zoneOf: Barcelona, L'Hospitalet, Badalona…). En Madrid todos los
+// locales caen en la zona «Madrid», así que el selector (que solo sale con más de una zona) no aparecía ni en clubs ni en esenciales: allí el
+// área es el barrio popular que guarda cada ficha (Malasaña, Chueca, La Latina… o el de OpenStreetMap; «Madrid» si no tiene ninguno).
+export function areaOf(item: ZoneItem, city: CityKey): string {
+  if (city !== "madrid") return zoneOf(item)
+  return (item.neighborhood || "").trim() || "Madrid"
+}
+
+/** Áreas con algún sitio y cuántos tiene cada una. Barcelona: las zonas de siempre, en su orden. Madrid: los barrios, los de más sitios primero. */
+export function areasPresent(items: ZoneItem[], city: CityKey): { name: string; n: number }[] {
+  const counts = new Map<string, number>()
+  for (const it of items) {
+    const a = areaOf(it, city)
+    counts.set(a, (counts.get(a) || 0) + 1)
+  }
+  if (city !== "madrid") return ZONES.filter((z) => (counts.get(z) || 0) > 0).map((z) => ({ name: z, n: counts.get(z) || 0 }))
+  // «Madrid» a secas (locales sin barrio concreto) va al final, aunque tenga más sitios: no es un barrio al que se vaya.
+  return Array.from(counts, ([name, n]) => ({ name, n })).sort((a, b) => Number(a.name === "Madrid") - Number(b.name === "Madrid") || b.n - a.n || a.name.localeCompare(b.name, "es"))
 }

@@ -624,7 +624,9 @@ export default function HomeClient({
               <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-night to-transparent sm:hidden" />
             )}
           </div>
-          <HomeMessages className="mt-4 sm:hidden" />
+          {/* mb-12 (16/11/2026): el Consejo y la tarjeta de Sorpréndeme (justo debajo) salían pegados; ahora hay 48 px entre las dos.
+              Si no hay mensaje no se pinta nada y el hueco entre el carrusel y Sorpréndeme sigue siendo el de siempre. */}
+          <HomeMessages className="mt-4 mb-12 sm:hidden" />
         </section>
 
         {/* SORPRÉNDEME (15/11/2026): justo debajo del carrusel de «Esta noche» (antes iba tras las puertas de Explora y los ambientes,
