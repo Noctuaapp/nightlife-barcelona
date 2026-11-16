@@ -19,7 +19,7 @@ import { activeMessages, shuffled, type HomeMessage, type HomeMessageKind, type 
 
 const INTERVAL_MS = 9000
 const HIDE_KEY = "noctua_home_messages_hidden"
-// La portada pinta el mensaje dos veces (arriba a la derecha en pantalla grande y debajo del carrusel en el móvil; solo se ve una). Al cerrar uno se avisa al otro.
+// La portada pinta el mensaje dos veces (arriba a la derecha en pantalla grande y, en el móvil, entre las puertas de Explora y los ambientes; solo se ve una). Al cerrar uno se avisa al otro.
 const HIDE_EVENT = "noctua-home-messages-hide"
 
 const ACCENT: Record<HomeMessageKind, string> = {
