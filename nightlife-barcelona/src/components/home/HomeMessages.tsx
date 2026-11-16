@@ -132,7 +132,9 @@ export default function HomeMessages({ announcements, className = "" }: { announ
       className={`relative overflow-hidden rounded-card border border-white/10 bg-white/[0.04] ${className}`}
     >
       <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1" style={{ background: accent }} />
-      <div className="flex min-h-[7.5rem] gap-3 py-3 pl-5 pr-2 sm:gap-4 sm:pl-6">
+      {/* Altura mínima 8.5rem (antes 7.5rem): con los consejos en tono más cercano (16/11/2026) el texto puede ocupar 3 líneas
+          (el máximo, line-clamp-3) más el botón, que mide ~8.5rem; así la tarjeta no cambia de alto cada vez que rota. */}
+      <div className="flex min-h-[8.5rem] gap-3 py-3 pl-5 pr-2 sm:gap-4 sm:pl-6">
         <span
           className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
           style={{ background: `${accent}1f`, color: accent }}
