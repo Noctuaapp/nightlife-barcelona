@@ -13,7 +13,7 @@ import { createSlug } from "../../lib/slug"
 import { useLanguage } from "../../context/LanguageContext"
 import ArrowIcon from "../../components/ui/ArrowIcon"
 import { areaOf, areasPresent } from "../../lib/zones"
-import { categoryRank, categoryNameKey, categoryInfo } from "../../lib/essentialCategories"
+import { categoryRank, categoryNameKey, categoryInfo, isOnMap } from "../../lib/essentialCategories"
 import { availabilityOf } from "../../lib/availability"
 import { isShownEssential } from "../../lib/essentials"
 import { limitEssentialsForMap, PER_CATEGORY } from "../../lib/essentialsMapLimit"
@@ -31,7 +31,7 @@ import { essentialsOfCity, scopeToCity } from "../../lib/cityEssentials"
 
 // Qué esenciales se enseñan lo decide lib/essentials.ts (isShownEssential): solo las categorías del
 // catálogo (essentialCategories.ts), sin Hotel y sin las oficinas de Uber/Cabify que se guardaron como
-// «Taxi». Las paradas de taxi de verdad vuelven a salir (05/11/2026). Una categoría con menos sitios
+// «Taxi». Las paradas de taxi volvieron el 05/11/2026 y se quitaron otra vez el 16/11/2026: el mapa no las enseña (isOnMap). Una categoría con menos sitios
 // publicados que su mínimo (minPlaces) tampoco sale: no se enseñan categorías casi vacías.
 
 type Club = {
@@ -476,7 +476,8 @@ export default function MapPage() {
       // Esenciales (también los de Madrid en vista previa, 14/11/2026): solo los de la ciudad que se ve, por sus coordenadas, y
       // solo las categorías del catálogo que llegan a su mínimo de sitios.
       const showEssentials = (rows: any[]) => {
-        const shown = essentialsOfCity(rows.filter(isShownEssential), city)
+        // Sin taxi ni VTC (16/11/2026): no hay paradas de taxi en el mapa de ninguna ciudad (essentialCategories.ts › NOT_ON_MAP).
+        const shown = essentialsOfCity(rows.filter((r) => isShownEssential(r) && isOnMap(r.category)), city)
         const perCategory: Record<string, number> = {}
         for (const e of shown) perCategory[e.category] = (perCategory[e.category] || 0) + 1
         setEssentials(shown.filter((e) => perCategory[e.category] >= categoryInfo(e.category).minPlaces))

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
+import Link, { useCityPath } from "../system/CityLink" // 16/11/2026: «Ver todos» y «Ver en el mapa» van a las páginas de la ciudad en pantalla
 import Image from "../ui/SafeImage" // <Image> que nunca deja una foto rota
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
@@ -46,6 +46,7 @@ export default function EventsSection() {
   const [selectedCategory, setSelectedCategory] = useState("All")
   const { t, locale } = useLanguage()
   const router = useRouter()
+  const cityHref = useCityPath()
   const geo = useGeolocation()
 
   // Sin el filtro "Agotado": no ayuda a decidir a qué ir.
@@ -218,7 +219,7 @@ export default function EventsSection() {
                       onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
-                        router.push(`/map?type=events&id=${event.id}`)
+                        router.push(cityHref(`/map?type=events&id=${event.id}`))
                       }}
                       className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 hover:text-ink"
                     >

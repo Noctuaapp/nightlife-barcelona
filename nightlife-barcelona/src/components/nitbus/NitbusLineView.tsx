@@ -318,9 +318,11 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
         {!line || stops.length === 0 ? (
           <div className="mt-8 rounded-card border border-white/10 bg-surface p-6">
             <p className="text-base leading-relaxed text-zinc-200">{tl("noStops")}</p>
-            {!madrid && (
+            {/* El mapa de paradas: en Barcelona, Esenciales › Nitbus / Metro; en Madrid, el de los búhos (/madrid/buhos/mapa, 16/11/2026).
+                El Metro de Madrid no tiene mapa de estaciones todavía. */}
+            {(!madrid || !isMetro) && (
               <Link
-                href={`/essentials/${kind}?line=${code}`}
+                href={madrid ? `/buhos/mapa?line=${code}` : `/essentials/${kind}?line=${code}`}
                 className="btn-pill btn-secondary mt-4 inline-flex items-center gap-2 px-5 py-3 text-sm"
               >
                 <MapIcon size={16} aria-hidden="true" /> {tl("viewMap")}
@@ -640,9 +642,9 @@ export default function NitbusLineView({ code, line, route, allCodes, kind = "ni
               </ol>
             )}
 
-            {!madrid && (
+            {(!madrid || !isMetro) && (
               <Link
-                href={`/essentials/${kind}?line=${code}`}
+                href={madrid ? `/buhos/mapa?line=${code}` : `/essentials/${kind}?line=${code}`}
                 className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-brand-soft underline underline-offset-4 hover:text-ink"
               >
                 <MapIcon size={16} aria-hidden="true" /> {tl("viewMapLine").replace("{code}", code)}

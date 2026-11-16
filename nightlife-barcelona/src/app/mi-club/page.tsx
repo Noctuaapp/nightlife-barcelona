@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, type ChangeEvent, type ReactNode } from "react"
-import Link from "next/link"
+import Link from "../../components/system/CityLink" // 16/11/2026: el «Volver al inicio» («/») va a la portada de la ciudad en pantalla (lib/cityMemory.ts)
 
 import { Upload, X, Pencil, Trash2, Check, ExternalLink, Copy, BadgeCheck, TrendingUp, Lock, Files } from "lucide-react"
 import Header from "../../components/layout/Header"

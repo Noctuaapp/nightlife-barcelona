@@ -9,6 +9,7 @@ import BottomNav from "../../../components/layout/BottomNav"
 import { supabase } from "../../../lib/supabase"
 import { useLanguage } from "../../../context/LanguageContext"
 import { parsePasswordIssue, passwordIssueText } from "../../../lib/authErrors"
+import { rememberedHome } from "../../../lib/cityMemory"
 
 export default function ChangePasswordPage() {
   const { t, locale } = useLanguage()
@@ -73,7 +74,7 @@ export default function ChangePasswordPage() {
     }
 
     setSuccess(t("changePassword.success"))
-    if (recovery) window.setTimeout(() => (window.location.href = "/"), 1500)
+    if (recovery) window.setTimeout(() => (window.location.href = rememberedHome()), 1500) // a la portada de la ciudad en la que se estaba
     setPassword("")
     setConfirmPassword("")
   }

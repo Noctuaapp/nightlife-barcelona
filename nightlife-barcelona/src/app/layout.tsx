@@ -5,6 +5,7 @@ import { FavoritesProvider } from "../context/FavoritesContext"
 import { LanguageProvider } from "../context/LanguageContext"
 import TermsGate from "../components/auth/TermsGate"
 import MaintenanceGate from "../components/system/MaintenanceGate"
+import AutoCityScope from "../components/system/AutoCityScope"
 import TrafficSource from "../components/system/TrafficSource"
 import InstallCapture from "../components/system/InstallCapture"
 import InstallBanner from "../components/system/InstallBanner"
@@ -108,19 +109,23 @@ export default function RootLayout({
         <LanguageProvider>
           <FavoritesProvider>
             <MaintenanceGate>
-              {/* Franja «Instala Noctua» arriba del todo, solo en móvil y si no está instalada (ver el componente) */}
-              <InstallBanner />
-              {children}
-              {/* Quien tiene sesión debe haber aceptado los términos y confirmado su edad, en cualquier página */}
-              <TermsGate />
-              {/* Juego "¿Qué prefieres?" — popup diario para todos; sin cuenta, solo con permiso de cookies (ver el componente) */}
-              <PartyPollPopup />
-              {/* Permiso para lo opcional que se guarda en el dispositivo (ver lib/consent.ts) */}
-              <CookieBanner />
-              {/* Aviso de registro fuera de las fichas (las fichas llevan el suyo). Los tres avisos salen de uno en uno: ver lib/popupGate.ts */}
-              <JoinNoctuaPrompt />
-              {/* Luces y nieve de Navidad (1 dic – 6 ene, o forzadas desde /admin/herramientas) */}
-              <ChristmasDecor />
+              {/* La ciudad en pantalla para toda la web (16/11/2026): las páginas comunes (perfil, favoritos, acceso…) heredan la
+                  última ciudad vista en vez de caer en Barcelona. Ver lib/cityMemory.ts. */}
+              <AutoCityScope>
+                {/* Franja «Instala Noctua» arriba del todo, solo en móvil y si no está instalada (ver el componente) */}
+                <InstallBanner />
+                {children}
+                {/* Quien tiene sesión debe haber aceptado los términos y confirmado su edad, en cualquier página */}
+                <TermsGate />
+                {/* Juego "¿Qué prefieres?" — popup diario para todos; sin cuenta, solo con permiso de cookies (ver el componente) */}
+                <PartyPollPopup />
+                {/* Permiso para lo opcional que se guarda en el dispositivo (ver lib/consent.ts) */}
+                <CookieBanner />
+                {/* Aviso de registro fuera de las fichas (las fichas llevan el suyo). Los tres avisos salen de uno en uno: ver lib/popupGate.ts */}
+                <JoinNoctuaPrompt />
+                {/* Luces y nieve de Navidad (1 dic – 6 ene, o forzadas desde /admin/herramientas) */}
+                <ChristmasDecor />
+              </AutoCityScope>
             </MaintenanceGate>
           </FavoritesProvider>
         </LanguageProvider>

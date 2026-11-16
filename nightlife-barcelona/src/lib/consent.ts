@@ -1,7 +1,7 @@
 // Permiso para guardar cosas opcionales en el dispositivo (banner de cookies, 30/10/2026).
 //
 // Qué se guarda SIN pedir permiso (es imprescindible o lo ha elegido la propia persona): la sesión
-// de la cuenta, el idioma, y la propia decisión de este banner. La analítica de Noctua tampoco
+// de la cuenta, el idioma, la ciudad que se está viendo (lib/cityMemory.ts) y la propia decisión de este banner. La analítica de Noctua tampoco
 // guarda nada en el dispositivo (ver lib/track.ts).
 //
 // Qué solo se guarda CON permiso: la marca que recuerda qué se votó en la encuesta del día

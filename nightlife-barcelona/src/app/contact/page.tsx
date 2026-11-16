@@ -8,6 +8,7 @@ import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import NocOwl from "../../components/mascot/NocOwl"
 import { logError } from "../../lib/log"
+import { rememberedHome } from "../../lib/cityMemory"
 import { renderWithLinks } from "../../lib/legalText"
 import NightBackdrop from "../../components/ui/NightBackdrop"
 
@@ -210,7 +211,7 @@ export default function ContactPage() {
                     <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                       <button
                         type="button"
-                        onClick={() => (window.history.length > 1 ? window.history.back() : (window.location.href = "/"))}
+                        onClick={() => (window.history.length > 1 ? window.history.back() : (window.location.href = rememberedHome()))}
                         className="btn-pill btn-primary px-6 py-3 text-sm"
                       >
                         {t("contact.back")}

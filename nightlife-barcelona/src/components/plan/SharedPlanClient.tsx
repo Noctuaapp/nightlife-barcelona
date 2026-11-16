@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import Link from "next/link"
+import Link from "../system/CityLink" // 16/11/2026: «/plan» (generar tu plan) debe ser el de la ciudad en pantalla, no el de Barcelona
 import CityLink from "../system/CityLink"
 import { supabase } from "../../lib/supabase"
 import NocOwl from "../mascot/NocOwl"

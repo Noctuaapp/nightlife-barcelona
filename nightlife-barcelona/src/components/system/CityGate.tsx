@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { CITIES, type CityKey } from "../../lib/cities"
+import { rememberCity } from "../../lib/cityMemory"
 import { isAdminEmail } from "../../lib/admin"
 import { supabase } from "../../lib/supabase"
 import { useViewAsUser } from "../../lib/viewAsUser"
@@ -32,7 +33,12 @@ export default function CityGate({ city, children }: { city: CityKey; children: 
   const turnAway = prelaunch && (admin === false || (admin === true && viewAsUser))
 
   useEffect(() => {
-    if (turnAway) router.replace("/")
+    if (turnAway) {
+      // Lo que se recuerda es la ciudad a la que se la devuelve: nadie que no pueda ver una ciudad en vista previa debe quedar con
+      // ella recordada (lib/cityMemory.ts), o las páginas comunes le enseñarían su cabecera.
+      rememberCity("barcelona")
+      router.replace("/")
+    }
   }, [turnAway, router])
 
   if (!allowed) return <div aria-hidden="true" className="min-h-screen bg-[#05060f]" />

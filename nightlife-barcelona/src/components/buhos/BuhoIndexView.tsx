@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "../system/CityLink"
-import { ChevronRight, Search } from "lucide-react"
+import { ChevronRight, Map as MapIcon, Search } from "lucide-react"
 import Header from "../layout/Header"
 import Footer from "../layout/Footer"
 import BottomNav from "../layout/BottomNav"
@@ -93,6 +93,11 @@ export default function BuhoIndexView({ lines, search }: Props) {
               </div>
             )}
           </section>
+
+          {/* El mapa de las paradas (16/11/2026), como el de Nitbus en Barcelona: /madrid/buhos/mapa */}
+          <Link href="/buhos/mapa" className="btn-pill btn-secondary mt-6 inline-flex items-center gap-2 px-5 py-3 text-sm">
+            <MapIcon size={16} aria-hidden="true" /> {t("nitbusPage.viewMap")}
+          </Link>
 
           <section className="mt-10" aria-labelledby="bh-lines">
             <h2 id="bh-lines" className="text-xl font-semibold text-ink">

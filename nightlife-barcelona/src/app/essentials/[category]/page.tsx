@@ -4,7 +4,7 @@ import { zoneOf, zonesPresent } from "../../../lib/zones"
 import { getMetroTonight } from "../../../lib/transitHours"
 import { cleanEssential } from "../../../lib/essentials"
 import { essentialsOfCity, scopeToCity } from "../../../lib/cityEssentials"
-import { CITIES } from "../../../lib/cities"
+import { CITIES, cityPath } from "../../../lib/cities"
 import { useSelectedCity } from "../../../lib/previewCity"
 import { useCityT } from "../../../lib/useCityT"
 import { Fragment, useState, useEffect, useMemo, useRef } from "react"
@@ -149,8 +149,9 @@ export default function EssentialCategoryPage() {
   // quien llega aquí con la otra ciudad en vista previa vuelve a la portada de Esenciales en vez de ver una lista vacía o ajena.
   const wrongCity = city !== "barcelona" ? category === "metro" || category === "nitbus" || category === "bicing" : category === "bicimad" || category === "tobacco"
   useEffect(() => {
-    if (wrongCity) router.replace("/essentials")
-  }, [wrongCity, router])
+    // A la portada de Esenciales de la MISMA ciudad (16/11/2026): antes era «/essentials» a secas y quien estaba en Madrid acababa en Barcelona.
+    if (wrongCity) router.replace(cityPath("/essentials", city))
+  }, [wrongCity, router, city])
   const info = ESSENTIAL_CATEGORIES.find((c) => c.slug === category)
   const CatIcon = info?.icon || MapPin
   const config = { color: BRAND }
@@ -492,12 +493,10 @@ export default function EssentialCategoryPage() {
     map.current.jumpTo({ center: [CITIES[city].center.lng, CITIES[city].center.lat], zoom: 13 })
   }, [mapReady, city])
 
-  // Taxi: ¿hay paradas reales que enseñar? (las oficinas/apps no cuentan). Mientras carga o si no hay
-  // ninguna, la pantalla se queda en los dos recuadros de arriba, sin lista vacía, filtros ni mapa.
-  const taxiRankCount = category === "taxi" ? essentials.filter((e) => !NOT_A_RANK.test(e.name || "")).length : 0
-  // En Madrid tampoco se enseñan las paradas (15/11/2026): como en Barcelona, la pantalla de Taxi son solo los dos recuadros de arriba
-  // (apps y teléfonos de radio taxi). Las paradas que hay cargadas para Madrid no se muestran ni en lista ni en mapa.
-  const hideTaxiRanks = category === "taxi" && (loading || taxiRankCount === 0 || city === "madrid")
+  // Taxi: nunca se enseñan paradas (16/11/2026), ni en Barcelona ni en Madrid, ni en lista ni en mapa: la pantalla de Taxi son solo
+  // los dos recuadros de arriba (apps y teléfonos de radio taxi). Hasta el 15/11 se enseñaban en Barcelona si las había y se habían
+  // quitado ya en Madrid. Las filas de paradas siguen en la base (las usa la ficha de un local para «parada de taxi más cercana»).
+  const hideTaxiRanks = category === "taxi"
 
   // Taxi: el mapa se crea al montar, cuando la sección aún está oculta (cargando). Al aparecer las
   // paradas hay que avisar a Mapbox del tamaño real antes de encuadrar los marcadores.
@@ -1010,7 +1009,7 @@ export default function EssentialCategoryPage() {
             )}
             <div className="min-w-0">
               <h1 className="font-display text-[1.9rem] leading-tight sm:text-5xl">{label}</h1>
-              {!(category === "taxi" && hideTaxiRanks && !loading) && (
+              {!(category === "taxi" && hideTaxiRanks) && (
               <p className="mt-1 text-sm text-zinc-400">
                 {category === "nitbus"
                   ? t("essentialsPage.nitbusLinesCount").replace("{n}", String(Object.keys(NIGHT_BUS_LINES).length)) +

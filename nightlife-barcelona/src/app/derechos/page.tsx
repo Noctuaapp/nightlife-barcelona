@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import Link from "../../components/system/CityLink" // 16/11/2026: el enlace a «/clubs» lleva a los de la ciudad en pantalla (lib/cityMemory.ts)
 import { Check, X, Phone, ChevronDown } from "lucide-react"
 import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"

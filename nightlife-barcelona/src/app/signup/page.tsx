@@ -5,6 +5,8 @@ import Link from "next/link"
 import { Check, Eye, EyeOff } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { safeNextPath } from "../../lib/nextPath"
+import { cityPath } from "../../lib/cities"
+import { useSelectedCity } from "../../lib/previewCity"
 import { track } from "../../lib/track"
 import CountrySelect from "../../components/ui/CountrySelect"
 import { useLanguage } from "../../context/LanguageContext"
@@ -68,6 +70,7 @@ function isWeakPassword(value: string, email: string, username: string): boolean
 
 export default function SignupPage() {
   const { t, locale } = useLanguage()
+  const city = useSelectedCity() // la ciudad en pantalla (la recordada, porque /signup es una página común): lib/cityMemory.ts
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [username, setUsername] = useState("")
@@ -163,6 +166,11 @@ export default function SignupPage() {
         // aquí también: sin sesión no se puede escribir en profiles, y así no se pierde. Al entrar por
         // primera vez, /confirm-age la pasa al perfil sin volver a preguntar.
         data: { username, country, gender, ...consentMetadata(bd.getFullYear()) },
+        // El enlace del correo de confirmación abre la web en el navegador (a menudo en otra pestaña o aplicación, donde no queda ciudad
+        // recordada): para quien se registró desde Madrid, que lleve a la portada de Madrid y no a la de Barcelona (16/11/2026). En
+        // Barcelona no se pasa nada: se mantiene el comportamiento de siempre (la URL del sitio en Supabase). Si Supabase no tuviera
+        // esa dirección en su lista de permitidas, ignora este valor y usa la de siempre: no rompe la confirmación.
+        ...(city !== "barcelona" ? { emailRedirectTo: `${window.location.origin}${cityPath("/", city)}` } : {}),
         ...captchaOptions(captchaToken),
       },
     })

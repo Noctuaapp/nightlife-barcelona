@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import Link from "next/link"
+import Link from "../system/CityLink" // 16/11/2026: «/clubs» (el reto aún no cumplido) debe llevar a los clubs de la ciudad en pantalla, no a los de Barcelona
 import Icon from "../ui/Icon"
 import NocOwl from "../mascot/NocOwl"
 import { useLanguage } from "../../context/LanguageContext"

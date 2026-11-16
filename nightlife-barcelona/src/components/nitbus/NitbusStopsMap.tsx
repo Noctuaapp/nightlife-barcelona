@@ -36,6 +36,9 @@ type Props = {
   locating: boolean
   onLocate: () => void
   className?: string
+  // Vista inicial y a la que se vuelve con fitKey "" (16/11/2026): por defecto Barcelona; los búhos de Madrid pasan la suya.
+  center?: [number, number]
+  zoom?: number
   mapStyle?: string | mapboxgl.Style // por defecto el oscuro de Mapbox; las pruebas usan uno sin red
   children?: ReactNode // ficha de la parada elegida, encima del mapa
 }
@@ -79,8 +82,8 @@ export default function NitbusStopsMap(props: Props) {
     const map = new mapboxgl.Map({
       container: el,
       style: latest.current.mapStyle ?? DEFAULT_STYLE,
-      center: BARCELONA,
-      zoom: 12,
+      center: latest.current.center ?? BARCELONA,
+      zoom: latest.current.zoom ?? 12,
     })
     mapRef.current = map
     map.dragRotate.disable()
@@ -239,7 +242,7 @@ export default function NitbusStopsMap(props: Props) {
     const timer = setTimeout(() => {
       const pts = latest.current.stops.map((s) => [s.lon, s.lat] as [number, number])
       if (latest.current.fitKey === "" || pts.length === 0) {
-        if (latest.current.fitKey === "") map.easeTo({ center: BARCELONA, zoom: 12, duration: 700 })
+        if (latest.current.fitKey === "") map.easeTo({ center: latest.current.center ?? BARCELONA, zoom: latest.current.zoom ?? 12, duration: 700 })
         return
       }
       if (pts.length === 1) {

@@ -129,6 +129,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         { url: `${BASE_URL}/madrid/metro`, changeFrequency: "monthly", priority: 0.5 },
         ...MADRID_METRO_CODES.map((c) => ({ url: `${BASE_URL}/madrid/metro/${c}`, changeFrequency: "monthly" as const, priority: 0.4 })),
         { url: `${BASE_URL}/madrid/buhos`, changeFrequency: "monthly", priority: 0.5 },
+        { url: `${BASE_URL}/madrid/buhos/mapa`, changeFrequency: "monthly", priority: 0.4 }, // el mapa de paradas (16/11/2026)
         ...MADRID_BUHO_CODES.map((c) => ({ url: `${BASE_URL}/madrid/buhos/${c}`, changeFrequency: "monthly" as const, priority: 0.4 })),
         ...neighborhoodsOf(madridAreaClubs)
           .filter((n) => n.count >= MIN_INDEXABLE)

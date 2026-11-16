@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import Link from "next/link"
+import Link from "../../components/system/CityLink" // 16/11/2026: «Explorar» lleva a los clubs de la ciudad en pantalla (lib/cityMemory.ts)
 import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"
 import BottomNav from "@/components/layout/BottomNav"

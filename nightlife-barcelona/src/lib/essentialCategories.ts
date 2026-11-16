@@ -91,6 +91,14 @@ export function isKnownCategory(key: string | null | undefined): boolean {
   return !!key && ESSENTIAL_CATEGORIES.some((c) => c.key === key)
 }
 
+// Categorías que NO salen en el mapa (/map y /madrid/map) aunque existan como esencial (16/11/2026). Taxi y VTC: en el mapa no deben
+// verse paradas de taxi ni de VTC, ni en Barcelona ni en Madrid; para pedir un coche está la pantalla Esenciales › Taxi (apps y teléfonos
+// de radio taxi). Las filas siguen en la base: la ficha de un local las usa para «parada de taxi más cercana».
+export const NOT_ON_MAP: readonly string[] = ["Taxi"]
+export function isOnMap(category: string | null | undefined): boolean {
+  return !NOT_ON_MAP.includes(category || "")
+}
+
 // Nombre en español de cada categoría por su slug de la URL, para el admin (Datos, Visitas, Actividad),
 // que siempre está en español y recibe el slug tal cual lo guardó la analítica.
 const SLUG_LABEL_ES: Record<string, string> = {

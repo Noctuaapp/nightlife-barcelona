@@ -64,7 +64,8 @@ export async function BarrioView({ city, params }: { city: CityKey; params: Prom
   const { area, clubs, neighborhoods, styles, facts, zones } = data
   // Un municipio de fuera de Barcelona (Badalona, L'Hospitalet…) ya tiene su página en /zona/: esta
   // es un duplicado (mismos locales y un título que dice «…, Barcelona»), así que se manda allí.
-  const zoneSlug = zoneSlugByName(zoneOf({ neighborhood: area.name }))
+  // Solo en Barcelona (16/11/2026): /zona/ es de Barcelona, y un barrio de Madrid nunca debe acabar en una página de Barcelona.
+  const zoneSlug = city === "barcelona" ? zoneSlugByName(zoneOf({ neighborhood: area.name })) : undefined
   if (zoneSlug) permanentRedirect(`/zona/${zoneSlug}`)
   const url = cityUrl(`/barrio/${area.slug}`, city)
 

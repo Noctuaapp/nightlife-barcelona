@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
+import Link from "../../components/system/CityLink" // 16/11/2026: «Explorar clubs» lleva a los de la ciudad en pantalla (lib/cityMemory.ts)
 import { Heart } from "lucide-react"
 
 import Header from "../../components/layout/Header"
