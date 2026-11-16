@@ -104,8 +104,13 @@ export default function BuhoMapView() {
     setSelectedId(null)
   }
 
-  const chip = (active: boolean) =>
-    `shrink-0 rounded-full border px-1.5 py-1 transition ${active ? "border-brand bg-brand/20" : "border-white/10 bg-surface hover:border-white/25"}`
+  // Sin contorno (16/11/2026): «Todas» es una píldora sólida (blanca si está elegida) y cada línea es solo su placa, sin la
+  // píldora oscura con aro que la rodeaba. Como ya no hay aro que marque la elegida, cuando se filtra por una línea las demás
+  // se apagan y la elegida se agranda un poco.
+  const allChip = (active: boolean) =>
+    `shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${active ? "bg-white text-[#0a0910]" : "bg-[#23202d] text-white hover:bg-[#2c2937]"}`
+  const lineChip = (code: string) =>
+    `shrink-0 rounded-md transition ${line === code ? "scale-110" : line === ALL ? "opacity-100 hover:scale-105" : "opacity-45 hover:opacity-100"}`
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -120,11 +125,11 @@ export default function BuhoMapView() {
 
           {/* Las líneas como filtro: «Todas» y una placa por línea; se desliza en horizontal. */}
           <div role="group" aria-label={t("nitbusPage.linesTitle")} className="-mx-4 mt-6 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:thin]">
-            <button type="button" aria-pressed={line === ALL} onClick={() => pickLine(ALL)} className={`${chip(line === ALL)} px-3.5 text-sm font-semibold text-ink`}>
+            <button type="button" aria-pressed={line === ALL} onClick={() => pickLine(ALL)} className={allChip(line === ALL)}>
               {t("nitbusPage.mapAllLines")}
             </button>
             {(data?.codes ?? []).map((code) => (
-              <button key={code} type="button" aria-pressed={line === code} aria-label={`Búho ${code}`} onClick={() => pickLine(code)} className={chip(line === code)}>
+              <button key={code} type="button" aria-pressed={line === code} aria-label={`Búho ${code}`} onClick={() => pickLine(code)} className={lineChip(code)}>
                 <NitbusBadge code={code} size="md" />
               </button>
             ))}

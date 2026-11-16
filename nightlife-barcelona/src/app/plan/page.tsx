@@ -753,12 +753,17 @@ export default function PlanPage() {
   const dresscodeOptions = DRESSCODE_OPTIONS.filter((d) => d === "any" || d === dresscode || optionsWithData([d], clubs, (c, o) => dressCodeOf(c) === o).length > 0)
   const anyOffers = clubs.some((c) => hasOffer(c))
 
+  // Botones del formulario (16/11/2026): rellenos SÓLIDOS. Antes eran un gris casi negro (bg-surface, degradados y un aro interior)
+  // que sobre el fondo se veía borroso, y la opción elegida era un violeta translúcido (bg-brand/15) que se perdía en el fondo.
+  // Ahora: sin elegir = azul noche sólido (#1b244f, un poco más claro que el fondo, con su borde del mismo tono); elegida =
+  // violeta de marca sólido con letra blanca (el icono y la descripción pasan a blanco: el violeta claro no se leería encima).
   const option = (active: boolean) =>
-    `rounded-card border p-5 text-left transition ${active ? "border-brand bg-brand/15" : "border-white/10 bg-surface hover:border-white/25"}`
+    `rounded-card border p-5 text-left transition ${active ? "border-brand-soft bg-brand-strong [&_svg]:text-white [&_p+p]:text-white/85" : "border-[#2c3874] bg-[#1b244f] hover:bg-[#232e62]"}`
   const chip = (active: boolean) =>
-    `rounded-full px-4 py-2.5 text-sm font-semibold transition ${active ? "bg-white text-[#0a0910]" : "border border-transparent bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"}`
+    `rounded-full border border-transparent px-4 py-2.5 text-sm font-semibold transition ${active ? "bg-white text-[#0a0910]" : "bg-[#1b244f] text-white hover:bg-[#232e62]"}`
+  const toggleRow = "flex cursor-pointer items-center gap-3 rounded-ctl border border-[#2c3874] bg-[#1b244f] px-4 py-3.5 text-sm font-semibold text-ink transition hover:bg-[#232e62]"
   const primaryBtn = "btn-pill btn-primary flex-1 py-4 text-sm"
-  const secondaryBtn = "btn-pill btn-secondary px-6 py-4 text-sm"
+  const secondaryBtn = "btn-pill bg-[#1b244f] px-6 py-4 text-sm text-white transition hover:bg-[#232e62]"
 
   const selectedVibe = VIBE_PRESETS.find((v) => v.key === vibeKey)
 
@@ -943,7 +948,7 @@ export default function PlanPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="relative flex cursor-pointer items-center gap-3 rounded-ctl border border-white/10 bg-surface px-4 py-3.5 text-sm font-semibold text-ink">
+                        <label className={`relative ${toggleRow}`}>
                           <input
                             type="checkbox"
                             checked={lgtbi}
@@ -966,12 +971,12 @@ export default function PlanPage() {
                           )}
                         </label>
                         {anyOffers && (
-                          <label className="flex cursor-pointer items-center gap-3 rounded-ctl border border-white/10 bg-surface px-4 py-3.5 text-sm font-semibold text-ink">
+                          <label className={toggleRow}>
                             <input type="checkbox" checked={offers} onChange={() => setOffers(!offers)} className="h-4 w-4 accent-[#7c5cff]" />
                             {t("planPage.offersPriority")}
                           </label>
                         )}
-                        <label className="flex cursor-pointer items-center gap-3 rounded-ctl border border-white/10 bg-surface px-4 py-3.5 text-sm font-semibold text-ink">
+                        <label className={toggleRow}>
                           <input type="checkbox" checked={mature} onChange={() => setMature(!mature)} className="h-4 w-4 accent-[#7c5cff]" />
                           {t("planPage.mature")}
                         </label>
