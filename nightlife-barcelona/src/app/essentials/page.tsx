@@ -174,10 +174,17 @@ export default function EssentialsPage() {
   for (const e of essentials) countsByCategory[e.category] = (countsByCategory[e.category] || 0) + 1
   const listedCategories = categories.filter((c) => (countsByCategory[c] || 0) >= categoryInfo(c).minPlaces)
 
-  // Metro y Nitbus son de Barcelona: en Madrid sus páginas llegarán con el lanzamiento (/metro y los búhos por ciudad). Mientras,
-  // el bloque de transporte de Madrid solo enseña el taxi cuando tiene paradas publicadas.
-  const transportTiles = [
-    ...(city === "barcelona" ? [{ cat: "Metro", line: metroLabel }, { cat: "Nitbus", line: t("essentialsPage.nitbusLine") }] : []),
+  // «Volver a casa». En Barcelona, Metro y Nitbus llevan a su categoría de Esenciales. En Madrid (16/11/2026) esas categorías no
+  // existen: el metro y los búhos tienen sus propias páginas (/metro y /buhos, que CityLink lleva a /madrid/...), así que las fichas
+  // apuntan allí y la de los búhos se llama «Búhos». Antes Madrid se quedaba sin estas dos fichas.
+  type TransportTile = { cat: string; line: string; name?: string; href?: string }
+  const transportTiles: TransportTile[] = [
+    ...(city === "barcelona"
+      ? [{ cat: "Metro", line: metroLabel }, { cat: "Nitbus", line: t("essentialsPage.nitbusLine") }]
+      : [
+          { cat: "Metro", line: metroLabel, href: "/metro" },
+          { cat: "Nitbus", line: t("essentialsPage.nitbusLine"), name: tc("home.doorNitbus"), href: "/buhos" },
+        ]),
     // El taxi vuelve cuando hay paradas de verdad publicadas (mínimo en essentialCategories.ts).
     ...((countsByCategory.Taxi || 0) >= categoryInfo("Taxi").minPlaces ? [{ cat: "Taxi", line: t("essentialsPage.taxiLine") }] : []),
   ]
@@ -339,16 +346,16 @@ export default function EssentialsPage() {
             <section className="mx-auto mt-10 max-w-7xl px-4">
               <h2 className={sectionTitle}>{t("essentialsPage.transportTitle")}</h2>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {transportTiles.map(({ cat, line }) => {
+                {transportTiles.map(({ cat, line, name, href }) => {
                   const info = categoryInfo(cat)
                   const CatIcon = info.icon
                   return (
-                    <Link key={cat} href={`/essentials/${info.slug}`} className="flex items-center gap-4 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25">
+                    <Link key={cat} href={href ?? `/essentials/${info.slug}`} className="flex items-center gap-4 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25">
                       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 text-ink">
                         <CatIcon size={22} />
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-ink">{t(categoryNameKey(cat))}</span>
+                        <span className="block text-sm font-semibold text-ink">{name ?? t(categoryNameKey(cat))}</span>
                         <span className="mt-0.5 block text-xs text-zinc-300">{line}</span>
                       </span>
                     </Link>

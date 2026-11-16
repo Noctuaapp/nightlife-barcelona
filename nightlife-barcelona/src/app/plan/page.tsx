@@ -34,7 +34,7 @@ import { cityTextKey } from "../../lib/cityText"
 import { UtensilsCrossed, ShoppingCart } from "lucide-react"
 import { DRESS_CODES, dressCodeLabel, dressCodeOf } from "../../lib/dressCode"
 import NocOwl from "../../components/mascot/NocOwl"
-import { PLAN_BACKDROP_STYLE } from "../../components/plan/planBackdrop"
+import { PLAN_BACKDROP_STYLE, PLAN_OWL_STYLE } from "../../components/plan/planBackdrop"
 
 // "Planifica tu noche". Cambios de la auditoría de octubre 2026:
 // - Los estilos de música eran "Commercial" y "Cocktail Bar" (en inglés) contra datos en español:
@@ -765,10 +765,12 @@ export default function PlanPage() {
   return (
     <>
       <Header />
-      {/* Fondo (15/11/2026): cielo índigo con rutas de puntitos y paradas (cena, copa, música), en vez del negro liso con un
-          resplandor violeta. Va como fondo del propio <main> (planBackdrop.ts), así vale para todas las fases (formulario,
-          cargando, resultado) y no depende de capas con z-index. bg-night queda solo de color de respaldo. */}
-      <main className="relative min-h-screen bg-night pb-40 text-ink" style={PLAN_BACKDROP_STYLE}>
+      {/* Fondo (16/11/2026): azul noche oscuro (que no se confunda con los botones violeta) y, detrás del título, el búho del
+          logo de Noctua, tenue. El degradado va como fondo del propio <main> (planBackdrop.ts) y vale para todas las fases
+          (formulario, cargando, resultado); el búho es una capa suelta con -z-10 dentro del <main>, que lleva `isolate` para que
+          esa capa quede por debajo del contenido pero por encima del fondo. bg-night queda solo de color de respaldo. */}
+      <main className="relative isolate min-h-screen bg-night pb-40 text-ink" style={PLAN_BACKDROP_STYLE}>
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[760px]" style={PLAN_OWL_STYLE} />
 
         <section className="relative mx-auto max-w-2xl px-4 pb-8 pt-10 sm:pt-14">
           <div className="relative flex items-start gap-4">
