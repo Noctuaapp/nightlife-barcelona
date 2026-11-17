@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { isAuthorizedCronRequest } from "@/lib/adminAuth"
-import { startJobBudget, recordGoogleCalls, googleFetch, fetchRichData, dailyLimit } from "@/lib/googlePlacesBudget"
+import { startJobBudget, recordGoogleCalls, googleFetch, fetchRichData, fetchReviews, dailyLimit } from "@/lib/googlePlacesBudget"
 import { classifyGoogleWebsite } from "@/lib/googleWebsite"
 import { CITIES, EXCLUDE_PRELAUNCH_OR, inBox, type CityKey } from "@/lib/cities"
 
@@ -183,6 +183,20 @@ export async function GET(req: Request) {
     .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
     .limit(BATCH_SIZE)
 
+  // Reseñas (17/11/2026): solo si GOOGLE_PLACES_FETCH_REVIEWS está activa, a los clubs de esta tanda que aún no tienen las suyas bajadas
+  // (columna clubs.google_reviews_at, SQL 129) y que Google dice que tienen alguna. Se pide por separado y sin romper nada: si la columna
+  // todavía no existe la consulta falla, la lista queda vacía y el cron se comporta exactamente como antes.
+  const reviewsPending = new Set<number>()
+  if (fetchReviews() && (clubs || []).length > 0) {
+    const { data: reviewFlags, error: reviewFlagsError } = await supabase
+      .from("clubs")
+      .select("id, google_reviews_at, google_review_count")
+      .in("id", (clubs || []).map((c: any) => c.id))
+    if (!reviewFlagsError) {
+      for (const r of (reviewFlags || []) as any[]) if (!r.google_reviews_at && r.google_review_count !== 0) reviewsPending.add(r.id)
+    }
+  }
+
   const { count: totalWithPlaceId } = await inScope(
     supabase
       .from("clubs")
@@ -233,7 +247,10 @@ export async function GET(req: Request) {
         // websiteUri cae en el mismo nivel de precio que rating/userRatingCount, que ya se pedían: no sube el coste.
         // En una ciudad concreta se pide también la ubicación (mismo nivel de precio) para descartar fichas que caigan fuera de ella.
         const baseFields = "displayName,types,rating,userRatingCount,websiteUri" + (scopeCity ? ",location" : "")
-        const fields = needsPhotos ? `${baseFields},photos` : baseFields
+        // Las reseñas llegan en la misma llamada (languageCode=es: el texto viene traducido al castellano); sube la llamada al nivel
+        // «Enterprise + Atmosphere» (ver fetchReviews en googlePlacesBudget.ts), pero no añade ninguna llamada.
+        const wantsReviews = reviewsPending.has(club.id)
+        const fields = [baseFields, needsPhotos ? "photos" : "", wantsReviews ? "reviews" : ""].filter(Boolean).join(",")
         const detailsRes = await googleFetch(counter, `https://places.googleapis.com/v1/places/${club.google_place_id}?languageCode=es`, {
           headers: {
             "X-Goog-Api-Key": apiKey,
@@ -335,16 +352,27 @@ export async function GET(req: Request) {
           .eq("id", club.id)
 
         if (Array.isArray(data.reviews)) {
-          await supabase.from("club_reviews").delete().eq("club_id", club.id)
-          const rows = data.reviews.slice(0, 5).map((r: any) => ({
-            club_id: club.id,
-            author_name: r.authorAttribution?.displayName || "Anónimo",
-            rating: r.rating || null,
-            text: r.text?.text || r.originalText?.text || "",
-            relative_time: r.relativePublishTimeDescription || "",
-          }))
-          if (rows.length > 0) await supabase.from("club_reviews").insert(rows)
+          const rows = data.reviews.slice(0, 5).map((r: any) => {
+            // Si la reseña ya está escrita en castellano o catalán se guarda tal cual la escribió la persona; si no, el texto traducido al
+            // castellano que devuelve Google (languageCode=es), y como último recurso el original.
+            const originalLang = String(r.originalText?.languageCode || "").toLowerCase().split("-")[0]
+            const keepOriginal = !!r.originalText?.text && (originalLang === "es" || originalLang === "ca")
+            return {
+              club_id: club.id,
+              author_name: r.authorAttribution?.displayName || "Anónimo",
+              rating: r.rating || null,
+              text: (keepOriginal ? r.originalText.text : r.text?.text || r.originalText?.text) || "",
+              relative_time: r.relativePublishTimeDescription || "",
+            }
+          })
+          // Solo se sustituyen las que había si llegan nuevas: una respuesta vacía no borra nada.
+          if (rows.length > 0) {
+            await supabase.from("club_reviews").delete().eq("club_id", club.id)
+            await supabase.from("club_reviews").insert(rows)
+          }
         }
+        // Las reseñas de este club ya están bajadas: no se vuelven a pedir (ni a pagar) en la próxima vuelta.
+        if (wantsReviews) await supabase.from("clubs").update({ google_reviews_at: new Date().toISOString() }).eq("id", club.id)
 
         return { club: club.name, status: "ok", photos: photoUrls.length, reviews: data.reviews?.length || 0 }
       } catch (e: any) {

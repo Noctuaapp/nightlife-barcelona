@@ -9,6 +9,7 @@ import BottomNav from "../../components/layout/BottomNav"
 import ExploreSwitch from "../../components/nightlife/ExploreSwitch"
 import SectionHero from "../../components/ui/SectionHero"
 import EssentialPhoto from "../../components/essentials/EssentialPhoto"
+import CategoryTile from "../../components/essentials/CategoryTile"
 import EmergencyBar from "../../components/essentials/EmergencyBar"
 import { supabase } from "../../lib/supabase"
 import { fetchAllPages } from "../../lib/fetchAll"
@@ -21,7 +22,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../lib/geo"
 import { availabilityOf, availabilityClass } from "../../lib/availability"
 import { getMetroTonight } from "../../lib/transitHours"
-import { categoryInfo, categoryRank, categoryNameKey, categoryDescKey, groupNameKey, usesOwnPhoto, ESSENTIAL_GROUPS } from "../../lib/essentialCategories"
+import { categoryInfo, categoryRank, categoryNameKey, categoryDescKey, groupNameKey, usesOwnPhoto, ESSENTIAL_GROUPS, GROUP_ACCENT } from "../../lib/essentialCategories"
 
 // Portada de Esenciales. Rehecha tras la auditoría de octubre 2026: antes eran cuatro bloques con
 // doce colores (uno por categoría), emojis como iconos, contadores de relleno ("12 categorías",
@@ -190,7 +191,6 @@ export default function EssentialsPage() {
   ]
 
   const sectionTitle = "mb-4 text-lg font-semibold text-ink"
-  const tile = "flex flex-col gap-3 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25"
 
   return (
     <>
@@ -310,32 +310,31 @@ export default function EssentialsPage() {
                     const items = itemsByCategory(cat)
                     if (items.length === 0) return null
                     const info = categoryInfo(cat)
-                    const CatIcon = info.icon
                     const open = openCount(cat)
                     const close = closestOf(cat)
                     return (
-                      <Link key={cat} href={close ? `/essentials/${info.slug}?id=${close.id}` : `/essentials/${info.slug}`} className={tile}>
-                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-ink">
-                          <CatIcon size={20} />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-sm font-semibold text-ink">{t(categoryNameKey(cat))}</span>
-                          {close ? (
-                            <>
-                              <span className="mt-0.5 block truncate text-xs text-zinc-300">{close.name}</span>
-                              <span className={`mt-0.5 block text-xs font-semibold ${close._open ? "text-open" : "text-zinc-400"}`}>
-                                {formatDistance(close._dist)} · {t("essentialsPage.walkMin").replace("{n}", String(walkingMinutes(close._dist)))}
-                              </span>
-                            </>
-                          ) : (
-                            <span className={`mt-0.5 block text-xs font-semibold ${open > 0 ? "text-open" : "text-zinc-400"}`}>
-                              {open > 0
-                                ? (open === 1 ? t("essentialsPage.openNowOne") : t("essentialsPage.openNowCount")).replace("{n}", String(open))
-                                : (items.length === 1 ? t("essentialsPage.placesOne") : t("essentialsPage.placesCount")).replace("{n}", String(items.length))}
+                      <CategoryTile
+                        key={cat}
+                        href={close ? `/essentials/${info.slug}?id=${close.id}` : `/essentials/${info.slug}`}
+                        icon={info.icon}
+                        accent={GROUP_ACCENT[info.group]}
+                        title={t(categoryNameKey(cat))}
+                      >
+                        {close ? (
+                          <>
+                            <span className="mt-1 block truncate text-xs text-zinc-300">{close.name}</span>
+                            <span className={`mt-0.5 block text-xs font-semibold ${close._open ? "text-open" : "text-zinc-400"}`}>
+                              {formatDistance(close._dist)} · {t("essentialsPage.walkMin").replace("{n}", String(walkingMinutes(close._dist)))}
                             </span>
-                          )}
-                        </span>
-                      </Link>
+                          </>
+                        ) : (
+                          <span className={`mt-1 block text-xs font-semibold ${open > 0 ? "text-open" : "text-zinc-400"}`}>
+                            {open > 0
+                              ? (open === 1 ? t("essentialsPage.openNowOne") : t("essentialsPage.openNowCount")).replace("{n}", String(open))
+                              : (items.length === 1 ? t("essentialsPage.placesOne") : t("essentialsPage.placesCount")).replace("{n}", String(items.length))}
+                          </span>
+                        )}
+                      </CategoryTile>
                     )
                   })}
                 </div>
@@ -348,17 +347,10 @@ export default function EssentialsPage() {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {transportTiles.map(({ cat, line, name, href }) => {
                   const info = categoryInfo(cat)
-                  const CatIcon = info.icon
                   return (
-                    <Link key={cat} href={href ?? `/essentials/${info.slug}`} className="flex items-center gap-4 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25">
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 text-ink">
-                        <CatIcon size={22} />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-ink">{name ?? t(categoryNameKey(cat))}</span>
-                        <span className="mt-0.5 block text-xs text-zinc-300">{line}</span>
-                      </span>
-                    </Link>
+                    <CategoryTile key={cat} layout="row" href={href ?? `/essentials/${info.slug}`} icon={info.icon} accent={GROUP_ACCENT[info.group]} title={name ?? t(categoryNameKey(cat))}>
+                      <span className="mt-1 block text-sm text-zinc-300">{line}</span>
+                    </CategoryTile>
                   )
                 })}
               </div>
@@ -426,23 +418,18 @@ export default function EssentialsPage() {
                     if (cats.length === 0) return null
                     return (
                       <div key={g}>
-                        <h3 className="mb-3 text-sm font-semibold text-zinc-300">{t(groupNameKey(g))}</h3>
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-200">
+                          <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ background: GROUP_ACCENT[g] }} />
+                          {t(groupNameKey(g))}
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                           {cats.map((cat) => {
                             const info = categoryInfo(cat)
-                            const CatIcon = info.icon
                             const count = itemsByCategory(cat).length
                             return (
-                              <Link key={cat} href={`/essentials/${info.slug}`} className="flex items-center gap-4 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25">
-                                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 text-ink">
-                                  <CatIcon size={22} />
-                                </span>
-                                <span className="min-w-0 flex-1">
-                                  <span className="block text-sm font-semibold text-ink">{t(categoryNameKey(cat))}</span>
-                                  <span className="mt-0.5 block truncate text-xs text-zinc-400">{tc(categoryDescKey(cat))}</span>
-                                </span>
-                                <span className="shrink-0 text-xs font-semibold text-zinc-400">{count}</span>
-                              </Link>
+                              <CategoryTile key={cat} href={`/essentials/${info.slug}`} icon={info.icon} accent={GROUP_ACCENT[info.group]} title={t(categoryNameKey(cat))} badge={count}>
+                                <span className="mt-1 line-clamp-2 block text-xs leading-snug text-zinc-300">{tc(categoryDescKey(cat))}</span>
+                              </CategoryTile>
                             )
                           })}
                         </div>

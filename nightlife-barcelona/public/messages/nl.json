@@ -197,7 +197,9 @@
     "catNeighborhood": "Buurtfeesten",
     "catConcertSub": "Live muziek en optredens",
     "catFestivalSub": "Muziek en cultuur",
-    "catNeighborhoodSub": "De grote buurtfeesten van Barcelona"
+    "catNeighborhoodSub": "De grote buurtfeesten van Barcelona",
+    "catAll": "Alles",
+    "catAllSub": "Concerten, festivals en feesten, alles bij elkaar"
   },
   "essentials": {
     "title": "Essentials",
@@ -1023,7 +1025,8 @@
     "fShisha": "Shisha",
     "fAccessible": "Toegankelijk met rolstoel",
     "stopAt": "Halte {name}",
-    "reviewsGoogleFallback": "Bekijk ondertussen wat men op Google Maps zegt"
+    "reviewsGoogleFallback": "Bekijk ondertussen wat men op Google Maps zegt",
+    "reviewOtherLang": "In een andere taal"
   },
   "eventPage": {
     "dateTbc": "Datum nog niet bekend",

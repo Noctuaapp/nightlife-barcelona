@@ -6,6 +6,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const state = vi.hoisted(() => ({
   limit: 4000,
   rich: true,
+  reviews: false,
+  // Respuesta de la consulta «¿qué clubs de la tanda aún no tienen las reseñas bajadas?» (columna clubs.google_reviews_at).
+  reviewFlags: [] as any[],
+  reviewFlagsError: null as any,
   builders: [] as any[],
   googleCalls: [] as { url: string; init?: any }[],
   googleReply: (_url: string, _init?: any): { status: number; body: any } => ({ status: 200, body: {} }),
@@ -19,6 +23,7 @@ vi.mock("@/lib/googleWebsite", () => ({ classifyGoogleWebsite: () => ({}) }))
 vi.mock("@/lib/googlePlacesBudget", () => ({
   dailyLimit: () => state.limit,
   fetchRichData: () => state.rich,
+  fetchReviews: () => state.reviews,
   startJobBudget: async () => ({ over: false, used: 0, counter: { count: 0 } }),
   recordGoogleCalls: async () => {},
   googleFetch: async (counter: { count: number }, url: string, init?: any) => {
@@ -32,7 +37,7 @@ vi.mock("@/lib/googlePlacesBudget", () => ({
 // Constructor de consultas falso: apunta cada llamada encadenada y, al esperarlo, responde según la tabla y los filtros.
 function makeBuilder(table: string) {
   const b: any = { table, ops: [] as [string, ...any[]][] }
-  for (const m of ["select", "is", "or", "not", "ilike", "order", "limit", "eq", "update", "delete", "insert"]) {
+  for (const m of ["select", "is", "or", "not", "ilike", "order", "limit", "eq", "in", "update", "delete", "insert"]) {
     b[m] = (...args: any[]) => {
       b.ops.push([m, ...args])
       return b
@@ -43,7 +48,8 @@ function makeBuilder(table: string) {
     const wantsNoPlace = b.ops.some((o: any[]) => o[0] === "is" && o[1] === "google_place_id")
     const isWrite = b.ops.some((o: any[]) => ["update", "delete", "insert"].includes(o[0]))
     let out: any
-    if (isWrite || table !== "clubs") out = { data: null, error: null }
+    if (table === "clubs" && b.ops.some((o: any[]) => o[0] === "in")) out = { data: state.reviewFlags, error: state.reviewFlagsError }
+    else if (isWrite || table !== "clubs") out = { data: null, error: null }
     else if (selectsCount) out = { count: wantsNoPlace ? state.clubsWithoutPlace.length : state.clubsToRefresh.length, error: null }
     else out = { data: wantsNoPlace ? state.clubsWithoutPlace : state.clubsToRefresh, error: null }
     return Promise.resolve(out).then(resolve)
@@ -80,6 +86,9 @@ const BARNA = { latitude: 41.3874, longitude: 2.1686 }
 beforeEach(() => {
   state.limit = 4000
   state.rich = true
+  state.reviews = false
+  state.reviewFlags = []
+  state.reviewFlagsError = null
   state.builders = []
   state.googleCalls = []
   state.clubsToRefresh = []
@@ -263,5 +272,73 @@ describe("refresh-google-data · detalles de la ficha", () => {
     expect(details.init.headers["X-Goog-FieldMask"]).not.toContain("location")
     const w = clubWrites().map((b) => b.ops.find((o: any[]) => o[0] === "update")[1]).find((x: any) => "google_rating" in x)
     expect(w).toMatchObject({ google_rating: 4.5, google_review_count: 120 })
+  })
+})
+
+describe("refresh-google-data · reseñas de Google (GOOGLE_PLACES_FETCH_REVIEWS)", () => {
+  const club = { id: "c9", name: "Teatro Barceló", image: null, gallery: "x", google_place_id: "PLACE", website: null, instagram: null, tiktok: null }
+  const place = {
+    displayName: { text: "Teatro Barceló" },
+    types: ["night_club"],
+    rating: 4.5,
+    userRatingCount: 120,
+    reviews: [
+      { authorAttribution: { displayName: "Marta" }, rating: 5, relativePublishTimeDescription: "hace un mes", text: { text: "Muy buen sitio" }, originalText: { text: "Muy buen sitio", languageCode: "es" } },
+      { authorAttribution: { displayName: "Jordi" }, rating: 4, relativePublishTimeDescription: "hace 2 meses", text: { text: "Gran ambiente" }, originalText: { text: "Bon ambient", languageCode: "ca" } },
+      { authorAttribution: { displayName: "Tom" }, rating: 5, relativePublishTimeDescription: "a month ago", text: { text: "Gran lugar, muy recomendable" }, originalText: { text: "Great place, would recommend", languageCode: "en" } },
+    ],
+  }
+  const details = () => state.googleCalls.find((c) => c.url.includes("/places/PLACE"))!
+  const reviewWrites = (op: string) => state.builders.filter((b) => b.table === "club_reviews" && b.ops.some((o: any[]) => o[0] === op))
+
+  it("con la variable apagada no pide reseñas ni mira la columna (comportamiento de siempre)", async () => {
+    state.clubsToRefresh = [club]
+    // Google solo devuelve `reviews` si se piden en el fieldmask.
+    state.googleReply = () => ({ status: 200, body: { ...place, reviews: undefined } })
+    await call()
+    expect(details().init.headers["X-Goog-FieldMask"]).not.toContain("reviews")
+    expect(state.builders.some((b) => b.ops.some((o: any[]) => o[0] === "in"))).toBe(false)
+    expect(reviewWrites("insert")).toHaveLength(0)
+  })
+
+  it("con la variable encendida pide «reviews» solo a los que aún no las tienen y las guarda (castellano/catalán tal cual, el resto traducido)", async () => {
+    state.reviews = true
+    state.clubsToRefresh = [club]
+    state.reviewFlags = [{ id: "c9", google_reviews_at: null, google_review_count: 120 }]
+    state.googleReply = () => ({ status: 200, body: place })
+    await call()
+    expect(details().url).toContain("languageCode=es")
+    expect(details().init.headers["X-Goog-FieldMask"]).toContain("reviews")
+    const inserted = reviewWrites("insert")[0].ops.find((o: any[]) => o[0] === "insert")[1]
+    expect(inserted.map((r: any) => r.text)).toEqual(["Muy buen sitio", "Bon ambient", "Gran lugar, muy recomendable"])
+    // Y se anota que ya están bajadas.
+    const marks = clubWrites().map((b) => b.ops.find((o: any[]) => o[0] === "update")[1]).filter((x: any) => "google_reviews_at" in x)
+    expect(marks).toHaveLength(1)
+    expect(typeof marks[0].google_reviews_at).toBe("string")
+  })
+
+  it("si el club ya las tiene bajadas, o Google dice que no tiene ninguna, no las vuelve a pedir", async () => {
+    state.reviews = true
+    state.clubsToRefresh = [club]
+    state.reviewFlags = [{ id: "c9", google_reviews_at: "2026-11-17T10:00:00Z", google_review_count: 120 }]
+    state.googleReply = () => ({ status: 200, body: { ...place, reviews: undefined } })
+    await call()
+    expect(details().init.headers["X-Goog-FieldMask"]).not.toContain("reviews")
+
+    state.builders = []
+    state.googleCalls = []
+    state.reviewFlags = [{ id: "c9", google_reviews_at: null, google_review_count: 0 }]
+    await call()
+    expect(details().init.headers["X-Goog-FieldMask"]).not.toContain("reviews")
+  })
+
+  it("si la columna google_reviews_at aún no existe (falta el SQL 129), no pide reseñas y no escribe nada nuevo", async () => {
+    state.reviews = true
+    state.clubsToRefresh = [club]
+    state.reviewFlagsError = { message: "column clubs.google_reviews_at does not exist" }
+    state.googleReply = () => ({ status: 200, body: place })
+    await call()
+    expect(details().init.headers["X-Goog-FieldMask"]).not.toContain("reviews")
+    expect(clubWrites().map((b) => b.ops.find((o: any[]) => o[0] === "update")[1]).some((x: any) => "google_reviews_at" in x)).toBe(false)
   })
 })

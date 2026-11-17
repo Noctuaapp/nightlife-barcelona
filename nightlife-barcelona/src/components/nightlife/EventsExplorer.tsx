@@ -83,11 +83,9 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   const [events] = useState<any[]>(() =>
     initialEvents.map((e) => ({ ...e, _cls: classifyEvent(e) })).filter((e) => !e._cls.hidden)
   )
-  const [cat, setCat] = useState<EventCategory>(() => {
-    const upcoming = (e: any) => !isEventPast(e.date, e.date_end)
-    const items = initialEvents.map((e) => ({ e, c: classifyEvent(e) })).filter((x) => !x.c.hidden)
-    return EVENT_CATEGORIES.find((c) => items.some((x) => x.c.category === c && upcoming(x.e))) || "concert"
-  })
+  // 17/11/2026: nueva opción «Todos» (por defecto): conciertos, festivales y fiestas de barrio mezclados y por fecha, para no tener que ir
+  // categoría por categoría. Las tres categorías siguen ahí para quien quiera filtrar.
+  const [cat, setCat] = useState<EventCategory | "all">("all")
   const [selectedFilters, setSelectedFilters] = useState<Set<string>>(new Set())
   const [selectedZones, setSelectedZones] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState("")
@@ -138,7 +136,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
   const filteredEvents = useMemo(() => {
     return events.filter((event) => {
-      if (event._cls.category !== cat) return false
+      if (cat !== "all" && event._cls.category !== cat) return false
       const matchesFilters = selectedFilters.size === 0 || Array.from(selectedFilters).every((key) => filterMatch(event, key))
 
       const matchesSearch = searchScore(event, search) > 0
@@ -160,12 +158,14 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
   const sortedEvents = useMemo(() => {
     const arr = [...filteredEvents]
+    // En «Todos» los tres tipos van mezclados: por fecha, de más cerca a más lejos (las categorías ya vienen ordenadas, la mezcla no).
+    if (cat === "all") arr.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     if (search.trim()) {
       // Con búsqueda activa: primero lo más relevante, y a igual relevancia, por fecha.
       arr.sort((a, b) => searchScore(b, search) - searchScore(a, search) || new Date(a.date).getTime() - new Date(b.date).getTime())
     }
     return arr
-  }, [filteredEvents, search])
+  }, [filteredEvents, search, cat])
 
   const visibleEvents = sortedEvents.slice(0, visibleCount)
 
@@ -234,13 +234,17 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
   // Cuántos eventos próximos hay en cada categoría (para los números de las pestañas).
   const catCounts = useMemo(() => {
-    const c: Record<EventCategory, number> = { concert: 0, festival: 0, neighborhood: 0 }
+    const c: Record<EventCategory | "all", number> = { all: 0, concert: 0, festival: 0, neighborhood: 0 }
     events.forEach((e) => {
-      if (!isEventPast(e.date, e.date_end)) c[e._cls.category as EventCategory]++
+      if (!isEventPast(e.date, e.date_end)) {
+        c[e._cls.category as EventCategory]++
+        c.all++
+      }
     })
     return c
   }, [events])
-  const catMeta: Record<EventCategory, { label: string; sub: string; icon: string }> = {
+  const catMeta: Record<EventCategory | "all", { label: string; sub: string; icon: string }> = {
+    all: { label: t("events.catAll"), sub: t("events.catAllSub"), icon: "calendar" },
     concert: { label: t("events.catConcert"), sub: t("events.catConcertSub"), icon: "mic" },
     festival: { label: t("events.catFestival"), sub: t("events.catFestivalSub"), icon: "ticket" },
     neighborhood: { label: t("events.catNeighborhood"), sub: t("events.catNeighborhoodSub"), icon: "users" },
@@ -260,7 +264,25 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
 
         {/* CATEGORÍAS (04/11/2026): lo primero que eliges es qué tipo de plan buscas. */}
         <nav aria-label={t("events.title")} className="mx-auto max-w-7xl px-4 pt-5">
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3">
+            {/* «Todos»: en móvil una barra a todo el ancho (cuatro tarjetas en una fila no caben con «Nachbarschaftsfeste» o «Fiestas de barrio»); desde sm, la primera tarjeta. */}
+            <button
+              type="button"
+              onClick={() => setCat("all")}
+              aria-pressed={cat === "all"}
+              className={`col-span-3 flex items-center gap-3 rounded-[20px] px-4 py-3 text-left transition active:scale-[0.98] sm:col-span-1 sm:flex-col sm:items-start sm:gap-1 sm:px-5 sm:py-4 ${
+                cat === "all" ? "bg-white text-[#0a0910]" : "bg-[#23202d] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] hover:bg-[#2c2937]"
+              }`}
+            >
+              <span className="flex items-center gap-3 sm:w-full sm:justify-between sm:gap-2">
+                <Icon name={catMeta.all.icon} className={`h-5 w-5 ${cat === "all" ? "text-[#0a0910]" : "text-zinc-300"}`} />
+                <span className="text-[15px] font-bold leading-tight sm:hidden">{catMeta.all.label}</span>
+                <span className={`hidden rounded-full px-2 py-0.5 text-[11px] font-bold sm:inline ${cat === "all" ? "bg-[#0a0910]/10" : "bg-white/10 text-zinc-200"}`}>{catCounts.all}</span>
+              </span>
+              <span className="hidden text-base font-bold leading-tight sm:block">{catMeta.all.label}</span>
+              <span className={`hidden text-xs font-normal leading-snug sm:block ${cat === "all" ? "text-[#0a0910]/65" : "text-zinc-400"}`}>{catMeta.all.sub}</span>
+              <span className={`ml-auto rounded-full px-2 py-0.5 text-[11px] font-bold sm:hidden ${cat === "all" ? "bg-[#0a0910]/10" : "bg-white/10 text-zinc-200"}`}>{catCounts.all}</span>
+            </button>
             {EVENT_CATEGORIES.map((c) => {
               const on = cat === c
               return (
@@ -391,7 +413,7 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
               )
 
               // FIESTAS DE BARRIO: fila compacta, con el barrio por delante.
-              if (event._cls.category === "neighborhood") {
+              if (cat === "neighborhood") {
                 return (
                   <Link
                     key={event.id}
@@ -413,7 +435,13 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                 )
               }
 
-              // CONCIERTOS Y FESTIVALES: foto grande con la fecha encima.
+              // CONCIERTOS Y FESTIVALES (y, en «Todos», también las fiestas de barrio): foto grande con la fecha encima. En «Todos» cada tarjeta
+              // lleva su categoría arriba a la derecha; una fiesta de barrio enseña el barrio como título.
+              const isHood = event._cls.category === "neighborhood"
+              const cardTitle = isHood ? event._cls.barrio || event.title : event.title
+              const cardSub = isHood
+                ? (event._cls.barrio ? event.title : event.club_name || cityName)
+                : [event.club_name || cityName, event.music].filter(Boolean).join(" · ")
               return (
                 <Link
                   key={event.id}
@@ -425,10 +453,13 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                       <Image src={event.image} alt={event.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition duration-500 group-hover:scale-[1.03]" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand/30 via-surface to-night">
-                        <Icon name="calendar" className="h-12 w-12 text-white/20" />
+                        <Icon name={isHood ? "users" : "calendar"} className="h-12 w-12 text-white/20" />
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
+                    {cat === "all" && (
+                      <span className="absolute right-3 top-3 rounded-full bg-night/80 px-2.5 py-1 text-xs font-semibold text-ink">{catMeta[event._cls.category as EventCategory].label}</span>
+                    )}
                     <div className="absolute left-3 top-3 flex items-start gap-2">
                       {dateBlock}
                       <div className="flex flex-col items-start gap-1.5">
@@ -440,12 +471,10 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
                   </div>
                   <div className="p-4">
                     <h2 className="min-w-0 text-lg font-semibold leading-snug text-ink">
-                      {event.title}
+                      {cardTitle}
                       {event.featured && !past && <Icon name="star" className="ml-1.5 inline h-4 w-4 align-[-2px] text-warn" />}
                     </h2>
-                    <p className="mt-0.5 truncate text-sm text-zinc-400">
-                      {[event.club_name || cityName, event.music].filter(Boolean).join(" · ")}
-                    </p>
+                    <p className="mt-0.5 truncate text-sm text-zinc-400">{cardSub}</p>
                     {(event.start_time || event.price) && (
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                         {event.start_time && (

@@ -81,6 +81,9 @@ const EVENT_LABELS: Record<string, string> = {
   plan_poll_create: "Crea una votación entre sitios",
   plan_poll_vote: "Vota en una votación de plan",
   plan_rsvp: "Se apunta a un plan",
+  surprise_open: "Abre Sorpréndeme",
+  surprise_result: "Sorpréndeme le enseña:",
+  surprise_click: "Desde Sorpréndeme pulsa:",
   top_pick_click: "Pulsa el Top 3",
   tab_open: "Abre la pestaña",
   nearby_click: "Va a un sitio cercano:",
@@ -137,6 +140,9 @@ function extraDetail(e: Ev): string | null {
   if (e.type === "plan_poll_vote") return e.meta?.changed ? "(cambia su voto)" : ""
   if (e.type === "plan_poll_create") return e.meta?.options ? `(${String(e.meta.options)} sitios)` : ""
   if (e.type === "plan_rsvp") return e.meta?.kind === "poll" ? "(en una votación)" : ""
+  if (e.type === "surprise_result") return `${e.name || ""}${e.meta?.again ? " (tras «Otra opción»)" : ""}`.trim()
+  if (e.type === "surprise_click") return `${e.meta?.action === "directions" ? "Cómo llegar" : "Ver ficha"}: ${e.name || ""}`.trim()
+  if (e.type === "surprise_open") return ""
   if (e.type === "auth_gate_view" && e.meta?.reason === "plan" && e.meta?.from === "poll") return "(al crear una votación)"
   if (e.type === "auth_gate_view") return ({ favorite: "(al guardar un favorito)", attend: "(al apuntarse)", checkin: "(al hacer check-in)", plan: "(al compartir un plan)", poll: "(tras votar en la encuesta)" } as Record<string, string>)[String(e.meta?.reason ?? "")] ?? ""
   if (e.type === "signup_ok") return e.meta?.confirm_email ? "(debe confirmar el correo)" : "(ya con sesión)"

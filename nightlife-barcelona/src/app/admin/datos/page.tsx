@@ -17,6 +17,7 @@ import { madridDaysAgo, madridToday, madridYear } from "../../../lib/madridDay"
 import InteractionStats, { type Kind as ClickKind } from "../../../components/admin/InteractionStats"
 import { CountryPanel, FunnelPanel, LanguagePanel, SourcePanel } from "../../../components/admin/DataInsights"
 import { NeedSql } from "../../../components/admin/insights"
+import SurprisePanel from "../../../components/admin/SurprisePanel"
 import {
   actionIndex, actionsPer100, compareValues, fillDays, hoursSeries, isDeadItem, previousRange, rangeLength, searchRows, totalActions, weekdaySeries,
   DEAD_MIN_VIEWS, type ClubActionRow, type CountryRow, type FunnelRow, type HourRow, type LanguageRow, type SearchDetailTerm, type SignupErrorRow, type SourceQualityRow, type WeekdayRow,
@@ -148,6 +149,9 @@ export default function AdminDatosPage() {
   // pestañas sigan funcionando y solo esta avise.
   const [essStats, setEssStats] = useState<any>(null)
   const [essError, setEssError] = useState("")
+  // Sorpréndeme (17/11/2026): también aparte; si falta el SQL 128 solo avisa en su panel.
+  const [surpriseStats, setSurpriseStats] = useState<any>(null)
+  const [surpriseMissing, setSurpriseMissing] = useState(false)
   // Si cambias las fechas rápido, solo vale la última consulta (antes una respuesta lenta de un rango
   // anterior podía pisar a la nueva y enseñar números de otro periodo).
   const loadSeq = useRef(0)
@@ -184,7 +188,7 @@ export default function AdminDatosPage() {
     setError("")
     const range = { p_from: from, p_to: to }
     // Las fichas (ci, ei) salen de toda la web y aquí se filtran por la ciudad de cada una. Lo demás se pide ya por ciudad.
-    const [ov, ci, ei, se, au, clubs, rc, es, evMeta] = await Promise.all([
+    const [ov, ci, ei, se, au, clubs, rc, es, evMeta, ss] = await Promise.all([
       rpcByCity<any>(supabase, "admin_data_overview", range, city, CITY_SQL_105),
       supabase.rpc("admin_data_items", { p_type: "club", ...range }),
       supabase.rpc("admin_data_items", { p_type: "event", ...range }),
@@ -195,6 +199,7 @@ export default function AdminDatosPage() {
       rpcByCity<any>(supabase, "admin_ride_clicks", range, city, CITY_SQL_105),
       rpcByCity<any>(supabase, "admin_essentials_stats", range, city),
       fetchAllPages((lo, hi) => supabase.from("events").select("id, club_name, latitude, longitude").order("id").range(lo, hi)),
+      rpcByCity<any>(supabase, "admin_surprise_stats", range, city, "128_analitica_sorprendeme.sql"),
     ])
     if (seq !== loadSeq.current) return
     setLoadFlags(cityFlags([es], [ov, se, au, rc]))
@@ -217,6 +222,8 @@ export default function AdminDatosPage() {
     setRideClicks(rc.error ? [] : rc.data || [])
     setEssError(es.error && !isCitySqlMissing(es.error) ? es.error.message || "error" : "")
     setEssStats(es.error ? null : es.data)
+    setSurpriseStats(ss.error ? null : ss.data)
+    setSurpriseMissing(!!ss.error && (isCitySqlMissing(ss.error) || /function|schema cache|does not exist/i.test(ss.error.message || "")))
     const meta: Record<string, any> = {}
     const clubList = (clubs || []) as { id: number; name: string; city: string | null; latitude: number | null; longitude: number | null }[]
     for (const c of clubList) meta[String(c.id)] = { ...c, zone: zoneOf(c as any) }
@@ -545,6 +552,7 @@ export default function AdminDatosPage() {
                 </div>
                 <ListBars rows={rideClicks.map((r) => ({ label: RIDE_PROVIDER_LABELS[r.provider] || r.provider, n: r.n }))} />
               </Panel>
+              <SurprisePanel stats={surpriseStats} missingSql={surpriseMissing} />
             </div>
           </div>
         )}

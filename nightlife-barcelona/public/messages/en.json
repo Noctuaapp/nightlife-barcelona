@@ -197,7 +197,9 @@
     "catNeighborhood": "Neighbourhood parties",
     "catConcertSub": "Live music and gigs",
     "catFestivalSub": "Music and culture",
-    "catNeighborhoodSub": "Barcelona's main neighbourhood festivals"
+    "catNeighborhoodSub": "Barcelona's main neighbourhood festivals",
+    "catAll": "All",
+    "catAllSub": "Concerts, festivals and parties, all in one list"
   },
   "essentials": {
     "title": "Essentials",
@@ -1023,7 +1025,8 @@
     "rideTo": "Destination",
     "ticketsAdvance": "Advance tickets",
     "fCapacityLabel": "Capacity",
-    "reviewsGoogleFallback": "Meanwhile, see what people say on Google Maps"
+    "reviewsGoogleFallback": "Meanwhile, see what people say on Google Maps",
+    "reviewOtherLang": "In another language"
   },
   "eventPage": {
     "dateTbc": "Date to be confirmed",

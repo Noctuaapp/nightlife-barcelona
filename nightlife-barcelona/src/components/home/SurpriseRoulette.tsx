@@ -102,10 +102,12 @@ export default function SurpriseRoulette({ names, durationMs, label }: { names: 
           <circle cx={C} cy={C} r={R_OUT} fill="none" stroke={GOLD} strokeWidth="2.2" />
           <circle cx={C} cy={C} r={R_IN} fill={NIGHT} stroke={GOLD} strokeWidth="2.2" />
           <path d={`M${C} ${C - R_IN + 6} L${C} ${C + R_IN - 6} M${C - R_IN + 6} ${C} L${C + R_IN - 6} ${C}`} stroke="#2a2540" strokeWidth="3" strokeLinecap="round" />
-          <circle cx={C} cy={C} r="20" fill={GOLD} stroke={NIGHT} strokeWidth="2.4" />
-          {/* Luna creciente en el centro */}
-          <path d="M123 108 A13 13 0 1 0 123 132 A10.5 10.5 0 1 1 123 108 Z" fill={NIGHT} />
         </g>
+
+        {/* Centro de la rueda (17/11/2026): el búho de Noctua, quieto y derecho aunque la rueda gire (por eso va fuera del grupo que rota).
+            Antes era una luna negra sobre un círculo amarillo. La imagen es un webp pequeño con fondo transparente (public/noctua_owl_sm.webp). */}
+        <circle cx={C} cy={C} r="27" fill={NIGHT} stroke={GOLD} strokeWidth="2.2" />
+        <image href="/noctua_owl_sm.webp" x={C - 20.5} y={C - 14.8} width="41" height="29.6" preserveAspectRatio="xMidYMid meet" />
 
         {/* La bola */}
         <g ref={ballRef}>

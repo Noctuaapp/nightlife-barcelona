@@ -11,8 +11,10 @@ type Review = { id: number; author_name: string; rating: number | null; relative
 
 // Reseñas de Google, siempre atribuidas a Google. Desde el 25/10/2026 viven en la pestaña
 // «Opiniones» de la ficha (debajo de las opiniones de Noctua) en vez de al final de la página.
-// Solo se enseñan las que están en castellano o catalán (las guardadas venían en el idioma de
-// cada persona y muchas salían en inglés); el resto se puede leer en Google Maps con el enlace.
+// Primero van las que están en castellano o catalán (las guardadas antiguas venían en el idioma de
+// cada persona y muchas salían en inglés). 17/11/2026: antes las de otro idioma se ocultaban y muchas fichas se quedaban sin
+// ninguna opinión; ahora, si hay menos de cuatro en castellano o catalán, se completa con las de otro idioma (con su etiqueta, para
+// quien lee en castellano o catalán). Las nuevas ya se descargan traducidas al castellano (ver el cron refresh-google-data).
 export default function ClubReviews({
   clubId,
   rating,
@@ -30,8 +32,9 @@ export default function ClubReviews({
   mapsUrl?: string | null
   embedded?: boolean
 }) {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const [reviews, setReviews] = useState<Review[] | null>(null)
+  const tagOtherLang = locale === "es" || locale === "ca"
 
   useEffect(() => {
     supabase
@@ -41,8 +44,10 @@ export default function ClubReviews({
       .order("rating", { ascending: false })
       .limit(10)
       .then(({ data }) => {
-        const all = (data || []) as Review[]
-        setReviews(all.filter((r) => isSpanishOrCatalan(r.text)).slice(0, 4))
+        const all = ((data || []) as Review[]).filter((r) => r.text && r.text.trim())
+        const preferred = all.filter((r) => isSpanishOrCatalan(r.text))
+        const others = all.filter((r) => !isSpanishOrCatalan(r.text))
+        setReviews([...preferred, ...others].slice(0, 4))
       })
   }, [clubId, table, column])
 
@@ -93,6 +98,7 @@ export default function ClubReviews({
                 {r.relative_time && <p className="truncate text-[11px] text-zinc-400">{r.relative_time}</p>}
               </div>
               {r.text && <p className="mt-2 line-clamp-5 text-xs leading-relaxed text-zinc-300 sm:line-clamp-6">{r.text}</p>}
+              {tagOtherLang && !isSpanishOrCatalan(r.text) && <p className="mt-auto pt-2 text-[10px] font-semibold text-zinc-500">{t("clubPage.reviewOtherLang")}</p>}
             </article>
           ))}
         </div>

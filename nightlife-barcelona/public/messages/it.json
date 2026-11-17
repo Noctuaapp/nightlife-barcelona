@@ -197,7 +197,9 @@
     "catNeighborhood": "Feste di quartiere",
     "catConcertSub": "Musica dal vivo e concerti",
     "catFestivalSub": "Musica e cultura",
-    "catNeighborhoodSub": "Le feste maggiori di Barcellona"
+    "catNeighborhoodSub": "Le feste maggiori di Barcellona",
+    "catAll": "Tutti",
+    "catAllSub": "Concerti, festival e feste, tutto insieme"
   },
   "essentials": {
     "title": "Essenziali",
@@ -1023,7 +1025,8 @@
     "fShisha": "Shisha",
     "fAccessible": "Accessibile in sedia a rotelle",
     "stopAt": "Fermata {name}",
-    "reviewsGoogleFallback": "Nel frattempo, guarda cosa dicono su Google Maps"
+    "reviewsGoogleFallback": "Nel frattempo, guarda cosa dicono su Google Maps",
+    "reviewOtherLang": "In un'altra lingua"
   },
   "eventPage": {
     "dateTbc": "Data da confermare",

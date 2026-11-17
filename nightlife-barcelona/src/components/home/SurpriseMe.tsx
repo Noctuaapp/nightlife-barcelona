@@ -12,6 +12,7 @@ import SharePlanButton from "../plan/SharePlanButton"
 import NocSays, { useOwnLevelColor } from "../mascot/NocSays"
 import { useLanguage } from "../../context/LanguageContext"
 import { useCityT } from "../../lib/useCityT"
+import { track } from "../../lib/track"
 import { otherCityName } from "../../lib/cities"
 import { getDeniedClubIds } from "../../lib/deniedVenues"
 import { effectiveHoursStatus, effectiveOpenNow } from "../../lib/scheduleNotices"
@@ -30,6 +31,9 @@ import { clubDistance, hasFreeEntry, MOOD_IDS, moodScore, NO_EXTRAS, pickSurpris
 // «Filtros» (cerca de mí, entrada gratis, terraza, ambiente LGTBI+, zona). Cambiar cualquiera vuelve a
 // tirar al instante, así se ve qué hace cada filtro. «Otra opción» no repite; la flecha vuelve atrás.
 // La lógica de elección está en lib/surprise.ts (con tests) y no ha cambiado.
+//
+// Analítica (17/11/2026): surprise_open (pulsa el botón), surprise_result (la ruleta enseña un local; meta.mood, meta.filters y meta.again si
+// es «Otra opción») y surprise_click (pulsa «Ver ficha» o «Cómo llegar»). Se leen en Admin › Datos › Resumen › Sorpréndeme (supabase/128).
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Club = Record<string, any>
@@ -202,6 +206,8 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
         setSeen((s) => (fresh ? [chosen.id] : [...s, chosen.id]))
         setTrail((tr) => (fresh ? { items: [chosen], at: 0 } : { items: [...tr.items.slice(0, tr.at + 1), chosen], at: tr.at + 1 }))
         setPhase("result")
+        const filterCount = (f.extras.free ? 1 : 0) + (f.extras.terrace ? 1 : 0) + (f.extras.lgtbi ? 1 : 0) + (f.near ? 1 : 0) + (f.zone ? 1 : 0)
+        track("surprise_result", { itemType: "surprise", itemName: String(chosen.name).slice(0, 120), meta: { club_id: chosen.id, mood: f.mood, filters: filterCount, again: !fresh } })
         try {
           if (!reduceMotion()) navigator.vibrate?.(15)
         } catch {
@@ -399,7 +405,10 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
         <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-center">
           <button
             ref={triggerRef}
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              track("surprise_open", { itemType: "surprise" })
+              setOpen(true)
+            }}
             className="btn-pill btn-primary surprise-cta inline-flex items-center justify-center gap-2 px-8 py-4 text-base active:scale-95 motion-reduce:transition-none"
           >
             <Dices size={18} aria-hidden="true" /> {t("surprise.cta")}
@@ -650,6 +659,7 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
                           href={directions}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={() => track("surprise_click", { itemType: "surprise", itemName: String(card.name).slice(0, 120), meta: { club_id: card.id, action: "directions" } })}
                           className="btn-pill btn-secondary inline-flex items-center justify-center px-3 py-3 text-center text-sm"
                         >
                           {t("surprise.directions")}
@@ -694,7 +704,14 @@ export default function SurpriseMe({ clubs }: { clubs: Club[] }) {
                   >
                     <Dices size={17} aria-hidden="true" /> {t("surprise.another")}
                   </button>
-                  <Link href={href} onClick={() => setOpen(false)} className="btn-pill btn-primary flex h-12 flex-1 items-center justify-center px-3 text-center text-sm">
+                  <Link
+                    href={href}
+                    onClick={() => {
+                      track("surprise_click", { itemType: "surprise", itemName: String(card.name).slice(0, 120), meta: { club_id: card.id, action: "venue" } })
+                      setOpen(false)
+                    }}
+                    className="btn-pill btn-primary flex h-12 flex-1 items-center justify-center px-3 text-center text-sm"
+                  >
                     {t("surprise.seeVenue")}
                   </Link>
                 </div>

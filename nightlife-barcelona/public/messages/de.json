@@ -197,7 +197,9 @@
     "catNeighborhood": "Stadtteilfeste",
     "catConcertSub": "Live-Musik und Gigs",
     "catFestivalSub": "Musik und Kultur",
-    "catNeighborhoodSub": "Die großen Stadtteilfeste Barcelonas"
+    "catNeighborhoodSub": "Die großen Stadtteilfeste Barcelonas",
+    "catAll": "Alle",
+    "catAllSub": "Konzerte, Festivals und Feste, alles in einer Liste"
   },
   "essentials": {
     "title": "Wichtiges",
@@ -1023,7 +1025,8 @@
     "fShisha": "Shisha",
     "fAccessible": "Rollstuhlgerecht",
     "stopAt": "Haltestelle {name}",
-    "reviewsGoogleFallback": "Schau dir in der Zwischenzeit die Meinungen auf Google Maps an"
+    "reviewsGoogleFallback": "Schau dir in der Zwischenzeit die Meinungen auf Google Maps an",
+    "reviewOtherLang": "In einer anderen Sprache"
   },
   "eventPage": {
     "dateTbc": "Datum folgt",

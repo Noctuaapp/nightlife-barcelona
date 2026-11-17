@@ -197,7 +197,9 @@
     "catNeighborhood": "Festes de barri",
     "catConcertSub": "Directes i concerts",
     "catFestivalSub": "Música i cultura",
-    "catNeighborhoodSub": "Les festes majors de Barcelona"
+    "catNeighborhoodSub": "Les festes majors de Barcelona",
+    "catAll": "Tots",
+    "catAllSub": "Concerts, festivals i festes, tot junt"
   },
   "essentials": {
     "title": "Essencials",
@@ -1023,7 +1025,8 @@
     "rideTo": "Destinació",
     "ticketsAdvance": "Entrades anticipades",
     "fCapacityLabel": "Aforament",
-    "reviewsGoogleFallback": "Mentrestant, mira què diuen a Google Maps"
+    "reviewsGoogleFallback": "Mentrestant, mira què diuen a Google Maps",
+    "reviewOtherLang": "En un altre idioma"
   },
   "eventPage": {
     "dateTbc": "Data per confirmar",

@@ -197,7 +197,9 @@
     "catNeighborhood": "Fêtes de quartier",
     "catConcertSub": "Concerts et live",
     "catFestivalSub": "Musique et culture",
-    "catNeighborhoodSub": "Les fêtes majeures de Barcelone"
+    "catNeighborhoodSub": "Les fêtes majeures de Barcelone",
+    "catAll": "Tous",
+    "catAllSub": "Concerts, festivals et fêtes, tout au même endroit"
   },
   "essentials": {
     "title": "Essentiels",
@@ -1023,7 +1025,8 @@
     "fShisha": "Chicha",
     "fAccessible": "Accessible en fauteuil roulant",
     "stopAt": "Arrêt {name}",
-    "reviewsGoogleFallback": "En attendant, voyez ce qu'on en dit sur Google Maps"
+    "reviewsGoogleFallback": "En attendant, voyez ce qu'on en dit sur Google Maps",
+    "reviewOtherLang": "Dans une autre langue"
   },
   "eventPage": {
     "dateTbc": "Date à confirmer",

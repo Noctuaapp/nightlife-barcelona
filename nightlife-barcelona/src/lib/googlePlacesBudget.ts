@@ -18,6 +18,16 @@ export function fetchRichData(): boolean {
   return v === "true" || v === "1"
 }
 
+// Si está a "true"/"1", el cron de clubs pide también las reseñas (traducidas al castellano) de los clubs que aún no las tienen bajadas
+// (17/11/2026). Es independiente de GOOGLE_PLACES_FETCH_RICH_DATA: no descarga fotos. Pedir `reviews` sube esa llamada al nivel
+// «Place Details Enterprise + Atmosphere» (25 USD por 1.000 llamadas, con 1.000 al mes gratis) en vez de «Enterprise» (20 USD por 1.000):
+// son 5 USD más por cada 1.000 llamadas, y no se añaden llamadas, se cambia el contenido de la que ya se hace. Va por el mismo tope diario
+// (GOOGLE_PLACES_DAILY_LIMIT). Apagada por defecto. Necesita el SQL 129 (columna clubs.google_reviews_at); sin él no hace nada.
+export function fetchReviews(): boolean {
+  const v = process.env.GOOGLE_PLACES_FETCH_REVIEWS
+  return v === "true" || v === "1"
+}
+
 function today(): string {
   return new Date().toISOString().slice(0, 10)
 }

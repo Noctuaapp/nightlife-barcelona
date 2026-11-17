@@ -197,7 +197,9 @@
     "catNeighborhood": "Fiestas de barrio",
     "catConcertSub": "Directos y conciertos",
     "catFestivalSub": "Música y cultura",
-    "catNeighborhoodSub": "Las fiestas mayores de Barcelona"
+    "catNeighborhoodSub": "Las fiestas mayores de Barcelona",
+    "catAll": "Todos",
+    "catAllSub": "Conciertos, festivales y fiestas, todo junto"
   },
   "essentials": {
     "title": "Esenciales",
@@ -1023,7 +1025,8 @@
     "rideTo": "Destino",
     "ticketsAdvance": "Entradas anticipadas",
     "fCapacityLabel": "Aforo",
-    "reviewsGoogleFallback": "Mientras tanto, mira qué dicen en Google Maps"
+    "reviewsGoogleFallback": "Mientras tanto, mira qué dicen en Google Maps",
+    "reviewOtherLang": "En otro idioma"
   },
   "eventPage": {
     "dateTbc": "Fecha por confirmar",

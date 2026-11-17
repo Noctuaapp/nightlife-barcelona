@@ -23,6 +23,18 @@ import { Pill, Banknote, UtensilsCrossed, TrainFront, Bus, ShoppingCart, Dices, 
 // reales y teléfonos, no con las oficinas de Uber/Cabify que había antes.
 export type EssentialGroup = "health" | "move" | "food" | "personal" | "other"
 export type Availability = "schedule" | "always" | "on_call"
+
+// Color de acento de cada GRUPO (17/11/2026), para las tarjetas visuales de la portada de Esenciales (como las fotos de Clubs, pero con
+// degradado e icono grande porque no hay buenas fotos de farmacias o cajeros). Cinco colores en total, uno por grupo y no por categoría
+// (la auditoría de octubre quitó «un color por categoría»). Se evitan el verde (reservado a «abierto»), el ámbar (avisos) y el rojo
+// (solo «Me ha pasado algo» y el 112).
+export const GROUP_ACCENT: Record<EssentialGroup, string> = {
+  health: "#f472b6",
+  move: "#38bdf8",
+  food: "#fb923c",
+  personal: "#a08bff",
+  other: "#818cf8",
+}
 export type EssentialCategory = {
   key: string
   slug: string
