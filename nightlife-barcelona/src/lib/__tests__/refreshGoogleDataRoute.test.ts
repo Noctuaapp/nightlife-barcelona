@@ -138,7 +138,7 @@ describe("refresh-google-data · alcance por ciudad", () => {
       expect(hasOp(b.ops, "or", EXCLUDE_PRELAUNCH_OR)).toBe(true)
       expect(b.ops.some((o: any[]) => o[0] === "ilike")).toBe(false)
     }
-    // El paso 0 de siempre no mira la fecha de intento.
+    // El paso 0 no filtra por «sin intentar» a secas (eso es de una ciudad concreta): en Barcelona deja reintentar pasados unos días.
     const step0 = clubReads().find((b) => hasOp(b.ops, "is", "google_place_id", null) && !b.ops.some((o: any[]) => o[1]?.head))!
     expect(step0.ops.some((o: any[]) => o[0] === "is" && o[1] === "google_last_refreshed_at")).toBe(false)
   })
@@ -238,6 +238,66 @@ describe("refresh-google-data · búsqueda de ficha en Madrid", () => {
     const json = await (await call("?city=madrid")).json()
     expect(json.remaining).toBe(2) // el recuento de «sin ficha y sin intentar» lo da la base de datos (falsa) tras el paso 0
     expect(json.city).toBe("Madrid")
+  })
+})
+
+describe("refresh-google-data · búsqueda de ficha en Barcelona sin repetir las que fallan", () => {
+  const club = { id: "c1", name: "Club Fantasma", address: "Calle Falsa 1", neighborhood: "Gràcia" }
+  const withPlace = { id: "c9", name: "Teatro Barceló", image: null, gallery: "x", google_place_id: "PLACE", website: null, instagram: null, tiktok: null }
+  const step0Ops = () => clubReads().find((b) => hasOp(b.ops, "is", "google_place_id", null) && !b.ops.some((o: any[]) => o[1]?.head))!.ops
+  const stampsOnly = () =>
+    clubWrites()
+      .map((b) => b.ops.find((o: any[]) => o[0] === "update")[1])
+      .filter((x: any) => Object.keys(x).length === 1 && typeof x.google_last_refreshed_at === "string")
+  const daysAgo = (iso: string) => (Date.now() - new Date(iso).getTime()) / 86400000
+
+  it("solo busca los clubs sin intentar o intentados hace más de 7 días", async () => {
+    await call()
+    const orOp = step0Ops().find((o: any[]) => o[0] === "or" && String(o[1]).startsWith("google_last_refreshed_at.is.null,google_last_refreshed_at.lt."))!
+    expect(orOp).toBeTruthy()
+    const days = daysAgo(String(orOp[1]).split(".lt.")[1])
+    expect(days).toBeGreaterThan(6.9)
+    expect(days).toBeLessThan(7.1)
+  })
+
+  it("en una ciudad concreta sigue mirando solo los que no se han intentado (sin plazo de reintento)", async () => {
+    await call("?city=madrid")
+    expect(step0Ops().some((o: any[]) => o[0] === "is" && o[1] === "google_last_refreshed_at")).toBe(true)
+    expect(step0Ops().some((o: any[]) => o[0] === "or" && String(o[1]).includes("google_last_refreshed_at"))).toBe(false)
+  })
+
+  it("el que Google no encuentra se marca con la fecha de hoy, para no volver a buscarlo en cada vuelta", async () => {
+    state.clubsWithoutPlace = [club]
+    state.googleReply = () => ({ status: 200, body: {} })
+    const json = await (await call()).json()
+    expect(json.newlyAssigned[0].status).toBe("not_found")
+    const stamps = stampsOnly()
+    expect(stamps).toHaveLength(1)
+    expect(daysAgo(stamps[0].google_last_refreshed_at)).toBeLessThan(0.01)
+  })
+
+  it("un 429 en la búsqueda no corta el proceso (las fichas tienen otra cuota) y ese club se reintenta en ~1 día", async () => {
+    state.clubsWithoutPlace = [club]
+    state.clubsToRefresh = [withPlace]
+    state.googleReply = (url) =>
+      url.endsWith(":searchText") ? { status: 429, body: {} } : { status: 200, body: { displayName: { text: "Teatro Barceló" }, types: ["night_club"], rating: 4.4, userRatingCount: 50 } }
+    const res = await call()
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.newlyAssigned[0].status).toBe("error")
+    expect(json.results[0].status).toBe("ok")
+    const stamps = stampsOnly()
+    expect(stamps).toHaveLength(1)
+    expect(daysAgo(stamps[0].google_last_refreshed_at)).toBeGreaterThan(5.9)
+    expect(daysAgo(stamps[0].google_last_refreshed_at)).toBeLessThan(6.1)
+  })
+
+  it("en una ciudad concreta un 429 en la búsqueda sigue cortando con error 429 (como siempre)", async () => {
+    state.clubsWithoutPlace = [club]
+    state.googleReply = () => ({ status: 429, body: {} })
+    const res = await call("?city=madrid")
+    expect(res.status).toBe(429)
+    expect(stampsOnly()).toHaveLength(0)
   })
 })
 

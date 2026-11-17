@@ -114,11 +114,18 @@ export async function GET(req: Request) {
       .is("google_place_id", null)
       .or("manual_photos.is.null,manual_photos.eq.false")
   )
+  // Barcelona (17/11/2026): antes la búsqueda se repetía en CADA vuelta con los mismos clubs que Google no encuentra (5 búsquedas de pago por
+  // vuelta), y con el botón del panel dando muchas vueltas seguidas gastaba la cuota diaria de búsquedas (100) sin avanzar. Ahora a los que
+  // falla se les pone la fecha y no se vuelve a buscar hasta pasados 7 días; un club nuevo (sin fecha) se busca enseguida.
+  const SEARCH_RETRY_DAYS = 7
   if (scopeCity) step0 = step0.is("google_last_refreshed_at", null)
+  else step0 = step0.or(`google_last_refreshed_at.is.null,google_last_refreshed_at.lt.${new Date(Date.now() - SEARCH_RETRY_DAYS * 86400000).toISOString()}`)
   const { data: newClubs } = await step0.limit(scopeCity && BIG_BUDGET ? 10 : 5)
 
-  const markTried = async (id: string) => {
-    if (scopeCity) await supabase.from("clubs").update({ google_last_refreshed_at: new Date().toISOString() }).eq("id", id)
+  // `backoff`: fecha de hace (SEARCH_RETRY_DAYS - 1) días, para que se reintente en ~1 día (se usa cuando Google no llegó ni a buscar: 429).
+  const markTried = async (id: string, backoff = false) => {
+    const when = new Date(Date.now() - (backoff ? (SEARCH_RETRY_DAYS - 1) * 86400000 : 0)).toISOString()
+    await supabase.from("clubs").update({ google_last_refreshed_at: when }).eq("id", id)
   }
 
   const newlyAssigned = await Promise.all(
@@ -139,8 +146,11 @@ export async function GET(req: Request) {
           body: JSON.stringify({ textQuery: query, locationBias: bias }),
         })
         if (res.status === 429) {
-          quotaHit = true
-          return { club: club.name, status: "error", message: "Google ha alcanzado el tope diario de la cuota (429)" }
+          // En una ciudad concreta se corta (como siempre). En Barcelona la cuota de búsquedas es otra distinta de la de fichas: no se
+          // para todo el proceso (las reseñas y valoraciones siguen), y el club se reintenta en ~1 día en vez de en cada vuelta.
+          if (scopeCity) quotaHit = true
+          else await markTried(club.id, true)
+          return { club: club.name, status: "error", message: "Google ha alcanzado el tope diario de la cuota de búsquedas (429)" }
         }
         const json = await res.json()
         const place = json?.places?.[0]
