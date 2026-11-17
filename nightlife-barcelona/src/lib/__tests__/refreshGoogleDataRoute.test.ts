@@ -10,6 +10,10 @@ const state = vi.hoisted(() => ({
   // Respuesta de la consulta «¿qué clubs de la tanda aún no tienen las reseñas bajadas?» (columna clubs.google_reviews_at).
   reviewFlags: [] as any[],
   reviewFlagsError: null as any,
+  // Clubs que devuelve la consulta «los que aún no tienen reseñas» (null = los mismos de la tanda normal) y cuántos quedan por bajar.
+  pendingBatch: null as any[] | null,
+  reviewsLeft: 0,
+  revalidated: [] as any[][],
   builders: [] as any[],
   googleCalls: [] as { url: string; init?: any }[],
   googleReply: (_url: string, _init?: any): { status: number; body: any } => ({ status: 200, body: {} }),
@@ -18,6 +22,7 @@ const state = vi.hoisted(() => ({
   clubsWithoutPlace: [] as any[],
 }))
 
+vi.mock("next/cache", () => ({ revalidatePath: (...a: any[]) => state.revalidated.push(a) }))
 vi.mock("@/lib/adminAuth", () => ({ isAuthorizedCronRequest: async () => true }))
 vi.mock("@/lib/googleWebsite", () => ({ classifyGoogleWebsite: () => ({}) }))
 vi.mock("@/lib/googlePlacesBudget", () => ({
@@ -48,7 +53,10 @@ function makeBuilder(table: string) {
     const wantsNoPlace = b.ops.some((o: any[]) => o[0] === "is" && o[1] === "google_place_id")
     const isWrite = b.ops.some((o: any[]) => ["update", "delete", "insert"].includes(o[0]))
     let out: any
+    const asksReviewsPending = b.ops.some((o: any[]) => o[0] === "is" && o[1] === "google_reviews_at")
     if (table === "clubs" && b.ops.some((o: any[]) => o[0] === "in")) out = { data: state.reviewFlags, error: state.reviewFlagsError }
+    else if (table === "clubs" && asksReviewsPending && selectsCount) out = { count: state.reviewsLeft, error: state.reviewFlagsError }
+    else if (table === "clubs" && asksReviewsPending) out = { data: state.pendingBatch ?? state.clubsToRefresh, error: state.reviewFlagsError }
     else if (isWrite || table !== "clubs") out = { data: null, error: null }
     else if (selectsCount) out = { count: wantsNoPlace ? state.clubsWithoutPlace.length : state.clubsToRefresh.length, error: null }
     else out = { data: wantsNoPlace ? state.clubsWithoutPlace : state.clubsToRefresh, error: null }
@@ -89,6 +97,9 @@ beforeEach(() => {
   state.reviews = false
   state.reviewFlags = []
   state.reviewFlagsError = null
+  state.pendingBatch = null
+  state.reviewsLeft = 0
+  state.revalidated = []
   state.builders = []
   state.googleCalls = []
   state.clubsToRefresh = []
@@ -340,5 +351,96 @@ describe("refresh-google-data · reseñas de Google (GOOGLE_PLACES_FETCH_REVIEWS
     await call()
     expect(details().init.headers["X-Goog-FieldMask"]).not.toContain("reviews")
     expect(clubWrites().map((b) => b.ops.find((o: any[]) => o[0] === "update")[1]).some((x: any) => "google_reviews_at" in x)).toBe(false)
+  })
+
+  describe("tanda y «quedan» con las reseñas pendientes", () => {
+    const mainBatch = () => clubReads().filter((b) => b.ops.some((o: any[]) => o[0] === "order"))
+
+    it("la tanda empieza por los clubs sin reseñas bajadas (y que Google dice que tienen alguna)", async () => {
+      state.reviews = true
+      state.rich = false
+      state.clubsToRefresh = [club]
+      state.reviewFlags = [{ id: "c9", google_reviews_at: null, google_review_count: 120 }]
+      state.googleReply = () => ({ status: 200, body: place })
+      await call()
+      const pending = mainBatch().find((b) => hasOp(b.ops, "is", "google_reviews_at", null))!
+      expect(pending).toBeTruthy()
+      expect(hasOp(pending.ops, "or", "google_review_count.is.null,google_review_count.gt.0")).toBe(true)
+      expect(hasOp(pending.ops, "limit", 8)).toBe(true)
+      expect(details()).toBeTruthy()
+    })
+
+    it("sin variable no hay consulta de pendientes: solo la tanda de siempre", async () => {
+      state.clubsToRefresh = [club]
+      state.googleReply = () => ({ status: 200, body: { ...place, reviews: undefined } })
+      await call()
+      expect(mainBatch().some((b) => hasOp(b.ops, "is", "google_reviews_at", null))).toBe(false)
+    })
+
+    it("si ya no queda ninguno pendiente, sigue con la tanda de siempre (los más antiguos)", async () => {
+      state.reviews = true
+      state.pendingBatch = []
+      state.clubsToRefresh = [club]
+      state.googleReply = () => ({ status: 200, body: { ...place, reviews: undefined } })
+      await call()
+      expect(mainBatch().length).toBe(2)
+      expect(details()).toBeTruthy()
+    })
+
+    it("si falla la consulta de pendientes (falta el SQL 129), sigue con la tanda de siempre", async () => {
+      state.reviews = true
+      state.pendingBatch = [{ ...club, id: "otro", google_place_id: "OTRO" }]
+      state.reviewFlagsError = { message: "column does not exist" }
+      state.clubsToRefresh = [club]
+      state.googleReply = () => ({ status: 200, body: { ...place, reviews: undefined } })
+      await call()
+      expect(state.googleCalls.some((c) => c.url.includes("/places/PLACE"))).toBe(true)
+      expect(state.googleCalls.some((c) => c.url.includes("/places/OTRO"))).toBe(false)
+    })
+
+    it("«quedan» cuenta los clubs a los que aún les faltan reseñas, para que el botón siga hasta bajarlas todas", async () => {
+      state.reviews = true
+      state.clubsToRefresh = [club]
+      state.reviewFlags = [{ id: "c9", google_reviews_at: null, google_review_count: 120 }]
+      state.reviewsLeft = 7
+      state.googleReply = () => ({ status: 200, body: place })
+      const res = await call()
+      expect((await res.json()).remaining).toBe(7)
+    })
+
+    it("si en la vuelta no se pudo con ninguno (todo errores) no se sigue dando vueltas", async () => {
+      state.reviews = true
+      state.clubsToRefresh = [club]
+      state.reviewFlags = [{ id: "c9", google_reviews_at: null, google_review_count: 120 }]
+      state.reviewsLeft = 7
+      state.googleReply = () => ({ status: 404, body: {} })
+      const res = await call()
+      expect((await res.json()).remaining).toBe(0)
+    })
+
+    it("una ficha que ya no existe (404) también da las reseñas por intentadas para que no cuente para siempre", async () => {
+      state.reviews = true
+      state.clubsToRefresh = [club]
+      state.reviewFlags = [{ id: "c9", google_reviews_at: null, google_review_count: 120 }]
+      state.googleReply = () => ({ status: 404, body: {} })
+      await call()
+      const upd = clubWrites().map((b) => b.ops.find((o: any[]) => o[0] === "update")[1])
+      expect(upd.some((x: any) => "google_reviews_at" in x && "google_last_refreshed_at" in x)).toBe(true)
+    })
+
+    it("al bajar reseñas nuevas refresca las fichas cacheadas; si no se baja ninguna, no", async () => {
+      state.reviews = true
+      state.clubsToRefresh = [club]
+      state.reviewFlags = [{ id: "c9", google_reviews_at: null, google_review_count: 120 }]
+      state.googleReply = () => ({ status: 200, body: place })
+      await call()
+      expect(state.revalidated).toEqual([["/clubs/[slug]", "page"]])
+
+      state.revalidated = []
+      state.reviews = false
+      state.googleReply = () => ({ status: 200, body: { ...place, reviews: undefined } })
+      await call()
+      expect(state.revalidated).toEqual([])
+    })
   })
 })

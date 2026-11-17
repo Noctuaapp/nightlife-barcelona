@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { createClient } from "@supabase/supabase-js"
 import { isAuthorizedCronRequest } from "@/lib/adminAuth"
 import { startJobBudget, recordGoogleCalls, googleFetch, fetchRichData, fetchReviews, dailyLimit } from "@/lib/googlePlacesBudget"
@@ -173,15 +174,32 @@ export async function GET(req: Request) {
   // Los clubs marcados como "manual_photos" (el admin ha quitado o subido fotos a mano desde el
   // panel) los deja en paz el pipeline automático — ni fotos ni place_id — para no pisar lo que
   // se haya curado a mano.
-  const { data: clubs, error } = await inScope(
+  const clubCols = "id, name, image, gallery, google_place_id, website, instagram, tiktok"
+  const clubBase = () =>
     supabase
       .from("clubs")
-      .select("id, name, image, gallery, google_place_id, website, instagram, tiktok")
+      .select(clubCols)
       .not("google_place_id", "is", null)
       .or("manual_photos.is.null,manual_photos.eq.false")
-  )
-    .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
-    .limit(BATCH_SIZE)
+
+  // Reseñas (17/11/2026): con GOOGLE_PLACES_FETCH_REVIEWS activa, la tanda empieza por los clubs que aún no tienen las suyas bajadas
+  // (los que Google dice que no tienen ninguna, no). Antes la tanda eran siempre «los 8 más antiguos» aunque ya tuvieran reseñas, y el
+  // botón del panel paraba tras una sola vuelta porque «quedan» solo contaba clubs sin fecha de actualización. Si la columna aún no existe
+  // (SQL 129) o ya no queda ninguno pendiente, se sigue con la tanda de siempre.
+  let pendingBatch: any[] | null = null
+  if (fetchReviews()) {
+    const pendingRes = await inScope(clubBase())
+      .is("google_reviews_at", null)
+      .or("google_review_count.is.null,google_review_count.gt.0")
+      .order("google_last_refreshed_at", { ascending: true, nullsFirst: true })
+      .limit(BATCH_SIZE)
+    if (!pendingRes.error && (pendingRes.data || []).length > 0) pendingBatch = pendingRes.data
+  }
+
+  const { data: regularBatch, error } = pendingBatch
+    ? { data: pendingBatch, error: null }
+    : await inScope(clubBase()).order("google_last_refreshed_at", { ascending: true, nullsFirst: true }).limit(BATCH_SIZE)
+  const clubs = regularBatch
 
   // Reseñas (17/11/2026): solo si GOOGLE_PLACES_FETCH_REVIEWS está activa, a los clubs de esta tanda que aún no tienen las suyas bajadas
   // (columna clubs.google_reviews_at, SQL 129) y que Google dice que tienen alguna. Se pide por separado y sin romper nada: si la columna
@@ -264,7 +282,11 @@ export async function GET(req: Request) {
             quotaHit = true // sin fecha: se reintenta cuando se reinicie la cuota
           } else {
             // Ficha caducada o inexistente (404...): se le pone la fecha para que pase al final de la cola y no la bloquee.
-            await supabase.from("clubs").update({ google_last_refreshed_at: new Date().toISOString() }).eq("id", club.id)
+            // Las reseñas se dan también por intentadas, para que «quedan» no cuente para siempre una ficha que Google ya no tiene.
+            await supabase
+              .from("clubs")
+              .update({ google_last_refreshed_at: new Date().toISOString(), ...(wantsReviews ? { google_reviews_at: new Date().toISOString() } : {}) })
+              .eq("id", club.id)
           }
           return { club: club.name, status: "google_error", httpStatus: detailsRes.status }
         }
@@ -381,7 +403,31 @@ export async function GET(req: Request) {
     })
   )
 
-  const remaining = (totalWithPlaceId ?? 0) - (alreadyRefreshed ?? 0) - results.length + untriedWithoutPlaceId
+  let remaining = (totalWithPlaceId ?? 0) - (alreadyRefreshed ?? 0) - results.length + untriedWithoutPlaceId
+
+  // Con las reseñas activas, «quedan» cuenta también los clubs a los que aún les faltan (así el botón sigue dando vueltas hasta bajarlas todas).
+  // Si en esta vuelta no se pudo con ninguno (todo errores) no se cuenta, para no dar vueltas en vano contra un fallo.
+  if (fetchReviews()) {
+    const { count: reviewsLeft, error: reviewsLeftError } = await inScope(
+      supabase
+        .from("clubs")
+        .select("*", { count: "exact", head: true })
+        .not("google_place_id", "is", null)
+        .or("manual_photos.is.null,manual_photos.eq.false")
+    )
+      .is("google_reviews_at", null)
+      .or("google_review_count.is.null,google_review_count.gt.0")
+    if (!reviewsLeftError && results.some((r: any) => r.status === "ok")) remaining = Math.max(remaining, reviewsLeft ?? 0)
+  }
+
+  // Las fichas de club se cachean 6 h: tras bajar reseñas nuevas se refrescan para que se vean ya (sin esto, hasta 6 h de retraso).
+  if (results.some((r: any) => r.status === "ok" && r.reviews > 0)) {
+    try {
+      revalidatePath("/clubs/[slug]", "page")
+    } catch {
+      // fuera de una petición de Next (pruebas) no hay nada que refrescar
+    }
+  }
 
   await recordGoogleCalls(supabase, counter.count)
 
