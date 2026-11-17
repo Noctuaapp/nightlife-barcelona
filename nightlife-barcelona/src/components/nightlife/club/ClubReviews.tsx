@@ -86,24 +86,42 @@ export default function ClubReviews({
       {reviews.length > 0 && (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {reviews.map((r) => (
-            <article key={r.id} className="flex aspect-square flex-col overflow-hidden rounded-card border border-white/10 bg-surface p-3.5 sm:p-4">
-              <div className="flex items-center gap-2">
-                <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-ink">
-                  {(r.author_name || "?").trim().charAt(0).toUpperCase()}
-                </span>
-                <p className="min-w-0 truncate text-xs font-semibold text-ink">{r.author_name}</p>
-              </div>
-              <div className="mt-2 flex items-center justify-between gap-2">
-                {r.rating ? <Stars rating={r.rating} size="h-3 w-3" /> : <span />}
-                {r.relative_time && <p className="truncate text-[11px] text-zinc-400">{r.relative_time}</p>}
-              </div>
-              {r.text && <p className="mt-2 line-clamp-5 text-xs leading-relaxed text-zinc-300 sm:line-clamp-6">{r.text}</p>}
-              {tagOtherLang && !isSpanishOrCatalan(r.text) && <p className="mt-auto pt-2 text-[10px] font-semibold text-zinc-500">{t("clubPage.reviewOtherLang")}</p>}
-            </article>
+            <ReviewCard key={r.id} r={r} tagOtherLang={tagOtherLang} />
           ))}
         </div>
       )}
     </section>
+  )
+}
+
+// Las reseñas normales salen enteras; solo las muy largas se recortan a 6 líneas con «Leer más», para que la ficha no se alargue.
+// (17/11/2026: antes cada tarjeta era un cuadrado fijo y cortaba el texto a media frase.)
+const LONG_REVIEW_CHARS = 200
+
+function ReviewCard({ r, tagOtherLang }: { r: Review; tagOtherLang: boolean }) {
+  const { t } = useLanguage()
+  const [open, setOpen] = useState(false)
+  const long = (r.text || "").length > LONG_REVIEW_CHARS
+  return (
+    <article className="flex flex-col rounded-card border border-white/10 bg-surface p-3.5 sm:p-4">
+      <div className="flex items-center gap-2">
+        <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-ink">
+          {(r.author_name || "?").trim().charAt(0).toUpperCase()}
+        </span>
+        <p className="min-w-0 truncate text-xs font-semibold text-ink">{r.author_name}</p>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
+        {r.rating ? <Stars rating={r.rating} size="h-3 w-3" /> : <span />}
+        {r.relative_time && <p className="text-[11px] text-zinc-400">{r.relative_time}</p>}
+      </div>
+      {r.text && <p className={`mt-2 text-xs leading-relaxed text-zinc-300 ${long && !open ? "line-clamp-6" : ""}`}>{r.text}</p>}
+      {long && (
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="mt-1.5 self-start text-[11px] font-semibold text-brand-soft hover:underline">
+          {open ? t("clubPage.readLess") : t("clubPage.readMore")}
+        </button>
+      )}
+      {tagOtherLang && !isSpanishOrCatalan(r.text) && <p className="mt-auto pt-2 text-[10px] font-semibold text-zinc-500">{t("clubPage.reviewOtherLang")}</p>}
+    </article>
   )
 }
 

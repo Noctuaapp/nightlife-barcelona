@@ -320,8 +320,8 @@ export default function VenueReviews({
           firstOne ? (
             <div className="flex flex-col items-start gap-3 rounded-card border border-white/10 bg-white/[0.03] p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:p-5">
               <div className="flex min-w-0 items-start gap-3">
-                <span aria-hidden="true" className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-warn/15">
-                  <Icon name="star" className="h-5 w-5 text-warn" />
+                <span aria-hidden="true" className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand/15">
+                  <Icon name="star" className="h-5 w-5 text-brand-soft" />
                 </span>
                 <div className="min-w-0">
                   <h2 className="text-base font-semibold text-ink">{t("reviews.firstTitle")}</h2>
@@ -359,7 +359,7 @@ export default function VenueReviews({
                   }}
                   className="rounded-md p-1 transition active:scale-90"
                 >
-                  <Icon name="star" className={`h-8 w-8 text-warn transition ${n <= draftRating ? "" : "opacity-25"}`} />
+                  <Icon name="star" className={`h-8 w-8 ${firstOne ? "text-brand-soft" : "text-warn"} transition ${n <= draftRating ? "" : "opacity-25"}`} />
                 </button>
               ))}
             </div>
