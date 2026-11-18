@@ -94,9 +94,9 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
   const [userLng, setUserLng] = useState<number | null>(null)
   const [nearMeLoading, setNearMeLoading] = useState(false)
   const [nearMeError, setNearMeError] = useState("")
-  // Los eventos pasados se ocultan por defecto (antes salían mezclados, solo atenuados).
-  // Por defecto solo los próximos (04/11/2026, con las categorías los pasados se colaban arriba); el chip «Solo próximos» los vuelve a mostrar.
-  const [hidePast, setHidePast] = useState(true)
+  // 18/11/2026: «Solo próximos» ya NO viene activado al entrar: se ven todos los eventos y el chip «Solo próximos» los filtra
+  // cuando la persona lo pulsa. (Entre el 04/11 y el 18/11 venía activado por defecto.)
+  const [hidePast, setHidePast] = useState(false)
   // 16/11/2026: se quitó el desplegable «Próximos primero» (orden por fecha / más lejanos / destacados): casi repetía «Solo próximos»
   // y se veía mal. Se ordena siempre por fecha, y con una búsqueda activa primero lo más relevante.
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
@@ -163,8 +163,14 @@ export default function EventsExplorer({ initialEvents }: { initialEvents: any[]
     if (search.trim()) {
       // Con búsqueda activa: primero lo más relevante, y a igual relevancia, por fecha.
       arr.sort((a, b) => searchScore(b, search) - searchScore(a, search) || new Date(a.date).getTime() - new Date(b.date).getTime())
+      return arr
     }
-    return arr
+    // 18/11/2026: con «Solo próximos» desactivado, primero salen los eventos que aún no han pasado (por fecha, el más cercano
+    // arriba) y detrás los pasados (el más reciente primero). Dentro de cada grupo se respeta el orden de antes.
+    const upcoming = arr.filter((e) => !isEventPast(e.date, e.date_end))
+    const past = arr.filter((e) => isEventPast(e.date, e.date_end))
+    if (cat === "all") past.reverse()
+    return [...upcoming, ...past]
   }, [filteredEvents, search, cat])
 
   const visibleEvents = sortedEvents.slice(0, visibleCount)
