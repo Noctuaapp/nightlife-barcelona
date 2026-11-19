@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "../system/CityLink"
 import { Phone, X, CarTaxiFront, Bus, Pill, Hospital, PawPrint, UtensilsCrossed, Toilet, Siren, PackageSearch, ChevronRight, type LucideIcon } from "lucide-react"
 import { useLanguage } from "../../context/LanguageContext"
-import { categoryInfo } from "../../lib/essentialCategories"
+import { categoryInfo, essentialEntryHref } from "../../lib/essentialCategories"
 import { useSelectedCity } from "../../lib/previewCity"
 import { useCityT } from "../../lib/useCityT"
 
@@ -51,7 +51,7 @@ export default function EmergencyBar({ counts }: { counts: Record<string, number
   if (taxiReady || city === "barcelona") {
     shortcuts.push({
       key: "home",
-      href: taxiReady ? `/essentials/${slug("Taxi")}?near=1` : `/essentials/${slug("Nitbus")}`,
+      href: taxiReady ? `/essentials/${slug("Taxi")}?near=1` : essentialEntryHref(slug("Nitbus"), city),
       icon: taxiReady ? CarTaxiFront : Bus,
       title: t("essentialsHelp.home"),
       hint: tc("essentialsHelp.homeHint"),

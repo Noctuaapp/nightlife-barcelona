@@ -4,7 +4,7 @@ import Link from "../system/CityLink"
 import { stripCityPath } from "../../lib/cities"
 import { Home, Shield, type LucideIcon } from "lucide-react"
 import { usePathname } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
 import { useIdleVisible } from "../../lib/useIdleVisible"
@@ -13,42 +13,20 @@ import { useViewAsUser } from "../../lib/viewAsUser"
 import { EVENTS_HIDDEN } from "../../lib/featureFlags"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
 
-// Colores de la barra (06/11/2026). Antes todo era gris y blanco: la sección activa solo cambiaba a fondo blanco.
-// Ahora cada sección tiene su acento neón (el icono lo lleva siempre, apagado cuando no está activa) y la sección
-// activa se enciende con su color: fondo teñido, aro, brillo en el icono y una línea luminosa arriba. La activa
-// no depende solo del color: también cambia a letra blanca, más peso y la línea de arriba.
-type Accent = "violet" | "pink" | "coral" | "cyan" | "gold"
-const ACCENT: Record<Accent, { icon: string; active: string; glow: string; line: string }> = {
-  violet: {
-    icon: "text-brand-soft/80",
-    active: "bg-linear-to-b from-brand/30 to-brand/5 ring-1 ring-inset ring-brand/50",
-    glow: "text-brand-soft drop-shadow-[0_0_8px_rgba(160,139,255,0.95)]",
-    line: "bg-brand-soft shadow-[0_0_10px_rgba(160,139,255,0.9)]",
-  },
-  pink: {
-    icon: "text-[#ff86bf]/80",
-    active: "bg-linear-to-b from-[#ff4fa3]/30 to-[#ff4fa3]/5 ring-1 ring-inset ring-[#ff4fa3]/50",
-    glow: "text-[#ff86bf] drop-shadow-[0_0_8px_rgba(255,79,163,0.95)]",
-    line: "bg-[#ff86bf] shadow-[0_0_10px_rgba(255,79,163,0.9)]",
-  },
-  coral: {
-    icon: "text-orange-300/80",
-    active: "bg-linear-to-b from-orange-400/30 to-orange-400/5 ring-1 ring-inset ring-orange-400/50",
-    glow: "text-orange-300 drop-shadow-[0_0_8px_rgba(251,146,60,0.95)]",
-    line: "bg-orange-300 shadow-[0_0_10px_rgba(251,146,60,0.9)]",
-  },
-  cyan: {
-    icon: "text-cyan-300/80",
-    active: "bg-linear-to-b from-cyan-400/30 to-cyan-400/5 ring-1 ring-inset ring-cyan-400/50",
-    glow: "text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,0.95)]",
-    line: "bg-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.9)]",
-  },
-  gold: {
-    icon: "text-amber-300/80",
-    active: "bg-linear-to-b from-amber-300/30 to-amber-300/5 ring-1 ring-inset ring-amber-300/50",
-    glow: "text-amber-200 drop-shadow-[0_0_8px_rgba(252,211,77,0.95)]",
-    line: "bg-amber-200 shadow-[0_0_10px_rgba(252,211,77,0.9)]",
-  },
+// Barra de abajo. 19/11/2026: se quitan los neón y los brillos sueltos. Cápsula de cristal oscuro con borde de luz y botones iguales
+// entre sí; la sección en la que estás se llena con una pieza de cristal con volumen que se DESLIZA hasta ella y cambia de color
+// según la sección (violeta, magenta, naranja, turquesa, dorado; clases «ui-dock» en globals.css). La activa no depende solo del
+// color: también cambia a letra blanca, más peso, icono más grueso y el relleno.
+
+// Color de la pieza activa de cada sección (arriba, abajo, contorno, resplandor). Todos son el mismo cristal con volumen, en tonos
+// profundos para que la letra blanca se lea bien. Antes eran neón; ahora son cristal sobrio.
+type Tone = [string, string, string, string]
+const TONES: Record<string, Tone> = {
+  home: ["#8d70ff", "#6a46f5", "#4f2fd0", "rgb(124 92 255 / 0.85)"],
+  clubs: ["#d946b0", "#a21caf", "#7a1488", "rgb(217 70 168 / 0.8)"],
+  events: ["#ea7a1a", "#b45309", "#85400a", "rgb(245 158 11 / 0.75)"],
+  essentials: ["#14b8a6", "#0f766e", "#0b5750", "rgb(45 212 191 / 0.7)"],
+  admin: ["#d9a21b", "#a16207", "#774a05", "rgb(234 179 8 / 0.7)"],
 }
 
 export default function BottomNav() {
@@ -74,14 +52,14 @@ export default function BottomNav() {
   // pulsar una tecla.
   const visible = useIdleVisible(1500, pathname)
 
-  const navItems: { label: string; href: string; icon: LucideIcon; accent: Accent }[] = [
-    { label: t("nav.home"), href: "/", icon: Home, accent: "violet" },
-    { label: t("nav.clubs"), href: "/clubs", icon: SECTION_ICONS.clubs, accent: "pink" },
+  const navItems: { label: string; href: string; icon: LucideIcon; tone: Tone }[] = [
+    { label: t("nav.home"), href: "/", icon: Home, tone: TONES.home },
+    { label: t("nav.clubs"), href: "/clubs", icon: SECTION_ICONS.clubs, tone: TONES.clubs },
     // Con Eventos cerrado (lib/featureFlags.ts) el botón sigue ahí, con la etiqueta «Próximamente», y lleva al aviso.
-    { label: t("nav.events"), href: "/events", icon: SECTION_ICONS.events, accent: "coral" },
-    { label: t("nav.essentials"), href: "/essentials", icon: SECTION_ICONS.essentials, accent: "cyan" },
+    { label: t("nav.events"), href: "/events", icon: SECTION_ICONS.events, tone: TONES.events },
+    { label: t("nav.essentials"), href: "/essentials", icon: SECTION_ICONS.essentials, tone: TONES.essentials },
     // Al entrar en admin se va directo al dashboard, no a la gestión de clubs (que sigue en /admin).
-    ...(isAdmin ? [{ label: "Admin", href: "/admin/dashboard", icon: Shield, accent: "gold" as Accent }] : []),
+    ...(isAdmin ? [{ label: "Admin", href: "/admin/dashboard", icon: Shield, tone: TONES.admin }] : []),
   ]
 
   // Con la pestaña Admin (solo para ti) son cinco botones y ya no caben con el relleno de siempre: se salía el último por la derecha
@@ -89,23 +67,61 @@ export default function BottomNav() {
   // con «…». Con cuatro (todo el público) la barra queda exactamente como estaba.
   const compact = navItems.length > 4
 
+  // La pieza violeta se desliza hasta la sección activa (se mide el botón, así que da igual cuántos haya). Sin sección activa
+  // (p. ej. en /profile) se esconde. La primera colocación no se anima.
+  const itemRefs = useRef<(HTMLAnchorElement | null)[]>([])
+  const activeIndex = navItems.findIndex((i) => i.href === pathname)
+  const tone = (activeIndex >= 0 ? navItems[activeIndex] : navItems[0]).tone
+  const [thumb, setThumb] = useState<{ x: number; w: number } | null>(null)
+  const [animate, setAnimate] = useState(false)
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = activeIndex >= 0 ? itemRefs.current[activeIndex] : null
+      setThumb(el ? { x: el.offsetLeft, w: el.offsetWidth } : null)
+    }
+    measure()
+    window.addEventListener("resize", measure)
+    const raf = requestAnimationFrame(() => setAnimate(true))
+    return () => {
+      window.removeEventListener("resize", measure)
+      cancelAnimationFrame(raf)
+    }
+  }, [activeIndex, navItems.length])
+
   return (
-    <div className={`fixed bottom-4 left-1/2 z-50 flex w-[92%] max-w-md -translate-x-1/2 items-center justify-around rounded-2xl border border-white/10 bg-black/70 py-2 ${compact ? "px-2" : "px-3"} shadow-[0_12px_40px_-10px_rgba(124,92,255,0.55)] backdrop-blur-2xl transition-all duration-300 before:pointer-events-none before:absolute before:inset-x-8 before:top-0 before:h-px before:bg-linear-to-r before:from-transparent before:via-brand-soft/80 before:to-transparent ${visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-24 opacity-0"}`}>
-      {navItems.map((item) => {
+    <nav
+      className={`ui-dock fixed bottom-4 left-1/2 z-50 flex w-[92%] max-w-md -translate-x-1/2 items-stretch gap-1 p-1.5 transition-[transform,opacity] duration-300 ${visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-24 opacity-0"}`}
+    >
+      <span
+        aria-hidden="true"
+        className="ui-dock-thumb"
+        style={
+          {
+            width: thumb?.w ?? 0,
+            transform: `translateX(${thumb?.x ?? 0}px)`,
+            opacity: thumb ? 1 : 0,
+            transitionDuration: animate ? undefined : "0s",
+            "--t1": tone[0],
+            "--t2": tone[1],
+            "--t3": tone[2],
+            "--tg": tone[3],
+          } as React.CSSProperties
+        }
+      />
+      {navItems.map((item, idx) => {
         const Icon = item.icon
         const active = pathname === item.href
-        const a = ACCENT[item.accent]
         return (
           <Link
             key={item.href}
+            ref={(el) => {
+              itemRefs.current[idx] = el
+            }}
             href={item.href}
             aria-current={active ? "page" : undefined}
-            className={`relative flex flex-col items-center gap-1 rounded-xl py-2 transition ${compact ? "min-w-0 flex-1 px-1 text-[11px]" : "px-3 text-xs"} ${
-              active ? `${a.active} font-bold text-white` : "font-medium text-zinc-400 hover:text-white"
-            }`}
+            className={`ui-dock-item relative flex min-w-0 flex-1 flex-col items-center gap-1 py-2 active:scale-[0.97] ${compact ? "px-1 text-[11px]" : "px-2 text-xs"} ${active ? "font-bold" : "font-semibold"}`}
           >
-            {active && <span aria-hidden="true" className={`absolute inset-x-3 -top-px h-0.5 rounded-full ${a.line}`} />}
-            <Icon size={18} className={active ? a.glow : a.icon} />
+            <Icon size={20} strokeWidth={active ? 2.25 : 1.75} aria-hidden="true" />
             <span className="max-w-full truncate">{item.label}</span>
             {item.href === "/events" && EVENTS_HIDDEN && (
               <span className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-warn px-1.5 py-px text-[8px] font-bold leading-tight text-night">
@@ -115,6 +131,6 @@ export default function BottomNav() {
           </Link>
         )
       })}
-    </div>
+    </nav>
   )
 }

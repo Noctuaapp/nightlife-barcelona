@@ -30,12 +30,16 @@ export default function ClubGallery({
   edit,
   compact = false,
   dense = false,
+  coverAbove = false,
 }: {
   images: string[]
   name: string
   edit?: GalleryEdit
   compact?: boolean
   dense?: boolean
+  // La ficha ya enseña la primera foto (la portada) en grande arriba: el mosaico y el carrusel empiezan en la segunda, para
+  // que la portada no salga repetida justo debajo (19/11/2026). La tira de gestión del admin y el visor siguen llevando todas.
+  coverAbove?: boolean
 }) {
   const { t } = useLanguage()
   const isAdmin = useCanEdit() // admin, o el dueño de esta ficha
@@ -57,7 +61,13 @@ export default function ClubGallery({
   // `Array.from(new Set(...))` quita duplicados (p.ej. si la portada quedó repetida también
   // dentro de la galería), que si no rompían el listado de miniaturas de abajo (claves repetidas).
   const basePhotos = edit ? (Array.from(new Set([images[0], ...edit.gallery].filter(Boolean))) as string[]) : images
-  const displayImages = canManage ? (photosOverride ?? basePhotos) : images
+  // Quien solo mira ve la lista sin repetidas: las fichas que rellenó Google guardan la portada también como primera foto de
+  // la galería (338 locales), y salía dos veces seguidas (19/11/2026).
+  const publicPhotos = Array.from(new Set(images.filter(Boolean)))
+  const displayImages = canManage ? (photosOverride ?? basePhotos) : publicPhotos
+  // Lo que se pinta en el mosaico y el carrusel; el índice de cada foto en el visor es su posición aquí + tileOffset.
+  const tileOffset = coverAbove && displayImages.length > 1 ? 1 : 0
+  const tiles = displayImages.slice(tileOffset)
 
   const go = (delta: number) => setOpen((i) => (i === null ? null : (i + delta + displayImages.length) % displayImages.length))
 
@@ -211,32 +221,36 @@ export default function ClubGallery({
       {displayImages.length >= 2 && (
         <>
           <div className={`hidden grid-cols-4 grid-rows-2 gap-3 sm:grid ${dense ? "h-[300px]" : "h-[420px]"}`}>
-            {displayImages.slice(0, 5).map((src, i) => (
-              <button
-                key={src + i}
-                onClick={() => setOpen(i)}
-                className={`group relative overflow-hidden rounded-card ${i === 0 ? "col-span-2 row-span-2" : ""}`}
-                aria-label={`${t("clubPage.openPhoto")} ${i + 1}`}
-              >
-                <Image src={src} alt={`${name} ${i + 1}`} fill sizes={i === 0 ? "50vw" : "25vw"} className="object-cover" />
-                {i === 4 && displayImages.length > 5 && (
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-lg font-semibold text-white">
-                    +{displayImages.length - 5}
-                  </span>
-                )}
-              </button>
-            ))}
+            {tiles.slice(0, 5).map((src, i) => {
+              // Con una sola foto ocupa todo el ancho; con dos, mitad y mitad; con más, la primera grande y el resto pequeñas.
+              const span = tiles.length === 1 ? "col-span-4 row-span-2" : tiles.length === 2 || i === 0 ? "col-span-2 row-span-2" : ""
+              return (
+                <button
+                  key={src + i}
+                  onClick={() => setOpen(i + tileOffset)}
+                  className={`group relative overflow-hidden rounded-card ${span}`}
+                  aria-label={`${t("clubPage.openPhoto")} ${i + 1 + tileOffset}`}
+                >
+                  <Image src={src} alt={`${name} ${i + 1 + tileOffset}`} fill sizes={tiles.length === 1 ? "100vw" : span ? "50vw" : "25vw"} className="object-cover" />
+                  {i === 4 && tiles.length > 5 && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-lg font-semibold text-white">
+                      +{tiles.length - 5}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </div>
 
           <div className={`scrollbar-none -mx-4 flex snap-x snap-mandatory overflow-x-auto px-4 sm:hidden ${dense ? "scroll-pl-4 gap-2" : "gap-3"}`}>
-            {displayImages.map((src, i) => (
+            {tiles.map((src, i) => (
               <button
                 key={src + i}
-                onClick={() => setOpen(i)}
+                onClick={() => setOpen(i + tileOffset)}
                 className={`relative shrink-0 overflow-hidden ${dense ? "h-[34vw] w-[48vw] snap-start rounded-ctl" : "h-[56vw] w-[78vw] snap-center rounded-card"}`}
-                aria-label={`${t("clubPage.openPhoto")} ${i + 1}`}
+                aria-label={`${t("clubPage.openPhoto")} ${i + 1 + tileOffset}`}
               >
-                <Image src={src} alt={`${name} ${i + 1}`} fill sizes={dense ? "48vw" : "78vw"} className="object-cover" />
+                <Image src={src} alt={`${name} ${i + 1 + tileOffset}`} fill sizes={dense ? "48vw" : "78vw"} className="object-cover" />
               </button>
             ))}
           </div>

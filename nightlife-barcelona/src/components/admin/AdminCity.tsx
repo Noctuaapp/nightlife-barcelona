@@ -74,7 +74,7 @@ export function AdminCitySwitch({ compact = false }: { compact?: boolean }) {
 
   return (
     <div>
-      <div role="group" aria-label="Ciudad del admin" className="grid grid-cols-2 gap-1 rounded-ctl border border-white/10 bg-white/[0.03] p-1">
+      <div role="group" aria-label="Ciudad del admin" className="grid grid-cols-2 gap-1 rounded-xl border border-white/[0.07] bg-white/[0.03] p-1">
         {cities.map((c) => {
           const active = c.key === city
           return (
@@ -83,8 +83,8 @@ export function AdminCitySwitch({ compact = false }: { compact?: boolean }) {
               type="button"
               aria-pressed={active}
               onClick={() => setCity(c.key)}
-              className={`rounded-md px-2.5 py-1.5 text-sm font-semibold transition ${
-                active ? "bg-white text-night" : "text-zinc-400 hover:bg-white/[0.06] hover:text-ink"
+              className={`rounded-lg px-2.5 py-1.5 text-sm font-semibold transition ${
+                active ? "bg-white/[0.11] text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]" : "text-zinc-400 hover:text-ink"
               }`}
             >
               {c.name}

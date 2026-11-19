@@ -359,7 +359,8 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
   const galleryImages: string[] = (
     Array.isArray(club.gallery) ? club.gallery : Array.isArray(club.images) ? club.images : [club.image_2, club.image_3, club.image_4]
   ).filter((src: unknown): src is string => typeof src === "string" && src.length > 0)
-  const allImages = [club.image, ...galleryImages].filter(Boolean) as string[]
+  // Sin repetidas: las fichas que rellenó Google guardan la portada también como primera foto de la galería (19/11/2026).
+  const allImages = Array.from(new Set([club.image, ...galleryImages].filter(Boolean))) as string[]
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "about", label: t("clubPage.tabAbout") },
@@ -708,6 +709,7 @@ export default function ClubPageContent({ club, clubEvents, clubSessions = [], i
                 compact
                 dense
                 images={allImages}
+                coverAbove={!!club.image}
                 name={club.name}
                 edit={{ table: "clubs", id: club.id, bucket: "club-photos", gallery: Array.isArray(club.gallery) ? club.gallery : [] }}
               />

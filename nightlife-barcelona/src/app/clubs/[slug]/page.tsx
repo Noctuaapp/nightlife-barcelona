@@ -148,7 +148,7 @@ export default async function ClubPage({ params }: ClubPageProps) {
     description: club.description || clubSummary(club),
     // Todas las fotos (portada + galería), no solo la portada: más posibilidades de salir en
     // Google Imágenes y en los resultados con foto.
-    image: [club.image, ...(Array.isArray(club.gallery) ? club.gallery : [])].filter(Boolean).slice(0, 6),
+    image: Array.from(new Set([club.image, ...(Array.isArray(club.gallery) ? club.gallery : [])].filter(Boolean))).slice(0, 6),
     url: `https://www.noctuaapp.com/clubs/${match.canonicalSlug}`,
     ...(club.website ? { sameAs: [club.website, club.instagram].filter(Boolean) } : {}),
     address: {

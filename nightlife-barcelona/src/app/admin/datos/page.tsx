@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import AdminShell from "../../../components/admin/AdminShell"
-import { FilterChip, Panel, SectionTitle, StatTile, TrendRangeContext, type Accent, type TrendInfo } from "../../../components/admin/ui"
+import { BTN_GHOST_SM, BTN_PRIMARY, FilterChip, Panel, Segmented, SectionTitle, StatTile, TrendRangeContext, type Accent, type TrendInfo } from "../../../components/admin/ui"
 import { BarChart3, CalendarCheck, CalendarDays, Car, CheckCircle2, Clock, Eye, Layers, MapPin, Scale, Search, Share2, Smartphone, Ticket, Users, type LucideIcon } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { zoneOf } from "../../../lib/zones"
@@ -102,7 +102,7 @@ function ListBars({ rows, suffix = "" }: { rows: { label: string; n: number | nu
             <span className="text-zinc-400">{r.n === null ? "<5" : `${r.n}${suffix}`}</span>
           </div>
           <div className="mt-1 h-2 rounded-full bg-white/5">
-            <div className="h-2 rounded-full bg-purple-500" style={{ width: `${((r.n || 0) / max) * 100}%` }} />
+            <div className="h-2 rounded-full bg-brand" style={{ width: `${((r.n || 0) / max) * 100}%` }} />
           </div>
         </div>
       ))}
@@ -458,31 +458,28 @@ export default function AdminDatosPage() {
     <AdminShell title="Datos de negocio" subtitle="Métricas agregadas para clubs, managers y compradores de datos.">
       <section className="mx-auto max-w-7xl pb-16">
         {/* Rango de fechas */}
-        <div className="mb-6 flex flex-wrap items-center gap-2">
-          {presets.map((p) => (
-            <button
-              key={p.label}
-              onClick={() => { setFrom(p.f); setTo(madridToday()) }}
-              className={`rounded-full border px-4 py-2 text-xs font-bold transition ${from === p.f && to === madridToday() ? "border-brand/60 bg-brand/20 text-white" : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/[0.08]"}`}
-            >
-              {p.label}
-            </button>
-          ))}
-          <input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} style={{ colorScheme: "dark" }} className="rounded-xl border border-white/10 bg-night/70 px-3 py-2 text-xs text-zinc-300" />
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <Segmented
+            label="Rango de fechas"
+            options={presets.map((p) => ({ value: p.label, label: p.label }))}
+            value={presets.find((p) => from === p.f && to === madridToday())?.label ?? ""}
+            onChange={(label) => {
+              const p = presets.find((x) => x.label === label)
+              if (p) { setFrom(p.f); setTo(madridToday()) }
+            }}
+          />
+          <input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} style={{ colorScheme: "dark" }} className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-300 outline-none transition hover:border-white/20 focus:border-brand/60" />
           <span className="text-xs text-zinc-400">→</span>
-          <input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} style={{ colorScheme: "dark" }} className="rounded-xl border border-white/10 bg-night/70 px-3 py-2 text-xs text-zinc-300" />
+          <input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} style={{ colorScheme: "dark" }} className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-300 outline-none transition hover:border-white/20 focus:border-brand/60" />
         </div>
 
-        <div className="mb-6 flex flex-wrap gap-2">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => { setTab(t.key); setSelected(null) }}
-              className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${tab === t.key ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10"}`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="mb-6 max-w-full overflow-x-auto">
+          <Segmented
+            label="Apartado de datos"
+            options={tabs.map((t) => ({ value: t.key, label: t.label }))}
+            value={tab}
+            onChange={(k) => { setTab(k); setSelected(null) }}
+          />
         </div>
 
         {tab !== "clubs" && tab !== "eventos" && tab !== "clics" && flagsNote && (
@@ -516,7 +513,7 @@ export default function AdminDatosPage() {
             <Panel>
               <div className="mb-4 flex items-center justify-between gap-3">
                 <SectionTitle icon={BarChart3} accent="violet">Visitas por día</SectionTitle>
-                <button onClick={exportOverviewCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
+                <button onClick={exportOverviewCsv} className={BTN_GHOST_SM}>Descargar CSV</button>
               </div>
               <Bars data={(overview.daily || []).map((d: any) => ({ label: d.d.slice(5), value: d.views }))} />
             </Panel>
@@ -543,12 +540,12 @@ export default function AdminDatosPage() {
               </Panel>
               <Panel accent="coral">
                 <SectionTitle icon={CalendarDays} accent="coral" className="mb-4">Visitas por día de la semana{insights?.hours ? " (hora de Madrid)" : ""}</SectionTitle>
-                <Bars color="#f59e0b" data={[1, 2, 3, 4, 5, 6, 7].map((d) => ({ label: WEEKDAYS[d], value: insights?.hours ? weekdaySeries(insights.hours.weekdays)[d - 1] : (overview.weekdays || []).find((x: any) => x.d === d)?.n || 0 }))} />
+                <Bars color="#7c5cff" data={[1, 2, 3, 4, 5, 6, 7].map((d) => ({ label: WEEKDAYS[d], value: insights?.hours ? weekdaySeries(insights.hours.weekdays)[d - 1] : (overview.weekdays || []).find((x: any) => x.d === d)?.n || 0 }))} />
               </Panel>
               <Panel accent="cyan">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <SectionTitle icon={Car} accent="cyan">Clics en Uber / Cabify / FREE NOW / Bolt</SectionTitle>
-                  <button onClick={() => goClicks("ride_click")} className="shrink-0 rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-zinc-300 hover:bg-white/10">Ver taxi y VTC ›</button>
+                  <button onClick={() => goClicks("ride_click")} className={`shrink-0 ${BTN_GHOST_SM}`}>Ver taxi y VTC ›</button>
                 </div>
                 <ListBars rows={rideClicks.map((r) => ({ label: RIDE_PROVIDER_LABELS[r.provider] || r.provider, n: r.n }))} />
               </Panel>
@@ -561,7 +558,7 @@ export default function AdminDatosPage() {
           <div className="rounded-card border border-white/10 bg-surface p-4">
             <div className="mb-3 flex items-center justify-between px-2">
               <p className="text-xs text-zinc-400">Pulsa un encabezado para ordenar y una fila para ver el detalle. «Acciones» suma entradas, llegar, compartir, favoritos, web, taxi, llamadas y asistiré.</p>
-              <button onClick={tab === "clubs" ? exportClubsCsv : exportEventsCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
+              <button onClick={tab === "clubs" ? exportClubsCsv : exportEventsCsv} className={BTN_GHOST_SM}>Descargar CSV</button>
             </div>
             <div className="mb-3 flex flex-wrap items-center gap-2 px-2">
               {hasActionExtras ? (
@@ -646,7 +643,7 @@ export default function AdminDatosPage() {
                 <h2 className="mt-1 text-2xl font-black">{selected.name}</h2>
                 <p className="text-xs text-zinc-400">{from} → {to}</p>
               </div>
-              <button onClick={exportDetailCsv} className="rounded-full bg-purple-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-purple-400">Descargar informe (CSV)</button>
+              <button onClick={exportDetailCsv} className={BTN_PRIMARY}>Descargar informe (CSV)</button>
             </div>
 
             {sel && (
@@ -742,7 +739,7 @@ export default function AdminDatosPage() {
                 <div className="rounded-card border border-white/10 bg-surface p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <SectionTitle icon={Layers} accent="coral">Por categoría</SectionTitle>
-                    <button onClick={exportEssCategoriesCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
+                    <button onClick={exportEssCategoriesCsv} className={BTN_GHOST_SM}>Descargar CSV</button>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -779,7 +776,7 @@ export default function AdminDatosPage() {
                 <div className="rounded-card border border-white/10 bg-surface p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <SectionTitle icon={MapPin} accent="cyan">Locales más abiertos</SectionTitle>
-                    <button onClick={exportEssItemsCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
+                    <button onClick={exportEssItemsCsv} className={BTN_GHOST_SM}>Descargar CSV</button>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -822,10 +819,10 @@ export default function AdminDatosPage() {
           <div className="rounded-card border border-white/10 bg-surface p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-2">
               <label className="flex items-center gap-2 text-xs text-zinc-300">
-                <input type="checkbox" checked={onlyZeroSearches} onChange={(e) => setOnlyZeroSearches(e.target.checked)} className="accent-purple-500" />
+                <input type="checkbox" checked={onlyZeroSearches} onChange={(e) => setOnlyZeroSearches(e.target.checked)} className="accent-brand" />
                 Solo las que dieron 0 resultados (demanda sin cubrir)
               </label>
-              <button onClick={exportSearchesCsv} className="rounded-full border border-white/10 px-4 py-1.5 text-xs font-bold text-zinc-300 hover:bg-white/10">Descargar CSV</button>
+              <button onClick={exportSearchesCsv} className={BTN_GHOST_SM}>Descargar CSV</button>
             </div>
             {insights?.searchDetail && insights.searchDetail.total > 0 && (
               <div className="mb-5 px-2">
@@ -833,7 +830,7 @@ export default function AdminDatosPage() {
                   De {insights.searchDetail.total} búsquedas, <span className="font-semibold text-ink">{insights.searchDetail.total_opened}</span> ({String(pct(insights.searchDetail.total_opened, insights.searchDetail.total)).replace(".", ",")} %) acaban abriendo una ficha o haciendo un clic en los 5 minutos siguientes.
                   Las demás, o no encuentran lo que buscan o se van.
                 </p>
-                <Bars color="#ec4899" data={fillDays(from, to, insights.searchDetail.daily, (d) => d.n)} />
+                <Bars color="#7c5cff" data={fillDays(from, to, insights.searchDetail.daily, (d) => d.n)} />
                 <p className="mt-2 text-xs text-zinc-500">Búsquedas por día.</p>
               </div>
             )}

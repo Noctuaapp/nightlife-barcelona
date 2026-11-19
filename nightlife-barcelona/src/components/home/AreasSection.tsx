@@ -6,6 +6,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { useCityT } from "../../lib/useCityT"
 import { useSelectedCity } from "../../lib/previewCity"
 import type { CityKey } from "../../lib/cities"
+import { essentialEntryHref } from "../../lib/essentialCategories"
 
 // Esenciales de la noche en la portada: accesos directos compactos. Antes eran 7 tarjetas de
 // 300 px de alto con degradados de colores, e incluían Hotel y Casino, que no son esenciales para
@@ -50,7 +51,7 @@ export default function AreasSection() {
           return (
             <Link
               key={cat.slug}
-              href={`/essentials/${cat.slug}`}
+              href={essentialEntryHref(cat.slug, city)}
               className="flex flex-col gap-3 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25"
             >
               <Icon size={22} className="text-brand-soft" />

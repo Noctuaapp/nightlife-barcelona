@@ -22,7 +22,7 @@ import { useLanguage } from "../../context/LanguageContext"
 import { distanceInMeters, formatDistance, walkingMinutes } from "../../lib/geo"
 import { availabilityOf, availabilityClass } from "../../lib/availability"
 import { getMetroTonight } from "../../lib/transitHours"
-import { categoryInfo, categoryRank, categoryNameKey, categoryDescKey, groupNameKey, usesOwnPhoto, ESSENTIAL_GROUPS, GROUP_ACCENT } from "../../lib/essentialCategories"
+import { categoryInfo, categoryRank, categoryNameKey, categoryDescKey, groupNameKey, usesOwnPhoto, essentialEntryHref, ESSENTIAL_GROUPS, GROUP_ACCENT } from "../../lib/essentialCategories"
 
 // Portada de Esenciales. Rehecha tras la auditoría de octubre 2026: antes eran cuatro bloques con
 // doce colores (uno por categoría), emojis como iconos, contadores de relleno ("12 categorías",
@@ -277,7 +277,7 @@ export default function EssentialsPage() {
                   return (
                     <Link
                       key={item.id}
-                      href={`/essentials/${info.slug}`}
+                      href={essentialEntryHref(info.slug, city)}
                       className="flex items-start gap-4 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25"
                     >
                       <EssentialPhoto src={usesOwnPhoto(item.category) ? item.image : null} alt={item.name} icon={<CatIcon size={26} />} color="#7c5cff" className="h-16 w-16 shrink-0 rounded-ctl" />
@@ -348,7 +348,7 @@ export default function EssentialsPage() {
                 {transportTiles.map(({ cat, line, name, href }) => {
                   const info = categoryInfo(cat)
                   return (
-                    <CategoryTile key={cat} layout="row" href={href ?? `/essentials/${info.slug}`} icon={info.icon} accent={GROUP_ACCENT[info.group]} title={name ?? t(categoryNameKey(cat))}>
+                    <CategoryTile key={cat} layout="row" href={href ?? essentialEntryHref(info.slug, city)} icon={info.icon} accent={GROUP_ACCENT[info.group]} title={name ?? t(categoryNameKey(cat))}>
                       <span className="mt-1 block text-sm text-zinc-300">{line}</span>
                     </CategoryTile>
                   )
@@ -427,7 +427,7 @@ export default function EssentialsPage() {
                             const info = categoryInfo(cat)
                             const count = itemsByCategory(cat).length
                             return (
-                              <CategoryTile key={cat} href={`/essentials/${info.slug}`} icon={info.icon} accent={GROUP_ACCENT[info.group]} title={t(categoryNameKey(cat))} badge={count}>
+                              <CategoryTile key={cat} href={essentialEntryHref(info.slug, city)} icon={info.icon} accent={GROUP_ACCENT[info.group]} title={t(categoryNameKey(cat))} badge={count}>
                                 <span className="mt-1 line-clamp-2 block text-xs leading-snug text-zinc-300">{tc(categoryDescKey(cat))}</span>
                               </CategoryTile>
                             )

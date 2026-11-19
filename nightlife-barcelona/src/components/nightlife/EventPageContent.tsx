@@ -118,7 +118,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
   const galleryImages: string[] = (Array.isArray(event.gallery) ? event.gallery : []).filter(
     (src: unknown): src is string => typeof src === "string" && src.length > 0
   )
-  const allImages = [event.image, ...galleryImages].filter(Boolean) as string[]
+  const allImages = Array.from(new Set([event.image, ...galleryImages].filter(Boolean))) as string[]
 
   const quickFacts = [
     shortDate && { key: "date", field: null, icon: "calendar", label: t("event.date"), value: past ? t("event.finishedValue") : shortDate },
@@ -243,6 +243,7 @@ export default function EventPageContent({ event, tickets, sessions }: { event: 
       <ClubGallery
         compact
         images={allImages}
+        coverAbove={!!event.image}
         name={event.title}
         edit={{ table: "events", id: event.id, bucket: "event-photos", gallery: Array.isArray(event.gallery) ? event.gallery : [] }}
       />

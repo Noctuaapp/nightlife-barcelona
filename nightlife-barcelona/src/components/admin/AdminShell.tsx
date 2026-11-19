@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
-import { ACCENT, AccentContext, type Accent } from "./ui"
+import { AccentContext, type Accent } from "./ui"
 import { AdminCityBadge, AdminCitySwitch } from "./AdminCity"
 
 // Rediseño del admin (24/10/2026, tras el análisis completo del panel). Antes: 13 pestañas en una
@@ -128,13 +128,9 @@ function NavList({ pathname, badges, onNavigate }: { pathname: string; badges: B
   return (
     <nav aria-label="Secciones del admin" className="flex flex-col gap-6">
       {ADMIN_NAV.map((group) => {
-        const a = ACCENT[group.accent]
         return (
           <div key={group.label}>
-            <p className="mb-1.5 flex items-center gap-2 px-3 text-xs font-semibold text-zinc-400">
-              <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${a.solid}`} />
-              {group.label}
-            </p>
+            <p className="mb-1.5 px-3 text-[11px] font-bold tracking-wide text-zinc-500">{group.label}</p>
             <ul className="flex flex-col gap-0.5">
               {group.items.map((item) => {
                 const active = pathname === item.href
@@ -146,14 +142,12 @@ function NavList({ pathname, badges, onNavigate }: { pathname: string; badges: B
                       href={item.href}
                       onClick={onNavigate}
                       aria-current={active ? "page" : undefined}
-                      className={`group relative flex items-center gap-2.5 rounded-ctl px-2.5 py-1.5 text-sm font-semibold transition ${
-                        active ? "bg-white/[0.07] text-ink" : "text-zinc-400 hover:bg-white/[0.04] hover:text-ink"
+                      className={`group relative flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                        active ? "ui-nav-on" : "text-zinc-400 hover:bg-white/[0.04] hover:text-ink"
                       }`}
                     >
-                      {active && <span aria-hidden="true" className={`absolute -left-3 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full ${a.solid}`} />}
-                      <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-md transition ${active ? a.chip : "bg-white/[0.04] text-zinc-400 group-hover:text-ink"}`}>
-                        <Icon size={14} aria-hidden="true" />
-                      </span>
+                      {active && <span aria-hidden="true" className="absolute -left-3 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-soft shadow-[0_0_12px_rgba(160,139,255,0.9)]" />}
+                      <Icon size={16} aria-hidden="true" className={`shrink-0 transition ${active ? "text-brand-soft" : "text-zinc-500 group-hover:text-zinc-300"}`} />
                       <span className="flex-1">{item.label}</span>
                       {item.city && (
                         <>
@@ -226,15 +220,13 @@ export default function AdminShell({
   // Sección y icono de la pantalla actual (para el acento y la cabecera). Pantallas que no salen en el
   // menú (p. ej. /admin/analytics) usan el acento del Resumen.
   const current = (() => {
-    for (const g of ADMIN_NAV) for (const item of g.items) if (item.href === pathname) return { accent: g.accent, icon: item.icon, city: !!item.city }
-    return { accent: "violet" as Accent, icon: LayoutDashboard, city: false }
+    for (const g of ADMIN_NAV) for (const item of g.items) if (item.href === pathname) return { accent: g.accent, city: !!item.city }
+    return { accent: "violet" as Accent, city: false }
   })()
-  const CurrentIcon = current.icon
-  const accentStyle = ACCENT[current.accent]
 
   const brand = (
     <Link href="/admin/dashboard" className="flex items-center gap-2.5">
-      <span className="flex h-9 w-9 items-center justify-center rounded-ctl bg-brand text-base font-black text-white">N</span>
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-b from-[#8f73ff] to-[#6a46f5] text-base font-black text-white shadow-[0_0_0_1px_rgba(106,70,245,0.95),inset_0_1px_0_rgba(255,255,255,0.34),0_8px_20px_-8px_rgba(124,92,255,0.8)]">N</span>
       <span className="leading-tight">
         <span className="block text-sm font-black tracking-tight text-ink">Noctua</span>
         <span className="block text-xs text-zinc-400">Admin</span>
@@ -243,7 +235,7 @@ export default function AdminShell({
   )
 
   return (
-    <div className="min-h-screen bg-night text-ink lg:grid lg:grid-cols-[272px_1fr]">
+    <div className="min-h-screen bg-night bg-[radial-gradient(60%_45%_at_28%_-8%,rgba(124,92,255,0.13),transparent_72%)] bg-fixed bg-no-repeat text-ink lg:grid lg:grid-cols-[272px_1fr]">
       {/* Barra lateral (ordenador) */}
       <aside className="hidden lg:block">
         <div className="sticky top-0 flex h-screen flex-col border-r border-white/[0.06] px-3 py-5">
@@ -271,7 +263,7 @@ export default function AdminShell({
           <Link
             href="/admin/avisos"
             aria-label={badges.notices > 0 ? `Avisos: ${badges.notices} sin leer` : "Avisos"}
-            className="relative flex h-10 w-10 items-center justify-center rounded-ctl border border-white/10 bg-white/[0.04] text-ink"
+            className="ui-btn ui-btn-secondary relative h-10 w-10 p-0"
           >
             <Bell size={18} aria-hidden="true" />
             {badges.notices > 0 && (
@@ -284,7 +276,7 @@ export default function AdminShell({
             type="button"
             onClick={() => setMenuOpen(true)}
             aria-expanded={menuOpen}
-            className="relative flex items-center gap-2 rounded-ctl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm font-semibold text-ink"
+            className="ui-btn ui-btn-secondary relative h-10 px-3.5 py-0"
           >
             <Menu size={18} aria-hidden="true" /> Menú
             {pending > 0 && (
@@ -320,25 +312,17 @@ export default function AdminShell({
         )}
 
         <main className="mx-auto max-w-[1200px] px-4 pb-32 pt-6 sm:px-6 lg:px-10 lg:pt-10">
-          <div className="relative mb-8">
-            <span aria-hidden="true" className={`pointer-events-none absolute -left-6 -top-16 h-52 w-[28rem] max-w-full rounded-full opacity-60 blur-3xl ${accentStyle.glow}`} />
-            <div className="relative flex flex-wrap items-end justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <span className={`mt-1 hidden h-12 w-12 shrink-0 place-items-center rounded-2xl sm:grid ${accentStyle.chip}`}>
-                  <CurrentIcon size={22} aria-hidden="true" />
-                </span>
-                <div>
-                  <h1 className="font-display text-3xl tracking-tight md:text-4xl">{title}</h1>
-                  {subtitle && <p className="mt-2 max-w-2xl text-sm text-zinc-400">{subtitle}</p>}
-                  {current.city && (
-                    <div className="mt-3">
-                      <AdminCityBadge />
-                    </div>
-                  )}
+          <div className="mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 border-b border-white/[0.06] pb-6">
+            <div className="min-w-0">
+              <h1 className="font-display text-2xl tracking-tight md:text-[28px]">{title}</h1>
+              {subtitle && <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">{subtitle}</p>}
+              {current.city && (
+                <div className="mt-3">
+                  <AdminCityBadge />
                 </div>
-              </div>
-              {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+              )}
             </div>
+            {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
           </div>
 
           <AccentContext.Provider value={current.accent}>{children}</AccentContext.Provider>

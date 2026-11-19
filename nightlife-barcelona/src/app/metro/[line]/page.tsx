@@ -39,7 +39,7 @@ export default async function MetroLinePage({ params }: Props) {
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Noctua", item: "https://www.noctuaapp.com" },
-      { "@type": "ListItem", position: 2, name: "Metro", item: "https://www.noctuaapp.com/essentials/metro" },
+      { "@type": "ListItem", position: 2, name: "Metro", item: "https://www.noctuaapp.com/metro" },
       { "@type": "ListItem", position: 3, name: `Metro ${code}`, item: `https://www.noctuaapp.com/metro/${code}` },
     ],
   }

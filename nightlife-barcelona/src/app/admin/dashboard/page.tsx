@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
-  Activity, ArrowUpRight, BellRing, CalendarDays, CheckCircle2, Eye, FileText, Layers, MousePointerClick, ShieldCheck,
-  TrendingDown, TrendingUp, UserPlus, Users, type LucideIcon,
+  Activity, ArrowUpRight, BellRing, CalendarDays, CheckCircle2, ChevronRight, Layers, ShieldCheck, TrendingDown, TrendingUp, Users,
 } from "lucide-react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { AdminCityBadge, useAdminCity } from "../../../components/admin/AdminCity"
-import { ACCENT, AVATAR_ORDER, CARD, StatusPill, type Accent } from "../../../components/admin/ui"
+import { BTN_GHOST_SM, LINK, Panel, SectionTitle, StatusPill } from "../../../components/admin/ui"
+import { CompareBars, WeekChart, type DayPoint } from "../../../components/admin/WeekChart"
 import { supabase } from "../../../lib/supabase"
 import { fetchAllPages } from "../../../lib/fetchAll"
 import { clubCityIndex, cityOfEvent, rowsOfCity, rowsOfCityByClub } from "../../../lib/adminCity"
@@ -39,79 +39,34 @@ type Signup = { id: string; email: string; username: string | null; created_at: 
 // Resumen por usuario de admin_users_activity (supabase/24): solo lo que hace falta aquí.
 type ActivityRow = { user_id: string; last_seen: string | null }
 
-function delta(now: number, before: number) {
-  if (!before) return now ? "Sin datos de la semana anterior" : "—"
+// Variación de una cifra frente a la semana anterior. Flecha y signo, nunca solo color; con el valor de antes a la vista.
+function Delta({ now, before }: { now: number; before: number }) {
+  if (!before) return <span className="text-xs text-zinc-500">{now ? "Sin semana anterior" : "—"}</span>
   const p = Math.round(((now - before) / before) * 100)
-  if (p === 0) return "Igual que la semana anterior"
-  return `${p > 0 ? "+" : ""}${p}% frente a la semana anterior`
-}
-
-function deltaTone(now: number, before: number): "up" | "down" | "flat" {
-  if (!before) return "flat"
-  const p = Math.round(((now - before) / before) * 100)
-  return p > 0 ? "up" : p < 0 ? "down" : "flat"
-}
-
-// Colores del resumen (06/11/2026): los acentos, la tarjeta y las pastillas de estado viven ahora en
-// components/admin/ui.tsx, porque el resto de pantallas del admin usan los mismos. Aquí quedan el KPI con
-// su gráfica y el título de bloque, que son propios del Resumen.
-function Sparkline({ values, accent }: { values: number[]; accent: Accent }) {
-  const max = Math.max(1, ...values)
-  const a = ACCENT[accent]
-  return (
-    <div className="mt-4 flex h-10 items-end gap-1" aria-hidden="true">
-      {values.map((v, i) => (
-        <div key={i} className={`flex-1 rounded-t-sm ${i === values.length - 1 ? a.barLast : a.bar}`} style={{ height: `${Math.max(6, (v / max) * 100)}%` }} />
-      ))}
-    </div>
-  )
-}
-
-function SectionTitle({ id, icon: Icon, accent, children }: { id: string; icon: LucideIcon; accent: string; children: React.ReactNode }) {
-  return (
-    <h2 id={id} className="flex items-center gap-2.5 text-sm font-bold text-ink">
-      <span className={`grid h-7 w-7 place-items-center rounded-lg ${accent}`}>
-        <Icon size={15} aria-hidden="true" />
+  if (p === 0) {
+    return (
+      <span className="inline-flex items-center gap-2">
+        <span className="rounded-md bg-white/[0.06] px-1.5 py-0.5 text-xs font-bold text-zinc-300 ring-1 ring-inset ring-white/10">= igual</span>
+        <span className="hidden text-xs text-zinc-500 sm:inline">antes {before}</span>
       </span>
-      {children}
-    </h2>
+    )
+  }
+  const up = p > 0
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span
+        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-bold ring-1 ring-inset ${up ? "bg-open/10 text-open ring-open/20" : "bg-red-500/10 text-red-300 ring-red-400/25"}`}
+      >
+        {up ? <TrendingUp size={12} aria-hidden="true" /> : <TrendingDown size={12} aria-hidden="true" />}
+        {up ? "+" : ""}
+        {p} %
+      </span>
+      <span className="hidden text-xs text-zinc-500 sm:inline">antes {before}</span>
+    </span>
   )
 }
 
-type Tone = "up" | "down" | "flat"
-
-function Kpi({
-  accent, icon: Icon, label, value, note, tone = "flat", series, href,
-}: { accent: Accent; icon: LucideIcon; label: string; value: React.ReactNode; note: string; tone?: Tone; series?: number[]; href?: string }) {
-  const a = ACCENT[accent]
-  const body = (
-    <>
-      <span aria-hidden="true" className={`pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full blur-2xl ${a.glow}`} />
-      <span aria-hidden="true" className={`pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent ${a.line} to-transparent`} />
-      <div className="relative flex items-center gap-2.5">
-        <span className={`grid h-8 w-8 place-items-center rounded-lg ${a.chip}`}>
-          <Icon size={16} aria-hidden="true" />
-        </span>
-        <p className="text-xs font-semibold text-zinc-300">{label}</p>
-      </div>
-      <p className="relative mt-3 font-display text-3xl text-ink tabular-nums">{value}</p>
-      <p className={`relative mt-1 flex items-start gap-1.5 text-xs ${tone === "up" ? "text-open" : tone === "down" ? "text-rose-300" : "text-zinc-500"}`}>
-        {tone === "up" && <TrendingUp size={14} className="mt-px shrink-0" aria-hidden="true" />}
-        {tone === "down" && <TrendingDown size={14} className="mt-px shrink-0" aria-hidden="true" />}
-        <span>{note}</span>
-      </p>
-      {series && series.length > 0 && <Sparkline values={series} accent={accent} />}
-    </>
-  )
-  const cls = `${CARD} block p-5`
-  return href ? (
-    <Link href={href} className={`${cls} transition hover:border-white/25`}>
-      {body}
-    </Link>
-  ) : (
-    <div className={cls}>{body}</div>
-  )
-}
+type MetricKey = "sessions" | "views" | "tickets"
 
 function initialOf(text: string) {
   return (text.match(/[A-Za-z0-9ÁÉÍÓÚÑáéíóúñ]/)?.[0] || "?").toUpperCase()
@@ -124,6 +79,7 @@ export default function AdminDashboardPage() {
   // Si la función de datos falla (no está en Supabase, sesión caducada...), antes los números se
   // quedaban en «…» para siempre sin decir nada.
   const [trafficFailed, setTrafficFailed] = useState(false)
+  const [metricKey, setMetricKey] = useState<MetricKey>("sessions")
   const [prevWeek, setPrevWeek] = useState<Overview | null>(null)
   const [users, setUsers] = useState<{ total: number; new7: number; active7: number } | null>(null)
   const [signups, setSignups] = useState<Signup[]>([])
@@ -302,201 +258,240 @@ export default function AdminDashboardPage() {
     system.season === "none" ? "Apagado" :
     SEASONAL_THEMES.find((t) => t.key === system.season)?.label || system.season || "…"
 
-  const traffic: { label: string; icon: LucideIcon; accent: Accent; now: number; before: number; series: number[] }[] = [
-    { label: "Visitas", icon: Eye, accent: "violet", now: week?.sessions || 0, before: prevWeek?.sessions || 0, series: (week?.daily || []).map((d) => d.sessions) },
-    { label: "Fichas vistas", icon: FileText, accent: "pink", now: week?.page_views || 0, before: prevWeek?.page_views || 0, series: (week?.daily || []).map((d) => d.views) },
-    { label: "Clics en entradas", icon: MousePointerClick, accent: "cyan", now: week?.tickets || 0, before: prevWeek?.tickets || 0, series: [] as number[] },
+
+  // Lo que enseña la gráfica grande: tres cifras con pestaña. Las dos primeras tienen desglose por día; los clics en
+  // entradas no (solo el total de cada semana).
+  const weekDaily = week?.daily || []
+  const prevDaily = prevWeek?.daily || []
+  const daysOf = (pick: (d: { sessions: number; views: number }) => number): DayPoint[] =>
+    weekDaily.map((d, i) => ({ d: d.d, v: pick(d), prev: prevDaily[i] ? pick(prevDaily[i]) : null }))
+  const metrics: { key: MetricKey; label: string; short: string; unit: string; now: number; before: number; days: DayPoint[] | null }[] = [
+    { key: "sessions", label: "Visitas", short: "Visitas", unit: "visitas", now: week?.sessions || 0, before: prevWeek?.sessions || 0, days: daysOf((d) => d.sessions) },
+    { key: "views", label: "Fichas vistas", short: "Fichas", unit: "fichas vistas", now: week?.page_views || 0, before: prevWeek?.page_views || 0, days: daysOf((d) => d.views) },
+    { key: "tickets", label: "Clics en entradas", short: "Entradas", unit: "clics", now: week?.tickets || 0, before: prevWeek?.tickets || 0, days: null },
   ]
+  const metric = metrics.find((m) => m.key === metricKey) || metrics[0]
+  const queueTotal = queue.reduce((sum, q) => sum + q.n, 0)
 
   return (
     <AdminShell title="Resumen" subtitle="Lo que pide atención, cómo va la semana y el estado de la web.">
-      <div className="grid grid-cols-1 gap-6">
-        {/* 1. Pendientes */}
-        <section
-          aria-labelledby="pending-h"
-          className={`${CARD} p-6 ${queue.length > 0 ? "border-warn/30 bg-linear-to-br from-warn/[0.09] via-surface to-surface" : pending ? "border-open/25 bg-linear-to-br from-open/[0.08] via-surface to-surface" : ""}`}
-        >
-          <SectionTitle id="pending-h" icon={BellRing} accent="bg-warn/15 text-warn">Pendiente</SectionTitle>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        {/* 1. Pendiente: lo primero en móvil; a la derecha de la gráfica en ordenador */}
+        <Panel aria-labelledby="pending-h" pad="p-0" className="lg:col-start-2 lg:row-start-1">
+          <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-5 sm:px-6">
+            <SectionTitle id="pending-h" icon={BellRing}>Pendiente</SectionTitle>
+            {queueTotal > 0 && <span className="rounded-full bg-warn/10 px-2.5 py-0.5 text-xs font-bold tabular-nums text-warn ring-1 ring-inset ring-warn/25">{queueTotal}</span>}
+          </div>
           {!pending ? (
-            <p className="mt-3 text-sm text-zinc-500">Cargando…</p>
+            <p className="px-5 pb-5 text-sm text-zinc-500 sm:px-6">Cargando…</p>
           ) : queue.length === 0 ? (
-            <p className="mt-3 flex items-center gap-2 text-sm text-open">
-              <CheckCircle2 size={18} aria-hidden="true" /> Nada pendiente. Todo al día.
-            </p>
+            <div className="flex items-center gap-3 px-5 pb-6 pt-1 sm:px-6">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-open/10 text-open">
+                <CheckCircle2 size={18} aria-hidden="true" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-ink">Todo al día</p>
+                <p className="text-xs text-zinc-500">No hay nada esperándote.</p>
+              </div>
+            </div>
           ) : (
-            <ul className="mt-3 divide-y divide-white/[0.06]">
+            <ul className="divide-y divide-white/[0.06] border-t border-white/[0.06]">
               {queue.map((q) => (
                 <li key={q.href}>
-                  <Link href={q.href} className="group flex items-center gap-4 py-3">
-                    <span className="grid h-10 min-w-10 place-items-center rounded-xl bg-warn/15 px-2 font-display text-xl text-warn tabular-nums shadow-[inset_0_0_0_1px_rgba(251,191,36,0.25)]">{q.n}</span>
-                    <span className="flex-1 text-sm text-zinc-200 group-hover:text-ink">{q.label}</span>
-                    <ArrowUpRight size={18} className="text-warn/60 transition group-hover:text-warn" aria-hidden="true" />
+                  <Link href={q.href} className="ui-row group flex items-center gap-3 px-5 py-3 transition sm:px-6">
+                    <span className="grid h-8 min-w-8 shrink-0 place-items-center rounded-lg bg-warn/10 px-1.5 text-sm font-extrabold tabular-nums text-warn ring-1 ring-inset ring-warn/25">{q.n}</span>
+                    <span className="flex-1 text-sm leading-snug text-zinc-200 group-hover:text-ink">{q.label}</span>
+                    <ChevronRight size={16} aria-hidden="true" className="shrink-0 text-zinc-600 transition group-hover:translate-x-0.5 group-hover:text-zinc-300" />
                   </Link>
                 </li>
               ))}
             </ul>
           )}
-        </section>
+        </Panel>
 
-        {/* 2. Tráfico de la semana */}
-        <section aria-labelledby="traffic-h">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <SectionTitle id="traffic-h" icon={Activity} accent="bg-brand/15 text-brand-soft">Últimos 7 días</SectionTitle>
+        {/* 2. La semana: una gráfica con tres pestañas */}
+        <Panel aria-labelledby="traffic-h" pad="p-0" className="lg:col-start-1 lg:row-span-2 lg:row-start-1">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 pb-4 pt-5 sm:px-6">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <SectionTitle id="traffic-h" icon={Activity}>Últimos 7 días</SectionTitle>
               <AdminCityBadge />
             </div>
-            <Link href="/admin/datos" className="text-xs font-semibold text-brand-soft hover:text-ink">Ver datos completos</Link>
+            <Link href="/admin/datos" className={BTN_GHOST_SM}>
+              Ver datos completos <ArrowUpRight size={13} aria-hidden="true" />
+            </Link>
           </div>
           {trafficNote && (
-            <p role="status" className="mb-3 rounded-xl border border-warn/40 bg-warn/10 px-4 py-2.5 text-xs text-warn">{trafficNote.text}</p>
+            <p role="status" className="mx-5 mb-4 rounded-xl border border-warn/40 bg-warn/10 px-4 py-2.5 text-xs text-warn sm:mx-6">{trafficNote.text}</p>
           )}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {traffic.map((t) => (
-              <Kpi
-                key={t.label}
-                accent={t.accent}
-                icon={t.icon}
-                label={t.label}
-                value={week ? t.now : trafficFailed ? "—" : "…"}
-                note={week ? delta(t.now, t.before) : trafficFailed ? (trafficNote ? "Falta el SQL" : "No se pudo cargar") : ""}
-                tone={week ? deltaTone(t.now, t.before) : "flat"}
-                series={t.series}
-              />
-            ))}
-            <Kpi
-              href="/admin/users"
-              accent="coral"
-              icon={Users}
-              label="Usuarios registrados"
-              value={users ? users.total : "…"}
-              note={users ? `${users.new7} nuevos y ${users.active7} activos esta semana (cuentas de toda la web)` : ""}
-            />
+          <div role="tablist" aria-label="Qué enseña la gráfica" className="grid grid-cols-3 divide-x divide-white/[0.06] border-y border-white/[0.06]">
+            {metrics.map((m) => {
+              const on = m.key === metric.key
+              return (
+                <button
+                  key={m.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => setMetricKey(m.key)}
+                  className={`px-3.5 py-4 text-left transition sm:px-6 ${on ? "bg-linear-to-b from-brand/[0.16] to-transparent shadow-[inset_0_2px_0_0_var(--color-brand-soft)]" : "hover:bg-white/[0.025]"}`}
+                >
+                  <span className={`block text-xs font-medium ${on ? "text-zinc-200" : "text-zinc-500"}`}>
+                    <span className="sm:hidden">{m.short}</span>
+                    <span className="hidden sm:inline">{m.label}</span>
+                  </span>
+                  <span className={`mt-1.5 block text-[26px] font-extrabold leading-none tracking-tight sm:text-4xl ${on ? "text-ink" : "text-zinc-400"}`}>
+                    {week ? m.now : trafficFailed ? "—" : "…"}
+                  </span>
+                  <span className="mt-2 block">{week ? <Delta now={m.now} before={m.before} /> : <span className="text-xs text-zinc-500">{trafficFailed ? (trafficNote ? "Falta el SQL" : "No se pudo cargar") : ""}</span>}</span>
+                </button>
+              )
+            })}
           </div>
-        </section>
+          <div className="px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
+            {!week ? (
+              <p className="py-20 text-center text-sm text-zinc-500">{trafficFailed ? "No hay datos de la semana." : "Cargando…"}</p>
+            ) : metric.days ? (
+              <WeekChart days={metric.days} unit={metric.unit} />
+            ) : (
+              <CompareBars now={metric.now} before={metric.before} unit={metric.unit} />
+            )}
+          </div>
+        </Panel>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* 3. Estado */}
-          <section aria-labelledby="system-h" className={`${CARD} p-6`}>
-            <div className="flex items-center justify-between gap-3">
-              <SectionTitle id="system-h" icon={ShieldCheck} accent="bg-open/15 text-open">Estado de la web</SectionTitle>
-              <Link href="/admin/herramientas" className="text-xs font-semibold text-brand-soft hover:text-ink">Cambiar</Link>
+        {/* 3. Estado de la web: bajo «Pendiente» en ordenador, tras la gráfica en móvil */}
+        <Panel aria-labelledby="system-h" className="lg:col-start-2 lg:row-start-2">
+          <SectionTitle id="system-h" icon={ShieldCheck} right={<Link href="/admin/herramientas" className={LINK}>Cambiar</Link>}>Estado de la web</SectionTitle>
+          <dl className="mt-4 divide-y divide-white/[0.06] text-sm">
+            <div className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+              <dt className="text-zinc-400">Mantenimiento</dt>
+              <dd>
+                {system.maintenance === null ? (
+                  <StatusPill tone="neutral">…</StatusPill>
+                ) : system.maintenance ? (
+                  <StatusPill tone="red">Activo: solo tú entras</StatusPill>
+                ) : (
+                  <StatusPill tone="green">Apagado</StatusPill>
+                )}
+              </dd>
             </div>
-            <dl className="mt-4 space-y-3 text-sm">
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-zinc-400">Modo mantenimiento</dt>
-                <dd>
-                  {system.maintenance === null ? (
-                    <StatusPill tone="neutral">…</StatusPill>
-                  ) : system.maintenance ? (
-                    <StatusPill tone="red">Activo: solo tú puedes entrar</StatusPill>
-                  ) : (
-                    <StatusPill tone="green">Apagado</StatusPill>
-                  )}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-zinc-400">Club Noctua (XP y misiones)</dt>
-                <dd>
-                  {system.clubNoctua === null ? (
-                    <StatusPill tone="neutral">…</StatusPill>
-                  ) : system.clubNoctua ? (
-                    <StatusPill tone="green">Activo</StatusPill>
-                  ) : (
-                    <StatusPill tone="amber">En pausa</StatusPill>
-                  )}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-zinc-400">Disfraz de Noc</dt>
-                <dd>
-                  <StatusPill tone="violet">{seasonLabel}</StatusPill>
-                </dd>
-              </div>
-            </dl>
-          </section>
-
-          {/* Contenido */}
-          <section aria-labelledby="content-h" className={`${CARD} p-6`}>
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <SectionTitle id="content-h" icon={Layers} accent="bg-[#ff4fa3]/15 text-[#ff86bf]">Contenido publicado</SectionTitle>
-                <AdminCityBadge />
-              </div>
-              <Link href="/admin/calidad" className="text-right text-xs font-semibold text-brand-soft hover:text-ink">Revisar calidad de fichas</Link>
+            <div className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+              <dt className="text-zinc-400">Club Noctua</dt>
+              <dd>
+                {system.clubNoctua === null ? (
+                  <StatusPill tone="neutral">…</StatusPill>
+                ) : system.clubNoctua ? (
+                  <StatusPill tone="green">Activo</StatusPill>
+                ) : (
+                  <StatusPill tone="amber">En pausa</StatusPill>
+                )}
+              </dd>
             </div>
-            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-              <div className={`rounded-2xl border p-4 ${ACCENT.violet.tile}`}>
-                <dt className="text-xs text-zinc-300">Clubs visibles</dt>
-                <dd className={`mt-1 font-display text-2xl tabular-nums ${ACCENT.violet.text}`}>{content ? content.clubsVisible : "…"}</dd>
-                <dd className="text-xs text-zinc-500">{content ? `${content.clubsHidden} ocultos` : ""}</dd>
-              </div>
-              <div className={`rounded-2xl border p-4 ${ACCENT.pink.tile}`}>
-                <dt className="text-xs text-zinc-300">Eventos próximos 30 días</dt>
-                <dd className={`mt-1 font-display text-2xl tabular-nums ${ACCENT.pink.text}`}>{content ? content.events30 : "…"}</dd>
-              </div>
-              <div className={`rounded-2xl border p-4 ${ACCENT.cyan.tile}`}>
-                <dt className="text-xs text-zinc-300">Noches de club esta semana</dt>
-                <dd className={`mt-1 font-display text-2xl tabular-nums ${ACCENT.cyan.text}`}>{content ? content.nights7 : "…"}</dd>
-              </div>
-            </dl>
-          </section>
-        </div>
+            <div className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+              <dt className="text-zinc-400">Disfraz de Noc</dt>
+              <dd>
+                <StatusPill tone="violet">{seasonLabel}</StatusPill>
+              </dd>
+            </div>
+          </dl>
+        </Panel>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* 4. Esta semana */}
-          <section aria-labelledby="upcoming-h" className={`${CARD} p-6`}>
-            <SectionTitle id="upcoming-h" icon={CalendarDays} accent="bg-cyan-400/15 text-cyan-300">Esta semana</SectionTitle>
+        {/* 4. Contenido publicado: una franja ancha con tres cifras */}
+        <Panel aria-labelledby="content-h" className="lg:col-span-2">
+          <div className="lg:flex lg:items-center lg:gap-12">
+            <div className="flex items-start justify-between gap-3 lg:block lg:w-56 lg:shrink-0">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 lg:block">
+                <SectionTitle id="content-h" icon={Layers}>Contenido publicado</SectionTitle>
+                <div className="lg:mt-3"><AdminCityBadge /></div>
+              </div>
+              <Link href="/admin/calidad" className={`${LINK} shrink-0 lg:mt-3`}>Revisar calidad</Link>
+            </div>
+            <dl className="mt-5 grid flex-1 grid-cols-3 divide-x divide-white/[0.06] lg:mt-0">
+              {[
+                { label: "Clubs visibles", value: content?.clubsVisible, note: content ? `${content.clubsHidden} ocultos` : "" },
+                { label: "Eventos en 30 días", value: content?.events30, note: "" },
+                { label: "Noches de club esta semana", value: content?.nights7, note: "" },
+              ].map((c) => (
+                <div key={c.label} className="px-3 first:pl-0 last:pr-0 lg:px-8 lg:first:pl-8">
+                  <dt className="text-xs leading-snug text-zinc-400">{c.label}</dt>
+                  <dd className="mt-2 text-3xl font-extrabold leading-none tracking-tight text-ink lg:text-4xl">{content ? c.value : "…"}</dd>
+                  {c.note && <dd className="mt-1.5 text-xs text-zinc-500">{c.note}</dd>}
+                </div>
+              ))}
+            </dl>
+          </div>
+        </Panel>
+
+        {/* 5. Agenda y usuarios, alineados con las columnas de arriba */}
+        <div className="grid grid-cols-1 gap-5 lg:col-span-2 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <Panel aria-labelledby="upcoming-h">
+            <SectionTitle id="upcoming-h" icon={CalendarDays}>Esta semana</SectionTitle>
             {upcoming.length === 0 ? (
-              <p className="mt-3 text-sm text-zinc-500">No hay eventos ni noches de club en los próximos 7 días.</p>
+              <p className="mt-4 text-sm text-zinc-500">No hay eventos ni noches de club en los próximos 7 días.</p>
             ) : (
               <ul className="mt-3 divide-y divide-white/[0.06]">
                 {upcoming.map((u) => {
                   const when = new Date(`${u.date}T12:00:00`)
-                  const a = ACCENT[u.kind === "Evento" ? "pink" : "violet"]
                   return (
                     <li key={`${u.kind}-${u.id}`}>
-                      <Link href={u.href} className="flex items-center gap-3 py-2.5 text-sm">
-                        <span className={`flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl leading-none ${a.chip}`}>
-                          <span className="text-[10px] font-semibold capitalize">{when.toLocaleDateString("es-ES", { weekday: "short" }).replace(".", "")}</span>
-                          <span className="mt-0.5 font-display text-base tabular-nums">{when.getDate()}</span>
+                      <Link href={u.href} className="ui-row group -mx-3 flex items-center gap-4 rounded-xl px-3 py-3 text-sm">
+                        <span className="ui-well flex h-12 w-11 shrink-0 flex-col items-center justify-center leading-none">
+                          <span className="text-[11px] font-medium capitalize text-zinc-500">{when.toLocaleDateString("es-ES", { weekday: "short" }).replace(".", "")}</span>
+                          <span className="mt-1 text-lg font-extrabold tabular-nums text-ink">{when.getDate()}</span>
                         </span>
-                        <span className="flex-1 truncate text-zinc-100">{u.title}</span>
-                        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${a.chip}`}>{u.kind}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium text-zinc-100 group-hover:text-ink">{u.title}</span>
+                          <span className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-500">
+                            <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${u.kind === "Evento" ? "bg-zinc-500" : "bg-brand"}`} />
+                            {u.kind}
+                          </span>
+                        </span>
+                        <ChevronRight size={16} aria-hidden="true" className="shrink-0 text-zinc-600 transition group-hover:translate-x-0.5 group-hover:text-zinc-300" />
                       </Link>
                     </li>
                   )
                 })}
               </ul>
             )}
-          </section>
+          </Panel>
 
-          <section aria-labelledby="signups-h" className={`${CARD} p-6`}>
-            <div className="flex items-center justify-between gap-3">
-              <SectionTitle id="signups-h" icon={UserPlus} accent="bg-orange-400/15 text-orange-300">Últimos registros</SectionTitle>
-              <Link href="/admin/users" className="text-xs font-semibold text-brand-soft hover:text-ink">Todos</Link>
+          <Panel aria-labelledby="users-h">
+            <SectionTitle id="users-h" icon={Users} right={<Link href="/admin/users" className={LINK}>Ver todos</Link>}>Usuarios</SectionTitle>
+            <div className="mt-4 flex items-end gap-3">
+              <p className="text-4xl font-extrabold leading-none tracking-tight text-ink">{users ? users.total : "…"}</p>
+              <p className="pb-0.5 text-xs text-zinc-500">registrados en toda la web</p>
             </div>
+            <dl className="ui-well mt-4 grid grid-cols-2 divide-x divide-white/[0.06] text-sm">
+              <div className="px-4 py-3">
+                <dt className="text-xs text-zinc-400">Nuevos esta semana</dt>
+                <dd className="mt-1 text-xl font-extrabold tabular-nums text-ink">{users ? users.new7 : "…"}</dd>
+              </div>
+              <div className="px-4 py-3">
+                <dt className="text-xs text-zinc-400">Activos esta semana</dt>
+                <dd className="mt-1 text-xl font-extrabold tabular-nums text-ink">{users ? users.active7 : "…"}</dd>
+              </div>
+            </dl>
+            <h3 className="mt-5 text-xs font-semibold text-zinc-500">Últimos registros</h3>
             {signups.length === 0 ? (
               <p className="mt-3 text-sm text-zinc-500">Todavía no hay usuarios.</p>
             ) : (
-              <ul className="mt-3 divide-y divide-white/[0.06]">
-                {signups.map((s, i) => (
+              <ul className="mt-1 divide-y divide-white/[0.06]">
+                {signups.map((s) => (
                   <li key={s.id}>
-                    <Link href={`/admin/actividad?user=${s.id}`} className="flex items-center gap-3 py-2.5 text-sm">
-                      <span
-                        aria-hidden="true"
-                        className={`grid h-8 w-8 shrink-0 place-items-center rounded-full bg-linear-to-br text-xs font-bold text-white ${ACCENT[AVATAR_ORDER[i % AVATAR_ORDER.length]].avatar}`}
-                      >
+                    <Link href={`/admin/actividad?user=${s.id}`} className="ui-row group -mx-3 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm">
+                      <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-linear-to-br from-[#8f73ff] to-[#5b3fd6] text-xs font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]">
                         {initialOf(s.username || s.email)}
                       </span>
-                      <span className="flex-1 truncate text-zinc-100">{s.username ? `@${s.username}` : s.email}</span>
-                      <span className="shrink-0 text-xs text-zinc-500">{new Date(s.created_at).toLocaleDateString("es-ES")}</span>
-                      <span className="shrink-0 text-xs font-semibold text-brand-soft">Ver actividad</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium text-zinc-100 group-hover:text-ink">{s.username ? `@${s.username}` : s.email}</span>
+                        <span className="block text-xs text-zinc-500">{new Date(s.created_at).toLocaleDateString("es-ES")}</span>
+                      </span>
+                      <ChevronRight size={16} aria-hidden="true" className="shrink-0 text-zinc-600 transition group-hover:translate-x-0.5 group-hover:text-zinc-300" />
                     </Link>
                   </li>
                 ))}
               </ul>
             )}
-          </section>
+          </Panel>
         </div>
       </div>
     </AdminShell>

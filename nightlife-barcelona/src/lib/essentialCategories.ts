@@ -107,6 +107,14 @@ export function isKnownCategory(key: string | null | undefined): boolean {
 // verse paradas de taxi ni de VTC, ni en Barcelona ni en Madrid; para pedir un coche está la pantalla Esenciales › Taxi (apps y teléfonos
 // de radio taxi). Las filas siguen en la base: la ficha de un local las usa para «parada de taxi más cercana».
 export const NOT_ON_MAP: readonly string[] = ["Taxi"]
+// A dónde lleva una categoría desde un listado (portada de Esenciales, accesos de la portada, «Volver a casa»). En Barcelona,
+// Metro y Nitbus abren primero su portada con todas las líneas (/metro, /nitbus) y desde ahí un botón «Ver en el mapa» lleva al
+// mapa de paradas (/essentials/metro, /essentials/nitbus). Antes se entraba directamente al mapa (19/11/2026). El resto de
+// categorías, y Madrid (que tiene sus propias páginas de metro y búhos), siguen yendo a su página de Esenciales.
+export function essentialEntryHref(slug: string, city: string): string {
+  return city === "barcelona" && (slug === "metro" || slug === "nitbus") ? `/${slug}` : `/essentials/${slug}`
+}
+
 export function isOnMap(category: string | null | undefined): boolean {
   return !NOT_ON_MAP.includes(category || "")
 }

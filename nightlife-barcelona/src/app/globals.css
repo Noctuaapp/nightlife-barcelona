@@ -344,3 +344,260 @@ button, a {
 .act-tt svg { filter: drop-shadow(1px 0.6px 0 #25f4ee) drop-shadow(-1px -0.6px 0 #fe2c55); }
 .act-taxi svg { color: #facc15; }
 .act .brand-logo { width: 36px; height: 36px; border-radius: 999px; object-fit: cover; flex: none; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12), 0 4px 10px -4px rgb(0 0 0 / 0.7); }
+
+/* =====================================================================
+   ADMIN Y BARRA INFERIOR — «violeta profundo» (19/11/2026)
+   Un solo acento (el violeta de marca) trabajado como material: bordes con luz que se desvanece, un destello violeta
+   muy suave en la esquina de cada tarjeta y botones con volumen real (brillo arriba, filo oscuro abajo, sombra de
+   contacto y resplandor), con un destello que los cruza al pasar por encima y una pulsación que los hunde. Los
+   selectores y la barra de abajo llevan una pieza activa que se desliza de una opción a otra. Va en la capa
+   «components»: una clase de Tailwind suelta (padding, ancho...) siempre puede ajustarlas.
+   ===================================================================== */
+/* Color de la pieza de la barra de abajo: propiedades registradas para que el color PASE de una sección a otra mientras se desliza. */
+@property --t1 { syntax: "<color>"; inherits: false; initial-value: #8d70ff; }
+@property --t2 { syntax: "<color>"; inherits: false; initial-value: #6a46f5; }
+@property --t3 { syntax: "<color>"; inherits: false; initial-value: #4f2fd0; }
+@property --tg { syntax: "<color>"; inherits: false; initial-value: rgb(124 92 255 / 0.85); }
+
+@layer components {
+  /* ---------- Superficies ---------- */
+  .ui-card {
+    position: relative;
+    border: 1px solid transparent;
+    border-radius: 20px;
+    background:
+      radial-gradient(120% 90% at 0% 0%, rgb(124 92 255 / 0.11), transparent 55%) padding-box,
+      linear-gradient(#15131f, #15131f) padding-box,
+      linear-gradient(140deg, rgb(160 139 255 / 0.42), rgb(255 255 255 / 0.06) 38%, rgb(255 255 255 / 0.035) 70%, rgb(160 139 255 / 0.14)) border-box;
+    box-shadow: 0 18px 40px -26px rgb(0 0 0 / 0.9);
+  }
+  .ui-well {
+    border: 1px solid rgb(255 255 255 / 0.07);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.035), rgb(255 255 255 / 0.012));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  }
+  .ui-well-on {
+    border-color: rgb(160 139 255 / 0.55);
+    background: linear-gradient(180deg, rgb(124 92 255 / 0.16), rgb(124 92 255 / 0.05));
+  }
+  .ui-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    color: #b8a6ff;
+    background: linear-gradient(180deg, rgb(124 92 255 / 0.2), rgb(124 92 255 / 0.07));
+    box-shadow: inset 0 0 0 1px rgb(160 139 255 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.08);
+  }
+
+  /* ---------- Botones ---------- */
+  .ui-btn {
+    --btn-r: 12px;
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    overflow: hidden;
+    border: 1px solid transparent;
+    border-radius: var(--btn-r);
+    padding: 0.6rem 1.1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.011em;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.12s cubic-bezier(0.3, 0.9, 0.3, 1), box-shadow 0.2s ease, filter 0.2s ease, background 0.2s ease, color 0.2s ease;
+  }
+  .ui-btn > svg { flex: none; }
+  .ui-btn:active:not(:disabled) { transform: translateY(1px) scale(0.985); }
+  .ui-btn:disabled { cursor: not-allowed; opacity: 0.45; filter: saturate(0.5); }
+  .ui-btn[aria-busy="true"] { cursor: progress; pointer-events: none; opacity: 0.8; }
+  .ui-btn-sm { --btn-r: 10px; padding: 0.36rem 0.75rem; font-size: 0.75rem; line-height: 1rem; }
+  .ui-btn-lg { --btn-r: 14px; padding: 0.8rem 1.4rem; font-size: 0.9375rem; }
+  .ui-btn-icon { width: 2.5rem; height: 2.5rem; padding: 0; }
+  .ui-btn-icon.ui-btn-sm { width: 2rem; height: 2rem; }
+
+  /* Principal: cristal violeta. Brillo en la mitad de arriba, filo de luz, filo oscuro abajo, sombra de contacto,
+     sombra de apoyo y resplandor. Al pasar, un destello cruza el botón. */
+  .ui-btn-primary {
+    color: #fff;
+    text-shadow: 0 1px 0 rgb(40 20 120 / 0.55);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.2) 0%, rgb(255 255 255 / 0.04) 49%, rgb(255 255 255 / 0) 50%),
+      linear-gradient(180deg, #8d70ff 0%, #6a46f5 100%);
+    background-origin: border-box;
+    box-shadow:
+      0 0 0 1px #4f2fd0,
+      inset 0 1px 0 rgb(255 255 255 / 0.42),
+      inset 0 -1px 0 rgb(30 10 110 / 0.45),
+      0 1px 2px rgb(0 0 0 / 0.45),
+      0 8px 18px -6px rgb(106 70 245 / 0.6),
+      0 22px 36px -18px rgb(124 92 255 / 0.38);
+  }
+  .ui-btn-primary::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.34) 50%, transparent 65%);
+    transform: translateX(-130%);
+    transition: transform 0.7s cubic-bezier(0.3, 0.7, 0.2, 1);
+  }
+  .ui-btn-primary:hover:not(:disabled) { filter: brightness(1.07); }
+  .ui-btn-primary:hover:not(:disabled)::after { transform: translateX(130%); }
+  .ui-btn-primary:active:not(:disabled) {
+    filter: brightness(0.97);
+    box-shadow: 0 0 0 1px #4f2fd0, inset 0 2px 5px rgb(30 10 110 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.18), 0 2px 6px -2px rgb(106 70 245 / 0.5);
+  }
+
+  /* Secundario: cristal oscuro con borde de luz en degradado. */
+  .ui-btn-secondary {
+    color: #f1eeff;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.015)) padding-box,
+      linear-gradient(#18151f, #18151f) padding-box,
+      linear-gradient(180deg, rgb(255 255 255 / 0.24), rgb(255 255 255 / 0.07) 60%, rgb(160 139 255 / 0.26)) border-box;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 1px 2px rgb(0 0 0 / 0.5), 0 10px 18px -12px rgb(0 0 0 / 0.9);
+  }
+  .ui-btn-secondary:hover:not(:disabled) {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(124 92 255 / 0.08)) padding-box,
+      linear-gradient(#1c1827, #1c1827) padding-box,
+      linear-gradient(180deg, rgb(255 255 255 / 0.34), rgb(160 139 255 / 0.4)) border-box;
+  }
+  .ui-btn-secondary:active:not(:disabled) { box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.55), 0 1px 0 rgb(255 255 255 / 0.04); }
+
+  /* Terciario: sin caja hasta que lo tocas. */
+  .ui-btn-ghost { color: #c9c5d8; background: transparent; }
+  .ui-btn-ghost:hover:not(:disabled) { color: #fff; background: rgb(255 255 255 / 0.07); }
+
+  /* Peligro: el mismo cristal en rojo, sin gritar hasta que lo necesitas. */
+  .ui-btn-danger {
+    color: #fda4af;
+    background:
+      linear-gradient(180deg, rgb(251 113 133 / 0.14), rgb(244 63 94 / 0.05)) padding-box,
+      linear-gradient(#1c1219, #1c1219) padding-box,
+      linear-gradient(180deg, rgb(251 113 133 / 0.55), rgb(251 113 133 / 0.14)) border-box;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.5);
+  }
+  .ui-btn-danger:hover:not(:disabled) { color: #fecdd3; filter: brightness(1.25); }
+  .ui-btn-danger:active:not(:disabled) { box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.55); }
+
+  /* ---------- Selector segmentado: pista hundida y una pieza de cristal violeta que se desliza ---------- */
+  .ui-seg {
+    position: relative;
+    display: inline-flex;
+    max-width: 100%;
+    padding: 4px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.12));
+    box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.55), inset 0 0 0 1px rgb(160 139 255 / 0.16), 0 1px 0 rgb(255 255 255 / 0.04);
+  }
+  .ui-seg-thumb {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 0;
+    border-radius: 10px;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.2) 0%, rgb(255 255 255 / 0) 50%),
+      linear-gradient(180deg, #8d70ff, #6a46f5);
+    box-shadow: 0 0 0 1px #4f2fd0, inset 0 1px 0 rgb(255 255 255 / 0.38), inset 0 -1px 0 rgb(30 10 110 / 0.4), 0 6px 14px -6px rgb(124 92 255 / 0.8);
+    transition: transform 0.32s cubic-bezier(0.3, 0.9, 0.25, 1), width 0.32s cubic-bezier(0.3, 0.9, 0.25, 1), opacity 0.2s ease;
+  }
+  .ui-seg-item {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 10px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 700;
+    color: #a79fc4;
+    transition: color 0.2s ease;
+  }
+  .ui-seg-item:hover { color: #fff; }
+  .ui-seg-item[aria-pressed="true"] { color: #fff; text-shadow: 0 1px 0 rgb(40 20 120 / 0.5); }
+
+  /* Chip de filtro (varios a la vez) */
+  .ui-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 10px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 700;
+    color: #a79fc4;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+    transition: color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .ui-chip:hover { color: #fff; box-shadow: inset 0 0 0 1px rgb(160 139 255 / 0.4); }
+  .ui-chip[aria-pressed="true"] {
+    color: #fff;
+    background: linear-gradient(180deg, rgb(124 92 255 / 0.28), rgb(124 92 255 / 0.12));
+    box-shadow: inset 0 0 0 1px rgb(160 139 255 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.08);
+  }
+
+  .ui-row:hover { background: linear-gradient(90deg, rgb(124 92 255 / 0.09), transparent 75%); }
+
+  .ui-nav-on {
+    color: #fff;
+    background: linear-gradient(90deg, rgb(124 92 255 / 0.22), rgb(124 92 255 / 0.04));
+    box-shadow: inset 0 0 0 1px rgb(160 139 255 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  }
+
+  /* ---------- Barra de abajo: cristal esmerilado con borde de luz y una pieza violeta que se desliza ---------- */
+  .ui-dock {
+    border: 1px solid transparent;
+    border-radius: 28px;
+    background:
+      linear-gradient(rgb(18 16 28 / 0.72), rgb(18 16 28 / 0.72)) padding-box,
+      linear-gradient(160deg, rgb(255 255 255 / 0.3), rgb(160 139 255 / 0.2) 30%, rgb(255 255 255 / 0.05) 60%, rgb(160 139 255 / 0.32)) border-box;
+    -webkit-backdrop-filter: blur(22px) saturate(170%);
+    backdrop-filter: blur(22px) saturate(170%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), 0 24px 48px -16px rgb(0 0 0 / 0.95), 0 4px 12px rgb(0 0 0 / 0.4);
+  }
+  .ui-dock-thumb {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 0;
+    border-radius: 22px;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.2) 0%, rgb(255 255 255 / 0) 50%),
+      linear-gradient(180deg, var(--t1), var(--t2));
+    box-shadow: 0 0 0 1px var(--t3), inset 0 1px 0 rgb(255 255 255 / 0.4), inset 0 -1px 0 rgb(0 0 0 / 0.28), 0 10px 22px -8px var(--tg);
+    transition:
+      transform 0.4s cubic-bezier(0.3, 0.9, 0.25, 1),
+      width 0.4s cubic-bezier(0.3, 0.9, 0.25, 1),
+      opacity 0.2s ease,
+      --t1 0.4s ease,
+      --t2 0.4s ease,
+      --t3 0.4s ease,
+      --tg 0.4s ease;
+  }
+  .ui-dock-item { position: relative; z-index: 1; border-radius: 22px; color: #8f8aa6; transition: color 0.2s ease, transform 0.12s ease; }
+  .ui-dock-item:hover { color: #fff; }
+  .ui-dock-item:active { transform: scale(0.94); }
+  .ui-dock-item[aria-current="page"] { color: #fff; text-shadow: 0 1px 0 rgb(40 20 120 / 0.5); }
+  .ui-dock-item[aria-current="page"] svg { filter: drop-shadow(0 1px 0 rgb(40 20 120 / 0.5)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-btn, .ui-btn-primary::after, .ui-seg-thumb, .ui-seg-item, .ui-chip, .ui-dock-thumb, .ui-dock-item { transition: none; }
+}

@@ -61,6 +61,13 @@ export default function MetroIndexView({ lines, search }: Props) {
           <NocOwl size={84} pose="metro" mood="happy" className="mt-3 hidden shrink-0 min-[380px]:block sm:mr-4" />
         </header>
 
+        {/* 19/11/2026: desde Esenciales se entra aquí primero (todas las líneas); el mapa de estaciones queda a un toque. */}
+        {!madrid && (
+          <Link href="/essentials/metro" className="btn-pill btn-secondary mt-6 inline-flex items-center gap-2 px-5 py-3 text-sm">
+            <MapIcon size={16} aria-hidden="true" /> {t("metroPage.viewMap")}
+          </Link>
+        )}
+
         <section className="mt-8" aria-label={t("metroPage.findStopAll")}>
           <div className="relative">
             <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
@@ -130,15 +137,7 @@ export default function MetroIndexView({ lines, search }: Props) {
           </ul>
         </section>
 
-        {!madrid && (
-          <Link
-            href="/essentials/metro"
-            className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-brand-soft underline underline-offset-4 hover:text-ink"
-          >
-            <MapIcon size={16} aria-hidden="true" /> {t("metroPage.viewMap")}
-          </Link>
-        )}
-        <p className="mt-6 text-xs leading-relaxed text-zinc-400">{t("metroPage.officialNote")}</p>
+        <p className="mt-8 text-xs leading-relaxed text-zinc-400">{t("metroPage.officialNote")}</p>
         {madrid && (
           // Crédito exigido por la licencia de los datos del CRTM (no da a entender que respalde la web).
           <p className="mt-2 text-[11px] leading-snug text-zinc-500">
