@@ -31,6 +31,21 @@ export function rowsOfCity<T extends Place>(rows: T[], city: CityKey): T[] {
   return rows.filter((r) => cityOfClub(r) === city)
 }
 
+/**
+ * Cuántos clubs hay en cada ciudad, publicados y ocultos (Ajustes y herramientas › Estado, 20/11/2026). Usa el mismo reparto que
+ * la pantalla Clubs (rowsOfCity), así que las cifras coinciden con las de allí.
+ */
+export function clubCountsByCity<T extends Place & { hidden?: boolean | null }>(rows: T[]): Record<CityKey, { visible: number; hidden: number }> & { total: { visible: number; hidden: number } } {
+  const out = { total: { visible: 0, hidden: 0 } } as Record<CityKey, { visible: number; hidden: number }> & { total: { visible: number; hidden: number } }
+  for (const key of Object.keys(CITIES) as CityKey[]) out[key] = { visible: 0, hidden: 0 }
+  for (const r of rows) {
+    const k = r.hidden ? "hidden" : "visible"
+    out[cityOfClub(r)][k]++
+    out.total[k]++
+  }
+  return out
+}
+
 /** Los ids de los locales de una ciudad (para filtrar tablas que solo guardan club_id: noches de club, sesiones semanales...). */
 export function clubIdsOfCity<T extends Place & { id: number }>(clubs: T[], city: CityKey): Set<number> {
   return new Set(rowsOfCity(clubs, city).map((c) => c.id))

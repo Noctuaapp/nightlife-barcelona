@@ -241,7 +241,8 @@ export function SystemStatus() {
 
       <div className="mt-5 grid grid-cols-2 gap-3 border-t border-white/10 pt-5 sm:grid-cols-4">
         <StatTile accent="violet" label="Usuarios" value={s.users ?? "—"} note={`+${s.users_7d ?? 0} esta semana`} />
-        <StatTile accent="pink" label="Clubs publicados / ocultos" value={`${s.clubs_visible ?? "—"} / ${s.clubs_hidden ?? "—"}`} />
+        {/* Cuenta TODA la tabla (todas las ciudades). La pantalla Clubs solo cuenta los de la ciudad elegida arriba, de ahí que no cuadren (20/11/2026). */}
+        <StatTile accent="pink" label="Clubs publicados / ocultos" value={`${s.clubs_visible ?? "—"} / ${s.clubs_hidden ?? "—"}`} note="Suma de todas las ciudades" />
         <StatTile accent="cyan" label="Clubs con dueño vinculado" value={s.clubs_owned ?? "—"} />
         <StatTile accent="coral" label="Registros de analítica" value={(s.analytics_rows ?? 0).toLocaleString("es-ES")} />
       </div>

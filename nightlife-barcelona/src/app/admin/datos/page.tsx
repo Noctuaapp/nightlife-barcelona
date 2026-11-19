@@ -13,7 +13,8 @@ import { clubCityIndex, cityOfEvent } from "../../../lib/adminCity"
 import { CITIES, cityOfClub, type CityKey } from "../../../lib/cities"
 import { ADMIN_EMAIL } from "../../../lib/admin"
 import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
-import { madridDaysAgo, madridToday, madridYear } from "../../../lib/madridDay"
+import { madridDaysAgo, madridToday, madridYear, shiftIsoDay } from "../../../lib/madridDay"
+import { useMadridToday } from "../../../lib/useMadridToday"
 import InteractionStats, { type Kind as ClickKind } from "../../../components/admin/InteractionStats"
 import { CountryPanel, FunnelPanel, LanguagePanel, SourcePanel } from "../../../components/admin/DataInsights"
 import { NeedSql } from "../../../components/admin/insights"
@@ -128,6 +129,13 @@ export default function AdminDatosPage() {
   const [to, setTo] = useState(madridToday())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  // Personas y cuentas por día (20/11/2026, SQL 130). Aparte del resto: si falta el SQL solo avisa su panel.
+  const [peopleDaily, setPeopleDaily] = useState<{ d: string; people: number; accounts: number }[] | null>(null)
+  const [peopleTotal, setPeopleTotal] = useState<number | null>(null)
+  const [peopleMissing, setPeopleMissing] = useState(false)
+  // Si la pantalla se queda abierta pasada la medianoche y el periodo acababa en «hoy», se corre un día (antes se quedaba en ayer).
+  const todayNow = useMadridToday()
+  const lastToday = useRef(todayNow)
 
   const [overview, setOverview] = useState<any>(null)
   const [clubItems, setClubItems] = useState<any[]>([])
@@ -182,6 +190,34 @@ export default function AdminDatosPage() {
       setCheckingAdmin(false)
     })
   }, [])
+
+  useEffect(() => {
+    if (lastToday.current === todayNow) return
+    const was = lastToday.current
+    lastToday.current = todayNow
+    if (to !== was) return
+    const delta = Math.round((new Date(`${todayNow}T12:00:00Z`).getTime() - new Date(`${was}T12:00:00Z`).getTime()) / 86400000)
+    setFrom(shiftIsoDay(from, delta))
+    setTo(todayNow)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todayNow])
+
+  useEffect(() => {
+    if (checkingAdmin) return
+    let current = true
+    setPeopleDaily(null)
+    setPeopleTotal(null)
+    setPeopleMissing(false)
+    rpcByCity<{ daily: { d: string; people: number; accounts: number }[]; accounts_total: number }>(
+      supabase, "admin_people_by_day", { p_from: from, p_to: to }, city, "130_personas_por_dia.sql"
+    ).then(({ data, error }) => {
+      if (!current) return
+      if (error || !data) { setPeopleMissing(true); return }
+      setPeopleDaily(data.daily || [])
+      setPeopleTotal(data.accounts_total ?? 0)
+    })
+    return () => { current = false }
+  }, [checkingAdmin, from, to, city])
 
   const load = useCallback(async () => {
     const seq = ++loadSeq.current
@@ -525,12 +561,26 @@ export default function AdminDatosPage() {
               onTable={(type, sort) => goTab(type === "club" ? "clubs" : "eventos", sort)}
               onClicks={goClicks}
             />
+            {peopleDaily ? (
+              <Panel>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                  <SectionTitle icon={Users} accent="violet">Personas que entran por día</SectionTitle>
+                  <p className="text-xs text-zinc-400">
+                    {peopleTotal ?? 0} {peopleTotal === 1 ? "cuenta distinta ha entrado" : "cuentas distintas han entrado"} en el periodo
+                  </p>
+                </div>
+                <Bars data={fillDays(from, to, peopleDaily.map((d) => ({ day: d.d, p: d.people })), (r) => r.p)} />
+                <p className="mt-3 text-xs leading-relaxed text-zinc-400">Cada día se cuenta aparte: quien entra dos días cuenta dos veces (así se protege su privacidad).</p>
+              </Panel>
+            ) : peopleMissing ? (
+              <NeedSql file="130_personas_por_dia.sql" what="cuántas personas y cuentas entran cada día" />
+            ) : null}
             <Panel>
               <div className="mb-4 flex items-center justify-between gap-3">
                 <SectionTitle icon={BarChart3} accent="violet">Visitas por día</SectionTitle>
                 <button onClick={exportOverviewCsv} className={BTN_GHOST_SM}>Descargar CSV</button>
               </div>
-              <Bars data={(overview.daily || []).map((d: any) => ({ label: d.d.slice(5), value: d.views }))} />
+              <Bars data={fillDays<{ day: string; views: number }>(from, to, (overview.daily || []).map((d: any) => ({ day: d.d, views: d.views })), (r) => r.views)} />
             </Panel>
             {insights?.funnel ? (
               <FunnelPanel browse={insights.funnel.browse} signup={insights.funnel.signup} errors={insights.funnel.errors} />
@@ -690,7 +740,7 @@ export default function AdminDatosPage() {
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <Panel accent="violet" className="md:col-span-2">
                   <SectionTitle icon={BarChart3} accent="violet" className="mb-4">Visitas por día</SectionTitle>
-                  <Bars data={detail.daily.map((d: any) => ({ label: d.d.slice(5), value: d.views }))} />
+                  <Bars data={fillDays<{ day: string; views: number }>(from, to, detail.daily.map((d: any) => ({ day: d.d, views: d.views })), (r) => r.views)} />
                 </Panel>
                 <Panel accent="violet">
                   <SectionTitle icon={Clock} accent="violet" className="mb-4">Visitas por hora</SectionTitle>
@@ -749,7 +799,7 @@ export default function AdminDatosPage() {
                 </div>
                 <Panel accent="violet">
                   <SectionTitle icon={BarChart3} accent="violet" className="mb-4">Visitas a categorías por día</SectionTitle>
-                  <Bars data={(essStats.daily || []).map((d: any) => ({ label: d.d.slice(5), value: d.category_views }))} />
+                  <Bars data={fillDays<{ day: string; v: number }>(from, to, (essStats.daily || []).map((d: any) => ({ day: d.d, v: d.category_views })), (r) => r.v)} />
                 </Panel>
                 <div className="rounded-card border border-white/10 bg-surface p-4">
                   <div className="mb-3 flex items-center justify-between">

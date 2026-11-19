@@ -8,7 +8,9 @@ import {
 import AdminShell from "../../../components/admin/AdminShell"
 import { AdminCityBadge, useAdminCity } from "../../../components/admin/AdminCity"
 import { BTN_GHOST_SM, LINK, Panel, SectionTitle, StatusPill } from "../../../components/admin/ui"
-import { CompareBars, WeekChart, type DayPoint } from "../../../components/admin/WeekChart"
+import { CompareBars, WeekChart } from "../../../components/admin/WeekChart"
+import { weekSeries } from "../../../lib/weekSeries"
+import { useMadridToday } from "../../../lib/useMadridToday"
 import { supabase } from "../../../lib/supabase"
 import { fetchAllPages } from "../../../lib/fetchAll"
 import { clubCityIndex, cityOfEvent, rowsOfCity, rowsOfCityByClub } from "../../../lib/adminCity"
@@ -55,9 +57,10 @@ function Delta({ now, before }: { now: number; before: number }) {
   return (
     <span className="inline-flex items-center gap-2">
       <span
-        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-bold ring-1 ring-inset ${up ? "bg-open/10 text-open ring-open/20" : "bg-red-500/10 text-red-300 ring-red-400/25"}`}
+        className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-0.5 text-xs font-bold ring-1 ring-inset ${up ? "bg-open/10 text-open ring-open/20" : "bg-red-500/10 text-red-300 ring-red-400/25"}`}
       >
-        {up ? <TrendingUp size={12} aria-hidden="true" /> : <TrendingDown size={12} aria-hidden="true" />}
+        {/* En móvil, con 5 pestañas, no cabe la flecha: queda el signo (+/−) y el color. */}
+        <span className="hidden sm:inline-flex">{up ? <TrendingUp size={12} aria-hidden="true" /> : <TrendingDown size={12} aria-hidden="true" />}</span>
         {up ? "+" : ""}
         {p} %
       </span>
@@ -66,7 +69,9 @@ function Delta({ now, before }: { now: number; before: number }) {
   )
 }
 
-type MetricKey = "sessions" | "views" | "tickets"
+type MetricKey = "people" | "accounts" | "sessions" | "views" | "tickets"
+// admin_people_by_day (SQL 130): personas distintas y cuentas que han entrado, por día.
+type PeopleData = { daily: { d: string; people: number; accounts: number }[]; accounts_total: number }
 
 function initialOf(text: string) {
   return (text.match(/[A-Za-z0-9ÁÉÍÓÚÑáéíóúñ]/)?.[0] || "?").toUpperCase()
@@ -79,8 +84,14 @@ export default function AdminDashboardPage() {
   // Si la función de datos falla (no está en Supabase, sesión caducada...), antes los números se
   // quedaban en «…» para siempre sin decir nada.
   const [trafficFailed, setTrafficFailed] = useState(false)
-  const [metricKey, setMetricKey] = useState<MetricKey>("sessions")
+  // 20/11/2026: lo que interesa es cuánta gente entra, no cuántas veces: la gráfica abre en «Personas».
+  const [metricKey, setMetricKey] = useState<MetricKey>("people")
   const [prevWeek, setPrevWeek] = useState<Overview | null>(null)
+  const [people, setPeople] = useState<PeopleData | null>(null)
+  const [prevPeople, setPrevPeople] = useState<PeopleData | null>(null)
+  const [peopleMissing, setPeopleMissing] = useState(false)
+  // «Hoy» de Madrid, vivo: si la pantalla se queda abierta pasada la medianoche, se vuelve a pedir la semana (antes se quedaba en ayer).
+  const todayNow = useMadridToday()
   const [users, setUsers] = useState<{ total: number; new7: number; active7: number } | null>(null)
   const [signups, setSignups] = useState<Signup[]>([])
   const [system, setSystem] = useState<System>({ maintenance: null, clubNoctua: null, season: null })
@@ -176,14 +187,19 @@ export default function AdminDashboardPage() {
     const today = madridToday()
     setWeek(null)
     setPrevWeek(null)
+    setPeople(null)
+    setPrevPeople(null)
+    setPeopleMissing(false)
     setTrafficFailed(false)
     setContent(null)
     setUpcoming([])
 
     const load = async () => {
-      const [ov, ovPrev, clubs, events, nights] = await Promise.all([
+      const [ov, ovPrev, pe, pePrev, clubs, events, nights] = await Promise.all([
         rpcByCity<Overview>(supabase, "admin_data_overview", { p_from: daysAgo(6), p_to: today }, city, "105_datos_por_ciudad.sql"),
         rpcByCity<Overview>(supabase, "admin_data_overview", { p_from: daysAgo(13), p_to: daysAgo(7) }, city, "105_datos_por_ciudad.sql"),
+        rpcByCity<PeopleData>(supabase, "admin_people_by_day", { p_from: daysAgo(6), p_to: today }, city, "130_personas_por_dia.sql"),
+        rpcByCity<PeopleData>(supabase, "admin_people_by_day", { p_from: daysAgo(13), p_to: daysAgo(7) }, city, "130_personas_por_dia.sql"),
         // Por páginas: Supabase corta en 1.000 filas y, con Madrid, entre las dos ciudades se pasa de ahí.
         fetchAllPages((lo, hi) =>
           supabase.from("clubs").select("id, name, city, latitude, longitude, hidden").order("id").range(lo, hi)
@@ -202,6 +218,10 @@ export default function AdminDashboardPage() {
       setTrafficFailed(!!ov.error)
       setWeek(ov.error ? null : ov.data || null)
       setPrevWeek(ovPrev.error ? null : ovPrev.data || null)
+      // Personas y cuentas (SQL 130): si falta, la gráfica sigue con visitas y avisa.
+      setPeople(pe.error ? null : pe.data || null)
+      setPrevPeople(pePrev.error ? null : pePrev.data || null)
+      setPeopleMissing(!!pe.error)
 
       type ClubRow = { id: number; name: string; city: string | null; latitude: number | null; longitude: number | null; hidden: boolean | null }
       type EventRow = { id: number; title: string; date: string; club_name: string | null; latitude: number | null; longitude: number | null }
@@ -230,7 +250,7 @@ export default function AdminDashboardPage() {
     return () => {
       current = false
     }
-  }, [checkingAdmin, city])
+  }, [checkingAdmin, city, todayNow])
 
   if (checkingAdmin) {
     return (
@@ -261,13 +281,28 @@ export default function AdminDashboardPage() {
 
   // Lo que enseña la gráfica grande: tres cifras con pestaña. Las dos primeras tienen desglose por día; los clics en
   // entradas no (solo el total de cada semana).
-  const weekDaily = week?.daily || []
-  const prevDaily = prevWeek?.daily || []
-  const daysOf = (pick: (d: { sessions: number; views: number }) => number): DayPoint[] =>
-    weekDaily.map((d, i) => ({ d: d.d, v: pick(d), prev: prevDaily[i] ? pick(prevDaily[i]) : null }))
-  const metrics: { key: MetricKey; label: string; short: string; unit: string; now: number; before: number; days: DayPoint[] | null }[] = [
-    { key: "sessions", label: "Visitas", short: "Visitas", unit: "visitas", now: week?.sessions || 0, before: prevWeek?.sessions || 0, days: daysOf((d) => d.sessions) },
-    { key: "views", label: "Fichas vistas", short: "Fichas", unit: "fichas vistas", now: week?.page_views || 0, before: prevWeek?.page_views || 0, days: daysOf((d) => d.views) },
+  // El eje son siempre los 7 días de calendario que acaban en HOY (los días sin filas valen 0) y cada día se empareja por fecha con el
+  // mismo día de la semana anterior (ver lib/weekSeries.ts).
+  const axisDays = Array.from({ length: 7 }, (_, i) => daysAgo(6 - i))
+  const axisPrevDays = Array.from({ length: 7 }, (_, i) => daysAgo(13 - i))
+  const sum = (rows: { people: number }[] | undefined) => (rows || []).reduce((a, r) => a + r.people, 0)
+  const metrics: { key: MetricKey; label: string; short: string; unit: string; now: number; before: number; days: ReturnType<typeof weekSeries> | null; note?: string }[] = [
+    ...(people
+      ? [
+          {
+            key: "people" as const, label: "Personas que entran", short: "Personas", unit: "personas", now: sum(people.daily), before: sum(prevPeople?.daily),
+            days: weekSeries(axisDays, axisPrevDays, people.daily, prevPeople?.daily, !!prevPeople, (d) => d.people),
+            note: "Cada día se cuenta aparte: quien entra dos días cuenta dos veces (así se protege su privacidad).",
+          },
+          {
+            key: "accounts" as const, label: "Cuentas que entran", short: "Cuentas", unit: "cuentas", now: people.accounts_total, before: prevPeople?.accounts_total || 0,
+            days: weekSeries(axisDays, axisPrevDays, people.daily, prevPeople?.daily, !!prevPeople, (d) => d.accounts),
+            note: "Cuentas registradas que han entrado con la sesión iniciada. El total de arriba no repite a quien entra varios días.",
+          },
+        ]
+      : []),
+    { key: "sessions", label: "Visitas", short: "Visitas", unit: "visitas", now: week?.sessions || 0, before: prevWeek?.sessions || 0, days: weekSeries(axisDays, axisPrevDays, week?.daily, prevWeek?.daily, !!prevWeek, (d) => d.sessions) },
+    { key: "views", label: "Fichas vistas", short: "Fichas", unit: "fichas vistas", now: week?.page_views || 0, before: prevWeek?.page_views || 0, days: weekSeries(axisDays, axisPrevDays, week?.daily, prevWeek?.daily, !!prevWeek, (d) => d.views) },
     { key: "tickets", label: "Clics en entradas", short: "Entradas", unit: "clics", now: week?.tickets || 0, before: prevWeek?.tickets || 0, days: null },
   ]
   const metric = metrics.find((m) => m.key === metricKey) || metrics[0]
@@ -323,7 +358,7 @@ export default function AdminDashboardPage() {
           {trafficNote && (
             <p role="status" className="mx-5 mb-4 rounded-xl border border-warn/40 bg-warn/10 px-4 py-2.5 text-xs text-warn sm:mx-6">{trafficNote.text}</p>
           )}
-          <div role="tablist" aria-label="Qué enseña la gráfica" className="grid grid-cols-3 divide-x divide-white/[0.06] border-y border-white/[0.06]">
+          <div role="tablist" aria-label="Qué enseña la gráfica" style={{ gridTemplateColumns: `repeat(${metrics.length}, minmax(0, 1fr))` }} className="grid divide-x divide-white/[0.06] border-y border-white/[0.06]">
             {metrics.map((m) => {
               const on = m.key === metric.key
               return (
@@ -333,13 +368,13 @@ export default function AdminDashboardPage() {
                   role="tab"
                   aria-selected={on}
                   onClick={() => setMetricKey(m.key)}
-                  className={`px-3.5 py-4 text-left transition sm:px-6 ${on ? "bg-linear-to-b from-brand/[0.16] to-transparent shadow-[inset_0_2px_0_0_var(--color-brand-soft)]" : "hover:bg-white/[0.025]"}`}
+                  className={`px-2.5 py-4 text-left transition sm:px-5 ${on ? "bg-linear-to-b from-brand/[0.16] to-transparent shadow-[inset_0_2px_0_0_var(--color-brand-soft)]" : "hover:bg-white/[0.025]"}`}
                 >
                   <span className={`block text-xs font-medium ${on ? "text-zinc-200" : "text-zinc-500"}`}>
                     <span className="sm:hidden">{m.short}</span>
                     <span className="hidden sm:inline">{m.label}</span>
                   </span>
-                  <span className={`mt-1.5 block text-[26px] font-extrabold leading-none tracking-tight sm:text-4xl ${on ? "text-ink" : "text-zinc-400"}`}>
+                  <span className={`mt-1.5 block text-[22px] font-extrabold leading-none tracking-tight sm:text-4xl ${on ? "text-ink" : "text-zinc-400"}`}>
                     {week ? m.now : trafficFailed ? "—" : "…"}
                   </span>
                   <span className="mt-2 block">{week ? <Delta now={m.now} before={m.before} /> : <span className="text-xs text-zinc-500">{trafficFailed ? (trafficNote ? "Falta el SQL" : "No se pudo cargar") : ""}</span>}</span>
@@ -347,11 +382,19 @@ export default function AdminDashboardPage() {
               )
             })}
           </div>
+          {peopleMissing && week && (
+            <p role="status" className="mx-5 mt-4 rounded-xl border border-warn/40 bg-warn/10 px-4 py-2.5 text-xs text-warn sm:mx-6">
+              Para ver cuántas personas y cuentas entran cada día, ejecuta supabase/130_personas_por_dia.sql en Supabase. Mientras tanto se ven las visitas.
+            </p>
+          )}
           <div className="px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
             {!week ? (
               <p className="py-20 text-center text-sm text-zinc-500">{trafficFailed ? "No hay datos de la semana." : "Cargando…"}</p>
             ) : metric.days ? (
-              <WeekChart days={metric.days} unit={metric.unit} />
+              <>
+                <WeekChart days={metric.days} unit={metric.unit} />
+                {metric.note && <p className="mt-3 text-xs leading-relaxed text-zinc-400">{metric.note}</p>}
+              </>
             ) : (
               <CompareBars now={metric.now} before={metric.before} unit={metric.unit} />
             )}

@@ -11,7 +11,8 @@ import { isCitySqlMissing, rpcByCity } from "../../../lib/adminRpc"
 import { essentialSlugLabelEs } from "../../../lib/essentialCategories"
 import { pageLabel } from "../../../lib/adminPageLabel"
 import { fmtDuration, measuredSeconds } from "../../../lib/duration"
-import { madridDaysAgo, madridToday } from "../../../lib/madridDay"
+import { madridDaysAgo } from "../../../lib/madridDay"
+import { useMadridToday } from "../../../lib/useMadridToday"
 import { ADMIN_RANGE_MIN, normalizeRange, rangeDays, yearRange, yearsUpTo, type AdminRange } from "../../../lib/adminRange"
 
 // Visitas (26/10/2026): «de las 84 sesiones, ¿dónde han entrado y qué han hecho?». Cada visita
@@ -167,7 +168,8 @@ export default function AdminVisitsPage() {
   const [days, setDays] = useState(7)
   // Día, rango o año elegido a mano (01/11/2026). Si hay uno, manda sobre los botones «Hoy / 7 / 30 días».
   const [custom, setCustom] = useState<AdminRange | null>(null)
-  const today = madridToday()
+  // «Hoy» vivo: pasada la medianoche el periodo se corre un día y los datos se vuelven a pedir.
+  const today = useMadridToday()
   const range: AdminRange = custom ?? { from: madridDaysAgo(days - 1), to: today }
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState<string | null>(null)

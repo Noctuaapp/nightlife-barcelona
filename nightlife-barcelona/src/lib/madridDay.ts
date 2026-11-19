@@ -20,6 +20,13 @@ function shift(days: number): string {
   return base.toISOString().slice(0, 10)
 }
 
+/** Una fecha AAAA-MM-DD movida n días (sin mirar el reloj; mismo mediodía UTC que arriba, así el cambio de hora no la mueve). */
+export function shiftIsoDay(iso: string, n: number): string {
+  const base = new Date(`${iso}T12:00:00Z`)
+  base.setUTCDate(base.getUTCDate() + n)
+  return base.toISOString().slice(0, 10)
+}
+
 export const madridDaysAgo = (n: number): string => shift(-n)
 export const madridDaysAhead = (n: number): string => shift(n)
 export const madridYear = (): number => Number(madridToday().slice(0, 4))

@@ -4,6 +4,7 @@ import {
   cityNameForNewRow,
   cityOfEvent,
   clubCityIndex,
+  clubCountsByCity,
   clubIdsOfCity,
   eventsOfCity,
   foldName,
@@ -124,5 +125,24 @@ describe("eventos", () => {
     ]
     expect(eventsOfCity(events, "madrid", index).map((e) => e.id)).toEqual([1, 3])
     expect(eventsOfCity(events, "barcelona", index).map((e) => e.id)).toEqual([2, 4])
+  })
+})
+
+describe("clubCountsByCity", () => {
+  it("reparte los clubs por ciudad como la pantalla Clubs y da el total (publicados y ocultos)", () => {
+    const clubs = [
+      { id: 1, hidden: false, city: "Barcelona", latitude: 41.38, longitude: 2.17 },
+      { id: 2, hidden: true, city: null, latitude: null, longitude: null }, // sin ciudad ni coordenadas: Barcelona
+      { id: 3, hidden: false, city: "Madrid", latitude: 40.42, longitude: -3.7 },
+      { id: 4, hidden: false, city: null, latitude: 40.41, longitude: -3.69 }, // dentro del rectángulo de Madrid
+      { id: 5, hidden: true, city: "Madrid", latitude: 40.43, longitude: -3.71 },
+    ]
+    const c = clubCountsByCity(clubs)
+    expect(c.barcelona).toEqual({ visible: 1, hidden: 1 })
+    expect(c.madrid).toEqual({ visible: 2, hidden: 1 })
+    expect(c.total).toEqual({ visible: 3, hidden: 2 })
+    // Coincide con lo que cuenta la pantalla Clubs al elegir cada ciudad.
+    expect(rowsOfCity(clubs, "barcelona")).toHaveLength(c.barcelona.visible + c.barcelona.hidden)
+    expect(rowsOfCity(clubs, "madrid")).toHaveLength(c.madrid.visible + c.madrid.hidden)
   })
 })

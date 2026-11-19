@@ -12,9 +12,9 @@ import EssentialPhoto from "../../components/essentials/EssentialPhoto"
 import CategoryTile from "../../components/essentials/CategoryTile"
 import EmergencyBar from "../../components/essentials/EmergencyBar"
 import { supabase } from "../../lib/supabase"
-import { fetchAllPages } from "../../lib/fetchAll"
+import { fetchEssentialsList } from "../../lib/essentialsFetch"
 import { cleanEssential, isShownEssential } from "../../lib/essentials"
-import { essentialsOfCity, scopeToCity } from "../../lib/cityEssentials"
+import { essentialsOfCity } from "../../lib/cityEssentials"
 import { useSelectedCity } from "../../lib/previewCity"
 import { suggestHref } from "../../lib/essentialSuggestions"
 import { useCityT } from "../../lib/useCityT"
@@ -54,7 +54,8 @@ export default function EssentialsPage() {
     setLoading(true)
     // Por páginas: con las paradas de Nitbus hay más de 1.000 esenciales (ver lib/fetchAll).
     // De 4 en 4 páginas a la vez (lib/fetchAll): la tabla pasa de las 3.000 filas.
-    fetchAllPages((from, to) => scopeToCity(supabase.from("essentials").select("*"), city).order("id").range(from, to), 1000, 4).then((data) => {
+    // Solo las columnas que usa la portada (lib/essentialsFetch.ts): antes `select=*` arrastraba descripciones, enlaces y notas de 3.000+ filas.
+    fetchEssentialsList(supabase, city).then((data) => {
       if (!alive) return
       setEssentials(essentialsOfCity(data.map(cleanEssential).filter(isShownEssential), city))
       setLoading(false)
