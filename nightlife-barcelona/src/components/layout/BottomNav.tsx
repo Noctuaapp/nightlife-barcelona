@@ -1,9 +1,9 @@
 "use client"
 
-import Link from "../system/CityLink"
+import Link, { useCityPath } from "../system/CityLink"
 import { stripCityPath } from "../../lib/cities"
 import { Home, Shield, type LucideIcon } from "lucide-react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { supabase } from "../../lib/supabase"
 import { useLanguage } from "../../context/LanguageContext"
@@ -66,6 +66,24 @@ export default function BottomNav() {
   // (15/11/2026). Con cinco, cada botón ocupa una quinta parte, con menos relleno y letra algo menor, y una etiqueta muy larga se recorta
   // con «…». Con cuatro (todo el público) la barra queda exactamente como estaba.
   const compact = navItems.length > 4
+
+  // Precarga de las secciones de la barra (19/11/2026). Los enlaces de Next precargan solos, pero no se notaba: en el móvil, al pulsar
+  // Clubs/Eventos/Esenciales todavía tocaba pedir la página entera. Ahora, en cuanto el navegador está libre, se piden las otras
+  // secciones (ya guardadas, el cambio es instantáneo) y se hace una sola vez por sección y visita. Admin no se precarga.
+  const router = useRouter()
+  const toCityPath = useCityPath()
+  const sections = navItems.map((i) => i.href).filter((h) => h !== pathname && !h.startsWith("/admin")).join("|")
+  useEffect(() => {
+    if (!sections) return
+    const run = () => sections.split("|").forEach((h) => router.prefetch(toCityPath(h)))
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void }
+    if (typeof w.requestIdleCallback === "function") {
+      const id = w.requestIdleCallback(run, { timeout: 3000 })
+      return () => w.cancelIdleCallback?.(id)
+    }
+    const id = window.setTimeout(run, 1200)
+    return () => window.clearTimeout(id)
+  }, [sections, router, toCityPath])
 
   // La pieza violeta se desliza hasta la sección activa (se mide el botón, así que da igual cuántos haya). Sin sección activa
   // (p. ej. en /profile) se esconde. La primera colocación no se anima.

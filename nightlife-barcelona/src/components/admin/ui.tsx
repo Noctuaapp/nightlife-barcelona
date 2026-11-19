@@ -105,9 +105,14 @@ export function TrendChip({ trend }: { trend: TrendInfo }) {
   )
 }
 
-// Cifra con su etiqueta. Casilla neutra; si se puede pulsar, se eleva al pasar por encima y la elegida lleva el
-// borde violeta.
+// Color de cada recuadro de cifra («r g b»). El acento de la pantalla sigue siendo el violeta, pero las CIFRAS llevan su color
+// (violeta, magenta, turquesa, naranja) para que se distingan de un vistazo y no sea todo el mismo gris oscuro (19/11/2026).
+export const TONE_RGB: Record<Accent, string> = { violet: "150 124 255", pink: "244 114 182", cyan: "45 212 191", coral: "251 146 60" }
+
+// Cifra con su etiqueta. Recuadro teñido de su color, con el icono en una pastilla; si se puede pulsar, se eleva al pasar por
+// encima y el elegido lleva el borde a todo color.
 export function StatTile({
+  accent = "violet",
   label,
   value,
   note,
@@ -133,23 +138,30 @@ export function StatTile({
 }) {
   const body = (
     <>
-      <span className="flex items-center gap-2 text-xs font-medium text-zinc-400">
-        {Icon && <Icon size={14} aria-hidden="true" className="shrink-0 text-zinc-500" />}
-        {label}
+      <span className="flex items-center gap-2.5 text-[13px] font-semibold text-zinc-200">
+        {Icon && (
+          <span className="ui-tile-icon">
+            <Icon size={16} aria-hidden="true" />
+          </span>
+        )}
+        <span className="min-w-0 leading-tight">{label}</span>
       </span>
-      <span className="mt-1.5 block text-[26px] font-extrabold leading-none tracking-tight text-ink">{value}</span>
-      {note != null && note !== "" && <span className="mt-1.5 block text-xs text-zinc-500">{note}</span>}
+      <span className="mt-3 block text-[30px] font-extrabold leading-none tracking-tight text-white">{value}</span>
+      {note != null && note !== "" && <span className="mt-2 block text-xs text-zinc-300/80">{note}</span>}
       {trend && <TrendChip trend={trend} />}
-      {onClick && cue && <span className="mt-2 block text-xs font-semibold text-brand-soft">{cue} ›</span>}
+      {onClick && cue && <span className="mt-2.5 block text-xs font-bold" style={{ color: `rgb(${TONE_RGB[accent]})` }}>{cue} ›</span>}
     </>
   )
-  const cls = `ui-well block p-4 text-left transition ${active ? "ui-well-on" : ""} ${onClick ? "hover:border-brand-soft/40 hover:brightness-125" : ""} ${className}`
+  const cls = `ui-tile flex flex-col items-stretch justify-start p-4 pl-5 text-left transition ${active ? "ui-tile-on" : ""} ${onClick ? "hover:-translate-y-0.5 hover:brightness-110" : ""} ${className}`
+  const style = { "--tone": TONE_RGB[accent] } as React.CSSProperties
   return onClick ? (
-    <button type="button" onClick={onClick} aria-pressed={active} className={cls}>
+    <button type="button" onClick={onClick} aria-pressed={active} className={cls} style={style}>
       {body}
     </button>
   ) : (
-    <div className={cls}>{body}</div>
+    <div className={cls} style={style}>
+      {body}
+    </div>
   )
 }
 
@@ -261,8 +273,7 @@ export function Segmented<T extends string>({
 }
 
 // Campo de texto / desplegable / botones de las pantallas del admin.
-export const INPUT =
-  "w-full rounded-ctl border border-white/10 bg-white/[0.035] px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-zinc-500 hover:border-white/20 focus:border-brand/60 focus:bg-white/[0.05] focus:ring-2 focus:ring-brand/20"
+export const INPUT = "ui-input ui-input-flat"
 // Botones (clases «ui-btn» de globals.css). Principal: cristal violeta con volumen y un destello al pasar. Secundario: cristal
 // oscuro con borde de luz. Terciario: sin caja hasta que lo tocas. Peligro: el mismo cristal en rojo. Con «-SM» para dentro de una
 // tarjeta y «BTN_ICON» para un botón cuadrado con un solo icono. En carga: aria-busy="true".

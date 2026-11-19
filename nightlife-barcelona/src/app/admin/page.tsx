@@ -5,8 +5,9 @@ import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 import { EXTRA_FEATURES, CLOSED_FIELD, extrasFromRow } from "../../lib/extraFeatures"
 import AdminShell from "../../components/admin/AdminShell"
-import { StatTile } from "../../components/admin/ui"
-import { BadgeCheck, Eye, Flame, Wine } from "lucide-react"
+import { BTN_DANGER, BTN_GHOST, BTN_GHOST_SM, BTN_PRIMARY, FilterChip, Segmented, StatTile, Tag } from "../../components/admin/ui"
+import { EditSheet, Field, FieldGrid, FormSection, SearchBox, SheetTabs, ShowMore, SplitView, SwitchRow, Thumb } from "../../components/admin/editor"
+import { BadgeCheck, ExternalLink, Eye, EyeOff, Flame, Layers, Plus, Trash2, Upload, Wine, X } from "lucide-react"
 import { ADMIN_EMAIL } from "../../lib/admin"
 import { toast } from "../../components/ui/Toast"
 import CoordsField from "../../components/admin/CoordsField"
@@ -287,6 +288,9 @@ export default function AdminPage() {
   const [bulkBusy, setBulkBusy] = useState(false)
   const [lastBulk, setLastBulk] = useState<{ key: string; label: string; ids: number[]; value: boolean } | null>(null)
 
+  // Se pintan 50 clubs y un botón «Mostrar más»; la pestaña abierta de la ficha de edición.
+  const [shown, setShown] = useState(50)
+  const [sheetTab, setSheetTab] = useState<"datos" | "fotos" | "horario" | "etiquetas" | "estado">("datos")
   const [showAddForm, setShowAddForm] = useState(false)
   const [newClub, setNewClub] = useState<ClubFormData>(emptyForm)
   const [saving, setSaving] = useState(false)
@@ -326,8 +330,8 @@ export default function AdminPage() {
     touchCache(clubPaths(club.slug || createSlug(club.name)))
   }
 
-  const deleteClub = async (id: number) => {
-    if (!confirm("¿Seguro que quieres eliminar este club?")) return
+  const deleteClub = async (id: number): Promise<boolean> => {
+    if (!confirm("¿Seguro que quieres eliminar este club?")) return false
     // El slug hace falta para avisar a Next qué ficha pública invalidar — una vez borrado el club
     // ya no se puede volver a pedir, así que se guarda antes de borrar.
     const gone = clubs.find((c) => c.id === id)
@@ -335,13 +339,14 @@ export default function AdminPage() {
     const { error } = await supabase.from("clubs").delete().eq("id", id)
     if (error) {
       toast("Error al eliminar: " + error.message)
-      return
+      return false
     }
     setClubs((prev) => prev.filter((c) => c.id !== id))
     // Antes esto faltaba aquí (sí estaba al crear/editar un club): sin avisar a Next, el listado
     // público de /clubs seguía sirviendo la versión en caché con el club todavía dentro hasta que
     // caducaba por su cuenta (hasta 1 hora) — exactamente el "lo borro y me vuelve a aparecer".
     touchCache(clubPaths(slug))
+    return true
   }
 
   // Antes "Mostrar todos" / "Ocultar todos" actuaban al instante, sin preguntar: un toque sin
@@ -559,6 +564,8 @@ export default function AdminPage() {
 
   // Al cambiar de ciudad se cierra el formulario de «Añadir» (el club nuevo se habría creado en la ciudad equivocada), se limpia el
   // filtro y se cierra la edición abierta si ese club no es de la ciudad nueva.
+  useEffect(() => { setShown(50) }, [search, filter, city])
+
   const prevCity = useRef(city)
   useEffect(() => {
     if (prevCity.current === city) return
@@ -685,215 +692,490 @@ export default function AdminPage() {
     </main>
   )
 
-  const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-brand/60 transition placeholder:text-zinc-400"
-  const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1.5"
+  // Campos y chips: el estilo está en globals.css («ui-input», «ui-chip»), igual en todo el admin.
+  const inputClass = "ui-input"
 
-  const renderClubForm = (form: ClubFormData, setForm: (f: ClubFormData) => void) => (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+  type SheetTab = "datos" | "fotos" | "horario" | "etiquetas" | "estado"
+
+  const renderClubForm = (form: ClubFormData, setForm: (f: ClubFormData) => void) => {
+    const set = <K extends keyof ClubFormData>(key: K, value: ClubFormData[K]) => setForm({ ...form, [key]: value })
+    const hasColumn = (key: string) => key in form.extras || clubs.some((c) => key in (c as unknown as Record<string, unknown>))
+    const closedTag = TAG_GROUPS.flatMap((g) => g.tags).find((t) => t.closed)
+    const showClosed = !!closedTag && hasColumn(closedTag.key)
+    return (
       <div>
-        <label className={labelClass}>Nombre *</label>
-        <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nombre del club" className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass}>Barrio</label>
-        <input value={form.neighborhood} onChange={(e) => setForm({ ...form, neighborhood: e.target.value })} placeholder="Gràcia, Eixample..." className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass}>Dirección</label>
-        <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Carrer de Còrsega, 327" className={inputClass} />
-      </div>
-      <div className="md:col-span-2">
-        <CoordsField
-          latitude={form.latitude}
-          longitude={form.longitude}
-          address={form.address}
-          inputClassName={inputClass}
-          onChange={(latitude, longitude) => setForm({ ...form, latitude, longitude })}
-        />
-      </div>
-      <div>
-        <label className={labelClass}>Música</label>
-        <input value={form.music} onChange={(e) => setForm({ ...form, music: e.target.value })} placeholder="Techno, Reggaetón..." className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass}>Precio</label>
-        <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="15-20€" className={inputClass} />
-      </div>
-      <div className="md:col-span-2">
-        <label className={labelClass}>Descripción</label>
-        <textarea
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-          placeholder="Cuenta cómo es el local, el ambiente, qué lo hace especial... (sin límite de palabras)"
-          rows={5}
-          className={`${inputClass} resize-y`}
-        />
-      </div>
-      <div className="md:col-span-2">
-        <label className={labelClass}>Imagen</label>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-          {form.image && (
-            <img src={form.image} alt="Vista previa" className="h-20 w-20 flex-shrink-0 rounded-xl object-cover border border-white/10" />
-          )}
-          <div className="flex-1 space-y-2">
-            <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://... (o sube una desde tu ordenador)" className={inputClass} />
-            <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploadingImage ? "border-white/10 text-zinc-400" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
-              {uploadingImage ? "Subiendo..." : "📁 Subir imagen desde tu ordenador"}
-              <input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={(e) => handleImageUpload(e, form, setForm)} />
-            </label>
-          </div>
+        <div className="mb-6">
+          <SheetTabs<SheetTab>
+            label="Apartados de la ficha"
+            value={sheetTab}
+            onChange={setSheetTab}
+            tabs={[
+              { value: "datos", label: "Datos" },
+              { value: "fotos", label: `Fotos${form.gallery.length ? ` (${form.gallery.length + (form.image ? 1 : 0)})` : ""}` },
+              { value: "horario", label: "Horario" },
+              { value: "etiquetas", label: "Etiquetas" },
+              { value: "estado", label: "Estado" },
+            ]}
+          />
         </div>
-      </div>
-      <div className="md:col-span-2">
-        <label className={labelClass}>
-          Galería ({form.gallery.length} foto{form.gallery.length === 1 ? "" : "s"})
-          {form.gallery.length > 0 && <span className="ml-2 normal-case font-normal text-zinc-400">— quita las que no encajen con la ✕</span>}
-        </label>
-        <label className={`block cursor-pointer rounded-xl border border-dashed px-4 py-3 text-center text-xs font-bold transition ${uploadingGallery ? "border-white/10 text-zinc-400" : "border-white/20 bg-white/[0.02] text-zinc-400 hover:border-purple-500/50 hover:text-white"}`}>
-          {uploadingGallery ? "Subiendo..." : "📁 Añadir fotos a la galería"}
-          <input type="file" accept="image/*" multiple className="hidden" disabled={uploadingGallery} onChange={(e) => handleGalleryUpload(e, form, setForm)} />
-        </label>
-        {form.gallery.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-3">
-            {form.gallery.map((url) => (
-              <div key={url} className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-white/10">
-                <img src={url} alt="" className="h-full w-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => removeGalleryPhoto(url, form, setForm)}
-                  className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white opacity-0 transition group-hover:opacity-100"
-                >
-                  ✕
-                </button>
+
+        {sheetTab === "datos" && (
+          <FieldGrid>
+            <Field label="Nombre *">
+              <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Nombre del club" className={inputClass} />
+            </Field>
+            <Field label="Tipo de local">
+              <select value={form.venue_type} onChange={(e) => set("venue_type", e.target.value)} className={inputClass}>
+                {VENUE_TYPE_OPTIONS.map((v) => (
+                  <option key={v} value={v}>{v}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Barrio">
+              <input value={form.neighborhood} onChange={(e) => set("neighborhood", e.target.value)} placeholder="Gràcia, Eixample..." className={inputClass} />
+            </Field>
+            <Field label="Dirección">
+              <input value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="Carrer de Còrsega, 327" className={inputClass} />
+            </Field>
+            <div className="md:col-span-2">
+              <CoordsField
+                latitude={form.latitude}
+                longitude={form.longitude}
+                address={form.address}
+                inputClassName={inputClass}
+                onChange={(latitude, longitude) => setForm({ ...form, latitude, longitude })}
+              />
+            </div>
+            <Field label="Música">
+              <input value={form.music} onChange={(e) => set("music", e.target.value)} placeholder="Techno, Reggaetón..." className={inputClass} />
+            </Field>
+            <Field label="Precio">
+              <input value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="15-20€" className={inputClass} />
+            </Field>
+            <Field label="Valoración (rating)">
+              <input value={form.rating} onChange={(e) => set("rating", e.target.value)} placeholder="4.5" inputMode="decimal" className={inputClass} />
+            </Field>
+            <Field label="Aforo / gente">
+              <input value={form.people} onChange={(e) => set("people", e.target.value)} placeholder="Ej. 500 personas" className={inputClass} />
+            </Field>
+            <Field label="Público (edad del ambiente)">
+              <select value={form.audience} onChange={(e) => set("audience", e.target.value)} className={inputClass}>
+                <option value="">Mixto / sin especificar</option>
+                <option value="joven">Joven (18-25)</option>
+                <option value="+30">+30</option>
+                <option value="+40">+40</option>
+              </select>
+            </Field>
+            <Field label="Dress code">
+              <select value={form.dresscode} onChange={(e) => set("dresscode", e.target.value)} className={inputClass}>
+                <option value="">Sin especificar</option>
+                {DRESS_CODES.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+                {/* Un valor antiguo fuera de la lista se conserva hasta que se cambie, para no borrarlo sin querer. */}
+                {form.dresscode && !(DRESS_CODES as readonly string[]).includes(form.dresscode) && <option value={form.dresscode}>{form.dresscode}</option>}
+              </select>
+            </Field>
+            <Field wide label="Descripción" hint="Cómo es el local, el ambiente, qué lo hace especial. Sin límite de palabras.">
+              <textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Cuenta cómo es el local, el ambiente, qué lo hace especial..." rows={6} className={inputClass} />
+            </Field>
+          </FieldGrid>
+        )}
+
+        {sheetTab === "fotos" && (
+          <div className="space-y-7">
+            <FormSection title="Foto principal" hint="La que sale en la lista y arriba de la ficha.">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                {form.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={form.image} alt="Vista previa" className="h-28 w-28 shrink-0 rounded-2xl border border-white/15 object-cover" />
+                ) : (
+                  <div className="grid h-28 w-28 shrink-0 place-items-center rounded-2xl border border-dashed border-white/25 text-xs text-zinc-400">Sin foto</div>
+                )}
+                <div className="min-w-0 flex-1 space-y-3">
+                  <input value={form.image} onChange={(e) => set("image", e.target.value)} placeholder="https://... (o sube una desde tu equipo)" aria-label="Enlace de la foto principal" className={inputClass} />
+                  <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-3 text-sm font-bold transition ${uploadingImage ? "border-white/15 text-zinc-400" : "border-white/30 bg-white/[0.04] text-zinc-100 hover:border-brand-soft hover:bg-brand/10"}`}>
+                    <Upload size={16} aria-hidden="true" />
+                    {uploadingImage ? "Subiendo..." : "Subir foto desde tu equipo"}
+                    <input type="file" accept="image/*" className="hidden" disabled={uploadingImage} onChange={(e) => handleImageUpload(e, form, setForm)} />
+                  </label>
+                </div>
               </div>
-            ))}
+            </FormSection>
+            <FormSection title={`Galería (${form.gallery.length} foto${form.gallery.length === 1 ? "" : "s"})`} hint="Las fotos de debajo de la principal. Quita las que no encajen con la ✕. Si dejas fotos aquí, Google ya no toca la galería de este club.">
+              <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-3 text-sm font-bold transition ${uploadingGallery ? "border-white/15 text-zinc-400" : "border-white/30 bg-white/[0.04] text-zinc-100 hover:border-brand-soft hover:bg-brand/10"}`}>
+                <Upload size={16} aria-hidden="true" />
+                {uploadingGallery ? "Subiendo..." : "Añadir fotos a la galería"}
+                <input type="file" accept="image/*" multiple className="hidden" disabled={uploadingGallery} onChange={(e) => handleGalleryUpload(e, form, setForm)} />
+              </label>
+              {form.gallery.length > 0 && (
+                <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
+                  {form.gallery.map((url) => (
+                    <div key={url} className="group relative aspect-square overflow-hidden rounded-xl border border-white/15">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryPhoto(url, form, setForm)}
+                        aria-label="Quitar foto"
+                        className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/75 text-white ring-1 ring-white/30 transition hover:bg-red-500 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+                      >
+                        <X size={14} aria-hidden="true" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </FormSection>
+          </div>
+        )}
+
+        {sheetTab === "horario" && (
+          <div className="space-y-7">
+            <FormSection title="Horario por días" hint="Marca cada día que abre y pon su hora de inicio y de fin; el horario se compone solo. Si cierra de madrugada, el fin cuenta al día siguiente. Sin días = sin dato, y no se filtra en «Planifica tu noche».">
+              <ClubHoursEditor
+                hours={form.hours}
+                openDays={form.open_days}
+                onChange={(next) => setForm({ ...form, ...next })}
+                dayLabel={(i) => DAY_OPTIONS[i]}
+                chipClass={() => "ui-chip"}
+                inputClass={inputClass}
+                labels={{
+                  start: "hora de inicio",
+                  end: "hora de fin",
+                  missing: "Falta la hora de inicio o de fin (sin las dos, este día no entra en el horario)",
+                  sameForAll: "Mismo horario para todos los días marcados",
+                  early: "Empieza pasada la medianoche: cuenta como la noche de este día",
+                  legacy: "Horario anterior (no se puede separar por días):",
+                  preview: "Se guardará como:",
+                  nights: "Lo que has marcado (por noches):",
+                  previewNote: "Las horas de madrugada se guardan con el día del calendario: la noche del jueves a las 00:30 ya es viernes. Es correcto: al volver a abrir el formulario salen otra vez tus noches.",
+                }}
+              />
+            </FormSection>
+            <FormSection title="Cómo llegar y promos">
+              <FieldGrid>
+                <Field label="Líneas de metro cercanas" hint="Separadas por comas.">
+                  <input value={form.metro_lines} onChange={(e) => set("metro_lines", e.target.value)} placeholder="L1, L4" className={inputClass} />
+                </Field>
+                <Field label="Buses nocturnos cercanos" hint="Separados por comas.">
+                  <input value={form.night_buses} onChange={(e) => set("night_buses", e.target.value)} placeholder="N0, N6" className={inputClass} />
+                </Field>
+                <Field label="Descuento o promo de hoy" hint="Vacío = ninguno.">
+                  <input value={form.discount_info} onChange={(e) => set("discount_info", e.target.value)} placeholder="2x1 en copas hasta las 02:00" className={inputClass} />
+                </Field>
+                <Field label="Entrada gratis: condiciones" hint="Vacío = ninguna.">
+                  <input value={form.free_entry_info} onChange={(e) => set("free_entry_info", e.target.value)} placeholder="Gratis para chicas hasta las 00:30" className={inputClass} />
+                </Field>
+              </FieldGrid>
+            </FormSection>
+          </div>
+        )}
+
+        {sheetTab === "etiquetas" && (
+          <div className="space-y-6">
+            <p className="text-xs leading-relaxed text-zinc-300/80">Toca para poner o quitar. Las encendidas salen en la ficha y en los filtros de la web.</p>
+            {TAG_GROUPS.filter((g) => g.title !== "Estado de la ficha").map((group) => {
+              // Las etiquetas de servicios solo salen si su columna ya existe (SQL 56 para «Cerrado temporalmente», SQL 60 para
+              // cumpleaños / eventos privados / alquiler). El formulario de club nuevo parte con los extras vacíos, así que también
+              // se mira si alguna ficha ya cargada tiene esa columna.
+              const tags = group.tags.filter((t) => !t.extra || hasColumn(t.key))
+              if (!tags.length) return null
+              return (
+                <div key={group.title}>
+                  <p className="mb-2.5 text-[13px] font-extrabold text-white">{group.title}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((t) => {
+                      const on = t.extra ? !!form.extras[t.key] : !!(form as unknown as Record<string, unknown>)[t.key]
+                      const toggle = () => (t.extra ? setForm({ ...form, extras: { ...form.extras, [t.key]: !on } }) : setForm({ ...form, [t.key]: !on }))
+                      return (
+                        <FilterChip key={t.key} active={on} onClick={toggle}>
+                          <span aria-hidden="true">{t.emoji}</span> {t.label}
+                        </FilterChip>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+            {form.swinger_friendly && (
+              <Field label="Normas del club swinger" hint="Vacío = no se enseña nada en la ficha.">
+                <textarea
+                  value={form.swinger_rules}
+                  onChange={(e) => set("swinger_rules", e.target.value)}
+                  placeholder="Solo parejas y mujeres solas. Código de vestimenta obligatorio tras las 00:00. Prohibido fotografiar o grabar."
+                  rows={4}
+                  className={inputClass}
+                />
+              </Field>
+            )}
+          </div>
+        )}
+
+        {sheetTab === "estado" && (
+          <div className="space-y-3">
+            <SwitchRow tone="green" checked={!form.hidden} onChange={(v) => set("hidden", !v)} title="Visible en la web" hint={form.hidden ? "Ahora está oculto: nadie lo ve en la web ni en el mapa." : "Sale en la lista, en el mapa y en las búsquedas."} />
+            <SwitchRow checked={form.verified} onChange={(v) => set("verified", v)} title="Verificado por Noctua" hint="Lleva la insignia «N Verified» en la ficha." />
+            <SwitchRow tone="amber" checked={form.trending} onChange={(v) => set("trending", v)} title="Trending" hint="Lleva la etiqueta 🔥 de tendencia." />
+            <SwitchRow tone="red" checked={form.sold_out} onChange={(v) => set("sold_out", v)} title="Agotado (sold out)" hint="Marca el local como agotado." />
+            {showClosed && closedTag && (
+              <SwitchRow
+                tone="amber"
+                checked={!!form.extras[closedTag.key]}
+                onChange={(v) => setForm({ ...form, extras: { ...form.extras, [closedTag.key]: v } })}
+                title="Cerrado temporalmente"
+                hint="Sigue en la web con su etiqueta, pero nunca sale como «abierto ahora» y no se recomienda en la portada, «Sorpréndeme», el plan ni «cerca de aquí»."
+              />
+            )}
           </div>
         )}
       </div>
-      <div>
-        <label className={labelClass}>Rating</label>
-        <input value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} placeholder="4.5" className={inputClass} />
+    )
+  }
+
+  const sheetOpen = showAddForm || editingId != null
+  const editingClub = editingId != null ? clubs.find((c) => c.id === editingId) || allClubs.find((c) => c.id === editingId) || null : null
+  const closeSheet = () => {
+    if (showAddForm) {
+      setShowAddForm(false)
+      setNewClub(emptyForm)
+    } else {
+      cancelEdit()
+    }
+  }
+  const openNew = () => {
+    setEditingId(null)
+    setSheetTab("datos")
+    setShowAddForm(true)
+  }
+  const openEdit = (club: Club) => {
+    setShowAddForm(false)
+    setSheetTab("datos")
+    startEdit(club)
+  }
+
+  // Atajos de filtro con su cuenta. «Cualquier etiqueta» (desplegable) es para el resto.
+  const quickFilters: { key: string; label: string; n: number }[] = [
+    { key: "all", label: "Todos", n: clubs.length },
+    { key: "visible", label: "Visibles", n: stats.visible },
+    { key: "tag:hidden", label: "Ocultos", n: clubs.length - stats.visible },
+    { key: "tag:verified", label: "Verificados", n: stats.verified },
+    { key: "tag:trending", label: "Trending", n: stats.trending },
+  ]
+  const quickKeys = new Set(quickFilters.map((q) => q.key))
+
+  // Se pintan de 50 en 50 (cientos de filas a la vez hacían lenta la pantalla); el club abierto siempre entra.
+  const openIdx = editingId != null ? filteredClubs.findIndex((c) => c.id === editingId) : -1
+  const shownClubs = filteredClubs.slice(0, Math.max(shown, openIdx + 1))
+
+  const sheet = sheetOpen ? (
+    <EditSheet
+      title={showAddForm ? "Nuevo club" : `Editando: ${editingClub?.name ?? ""}`}
+      subtitle={showAddForm ? `Se creará en ${cityName}` : [editingClub?.neighborhood, editingClub?.venue_type].filter(Boolean).join(" · ")}
+      onClose={closeSheet}
+      links={
+        !showAddForm && editingClub ? (
+          <Link href={`/clubs/${editingClub.slug || createSlug(editingClub.name)}`} target="_blank" className={`${BTN_GHOST_SM} hidden sm:inline-flex`}>
+            Ver ficha <ExternalLink size={13} aria-hidden="true" />
+          </Link>
+        ) : null
+      }
+      footer={
+        showAddForm ? (
+          <>
+            <button type="button" onClick={closeSheet} className={BTN_GHOST}>Cancelar</button>
+            <button type="button" onClick={addClub} disabled={saving} aria-busy={saving} className={`${BTN_PRIMARY} ml-auto`}>
+              {saving ? "Guardando..." : "Guardar club"}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={async () => {
+                if (editingClub && (await deleteClub(editingClub.id))) cancelEdit()
+              }}
+              className={BTN_DANGER}
+            >
+              <Trash2 size={15} aria-hidden="true" /> <span className="hidden sm:inline">Borrar</span><span className="sr-only sm:hidden">Borrar club</span>
+            </button>
+            <button type="button" onClick={cancelEdit} className={`${BTN_GHOST} ml-auto`}>Cancelar</button>
+            <button type="button" onClick={() => editingClub && saveEdit(editingClub.id)} disabled={saving} aria-busy={saving} className={BTN_PRIMARY}>
+              {saving ? "Guardando..." : "Guardar cambios"}
+            </button>
+          </>
+        )
+      }
+    >
+      {showAddForm ? renderClubForm(newClub, setNewClub) : renderClubForm(editForm, setEditForm)}
+    </EditSheet>
+  ) : null
+
+  const list = (
+    <div>
+      {/* Buscador y alta */}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+        <SearchBox value={search} onChange={setSearch} placeholder="Buscar clubs…" label="Buscar clubs por nombre, barrio o música" className="min-w-0 flex-1" />
+        <button type="button" onClick={openNew} className={`${BTN_PRIMARY} shrink-0`}>
+          <Plus size={17} aria-hidden="true" /> Añadir club
+        </button>
       </div>
-      <div>
-        <label className={labelClass}>Aforo / gente</label>
-        <input value={form.people} onChange={(e) => setForm({ ...form, people: e.target.value })} placeholder="Ej. 500 personas" className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass}>Público (edad del ambiente)</label>
-        <select value={form.audience} onChange={(e) => setForm({ ...form, audience: e.target.value })} className={inputClass} style={{ colorScheme: "dark" }}>
-          <option value="">Mixto / sin especificar</option>
-          <option value="joven">Joven (18-25)</option>
-          <option value="+30">+30</option>
-          <option value="+40">+40</option>
+
+      {/* Filtros rápidos, con cuántos clubs hay en cada uno */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {quickFilters.map((q) => (
+          <FilterChip key={q.key} active={filter === q.key} onClick={() => setFilter(q.key)} count={q.n}>
+            {q.label}
+          </FilterChip>
+        ))}
+        <select
+          value={quickKeys.has(filter) ? "" : filter}
+          onChange={(e) => setFilter(e.target.value || "all")}
+          aria-label="Filtrar por otra etiqueta"
+          className="ui-input ui-input-flat !min-h-[36px] !w-auto !rounded-full !py-1.5 !pl-3.5 !text-[13px] font-semibold"
+        >
+          <option value="">Otra etiqueta…</option>
+          {TAG_GROUPS.map((group) => {
+            const tags = group.tags.filter((t) => !t.extra || clubs.some((c) => t.key in (c as unknown as Record<string, unknown>)))
+            if (!tags.length) return null
+            return (
+              <optgroup key={group.title} label={group.title}>
+                {tags.map((t) => (
+                  <option key={t.key} value={`tag:${t.key}`}>
+                    {t.emoji} {t.filterLabel || t.label} ({clubs.filter((c) => !!(c as unknown as Record<string, unknown>)[t.key]).length})
+                  </option>
+                ))}
+              </optgroup>
+            )
+          })}
         </select>
       </div>
-      <div>
-        <label className={labelClass}>Dress code</label>
-        <select value={form.dresscode} onChange={(e) => setForm({ ...form, dresscode: e.target.value })} className={inputClass} style={{ colorScheme: "dark" }}>
-          <option value="">Sin especificar</option>
-          {DRESS_CODES.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-          {/* Un valor antiguo fuera de la lista se conserva hasta que se cambie, para no borrarlo sin querer. */}
-          {form.dresscode && !(DRESS_CODES as readonly string[]).includes(form.dresscode) && <option value={form.dresscode}>{form.dresscode}</option>}
-        </select>
+
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <p className="text-[13px] text-zinc-300/80">
+          <strong className="font-extrabold text-white">{filteredClubs.length}</strong> {filteredClubs.length === 1 ? "club" : "clubs"}
+        </p>
+        <button type="button" onClick={() => setBulkOpen((o) => !o)} aria-expanded={bulkOpen} className={BTN_GHOST_SM}>
+          <Layers size={14} aria-hidden="true" /> Acciones en bloque
+        </button>
       </div>
-      <div>
-        <label className={labelClass}>Tipo de local</label>
-        <select value={form.venue_type} onChange={(e) => setForm({ ...form, venue_type: e.target.value })} className={inputClass}>
-          {VENUE_TYPE_OPTIONS.map((v) => (
-            <option key={v} value={v} className="bg-black text-white">{v}</option>
-          ))}
-        </select>
-      </div>
-      <div className="md:col-span-2">
-        <label className={labelClass}>Horario por días (sin días = sin dato, no se filtra en Planifica tu noche)</label>
-        <p className="mb-3 text-xs text-zinc-400">Marca cada día que abre y pon su hora de inicio y de fin; el horario se compone solo. Si cierra de madrugada, el fin cuenta al día siguiente.</p>
-        <ClubHoursEditor
-          hours={form.hours}
-          openDays={form.open_days}
-          onChange={(next) => setForm({ ...form, ...next })}
-          dayLabel={(i) => DAY_OPTIONS[i]}
-          chipClass={(active) => `rounded-full px-4 py-2 text-xs font-bold transition ${active ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}
-          inputClass={inputClass}
-          labels={{
-            start: "hora de inicio",
-            end: "hora de fin",
-            missing: "Falta la hora de inicio o de fin (sin las dos, este día no entra en el horario)",
-            sameForAll: "Mismo horario para todos los días marcados",
-            early: "Empieza pasada la medianoche: cuenta como la noche de este día",
-            legacy: "Horario anterior (no se puede separar por días):",
-            preview: "Se guardará como:",
-            nights: "Lo que has marcado (por noches):",
-            previewNote: "Las horas de madrugada se guardan con el día del calendario: la noche del jueves a las 00:30 ya es viernes. Es correcto: al volver a abrir el formulario salen otra vez tus noches.",
-          }}
-        />
-      </div>
-      <div>
-        <label className={labelClass}>Líneas de metro cercanas (separadas por comas)</label>
-        <input value={form.metro_lines} onChange={(e) => setForm({ ...form, metro_lines: e.target.value })} placeholder="L1, L4" className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass}>Buses nocturnos cercanos (separados por comas)</label>
-        <input value={form.night_buses} onChange={(e) => setForm({ ...form, night_buses: e.target.value })} placeholder="N0, N6" className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass}>Descuento o promo de hoy (vacío = ninguno)</label>
-        <input value={form.discount_info} onChange={(e) => setForm({ ...form, discount_info: e.target.value })} placeholder="2x1 en copas hasta las 02:00" className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass}>Entrada gratis — condiciones (vacío = ninguna)</label>
-        <input value={form.free_entry_info} onChange={(e) => setForm({ ...form, free_entry_info: e.target.value })} placeholder="Gratis para chicas hasta las 00:30" className={inputClass} />
-      </div>
-      <div className="md:col-span-2 space-y-4 rounded-card border border-white/10 bg-white/[0.02] p-4 pt-3">
-        <p className={labelClass}>Etiquetas</p>
-        {TAG_GROUPS.map((group) => {
-          // Las etiquetas de servicios solo salen si su columna ya existe (SQL 56 para «Cerrado
-          // temporalmente», SQL 60 para cumpleaños / eventos privados / alquiler).
-          // (El formulario de club nuevo parte con los extras vacíos, así que también se mira si
-          // alguna ficha ya cargada tiene esa columna.)
-          const tags = group.tags.filter((t) => !t.extra || t.key in form.extras || clubs.some((c) => t.key in (c as unknown as Record<string, unknown>)))
-          if (!tags.length) return null
-          return (
-            <div key={group.title}>
-              <p className="mb-2 text-xs font-semibold text-zinc-400">{group.title}</p>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((t) => {
-                  const on = t.extra ? !!form.extras[t.key] : !!(form as unknown as Record<string, unknown>)[t.key]
-                  const toggle = () =>
-                    t.extra
-                      ? setForm({ ...form, extras: { ...form.extras, [t.key]: !on } })
-                      : setForm({ ...form, [t.key]: !on })
-                  return (
-                    <button key={t.key} type="button" aria-pressed={on} onClick={toggle}
-                      className={`rounded-full px-4 py-2 text-xs font-bold transition ${
-                        on ? (t.closed ? "bg-amber-400 text-black" : "bg-purple-500 text-white") : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                      }`}>
-                      {t.emoji} {t.label}
-                    </button>
-                  )
-                })}
-              </div>
-              {tags.some((t) => t.closed) && (
-                <p className="mt-2 text-xs text-zinc-400">Cerrado temporalmente: el local sigue en la web con su etiqueta, pero nunca sale como «abierto ahora» y no se recomienda en la portada, «Sorpréndeme», el plan ni «cerca de aquí».</p>
+
+      {bulkOpen && (
+        <div className="ui-card mb-5 space-y-5 p-5">
+          <div>
+            <p className="text-sm font-extrabold text-white">Mostrar u ocultar todos los clubs de {cityName}</p>
+            <p className="mt-1 text-xs text-zinc-300/80">Pide confirmación antes de cambiar nada.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" onClick={showAll} className={BTN_GHOST_SM}><Eye size={14} aria-hidden="true" /> Mostrar todos</button>
+              <button type="button" onClick={hideAll} className={BTN_DANGER + " ui-btn-sm"}><EyeOff size={14} aria-hidden="true" /> Ocultar todos</button>
+            </div>
+          </div>
+          <div className="border-t border-white/10 pt-5">
+            <p className="text-sm font-extrabold text-white">Poner o quitar una etiqueta a muchos clubs de golpe</p>
+            <div className="mt-4 flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
+              <select value={bulkTag} onChange={(e) => setBulkTag(e.target.value)} aria-label="Etiqueta" className="ui-input md:!w-64">
+                <option value="">Elige la etiqueta…</option>
+                {bulkGroups.map((g) => (
+                  <optgroup key={g.title} label={g.title}>
+                    {g.tags.map((t) => (
+                      <option key={t.key} value={t.key}>
+                        {t.emoji} {t.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <Segmented
+                label="Poner o quitar"
+                value={bulkValue ? "put" : "remove"}
+                onChange={(v) => setBulkValue(v === "put")}
+                options={[{ value: "put", label: "Poner" }, { value: "remove", label: "Quitar" }]}
+              />
+              <Segmented
+                label="A qué clubs"
+                value={bulkScope}
+                onChange={setBulkScope}
+                options={[{ value: "list", label: `La lista actual (${filteredClubs.length})` }, { value: "all", label: `Todos (${clubs.length})` }]}
+              />
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button type="button" onClick={applyBulkTag} disabled={!bulkTagRef || bulkTargets.length === 0 || bulkBusy} aria-busy={bulkBusy} className={BTN_PRIMARY}>
+                {bulkBusy ? "Aplicando…" : bulkTagRef ? `${bulkValue ? "Poner" : "Quitar"} a ${bulkTargets.length} club${bulkTargets.length === 1 ? "" : "s"}` : "Elige una etiqueta"}
+              </button>
+              {bulkTagRef && (
+                <p className="text-xs text-zinc-300/80">
+                  {bulkScopeCount - bulkTargets.length} de {bulkScopeCount} {bulkValue ? "ya la tienen" : "ya no la tienen"}; cambian {bulkTargets.length}.
+                </p>
+              )}
+              {lastBulk && (
+                <button type="button" onClick={undoBulkTag} disabled={bulkBusy} className={`${BTN_GHOST} ml-auto`}>
+                  Deshacer: {lastBulk.value ? "puesta" : "quitada"} «{lastBulk.label}» en {lastBulk.ids.length}
+                </button>
               )}
             </div>
-          )
-        })}
-      </div>
-      {form.swinger_friendly && (
-        <div className="md:col-span-2">
-          <label className={labelClass}>Normas del club swinger (vacío = no se enseña nada en la ficha)</label>
-          <textarea
-            value={form.swinger_rules}
-            onChange={(e) => setForm({ ...form, swinger_rules: e.target.value })}
-            placeholder="Solo parejas y mujeres solas. Código de vestimenta obligatorio tras las 00:00. Prohibido fotografiar o grabar."
-            rows={4}
-            className={`${inputClass} resize-y`}
-          />
+            <p className="mt-3 text-xs text-zinc-400">
+              «La lista actual» respeta la búsqueda y el filtro de arriba. La web pública y el mapa se refrescan al momento; las fichas de cada club pueden tardar hasta 6 horas en reflejarlo (o se actualizan al guardarlas).
+            </p>
+          </div>
         </div>
+      )}
+
+      {loading ? (
+        <p className="py-20 text-center text-sm text-zinc-300">Cargando clubs...</p>
+      ) : (
+        <>
+          <ul className="grid gap-2.5">
+            {shownClubs.map((club) => {
+              const open = editingId === club.id
+              return (
+                <li key={club.id} id={`club-${club.id}`}>
+                  <div className={`ui-item ${open ? "ui-item-on" : ""} ${club.hidden && !open ? "ui-item-dim" : ""}`}>
+                    <button type="button" onClick={() => openEdit(club)} aria-label={`Editar ${club.name}`} className="flex min-w-0 flex-1 items-center gap-3.5 text-left">
+                      <Thumb src={club.image} name={club.name} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[15px] font-extrabold text-white">{club.name}</span>
+                        <span className="mt-0.5 block truncate text-xs text-zinc-300/80">
+                          {[club.neighborhood, club.music].filter(Boolean).join(" · ") || "Sin datos"}
+                          {club.rating ? ` · ★ ${club.rating}` : ""}
+                        </span>
+                        {(club.verified || club.trending || club.sold_out || club.temporarily_closed) && (
+                          <span className="mt-1.5 flex flex-wrap gap-1.5">
+                            {club.verified && <Tag tone="violet">Verificado</Tag>}
+                            {club.trending && <Tag tone="amber">Trending</Tag>}
+                            {club.sold_out && <Tag tone="red">Agotado</Tag>}
+                            {club.temporarily_closed && <Tag tone="amber">Cerrado temp.</Tag>}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                    {/* Interruptor rápido de visibilidad: lo más usado, sin abrir la ficha. */}
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={!club.hidden}
+                      aria-label={`${club.name}: ${club.hidden ? "oculto, pulsa para mostrarlo" : "visible, pulsa para ocultarlo"}`}
+                      onClick={() => toggleField(club, "hidden")}
+                      className="flex shrink-0 flex-col items-center gap-1.5 rounded-lg px-1.5 py-1"
+                    >
+                      <span className="ui-switch" data-on={!club.hidden} data-tone="green" aria-hidden="true" />
+                      <span className={`text-[11px] font-bold ${club.hidden ? "text-zinc-400" : "text-open"}`}>{club.hidden ? "Oculto" : "Visible"}</span>
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+          {filteredClubs.length === 0 && (
+            <div className="ui-card px-6 py-14 text-center">
+              <p className="text-sm font-bold text-white">No se encontraron clubs</p>
+              <p className="mt-1 text-xs text-zinc-300/80">Prueba con otra búsqueda o quita el filtro.</p>
+              {(search || filter !== "all") && (
+                <button type="button" onClick={() => { setSearch(""); setFilter("all") }} className={`${BTN_GHOST_SM} mt-4`}>Quitar búsqueda y filtro</button>
+              )}
+            </div>
+          )}
+          <ShowMore shown={shownClubs.length} total={filteredClubs.length} onMore={() => setShown((n) => n + 50)} />
+        </>
       )}
     </div>
   )
@@ -901,272 +1183,14 @@ export default function AdminPage() {
   return (
     <AdminShell title="Clubs" subtitle="Gestiona las discotecas, pubs y bares musicales de Noctua.">
       <>
-          {/* Stats */}
-          <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <StatTile accent="violet" icon={Wine} label="Total clubs" value={stats.total} />
-            <StatTile accent="cyan" icon={Eye} label="Visibles" value={stats.visible} />
-            <StatTile accent="pink" icon={BadgeCheck} label="Verificados" value={stats.verified} />
-            <StatTile accent="coral" icon={Flame} label="Trending" value={stats.trending} />
-          </div>
-
-          {/* Add club toggle */}
-          <div className="mb-6">
-            <button onClick={() => { setShowAddForm((v) => !v); setEditingId(null) }}
-              className={`rounded-2xl px-6 py-4 text-sm font-black transition w-full md:w-auto ${showAddForm ? "border border-white/15 bg-white/[0.06] text-white hover:bg-white/10" : "bg-purple-500 text-white hover:bg-purple-400"}`}>
-              {showAddForm ? "✕ Cerrar formulario" : "+ Añadir club"}
-            </button>
-            {showAddForm && (
-              <div className="mt-4 rounded-card border border-purple-500/30 bg-purple-500/[0.04] p-6">
-                <h3 className="mb-4 text-lg font-black">Nuevo club</h3>
-                {renderClubForm(newClub, setNewClub)}
-                <div className="mt-5 flex gap-3">
-                  <button onClick={addClub} disabled={saving}
-                    className="rounded-full bg-purple-500 px-6 py-3 text-sm font-black text-white hover:bg-purple-400 transition disabled:opacity-50">
-                    {saving ? "Guardando..." : "Guardar club"}
-                  </button>
-                  <button onClick={() => { setShowAddForm(false); setNewClub(emptyForm) }}
-                    className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white hover:bg-white/10 transition">
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Search + filters */}
-          <div className="flex flex-col gap-3 mb-6 md:flex-row">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar clubs..."
-              className="flex-1 rounded-card border border-white/10 bg-surface px-5 py-4 outline-none focus:border-brand/60 transition"
-            />
-            {/* Un solo desplegable con el estado y todas las etiquetas, cada una con cuántos clubs la tienen. */}
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              aria-label="Filtrar clubs"
-              style={{ colorScheme: "dark" }}
-              className="rounded-2xl border border-white/10 bg-surface px-4 py-4 text-sm font-semibold text-white outline-none transition focus:border-brand/60 md:w-72"
-            >
-              <option value="all">Todos ({clubs.length})</option>
-              <option value="visible">Visibles ({stats.visible})</option>
-              {TAG_GROUPS.map((group) => {
-                const tags = group.tags.filter((t) => !t.extra || clubs.some((c) => t.key in (c as unknown as Record<string, unknown>)))
-                if (!tags.length) return null
-                return (
-                  <optgroup key={group.title} label={group.title}>
-                    {tags.map((t) => (
-                      <option key={t.key} value={`tag:${t.key}`}>
-                        {t.emoji} {t.filterLabel || t.label} ({clubs.filter((c) => !!(c as unknown as Record<string, unknown>)[t.key]).length})
-                      </option>
-                    ))}
-                  </optgroup>
-                )
-              })}
-            </select>
-          </div>
-
-          {/* Bulk actions */}
-          <div className="flex flex-wrap items-center gap-3 mb-6">
-            <button onClick={showAll} className="whitespace-nowrap rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-500 hover:text-white transition">✓ Mostrar todos</button>
-            <button onClick={hideAll} className="whitespace-nowrap rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-300 hover:bg-red-500 hover:text-white transition">✕ Ocultar todos</button>
-            <button
-              type="button"
-              onClick={() => setBulkOpen((o) => !o)}
-              aria-expanded={bulkOpen}
-              className="whitespace-nowrap rounded-full border border-white/10 px-4 py-2 text-xs font-bold text-zinc-200 hover:bg-white/10 transition"
-            >
-              Etiqueta en bloque
-            </button>
-            <p className="ml-auto text-xs text-zinc-400 self-center">{filteredClubs.length} clubs</p>
-          </div>
-
-          {bulkOpen && (
-            <div className="mb-6 rounded-card border border-white/10 bg-surface p-5">
-              <p className="text-sm font-bold text-white">Poner o quitar una etiqueta a muchos clubs de golpe</p>
-              <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
-                <select
-                  value={bulkTag}
-                  onChange={(e) => setBulkTag(e.target.value)}
-                  aria-label="Etiqueta"
-                  style={{ colorScheme: "dark" }}
-                  className="rounded-xl border border-white/10 bg-surface px-4 py-3 text-sm font-semibold text-white outline-none focus:border-brand/60 md:w-64"
-                >
-                  <option value="">Elige la etiqueta…</option>
-                  {bulkGroups.map((g) => (
-                    <optgroup key={g.title} label={g.title}>
-                      {g.tags.map((t) => (
-                        <option key={t.key} value={t.key}>
-                          {t.emoji} {t.label}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-                <div className="flex rounded-xl border border-white/10 p-1">
-                  {([[true, "Poner"], [false, "Quitar"]] as const).map(([v, label]) => (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() => setBulkValue(v)}
-                      aria-pressed={bulkValue === v}
-                      className={`rounded-lg px-4 py-2 text-sm font-bold transition ${bulkValue === v ? "bg-brand/25 text-white ring-1 ring-inset ring-brand/50" : "text-zinc-300 hover:bg-white/5"}`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex rounded-xl border border-white/10 p-1">
-                  {([["list", `La lista actual (${filteredClubs.length})`], ["all", `Todos los clubs (${clubs.length})`]] as const).map(([v, label]) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => setBulkScope(v)}
-                      aria-pressed={bulkScope === v}
-                      className={`rounded-lg px-4 py-2 text-sm font-bold transition ${bulkScope === v ? "bg-brand/25 text-white ring-1 ring-inset ring-brand/50" : "text-zinc-300 hover:bg-white/5"}`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={applyBulkTag}
-                  disabled={!bulkTagRef || bulkTargets.length === 0 || bulkBusy}
-                  className="rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-black transition hover:bg-zinc-200 disabled:opacity-40"
-                >
-                  {bulkBusy ? "Aplicando…" : bulkTagRef ? `${bulkValue ? "Poner" : "Quitar"} a ${bulkTargets.length} club${bulkTargets.length === 1 ? "" : "s"}` : "Elige una etiqueta"}
-                </button>
-                {bulkTagRef && (
-                  <p className="text-xs text-zinc-400">
-                    {bulkScopeCount - bulkTargets.length} de {bulkScopeCount} {bulkValue ? "ya la tienen" : "ya no la tienen"}; cambian {bulkTargets.length}.
-                  </p>
-                )}
-                {lastBulk && (
-                  <button
-                    type="button"
-                    onClick={undoBulkTag}
-                    disabled={bulkBusy}
-                    className="ml-auto rounded-xl border border-white/10 px-4 py-2.5 text-sm font-bold text-zinc-200 hover:bg-white/10 disabled:opacity-40"
-                  >
-                    Deshacer: {lastBulk.value ? "puesta" : "quitada"} «{lastBulk.label}» en {lastBulk.ids.length}
-                  </button>
-                )}
-              </div>
-              <p className="mt-3 text-xs text-zinc-500">
-                «La lista actual» respeta la búsqueda y el filtro de arriba. La web pública y el mapa se refrescan al momento; las fichas de cada club pueden tardar hasta 6 horas en reflejarlo (o se actualizan al guardarlas).
-              </p>
-            </div>
-          )}
-
-          {/* Clubs list */}
-          {loading ? (
-            <p className="text-zinc-400 text-sm text-center py-20">Cargando clubs...</p>
-          ) : (
-            <div className="grid gap-4">
-              {filteredClubs.map((club) => (
-                <div key={club.id} id={`club-${club.id}`}
-                  className={`rounded-card border p-5 transition ${club.hidden ? "border-white/5 bg-white/[0.01] opacity-50" : "border-white/10 bg-surface"} ${editingId === club.id ? "!border-purple-500/40 !bg-purple-500/[0.04] !opacity-100" : ""}`}>
-
-                  {editingId === club.id ? (
-                    <div>
-                      <div className="mb-4 flex items-center gap-2 flex-wrap">
-                        <h3 className="text-lg font-black">Editando: {club.name}</h3>
-                        <Link
-                          href={`/clubs/${club.slug || createSlug(club.name)}`}
-                          target="_blank"
-                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-zinc-300 hover:bg-white hover:text-black transition"
-                        >
-                          Ver ficha ↗
-                        </Link>
-                      </div>
-                      {renderClubForm(editForm, setEditForm)}
-                      <div className="mt-5 flex gap-3">
-                        <button onClick={() => saveEdit(club.id)} disabled={saving}
-                          className="rounded-full bg-purple-500 px-6 py-3 text-sm font-black text-white hover:bg-purple-400 transition disabled:opacity-50">
-                          {saving ? "Guardando..." : "Guardar cambios"}
-                        </button>
-                        <button onClick={cancelEdit}
-                          className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white hover:bg-white/10 transition">
-                          Cancelar
-                        </button>
-                        <Link
-                          href={`/clubs/${club.slug || createSlug(club.name)}`}
-                          target="_blank"
-                          className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white hover:bg-white/10 transition"
-                        >
-                          Ir al club ↗
-                        </Link>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                      <div className="flex items-center gap-4">
-                        {club.image && (
-                          <img src={club.image} alt={club.name} className="h-12 w-12 rounded-xl object-cover flex-shrink-0" />
-                        )}
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-black text-white">{club.name}</h3>
-                            {club.verified && <span className="rounded-full bg-purple-500/20 border border-purple-500/30 px-2 py-0.5 text-xs font-bold text-purple-300">N Verified</span>}
-                            {club.trending && <span className="rounded-full bg-orange-500/20 border border-orange-500/30 px-2 py-0.5 text-xs font-bold text-orange-300">🔥 Trending</span>}
-                            {club.hidden && <span className="rounded-full bg-zinc-500/20 border border-zinc-500/30 px-2 py-0.5 text-xs font-bold text-zinc-400">Oculto</span>}
-                            {club.temporarily_closed && <span className="rounded-full bg-amber-400/20 border border-amber-400/30 px-2 py-0.5 text-xs font-bold text-amber-300">⏸️ Cerrado temporalmente</span>}
-                          </div>
-                          <p className="text-xs text-zinc-400 mt-0.5">
-                            {club.neighborhood} · {club.music} {club.rating ? `· ⭐ ${club.rating}` : ""}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        <button onClick={() => startEdit(club)}
-                          className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white hover:bg-white hover:text-black transition">
-                          ✏️ Editar
-                        </button>
-                        <button onClick={() => toggleField(club, "trending")}
-                          className={`rounded-full px-4 py-2 text-xs font-bold transition ${club.trending ? "bg-orange-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-                          🔥 Trending
-                        </button>
-                        <button onClick={() => toggleField(club, "sold_out")}
-                          className={`rounded-full px-4 py-2 text-xs font-bold transition ${club.sold_out ? "bg-red-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-                          🚫 Sold out
-                        </button>
-                        {"temporarily_closed" in club && (
-                          <button onClick={() => toggleField(club, "temporarily_closed")}
-                            className={`rounded-full px-4 py-2 text-xs font-bold transition ${club.temporarily_closed ? "bg-amber-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-                            ⏸️ Cerrado temp.
-                          </button>
-                        )}
-                        <button onClick={() => toggleField(club, "hidden")}
-                          className={`rounded-full px-4 py-2 text-xs font-bold transition ${!club.hidden ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-                          👁️ {club.hidden ? "Oculto" : "Visible"}
-                        </button>
-                        {/* Aquí solo van los estados del club (verificado, tendencia, agotado, cerrado,
-                            visible). El resto de etiquetas (LGTBI+, mesa VIP, terraza...) se editan
-                            dentro de «Editar». */}
-                        <button onClick={() => toggleField(club, "verified")}
-                          className={`rounded-full px-4 py-2 text-xs font-bold transition ${club.verified ? "bg-purple-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-                          ✓ Verified
-                        </button>
-                        <button onClick={() => deleteClub(club.id)}
-                          className="rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-400 hover:bg-red-500 hover:text-white transition">
-                          🗑️ Borrar
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-              {filteredClubs.length === 0 && (
-                <p className="text-zinc-400 text-sm text-center py-20">No se encontraron clubs.</p>
-              )}
-            </div>
-          )}
+        {/* Cifras: pulsa una para filtrar la lista */}
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <StatTile accent="violet" icon={Wine} label="Total clubs" value={stats.total} active={filter === "all"} onClick={() => setFilter("all")} />
+          <StatTile accent="cyan" icon={Eye} label="Visibles" value={stats.visible} active={filter === "visible"} onClick={() => setFilter("visible")} />
+          <StatTile accent="pink" icon={BadgeCheck} label="Verificados" value={stats.verified} active={filter === "tag:verified"} onClick={() => setFilter("tag:verified")} />
+          <StatTile accent="coral" icon={Flame} label="Trending" value={stats.trending} active={filter === "tag:trending"} onClick={() => setFilter("tag:trending")} />
+        </div>
+        <SplitView list={list} sheet={sheet} />
       </>
     </AdminShell>
   )

@@ -10,6 +10,7 @@
 // valiendo a las 02:00 del domingo.
 import { clubHoursStatus, clubOpenNow, type HoursStatus } from "./clubHours"
 import { madridIsoDay } from "./madridDay"
+import { lazyDtf } from "./dtf"
 
 export type NoticeKind = "closed" | "hours" | "notice"
 
@@ -37,9 +38,10 @@ export function addDays(iso: string, n: number): string {
 }
 
 // La «noche» en la que estamos ahora (AAAA-MM-DD, hora de Madrid; antes de las 06:00 = la anterior).
+const madridHourFormat = lazyDtf("en-GB", { timeZone: "Europe/Madrid", hour: "2-digit", hour12: false })
+
 export function nightDay(now: Date = new Date()): string {
-  const hour =
-    Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", hour: "2-digit", hour12: false }).format(now)) % 24
+  const hour = Number(madridHourFormat().format(now)) % 24
   const day = madridIsoDay(now)
   return hour < 6 ? addDays(day, -1) : day
 }
@@ -102,7 +104,9 @@ type HoursClub = {
 // null = no se sabe (igual que clubOpenNow).
 export function effectiveOpenNow(club: HoursClub): boolean | null {
   if (club.temporarily_closed) return false
-  const active = activeNotices(club.schedule_notices)
+  // Casi ningún club tiene avisos: sin ellos no hace falta calcular qué noche es (se hacía una vez por club).
+  const raw = club.schedule_notices
+  const active = Array.isArray(raw) && raw.length > 0 ? activeNotices(raw) : []
   if (active.some((n) => n.kind === "closed")) return false
   const special = active.find((n) => n.kind === "hours" && n.open && n.close)
   if (special) return clubOpenNow(`${special.open}-${special.close}`, null)

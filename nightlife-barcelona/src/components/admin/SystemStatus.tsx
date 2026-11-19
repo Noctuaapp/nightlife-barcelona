@@ -37,7 +37,7 @@ const DB_LIMIT_MB = 500
 const STORAGE_LIMIT_MB = 1024
 const GOOGLE_DAILY_LIMIT = 20
 
-const ago = (iso?: string | null) => {
+export const ago = (iso?: string | null) => {
   if (!iso) return null
   const h = (Date.now() - new Date(iso).getTime()) / 3600000
   if (h < 1) return "hace menos de 1 h"

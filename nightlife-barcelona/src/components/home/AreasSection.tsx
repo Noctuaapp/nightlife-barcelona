@@ -6,7 +6,8 @@ import { useLanguage } from "../../context/LanguageContext"
 import { useCityT } from "../../lib/useCityT"
 import { useSelectedCity } from "../../lib/previewCity"
 import type { CityKey } from "../../lib/cities"
-import { essentialEntryHref } from "../../lib/essentialCategories"
+import { GROUP_ACCENT, categoryInfo, essentialEntryHref } from "../../lib/essentialCategories"
+import CategoryTile from "../essentials/CategoryTile"
 
 // Esenciales de la noche en la portada: accesos directos compactos. Antes eran 7 tarjetas de
 // 300 px de alto con degradados de colores, e incluían Hotel y Casino, que no son esenciales para
@@ -46,22 +47,20 @@ export default function AreasSection() {
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {CATEGORIES[city].map((cat) => {
-          const Icon = cat.icon
-          return (
-            <Link
-              key={cat.slug}
-              href={essentialEntryHref(cat.slug, city)}
-              className="flex flex-col gap-3 rounded-card border border-white/10 bg-surface p-4 transition hover:border-white/25"
-            >
-              <Icon size={22} className="text-brand-soft" />
-              <span>
-                <span className="block text-sm font-semibold text-ink">{t(`essentials.category_names.${cat.key}`)}</span>
-                <span className="mt-0.5 block text-xs leading-snug text-zinc-400">{tc(`essentials.categories.${cat.key}`)}</span>
-              </span>
-            </Link>
-          )
-        })}
+        {CATEGORIES[city].map((cat) => (
+          // 19/11/2026: antes eran recuadros planos y grises; ahora la misma tarjeta con luz de color que /essentials (el color es el de su
+          // grupo: salud, moverse, comer…), con contorno de ese color y el icono grande de marca de agua.
+          <CategoryTile
+            key={cat.slug}
+            href={essentialEntryHref(cat.slug, city)}
+            icon={cat.icon}
+            accent={GROUP_ACCENT[categoryInfo(cat.key).group]}
+            title={t(`essentials.category_names.${cat.key}`)}
+            bordered
+          >
+            <span className="mt-1 line-clamp-2 block text-xs leading-snug text-zinc-300">{tc(`essentials.categories.${cat.key}`)}</span>
+          </CategoryTile>
+        ))}
       </div>
     </section>
   )

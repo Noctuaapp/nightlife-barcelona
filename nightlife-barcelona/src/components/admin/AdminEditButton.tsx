@@ -7,7 +7,7 @@ type Kind = "club" | "event" | "clubEvent" | "essential"
 const EDIT_URL: Record<Kind, (id: number) => string> = {
   club: (id) => `/admin?edit=${id}`,
   event: (id) => `/admin/events?edit=${id}`,
-  clubEvent: (id) => `/admin/club-events?edit=${id}`,
+  clubEvent: (id) => `/admin/programacion?tab=fecha&edit=${id}`,
   essential: (id) => `/admin/essentials?edit=${id}`,
 }
 

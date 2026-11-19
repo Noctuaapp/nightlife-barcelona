@@ -11,6 +11,8 @@
 //   "J-S 00:00-06:00 | D 19:00-01:00"    → rangos de días y separador "|"
 // Devuelve null si no se puede interpretar (mejor "no sé" que decir que está abierto).
 
+import { lazyDtf } from "./dtf"
+
 const DAY_LETTERS = ["D", "L", "M", "X", "J", "V", "S"] // índice = getDay() (0 = domingo)
 const WEEK_ORDER = ["L", "M", "X", "J", "V", "S", "D"]
 const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
@@ -20,14 +22,11 @@ const OPEN_DAY_TO_LETTER: Record<string, string> = {
   lun: "L", mar: "M", mie: "X", mié: "X", jue: "J", vie: "V", sab: "S", sáb: "S", dom: "D",
 }
 
+// El formateador se crea una sola vez (lib/dtf.ts): esta función se llama una vez por club cada vez que se mira si está abierto.
+const madridClockFormat = lazyDtf("en-GB", { timeZone: "Europe/Madrid", weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false })
+
 export function madridClock(): { dow: number; minutes: number } {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Madrid",
-    weekday: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date())
+  const parts = madridClockFormat().formatToParts(new Date())
   const wd = (parts.find((p) => p.type === "weekday")?.value || "").toLowerCase()
   let hour = parseInt(parts.find((p) => p.type === "hour")?.value || "0", 10)
   if (hour === 24) hour = 0

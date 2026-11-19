@@ -53,7 +53,8 @@ export default function EssentialsPage() {
     let alive = true
     setLoading(true)
     // Por páginas: con las paradas de Nitbus hay más de 1.000 esenciales (ver lib/fetchAll).
-    fetchAllPages((from, to) => scopeToCity(supabase.from("essentials").select("*"), city).order("id").range(from, to)).then((data) => {
+    // De 4 en 4 páginas a la vez (lib/fetchAll): la tabla pasa de las 3.000 filas.
+    fetchAllPages((from, to) => scopeToCity(supabase.from("essentials").select("*"), city).order("id").range(from, to), 1000, 4).then((data) => {
       if (!alive) return
       setEssentials(essentialsOfCity(data.map(cleanEssential).filter(isShownEssential), city))
       setLoading(false)

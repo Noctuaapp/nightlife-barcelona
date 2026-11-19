@@ -547,6 +547,10 @@ button, a {
     transition: color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
   }
   .ui-chip:hover { color: #fff; box-shadow: inset 0 0 0 1px rgb(160 139 255 / 0.4); }
+  /* Dentro de una ficha de edición el chip sin elegir lleva fondo propio y borde claro: antes casi no se veía. */
+  .ui-sheet .ui-chip { min-height: 36px; padding: 0.4rem 0.85rem; font-size: 0.8125rem; color: #d6d2ec; background: #15132a; box-shadow: inset 0 0 0 1px #4a4672; }
+  .ui-sheet .ui-chip:hover { color: #fff; box-shadow: inset 0 0 0 1px #a08bff; }
+  .ui-sheet .ui-chip[aria-pressed="true"] { color: #fff; background: linear-gradient(180deg, #7f62ff, #6247e6); box-shadow: inset 0 0 0 1px #a08bff, inset 0 1px 0 rgb(255 255 255 / 0.3), 0 4px 12px -6px rgb(124 92 255 / 0.9); }
   .ui-chip[aria-pressed="true"] {
     color: #fff;
     background: linear-gradient(180deg, rgb(124 92 255 / 0.28), rgb(124 92 255 / 0.12));
@@ -597,7 +601,132 @@ button, a {
   .ui-dock-item:active { transform: scale(0.94); }
   .ui-dock-item[aria-current="page"] { color: #fff; text-shadow: 0 1px 0 rgb(40 20 120 / 0.5); }
   .ui-dock-item[aria-current="page"] svg { filter: drop-shadow(0 1px 0 rgb(40 20 120 / 0.5)); }
+
+  /* ---------- Edición y listas (19/11/2026) ----------
+     Capas de más oscuro a más claro: fondo de la página, tarjeta de la lista, ficha de edición, y los campos dentro de la ficha
+     (hundidos, con un borde que SÍ se ve). Antes la ficha y el fondo eran casi el mismo negro y los campos no se distinguían. */
+  .ui-sheet {
+    position: relative;
+    color-scheme: dark;
+    border: 1px solid rgb(255 255 255 / 0.16);
+    border-radius: 22px;
+    background:
+      radial-gradient(90% 60% at 0% 0%, rgb(124 92 255 / 0.16), transparent 60%),
+      linear-gradient(180deg, #2b2842, #232038);
+    box-shadow: 0 34px 70px -34px rgb(0 0 0 / 0.9), inset 0 1px 0 rgb(255 255 255 / 0.1);
+  }
+  .ui-sheet-bar { background: rgb(18 16 32 / 0.55); backdrop-filter: blur(10px); }
+  .ui-input {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    border-radius: 12px;
+    border: 1px solid #4a4672;
+    background: #15132a;
+    padding: 10px 14px;
+    font-size: 14px;
+    line-height: 1.35;
+    color: #f4f3f7;
+    outline: none;
+    box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.35);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  }
+  .ui-input::placeholder { color: #8a86a8; }
+  .ui-input:hover { border-color: #6a65a0; }
+  .ui-input:focus { border-color: #a08bff; background: #19173a; box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.3), 0 0 0 3px rgb(124 92 255 / 0.3); }
+  select.ui-input { appearance: none; padding-right: 38px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b8b3d6' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+  textarea.ui-input { min-height: 96px; resize: vertical; }
+  /* Fuera de la ficha (buscador, filtros de la lista): un poco menos hundido. */
+  .ui-input-flat { background: #1b1830; box-shadow: none; border-color: #3c3860; }
+  .ui-label { display: block; margin-bottom: 6px; font-size: 12.5px; font-weight: 700; color: #d6d2ec; letter-spacing: 0.005em; }
+  .ui-hint { margin-top: 6px; font-size: 12px; line-height: 1.45; color: #a29ebf; }
+
+  /* Fila de la lista: más clara que el fondo, con la elegida marcada por una barra violeta a la izquierda. */
+  .ui-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 12px 14px;
+    text-align: left;
+    border: 1px solid rgb(255 255 255 / 0.09);
+    border-radius: 16px;
+    background: linear-gradient(180deg, #1d1a33, #181629);
+    transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+  }
+  .ui-item:hover { border-color: rgb(160 139 255 / 0.45); box-shadow: 0 10px 24px -16px rgb(124 92 255 / 0.7); }
+  .ui-item:active { transform: scale(0.995); }
+  .ui-item-on {
+    border-color: rgb(160 139 255 / 0.75);
+    background: linear-gradient(180deg, rgb(124 92 255 / 0.26), rgb(124 92 255 / 0.1));
+    box-shadow: inset 3px 0 0 #a08bff, 0 12px 28px -18px rgb(124 92 255 / 0.9);
+  }
+  .ui-item-dim { opacity: 0.62; }
+
+  /* Interruptor (estado de la ficha): pista y bolita, con el texto al lado (el color nunca va solo). */
+  .ui-switch {
+    position: relative;
+    flex: none;
+    width: 42px;
+    height: 24px;
+    border-radius: 999px;
+    border: 1px solid #55507d;
+    background: #15132a;
+    box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.4);
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+  .ui-switch::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #ffffff, #cfcbe6);
+    box-shadow: 0 2px 4px rgb(0 0 0 / 0.45);
+    transition: transform 0.22s cubic-bezier(0.3, 0.9, 0.25, 1);
+  }
+  .ui-switch[data-on="true"] { background: linear-gradient(180deg, #8d70ff, #6a46f5); border-color: #4f2fd0; }
+  .ui-switch[data-on="true"]::after { transform: translateX(18px); }
+  .ui-switch[data-tone="green"][data-on="true"] { background: linear-gradient(180deg, #34d399, #059669); border-color: #047857; }
+  .ui-switch[data-tone="amber"][data-on="true"] { background: linear-gradient(180deg, #fbbf24, #d97706); border-color: #a45a06; }
+  .ui-switch[data-tone="red"][data-on="true"] { background: linear-gradient(180deg, #f87171, #dc2626); border-color: #a31717; }
+
+  /* Pestañas dentro de la ficha. */
+  .ui-tabs { display: flex; gap: 4px; overflow-x: auto; padding: 4px; border-radius: 14px; background: rgb(10 9 22 / 0.55); border: 1px solid rgb(255 255 255 / 0.08); scrollbar-width: none; }
+  .ui-tabs::-webkit-scrollbar { display: none; }
+  .ui-tab { flex: 1 0 auto; padding: 8px 10px; border-radius: 10px; font-size: 13px; font-weight: 700; color: #b0acc8; white-space: nowrap; transition: background-color 0.15s ease, color 0.15s ease; }
+  @media (min-width: 640px) { .ui-tab { padding: 8px 14px; } }
+  .ui-tab:hover { color: #fff; }
+  .ui-tab[aria-selected="true"] { color: #fff; background: linear-gradient(180deg, #7f62ff, #6247e6); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 4px 12px -4px rgb(124 92 255 / 0.8); }
+
+  /* Recuadro de cifra con color propio (--tone = «r g b»): fondo teñido, borde de su color e icono en una pastilla. */
+  .ui-tile {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgb(var(--tone) / 0.34);
+    background:
+      radial-gradient(120% 100% at 0% 0%, rgb(var(--tone) / 0.24), transparent 62%),
+      linear-gradient(180deg, #1c1932, #161428);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 14px 30px -22px rgb(var(--tone) / 0.7);
+  }
+  .ui-tile::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: linear-gradient(180deg, rgb(var(--tone)), rgb(var(--tone) / 0.2)); }
+  .ui-tile-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    color: rgb(var(--tone));
+    background: rgb(var(--tone) / 0.18);
+    box-shadow: inset 0 0 0 1px rgb(var(--tone) / 0.3);
+  }
+  .ui-tile-on { border-color: rgb(var(--tone) / 0.9); box-shadow: 0 0 0 1px rgb(var(--tone) / 0.5), 0 16px 34px -20px rgb(var(--tone) / 0.9); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ui-btn, .ui-btn-primary::after, .ui-seg-thumb, .ui-seg-item, .ui-chip, .ui-dock-thumb, .ui-dock-item { transition: none; }
+  .ui-btn, .ui-btn-primary::after, .ui-seg-thumb, .ui-seg-item, .ui-chip, .ui-dock-thumb, .ui-dock-item, .ui-item, .ui-input, .ui-switch, .ui-switch::after, .ui-tab { transition: none; }
 }

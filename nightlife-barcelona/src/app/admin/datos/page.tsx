@@ -18,6 +18,7 @@ import InteractionStats, { type Kind as ClickKind } from "../../../components/ad
 import { CountryPanel, FunnelPanel, LanguagePanel, SourcePanel } from "../../../components/admin/DataInsights"
 import { NeedSql } from "../../../components/admin/insights"
 import SurprisePanel from "../../../components/admin/SurprisePanel"
+import LocalBreakdown from "../../../components/admin/LocalBreakdown"
 import {
   actionIndex, actionsPer100, compareValues, fillDays, hoursSeries, isDeadItem, previousRange, rangeLength, searchRows, totalActions, weekdaySeries,
   DEAD_MIN_VIEWS, type ClubActionRow, type CountryRow, type FunnelRow, type HourRow, type LanguageRow, type SearchDetailTerm, type SignupErrorRow, type SourceQualityRow, type WeekdayRow,
@@ -510,6 +511,20 @@ export default function AdminDatosPage() {
                 {to === madridToday() ? " Hoy aún no ha terminado, así que el periodo actual sale algo más corto de lo que será." : ""}
               </p>
             )}
+            {/* De qué locales sale cada cifra (19/11/2026). */}
+            <LocalBreakdown
+              clubRows={clubRows}
+              eventRows={eventRows}
+              from={from}
+              to={to}
+              onOpen={(type, id, name) => {
+                setTab(type === "club" ? "clubs" : "eventos")
+                setSelected({ type, id, name })
+                window.scrollTo({ top: 0, behavior: "smooth" })
+              }}
+              onTable={(type, sort) => goTab(type === "club" ? "clubs" : "eventos", sort)}
+              onClicks={goClicks}
+            />
             <Panel>
               <div className="mb-4 flex items-center justify-between gap-3">
                 <SectionTitle icon={BarChart3} accent="violet">Visitas por día</SectionTitle>

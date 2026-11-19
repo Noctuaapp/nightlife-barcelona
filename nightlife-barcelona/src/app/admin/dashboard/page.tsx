@@ -222,7 +222,7 @@ export default function AdminDashboardPage() {
 
       const ups: Upcoming[] = [
         ...myEvents.filter((e) => e.date <= weekLimit).slice(0, 6).map((e) => ({ id: e.id, title: e.title, date: e.date, kind: "Evento" as const, href: `/admin/events?edit=${e.id}` })),
-        ...myNights.slice(0, 6).map((e) => ({ id: e.id, title: e.title, date: e.date, kind: "Noche de club" as const, href: `/admin/club-events?edit=${e.id}` })),
+        ...myNights.slice(0, 6).map((e) => ({ id: e.id, title: e.title, date: e.date, kind: "Noche de club" as const, href: `/admin/programacion?tab=fecha&edit=${e.id}` })),
       ].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 8)
       setUpcoming(ups)
     }

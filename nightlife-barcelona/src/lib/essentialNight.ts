@@ -15,6 +15,8 @@
 //     «Hasta 1:30 AM viernes-domingo», «2:30 AM (3:00 AM sábado)», «Medianoche (1:00 AM viernes-sábado)»
 // Lo que no se entiende devuelve null (mejor «no sé» que inventar un horario).
 
+import { lazyDtf } from "./dtf"
+
 export type NightDays = boolean[] // 7 posiciones, 0 = lunes
 
 type DayInfo = { full24: boolean; close: number | null; open1am: boolean }
@@ -138,8 +140,10 @@ export function qualifiesOnDay(raw: string | null | undefined, day: number): boo
 
 // La noche de «hoy» para quien sale: hasta las 6:00 todavía es la noche del día anterior (a las 2:00
 // del sábado se está en la noche del viernes). 0 = lunes. Siempre con la hora de Madrid.
+const tonightFormat = lazyDtf("en-GB", { timeZone: "Europe/Madrid", weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false })
+
 export function tonightIndex(now: Date = new Date()): number {
-  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(now)
+  const parts = tonightFormat().formatToParts(now)
   const weekday = (parts.find((p) => p.type === "weekday")?.value || "").toLowerCase()
   let hour = parseInt(parts.find((p) => p.type === "hour")?.value || "0", 10)
   if (hour === 24) hour = 0

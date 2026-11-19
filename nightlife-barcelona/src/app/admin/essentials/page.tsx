@@ -1,7 +1,10 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react"
+import { Camera, ExternalLink, Eye, EyeOff, ImageOff, Layers, Plus, ShieldCheck, Store, Trash2, Upload, type LucideIcon } from "lucide-react"
 import AdminShell from "../../../components/admin/AdminShell"
+import { BTN_DANGER, BTN_GHOST, BTN_GHOST_SM, BTN_PRIMARY, BTN_PRIMARY_SM, FilterChip, StatTile, Tag } from "../../../components/admin/ui"
+import { EditSheet, Field, FieldGrid, FormSection, SearchBox, SheetTabs, ShowMore, SplitView, SwitchRow, Thumb } from "../../../components/admin/editor"
 import { supabase } from "../../../lib/supabase"
 import { fetchAllPages } from "../../../lib/fetchAll"
 import { ADMIN_EMAIL } from "../../../lib/admin"
@@ -168,9 +171,22 @@ type SortKey = "category" | "recent" | "name"
 // Sin tildes ni mayúsculas: «farmacia» encuentra «Farmàcia».
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
 
-const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-brand/60 transition placeholder:text-zinc-400"
-const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1.5"
-const selectClass = "rounded-2xl border border-white/10 bg-surface px-4 py-4 text-sm font-semibold text-white outline-none transition focus:border-brand/60"
+// Campos y chips: el estilo está en globals.css («ui-input», «ui-chip»), igual en todo el admin.
+const inputClass = "ui-input"
+
+// Pestañas de la ficha (19/11/2026). «Estado» solo existe al editar: ahí están los interruptores y la verificación, que se guardan al momento.
+type SheetTab = "datos" | "horario" | "foto" | "estado"
+
+// Estados que salen como botones con su cuenta; el resto van en el desplegable «Otro estado…».
+const QUICK_STATUS: { key: StatusKey; label: string }[] = [
+  { key: "all", label: "Todos" },
+  { key: "visible", label: "Publicados" },
+  { key: "hidden", label: "Ocultos" },
+  { key: "nophoto", label: "Sin foto" },
+  { key: "nocoords", label: "Sin ubicación" },
+  { key: "nohours", label: "Sin horario" },
+  { key: "unverified", label: "Sin verificar" },
+]
 
 export default function AdminEssentialsPage() {
   const [essentials, setEssentials] = useState<Essential[]>([])
@@ -199,6 +215,8 @@ export default function AdminEssentialsPage() {
   const [uploading, setUploading] = useState(false)
   const [photoBusyId, setPhotoBusyId] = useState<number | null>(null)
   const [bulkBusy, setBulkBusy] = useState(false)
+  const [sheetTab, setSheetTab] = useState<SheetTab>("datos")
+  const [bulkOpen, setBulkOpen] = useState(false)
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -401,6 +419,7 @@ export default function AdminEssentialsPage() {
 
   const startEditing = (item: Essential) => {
     setShowAddForm(false)
+    setSheetTab("datos")
     setEditingId(item.id)
     setEditEssential({
       name: item.name || "", category: item.category || "", subcategory: item.subcategory || "", address: item.address || "",
@@ -553,365 +572,445 @@ export default function AdminEssentialsPage() {
     )
   }
 
+
   // ---------- Lista que se pinta ----------
+  // De 40 en 40; la ficha fijada (recién creada o abierta con ?edit=ID) va siempre arriba.
   const focus = focusId != null ? essentials.find((e) => e.id === focusId) : undefined
   const rest = filtered.filter((e) => e.id !== focus?.id)
-  const shown = [...(focus ? [focus] : []), ...rest.slice(0, limit)]
-  const remaining = Math.max(0, rest.length - limit)
+  const shownItems = [...(focus ? [focus] : []), ...rest.slice(0, limit)]
 
-  // Función (no componente): definida como componente dentro de la página se volvía a montar en
-  // cada tecla y el campo perdía el foco al escribir.
-  const renderForm = (data: EssentialForm, setData: (d: EssentialForm) => void, setImage: (url: string) => void) => {
-    const knownCategory = categories.includes(data.category)
-    const showSub = !!SUBCATEGORY_LABEL[data.category] || !!data.subcategory
-    return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div>
-          <label className={labelClass}>Nombre *</label>
-          <input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} placeholder="Farmacia Central" className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Categoría *</label>
-          <select value={data.category} onChange={(e) => setData({ ...data, category: e.target.value })} style={{ colorScheme: "dark" }} className={`${inputClass} bg-surface`}>
-            <option value="">Elige una categoría</option>
-            {!knownCategory && data.category && <option value={data.category}>{data.category}</option>}
-            {categories.map((c) => <option key={c} value={c}>{categorySingular(c)}</option>)}
-          </select>
-        </div>
-        {showSub && (
-          <div>
-            <label className={labelClass}>{SUBCATEGORY_LABEL[data.category] || "Subcategoría"}</label>
-            <input
-              value={data.subcategory}
-              onChange={(e) => setData({ ...data, subcategory: e.target.value })}
-              list="subcategory-hints"
-              placeholder={SUBCATEGORY_PLACEHOLDER[data.category] || ""}
-              className={inputClass}
-            />
-            <datalist id="subcategory-hints">
-              {(SUBCATEGORY_HINTS[data.category] || []).map((s) => <option key={s} value={s} />)}
-            </datalist>
-          </div>
-        )}
-        <div>
-          <label className={labelClass}>Barrio o municipio</label>
-          <input value={data.neighborhood} onChange={(e) => setData({ ...data, neighborhood: e.target.value })} placeholder="Gràcia, Badalona…" className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Dirección</label>
-          <input value={data.address} onChange={(e) => setData({ ...data, address: e.target.value })} placeholder="Carrer de Còrsega, 327" className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Horario</label>
-          <input value={data.open_hours} onChange={(e) => setData({ ...data, open_hours: e.target.value })} placeholder="Open 24 hours" className={inputClass} />
-          <label className="mt-2 flex items-center gap-2 text-xs text-zinc-300">
-            <input type="checkbox" checked={data.is_24h} onChange={(e) => setData({ ...data, is_24h: e.target.checked })} />
-            Abierto las 24 h (se usa si el horario está vacío)
-          </label>
-        </div>
-        <div>
-          <label className={labelClass}>Teléfono</label>
-          <input value={data.phone} onChange={(e) => setData({ ...data, phone: e.target.value })} inputMode="tel" placeholder="933 03 30 33" className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Web</label>
-          <input value={data.website} onChange={(e) => setData({ ...data, website: e.target.value })} inputMode="url" placeholder="https://…" className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Enlace de Google Maps</label>
-          <input
-            value={data.maps_link}
-            onChange={(e) => {
-              // Si el enlace de Google Maps lleva coordenadas y aún no hay, se rellenan solas.
-              const p = parseCoords(e.target.value)
-              const fill = p && !data.latitude && !data.longitude ? { latitude: String(p.lat), longitude: String(p.lng) } : {}
-              setData({ ...data, maps_link: e.target.value, ...fill })
-            }}
-            placeholder="https://www.google.com/maps/…"
-            className={inputClass}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <label className={labelClass}>Descripción</label>
-          <textarea value={data.description} onChange={(e) => setData({ ...data, description: e.target.value })} rows={3} placeholder="Opcional" className={`${inputClass} resize-y`} />
-        </div>
-        <div className="md:col-span-2">
-          <CoordsField
-            latitude={data.latitude}
-            longitude={data.longitude}
-            address={data.address}
-            onChange={(latitude, longitude) => setData({ ...data, latitude, longitude })}
-            inputClassName={inputClass}
-            labelClassName={labelClass}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <label className={labelClass}>Foto</label>
-          <div className="flex flex-wrap items-center gap-4">
-            {data.image ? (
-              <img src={data.image} alt="Vista previa" className="h-20 w-20 rounded-xl object-cover" />
-            ) : (
-              <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-dashed border-white/20 bg-white/5 text-center text-[11px] font-semibold leading-tight text-zinc-400">Sin<br />foto</div>
-            )}
-            <label className={`cursor-pointer rounded-full border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-xs font-bold text-amber-200 transition hover:bg-amber-300 hover:text-black ${uploading ? "pointer-events-none opacity-50" : ""}`}>
-              {uploading ? "Subiendo…" : data.image ? "📷 Cambiar foto" : "📷 Subir foto"}
-              <input type="file" accept="image/*" className="sr-only" disabled={uploading} onChange={(e) => void uploadFormImage(e, setImage)} />
-            </label>
-            {data.image && (
-              <button type="button" onClick={() => setImage("")} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-zinc-300 transition hover:bg-white/10">
-                Quitar foto
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    )
+  const editingItem = editingId != null ? essentials.find((e) => e.id === editingId) || null : null
+  const sheetOpen = showAddForm || editingId != null
+  const closeSheet = () => {
+    if (showAddForm) {
+      setShowAddForm(false)
+      setNewEssential(emptyForm)
+    } else {
+      cancelEditing()
+    }
+  }
+  const openNew = () => {
+    cancelEditing()
+    setSheetTab("datos")
+    setShowAddForm(true)
   }
 
-  const renderItem = (item: Essential) => {
-    const Icon = categoryInfo(item.category).icon
+  const mapsHrefOf = (item: Essential): string | null => {
     const hasCoords = item.latitude != null && item.longitude != null
-    const mapsHref = /^https?:\/\//i.test((item.maps_link || "").trim())
+    return /^https?:\/\//i.test((item.maps_link || "").trim())
       ? (item.maps_link || "").trim()
       : hasCoords
       ? googleMapsUrl({ lat: Number(item.latitude), lng: Number(item.longitude) })
       : null
-    const editing = editingId === item.id
-    const verifiedNow = isVerificationCurrent(item)
-    const verifiedDate = item.last_verified_at ? new Date(item.last_verified_at).toLocaleDateString("es-ES", { day: "numeric", month: "short" }) : ""
-    const strictCategory = categoryInfo(item.category).trust === "strict"
-    return (
-      <div
-        key={item.id}
-        id={`essential-${item.id}`}
-        className={`rounded-card border p-5 transition ${item.hidden ? "border-white/5 bg-white/[0.01] opacity-50" : "border-white/10 bg-surface"} ${editing ? "!border-purple-500/40 !bg-purple-500/[0.04] !opacity-100" : ""}`}
-      >
-        {editing ? (
-          <div>
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              <h3 className="text-lg font-black">Editando: {item.name}</h3>
-              <span className="text-xs text-zinc-500">ficha n.º {item.id}</span>
-              {mapsHref && (
-                <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-zinc-300 transition hover:bg-white hover:text-black">
-                  Ver en Google Maps ↗
-                </a>
-              )}
-            </div>
-            {renderForm(editEssential, setEditEssential, (url) => setEditEssential((prev) => ({ ...prev, image: url })))}
-            <div className="mt-5 flex gap-3">
-              <button onClick={() => saveEditing(item.id)} disabled={saving || uploading} className="rounded-full bg-purple-500 px-6 py-3 text-sm font-black text-white transition hover:bg-purple-400 disabled:opacity-50">
-                {saving ? "Guardando…" : "Guardar cambios"}
-              </button>
-              <button onClick={cancelEditing} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10">
-                Cancelar
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex min-w-0 items-center gap-4">
-              {item.image ? (
-                <img src={item.image} alt={item.name} className="h-14 w-14 flex-shrink-0 rounded-xl object-cover" />
-              ) : (
-                <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border border-dashed border-white/20 bg-white/5 text-zinc-500">
-                  <Icon size={20} aria-hidden="true" />
-                </div>
-              )}
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-black text-white">{item.name}</h3>
-                  <span className="rounded-full border border-teal-500/30 bg-teal-500/10 px-2 py-0.5 text-xs font-bold text-teal-300">{categorySingular(item.category)}</span>
-                  {item.subcategory && <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs font-bold text-zinc-300">{item.subcategory}</span>}
-                  {item.hidden && <span className="rounded-full border border-zinc-500/30 bg-zinc-500/20 px-2 py-0.5 text-xs font-bold text-zinc-400">Oculto</span>}
-                  {item.import_source === "osm" && <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs font-bold text-sky-300">OpenStreetMap</span>}
-                  {item.import_source === "google" && <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-xs font-bold text-sky-300">Google</span>}
-                  {verifiedNow ? (
-                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-bold text-emerald-300">Verificado {verifiedDate}</span>
-                  ) : item.verification_status === "verified" ? (
-                    <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs font-bold text-amber-300">Verificación caducada ({verifiedDate})</span>
-                  ) : strictCategory ? (
-                    <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs font-bold text-amber-300">Sin verificar</span>
-                  ) : null}
-                  {!item.image && <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs font-bold text-amber-300">Sin foto</span>}
-                  {!hasCoords && <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-xs font-bold text-red-300">Sin ubicación</span>}
-                </div>
-                <p className="mt-0.5 text-xs text-zinc-400">
-                  {[item.neighborhood, item.address].filter(Boolean).join(" · ") || "Sin dirección"}
-                  {item.open_hours ? ` · 🕒 ${item.open_hours}` : item.is_24h ? " · 🕒 24 h" : ""}
-                  {item.phone ? ` · 📞 ${item.phone}` : ""}
-                </p>
-              </div>
-            </div>
+  }
 
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => startEditing(item)} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:bg-white hover:text-black">
-                ✏️ Editar
-              </button>
-              <label className={`cursor-pointer rounded-full border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-xs font-bold text-amber-200 transition hover:bg-amber-300 hover:text-black ${photoBusyId !== null ? "pointer-events-none opacity-50" : ""}`}>
-                {photoBusyId === item.id ? "Subiendo…" : item.image ? "📷 Cambiar foto" : "📷 Subir foto"}
+  // Función (no componente): definida como componente dentro de la página se volvía a montar en
+  // cada tecla y el campo perdía el foco al escribir.
+  const renderForm = (data: EssentialForm, setData: (d: EssentialForm) => void, setImage: (url: string) => void, isNew: boolean) => {
+    const knownCategory = categories.includes(data.category)
+    const showSub = !!SUBCATEGORY_LABEL[data.category] || !!data.subcategory
+    const tab: SheetTab = isNew && sheetTab === "estado" ? "datos" : sheetTab
+    return (
+      <div>
+        <div className="mb-6">
+          <SheetTabs<SheetTab>
+            label="Apartados de la ficha"
+            value={tab}
+            onChange={setSheetTab}
+            tabs={[
+              { value: "datos", label: "Datos" },
+              { value: "horario", label: "Horario y contacto" },
+              { value: "foto", label: "Foto" },
+              ...(isNew ? [] : [{ value: "estado" as const, label: "Estado" }]),
+            ]}
+          />
+        </div>
+
+        {tab === "datos" && (
+          <FieldGrid>
+            <Field label="Nombre *">
+              <input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} placeholder="Farmacia Central" className={inputClass} />
+            </Field>
+            <Field label="Categoría *">
+              <select value={data.category} onChange={(e) => setData({ ...data, category: e.target.value })} className={inputClass}>
+                <option value="">Elige una categoría</option>
+                {!knownCategory && data.category && <option value={data.category}>{data.category}</option>}
+                {categories.map((c) => <option key={c} value={c}>{categorySingular(c)}</option>)}
+              </select>
+            </Field>
+            {showSub && (
+              <Field label={SUBCATEGORY_LABEL[data.category] || "Subcategoría"}>
                 <input
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  disabled={photoBusyId !== null}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    e.target.value = "" // permite volver a elegir la misma foto
-                    void changePhoto(item, file)
-                  }}
+                  value={data.subcategory}
+                  onChange={(e) => setData({ ...data, subcategory: e.target.value })}
+                  list="subcategory-hints"
+                  placeholder={SUBCATEGORY_PLACEHOLDER[data.category] || ""}
+                  className={inputClass}
                 />
-              </label>
-              <button onClick={() => setVerified(item, true)} className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500 hover:text-white">
-                ✅ {verifiedNow ? "Verificar otra vez hoy" : "Verificado hoy"}
-              </button>
-              {item.verification_status === "verified" && (
-                <button onClick={() => setVerified(item, false)} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-zinc-300 transition hover:bg-white/10">
-                  Quitar verificación
-                </button>
-              )}
-              <button onClick={() => toggleHidden(item)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${!item.hidden ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-                👁️ {item.hidden ? "Oculto" : "Visible"}
-              </button>
-              {mapsHref && (
-                <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/10">
-                  🗺️ Mapa ↗
-                </a>
-              )}
-              {/^https?:\/\//i.test(item.source_url || "") && (
-                <a href={item.source_url!} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/10">
-                  Fuente ↗
-                </a>
-              )}
-              <button onClick={() => deleteEssential(item)} className="rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-400 transition hover:bg-red-500 hover:text-white">
-                🗑️ Borrar
-              </button>
+                <datalist id="subcategory-hints">
+                  {(SUBCATEGORY_HINTS[data.category] || []).map((s) => <option key={s} value={s} />)}
+                </datalist>
+              </Field>
+            )}
+            <Field label="Barrio o municipio">
+              <input value={data.neighborhood} onChange={(e) => setData({ ...data, neighborhood: e.target.value })} placeholder="Gràcia, Badalona…" className={inputClass} />
+            </Field>
+            <Field label="Dirección">
+              <input value={data.address} onChange={(e) => setData({ ...data, address: e.target.value })} placeholder="Carrer de Còrsega, 327" className={inputClass} />
+            </Field>
+            <div className="md:col-span-2">
+              <CoordsField
+                latitude={data.latitude}
+                longitude={data.longitude}
+                address={data.address}
+                onChange={(latitude, longitude) => setData({ ...data, latitude, longitude })}
+                inputClassName={inputClass}
+                labelClassName="ui-label"
+              />
             </div>
+            <Field wide label="Descripción" hint="Opcional.">
+              <textarea value={data.description} onChange={(e) => setData({ ...data, description: e.target.value })} rows={4} className={`${inputClass} resize-y`} />
+            </Field>
+          </FieldGrid>
+        )}
+
+        {tab === "horario" && (
+          <div className="space-y-7">
+            <FormSection title="Cuándo abre">
+              <div className="space-y-3">
+                <Field label="Horario" hint="Texto como lo da la fuente: «Open 24 hours», «Monday to Sunday 9:00 AM – 3:00 AM»…">
+                  <input value={data.open_hours} onChange={(e) => setData({ ...data, open_hours: e.target.value })} placeholder="Open 24 hours" className={inputClass} />
+                </Field>
+                <SwitchRow checked={data.is_24h} onChange={(v) => setData({ ...data, is_24h: v })} title="Abierto las 24 h" hint="Se usa si el horario está vacío." />
+              </div>
+            </FormSection>
+            <FormSection title="Contacto y enlaces">
+              <FieldGrid>
+                <Field label="Teléfono">
+                  <input value={data.phone} onChange={(e) => setData({ ...data, phone: e.target.value })} inputMode="tel" placeholder="933 03 30 33" className={inputClass} />
+                </Field>
+                <Field label="Web">
+                  <input value={data.website} onChange={(e) => setData({ ...data, website: e.target.value })} inputMode="url" placeholder="https://…" className={inputClass} />
+                </Field>
+                <Field wide label="Enlace de Google Maps" hint="Si lleva coordenadas y todavía no hay, se rellenan solas.">
+                  <input
+                    value={data.maps_link}
+                    onChange={(e) => {
+                      const p = parseCoords(e.target.value)
+                      const fill = p && !data.latitude && !data.longitude ? { latitude: String(p.lat), longitude: String(p.lng) } : {}
+                      setData({ ...data, maps_link: e.target.value, ...fill })
+                    }}
+                    placeholder="https://www.google.com/maps/…"
+                    className={inputClass}
+                  />
+                </Field>
+              </FieldGrid>
+            </FormSection>
           </div>
         )}
+
+        {tab === "foto" && (
+          <FormSection title="Foto" hint="La que sale en la lista y arriba de la ficha. Si la subes tú, el proceso automático de Google no la cambia.">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              {data.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={data.image} alt="Vista previa" className="h-28 w-28 shrink-0 rounded-2xl border border-white/15 object-cover" />
+              ) : (
+                <div className="grid h-28 w-28 shrink-0 place-items-center rounded-2xl border border-dashed border-white/25 text-xs text-zinc-400">Sin foto</div>
+              )}
+              <div className="min-w-0 flex-1 space-y-3">
+                <input value={data.image} onChange={(e) => setImage(e.target.value)} placeholder="https://… (o sube una desde tu equipo)" aria-label="Enlace de la foto" className={inputClass} />
+                <div className="flex flex-wrap gap-2">
+                  <label className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-3 text-sm font-bold transition ${uploading ? "border-white/15 text-zinc-400" : "border-white/30 bg-white/[0.04] text-zinc-100 hover:border-brand-soft hover:bg-brand/10"}`}>
+                    <Upload size={16} aria-hidden="true" />
+                    {uploading ? "Subiendo…" : data.image ? "Cambiar foto" : "Subir foto desde tu equipo"}
+                    <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={(e) => void uploadFormImage(e, setImage)} />
+                  </label>
+                  {data.image && <button type="button" onClick={() => setImage("")} className={BTN_GHOST}>Quitar foto</button>}
+                </div>
+              </div>
+            </div>
+          </FormSection>
+        )}
+
+        {tab === "estado" && editingItem && renderStatus(editingItem)}
       </div>
     )
   }
 
-  const statCards: { label: string; value: number; color: string; apply: () => void }[] = [
-    { label: "Total", value: totals.total, color: "text-white", apply: () => setStatus("all") },
-    { label: "Publicados", value: totals.visible, color: "text-emerald-400", apply: () => setStatus("visible") },
-    { label: "Ocultos", value: totals.hidden, color: "text-zinc-300", apply: () => setStatus("hidden") },
-    { label: "Sin foto", value: totals.nophoto, color: "text-amber-300", apply: () => setStatus("nophoto") },
+  // Pestaña «Estado» de un esencial ya creado: visibilidad y verificación del horario. Se guardan al momento.
+  const renderStatus = (item: Essential) => {
+    const verifiedNow = isVerificationCurrent(item)
+    const verifiedDate = item.last_verified_at ? new Date(item.last_verified_at).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }) : ""
+    const strict = categoryInfo(item.category).trust === "strict"
+    const sourceHref = /^https?:\/\//i.test(item.source_url || "") ? (item.source_url as string) : null
+    return (
+      <div className="space-y-4">
+        <p className="text-xs leading-relaxed text-zinc-300/80">Lo de esta pestaña se guarda al momento: no hace falta pulsar «Guardar cambios».</p>
+        <SwitchRow
+          tone="green"
+          checked={!item.hidden}
+          onChange={() => void toggleHidden(item)}
+          title="Visible en la web"
+          hint={item.hidden ? "Ahora está oculto: nadie lo ve en la web ni en el mapa." : "Sale en las listas, en el mapa y en las búsquedas."}
+        />
+        <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+          <p className="text-sm font-bold text-white">Verificación del horario</p>
+          <p className="mt-1 text-xs leading-relaxed text-zinc-300/80">
+            {verifiedNow
+              ? `Verificado el ${verifiedDate}.`
+              : item.verification_status === "verified"
+              ? `La verificación del ${verifiedDate} ha caducado.`
+              : strict
+              ? "Sin verificar: en esta categoría sale como «horario sin confirmar» hasta que alguien de Noctua lo compruebe (llamando o con la fuente oficial)."
+              : "Sin verificar. En esta categoría no es obligatorio."}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" onClick={() => void setVerified(item, true)} className={BTN_PRIMARY_SM}>
+              <ShieldCheck size={14} aria-hidden="true" /> {verifiedNow ? "Verificar otra vez hoy" : "Marcar verificado hoy"}
+            </button>
+            {item.verification_status === "verified" && (
+              <button type="button" onClick={() => void setVerified(item, false)} className={BTN_GHOST_SM}>Quitar verificación</button>
+            )}
+          </div>
+        </div>
+        {(item.import_source || sourceHref) && (
+          <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+            <p className="text-sm font-bold text-white">Origen</p>
+            <p className="mt-1 text-xs text-zinc-300/80">
+              {item.import_source === "osm" ? "Importado de OpenStreetMap." : item.import_source === "google" ? "Importado de Google." : "Añadido a mano."}
+            </p>
+            {sourceHref && (
+              <a href={sourceHref} target="_blank" rel="noopener noreferrer" className={`${BTN_GHOST_SM} mt-3`}>
+                Ver la fuente <ExternalLink size={13} aria-hidden="true" />
+              </a>
+            )}
+          </div>
+        )}
+        <p className="text-xs text-zinc-400">Ficha n.º {item.id}</p>
+      </div>
+    )
+  }
+
+  const sheet = sheetOpen ? (
+    <EditSheet
+      title={showAddForm ? "Nuevo esencial" : `Editando: ${editingItem?.name ?? ""}`}
+      subtitle={showAddForm ? `Se creará en ${cityName}` : [editingItem ? categorySingular(editingItem.category) : "", editingItem?.neighborhood].filter(Boolean).join(" · ")}
+      onClose={closeSheet}
+      links={
+        !showAddForm && editingItem && mapsHrefOf(editingItem) ? (
+          <a href={mapsHrefOf(editingItem) as string} target="_blank" rel="noopener noreferrer" className={`${BTN_GHOST_SM} hidden sm:inline-flex`}>
+            Google Maps <ExternalLink size={13} aria-hidden="true" />
+          </a>
+        ) : null
+      }
+      footer={
+        showAddForm ? (
+          <>
+            <button type="button" onClick={closeSheet} className={BTN_GHOST}>Cancelar</button>
+            <button type="button" onClick={addEssential} disabled={saving || uploading} aria-busy={saving} className={`${BTN_PRIMARY} ml-auto`}>
+              {saving ? "Guardando…" : "Guardar esencial"}
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" onClick={() => editingItem && void deleteEssential(editingItem)} className={BTN_DANGER}>
+              <Trash2 size={15} aria-hidden="true" /> <span className="hidden sm:inline">Borrar</span><span className="sr-only sm:hidden">Borrar esencial</span>
+            </button>
+            <button type="button" onClick={cancelEditing} className={`${BTN_GHOST} ml-auto`}>Cancelar</button>
+            <button type="button" onClick={() => editingItem && saveEditing(editingItem.id)} disabled={saving || uploading} aria-busy={saving} className={BTN_PRIMARY}>
+              {saving ? "Guardando…" : "Guardar cambios"}
+            </button>
+          </>
+        )
+      }
+    >
+      {showAddForm
+        ? renderForm(newEssential, setNewEssential, (url) => setNewEssential((prev) => ({ ...prev, image: url })), true)
+        : renderForm(editEssential, setEditEssential, (url) => setEditEssential((prev) => ({ ...prev, image: url })), false)}
+    </EditSheet>
+  ) : null
+
+  const quickStatusKeys = new Set<StatusKey>(QUICK_STATUS.map((q) => q.key))
+  // «Importados de OSM / Google» solo salen si hay alguno (o están elegidos).
+  const otherStatuses = STATUS_ORDER.filter((k) => !quickStatusKeys.has(k) && ((k !== "osm" && k !== "google") || statusCounts[k] > 0 || status === k))
+
+  const list = (
+    <div>
+      {/* Buscador y alta */}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+        <SearchBox value={search} onChange={setSearch} placeholder="Buscar esenciales…" label="Buscar esenciales por nombre, dirección o barrio" className="min-w-0 flex-1" />
+        <button type="button" onClick={openNew} className={`${BTN_PRIMARY} shrink-0`}>
+          <Plus size={17} aria-hidden="true" /> Añadir esencial
+        </button>
+      </div>
+
+      {/* Categoría y orden */}
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row">
+        <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Filtrar por categoría" className="ui-input ui-input-flat min-w-0 flex-1">
+          <option value="all">Todas las categorías ({[...catCounts.values()].reduce((a, b) => a + b, 0)})</option>
+          {categories.map((c) => <option key={c} value={c}>{categoryPlural(c)} ({catCounts.get(c) || 0})</option>)}
+          {extraCategories.map((c) => <option key={c} value={c}>{c} ({catCounts.get(c) || 0})</option>)}
+        </select>
+        <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Ordenar" className="ui-input ui-input-flat sm:!w-auto">
+          <option value="category">Por categoría</option>
+          <option value="name">Por nombre (A-Z)</option>
+          <option value="recent">Últimos añadidos</option>
+        </select>
+      </div>
+
+      {/* Estado, con cuántos esenciales hay en cada uno */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {QUICK_STATUS.map((q) => (
+          <FilterChip key={q.key} active={status === q.key} onClick={() => setStatus(q.key)} count={statusCounts[q.key]}>
+            {q.label}
+          </FilterChip>
+        ))}
+        <select
+          value={quickStatusKeys.has(status) ? "" : status}
+          onChange={(e) => setStatus((e.target.value || "all") as StatusKey)}
+          aria-label="Filtrar por otro estado"
+          className="ui-input ui-input-flat !min-h-[36px] !w-auto !rounded-full !py-1.5 !pl-3.5 !text-[13px] font-semibold"
+        >
+          <option value="">Otro estado…</option>
+          {otherStatuses.map((k) => (
+            <option key={k} value={k}>{STATUS_LABEL[k]} ({statusCounts[k]})</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[13px] text-zinc-300/80">
+          <strong className="font-extrabold text-white">{filtered.length}</strong> de {scoped.length} esenciales
+          {isFiltered && (
+            <button type="button" onClick={clearFilters} className="ml-3 font-bold text-brand-soft underline-offset-2 hover:underline">Quitar filtros</button>
+          )}
+        </p>
+        <button type="button" onClick={() => setBulkOpen((o) => !o)} aria-expanded={bulkOpen} className={BTN_GHOST_SM}>
+          <Layers size={14} aria-hidden="true" /> Acciones en bloque
+        </button>
+      </div>
+
+      {bulkOpen && (
+        <div className="ui-card mb-5 p-5">
+          <p className="text-sm font-extrabold text-white">Publicar u ocultar lo que estás viendo</p>
+          <p className="mt-1 text-xs text-zinc-300/80">
+            Solo afecta a los {filtered.length} esenciales de la lista ({scopeText()}). Pide confirmación antes de cambiar nada.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => bulkSetHidden(false)} disabled={bulkBusy || filtered.length === 0} className={BTN_GHOST_SM}>
+              Publicar {isFiltered ? `los ${filtered.length}` : "todos"}
+            </button>
+            <button type="button" onClick={() => bulkSetHidden(true)} disabled={bulkBusy || filtered.length === 0} className={`${BTN_DANGER} ui-btn-sm`}>
+              Ocultar {isFiltered ? `los ${filtered.length}` : "todos"}
+            </button>
+            {bulkBusy && <span className="text-xs text-zinc-400">Aplicando…</span>}
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <p className="py-20 text-center text-sm text-zinc-300">Cargando esenciales…</p>
+      ) : (
+        <>
+          <ul className="grid gap-2.5">
+            {shownItems.map((item) => {
+              const open = editingId === item.id
+              const Icon: LucideIcon = categoryInfo(item.category).icon
+              const hasCoords = item.latitude != null && item.longitude != null
+              const verifiedNow = isVerificationCurrent(item)
+              const strict = categoryInfo(item.category).trust === "strict"
+              const meta = [item.neighborhood, item.address].filter(Boolean).join(" · ") || "Sin dirección"
+              const hours = item.open_hours || (item.is_24h ? "24 h" : "")
+              return (
+                <li key={item.id} id={`essential-${item.id}`}>
+                  <div className={`ui-item ${open ? "ui-item-on" : ""} ${item.hidden && !open ? "ui-item-dim" : ""}`}>
+                    <button type="button" onClick={() => startEditing(item)} aria-label={`Editar ${item.name}`} className="flex min-w-0 flex-1 items-center gap-3.5 text-left">
+                      <Thumb src={item.image} name={item.name} fallback={<Icon size={20} aria-hidden="true" />} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[15px] font-extrabold text-white">{item.name}</span>
+                        <span className="mt-0.5 block truncate text-xs text-zinc-300/80">
+                          {categorySingular(item.category)}
+                          {item.subcategory ? ` · ${item.subcategory}` : ""}
+                        </span>
+                        <span className="block truncate text-xs text-zinc-400">{meta}{hours ? ` · ${hours}` : ""}</span>
+                        <span className="mt-1.5 flex flex-wrap gap-1.5 empty:hidden">
+                          {verifiedNow ? <Tag tone="green">Verificado</Tag> : item.verification_status === "verified" ? <Tag tone="amber">Verificación caducada</Tag> : strict ? <Tag tone="amber">Sin verificar</Tag> : null}
+                          {!item.image && <Tag tone="amber">Sin foto</Tag>}
+                          {!hasCoords && <Tag tone="red">Sin ubicación</Tag>}
+                          {item.import_source === "osm" && <Tag>OpenStreetMap</Tag>}
+                          {item.import_source === "google" && <Tag>Google</Tag>}
+                        </span>
+                      </span>
+                    </button>
+                    {/* Foto rápida: sin foto, se sube desde la propia lista y se guarda al momento. */}
+                    {!item.image && (
+                      <label
+                        className={`grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-xl border border-white/15 bg-white/[0.06] text-zinc-200 transition hover:bg-white/15 ${photoBusyId !== null ? "pointer-events-none opacity-50" : ""}`}
+                        title="Subir foto"
+                      >
+                        {photoBusyId === item.id ? <span className="text-[10px] font-bold">…</span> : <Camera size={17} aria-hidden="true" />}
+                        <span className="sr-only">Subir foto de {item.name}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          disabled={photoBusyId !== null}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            e.target.value = "" // permite volver a elegir la misma foto
+                            void changePhoto(item, file)
+                          }}
+                        />
+                      </label>
+                    )}
+                    {/* Interruptor rápido de visibilidad: lo más usado, sin abrir la ficha. */}
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={!item.hidden}
+                      aria-label={`${item.name}: ${item.hidden ? "oculto, pulsa para publicarlo" : "publicado, pulsa para ocultarlo"}`}
+                      onClick={() => void toggleHidden(item)}
+                      className="flex shrink-0 flex-col items-center gap-1.5 rounded-lg px-1.5 py-1"
+                    >
+                      <span className="ui-switch" data-on={!item.hidden} data-tone="green" aria-hidden="true" />
+                      <span className={`text-[11px] font-bold ${item.hidden ? "text-zinc-400" : "text-open"}`}>{item.hidden ? "Oculto" : "Visible"}</span>
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+          {shownItems.length === 0 && (
+            <div className="ui-card px-6 py-14 text-center">
+              <p className="text-sm font-bold text-white">No hay esenciales con este filtro</p>
+              <p className="mt-1 text-xs text-zinc-300/80">Prueba con otra búsqueda o quita los filtros.</p>
+              {isFiltered && <button type="button" onClick={clearFilters} className={`${BTN_GHOST_SM} mt-4`}>Quitar búsqueda y filtros</button>}
+            </div>
+          )}
+          <ShowMore shown={Math.min(limit, rest.length) + (focus ? 1 : 0)} total={rest.length + (focus ? 1 : 0)} step={PAGE_SIZE} onMore={() => setLimit((l) => l + PAGE_SIZE)} />
+        </>
+      )}
+    </div>
+  )
+
+  const statCards: { label: string; value: number; accent: "violet" | "cyan" | "coral" | "pink"; icon: LucideIcon; active: boolean; apply: () => void }[] = [
+    { label: "Total", value: totals.total, accent: "violet", icon: Store, active: status === "all" && category === "all", apply: () => { setStatus("all"); setCategory("all") } },
+    { label: "Publicados", value: totals.visible, accent: "cyan", icon: Eye, active: status === "visible", apply: () => setStatus("visible") },
+    { label: "Ocultos", value: totals.hidden, accent: "pink", icon: EyeOff, active: status === "hidden", apply: () => setStatus("hidden") },
+    { label: "Sin foto", value: totals.nophoto, accent: "coral", icon: ImageOff, active: status === "nophoto", apply: () => setStatus("nophoto") },
   ]
 
   return (
     <AdminShell title="Esenciales" subtitle="Farmacias, cajeros, comida, transporte, taxi, aseos, máquinas, consignas y demás servicios para la noche.">
       <>
-        {/* Resumen (cada tarjeta filtra la lista) */}
-        <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-          {statCards.map((s) => (
-            <button key={s.label} onClick={s.apply} className="rounded-card border border-white/10 bg-surface p-5 text-center transition hover:bg-white/[0.06]">
-              <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
-              <p className="mt-1 text-xs text-zinc-400">{s.label}</p>
-            </button>
+        {/* Cifras: pulsa una para filtrar la lista */}
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {statCards.map((st) => (
+            <StatTile key={st.label} accent={st.accent} icon={st.icon} label={st.label} value={st.value} active={st.active && !search.trim()} onClick={st.apply} />
           ))}
         </div>
-
-        {/* Alta plegable */}
-        <div className="mb-6">
-          <button
-            onClick={() => { setShowAddForm((v) => !v); cancelEditing() }}
-            className={`w-full rounded-2xl px-6 py-4 text-sm font-black transition md:w-auto ${showAddForm ? "border border-white/15 bg-white/[0.06] text-white hover:bg-white/10" : "bg-purple-500 text-white hover:bg-purple-400"}`}
-          >
-            {showAddForm ? "✕ Cerrar formulario" : "+ Añadir esencial"}
-          </button>
-          {showAddForm && (
-            <div className="mt-4 rounded-card border border-purple-500/30 bg-purple-500/[0.04] p-6">
-              <h3 className="mb-4 text-lg font-black">Nuevo esencial</h3>
-              {renderForm(newEssential, setNewEssential, (url) => setNewEssential((prev) => ({ ...prev, image: url })))}
-              <div className="mt-5 flex gap-3">
-                <button onClick={addEssential} disabled={saving || uploading} className="rounded-full bg-purple-500 px-6 py-3 text-sm font-black text-white transition hover:bg-purple-400 disabled:opacity-50">
-                  {saving ? "Guardando…" : "Guardar esencial"}
-                </button>
-                <button onClick={() => { setShowAddForm(false); setNewEssential(emptyForm) }} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10">
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Búsqueda y filtros */}
-        <div className="mb-3 flex flex-col gap-3 lg:flex-row">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar nombre, dirección, barrio…"
-            aria-label="Buscar esenciales"
-            className="flex-1 rounded-card border border-white/10 bg-surface px-5 py-4 outline-none transition focus:border-brand/60"
-          />
-          <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Filtrar por categoría" style={{ colorScheme: "dark" }} className={`${selectClass} lg:w-60`}>
-            <option value="all">Todas las categorías ({[...catCounts.values()].reduce((a, b) => a + b, 0)})</option>
-            {categories.map((c) => <option key={c} value={c}>{categoryPlural(c)} ({catCounts.get(c) || 0})</option>)}
-            {extraCategories.map((c) => <option key={c} value={c}>{c} ({catCounts.get(c) || 0})</option>)}
-          </select>
-          <select value={status} onChange={(e) => setStatus(e.target.value as StatusKey)} aria-label="Filtrar por estado" style={{ colorScheme: "dark" }} className={`${selectClass} lg:w-64`}>
-            {STATUS_ORDER.filter((k) => ((k !== "osm" && k !== "google") ? true : (statusCounts[k] > 0 || status === k))).map((k) => (
-              <option key={k} value={k}>{STATUS_LABEL[k]} ({statusCounts[k]})</option>
-            ))}
-          </select>
-          <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Ordenar" style={{ colorScheme: "dark" }} className={`${selectClass} lg:w-48`}>
-            <option value="category">Por categoría</option>
-            <option value="name">Por nombre (A-Z)</option>
-            <option value="recent">Últimos añadidos</option>
-          </select>
-        </div>
-
-        {/* Acciones sobre lo que se ve */}
-        <div className="mb-6 flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => bulkSetHidden(false)}
-            disabled={bulkBusy || filtered.length === 0}
-            className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500 hover:text-white disabled:opacity-40"
-          >
-            ✓ Publicar {isFiltered ? `los ${filtered.length} filtrados` : "todos"}
-          </button>
-          <button
-            onClick={() => bulkSetHidden(true)}
-            disabled={bulkBusy || filtered.length === 0}
-            className="rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-300 transition hover:bg-red-500 hover:text-white disabled:opacity-40"
-          >
-            ✕ Ocultar {isFiltered ? `los ${filtered.length} filtrados` : "todos"}
-          </button>
-          {bulkBusy && <span className="text-xs text-zinc-400">Aplicando…</span>}
-          {isFiltered && (
-            <button onClick={clearFilters} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-zinc-300 transition hover:bg-white/10">
-              Quitar filtros
-            </button>
-          )}
-          <p className="ml-auto self-center text-xs text-zinc-400">
-            {filtered.length} de {scoped.length} esenciales
-          </p>
-        </div>
-
-        {/* Lista */}
-        {loading ? (
-          <p className="py-20 text-center text-sm text-zinc-400">Cargando esenciales…</p>
-        ) : (
-          <div className="grid gap-4">
-            {shown.map(renderItem)}
-            {remaining > 0 && (
-              <button onClick={() => setLimit((l) => l + PAGE_SIZE)} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10">
-                Ver {Math.min(PAGE_SIZE, remaining)} más (quedan {remaining})
-              </button>
-            )}
-            {shown.length === 0 && (
-              <div className="py-20 text-center">
-                <p className="text-sm text-zinc-400">No hay esenciales con este filtro.</p>
-                {isFiltered && (
-                  <button onClick={clearFilters} className="mt-4 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-xs font-bold text-white transition hover:bg-white/10">
-                    Quitar filtros
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        <SplitView list={list} sheet={sheet} />
       </>
     </AdminShell>
   )

@@ -21,6 +21,7 @@ export default function CategoryTile({
   badge,
   children,
   layout = "stack",
+  bordered = false,
   className = "",
 }: {
   href: string
@@ -33,6 +34,8 @@ export default function CategoryTile({
   children?: ReactNode
   /** stack: icono arriba y texto abajo (cuadrada). row: icono a la izquierda y texto a la derecha (ancha). */
   layout?: "stack" | "row"
+  /** Contorno del color del grupo y un halo suave (la portada de la web lo usa para que los accesos no se vean planos y grises). */
+  bordered?: boolean
   className?: string
 }) {
   const chip = (
@@ -43,8 +46,8 @@ export default function CategoryTile({
   return (
     <Link
       href={href}
-      style={tileBackground(accent)}
-      className={`group relative flex overflow-hidden rounded-card border border-white/10 p-4 transition hover:border-white/30 ${
+      style={bordered ? { ...tileBackground(accent), borderColor: `${accent}8c`, boxShadow: `0 12px 30px -18px ${accent}` } : tileBackground(accent)}
+      className={`group relative flex overflow-hidden rounded-card border p-4 transition ${bordered ? "hover:-translate-y-0.5 hover:brightness-110" : "border-white/10 hover:border-white/30"} ${
         layout === "stack" ? "min-h-[9.5rem] flex-col justify-between" : "min-h-[5.75rem] items-center gap-4"
       } ${className}`}
     >

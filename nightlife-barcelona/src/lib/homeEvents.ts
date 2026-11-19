@@ -3,6 +3,8 @@
 // noviembre bajo «Qué está pasando». Las fechas son AAAA-MM-DD (como se guardan en events y
 // club_events), que se pueden comparar como texto.
 
+import { lazyDtf } from "./dtf"
+
 export const HOME_EVENTS_DAYS_AHEAD = 2
 
 // Suma (o resta) días a una fecha AAAA-MM-DD sin que la zona horaria la mueva de día.
@@ -14,9 +16,12 @@ export function addDaysYmd(ymd: string, days: number): string {
 
 // La noche en curso, en hora de Madrid. Hasta las 6:00 todavía es la noche de ayer (a las 2:00 del
 // sábado se sigue en la fiesta del viernes), el mismo criterio que el filtro «Elige un día» y el Plan.
+const nightYmdFormat = lazyDtf("sv-SE", { timeZone: "Europe/Madrid" })
+const nightHourFormat = lazyDtf("en-GB", { timeZone: "Europe/Madrid", hour: "2-digit", hour12: false })
+
 export function nightDateMadrid(now: Date = new Date()): string {
-  const ymd = now.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" })
-  const hour = parseInt(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", hour: "2-digit", hour12: false }).format(now), 10) % 24
+  const ymd = nightYmdFormat().format(now)
+  const hour = parseInt(nightHourFormat().format(now), 10) % 24
   return hour < 6 ? addDaysYmd(ymd, -1) : ymd
 }
 

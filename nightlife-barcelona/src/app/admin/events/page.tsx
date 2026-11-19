@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type Dispatch, type SetStateAction } from "react"
 import Link from "next/link"
-import { CalendarClock, CalendarDays, EyeOff, Flame, type LucideIcon } from "lucide-react"
+import { CalendarClock, CalendarDays, ExternalLink, EyeOff, Flame, Layers, Plus, Trash2, Upload, X, type LucideIcon } from "lucide-react"
 
 import AdminShell from "../../../components/admin/AdminShell"
-import { StatTile } from "../../../components/admin/ui"
+import { BTN_DANGER, BTN_GHOST, BTN_GHOST_SM, BTN_PRIMARY, FilterChip, Segmented, StatTile, Tag } from "../../../components/admin/ui"
+import { EditSheet, Field, FieldGrid, FormSection, SearchBox, SheetTabs, ShowMore, SplitView, SwitchRow, Thumb } from "../../../components/admin/editor"
 
 import { supabase } from "../../../lib/supabase"
 import { fetchAllPages } from "../../../lib/fetchAll"
@@ -199,9 +200,21 @@ const STATUS_TESTS: Record<StatusKey, (e: Event) => boolean> = {
 
 type SortKey = "smart" | "date_asc" | "date_desc" | "recent"
 
-const inputClass = "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-brand/60 transition placeholder:text-zinc-400"
-const labelClass = "block text-xs font-bold uppercase tracking-widest text-zinc-400 mb-1.5"
-const selectClass = "rounded-2xl border border-white/10 bg-surface px-4 py-4 text-sm font-semibold text-white outline-none transition focus:border-brand/60"
+// Campos y chips: el estilo está en globals.css («ui-input», «ui-chip»), igual en todo el admin.
+const inputClass = "ui-input"
+
+// Pestañas de la ficha. «Estado» solo existe al editar (los interruptores se guardan al momento y un evento nuevo todavía no existe).
+type SheetTab = "datos" | "fechas" | "fotos" | "estado"
+
+// Filtros de estado que salen como botones con su cuenta; el resto van en el desplegable «Otro estado…».
+const QUICK_STATUS: { key: StatusKey; label: string }[] = [
+  { key: "all", label: "Todos" },
+  { key: "visible", label: "Publicados" },
+  { key: "hidden", label: "Ocultos" },
+  { key: "featured", label: "Destacados" },
+  { key: "nophoto", label: "Sin foto" },
+  { key: "nocoords", label: "Sin ubicación" },
+]
 
 export default function AdminEventsPage() {
   // Admin por ciudad (15/11/2026): `allEvents` es todo lo que hay y `events`, solo lo de la ciudad elegida en el menú. La ciudad de un
@@ -230,6 +243,8 @@ export default function AdminEventsPage() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [bulkBusy, setBulkBusy] = useState(false)
+  const [sheetTab, setSheetTab] = useState<SheetTab>("datos")
+  const [bulkOpen, setBulkOpen] = useState(false)
 
   const today = useMemo(() => todayISO(), [])
 
@@ -499,6 +514,7 @@ export default function AdminEventsPage() {
 
   const startEditing = (event: Event) => {
     setShowAddForm(false)
+    setSheetTab("datos")
     setEditingId(event.id)
     setEditDraft({
       title: event.title || "",
@@ -657,384 +673,408 @@ export default function AdminEventsPage() {
     )
   }
 
+
   // ---------- Lista que se pinta ----------
+  // Se pintan de 30 en 30; el evento fijado (recién creado o abierto con ?edit=ID) va siempre arriba.
   const focus = focusId != null ? events.find((e) => e.id === focusId) : undefined
   const rest = filtered.filter((e) => e.id !== focus?.id)
-  const shown = [...(focus ? [focus] : []), ...rest.slice(0, limit)]
-  const remaining = Math.max(0, rest.length - limit)
+  const shownEvents = [...(focus ? [focus] : []), ...rest.slice(0, limit)]
+
+  const editingEvent = editingId != null ? allEvents.find((e) => e.id === editingId) || null : null
+  const sheetOpen = showAddForm || editingId != null
+  const closeSheet = () => {
+    if (showAddForm) {
+      setShowAddForm(false)
+      setNewDraft(emptyDraft)
+    } else {
+      cancelEditing()
+    }
+  }
+  const openNew = () => {
+    cancelEditing()
+    setSheetTab("datos")
+    setShowAddForm(true)
+  }
 
   // Función (no componente): definida como componente dentro de la página se volvía a montar en
   // cada tecla y el campo perdía el foco al escribir.
-  const renderForm = (draft: EventDraft, setDraft: Dispatch<SetStateAction<EventDraft>>) => {
+  const renderForm = (draft: EventDraft, setDraft: Dispatch<SetStateAction<EventDraft>>, isNew: boolean) => {
     const set = patcher(setDraft)
+    const tab: SheetTab = isNew && sheetTab === "estado" ? "datos" : sheetTab
+    const photoCount = draft.gallery.length + (draft.image ? 1 : 0)
     return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="md:col-span-2">
-          <label className={labelClass}>Título *</label>
-          <input value={draft.title} onChange={(e) => set({ title: e.target.value })} placeholder="Nombre del evento o festival" className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Sala o recinto</label>
-          <input value={draft.club_name} onChange={(e) => set({ club_name: e.target.value })} placeholder="Razzmatazz" className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Dirección</label>
-          <input value={draft.address} onChange={(e) => set({ address: e.target.value })} placeholder="Carrer dels Almogàvers, 122" className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Artistas</label>
-          <input value={draft.artist} onChange={(e) => set({ artist: e.target.value })} placeholder="Artista 1, Artista 2" className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Música</label>
-          <input value={draft.music} onChange={(e) => set({ music: e.target.value })} placeholder="Techno, House…" className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Fecha de inicio</label>
-          <input type="date" value={draft.date} onChange={(e) => set({ date: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Fecha de fin (opcional)</label>
-          <input type="date" value={draft.date_end} onChange={(e) => set({ date_end: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Hora de inicio</label>
-          <input type="time" value={draft.start_time} onChange={(e) => set({ start_time: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Hora de fin</label>
-          <input type="time" value={draft.end_time} onChange={(e) => set({ end_time: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Precio</label>
-          <input value={draft.price} onChange={(e) => set({ price: e.target.value })} placeholder="15€ o Gratis" className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Enlace de entradas</label>
-          <input value={draft.ticket_url} onChange={(e) => set({ ticket_url: e.target.value })} placeholder="https://…" className={inputClass} />
-        </div>
-        <div className="md:col-span-2">
-          <label className={labelClass}>Tarifas adicionales (opcional)</label>
-          <input
-            value={draft.priceTiersRaw}
-            onChange={(e) => set({ priceTiersRaw: e.target.value })}
-            placeholder="VIP:40€; Día suelto:10€; Pack 3 días:25€"
-            className={inputClass}
-          />
-          <p className="mt-1 text-xs text-zinc-500">Formato «Etiqueta:precio», separadas por punto y coma.</p>
-        </div>
-        <div className="md:col-span-2">
-          <label className={labelClass}>Descripción</label>
-          <textarea value={draft.description} onChange={(e) => set({ description: e.target.value })} rows={5} className={`${inputClass} resize-y`} />
-        </div>
-        <div className="md:col-span-2">
-          <CoordsField
-            latitude={draft.latitude}
-            longitude={draft.longitude}
-            address={draft.address}
-            onChange={(latitude, longitude) => set({ latitude, longitude })}
-            inputClassName={inputClass}
-            labelClassName={labelClass}
+      <div>
+        <div className="mb-6">
+          <SheetTabs<SheetTab>
+            label="Apartados de la ficha"
+            value={tab}
+            onChange={setSheetTab}
+            tabs={[
+              { value: "datos", label: "Datos" },
+              { value: "fechas", label: "Fechas y entradas" },
+              { value: "fotos", label: `Fotos${photoCount ? ` (${photoCount})` : ""}` },
+              ...(isNew ? [] : [{ value: "estado" as const, label: "Estado" }]),
+            ]}
           />
         </div>
 
-        <div className="md:col-span-2">
-          <label className={labelClass}>Foto de portada</label>
-          <div className="flex flex-wrap items-center gap-4">
-            {draft.image ? (
-              <img src={draft.image} alt="Vista previa" className="h-24 w-40 rounded-xl object-cover" />
-            ) : (
-              <div className="flex h-24 w-40 items-center justify-center rounded-xl border border-dashed border-white/20 bg-white/5 text-xs font-semibold text-zinc-400">Sin foto</div>
-            )}
-            <label className={`cursor-pointer rounded-full border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-xs font-bold text-amber-200 transition hover:bg-amber-300 hover:text-black ${uploading ? "pointer-events-none opacity-50" : ""}`}>
-              {uploading ? "Subiendo…" : draft.image ? "📷 Cambiar foto" : "📷 Subir foto"}
-              <input type="file" accept="image/*" className="sr-only" disabled={uploading} onChange={(e) => void uploadCover(e, setDraft)} />
-            </label>
-            {draft.image && (
-              <button type="button" onClick={() => set({ image: "" })} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-zinc-300 transition hover:bg-white/10">
-                Quitar foto
-              </button>
-            )}
+        {tab === "datos" && (
+          <FieldGrid>
+            <Field wide label="Título *">
+              <input value={draft.title} onChange={(e) => set({ title: e.target.value })} placeholder="Nombre del evento o festival" className={inputClass} />
+            </Field>
+            <Field label="Sala o recinto">
+              <input value={draft.club_name} onChange={(e) => set({ club_name: e.target.value })} placeholder="Razzmatazz" className={inputClass} />
+            </Field>
+            <Field label="Dirección">
+              <input value={draft.address} onChange={(e) => set({ address: e.target.value })} placeholder="Carrer dels Almogàvers, 122" className={inputClass} />
+            </Field>
+            <div className="md:col-span-2">
+              <CoordsField
+                latitude={draft.latitude}
+                longitude={draft.longitude}
+                address={draft.address}
+                onChange={(latitude, longitude) => set({ latitude, longitude })}
+                inputClassName={inputClass}
+                labelClassName="ui-label"
+              />
+            </div>
+            <Field label="Artistas">
+              <input value={draft.artist} onChange={(e) => set({ artist: e.target.value })} placeholder="Artista 1, Artista 2" className={inputClass} />
+            </Field>
+            <Field label="Música">
+              <input value={draft.music} onChange={(e) => set({ music: e.target.value })} placeholder="Techno, House…" className={inputClass} />
+            </Field>
+            <Field wide label="Descripción">
+              <textarea value={draft.description} onChange={(e) => set({ description: e.target.value })} rows={6} className={`${inputClass} resize-y`} />
+            </Field>
+          </FieldGrid>
+        )}
+
+        {tab === "fechas" && (
+          <div className="space-y-7">
+            <FormSection title="Cuándo" hint="Si dura varios días, pon también la fecha de fin.">
+              <FieldGrid className="!grid-cols-2 !gap-x-3">
+                <Field label="Fecha de inicio">
+                  <input type="date" value={draft.date} onChange={(e) => set({ date: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
+                </Field>
+                <Field label="Fecha de fin (opcional)">
+                  <input type="date" value={draft.date_end} onChange={(e) => set({ date_end: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
+                </Field>
+                <Field label="Hora de inicio">
+                  <input type="time" value={draft.start_time} onChange={(e) => set({ start_time: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
+                </Field>
+                <Field label="Hora de fin">
+                  <input type="time" value={draft.end_time} onChange={(e) => set({ end_time: e.target.value })} style={{ colorScheme: "dark" }} className={inputClass} />
+                </Field>
+              </FieldGrid>
+            </FormSection>
+            <FormSection title="Entradas">
+              <FieldGrid>
+                <Field label="Precio">
+                  <input value={draft.price} onChange={(e) => set({ price: e.target.value })} placeholder="15€ o Gratis" className={inputClass} />
+                </Field>
+                <Field label="Enlace de entradas">
+                  <input value={draft.ticket_url} onChange={(e) => set({ ticket_url: e.target.value })} placeholder="https://…" className={inputClass} />
+                </Field>
+                <Field wide label="Tarifas adicionales (opcional)" hint="Formato «Etiqueta:precio», separadas por punto y coma.">
+                  <input value={draft.priceTiersRaw} onChange={(e) => set({ priceTiersRaw: e.target.value })} placeholder="VIP:40€; Día suelto:10€; Pack 3 días:25€" className={inputClass} />
+                </Field>
+              </FieldGrid>
+            </FormSection>
           </div>
-          <input value={draft.image} onChange={(e) => set({ image: e.target.value })} placeholder="…o pega aquí la URL de una imagen" aria-label="URL de la imagen" className={`${inputClass} mt-3`} />
-        </div>
+        )}
 
-        <div className="md:col-span-2">
-          <label className={labelClass}>
-            Galería manual ({draft.gallery.length} foto{draft.gallery.length === 1 ? "" : "s"})
-          </label>
-          <label className="block cursor-pointer rounded-xl border border-dashed border-white/20 bg-white/[0.02] px-5 py-4 text-center text-sm font-bold text-zinc-400 transition hover:border-purple-500/50 hover:text-white">
-            {uploading ? "Subiendo…" : "📁 Subir una o varias fotos"}
-            <input type="file" accept="image/*" multiple disabled={uploading} onChange={(e) => void uploadGallery(e, setDraft)} className="hidden" />
-          </label>
-          {draft.gallery.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-3">
-              {draft.gallery.map((url) => (
-                <div key={url} className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-white/10">
-                  <img src={url} alt="" className="h-full w-full object-cover" />
-                  <button
-                    type="button"
-                    aria-label="Quitar foto de la galería"
-                    onClick={() => setDraft((prev) => ({ ...prev, gallery: prev.gallery.filter((u) => u !== url) }))}
-                    className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white"
-                  >
-                    ✕
-                  </button>
+        {tab === "fotos" && (
+          <div className="space-y-7">
+            <FormSection title="Foto de portada" hint="La que sale en la lista y arriba de la ficha del evento.">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                {draft.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={draft.image} alt="Vista previa" className="h-28 w-40 shrink-0 rounded-2xl border border-white/15 object-cover" />
+                ) : (
+                  <div className="grid h-28 w-40 shrink-0 place-items-center rounded-2xl border border-dashed border-white/25 text-xs text-zinc-400">Sin foto</div>
+                )}
+                <div className="min-w-0 flex-1 space-y-3">
+                  <input value={draft.image} onChange={(e) => set({ image: e.target.value })} placeholder="https://… (o sube una desde tu equipo)" aria-label="URL de la imagen" className={inputClass} />
+                  <div className="flex flex-wrap gap-2">
+                    <label className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-3 text-sm font-bold transition ${uploading ? "border-white/15 text-zinc-400" : "border-white/30 bg-white/[0.04] text-zinc-100 hover:border-brand-soft hover:bg-brand/10"}`}>
+                      <Upload size={16} aria-hidden="true" />
+                      {uploading ? "Subiendo…" : draft.image ? "Cambiar foto" : "Subir foto desde tu equipo"}
+                      <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={(e) => void uploadCover(e, setDraft)} />
+                    </label>
+                    {draft.image && (
+                      <button type="button" onClick={() => set({ image: "" })} className={BTN_GHOST}>Quitar foto</button>
+                    )}
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  const renderItem = (event: Event) => {
-    const editing = editingId === event.id
-    const past = periodTest("past", event, today)
-    const hasCoords = event.latitude != null && event.longitude != null
-    const noPhoto = STATUS_TESTS.nophoto(event)
-    const href = `/event/${event.slug || createSlug(event.title)}`
-    const start = fmtDate(event.date)
-    const end = event.date_end && day(event.date_end) !== day(event.date) ? fmtDate(event.date_end) : null
-    const times = fmtTimes(event)
-    const details = [
-      start ? `📅 ${start}${end ? ` → ${end}` : ""}` : "📅 Sin fecha",
-      times ? `🕒 ${times}` : null,
-      event.club_name ? `📍 ${event.club_name}` : null,
-      event.artist ? `🎧 ${event.artist}` : null,
-      event.music ? `🎶 ${event.music}` : null,
-      event.price ? `🎟 ${event.price}` : null,
-    ].filter(Boolean)
-
-    return (
-      <div
-        key={event.id}
-        id={`event-${event.id}`}
-        className={`rounded-card border p-5 transition ${event.hidden ? "border-white/5 bg-white/[0.01] opacity-50" : "border-white/10 bg-surface"} ${editing ? "!border-purple-500/40 !bg-purple-500/[0.04] !opacity-100" : ""}`}
-      >
-        {editing ? (
-          <div>
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              <h3 className="text-lg font-black">Editando: {event.title}</h3>
-              <span className="text-xs text-zinc-500">ficha n.º {event.id}</span>
-              <Link href={href} target="_blank" className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-zinc-300 transition hover:bg-white hover:text-black">
-                Ver ficha ↗
-              </Link>
-            </div>
-            {renderForm(editDraft, setEditDraft)}
-            <div className="mt-5 flex flex-wrap gap-3">
-              <button onClick={() => saveEditing(event.id)} disabled={saving || uploading} className="rounded-full bg-purple-500 px-6 py-3 text-sm font-black text-white transition hover:bg-purple-400 disabled:opacity-50">
-                {saving ? "Guardando…" : "Guardar cambios"}
-              </button>
-              <button onClick={cancelEditing} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10">
-                Cancelar
-              </button>
-              <Link href={href} target="_blank" className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10">
-                Ir al evento ↗
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 items-start gap-4">
-              {event.image ? (
-                <img src={event.image} alt={event.title} className="h-16 w-16 flex-shrink-0 rounded-xl object-cover" />
-              ) : (
-                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl border border-dashed border-white/20 bg-white/5 text-zinc-500">
-                  <CalendarDays size={22} aria-hidden="true" />
+              </div>
+            </FormSection>
+            <FormSection title={`Galería (${draft.gallery.length} foto${draft.gallery.length === 1 ? "" : "s"})`} hint="Fotos de debajo de la principal. Si dejas fotos aquí, las automáticas de Google ya no tocan este evento.">
+              <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-3 text-sm font-bold transition ${uploading ? "border-white/15 text-zinc-400" : "border-white/30 bg-white/[0.04] text-zinc-100 hover:border-brand-soft hover:bg-brand/10"}`}>
+                <Upload size={16} aria-hidden="true" />
+                {uploading ? "Subiendo…" : "Añadir fotos a la galería"}
+                <input type="file" accept="image/*" multiple disabled={uploading} onChange={(e) => void uploadGallery(e, setDraft)} className="hidden" />
+              </label>
+              {draft.gallery.length > 0 && (
+                <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
+                  {draft.gallery.map((url) => (
+                    <div key={url} className="group relative aspect-square overflow-hidden rounded-xl border border-white/15">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                      <button
+                        type="button"
+                        aria-label="Quitar foto de la galería"
+                        onClick={() => setDraft((prev) => ({ ...prev, gallery: prev.gallery.filter((u) => u !== url) }))}
+                        className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/75 text-white ring-1 ring-white/30 transition hover:bg-red-500 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+                      >
+                        <X size={14} aria-hidden="true" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-black text-white">{event.title}</h3>
-                  {event.featured && <span className="rounded-full border border-emerald-400/30 bg-emerald-400/15 px-2 py-0.5 text-xs font-bold text-emerald-300">🔥 Destacado</span>}
-                  {event.sold_out && <span className="rounded-full border border-red-500/30 bg-red-500/15 px-2 py-0.5 text-xs font-bold text-red-300">🚫 Agotado</span>}
-                  {event.vip_tables && <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-300">🛋️ Mesa VIP</span>}
-                  {isAnnual(event) ? (
-                    <span className="rounded-full border border-cyan-500/30 bg-cyan-500/15 px-2 py-0.5 text-xs font-bold text-cyan-300">🔁 Anual</span>
-                  ) : (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs font-bold text-zinc-400">1️⃣ Único</span>
-                  )}
-                  {event.hidden && <span className="rounded-full border border-zinc-500/30 bg-zinc-500/20 px-2 py-0.5 text-xs font-bold text-zinc-400">Oculto</span>}
-                  {past && <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs font-bold text-zinc-400">Pasado</span>}
-                  {noPhoto && <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs font-bold text-amber-300">Sin foto</span>}
-                  {!hasCoords && <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-xs font-bold text-red-300">Sin ubicación</span>}
-                  {event.manual_photos && <span className="rounded-full border border-purple-500/30 bg-purple-500/15 px-2 py-0.5 text-xs font-bold text-purple-300">✋ Fotos manuales</span>}
-                  {event.google_rating ? (
-                    <span className="rounded-full border border-blue-500/30 bg-blue-500/15 px-2 py-0.5 text-xs font-bold text-blue-300">⭐ {event.google_rating} ({event.google_review_count || 0})</span>
-                  ) : null}
-                </div>
-                <p className="mt-0.5 text-xs text-zinc-400">{details.join(" · ")}</p>
-                {event.description && <p className="mt-1 line-clamp-2 max-w-2xl text-xs text-zinc-500">{event.description}</p>}
-              </div>
-            </div>
+            </FormSection>
+          </div>
+        )}
 
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => startEditing(event)} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:bg-white hover:text-black">
-                ✏️ Editar
-              </button>
-              <button onClick={() => setFlag(event, "featured", !event.featured)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${event.featured ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-                🔥 Destacado
-              </button>
-              <button onClick={() => setFlag(event, "sold_out", !event.sold_out)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${event.sold_out ? "bg-red-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-                🚫 Agotado
-              </button>
-              <button onClick={() => setFlag(event, "vip_tables", !event.vip_tables)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${event.vip_tables ? "bg-amber-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-                🛋️ Mesa VIP
-              </button>
-              <button onClick={() => setFlag(event, "recurring", !isAnnual(event))} className={`rounded-full px-4 py-2 text-xs font-bold transition ${isAnnual(event) ? "bg-cyan-500 text-white" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-                🔁 Anual
-              </button>
-              <button onClick={() => setFlag(event, "hidden", !event.hidden)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${!event.hidden ? "bg-emerald-400 text-black" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"}`}>
-                👁️ {event.hidden ? "Oculto" : "Visible"}
-              </button>
-              <Link href={href} target="_blank" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/10">
-                Ver ficha ↗
-              </Link>
-              <button onClick={() => deleteEvent(event)} className="rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-400 transition hover:bg-red-500 hover:text-white">
-                🗑️ Borrar
-              </button>
-            </div>
+        {tab === "estado" && editingEvent && (
+          <div className="space-y-3">
+            <p className="mb-1 text-xs leading-relaxed text-zinc-300/80">Estos interruptores se guardan al momento: no hace falta pulsar «Guardar cambios».</p>
+            <SwitchRow
+              tone="green"
+              checked={!editingEvent.hidden}
+              onChange={(v) => void setFlag(editingEvent, "hidden", !v)}
+              title="Visible en la web"
+              hint={editingEvent.hidden ? "Ahora está oculto: nadie lo ve en la web ni en el mapa." : "Sale en la lista de eventos y en las búsquedas."}
+            />
+            <SwitchRow tone="amber" checked={!!editingEvent.featured} onChange={(v) => void setFlag(editingEvent, "featured", v)} title="Destacado" hint="Lleva la etiqueta 🔥 de destacado." />
+            <SwitchRow tone="red" checked={!!editingEvent.sold_out} onChange={(v) => void setFlag(editingEvent, "sold_out", v)} title="Agotado" hint="Marca el evento como agotado." />
+            <SwitchRow checked={!!editingEvent.vip_tables} onChange={(v) => void setFlag(editingEvent, "vip_tables", v)} title="Con mesa VIP" hint="Indica que se pueden reservar mesas VIP." />
+            <SwitchRow
+              checked={isAnnual(editingEvent)}
+              onChange={(v) => void setFlag(editingEvent, "recurring", v)}
+              title="Se repite cada año"
+              hint="Festivales y fiestas mayores: al pasar la fecha, el sistema pone la del año siguiente y lo oculta para que lo revises. Si lo apagas, es un evento único: al pasar solo se oculta."
+            />
+            <p className="pt-2 text-xs text-zinc-400">Ficha n.º {editingEvent.id}</p>
           </div>
         )}
       </div>
     )
   }
 
-  const statCards: { label: string; value: number; accent: "violet" | "cyan" | "coral" | "pink"; icon: LucideIcon; apply: () => void }[] = [
-    { label: "Total", value: totals.total, accent: "violet", icon: CalendarDays, apply: clearFilters },
-    { label: "Próximos", value: totals.upcoming, accent: "cyan", icon: CalendarClock, apply: () => { setPeriod("upcoming"); setStatus("all") } },
-    { label: "Destacados", value: totals.featured, accent: "coral", icon: Flame, apply: () => { setPeriod("all"); setStatus("featured") } },
-    { label: "Ocultos", value: totals.hidden, accent: "pink", icon: EyeOff, apply: () => { setPeriod("all"); setStatus("hidden") } },
+  const sheet = sheetOpen ? (
+    <EditSheet
+      title={showAddForm ? "Nuevo evento" : `Editando: ${editingEvent?.title ?? ""}`}
+      subtitle={showAddForm ? `Se creará en ${cityName}` : [fmtDate(editingEvent?.date), editingEvent?.club_name].filter(Boolean).join(" · ")}
+      onClose={closeSheet}
+      links={
+        !showAddForm && editingEvent ? (
+          <Link href={`/event/${editingEvent.slug || createSlug(editingEvent.title)}`} target="_blank" className={`${BTN_GHOST_SM} hidden sm:inline-flex`}>
+            Ver ficha <ExternalLink size={13} aria-hidden="true" />
+          </Link>
+        ) : null
+      }
+      footer={
+        showAddForm ? (
+          <>
+            <button type="button" onClick={closeSheet} className={BTN_GHOST}>Cancelar</button>
+            <button type="button" onClick={addEvent} disabled={saving || uploading} aria-busy={saving} className={`${BTN_PRIMARY} ml-auto`}>
+              {saving ? "Guardando…" : "Guardar evento"}
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" onClick={() => editingEvent && void deleteEvent(editingEvent)} className={BTN_DANGER}>
+              <Trash2 size={15} aria-hidden="true" /> <span className="hidden sm:inline">Borrar</span><span className="sr-only sm:hidden">Borrar evento</span>
+            </button>
+            <button type="button" onClick={cancelEditing} className={`${BTN_GHOST} ml-auto`}>Cancelar</button>
+            <button type="button" onClick={() => editingEvent && saveEditing(editingEvent.id)} disabled={saving || uploading} aria-busy={saving} className={BTN_PRIMARY}>
+              {saving ? "Guardando…" : "Guardar cambios"}
+            </button>
+          </>
+        )
+      }
+    >
+      {showAddForm ? renderForm(newDraft, setNewDraft, true) : renderForm(editDraft, setEditDraft, false)}
+    </EditSheet>
+  ) : null
+
+  const quickStatusKeys = new Set<StatusKey>(QUICK_STATUS.map((q) => q.key))
+
+  const list = (
+    <div>
+      {/* Buscador y alta */}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+        <SearchBox value={search} onChange={setSearch} placeholder="Buscar eventos…" label="Buscar eventos por título, sala, artista o fecha" className="min-w-0 flex-1" />
+        <button type="button" onClick={openNew} className={`${BTN_PRIMARY} shrink-0`}>
+          <Plus size={17} aria-hidden="true" /> Añadir evento
+        </button>
+      </div>
+
+      {/* Cuándo */}
+      <div className="mb-3">
+        <Segmented<PeriodKey>
+          label="Filtrar por fecha"
+          value={period}
+          onChange={setPeriod}
+          options={PERIOD_ORDER.map((k) => ({ value: k, label: k === "all" ? "Todas" : PERIOD_LABEL[k], count: periodCounts[k] }))}
+        />
+      </div>
+
+      {/* Estado, con cuántos eventos hay en cada uno */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {QUICK_STATUS.map((q) => (
+          <FilterChip key={q.key} active={status === q.key} onClick={() => setStatus(q.key)} count={statusCounts[q.key]}>
+            {q.label}
+          </FilterChip>
+        ))}
+        <select
+          value={quickStatusKeys.has(status) ? "" : status}
+          onChange={(e) => setStatus((e.target.value || "all") as StatusKey)}
+          aria-label="Filtrar por otro estado"
+          className="ui-input ui-input-flat !min-h-[36px] !w-auto !rounded-full !py-1.5 !pl-3.5 !text-[13px] font-semibold"
+        >
+          <option value="">Otro estado…</option>
+          {STATUS_ORDER.filter((k) => !quickStatusKeys.has(k)).map((k) => (
+            <option key={k} value={k}>{STATUS_LABEL[k]} ({statusCounts[k]})</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[13px] text-zinc-300/80">
+          <strong className="font-extrabold text-white">{filtered.length}</strong> de {events.length} eventos
+          {isFiltered && (
+            <button type="button" onClick={clearFilters} className="ml-3 font-bold text-brand-soft underline-offset-2 hover:underline">Quitar filtros</button>
+          )}
+        </p>
+        <div className="flex items-center gap-2">
+          <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Ordenar" className="ui-input ui-input-flat !min-h-[36px] !w-auto !py-1.5 !pl-3.5 !text-[13px] font-semibold">
+            <option value="smart">Próximos primero</option>
+            <option value="date_asc">Fecha: antiguo a nuevo</option>
+            <option value="date_desc">Fecha: nuevo a antiguo</option>
+            <option value="recent">Últimos añadidos</option>
+          </select>
+          <button type="button" onClick={() => setBulkOpen((o) => !o)} aria-expanded={bulkOpen} className={BTN_GHOST_SM}>
+            <Layers size={14} aria-hidden="true" /> En bloque
+          </button>
+        </div>
+      </div>
+
+      {bulkOpen && (
+        <div className="ui-card mb-5 p-5">
+          <p className="text-sm font-extrabold text-white">Publicar u ocultar lo que estás viendo</p>
+          <p className="mt-1 text-xs text-zinc-300/80">
+            Solo afecta a los {filtered.length} eventos de la lista ({scopeText()}). Pide confirmación antes de cambiar nada.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => bulkSetHidden(false)} disabled={bulkBusy || filtered.length === 0} className={BTN_GHOST_SM}>
+              Publicar {isFiltered ? `los ${filtered.length}` : "todos"}
+            </button>
+            <button type="button" onClick={() => bulkSetHidden(true)} disabled={bulkBusy || filtered.length === 0} className={`${BTN_DANGER} ui-btn-sm`}>
+              Ocultar {isFiltered ? `los ${filtered.length}` : "todos"}
+            </button>
+            {bulkBusy && <span className="text-xs text-zinc-400">Aplicando…</span>}
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <p className="py-20 text-center text-sm text-zinc-300">Cargando eventos…</p>
+      ) : (
+        <>
+          <ul className="grid gap-2.5">
+            {shownEvents.map((event) => {
+              const open = editingId === event.id
+              const past = periodTest("past", event, today)
+              const start = fmtDate(event.date)
+              const end = event.date_end && day(event.date_end) !== day(event.date) ? fmtDate(event.date_end) : null
+              const times = fmtTimes(event)
+              const when = start ? `${start}${end ? ` → ${end}` : ""}${times ? ` · ${times}` : ""}` : "Sin fecha"
+              const hasCoords = event.latitude != null && event.longitude != null
+              return (
+                <li key={event.id} id={`event-${event.id}`}>
+                  <div className={`ui-item ${open ? "ui-item-on" : ""} ${event.hidden && !open ? "ui-item-dim" : ""}`}>
+                    <button type="button" onClick={() => startEditing(event)} aria-label={`Editar ${event.title}`} className="flex min-w-0 flex-1 items-center gap-3.5 text-left">
+                      <Thumb src={event.image} name={event.title} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[15px] font-extrabold text-white">{event.title}</span>
+                        <span className="mt-0.5 block truncate text-xs text-zinc-300/80">{when}</span>
+                        {(event.club_name || event.artist) && (
+                          <span className="block truncate text-xs text-zinc-400">{[event.club_name, event.artist].filter(Boolean).join(" · ")}</span>
+                        )}
+                        <span className="mt-1.5 flex flex-wrap gap-1.5 empty:hidden">
+                          {event.featured && <Tag tone="amber">Destacado</Tag>}
+                          {event.sold_out && <Tag tone="red">Agotado</Tag>}
+                          {event.vip_tables && <Tag tone="violet">Mesa VIP</Tag>}
+                          {past && <Tag>Pasado</Tag>}
+                          {STATUS_TESTS.nophoto(event) && <Tag tone="amber">Sin foto</Tag>}
+                          {!hasCoords && <Tag tone="red">Sin ubicación</Tag>}
+                        </span>
+                      </span>
+                    </button>
+                    {/* Interruptor rápido de visibilidad: lo más usado, sin abrir la ficha. */}
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={!event.hidden}
+                      aria-label={`${event.title}: ${event.hidden ? "oculto, pulsa para publicarlo" : "publicado, pulsa para ocultarlo"}`}
+                      onClick={() => void setFlag(event, "hidden", !event.hidden)}
+                      className="flex shrink-0 flex-col items-center gap-1.5 rounded-lg px-1.5 py-1"
+                    >
+                      <span className="ui-switch" data-on={!event.hidden} data-tone="green" aria-hidden="true" />
+                      <span className={`text-[11px] font-bold ${event.hidden ? "text-zinc-400" : "text-open"}`}>{event.hidden ? "Oculto" : "Visible"}</span>
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+          {shownEvents.length === 0 && (
+            <div className="ui-card px-6 py-14 text-center">
+              <p className="text-sm font-bold text-white">No hay eventos con este filtro</p>
+              <p className="mt-1 text-xs text-zinc-300/80">Prueba con otra búsqueda o quita los filtros.</p>
+              {isFiltered && <button type="button" onClick={clearFilters} className={`${BTN_GHOST_SM} mt-4`}>Quitar búsqueda y filtros</button>}
+            </div>
+          )}
+          <ShowMore shown={Math.min(limit, rest.length) + (focus ? 1 : 0)} total={rest.length + (focus ? 1 : 0)} step={PAGE_SIZE} onMore={() => setLimit((l) => l + PAGE_SIZE)} />
+        </>
+      )}
+    </div>
+  )
+
+  const statCards: { label: string; value: number; accent: "violet" | "cyan" | "coral" | "pink"; icon: LucideIcon; active: boolean; apply: () => void }[] = [
+    { label: "Total", value: totals.total, accent: "violet", icon: CalendarDays, active: period === "all" && status === "all", apply: clearFilters },
+    { label: "Próximos", value: totals.upcoming, accent: "cyan", icon: CalendarClock, active: period === "upcoming" && status === "all", apply: () => { setPeriod("upcoming"); setStatus("all") } },
+    { label: "Destacados", value: totals.featured, accent: "coral", icon: Flame, active: period === "all" && status === "featured", apply: () => { setPeriod("all"); setStatus("featured") } },
+    { label: "Ocultos", value: totals.hidden, accent: "pink", icon: EyeOff, active: period === "all" && status === "hidden", apply: () => { setPeriod("all"); setStatus("hidden") } },
   ]
 
   return (
     <AdminShell title="Eventos y festivales" subtitle="Crea, edita y gestiona los eventos y festivales.">
       <>
-        {/* Resumen (cada tarjeta filtra la lista) */}
-        <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-          {statCards.map((s) => (
-            <StatTile key={s.label} accent={s.accent} icon={s.icon} label={s.label} value={s.value} onClick={s.apply} />
+        {/* Cifras: pulsa una para filtrar la lista */}
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {statCards.map((st) => (
+            <StatTile key={st.label} accent={st.accent} icon={st.icon} label={st.label} value={st.value} active={st.active && !search.trim()} onClick={st.apply} />
           ))}
         </div>
 
         {/* Pendientes de revisar: lo que el sistema deja oculto al pasar a la edición del año siguiente */}
         {totals.hiddenUpcoming > 0 && (
-          <div className="mb-6 flex flex-wrap items-center gap-3 rounded-card border border-amber-400/30 bg-amber-400/[0.06] px-5 py-4">
-            <p className="flex-1 text-sm text-amber-100">
+          <div className="ui-card mb-6 flex flex-wrap items-center gap-3 !border-amber-400/35 !bg-amber-400/[0.07] px-5 py-4">
+            <p className="min-w-0 flex-1 text-sm text-amber-100">
               {totals.hiddenUpcoming} {totals.hiddenUpcoming === 1 ? "evento próximo está oculto" : "eventos próximos están ocultos"}. Las ediciones nuevas de los eventos anuales se ocultan solas para que las revises antes de publicarlas.
             </p>
-            <button
-              onClick={() => { setSearch(""); setPeriod("upcoming"); setStatus("hidden") }}
-              className="rounded-full border border-amber-300/40 bg-amber-300/10 px-4 py-2 text-xs font-bold text-amber-200 transition hover:bg-amber-300 hover:text-black"
-            >
+            <button type="button" onClick={() => { setSearch(""); setPeriod("upcoming"); setStatus("hidden") }} className={BTN_GHOST_SM}>
               Revisarlos
             </button>
           </div>
         )}
 
-        {/* Alta plegable */}
-        <div className="mb-6">
-          <button
-            onClick={() => { setShowAddForm((v) => !v); cancelEditing() }}
-            className={`w-full rounded-2xl px-6 py-4 text-sm font-black transition md:w-auto ${showAddForm ? "border border-white/15 bg-white/[0.06] text-white hover:bg-white/10" : "bg-purple-500 text-white hover:bg-purple-400"}`}
-          >
-            {showAddForm ? "✕ Cerrar formulario" : "+ Añadir evento"}
-          </button>
-          {showAddForm && (
-            <div className="mt-4 rounded-card border border-purple-500/30 bg-purple-500/[0.04] p-6">
-              <h3 className="mb-4 text-lg font-black">Nuevo evento</h3>
-              {renderForm(newDraft, setNewDraft)}
-              <div className="mt-5 flex gap-3">
-                <button onClick={addEvent} disabled={saving || uploading} className="rounded-full bg-purple-500 px-6 py-3 text-sm font-black text-white transition hover:bg-purple-400 disabled:opacity-50">
-                  {saving ? "Guardando…" : "Guardar evento"}
-                </button>
-                <button onClick={() => { setShowAddForm(false); setNewDraft(emptyDraft) }} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10">
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Búsqueda y filtros */}
-        <div className="mb-3 flex flex-col gap-3 lg:flex-row">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar título, sala, artista, fecha…"
-            aria-label="Buscar eventos"
-            className="flex-1 rounded-card border border-white/10 bg-surface px-5 py-4 outline-none transition focus:border-brand/60"
-          />
-          <select value={period} onChange={(e) => setPeriod(e.target.value as PeriodKey)} aria-label="Filtrar por fecha" style={{ colorScheme: "dark" }} className={`${selectClass} lg:w-52`}>
-            {PERIOD_ORDER.map((k) => (
-              <option key={k} value={k}>{PERIOD_LABEL[k]} ({periodCounts[k]})</option>
-            ))}
-          </select>
-          <select value={status} onChange={(e) => setStatus(e.target.value as StatusKey)} aria-label="Filtrar por estado" style={{ colorScheme: "dark" }} className={`${selectClass} lg:w-72`}>
-            {STATUS_ORDER.map((k) => (
-              <option key={k} value={k}>{STATUS_LABEL[k]} ({statusCounts[k]})</option>
-            ))}
-          </select>
-          <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Ordenar" style={{ colorScheme: "dark" }} className={`${selectClass} lg:w-52`}>
-            <option value="smart">Próximos primero</option>
-            <option value="date_asc">Fecha: de antiguo a nuevo</option>
-            <option value="date_desc">Fecha: de nuevo a antiguo</option>
-            <option value="recent">Últimos añadidos</option>
-          </select>
-        </div>
-
-        {/* Acciones sobre lo que se ve */}
-        <div className="mb-6 flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => bulkSetHidden(false)}
-            disabled={bulkBusy || filtered.length === 0}
-            className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500 hover:text-white disabled:opacity-40"
-          >
-            ✓ Publicar {isFiltered ? `los ${filtered.length} filtrados` : "todos"}
-          </button>
-          <button
-            onClick={() => bulkSetHidden(true)}
-            disabled={bulkBusy || filtered.length === 0}
-            className="rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-300 transition hover:bg-red-500 hover:text-white disabled:opacity-40"
-          >
-            ✕ Ocultar {isFiltered ? `los ${filtered.length} filtrados` : "todos"}
-          </button>
-          {bulkBusy && <span className="text-xs text-zinc-400">Aplicando…</span>}
-          {isFiltered && (
-            <button onClick={clearFilters} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-zinc-300 transition hover:bg-white/10">
-              Quitar filtros
-            </button>
-          )}
-          <p className="ml-auto self-center text-xs text-zinc-400">
-            {filtered.length} de {events.length} eventos
-          </p>
-        </div>
-
-        {/* Lista */}
-        {loading ? (
-          <p className="py-20 text-center text-sm text-zinc-400">Cargando eventos…</p>
-        ) : (
-          <div className="grid gap-4">
-            {shown.map(renderItem)}
-            {remaining > 0 && (
-              <button onClick={() => setLimit((l) => l + PAGE_SIZE)} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10">
-                Ver {Math.min(PAGE_SIZE, remaining)} más (quedan {remaining})
-              </button>
-            )}
-            {shown.length === 0 && (
-              <div className="py-20 text-center">
-                <p className="text-sm text-zinc-400">No hay eventos con este filtro.</p>
-                {isFiltered && (
-                  <button onClick={clearFilters} className="mt-4 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-xs font-bold text-white transition hover:bg-white/10">
-                    Quitar filtros
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        <SplitView list={list} sheet={sheet} />
       </>
     </AdminShell>
   )

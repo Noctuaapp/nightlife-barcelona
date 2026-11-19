@@ -354,11 +354,12 @@ export default function AdminVisitsPage() {
         <div className="h-64 animate-pulse rounded-2xl bg-white/[0.03]" />
       ) : data ? (
         <>
-          <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {data.visitors !== undefined ? (
-              <Kpi label="Personas distintas" value={String(data.visitors)} sub={`${data.total_sessions} visitas · ${data.returning ?? 0} con varias visitas`} />
-            ) : (
-              <Kpi label="Visitas" value={String(data.total_sessions)} />
+          <dl className={`grid grid-cols-2 gap-3 ${data.visitors !== undefined ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
+            {/* Las dos cifras a la vez (19/11/2026): antes solo salía «Personas distintas» y las visitas quedaban en letra pequeña, así que
+                «40» aquí y «49 visitas» en la gráfica del Resumen parecían un error. Una persona puede entrar varias veces el mismo día. */}
+            <Kpi label="Visitas" value={String(data.total_sessions)} sub="cada entrada a la web" />
+            {data.visitors !== undefined && (
+              <Kpi label="Personas distintas" value={String(data.visitors)} sub={`${data.returning ?? 0} entraron más de una vez`} />
             )}
             <Kpi label="Con cuenta" value={`${data.with_account}`} sub={`${pct(data.with_account, data.total_sessions)} % de las visitas`} />
             <Kpi label="Se van sin hacer nada" value={`${pct(data.bounced, data.total_sessions)} %`} sub={`${data.bounced} visitas de una sola página`} />

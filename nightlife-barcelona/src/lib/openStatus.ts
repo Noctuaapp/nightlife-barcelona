@@ -5,6 +5,8 @@
 // Los horarios que vienen de un solo día ("Monday: ...") solo valen para ese día: si hoy es
 // otro día no se puede saber, y se devuelve "unknown" en vez de adivinar.
 
+import { lazyDtf } from "./dtf"
+
 const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 const DAY_RE = "(monday|tuesday|wednesday|thursday|friday|saturday|sunday)"
 
@@ -32,14 +34,10 @@ function L(tr: Translate | undefined, key: string, time = ""): string {
   return (tpl === `openStatus.${key}` ? ES[key] : tpl).replace("{time}", time)
 }
 
+const madridNowFormat = lazyDtf("en-GB", { timeZone: "Europe/Madrid", weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false })
+
 function madridNow(): { day: number; minutes: number } {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Madrid",
-    weekday: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date())
+  const parts = madridNowFormat().formatToParts(new Date())
   const weekday = (parts.find((p) => p.type === "weekday")?.value || "").toLowerCase()
   let hour = parseInt(parts.find((p) => p.type === "hour")?.value || "0", 10)
   if (hour === 24) hour = 0

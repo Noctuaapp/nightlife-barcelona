@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, BarChart3, BadgeCheck, Headphones, Users, Vote,
-  MessageSquare, Ban, Wrench, Flag, Star, Repeat, Activity, Menu, X, ExternalLink, Trophy, History, Bell, Footprints, TrendingUp, Inbox, Lightbulb, Moon, Sunrise, MapPin, type LucideIcon,
+  MessageSquare, Ban, Wrench, Flag, Star, Activity, Menu, X, ExternalLink, Trophy, History, Bell, Footprints, TrendingUp, Inbox, Lightbulb, Moon, Sunrise, MapPin, type LucideIcon,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { SECTION_ICONS } from "../../lib/sectionIcons"
@@ -26,6 +26,7 @@ import { AdminCityBadge, AdminCitySwitch } from "./AdminCity"
 //   - (06/11/2026) Mismo diseño que el Resumen en todo el admin: cada sección del menú tiene su acento
 //     (General violeta, Contenido rosa, Comunidad cian, Datos coral), el icono de la pantalla activa se
 //     tiñe de ese color y la cabecera de cada pantalla lleva su icono y un brillo suave del acento.
+//   - (19/11/2026) «Sesiones semanales» y «Noches de club» eran lo mismo (qué pasa en cada club): ahora una sola entrada, «Programación de clubs».
 //   - (15/11/2026) Ciudad: selector Barcelona | Madrid arriba del menú. Los apartados marcados con `city` enseñan y gestionan
 //     solo la ciudad elegida (se marcan con un pin en el menú y con la ciudad en la cabecera); el resto es común.
 //     Mismo día: Visitas, Retención y Cuándo sale la gente también (analítica por ciudad, supabase/104). El Resumen mezcla las dos cosas:
@@ -49,8 +50,7 @@ const ADMIN_NAV: NavGroup[] = [
     accent: "pink",
     items: [
       { href: "/admin", label: "Clubs", icon: SECTION_ICONS.clubs, city: true },
-      { href: "/admin/club-sessions", label: "Sesiones semanales", icon: Repeat, city: true },
-      { href: "/admin/club-events", label: "Noches de club", icon: Headphones, city: true },
+      { href: "/admin/programacion", label: "Programación de clubs", icon: Headphones, city: true },
       { href: "/admin/calidad", label: "Calidad de fichas", icon: BadgeCheck, city: true },
       { href: "/admin/recomendados", label: "Top 3 de Noctua", icon: Trophy, city: true },
       { href: "/admin/events", label: "Eventos y festivales", icon: SECTION_ICONS.events, city: true },
