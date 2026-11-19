@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
-  Activity, ArrowUpRight, BellRing, CalendarDays, CheckCircle2, ChevronRight, Layers, ShieldCheck, TrendingDown, TrendingUp, Users,
+  Activity, ArrowUpRight, BellRing, CalendarDays, CheckCircle2, ChevronRight, Eye, Layers, ShieldCheck, TrendingDown, TrendingUp, Users,
 } from "lucide-react"
 import AdminShell from "../../../components/admin/AdminShell"
 import { AdminCityBadge, useAdminCity } from "../../../components/admin/AdminCity"
-import { BTN_GHOST_SM, LINK, Panel, SectionTitle, StatusPill } from "../../../components/admin/ui"
+import { BTN_GHOST_SM, LINK, Panel, SectionTitle, StatTile, StatusPill } from "../../../components/admin/ui"
 import { CompareBars, WeekChart } from "../../../components/admin/WeekChart"
 import { weekSeries } from "../../../lib/weekSeries"
+import { activeAccounts, lastSeenLabel, type ActiveAccount } from "../../../lib/activeAccounts"
+import { topTicketClicks, type TicketTop } from "../../../lib/ticketClicks"
 import { useMadridToday } from "../../../lib/useMadridToday"
 import { supabase } from "../../../lib/supabase"
 import { fetchAllPages } from "../../../lib/fetchAll"
@@ -39,7 +41,9 @@ type System = { maintenance: boolean | null; clubNoctua: boolean | null; season:
 type Upcoming = { id: number; title: string; date: string; kind: "Evento" | "Noche de club"; href: string }
 type Signup = { id: string; email: string; username: string | null; created_at: string; last_sign_in_at: string | null }
 // Resumen por usuario de admin_users_activity (supabase/24): solo lo que hace falta aquí.
-type ActivityRow = { user_id: string; last_seen: string | null }
+type ActivityRow = { user_id: string; last_seen: string | null; active_days?: number | string | null }
+// Ficha de un club con sus ids de ciudad (para repartir los clics en entradas por ciudad).
+type ClubMeta = { id: number; name: string; city: string | null; latitude: number | null; longitude: number | null }
 
 // Variación de una cifra frente a la semana anterior. Flecha y signo, nunca solo color; con el valor de antes a la vista.
 function Delta({ now, before }: { now: number; before: number }) {
@@ -94,6 +98,11 @@ export default function AdminDashboardPage() {
   const todayNow = useMadridToday()
   const [users, setUsers] = useState<{ total: number; new7: number; active7: number } | null>(null)
   const [signups, setSignups] = useState<Signup[]>([])
+  // Quién ha entrado esta semana y dónde han pulsado en entradas (20/11/2026): el detalle de las pestañas «Cuentas» y «Entradas».
+  const [accounts, setAccounts] = useState<ActiveAccount[] | null>(null)
+  const [clubsMeta, setClubsMeta] = useState<ClubMeta[] | null>(null)
+  const [ticketTop, setTicketTop] = useState<TicketTop[] | null>(null)
+  const [ticketFailed, setTicketFailed] = useState(false)
   const [system, setSystem] = useState<System>({ maintenance: null, clubNoctua: null, season: null })
   const [content, setContent] = useState<{ clubsVisible: number; clubsHidden: number; events30: number; nights7: number } | null>(null)
   const [upcoming, setUpcoming] = useState<Upcoming[]>([])
@@ -169,6 +178,7 @@ export default function AdminDashboardPage() {
           activeByActivity ?? others.filter((u) => u.last_sign_in_at && new Date(u.last_sign_in_at).getTime() >= weekAgo).length,
       })
       setSignups([...all].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 5))
+      setAccounts(activity.error ? null : activeAccounts(all, (activity.data || []) as ActivityRow[], ADMIN_EMAIL))
 
       setSystem({
         maintenance: !!maint.data?.maintenance_mode,
@@ -193,6 +203,9 @@ export default function AdminDashboardPage() {
     setTrafficFailed(false)
     setContent(null)
     setUpcoming([])
+    setClubsMeta(null)
+    setTicketTop(null)
+    setTicketFailed(false)
 
     const load = async () => {
       const [ov, ovPrev, pe, pePrev, clubs, events, nights] = await Promise.all([
@@ -227,6 +240,7 @@ export default function AdminDashboardPage() {
       type EventRow = { id: number; title: string; date: string; club_name: string | null; latitude: number | null; longitude: number | null }
       type NightRow = { id: number; title: string; date: string; club_id: number | null }
       const clubRows = clubs as ClubRow[]
+      setClubsMeta(clubRows)
       const mine = rowsOfCity(clubRows, city)
       const index = clubCityIndex(clubRows)
       const myEvents = (events as EventRow[]).filter((e) => cityOfEvent(e, index) === city)
@@ -251,6 +265,42 @@ export default function AdminDashboardPage() {
       current = false
     }
   }, [checkingAdmin, city, todayNow])
+
+  // Dónde han pulsado en entradas esta semana. Va aparte del resto para no retrasar la gráfica; usa las fichas de clubs que el efecto de
+  // arriba ya ha cargado (sin pedirlas otra vez) y pide solo los eventos con clics para saber de qué ciudad son.
+  useEffect(() => {
+    if (checkingAdmin || !clubsMeta) return
+    let current = true
+    const range = { p_from: daysAgo(6), p_to: madridToday() }
+    const run = async () => {
+      const [ci, ei] = await Promise.all([
+        supabase.rpc("admin_data_items", { p_type: "club", ...range }),
+        supabase.rpc("admin_data_items", { p_type: "event", ...range }),
+      ])
+      if (!current) return
+      if (ci.error || ei.error) { setTicketFailed(true); return }
+      const clubItems = (ci.data || []) as { id: number; name?: string; tickets?: number }[]
+      const eventItems = (ei.data || []) as { id: number; name?: string; tickets?: number }[]
+      const withClicks = eventItems.filter((e) => Number(e.tickets) > 0).map((e) => e.id)
+      let eventCity = new Map<string, string>()
+      if (withClicks.length > 0) {
+        const { data: evs } = await supabase.from("events").select("id, club_name, latitude, longitude").in("id", withClicks)
+        if (!current) return
+        const index = clubCityIndex(clubsMeta)
+        eventCity = new Map(((evs || []) as { id: number; club_name: string | null; latitude: number | null; longitude: number | null }[]).map((e) => [String(e.id), cityOfEvent(e, index)]))
+      }
+      const metaById = new Map(clubsMeta.map((c) => [String(c.id), c]))
+      setTicketTop(
+        topTicketClicks(clubItems, eventItems, {
+          // Un club sin ficha en la base se queda en Barcelona, como en Datos.
+          club: (id) => rowsOfCity([metaById.get(id) || { city: null, latitude: null, longitude: null }], city).length === 1,
+          event: (id) => (eventCity.get(id) || "barcelona") === city,
+        })
+      )
+    }
+    run().catch(() => { if (current) setTicketFailed(true) })
+    return () => { current = false }
+  }, [checkingAdmin, clubsMeta, city])
 
   if (checkingAdmin) {
     return (
@@ -305,6 +355,12 @@ export default function AdminDashboardPage() {
     { key: "views", label: "Fichas vistas", short: "Fichas", unit: "fichas vistas", now: week?.page_views || 0, before: prevWeek?.page_views || 0, days: weekSeries(axisDays, axisPrevDays, week?.daily, prevWeek?.daily, !!prevWeek, (d) => d.views) },
     { key: "tickets", label: "Clics en entradas", short: "Entradas", unit: "clics", now: week?.tickets || 0, before: prevWeek?.tickets || 0, days: null },
   ]
+  // Hoy y ayer (20/11/2026): las cifras del día, aparte de las de la semana. Salen de las mismas series que la gráfica, así que
+  // coinciden con su última barra. Hoy, hasta ahora: el día no ha acabado.
+  const todayIso = axisDays[6]
+  const yesterdayIso = axisDays[5]
+  const visitsOn = (iso: string) => week?.daily?.find((d) => d.d === iso)?.sessions ?? 0
+  const peopleOn = (iso: string) => people?.daily.find((d) => d.d === iso)?.people ?? 0
   const metric = metrics.find((m) => m.key === metricKey) || metrics[0]
   const queueTotal = queue.reduce((sum, q) => sum + q.n, 0)
 
@@ -358,6 +414,12 @@ export default function AdminDashboardPage() {
           {trafficNote && (
             <p role="status" className="mx-5 mb-4 rounded-xl border border-warn/40 bg-warn/10 px-4 py-2.5 text-xs text-warn sm:mx-6">{trafficNote.text}</p>
           )}
+          {week && (
+            <div className={`grid gap-3 px-5 pb-4 sm:px-6 ${people ? "grid-cols-2" : "grid-cols-1"}`}>
+              {people && <StatTile accent="violet" icon={Users} label="Personas hoy" value={peopleOn(todayIso)} note={`ayer ${peopleOn(yesterdayIso)}`} />}
+              <StatTile accent="cyan" icon={Eye} label="Visitas hoy" value={visitsOn(todayIso)} note={`ayer ${visitsOn(yesterdayIso)}`} />
+            </div>
+          )}
           <div role="tablist" aria-label="Qué enseña la gráfica" style={{ gridTemplateColumns: `repeat(${metrics.length}, minmax(0, 1fr))` }} className="grid divide-x divide-white/[0.06] border-y border-white/[0.06]">
             {metrics.map((m) => {
               const on = m.key === metric.key
@@ -397,6 +459,67 @@ export default function AdminDashboardPage() {
               </>
             ) : (
               <CompareBars now={metric.now} before={metric.before} unit={metric.unit} />
+            )}
+
+            {/* Cuentas: quién ha entrado (de Actividad por usuario). */}
+            {week && metric.key === "accounts" && accounts && (
+              <div className="mt-6 border-t border-white/[0.06] pt-4">
+                <h3 className="text-sm font-bold text-ink">Quién ha entrado esta semana <span className="font-semibold text-zinc-400">· {accounts.length}</span></h3>
+                {accounts.length === 0 ? (
+                  <p className="mt-3 text-sm text-zinc-400">Ninguna cuenta ha entrado estos 7 días.</p>
+                ) : (
+                  <ul className="mt-1 divide-y divide-white/[0.06]">
+                    {accounts.slice(0, 8).map((a) => (
+                      <li key={a.id}>
+                        <Link href={`/admin/actividad?user=${a.id}`} className="ui-row group -mx-3 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm">
+                          <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-linear-to-br from-[#8f73ff] to-[#5b3fd6] text-xs font-bold text-white">{initialOf(a.label)}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-medium text-zinc-100 group-hover:text-ink">{a.label}{a.self && <span className="ml-2 text-xs font-semibold text-zinc-400">(tú)</span>}</span>
+                            <span className="block text-xs text-zinc-400">{lastSeenLabel(a.lastSeen)} · {a.days} {a.days === 1 ? "día" : "días"} esta semana</span>
+                          </span>
+                          <ChevronRight size={16} aria-hidden="true" className="shrink-0 text-zinc-600 transition group-hover:translate-x-0.5 group-hover:text-zinc-300" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Link href="/admin/actividad" className={`${LINK} mt-3 inline-flex items-center gap-1 text-sm`}>
+                  {accounts.length > 8 ? `Ver las ${accounts.length} cuentas` : "Ver su actividad"} <ArrowUpRight size={13} aria-hidden="true" />
+                </Link>
+              </div>
+            )}
+
+            {/* Entradas: en qué clubs y eventos han pulsado (de Datos). */}
+            {week && metric.key === "tickets" && (
+              <div className="mt-6 border-t border-white/[0.06] pt-4">
+                <h3 className="text-sm font-bold text-ink">Dónde han pulsado esta semana</h3>
+                {ticketFailed ? (
+                  <p className="mt-3 text-sm text-zinc-400">No se ha podido cargar el detalle. Está en Datos › Clics y tiempo.</p>
+                ) : !ticketTop ? (
+                  <p className="mt-3 text-sm text-zinc-400">Cargando…</p>
+                ) : ticketTop.length === 0 ? (
+                  <p className="mt-3 text-sm text-zinc-400">Ningún club ni evento de {city === "madrid" ? "Madrid" : "Barcelona"} ha recibido clics en entradas estos 7 días.</p>
+                ) : (
+                  <ul className="mt-3 space-y-3">
+                    {ticketTop.map((t) => (
+                      <li key={t.key}>
+                        <div className="flex items-baseline justify-between gap-3 text-sm">
+                          <span className="min-w-0 truncate font-medium text-zinc-100">
+                            {t.name} <span className="ml-1 text-xs font-semibold text-zinc-400">{t.kind === "club" ? "Club" : "Evento"}</span>
+                          </span>
+                          <span className="shrink-0 font-bold tabular-nums text-ink">{t.clicks}</span>
+                        </div>
+                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
+                          <div className="h-full rounded-full bg-cyan-400" style={{ width: `${Math.max(4, Math.round((t.clicks / ticketTop[0].clicks) * 100))}%` }} />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Link href="/admin/datos" className={`${LINK} mt-4 inline-flex items-center gap-1 text-sm`}>
+                  Ver todo en Datos <ArrowUpRight size={13} aria-hidden="true" />
+                </Link>
+              </div>
             )}
           </div>
         </Panel>
